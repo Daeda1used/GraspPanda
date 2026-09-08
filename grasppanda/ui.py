@@ -72,15 +72,17 @@ def component_parameters(method, backbone, crop):
 
 def loss_parameters(method):
     from .training_options import LOSS_TERMS
-    from .losses import PARAMETERS, is_classification
+    from .losses import PARAMETERS, is_classification, parameter_schema
     terms = LOSS_TERMS.get(method, {})
     if not terms:
         return 'This method uses its native objective and augmentation. Custom controls are not registered.'
     rows = [f'| `{name}` | ' + (', '.join(f'`{key}`: {low} to {high}' for key, (low, high) in options.items()) or 'No parameters') + ' |'
-            for name, options in PARAMETERS.items() if name != 'upstream']
+            for name in PARAMETERS if name != 'upstream' for options in [parameter_schema(method, name)]]
+    semantics = ('HGGD/RNG use independent sigmoid labels: cross_entropy means binary cross-entropy, and ASL uses the multi-label formulation. Native positive thresholds, class balancing and positive-count reductions remain in place. Focal alpha applies to each classification term. '
+                 if method in ('hggd', 'region_normalized_grasp') else 'Focal alpha applies only to binary objectness. ')
     return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Classification terms: ' + ', '.join(f'`{term}`' for term in terms if is_classification(method, term)) + '; remaining terms use regression losses.\n\n'
             '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
-            '\n\nUse `loss.functions.TERM: {"type": "NAME", ...}` in experiment JSON. Focal alpha applies only to binary objectness. '
+            '\n\nUse `loss.functions.TERM: {"type": "NAME", ...}` in experiment JSON. ' + semantics +
             'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#training-controls) for defaults, target units and augmentation parameters.')
 
 
@@ -94,7 +96,8 @@ def loss_preset(method, classification, regression, current):
         if not isinstance(value, dict): raise ValueError('Loss configuration must be a mapping')
         value['functions'] = {term: classification if is_classification(method, term) else regression
                               for term in LOSS_TERMS[method]}
-        Experiment(method=method, action='train_check', split='train', scene=0, loss=value).validate()
+        Experiment(method=method, action='train_check', split='train', scene=0, loss=value,
+                   workspace='native_demo' if method in ('hggd','region_normalized_grasp') else 'official_gt_workspace').validate()
     except (ValueError, TypeError) as error:
         raise gr.Error(str(error)) from error
     return json.dumps(value, indent=2)

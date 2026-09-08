@@ -19,7 +19,7 @@ Run commands from the repository root. The dataset root is the directory contain
 | [Training controls](examples/train-controls.yaml) | Select loss formulations and label-aligned point augmentation |
 | [Component composition](examples/compose-baseline.yaml) | Train a different encoder and cylindrical grouping |
 | [Point Transformer](examples/compose-ptv3.yaml) | Configure native PTv3 stages, attention windows and optimization |
-| [RGB-D composition](examples/compose-hggd.yaml) | Train an HGGD image encoder with a chosen optimizer and schedule |
+| [RGB-D composition](examples/compose-hggd.yaml) | Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation |
 | [Pretrained image features](examples/compose-dino.yaml) | Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks |
 | [Configuration sweep](examples/sweep-baseline.yaml) | Compare PointMLP widths and random seeds |
 

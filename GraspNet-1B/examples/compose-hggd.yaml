@@ -25,3 +25,16 @@ scheduler:
   type: cosine
   warmup_steps: 1
   min_lr_ratio: 0.1
+loss:
+  functions:
+    anchor_location: {type: asl, gamma_pos: 0, gamma_neg: 2, clip: 0.02}
+    anchor_theta: {type: huber, delta: 0.5}
+    local_orientation: poly1
+  weights:
+    local_offset: 0.8
+augmentation:
+  mode: custom
+  brightness: 0.1
+  contrast: 0.1
+  depth_noise_std: 0.0005
+  depth_noise_clip: 0.002

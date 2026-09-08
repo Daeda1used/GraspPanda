@@ -16,6 +16,8 @@ Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda sup
 
 ASL single-label and Poly-1 are implemented from their documented mathematical objectives, with source references in [Training controls](MODULES.md#loss-formulations). ASL is checked against the locked timm implementation; its saturated-probability handling uses stable complements and bounded power bases. No classification datasets or pretrained loss-specific models are downloaded.
 
+HGGD/RNG loss adapters invoke the locally downloaded, pinned native target generators with scoped loss primitives. Their sigmoid ASL and Poly-1 variants retain method-specific balancing and normalization, as described in [RGB-D training controls](MODULES.md#rgb-d-training-controls). RGB-D observation augmentation uses torchvision transforms and the native camera/input conventions. Original method source and its terms remain separate from the toolbox.
+
 Compatibility patches are stored in `grasppanda/resources/patches/` and applied only to local build copies or overlays. The scikit-geometry patch uses its exact-construction kernel consistently in skeleton bindings; this can change numerical behavior relative to the original mixed-kernel binding. Patches retain the underlying project licenses.
 
 DINOv2 and DINOv3 encoders use locked timm code and revision-pinned timm weight conversions, downloaded separately. DINOv2 weights retain Apache-2.0 terms; DINOv3 weights and derived checkpoints retain the [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md), including its redistribution and research-attribution requirements. GraspPanda's MIT license does not replace these terms. Sources and papers are linked in [Modules](MODULES.md#pretrained-dino-image-features).

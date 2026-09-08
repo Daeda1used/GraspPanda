@@ -98,6 +98,10 @@ def hggd(config, out, steps=3, label_root=None):
     dataset=module.GraspnetPointDataset(args.all_points_num,str(labels),config.dataset_root,[config.scene],
         noise=0,sigma=args.sigma,ratio=args.ratio,anchor_k=args.anchor_k,anchor_z=args.anchor_z,
         anchor_w=args.anchor_w,grasp_count=args.grasp_count,output_size=(640,360),random_rotate=False,random_zoom=False)
+    from .image_augmentation import configure_dataset
+    from .image_losses import ImageLosses
+    configure_dataset(dataset, config)
+    objectives=ImageLosses(importlib.import_module('models.losses'), config)
     # Native trainer skips the update at batch index 0. N+1 batches yield N updates.
     loader=torch.utils.data.DataLoader(dataset,batch_size=2,sampler=[config.frame]*((steps+1)*2),num_workers=0)
     anchor=module.AnchorGraspNet(in_dim=4,ratio=8,anchor_k=6)
@@ -113,7 +117,7 @@ def hggd(config, out, steps=3, label_root=None):
     optimizer=build_optimizer(parameters,config) if config.optimizer else module.get_optimizer(args,parameters)
     schedule=UpdateSchedule(optimizer,config.scheduler,steps) if config.scheduler else None
     losses=[];updates=[]
-    anchor_loss=module.compute_anchor_loss;local_loss=module.compute_multicls_loss
+    anchor_loss=objectives.anchor;local_loss=objectives.local
     def measured_anchor(*a,**kw):
         value=anchor_loss(*a,**kw)
         losses.append(dict(anchor=float(value['loss'].detach()),**{k:float(v.detach()) for k,v in value['losses'].items()}))
@@ -130,7 +134,8 @@ def hggd(config, out, steps=3, label_root=None):
     def measured_step(*a,**kw):
         record={'learning_rate':optimizer.param_groups[0]['lr']}
         snapshots={}
-        branches=[('anchor',anchor),('local',local)]+[('anchor.'+prefix[:-1],anchor.get_submodule(prefix[:-1])) for prefix in changed]
+        branches=([('anchor',anchor)]+[('anchor.'+prefix[:-1],anchor.get_submodule(prefix[:-1])) for prefix in changed] if objectives.branch_enabled('anchor_') else [])
+        if objectives.branch_enabled('local_'):branches.append(('local',local))
         for name,net in branches:
             params=[p for p in net.parameters() if p.grad is not None]
             if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError(f'Invalid {name} gradients')
@@ -158,12 +163,12 @@ def hggd(config, out, steps=3, label_root=None):
                 **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
                 'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method='hggd',stage='real_label_joint_training',optimizer_steps=len(updates),
-        modules=config.modules,checkpoint_transfer=transfer,
+        modules=config.modules,checkpoint_transfer=transfer,loss_config=config.loss,augmentation=config.augmentation,
         optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         losses=losses,updates=updates,seconds=time.monotonic()-start,
         checkpoint_sha256=digest(config.checkpoint),label_sha256=digest(required),camera=config.camera,
         scene=config.scene,frame=config.frame,learning_rate=config.learning_rate,ap=None,
-        protocol='Original HGGD joint trainer and real preprocessed labels; repeated real frame, batch size 2 (native squeeze requires a batch axis), no augmentation; 48 centers; reduced learning rate.',
+        protocol='Original HGGD joint trainer and real preprocessed labels; repeated real frame, batch size 2 (native squeeze requires a batch axis); 48 centers; reduced learning rate. Registered loss and RGB-D observation controls are applied when configured.',
         loss_note='Loss components measured before the native trainer mutates the anchor-loss tensor in place. A few updates establish training viability, not convergence.')
 
 
@@ -390,6 +395,9 @@ def rng(config,out,steps=3,label_root=None):
     dataset=cls(str(labels),config.dataset_root,[config.scene],ratio=8,anchor_k=6,anchor_z=20,
                 anchor_w=75,grasp_count=5000,sigma=10,noise=0,random_rotate=False,random_zoom=False)
     dataset.is_aug=False;dataset.aug=None
+    from .image_augmentation import configure_dataset
+    from .image_losses import ImageLosses
+    configure_dataset(dataset, config)
     x,target,*_=dataset[config.frame]
     x=x.cuda()[None];target=[v.cuda()[None].repeat(2,*([1]*v.ndim)) for v in target]
     anchor,local=demo.anchornet,demo.localnet
@@ -398,6 +406,7 @@ def rng(config,out,steps=3,label_root=None):
     total_steps=steps+config.proposal_warmup_steps
     schedule=UpdateSchedule(optimizer,config.scheduler,total_steps) if config.scheduler else None
     losses_module=importlib.import_module('models.losses')
+    objectives=ImageLosses(losses_module, config)
     losses=[];updates=[];start=time.monotonic()
     # A replacement image encoder starts without learned grasp proposals.
     # Fit the actual anchor targets before using its own native proposal path.
@@ -405,7 +414,7 @@ def rng(config,out,steps=3,label_root=None):
     for step in range(config.proposal_warmup_steps):
         optimizer.zero_grad(set_to_none=True)
         pred,_=anchor(x.repeat(2,1,1,1))
-        first=losses_module.compute_anchor_loss(pred,target,reg_b=5)
+        first=objectives.anchor(pred,target,reg_b=5)
         loss=first['loss']
         if not torch.isfinite(loss):raise ValueError('Non-finite RNG proposal warmup loss')
         loss.backward()
@@ -457,10 +466,10 @@ def rng(config,out,steps=3,label_root=None):
     for step in range(steps):
         optimizer.zero_grad(set_to_none=True)
         pred,_=anchor(x.repeat(2,1,1,1))
-        first=losses_module.compute_anchor_loss(pred,target,reg_b=5)
+        first=objectives.anchor(pred,target,reg_b=5)
         _,pred,offset,theta_cls,theta_offset,width_reg=local(capture['patches'])
-        theta=losses_module.compute_theta_width_loss(theta_cls,theta_offset,width_reg,group_labels,anchor_w=60)
-        cls_loss,offset_loss,positive=losses_module.compute_multicls_loss(pred,offset,group_labels,
+        theta=objectives.theta(theta_cls,theta_offset,width_reg,group_labels,anchor_w=60)
+        cls_loss,offset_loss,positive=objectives.local(pred,offset,group_labels,
             get_info(theta_cls,theta_offset,width_reg),demo.anchors,args=SimpleNamespace(alpha=.02,offset_coef=1.),return_labels=True)
         if not positive.count_nonzero():raise ValueError('No positive native orientation labels; offset supervision would be untested')
         total=first['loss']+theta['loss']+cls_loss+offset_loss
@@ -469,9 +478,13 @@ def rng(config,out,steps=3,label_root=None):
                     'local_orientation':float(cls_loss.detach()),'local_offset':float(offset_loss.detach())}
         if not torch.isfinite(total) or not all(np.isfinite(v) for v in components.values()):raise ValueError('Non-finite native RNG loss')
         total.backward();snapshots={};record={'learning_rate':optimizer.param_groups[0]['lr']}
-        branches={'anchor':anchor,'local':local,'theta':local.theta_cls,'theta_offset':local.theta_offset,
-                  'width':local.width_reg,'orientation':local.anchor_cls,'offset':local.offset_reg}
-        branches.update({'anchor.'+prefix[:-1]:anchor.get_submodule(prefix[:-1]) for prefix in changed})
+        branches={}
+        if objectives.branch_enabled('anchor_'):
+            branches.update({'anchor':anchor,**{'anchor.'+prefix[:-1]:anchor.get_submodule(prefix[:-1]) for prefix in changed}})
+        if objectives.branch_enabled('local_'):branches['local']=local
+        for name,net,term in (('theta',local.theta_cls,'local_theta_classification'),('theta_offset',local.theta_offset,'local_theta'),
+                              ('width',local.width_reg,'local_width'),('orientation',local.anchor_cls,'local_orientation'),('offset',local.offset_reg,'local_offset')):
+            if objectives.enabled(term):branches[name]=net
         for name,net in branches.items():
             params=[p for p in net.parameters() if p.grad is not None]
             if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError(f'Invalid {name} gradients')
@@ -492,12 +505,12 @@ def rng(config,out,steps=3,label_root=None):
                 **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
                 'optimizer_state_dict':optimizer.state_dict(),'training_steps':steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method=config.method,stage='real_label_native_objective_training',optimizer_steps=total_steps,proposal_warmup_steps=config.proposal_warmup_steps,losses=losses,updates=updates,
-        modules=config.modules,checkpoint_transfer=transfer,
+        modules=config.modules,checkpoint_transfer=transfer,loss_config=config.loss,augmentation=config.augmentation,
         optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         camera=config.camera,scene=config.scene,frame=config.frame,seconds=time.monotonic()-start,checkpoint_sha256=digest(config.checkpoint),
         label_sha256=digest(path),patches=len(counts),labelled_patches=sum(n>0 for n in counts),local_labels=sum(counts),
         learning_rate=config.learning_rate,ap=None,
-        protocol='Real HGGD labels through the RNG native anchor target generator, native heatmap/camera/grid-sample patches and native theta/width/orientation/offset losses. Optional anchor-only warmup uses the same real targets and optimizer before preparing fixed proposals from that anchor; no teacher or substituted labels. No augmentation; anchor batch 2, local batch up to 48; AdamW unless overridden; alpha 0.02 m, anchor width 60 mm, offset coefficient 1.',
+        protocol='Real HGGD labels through the RNG native anchor target generator and native heatmap/camera/grid-sample patches. Optional anchor-only warmup uses the same real targets and optimizer before preparing fixed proposals from that anchor; no teacher or substituted labels. Configured RGB-D observation augmentation is sampled once before preparing the fixed frame and local patches. Anchor batch 2, local batch up to 48; AdamW unless overridden; alpha 0.02 m, anchor width 60 mm, offset coefficient 1. Registered loss controls preserve native target generation and reductions.',
         limitation='The upstream training driver and preprocessed patch archive are unreleased. This validates the native objectives and every prediction head using dynamically prepared real patches; it is not the unreleased training schedule or convergence.')
 
 

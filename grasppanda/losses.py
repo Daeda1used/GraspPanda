@@ -15,7 +15,15 @@ PARAMETERS = {
 }
 
 def is_classification(method, term):
+    if method in ('hggd', 'region_normalized_grasp'):
+        return term in ('anchor_location', 'anchor_classification', 'local_orientation', 'local_theta_classification')
     return term in ('objectness', 'angle') or (method == 'finegrasp' and term in ('depth', 'score'))
+
+
+def parameter_schema(method, kind):
+    if method in ('hggd', 'region_normalized_grasp') and kind == 'asl':
+        return {'gamma_pos': (0, 8), 'gamma_neg': (0, 8), 'clip': (0, .5)}
+    return PARAMETERS[kind]
 
 
 def choices(term, method=None):
@@ -29,12 +37,12 @@ def validate(method, functions):
         raise ValueError('loss.functions must map registered loss terms to formulations')
     for term, value in functions.items():
         kind, options = unpack(value)
-        if kind not in choices(term, method) or set(options) - set(PARAMETERS[kind]):
+        if kind not in choices(term, method) or set(options) - set(parameter_schema(method, kind)):
             raise ValueError(f'{method}/{term}: unsupported loss formulation or parameters')
-        if 'alpha' in options and term != 'objectness':
+        if 'alpha' in options and term != 'objectness' and method not in ('hggd', 'region_normalized_grasp'):
             raise ValueError('Focal alpha is registered only for binary objectness')
         for key, value in options.items():
-            low, high = PARAMETERS[kind][key]
+            low, high = parameter_schema(method, kind)[key]
             if type(value) not in (float, int) or not math.isfinite(value) or not low <= value <= high:
                 raise ValueError(f'Invalid {term}/{kind} loss parameter: {key}')
 

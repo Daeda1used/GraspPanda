@@ -128,7 +128,7 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 ## Training controls
 
-Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. Other methods retain their own supervision contracts. Start with [the training-controls example](../GraspNet-1B/examples/train-controls.yaml).
+Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD/RNG expose method-specific controls in `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [the point training-controls example](../GraspNet-1B/examples/train-controls.yaml).
 
 In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -151,7 +151,7 @@ augmentation:
 
 ### Loss formulations
 
-Weights are absolute coefficients. Unspecified terms retain their native coefficients and formulations. Omit `functions`, or select `upstream`, to retain the native objective; identical coefficient overrides alone retain the original loss tensor.
+Weights are absolute coefficients. Unspecified terms retain their native coefficients and formulations. Omit `functions`, or select `upstream`, to retain the native objective; identical coefficient overrides preserve its values and gradients.
 
 | Method | Classification terms | Regression terms | Native coefficients |
 |---|---|---|---|
@@ -174,11 +174,53 @@ Each `functions` value accepts a name or `{type: NAME, ...}`. The following para
 
 Softmax focal loss adapts [Focal Loss (ICCV 2017)](https://arxiv.org/pdf/1708.02002) to the existing class heads. Regression transitions follow the [PyTorch Smooth L1](https://docs.pytorch.org/docs/stable/generated/torch.nn.SmoothL1Loss.html) and [Huber](https://docs.pytorch.org/docs/stable/generated/torch.nn.HuberLoss.html) definitions.
 
-The adapters retain native positive masks, angle-label argmax/gather and target units. Baseline width and tolerance errors are divided by the native maximum width/tolerance; its grasp terms divide by the float32 valid count plus 1e-6. Graspness width targets are multiplied by 10; width loss uses positive quality labels only. Other substituted terms retain native valid-item means. Empty masks produce a gradient-connected zero for **substituted** terms; unmodified upstream terms keep their original behavior. A non-finite training objective stops the run.
+The point adapters retain native positive masks, angle-label argmax/gather and target units. Baseline width and tolerance errors are divided by the native maximum width/tolerance; its grasp terms divide by the float32 valid count plus 1e-6. Graspness width targets are multiplied by 10; width loss uses positive quality labels only. Other substituted point terms retain native valid-item means. Empty masks produce a gradient-connected zero for **substituted point** terms; unmodified upstream terms keep their original behavior. A non-finite training objective stops the run.
 
 [PolyLoss (ICLR 2022)](https://arxiv.org/pdf/2204.12511) uses the [author's Poly-1 formulation](https://waymo.com/research/polyloss-a-polynomial-expansion-perspective-of-classification-loss-functions/). [ASL (ICCV 2021)](https://arxiv.org/pdf/2009.14119) follows the [author's single-label softmax variant](https://github.com/Alibaba-MIIL/ASL), checked against the locked timm implementation. Probability complements and fractional powers use numerically stable evaluation at saturated logits. These are classification-head adaptations; no grasp accuracy improvement is implied.
 
 [Varifocal Loss](https://github.com/hyz-xmaster/VarifocalNet) assumes quality logits decoded through sigmoid. The current grasp-quality heads emit raw regression scores, so it requires an explicit head/decoder adaptation before becoming a selectable loss.
+
+### RGB-D training controls
+
+HGGD and RNG use independent sigmoid classification targets. The UI's classification selector applies binary cross-entropy, sigmoid focal, binary Poly-1 or multi-label ASL to these methods. The same `loss.functions` syntax applies; regression choices and their parameters are unchanged.
+
+| Term | Methods | Default coefficient | Supervision |
+|---|---|---|---|
+| `anchor_location` | HGGD / RNG | 1 | Location heatmap; positive threshold 0.99; negative suppression `(1-target)^4` |
+| `anchor_classification` | HGGD / RNG | 1 | In-plane anchor classes; positive threshold 0.5 |
+| `anchor_theta`, `anchor_depth`, `anchor_width` | HGGD / RNG | 5/3 each | Three normalized anchor offsets, with native prediction clipping to [-0.5, 0.5] and the same positive-anchor mask |
+| `local_orientation` | HGGD / RNG | 1 | Native gripper-symmetric orientation similarity targets; positive threshold 0.99 |
+| `local_offset` | HGGD / RNG | 1 | XYZ offsets normalized by 0.02 metres; strict orientation-positive mask |
+| `local_theta_classification` | RNG | 1 | Native local angle histogram targets; positive threshold 0.4 |
+| `local_theta` | RNG | 5 | Normalized within-bin angle offsets |
+| `local_width` | RNG | 1 | Log width relative to the 60-mm local width anchor |
+
+Coefficients follow the registered short-training presets, including HGGD's published joint-training shell configuration. The anchor regression coefficient 5 is divided equally across its three terms. Coefficients are absolute: setting one to zero removes that objective; it does not freeze shared parameters or disable optimizer weight decay. At least one objective must remain positive, and RNG warmup requires a positive anchor objective.
+
+Classification keeps the native positive-count denominator (or an unnormalized sum when there are no positives), negative heatmap suppression and class balancing: positive alpha 0.25 for anchor/local-theta classes and 0.5 for location/orientation. `focal.alpha` can override alpha per classification term. Probability clipping remains 1e-6 for HGGD and 1e-4 for RNG. `cross_entropy.label_smoothing` mixes binary labels with 0.5. `poly1.epsilon` adds the binary Poly-1 term before the same weighting and reduction.
+
+For these sigmoid heads, `asl` follows the [multi-label ASL formulation](https://github.com/Alibaba-MIIL/ASL/blob/main/src/loss_functions/losses.py): `gamma_pos: 0`, `gamma_neg: 4`, and `clip: 0.05` (range 0 to 0.5), with gradients through the focusing factor. It retains the grasp method's balancing, suppression and reduction. It accepts `clip` instead of the softmax variant's `label_smoothing`. This is an adaptation of the classification objective to grasp supervision.
+
+All loss choices use the pinned native target builders. Regression retains native masks, normalized targets and reductions: anchor terms use the valid-anchor count plus the method's epsilon; RNG local theta/width use the valid-bin count; local XYZ sums three coordinates per valid orientation. Original empty-label behavior is retained and non-finite objectives stop the run. Inference and decoding are unchanged; the UI clears training-only overrides when reusing a checkpoint.
+
+#### RGB-D observation augmentation
+
+Use `augmentation.mode: custom` or omit `mode` when providing the following parameters. An empty mapping, `native` or `none` retains the current unaugmented short-training preset. These settings are separate from the point augmentation schema.
+
+| Parameter | Default · accepted values | Meaning |
+|---|---|---|
+| `brightness`, `contrast`, `saturation` | 0 · [0, 1] | torchvision ColorJitter factors sampled within 1 ± the value |
+| `hue` | 0 · [0, 0.5] | Hue shift sampled within ± the value |
+| `grayscale_probability` | 0 · [0, 1] | Convert RGB to three-channel grayscale |
+| `blur_probability` | 0 · [0, 1] | Apply Gaussian blur after color jitter and grayscale |
+| `blur_kernel` | 5 · odd integers [3, 31] | Full-resolution blur kernel |
+| `blur_sigma_min`, `blur_sigma_max` | 0.1 / 2 · [0.001, 10] | Ordered blur sigma bounds |
+| `depth_noise_std`, `depth_noise_clip` | 0 / 0.01 · [0, 0.01] / [0, 0.1] | Noise standard deviation is `depth_noise_std * z^2` metres; clip is an absolute metre bound |
+| `depth_dropout` | 0 · [0, 0.3] | Independent missing-depth probability at valid pixels |
+
+RGB and depth perturbations are applied at full resolution before the native anchor resize. The same modified observations feed the local point cloud (HGGD) or local image patches (RNG). Invalid depth stays zero, valid noisy depth stays positive, and absolute grasp poses remain fixed. Native relative-depth targets are generated from the modified depth observation. Geometric image rotation/cropping and point-only perturbations are rejected because they require additional camera and local-label transforms.
+
+HGGD samples augmentation for each dataset item. RNG samples once before creating its fixed training frame, optional anchor warmup and local patches; it retains its bounded native-objective training protocol. Start with the loss and augmentation section of [the RGB-D composition example](../GraspNet-1B/examples/compose-hggd.yaml). Sweeps can vary paths such as `loss.functions.local_orientation`, `loss.weights.local_offset` and `augmentation.depth_noise_std`.
 
 ### Point augmentation
 
