@@ -124,10 +124,10 @@ class SonataBackbone(nn.Module):
 
 
 class SparseSonataBackbone(nn.Module):
-    def __init__(self, out_channels=512, voxel_size=.005, **options):
+    def __init__(self, out_channels=512, voxel_size=.005, feature_channels=3, **options):
         super().__init__()
         self.voxel_size = voxel_size
-        self.features = SonataFeatures(6, out_channels, voxel_size, **options)
+        self.features = SonataFeatures(3 + feature_channels, out_channels, voxel_size, **options)
 
     def forward(self, sparse):
         import MinkowskiEngine as ME

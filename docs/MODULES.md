@@ -12,6 +12,8 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
+| FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4` |
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
@@ -22,7 +24,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | `pointnext` | `width`, `blocks` (five stage depths), `nsample`, `radius` (metres), `radius_scaling`, `expansion`, `activation`, `reduction`: max/mean/sum, `decoder_layers` |
 | `pointmlp` | `embed_dim`, `dim_expansion`, `pre_blocks`, `pos_blocks`, `stage_points`, `k_neighbors`, `decoder_channels`, `decoder_blocks`, `res_expansion`, `activation`, `normalize`: anchor/center |
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
-| `finegrasp` | `nsample`, `radius_factors`; native local attention and Transformer fusion across radius groups |
+| `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
 | `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
 | Image `native_resnet` | `variant`: 18/34/50 (string); optional four-element `stage_depths` |
 | Image `convnextv2` | `variant`: atto/tiny; optional four-element `stage_channels`, `stage_depths`; `drop_path`, `projection_norm` |
@@ -98,7 +100,7 @@ Selecting a new encoder initializes it and its projections from scratch. `reuse_
 
 ## Training controls
 
-Baseline, its PointNet2 port and Graspness accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. Other methods retain their own supervision contracts. Start with [the training-controls example](../GraspNet-1B/examples/train-controls.yaml).
+Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. Other methods retain their own supervision contracts. Start with [the training-controls example](../GraspNet-1B/examples/train-controls.yaml).
 
 In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -127,6 +129,7 @@ Weights are absolute coefficients. Unspecified terms retain their native coeffic
 |---|---|---|---|
 | Baseline / PointNet2 port | `objectness`, `angle` | `view`, `score`, `width`, `tolerance` | Objectness/view: 1; score/angle/width/tolerance: 0.2 |
 | Graspness | `objectness` | `graspness`, `view`, `score`, `width` | Objectness: 1; graspness: 10; view: 100; score: 15; width: 10 |
+| FineGrasp | `objectness`, `angle`, `depth`, `score` | `graspness`, `view`, `width` | See the FineGrasp training section below |
 
 Each `functions` value accepts a name or `{type: NAME, ...}`. The following parameters have bounded, finite values; omitted parameters use the defaults shown.
 
@@ -174,7 +177,7 @@ Loss and augmentation settings are training-only. Resume requires saved configur
 
 ## Optimizers and schedules
 
-Baseline, its PointNet2 port, Graspness, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
+Baseline, its PointNet2 port, Graspness, FineGrasp, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
 
 ```yaml
 learning_rate: 0.00003
@@ -241,7 +244,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. The general `batch_size` and `epochs` fields apply to the full native `train` action, not this diagnostic.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp uses the configured `batch_size`; other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 
@@ -253,7 +256,7 @@ For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkp
 
 ## Train a composed model across epochs
 
-Baseline and Graspness accept these same module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
+Baseline, Graspness and FineGrasp accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
 
 To test the epoch workflow, change the example above:
 
@@ -282,3 +285,25 @@ Register a slot/choice in `grasppanda/components.py`, implement the adapter unde
 A newly initialized image encoder may produce proposals with no local grasp labels. For RNG short training, set `proposal_warmup_steps` to train the anchor on its native heatmap targets before preparing its own local patches. These updates are additional to `training_steps`; a custom learning-rate schedule spans both phases. The default is `0`. Warmup uses the selected optimizer and real targets, with no teacher model or replacement labels. Its loss is shown separately as **Anchor warmup**. The required duration depends on initialization, learning rate and scene; a positive proposal set is checked before local training.
 
 The browser exposes this setting under **Training & evaluation settings** for RNG. Checkpoint inference clears this training-only setting. This initialization procedure is a toolbox option; the unreleased RNG full training schedule is not reproduced.
+
+## FineGrasp training and composition
+
+FineGrasp exposes its own native training adapter, alongside the FineGrasp grouping replacement available to Graspness. Use [the training example](../GraspNet-1B/examples/train-finegrasp.yaml) with the economic labels described in [Data & weights](DOWNLOADS.md#finegrasp).
+
+| Part | Configuration and contract |
+|---|---|
+| Point encoder | `modules.backbone: upstream` keeps the released MinkUNet. `sonata_ptv3` exposes the same per-stage PTv3 settings documented above; its adapter concatenates lattice XYZ with the six native XYZ/normal features and restores the sparse row map before the 512-channel projection. |
+| Cylinder grouping | `modules.crop.type: native_cylinder` keeps the author's oriented queries and local interaction. `nsample` defaults to 16; `radius` to 0.07 metres; `radius_factors` to `[0.25, 0.5, 0.75, 1.0]`. |
+| Cross-radius attention | Optional `fusion_layers` (2), `fusion_heads` (8), `fusion_ffn_dim` (1024), `fusion_dropout` (0.1), `fusion_activation` (`relu`) and `fusion_pre_norm` (`false`) configure the native Transformer. Heads must divide 256. The learned attention reduction across groups stays native. These settings also apply to Graspness's `crop: finegrasp`. |
+| Classification objectives | `objectness`, `angle`, `depth` and `score`; retain the native target classes and validity masks. Unlike Graspness, FineGrasp's depth and quality scores are classification tasks. |
+| Regression objectives | `graspness`, `view`, `width`; retain the native masks and target units. Width targets are multiplied by 10 by the author objective. |
+| Loss coefficients | Defaults: objectness 1, graspness 10, view 100, angle 1, depth 1, score 1, width 10. Override using `loss.weights`; choose registered formulations using `loss.functions`. |
+| Augmentation | Native mode flips points, normals and object poses together. Custom rigid transforms, point dropout, cutout, jitter and depth-ray noise retain aligned labels. Jitter/depth noise re-estimate normals on the perturbed observation; latent object grasp annotations stay unchanged. |
+
+Changing cross-radius attention parameters initializes the Transformer under `reuse_unchanged`, while retaining the native attention-reduction weights. Replacing grouping initializes its cylinder layers. The resulting checkpoint must be loaded with the same module configuration and `strict` for inference or resume. Author safetensors and toolbox training checkpoints both require their companion `model.config.json`; keep it beside the selected checkpoint.
+
+An empty checkpoint starts FineGrasp from random weights; a supplied author or toolbox checkpoint initializes the selected architecture. Epoch training defaults to the author's Adam optimizer (weight decay `1e-5`), one-epoch linear warmup, native cosine formula and gradient norm clipping at 10. The cosine denominator uses the full planned update count, matching the pinned source. Registered optimizers and update schedules may replace these defaults. Short training uses a constant learning rate unless a schedule is selected. Empty augmentation preserves native flips for epoch training and disables augmentation for short training.
+
+Set `train_batch_limit: 0` for the complete training split. A positive limit selects consecutive frames from `scene` / `frame`, then shuffles them. Data-loader workers restart at epoch boundaries and receive explicit seeds, so a resumed epoch has the same sampling setup. This differs from the author's persistent-worker lifecycle. Resume restores model, optimizer and schedule state at an epoch boundary; keep the original final `epochs` horizon and data/optimization configuration. The checkpoint's update count must match its completed epochs. GPU operator results are not promised to be bitwise identical after restarting a process.
+
+FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. Short runs and bounded epoch checks do not establish full-training convergence or benchmark AP. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.

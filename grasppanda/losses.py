@@ -14,8 +14,12 @@ PARAMETERS = {
     'huber': {'delta': (1e-6, 10)}, 'charbonnier': {'epsilon': (1e-6, 1)},
 }
 
-def choices(term):
-    return ('upstream',) + (CLASSIFICATION if term in ('objectness', 'angle') else REGRESSION)
+def is_classification(method, term):
+    return term in ('objectness', 'angle') or (method == 'finegrasp' and term in ('depth', 'score'))
+
+
+def choices(term, method=None):
+    return ('upstream',) + (CLASSIFICATION if is_classification(method, term) else REGRESSION)
 
 
 def validate(method, functions):
@@ -25,7 +29,7 @@ def validate(method, functions):
         raise ValueError('loss.functions must map registered loss terms to formulations')
     for term, value in functions.items():
         kind, options = unpack(value)
-        if kind not in choices(term) or set(options) - set(PARAMETERS[kind]):
+        if kind not in choices(term, method) or set(options) - set(PARAMETERS[kind]):
             raise ValueError(f'{method}/{term}: unsupported loss formulation or parameters')
         if 'alpha' in options and term != 'objectness':
             raise ValueError('Focal alpha is registered only for binary objectness')
@@ -82,6 +86,18 @@ def regression(error, kind, options):
 
 def targets(end, method, term):
     """Return prediction/target, optional mask, normalization and denominator offset."""
+    if method == 'finegrasp':
+        if term == 'objectness':
+            return end['objectness_score'], end['objectness_label'].long(), None, 1., 0.
+        if term == 'graspness':
+            return end['graspness_score'].squeeze(1), end['graspness_label'].squeeze(-1), end['objectness_label'].bool(), 1., 0.
+        if term == 'view':
+            return end['view_score'], end['batch_grasp_view_graspness'], None, 1., 0.
+        mask = end['batch_valid_mask']
+        if term in ('angle', 'depth', 'score'):
+            label = (end['batch_grasp_score'] * 10 / 2).long() if term == 'score' else end['batch_grasp_rotations' if term == 'angle' else 'batch_grasp_depth'].long()
+            return end['grasp_' + term + '_pred'], label, mask, 1., 0.
+        return end['grasp_width_pred'].squeeze(1), end['batch_grasp_width'] * 10, mask, 1., 0.
     sparse = method == 'graspness'
     if term == 'objectness':
         target = end['objectness_label'].long()
@@ -125,7 +141,7 @@ def replace_losses(end_points, config):
         kind, options = unpack(value)
         if kind == 'upstream': continue
         prediction, target, mask, scale, offset = targets(end_points, config.method, term)
-        if term in ('objectness', 'angle'):
+        if is_classification(config.method, term):
             channels = prediction.shape[1]
             prediction = prediction.movedim(1, -1).reshape(-1, channels)
             target = target.reshape(-1)

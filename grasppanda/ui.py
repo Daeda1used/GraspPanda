@@ -72,13 +72,13 @@ def component_parameters(method, backbone, crop):
 
 def loss_parameters(method):
     from .training_options import LOSS_TERMS
-    from .losses import PARAMETERS
+    from .losses import PARAMETERS, is_classification
     terms = LOSS_TERMS.get(method, {})
     if not terms:
         return 'This method uses its native objective and augmentation. Custom controls are not registered.'
     rows = [f'| `{name}` | ' + (', '.join(f'`{key}`: {low} to {high}' for key, (low, high) in options.items()) or 'No parameters') + ' |'
             for name, options in PARAMETERS.items() if name != 'upstream']
-    return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Objectness and angle use classification losses; the remaining terms use regression losses.\n\n'
+    return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Classification terms: ' + ', '.join(f'`{term}`' for term in terms if is_classification(method, term)) + '; remaining terms use regression losses.\n\n'
             '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
             '\n\nUse `loss.functions.TERM: {"type": "NAME", ...}` in experiment JSON. Focal alpha applies only to binary objectness. '
             'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#training-controls) for defaults, target units and augmentation parameters.')
@@ -86,12 +86,13 @@ def loss_parameters(method):
 
 def loss_preset(method, classification, regression, current):
     from .training_options import LOSS_TERMS
+    from .losses import is_classification
     if method not in LOSS_TERMS:
         raise gr.Error('This method uses its native objective; loss overrides are not registered.')
     try:
         value = json.loads(current or '{}')
         if not isinstance(value, dict): raise ValueError('Loss configuration must be a mapping')
-        value['functions'] = {term: classification if term in ('objectness', 'angle') else regression
+        value['functions'] = {term: classification if is_classification(method, term) else regression
                               for term in LOSS_TERMS[method]}
         Experiment(method=method, action='train_check', split='train', scene=0, loss=value).validate()
     except (ValueError, TypeError) as error:
@@ -275,6 +276,7 @@ def create_app(manager=None):
         if not path.exists():raise gr.Error('This run has no saved training checkpoint.')
         config=replace(Experiment.from_dict(row['config']),action='infer',checkpoint=str(path),
                        checkpoint_policy='strict',split='test_seen',scene=100,frame=0,frames=1,loss={},augmentation={},optimizer={},scheduler={},proposal_warmup_steps=0,train_checkpoint_mode='initialize')
+        if method=='finegrasp': config=replace(config,workspace='native_demo')
         if 'infer' not in capabilities(method):
             config=replace(preset(method,row['config']['dataset_root']),checkpoint=str(path),gpu=row['config']['gpu'])
         config.validate()
@@ -375,8 +377,8 @@ def create_app(manager=None):
                             scheduler_kind=gr.Dropdown(['upstream'],value='upstream',label='Learning-rate schedule',interactive=False)
                             scheduler_options=gr.Code('{}',language='json',label='Scheduler parameters',lines=3)
                             gr.Markdown('The learning-rate field below sets the base rate. Scheduler warmup and milestones count **optimizer updates**, not epochs. Examples: optimizer `{"weight_decay": 0.01}`; cosine schedule `{"warmup_steps": 1, "min_lr_ratio": 0.01}`. Omit parameters to use the selected implementation defaults; see Guide → Modules for supported settings.')
-                        label_root=gr.Textbox(label='HGGD / RNG preprocessed label root (optional)',placeholder='Leave blank to use HGGD_Preprocessed under the dataset root')
-                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
+                        label_root=gr.Textbox(label='Prepared targets / cache root (optional)',placeholder='HGGD/RNG: preprocessed labels. FineGrasp: writable derived-input cache.')
+                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; FineGrasp uses the configured batch size; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
                         with gr.Row():
                             epochs = gr.Number(1, precision=0, label="Final epoch (must exceed resume epoch)")
                             batch = gr.Number(2, precision=0, label="Batch size")
@@ -386,7 +388,7 @@ def create_app(manager=None):
                             train_batch_limit=gr.Number(0,precision=0,minimum=0,label='Training batches per epoch (0 = full split)')
                             eval_batch_limit=gr.Number(0,precision=0,minimum=0,label='Validation batches per epoch (0 = full split)')
                             data_workers=gr.Number(0,precision=0,minimum=0,maximum=32,label='Data loader workers')
-                        gr.Markdown('A batch limit uses consecutive real frames from First scene / First frame, with native shuffling and augmentation. Baseline and SBG validate on test_seen; Graspness has no native validation loop. Full split runs can take many hours: adjust timeout_minutes in JSON.')
+                        gr.Markdown('A batch limit uses consecutive real frames from First scene / First frame, with native shuffling and augmentation. Baseline and SBG validate on test_seen; Graspness and FineGrasp have no validation loop. Full split runs can take many hours: adjust timeout_minutes in JSON.')
                         predictions = gr.Textbox(label="Complete predictions directory for evaluation")
             run_form=gr.Button('Run current form',variant='primary')
             with gr.Accordion("Configuration editor", open=False):
@@ -481,8 +483,10 @@ For component experiments, expand **Compose modules**. Full configuration editin
             selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name=False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
-            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','finegrasp') else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
+            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
             return ('train',0,2e-6 if m=='gfla' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
+        for selector in (method, action):
+            selector.change(lambda m,a: gr.update(value=0,interactive=m!='finegrasp' and a=='train'),[method,action],eval_batch_limit,api_name=False)
         action.change(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults')
         action.change(lambda a: gr.update(value='initialize',interactive=a=='train'),action,train_checkpoint_mode,api_name=False)
         def training_checkpoint(a,m,c,path):

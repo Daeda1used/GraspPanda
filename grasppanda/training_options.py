@@ -1,7 +1,7 @@
 """Training controls with explicit supervision and method contracts."""
 import math
 
-METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness')
+METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp')
 LOSS_TERMS = {
     'graspnet_baseline': {
         'objectness': ('loss/stage1_objectness_loss', 1.),
@@ -20,6 +20,9 @@ LOSS_TERMS = {
     },
 }
 LOSS_TERMS['pointnet2_upgrade'] = LOSS_TERMS['graspnet_baseline']
+LOSS_TERMS['finegrasp'] = {name: (name + '_loss', weight) for name, weight in
+    (('objectness', 1.), ('graspness', 10.), ('view', 100.), ('angle', 1.),
+     ('depth', 1.), ('score', 1.), ('width', 10.))}
 
 
 def finite(value, low, high):
@@ -164,7 +167,7 @@ def sample_points(sample, config):
     missing[retained] = False
     indices = np.arange(count)
     indices[missing] = np.random.choice(retained, missing.sum(), replace=True)
-    for key in ('point_clouds', 'cloud_colors', 'feats', 'objectness_label', 'graspness_label'):
+    for key in ('point_clouds', 'cloud_colors', 'cloud_normal', 'feats', 'objectness_label', 'graspness_label', 'segmentation_label'):
         if key in sample:
             if len(sample[key]) != count: raise ValueError(f'Per-point field {key} has mismatched rows')
             sample[key] = sample[key][indices].copy()

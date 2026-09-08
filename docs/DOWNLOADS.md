@@ -153,3 +153,11 @@ GraspFast short training generates native graspability targets in the run direct
 [Author weights](https://huggingface.co/HorizonRobotics/FineGrasp) · [Original implementation](https://github.com/HorizonRobotics/RoboOrchardLab/tree/master/projects/finegrasp_graspnet1b)
 
 The preset accepts RGB-D and camera metadata. The detector uses depth-derived XYZ and estimated normals; RGB is retained by the native input wrapper and preview. Native camera-space limits are x/y in [-1, 1] metres and z in [0, 2] metres, with no GT segmentation mask. Point count, voxel size, collision threshold and random seed are configurable.
+
+For training, prepare `economic_grasp_label_300views/` using the [EconomicGrasp author instructions](https://github.com/iSEE-Laboratory/EconomicGrasp), plus either `instance_norm_graspness/` or the workspace-ordered `graspness/` maps. The reader also needs RGB/depth, segmentation, camera metadata and poses for the training scenes. No training labels are needed for the FineGrasp inference preset.
+
+Existing `scenes/scene_XXXX/CAMERA/normal/FFFF.npy` and `instance_norm_graspness/scene_XXXX/CAMERA/FFFF.npy` are used directly. When absent, GraspPanda creates derivatives on demand under the run's `prepared/finegrasp/`, or a reusable `label_root` cache. It checks source and generated-file hashes before reuse; original dataset files are never modified.
+
+Generated graspness follows the paper's per-instance min-max normalization and subsequent scene normalization. Applying this to an already scene-normalized map gives the same values for nonconstant objects; constant instances and background receive zero. Normal generation uses the author's Open3D estimator (0.1-metre radius, 30 neighbors) on the full valid workspace cloud. Signed float32 maps are stored scaled by 255 to match the native dataset reader. The author offline normal-generation script is not released, so this is a documented preprocessing adaptation, not a claim of identical author training data. Full normal maps can occupy substantial disk space; choose a writable cache with adequate capacity.
+
+The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](MODULES.md#finegrasp-training-and-composition) for training, loss and resume settings.

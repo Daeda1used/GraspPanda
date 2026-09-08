@@ -7,8 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ("graspness", "graspnet_baseline", "scale_balanced_grasp", "fgc_graspnet")
-TRAIN = CORE[:3]
-TRAIN_CHECK = (*CORE, 'hggd', 'economicgrasp', 'dograspnet', 'pointnet2_upgrade', 'region_normalized_grasp','graspness_modern','generalizing_grasp','graspbalance','contact_graspnet_g1b','granet','rgb_matters','centergrasp','gfla','motiongrasp','spahybgen','graspfast')
+TRAIN = (*CORE[:3], 'finegrasp')
+TRAIN_CHECK = (*CORE, 'finegrasp', 'hggd', 'economicgrasp', 'dograspnet', 'pointnet2_upgrade', 'region_normalized_grasp','graspness_modern','generalizing_grasp','graspbalance','contact_graspnet_g1b','granet','rgb_matters','centergrasp','gfla','motiongrasp','spahybgen','graspfast')
 HEATMAP = ('hggd', 'region_normalized_grasp')
 NATIVE_POINTS = ('economicgrasp', 'dograspnet')
 SPLITS = {"train": (0, 100), "test_seen": (100, 130), "test_similar": (130, 160), "test_novel": (160, 190)}
@@ -119,6 +119,8 @@ class Experiment:
             raise ValueError("Unknown method")
         if self.action not in capabilities(self.method):
             raise ValueError(f"{self.method}: no implemented {self.action} adapter; consult method card")
+        if self.method == 'finegrasp' and self.eval_batch_limit:
+            raise ValueError('FineGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
         if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"):

@@ -24,9 +24,9 @@ def preflight(config):
             from ..config import ROOT
             missing=[r['role'] for r in records(config.method,config.camera) if r.get('role')!='primary' and not (ROOT/r['path']).is_file()]
             if missing:raise ValueError('CenterGrasp requires its paired SGDF checkpoint: run ./panda weights centergrasp --camera kinect')
-        if config.method not in ('graspbalance','granet') and (not config.checkpoint or not Path(config.checkpoint).is_file()):
+        if config.method not in ('graspbalance','granet','finegrasp') and (not config.checkpoint or not Path(config.checkpoint).is_file()):
             raise ValueError('Training checks require the registered checkpoint; replaced components may be initialized explicitly.')
-        labels={'hggd':[], 'region_normalized_grasp':[], 'economicgrasp':['economic_grasp_label_300views','graspness'],
+        labels={'finegrasp':['economic_grasp_label_300views'], 'hggd':[], 'region_normalized_grasp':[], 'economicgrasp':['economic_grasp_label_300views','graspness'],
                 'dograspnet':['grasp_label_simplified','collision_label'],
                 'fgc_graspnet':['grasp_label','FGC_label','collision_label'],
                 'graspness_modern':['grasp_label_simplified','collision_label','graspness'],
@@ -53,7 +53,7 @@ def preflight(config):
         if not config.checkpoint or not Path(config.checkpoint).is_file():
             raise ValueError("Inference requires a local checkpoint for this method/camera")
         if config.method=='finegrasp' and not (Path(config.checkpoint).parent/'model.config.json').is_file():
-            raise ValueError('FineGrasp requires model.config.json alongside the selected safetensors checkpoint')
+            raise ValueError('FineGrasp requires model.config.json alongside the selected checkpoint')
         root = Path(config.dataset_root)
         for index in range(config.scene * 256 + config.frame, config.scene * 256 + config.frame + config.frames):
             scene, frame = divmod(index, 256)
@@ -67,11 +67,18 @@ def preflight(config):
             if any(not p.is_file() for p in needed):
                 raise ValueError(f"Missing frame input: {next(p for p in needed if not p.is_file())}")
     if config.action in ("train", "train_smoke"):
-        labels = ["grasp_label", "collision_label"]
-        labels += ["graspness", "grasp_label_simplified"] if config.method == "graspness" else ["tolerance"]
+        labels = ["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"]
+        if config.method != "finegrasp":
+            labels += ["graspness", "grasp_label_simplified"] if config.method == "graspness" else ["tolerance"]
         for label in labels:
             if not (Path(config.dataset_root) / label).is_dir():
                 raise ValueError(f"Required preprocessing directory missing: {label}")
+    if config.method == 'finegrasp' and config.action in ('train', 'train_check', 'train_smoke'):
+        root = Path(config.dataset_root)
+        if not (root/'instance_norm_graspness').is_dir() and not (root/'graspness').is_dir():
+            raise ValueError('FineGrasp training needs instance_norm_graspness or Graspness maps for local preparation')
+        if config.checkpoint and not (Path(config.checkpoint).parent/'model.config.json').is_file():
+            raise ValueError('FineGrasp training initialization needs model.config.json alongside its checkpoint')
     if config.action == "evaluate":
         # Refuse partial predictions: they must never appear as benchmark AP.
         directory = Path(config.prediction_dir)

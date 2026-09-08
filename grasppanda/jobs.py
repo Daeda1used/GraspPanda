@@ -159,7 +159,7 @@ class JobManager:
                       "checkpoint_sha256": digest(config.checkpoint) if config.checkpoint and Path(config.checkpoint).is_file() else None}
         provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda/resources/patches').rglob('*.patch')}
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
-        if config.method=='finegrasp':
+        if config.method=='finegrasp' and config.checkpoint:
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')
         provenance['native_source_lock_sha256']=digest(ROOT/'grasppanda/resources/native_sources.lock.json')
         component_lock=ROOT/'grasppanda/resources/component_sources.lock.json'

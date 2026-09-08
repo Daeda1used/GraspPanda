@@ -167,12 +167,18 @@ def infer(config, out):
 
 
 def train(config, out):
+    if config.method=='finegrasp':
+        from .training_finegrasp import run
+        return run(config,out)
     from .native_training import run
     return run(config,out)
 
 
 def train_smoke(config, out):
     """One real-label optimizer step, using upstream data/model/loss code."""
+    if config.method=='finegrasp':
+        from .training_finegrasp import run
+        return run(config,out,1)
     import numpy as np
     import torch
     import scipy.io
@@ -317,7 +323,8 @@ def main():
         from .training_motion import run as motion
         from .training_spahybgen import run as spahybgen
         from .training_graspfast import run as graspfast
-        runner={'hggd':hggd,'region_normalized_grasp':rng,'contact_graspnet_g1b':contact,'rgb_matters':rgb_matters,'centergrasp':center,'gfla':gfla,'motiongrasp':motion,'spahybgen':spahybgen,'graspfast':graspfast}.get(config.method,point_family)
+        from .training_finegrasp import run as finegrasp
+        runner={'finegrasp':finegrasp,'hggd':hggd,'region_normalized_grasp':rng,'contact_graspnet_g1b':contact,'rgb_matters':rgb_matters,'centergrasp':center,'gfla':gfla,'motiongrasp':motion,'spahybgen':spahybgen,'graspfast':graspfast}.get(config.method,point_family)
         result=runner(config,out,config.training_steps)
     elif config.action == 'pipeline_smoke':
         command=[sys.executable,str(ROOT/'grasppanda/runtime/run_recipe.py'),config.method,'--dataset-root',config.dataset_root,'--out',str(out)]

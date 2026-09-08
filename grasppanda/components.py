@@ -27,6 +27,13 @@ def slots(method):
         return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4'),
             'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
             'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
+    if method=='finegrasp':return (
+        ComponentSlot('backbone','backbone',('upstream','sonata_ptv3'),
+            'Sparse camera XYZ and normal features; preserve voxel coordinate map and row order.',
+            '512-channel sparse features for the native FineGrasp seed selector.'),
+        ComponentSlot('crop','cy_groups',('upstream','native_cylinder'),
+            'FineGrasp seed XYZ, 512-channel features and native approach rotations.',
+            'Native 256-channel cylinder features per radius, consumed by multi-range attention.'))
     if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
         '512-channel sparse features, mapped to original input points by quantize2original.'),
@@ -66,7 +73,18 @@ def configure_model(model,method,selection,voxel_size=.005):
             replacement=native_resnet(native,**options) if choice=='native_resnet' else ImagePyramid(choice,**options)
         elif choice=='sonata_ptv3':
             from .modules.sonata import SonataBackbone,SparseSonataBackbone
-            replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,**options) if method=='graspness' else SonataBackbone(voxel_size,**options)
+            replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,feature_channels=6 if method=='finegrasp' and model.use_normal else 3,**options) if method in ('graspness','finegrasp') else SonataBackbone(voxel_size,**options)
+        elif method=='finegrasp' and choice=='native_cylinder':
+            from torch import nn
+            from .finegrasp import native_module
+            source=native_module()
+            from .modules.finegrasp import configure_fusion
+            if configure_fusion(model.fuse_multi_scale, {k:v for k,v in options.items() if k.startswith('fusion_')}):
+                changes.append('fuse_multi_scale.transformer.')
+            factors=options.get('radius_factors',model.cylinder_groups)
+            radius=options.get('radius',model.cylinder_radius)
+            replacement=nn.ModuleList(source.CylinderGroup(nsample=options.get('nsample',16),
+                seed_feature_dim=model.seed_feature_dim,cylinder_radius=radius*factor) for factor in factors)
         elif method=='graspness' and choice=='sparse_unet18':
             from models.backbone_resunet14 import MinkUNet18D
             replacement=MinkUNet18D(in_channels=3,out_channels=model.seed_feature_dim,D=3)

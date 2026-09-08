@@ -11,6 +11,9 @@ def unpack(value):
 
 
 def schema(method, slot, choice):
+    fusion = {'fusion_layers': ('int', 1, 8), 'fusion_heads': ('int', 1, 32),
+              'fusion_ffn_dim': ('int', 64, 4096), 'fusion_dropout': ('float', 0, .8),
+              'fusion_activation': ('choice', ('relu', 'gelu')), 'fusion_pre_norm': ('bool',)}
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
     if slot == 'backbone' and choice == 'sonata_ptv3':
@@ -30,6 +33,8 @@ def schema(method, slot, choice):
         fields.update({key: ('bool',) for key in ('qkv_bias', 'pre_norm', 'shuffle_orders',
             'enable_rpe', 'upcast_attention', 'upcast_softmax')})
         return fields
+    if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
+        return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
         if choice == 'native_resnet':
             return {'variant': ('choice', ('18', '34', '50')), 'stage_depths': ('int_list', 4, 1, 32)}
@@ -60,7 +65,7 @@ def schema(method, slot, choice):
     if slot == 'crop' and choice == 'multiscale':
         return {'radius_factors': ('radii',)}
     if method == 'graspness' and slot == 'crop' and choice == 'finegrasp':
-        return {'nsample': ('int', 4, 128), 'radius_factors': ('radii',)}
+        return {**fusion, 'nsample': ('int', 4, 128), 'radius_factors': ('radii',)}
     if slot == 'crop' and choice == 'cylinder':
         return {**common, 'hidden_channels': ('channels',), 'radius_factors': ('radii',),
                 'nsample': ('int', 4, 256), 'pooling': ('choice', ('max', 'mean', 'attention'))}
@@ -91,6 +96,8 @@ def validate_options(method, slot, choice, options):
             valid = isinstance(value, list) and len(value) == rule[1] and all(type(v) == int and rule[2] <= v <= rule[3] for v in value)
         if not valid:
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
+    if 'fusion_heads' in options and 256 % options['fusion_heads']:
+        raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
     if choice == 'pointmlp':
         sizes = options.get('stage_points', [1024, 256, 64, 16])
         neighbors = options.get('k_neighbors', [32, 32, 32, 16])
