@@ -9,6 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "pointnet2_ops._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers", "spconv.pytorch", "torch_scatter", "timm", "selective_scan_cuda_oflex", "_grasppanda_deepla_cuda"]
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
+modules += ['_grasppanda_gpg', 'fpsample', 'torch_cluster']
 for name in modules:
     try:
         mod = importlib.import_module(name)
@@ -22,6 +23,7 @@ result["gpu"] = torch.cuda.get_device_name() if torch.cuda.is_available() else N
 result["sources"] = []
 pins=json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text())
 pins+=json.loads((ROOT / "grasppanda/resources/component_sources.lock.json").read_text())
+pins += [p for p in json.loads((ROOT/'grasppanda/resources/native_sources.lock.json').read_text()) if p.get('id') == 'gpg']
 for entry in {p["path"]:p for p in pins}.values():
     repo = ROOT / entry["path"]
     if not repo.exists():

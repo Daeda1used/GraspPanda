@@ -59,14 +59,19 @@ def preflight(config):
             scene, frame = divmod(index, 256)
             directory = root / "scenes" / f"scene_{scene:04d}" / config.camera
             needed = [directory / "depth" / f"{frame:04d}.png", directory / "meta" / f"{frame:04d}.mat"]
-            if config.method=='finegrasp':needed += [directory/'rgb'/f'{frame:04d}.png']
+            if config.method in ('finegrasp', 'gtg2'):needed += [directory/'rgb'/f'{frame:04d}.png']
             if config.method in HEATMAP:
                 needed = [directory / 'depth' / f'{frame:04d}.png', directory / 'rgb' / f'{frame:04d}.png']
             if config.workspace == "official_gt_workspace":
                 needed += [directory / "label" / f"{frame:04d}.png", directory / "camera_poses.npy", directory / "cam0_wrt_table.npy"]
             if any(not p.is_file() for p in needed):
                 raise ValueError(f"Missing frame input: {next(p for p in needed if not p.is_file())}")
-    if config.action in ("train", "train_smoke"):
+    if config.method == 'gtg2' and config.action == 'train':
+        if not Path(config.label_root).is_dir():
+            raise ValueError('GtG2 graph inputs are missing: run ./panda prepare-gtg2 --config with your training configuration')
+        if config.checkpoint and not Path(config.checkpoint).is_file():
+            raise ValueError('GtG2 initialization or resume checkpoint is missing')
+    if config.action in ("train", "train_smoke") and config.method != 'gtg2':
         labels = [] if config.method == 'hggd' else (["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"])
         if config.method not in ("finegrasp", 'hggd'):
             labels += ["graspness", "grasp_label_simplified"] if config.method == "graspness" else ["tolerance"]

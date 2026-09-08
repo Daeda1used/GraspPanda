@@ -11,6 +11,9 @@ def unpack(value):
 
 
 def schema(method, slot, choice):
+    if method == 'gtg2':
+        from .gtg2_options import schema as graph_schema
+        return graph_schema(slot, choice)
     fusion = {'fusion_layers': ('int', 1, 8), 'fusion_heads': ('int', 1, 32),
               'fusion_ffn_dim': ('int', 64, 4096), 'fusion_dropout': ('float', 0, .8),
               'fusion_activation': ('choice', ('relu', 'gelu')), 'fusion_pre_norm': ('bool',)}
@@ -125,6 +128,8 @@ def validate_options(method, slot, choice, options):
             valid = isinstance(value, list) and 1 <= len(value) <= 8 and all(type(v) in (int, float) and math.isfinite(v) and .1 <= v <= 4 for v in value)
         elif rule[0] == 'blocks':
             valid = isinstance(value, list) and len(value) == 5 and all(type(v) == int and 1 <= v <= 12 for v in value)
+        elif rule[0] == 'float_list':
+            valid = isinstance(value, list) and rule[1] <= len(value) <= rule[2] and all(type(v) in (int, float) and math.isfinite(v) and rule[3] <= v <= rule[4] for v in value)
         elif rule[0] == 'int_list':
             valid = isinstance(value, list) and len(value) == rule[1] and all(type(v) == int and rule[2] <= v <= rule[3] for v in value)
         if not valid:

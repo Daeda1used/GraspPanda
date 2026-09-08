@@ -2,7 +2,7 @@
 import math
 
 IMAGE_METHODS = ('hggd', 'region_normalized_grasp')
-METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp') + IMAGE_METHODS
+METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp', 'gtg2') + IMAGE_METHODS
 LOSS_TERMS = {
     'graspnet_baseline': {
         'objectness': ('loss/stage1_objectness_loss', 1.),
@@ -21,6 +21,7 @@ LOSS_TERMS = {
     },
 }
 LOSS_TERMS['pointnet2_upgrade'] = LOSS_TERMS['graspnet_baseline']
+LOSS_TERMS['gtg2'] = {'score': ('score_loss', 1.)}
 LOSS_TERMS['finegrasp'] = {name: (name + '_loss', weight) for name, weight in
     (('objectness', 1.), ('graspness', 10.), ('view', 100.), ('angle', 1.),
      ('depth', 1.), ('score', 1.), ('width', 10.))}
@@ -54,6 +55,10 @@ def validate_training_options(config):
         raise ValueError(f'Loss weights must be finite, nonnegative and named from {tuple(terms)}')
     if weights and not any(weights.get(k, default) > 0 for k, (_, default) in terms.items()):
         raise ValueError('At least one loss component must retain positive weight')
+    if config.method == 'gtg2':
+        from .gtg2_options import validate_augmentation
+        validate_augmentation(config.augmentation)
+        return
     if config.method in IMAGE_METHODS:
         if config.proposal_warmup_steps and not any(weights.get(k, v) > 0 for k, (_, v) in terms.items() if k.startswith('anchor_')):
             raise ValueError('Anchor warmup requires at least one positive anchor loss weight')

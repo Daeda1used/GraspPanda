@@ -13,6 +13,10 @@ for prerequisite in git python3 g++ cmake pkg-config; do
     exit 1
   fi
 done
+if ! pkg-config --list-all | awk '{print $1}' | grep -E '^pcl_common(-[0-9.]+)?$' >/dev/null; then
+  echo 'Install libpcl-dev for candidate generation. See docs/INSTALL.md.' >&2
+  exit 1
+fi
 PANDA_NVCC="${GRASPPANDA_CUDA_HOME:-/usr/local/cuda-11.8}/bin/nvcc"
 if [[ ! -x "$PANDA_NVCC" ]] || ! "$PANDA_NVCC" --version | grep -q 'release 11.8'; then
   echo 'Set GRASPPANDA_CUDA_HOME to a CUDA 11.8 compiler toolkit. See docs/INSTALL.md.' >&2
@@ -31,6 +35,7 @@ fi
 "$UV_BIN" pip install --python .venv/bin/python --no-build-isolation grasp-nms==1.0.2
 python3 grasppanda/runtime/clone_upstreams.py
 .venv/bin/python grasppanda/runtime/build_native.py
+.venv/bin/python grasppanda/runtime/build_gpg.py
 .venv/bin/python grasppanda/runtime/build_components.py
 .venv/bin/python grasppanda/runtime/build_extras.py
 "$UV_BIN" pip check --python .venv/bin/python

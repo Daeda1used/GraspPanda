@@ -22,6 +22,7 @@ def capabilities(method):
     if method not in catalogue() or method == 'graspnet_api':
         return []
     actions = []
+    if method == 'gtg2': return ['infer', 'evaluate', 'train']
     if method in CORE:
         actions += ["infer", "evaluate"]
     if method in (*HEATMAP,'finegrasp'):
@@ -97,7 +98,10 @@ class Experiment:
         validate_optimization(self)
         from .training_options import validate_training_options
         validate_training_options(self)
-        from .hggd_options import validate as validate_trainer
+        if self.method == 'gtg2':
+            from .gtg2_options import validate_config as validate_trainer
+        else:
+            from .hggd_options import validate as validate_trainer
         validate_trainer(self)
         from .datasets import get_dataset
         from .components import validate_selection
@@ -132,7 +136,7 @@ class Experiment:
         last_scene=max(stop for _,stop in spec.splits.values())
         for key, low, high in (("scene", 0, last_scene-1), ("frame", 0, spec.frames_per_scene-1), ("frames", 1, last_scene*spec.frames_per_scene),
                                ("num_points", 2048, 50000), ("seed", 0, 2**31-1),
-                               ("batch_size", 1, 64), ("training_steps", 1, 1000), ("epochs", 1, 10000), ("gpu", 0, 127),
+                               ("batch_size", 1, 256 if self.method == 'gtg2' else 64), ("training_steps", 1, 1000), ("epochs", 1, 10000), ("gpu", 0, 127),
                                ("train_batch_limit",0,25600),("eval_batch_limit",0,7680),("data_workers",0,32),
                                ("timeout_minutes", 1, 43200)):
             value = getattr(self, key)

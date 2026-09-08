@@ -33,5 +33,11 @@
     "path": "environments/sources/manifold_python",
     "repository": "https://github.com/PRBonn/manifold_python",
     "commit": "2548ad89a633a35e48933647537e07a4e2de8ebe"
+  },
+  {
+    "id": "gpg",
+    "repository": "https://github.com/lianghongzhuo/gpg",
+    "path": "environments/sources/gpg",
+    "commit": "1ee07c83808ce4091a2395df2400c59802009bc9"
   }
 ]

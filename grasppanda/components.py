@@ -22,6 +22,13 @@ BASELINE_SLOTS = (
 
 
 def slots(method):
+    if method == 'gtg2': return (
+        ComponentSlot('backbone', 'block', ('upstream', 'gtg_sage', 'gtg_gatv2'),
+            'Candidate-local XYZ and inside/outside flags with undirected k-nearest graph edges.',
+            'One grasp-quality score per candidate graph; ensemble members share the encoder contract.'),
+        ComponentSlot('crop', 'graph', ('upstream', 'grasp_graph'),
+            'GPG candidates and calibrated camera-frame workspace points in metres.',
+            'Inside/outside point sets, explicit sampling caps and graph features.'))
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
     if method in ('hggd','region_normalized_grasp'):
         return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3','vmamba'),
@@ -60,6 +67,8 @@ def validate_selection(method,selection,checkpoint_policy='strict'):
 def configure_model(model,method,selection,voxel_size=.005):
     """Replace registered submodules only; return the exact changed state prefixes."""
     validate_selection(method,selection)
+    if method == 'gtg2':
+        raise ValueError('GtG2 uses GraphRegressor with resolved graph options; its crop configures data construction, not a network submodule')
     changes=[]
     for slot in slots(method):
         from .module_options import unpack

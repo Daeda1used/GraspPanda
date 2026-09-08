@@ -1,5 +1,7 @@
 # Data and checkpoint downloads
 
+GtG2 uses locally prepared candidate graphs and an ensemble you train; no pretrained ensemble is registered. Follow [Candidate graph experiments](GTG2.md) for its required scene/model archives and preparation command.
+
 ## Start without GraspNet
 
 ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered. Supplied samples do not establish GraspNet benchmark AP.

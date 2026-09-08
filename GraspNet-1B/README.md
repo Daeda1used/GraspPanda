@@ -17,6 +17,7 @@ Run commands from the repository root. The dataset root is the directory contain
 | [Epoch training](examples/train-baseline.yaml) | Train the baseline with its native dataset loop |
 | [HGGD training](examples/train-hggd.yaml) | Train RGB-D anchor/local stages with gradient accumulation and checkpoint resume |
 | [FineGrasp training](examples/train-finegrasp.yaml) | Configure native grouping, cross-radius attention and classification objectives |
+| [Candidate graph training](examples/train-gtg2.yaml) | Prepare GtG2 graphs and train scene-disjoint ensembles; [guide](../docs/GTG2.md) |
 | [Training controls](examples/train-controls.yaml) | Select loss formulations and label-aligned point augmentation |
 | [Component composition](examples/compose-baseline.yaml) | Train a different encoder and cylindrical grouping |
 | [RGB-D composition](examples/compose-hggd.yaml) | Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation |

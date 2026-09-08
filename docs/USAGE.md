@@ -51,7 +51,7 @@ export GRASPPANDA_DATASET_ROOT=/data/GraspNet-1B
 
 ## Train, resume and reuse
 
-Prepare the method's labels using [Data & weights](DOWNLOADS.md). For native epoch training, select **Train across epochs** and expand **Training & evaluation settings**. Set both batch limits to `0` for the complete native training/validation ranges. HGGD validates only scene 0100; FineGrasp has no automatic validation loop. Increase `timeout_minutes` in the configuration editor for long runs.
+Prepare the method's labels using [Data & weights](DOWNLOADS.md). For native epoch training, select **Train across epochs** and expand **Training & evaluation settings**. Set both batch limits to `0` for the complete native training/validation ranges. HGGD validates only scene 0100; FineGrasp has no automatic validation loop. Set **Run time limit (minutes)** for long runs.
 
 `initialize` loads model weights and starts a fresh optimizer. `resume` is available only for native epoch training; inference and short training use `initialize`. `resume` restores the model, optimizer and epoch with strict loading; keep the same component/data/optimization settings and set `epochs` above the saved epoch. SBG's native OneCycle schedule, FineGrasp's native schedule and configured update schedules require the original final-epoch horizon. [Optimization settings](MODULES.md#optimizers-and-schedules) cover the available choices and update units.
 

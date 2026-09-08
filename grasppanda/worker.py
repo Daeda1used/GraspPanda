@@ -50,6 +50,9 @@ def overlay(rgb_path, grasps, intr, destination):
 
 
 def infer(config, out):
+    if config.method == 'gtg2':
+        from .gtg2 import infer as graph_infer
+        return graph_infer(config, out)
     if config.method=='finegrasp':
         from .finegrasp import infer as finegrasp_infer
         return finegrasp_infer(config,out)
@@ -167,6 +170,9 @@ def infer(config, out):
 
 
 def train(config, out):
+    if config.method == 'gtg2':
+        from .training_gtg2 import run
+        return run(config, out)
     if config.method=='hggd':
         from .training_hggd import run
         return run(config,out)

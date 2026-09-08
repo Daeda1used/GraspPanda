@@ -26,6 +26,9 @@ CHECKPOINT_RECIPES = {'generalizing_grasp','contact_graspnet_g1b','gfla','center
 def preset(method, dataset_root=''):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if method == 'gtg2':
+        return Experiment(method=method, action='train', dataset_root=dataset_root, split='train', scene=0,
+            label_root='outputs/prepared/gtg2', epochs=500, batch_size=128, learning_rate=.01, timeout_minutes=43200)
     if method in RECIPES and 'infer' not in capabilities(method):
         camera=RECIPES[method][0]
         return Experiment(method=method,action='pipeline_smoke',dataset_root=dataset_root,camera=camera,timeout_minutes=15)

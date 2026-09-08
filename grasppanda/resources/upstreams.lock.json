@@ -160,5 +160,11 @@
     "repository": "https://github.com/HorizonRobotics/RoboOrchardLab",
     "path": "upstream/single_view/pointcloud/finegrasp",
     "commit": "241bbc692ec83b9bb669c23e574aea44b4816300"
+  },
+  {
+    "id": "gtg2",
+    "repository": "https://github.com/Ali-Rashidi/GtG2",
+    "path": "upstream/single_view/candidate_graphs/gtg2",
+    "pinned_commit": "99d378476f3b30164d486fce5d1833794cadd169"
   }
 ]

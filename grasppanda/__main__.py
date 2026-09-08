@@ -23,6 +23,8 @@ def main():
     fetch_weights.add_argument("--camera", choices=["realsense","kinect"], default="realsense")
     sdf = commands.add_parser("prepare-sdf", help="Prepare object SDF grids for fusion training")
     sdf.add_argument("arguments", nargs=argparse.REMAINDER)
+    graph = commands.add_parser('prepare-gtg2', help='Prepare reusable labelled candidate graphs for ensemble training')
+    graph.add_argument('arguments', nargs=argparse.REMAINDER)
     component_weights = commands.add_parser('component-weights', help='Download verified pretrained backbone weights')
     from .weights import component_records
     component_weights.add_argument('name', choices=list(component_records()))
@@ -36,8 +38,9 @@ def main():
     sweep.add_argument('config', type=Path)
     sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
     sweep.add_argument('--runs-dir', type=Path)
-    if len(sys.argv) > 1 and sys.argv[1] == 'prepare-sdf':
-        raise SystemExit(subprocess.call([sys.executable, str(ROOT / 'grasppanda/runtime/prepare_sdf.py'), *sys.argv[2:]], cwd=ROOT))
+    if len(sys.argv) > 1 and sys.argv[1] in ('prepare-sdf', 'prepare-gtg2'):
+        script = {'prepare-sdf': 'prepare_sdf.py', 'prepare-gtg2': 'prepare_gtg2.py'}[sys.argv[1]]
+        raise SystemExit(subprocess.call([sys.executable, str(ROOT / 'grasppanda/runtime' / script), *sys.argv[2:]], cwd=ROOT))
     args = parser.parse_args()
     if args.command == "install":
         raise SystemExit(subprocess.call(["bash", str(ROOT / "grasppanda/runtime/bootstrap.sh")], cwd=ROOT))
