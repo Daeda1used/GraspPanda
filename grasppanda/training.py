@@ -79,6 +79,8 @@ def hggd(config, out, steps=3, label_root=None):
     import numpy as np
     import torch
     from .worker import prepare
+    from .components import configure_model,load_checkpoint
+    from .optimization import build_optimizer,UpdateSchedule
     prepare('hggd')
     camera=importlib.import_module('dataset.config')
     intrinsic=camera.get_camera_intrinsic
@@ -89,7 +91,7 @@ def hggd(config, out, steps=3, label_root=None):
     args=module.parse_args()
     args.batch_size=2;args.step_cnt=1;args.pre_epochs=0;args.shift_epoch=0
     args.center_num=48;args.reg_b=5.;args.offset_d=1.;args.lr=config.learning_rate
-    args.all_points_num=25600
+    args.all_points_num=config.num_points
     labels=Path(label_root or config.label_root) if label_root or config.label_root else Path(config.dataset_root)/'HGGD_Preprocessed'/f'6dto2drefine_{config.camera}'
     required=labels/'6d_dataset'/f'scene_{config.scene}'/'grasp_labels'/f'{config.frame}_view.npz'
     if not required.exists():raise ValueError(f'HGGD preprocessed labels missing: {required}')
@@ -98,13 +100,18 @@ def hggd(config, out, steps=3, label_root=None):
         anchor_w=args.anchor_w,grasp_count=args.grasp_count,output_size=(640,360),random_rotate=False,random_zoom=False)
     # Native trainer skips the update at batch index 0. N+1 batches yield N updates.
     loader=torch.utils.data.DataLoader(dataset,batch_size=2,sampler=[config.frame]*((steps+1)*2),num_workers=0)
-    anchor=module.AnchorGraspNet(in_dim=4,ratio=8,anchor_k=6).cuda()
+    anchor=module.AnchorGraspNet(in_dim=4,ratio=8,anchor_k=6)
+    changed=configure_model(anchor,config.method,config.modules)
+    anchor.cuda()
     local=module.PointMultiGraspNet(3,49).cuda()
     if not config.checkpoint:raise ValueError('A trained HGGD checkpoint is required for the bounded joint-training check')
     state=torch.load(config.checkpoint,map_location='cuda',weights_only=True)
-    anchor.load_state_dict(state['anchor'],strict=True);local.load_state_dict(state['local'],strict=True)
+    transfer=load_checkpoint(anchor,state['anchor'],changed,config.checkpoint_policy)
+    local.load_state_dict({k:v for k,v in state['local'].items() if k.rsplit('.',1)[-1] not in ('total_ops','total_params')},strict=True)
     anchors={k:state[k].cuda() for k in ('gamma','beta')}
-    optimizer=module.get_optimizer(args,itertools.chain(anchor.parameters(),local.parameters()))
+    parameters=itertools.chain(anchor.parameters(),local.parameters())
+    optimizer=build_optimizer(parameters,config) if config.optimizer else module.get_optimizer(args,parameters)
+    schedule=UpdateSchedule(optimizer,config.scheduler,steps) if config.scheduler else None
     losses=[];updates=[]
     anchor_loss=module.compute_anchor_loss;local_loss=module.compute_multicls_loss
     def measured_anchor(*a,**kw):
@@ -121,9 +128,10 @@ def hggd(config, out, steps=3, label_root=None):
     module.compute_anchor_loss=measured_anchor;module.compute_multicls_loss=measured_local
     original_step=optimizer.step
     def measured_step(*a,**kw):
-        record={}
+        record={'learning_rate':optimizer.param_groups[0]['lr']}
         snapshots={}
-        for name,net in [('anchor',anchor),('local',local)]:
+        branches=[('anchor',anchor),('local',local)]+[('anchor.'+prefix[:-1],anchor.get_submodule(prefix[:-1])) for prefix in changed]
+        for name,net in branches:
             params=[p for p in net.parameters() if p.grad is not None]
             if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError(f'Invalid {name} gradients')
             nonzero=[p for p in params if torch.count_nonzero(p.grad)]
@@ -135,7 +143,9 @@ def hggd(config, out, steps=3, label_root=None):
         for name,(parameter,before) in snapshots.items():
             record[name+'_parameter_update_norm']=float((parameter.detach()-before).norm())
             if not record[name+'_parameter_update_norm']>0:raise ValueError(f'No parameter update in {name}')
-        updates.append(record);return answer
+        updates.append(record)
+        if schedule:schedule.step()
+        return answer
     optimizer.step=measured_step
     start=time.monotonic()
     module.train(0,anchor,local,loader,optimizer,anchors,args)
@@ -145,8 +155,11 @@ def hggd(config, out, steps=3, label_root=None):
     torch.save({'anchor':anchor.state_dict(),'local':local.state_dict(),
                 'gamma':anchors['gamma'],'beta':anchors['beta'],
                 'optimizer_state_dict':optimizer.state_dict(),'training_steps':steps,
+                **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
                 'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method='hggd',stage='real_label_joint_training',optimizer_steps=len(updates),
+        modules=config.modules,checkpoint_transfer=transfer,
+        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         losses=losses,updates=updates,seconds=time.monotonic()-start,
         checkpoint_sha256=digest(config.checkpoint),label_sha256=digest(required),camera=config.camera,
         scene=config.scene,frame=config.frame,learning_rate=config.learning_rate,ap=None,
@@ -162,6 +175,7 @@ def point_family(config, out, steps=3):
     import scipy.io
     from .worker import prepare
     from .training_options import augment_sample,weighted_loss
+    from .optimization import build_optimizer,UpdateSchedule
     repo=prepare(config.method)
     if config.method=='graspbalance':sys.path[:0]=[str(repo/p) for p in ('TrainModel','PointNet','KNN','DataProcessing','ModifiedNetTools')]
     sys.argv=['train.py','--dataset_root',config.dataset_root,'--camera',config.camera]
@@ -286,7 +300,8 @@ def point_family(config, out, steps=3):
         exec(compile(ast.fix_missing_locations(tree),str(source),'exec'),module.__dict__)
         for obj in labels:evidence['sdf_'+str(obj-1)]=digest(sdf_root/'models'/f'{obj-1:03d}'/'grid_sampled_sdf.npz')
     loss_module=importlib.import_module('models.loss_economicgrasp' if economic else ('TrainModel.loss' if balance else ('loss' if config.method=='dograspnet' or fusion else 'models.loss')))
-    optimizer=torch.optim.Adam(model.parameters(),lr=config.learning_rate)
+    optimizer=build_optimizer(model.parameters(),config) if config.optimizer else torch.optim.Adam(model.parameters(),lr=config.learning_rate)
+    schedule=UpdateSchedule(optimizer,config.scheduler,steps) if config.scheduler else None
     def cuda(value):
         if graph and type(value).__module__.startswith('dgl.'):return value.to('cuda')
         if isinstance(value,torch.Tensor):return value.cuda()
@@ -316,20 +331,24 @@ def point_family(config, out, steps=3):
             component_snapshots[prefix]=(selected[0],selected[0].detach().clone())
         before=nonzero[0].detach().clone()
         norm=float(torch.sqrt(sum(p.grad.detach().square().sum() for p in params)))
+        used_lr=optimizer.param_groups[0]['lr']
         optimizer.step()
         update=float((nonzero[0].detach()-before).norm())
         if not update>0 or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('No valid parameter update')
         component_updates={name:float((p.detach()-old).norm()) for name,(p,old) in component_snapshots.items()}
         if not all(value>0 for value in component_updates.values()):raise ValueError('Replacement component did not update')
-        updates.append(dict(gradient_tensors=len(params),gradient_norm=norm,parameter_update_norm=update,component_updates=component_updates))
+        updates.append(dict(gradient_tensors=len(params),gradient_norm=norm,parameter_update_norm=update,component_updates=component_updates,learning_rate=used_lr))
+        if schedule:schedule.step()
         print('TRAINING_STEP',step+1,losses[-1],updates[-1],flush=True)
     torch.cuda.synchronize()
     torch.save({'model_state_dict':model.state_dict(),'optimizer_state_dict':optimizer.state_dict(),
+                **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
                 'training_steps':steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method=config.method,stage='real_label_training',modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,checkpoint_transfer=transfer,optimizer_steps=len(updates),losses=losses,updates=updates,
+        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         seconds=time.monotonic()-start,label_sha256=evidence,checkpoint_sha256=digest(config.checkpoint) if config.checkpoint else None,
         camera=config.camera,scene=config.scene,frame=config.frame,num_points=config.num_points,learning_rate=config.learning_rate,ap=None,
-        protocol=('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. '))+('Configured augmentation, Adam. ' if config.augmentation else 'No augmentation, Adam. ')+'Loss coefficients are recorded in loss_config.',
+        protocol=('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. '))+('Configured augmentation. ' if config.augmentation else 'No augmentation. ')+'Loss and optimization settings are recorded in the result.',
         initialization='checkpoint' if config.checkpoint else 'random_constructor',
         limitation='The upstream GraspBalance driver references obsolete class names. This uses its actual GraspBalance detector and original loss with the native single-view loader; NcM augmentation and optional inference-time object balancing are not exercised.' if balance else None)
 
@@ -345,6 +364,8 @@ def rng(config,out,steps=3,label_root=None):
     import numpy as np
     import torch
     from .worker import prepare
+    from .components import configure_model,load_checkpoint
+    from .optimization import build_optimizer,UpdateSchedule
     prepare('region_normalized_grasp')
     camera=importlib.import_module('dataset.config')
     intrinsic=camera.get_camera_intrinsic
@@ -353,10 +374,12 @@ def rng(config,out,steps=3,label_root=None):
     sys.argv=['demo.py','--center-num','48','--all-points-num',str(config.num_points),
               '--group-num','512','--input-w','640','--input-h','360','--embed-dim','256','--patch-size','64']
     demo=importlib.import_module('demo')
-    demo.anchornet=demo.AnchorGraspNet(in_dim=4,ratio=8,anchor_k=6).cuda().eval()
+    demo.anchornet=demo.AnchorGraspNet(in_dim=4,ratio=8,anchor_k=6)
+    changed=configure_model(demo.anchornet,config.method,config.modules)
+    demo.anchornet.cuda().eval()
     demo.localnet=demo.PatchMultiGraspNet(49,theta_k_cls=6,feat_dim=256,anchor_w=60).cuda().eval()
     state=torch.load(config.checkpoint,map_location='cuda',weights_only=True)
-    demo.anchornet.load_state_dict(state['anchor'],strict=True)
+    transfer=load_checkpoint(demo.anchornet,state['anchor'],changed,config.checkpoint_policy)
     localstate={k:v for k,v in state['local'].items() if k.rsplit('.',1)[-1] not in ('total_ops','total_params')}
     demo.localnet.load_state_dict(localstate,strict=True)
     demo.anchors={k:state[k].cuda() for k in ('gamma','beta')}
@@ -369,6 +392,40 @@ def rng(config,out,steps=3,label_root=None):
     dataset.is_aug=False;dataset.aug=None
     x,target,*_=dataset[config.frame]
     x=x.cuda()[None];target=[v.cuda()[None].repeat(2,*([1]*v.ndim)) for v in target]
+    anchor,local=demo.anchornet,demo.localnet
+    parameters=itertools.chain(anchor.parameters(),local.parameters())
+    optimizer=build_optimizer(parameters,config) if config.optimizer else torch.optim.AdamW(parameters,lr=config.learning_rate)
+    total_steps=steps+config.proposal_warmup_steps
+    schedule=UpdateSchedule(optimizer,config.scheduler,total_steps) if config.scheduler else None
+    losses_module=importlib.import_module('models.losses')
+    losses=[];updates=[];start=time.monotonic()
+    # A replacement image encoder starts without learned grasp proposals.
+    # Fit the actual anchor targets before using its own native proposal path.
+    anchor.train()
+    for step in range(config.proposal_warmup_steps):
+        optimizer.zero_grad(set_to_none=True)
+        pred,_=anchor(x.repeat(2,1,1,1))
+        first=losses_module.compute_anchor_loss(pred,target,reg_b=5)
+        loss=first['loss']
+        if not torch.isfinite(loss):raise ValueError('Non-finite RNG proposal warmup loss')
+        loss.backward()
+        parameters=[p for p in anchor.parameters() if p.grad is not None]
+        if not parameters or not all(torch.isfinite(p.grad).all() for p in parameters):
+            raise ValueError('Invalid RNG proposal warmup gradients')
+        selected=next((p for p in parameters if p.grad.count_nonzero()),None)
+        if selected is None:raise ValueError('No RNG proposal warmup gradient')
+        before=selected.detach().clone()
+        record={'stage':'Anchor warmup','learning_rate':optimizer.param_groups[0]['lr']}
+        optimizer.step()
+        record['anchor_parameter_update_norm']=float((selected.detach()-before).norm())
+        if not record['anchor_parameter_update_norm']>0 or not all(torch.isfinite(p).all() for p in anchor.parameters()):
+            raise ValueError('Invalid RNG proposal warmup update')
+        losses.append(dict(stage='Anchor warmup',total=float(loss.detach()),
+                           components={k:float(v.detach()) for k,v in first['losses'].items()}))
+        updates.append(record)
+        if schedule:schedule.step()
+        print('ANCHOR_WARMUP',step+1,losses[-1],record,flush=True)
+    anchor.eval()
     rgb=torch.from_numpy(dataset.cur_rgb.copy()).float().cuda()[None]/255.
     depth=torch.from_numpy(dataset.cur_depth.copy()).float().cuda()[None]
     helper=demo.PointCloudHelper(config.num_points)
@@ -393,12 +450,10 @@ def rng(config,out,steps=3,label_root=None):
     with np.load(path) as source:
         group_labels,total_labels=pc.get_center_group_label(capture['centers'],[dict(source)],500,dis=.02)
     counts=[len(v) for v in group_labels]
-    if not len(total_labels):raise ValueError('No real labels within native 2 cm proposal neighborhoods')
+    if not len(total_labels):raise ValueError('No real labels within native 2 cm proposal neighborhoods. For a newly initialized image encoder, configure proposal_warmup_steps or initialize from its trained checkpoint.')
     losses_module=importlib.import_module('models.losses')
     get_info=importlib.import_module('models.localgraspnet').get_grasp_infos
     anchor,local=demo.anchornet.train(),demo.localnet.train()
-    optimizer=torch.optim.AdamW(itertools.chain(anchor.parameters(),local.parameters()),lr=config.learning_rate)
-    losses=[];updates=[];start=time.monotonic()
     for step in range(steps):
         optimizer.zero_grad(set_to_none=True)
         pred,_=anchor(x.repeat(2,1,1,1))
@@ -413,9 +468,10 @@ def rng(config,out,steps=3,label_root=None):
                     **{'local_theta_'+k:float(v.detach()) for k,v in theta['losses'].items()},
                     'local_orientation':float(cls_loss.detach()),'local_offset':float(offset_loss.detach())}
         if not torch.isfinite(total) or not all(np.isfinite(v) for v in components.values()):raise ValueError('Non-finite native RNG loss')
-        total.backward();snapshots={};record={}
+        total.backward();snapshots={};record={'learning_rate':optimizer.param_groups[0]['lr']}
         branches={'anchor':anchor,'local':local,'theta':local.theta_cls,'theta_offset':local.theta_offset,
                   'width':local.width_reg,'orientation':local.anchor_cls,'offset':local.offset_reg}
+        branches.update({'anchor.'+prefix[:-1]:anchor.get_submodule(prefix[:-1]) for prefix in changed})
         for name,net in branches.items():
             params=[p for p in net.parameters() if p.grad is not None]
             if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError(f'Invalid {name} gradients')
@@ -430,14 +486,18 @@ def rng(config,out,steps=3,label_root=None):
         if not all(torch.isfinite(p).all() for p in itertools.chain(anchor.parameters(),local.parameters())):raise ValueError('Non-finite updated parameter')
         losses.append(dict(total=float(total.detach()),components=components,positive_orientation_targets=int(positive.count_nonzero())))
         updates.append(record);print('TRAINING_STEP',step+1,losses[-1],record,flush=True)
+        if schedule:schedule.step()
     torch.cuda.synchronize()
     torch.save({'anchor':anchor.state_dict(),'local':local.state_dict(),**demo.anchors,
+                **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
                 'optimizer_state_dict':optimizer.state_dict(),'training_steps':steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
-    return dict(method=config.method,stage='real_label_native_objective_training',optimizer_steps=steps,losses=losses,updates=updates,
+    return dict(method=config.method,stage='real_label_native_objective_training',optimizer_steps=total_steps,proposal_warmup_steps=config.proposal_warmup_steps,losses=losses,updates=updates,
+        modules=config.modules,checkpoint_transfer=transfer,
+        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         camera=config.camera,scene=config.scene,frame=config.frame,seconds=time.monotonic()-start,checkpoint_sha256=digest(config.checkpoint),
         label_sha256=digest(path),patches=len(counts),labelled_patches=sum(n>0 for n in counts),local_labels=sum(counts),
         learning_rate=config.learning_rate,ap=None,
-        protocol='Real HGGD labels through the RNG native anchor target generator, native heatmap/camera/grid-sample patches and native theta/width/orientation/offset losses. Fixed proposals, no augmentation; anchor batch 2, local batch up to 48; AdamW; alpha 0.02 m, anchor width 60 mm, offset coefficient 1.',
+        protocol='Real HGGD labels through the RNG native anchor target generator, native heatmap/camera/grid-sample patches and native theta/width/orientation/offset losses. Optional anchor-only warmup uses the same real targets and optimizer before preparing fixed proposals from that anchor; no teacher or substituted labels. No augmentation; anchor batch 2, local batch up to 48; AdamW unless overridden; alpha 0.02 m, anchor width 60 mm, offset coefficient 1.',
         limitation='The upstream training driver and preprocessed patch archive are unreleased. This validates the native objectives and every prediction head using dynamically prepared real patches; it is not the unreleased training schedule or convergence.')
 
 

@@ -9,3 +9,5 @@ GraspNet baseline/Graspness and derivatives may carry academic-use terms. Public
 PointNeXt/OpenPoints and FineGrasp components are fetched from pinned author sources. FineGrasp uses its native point operators with the configuration utilities from RoboOrchardCore 0.7 and scoped imports of model dependencies. The broader RoboOrchard robotics application is not installed. Consult each source's license before redistribution.
 
 PointMLP uses the author's point hierarchy and feature-propagation blocks, plus the bundled PointNet2 operators. The installer builds these operators locally with the selected CUDA architecture. Original source and license files remain in the pinned repository; GraspPanda does not redistribute a pretrained PointMLP model.
+
+ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementations. Author papers and original implementation links are listed in [Modules](MODULES.md). Image encoder replacements initialize without external pretrained weights.

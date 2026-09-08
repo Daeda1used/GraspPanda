@@ -1,0 +1,27 @@
+dataset: graspnet1b
+method: hggd
+action: train_check
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+camera: realsense
+split: train
+scene: 0
+frame: 0
+workspace: native_demo
+training_steps: 3
+learning_rate: 0.00003
+checkpoint_policy: reuse_unchanged
+modules:
+  backbone:
+    type: convnextv2
+    variant: atto
+    stage_channels: [24, 48, 96, 192]
+    stage_depths: [1, 1, 2, 1]
+    projection_norm: group
+optimizer:
+  type: lion
+  weight_decay: 0.01
+scheduler:
+  type: cosine
+  warmup_steps: 1
+  min_lr_ratio: 0.1

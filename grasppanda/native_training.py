@@ -63,6 +63,7 @@ def run(config,out):
     from .components import configure_model,load_checkpoint
     from .jobs import digest
     from .training_options import configure_dataset,weighted_loss
+    from .optimization import build_optimizer,UpdateSchedule,NativeScheduleDisabled,native_driver
     implementation_hash=digest(__file__)
     repo=prepare(config.method)
     sparse=config.method=='graspness'
@@ -107,10 +108,16 @@ def run(config,out):
         if int(resume['epoch'])>=config.epochs:raise ValueError('Final epoch must exceed the resume checkpoint epoch')
         previous=resume.get('config')
         if previous:
-            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','loss','augmentation'):
-                if previous.get(key,{} if key in ('loss','augmentation') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
+            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','loss','augmentation','optimizer','scheduler','learning_rate'):
+                if previous.get(key,{} if key in ('loss','augmentation','optimizer','scheduler') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
             if config.method=='scale_balanced_grasp' and previous.get('epochs')!=config.epochs:
                 raise ValueError('Scale-Balanced-Grasp OneCycle resume requires its original final-epoch horizon')
+            if config.scheduler and previous.get('epochs')!=config.epochs:
+                raise ValueError('Configured scheduling requires the original final-epoch horizon when resuming')
+        elif config.optimizer or config.scheduler:
+            raise ValueError('Resume with optimization overrides requires saved configuration metadata')
+        if config.scheduler and 'scheduler_state_dict' not in resume:
+            raise ValueError('Resume checkpoint is missing the configured scheduler state')
 
     args=[str(repo/'train.py'),'--dataset_root',config.dataset_root,'--camera',config.camera,
           '--log_dir',str(out/'training'),'--num_point',str(config.num_points),
@@ -134,12 +141,19 @@ def run(config,out):
             dataset=torch.utils.data.Subset(dataset,range(start,stop))
         kwargs['num_workers']=config.data_workers
         return native_loader(dataset,*args,**kwargs)
-    torch.utils.data.DataLoader=loader
     namespace={'__name__':'grasppanda_native_trainer','__file__':str(repo/'train.py')}
-    try:exec(compile((repo/'train.py').read_text(),str(repo/'train.py'),'exec'),namespace)
-    finally:torch.utils.data.DataLoader=native_loader
+    namespace.update(_grasppanda_optimizer=lambda parameters:build_optimizer(parameters,config),
+                     _grasppanda_disabled_schedule=NativeScheduleDisabled,
+                     _grasppanda_loader=loader)
+    source=(repo/'train.py').read_text()
+    program=native_driver(source,repo/'train.py',config,adapt_loader=True)
+    exec(program,namespace)
     model=namespace['net'];optimizer=namespace['optimizer']
-    scheduler=namespace.get('scheduler')
+    if config.scheduler:
+        scheduler=UpdateSchedule(optimizer,config.scheduler,len(namespace['TRAIN_DATALOADER'])*config.epochs)
+        namespace['adjust_learning_rate']=lambda *args:None
+        namespace['get_current_lr']=lambda *args:optimizer.param_groups[0]['lr']
+    else:scheduler=namespace.get('scheduler')
     if resume is not None and scheduler is not None and 'scheduler_state_dict' in resume:
         scheduler.load_state_dict(resume['scheduler_state_dict'])
         # The native scheduler constructor changes optimizer LR/momentum.
@@ -170,6 +184,7 @@ def run(config,out):
         print('LOSS',json.dumps(record),flush=True)
         return loss,end
     def measured_step(*args,**kwargs):
+        used_lr=optimizer.param_groups[0]['lr']
         params=[p for p in model.parameters() if p.grad is not None]
         if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError('Invalid native epoch gradients')
         selected=[p for p in params if torch.count_nonzero(p.grad)]
@@ -183,7 +198,8 @@ def run(config,out):
         result=original_step(*args,**kwargs)
         delta={name:float((p.detach()-before).norm()) for name,(p,before) in snapshots.items()}
         if not all(v>0 for v in delta.values()) or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('Invalid native epoch parameter update')
-        updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,learning_rate=optimizer.param_groups[0]['lr']))
+        updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,learning_rate=used_lr))
+        if config.scheduler:scheduler.step()
         return result
     namespace['get_loss']=measured_loss;optimizer.step=measured_step
     # The author checkpoints omit composition metadata. Add it to each native
@@ -211,10 +227,11 @@ def run(config,out):
     shutil.copyfile(paths[-1],out/'checkpoint.pt')
     if transfer:(out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
     return dict(stage='native_epoch_training',method=config.method,modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,
+        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         implementation_sha256=implementation_hash,
         checkpoint_mode=config.train_checkpoint_mode,resume_state_verified=resume is not None,
         start_epoch=namespace['start_epoch'],final_epoch=config.epochs,
         optimizer_steps=len(updates),losses=losses,updates=updates,evaluation_losses=evaluations,
         train_batch_limit=config.train_batch_limit,eval_batch_limit=config.eval_batch_limit,
         seconds=time.monotonic()-start,checkpoint_sha256=digest(out/'checkpoint.pt'),
-        protocol='Native epoch driver with configured loss coefficients and augmentation; original optimizer and learning-rate schedule; lazy native labels. Nonzero batch limits restrict real-frame coverage and do not establish full-dataset convergence.',ap=None)
+        protocol='Native epoch driver with configured loss, augmentation and optimization settings; original optimizer/schedule when no override is supplied; lazy native labels. Nonzero batch limits restrict real-frame coverage and do not establish full-dataset convergence.',ap=None)

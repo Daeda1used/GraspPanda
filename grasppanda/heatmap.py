@@ -21,6 +21,7 @@ def infer(config, out):
     from PIL import Image
     from graspnetAPI import GraspGroup
     from .worker import prepare, overlay
+    from .components import configure_model, load_checkpoint
 
     prepare(config.method)
     camera_config = importlib.import_module('dataset.config')
@@ -33,12 +34,14 @@ def infer(config, out):
     sys.argv += ['--embed-dim', '256', '--patch-size', '64'] if rng else ['--anchor-num', '7']
     demo = importlib.import_module('demo')
     print('stage: construct networks', flush=True)
-    demo.anchornet = demo.AnchorGraspNet(in_dim=4, ratio=8, anchor_k=6).cuda().eval()
+    demo.anchornet = demo.AnchorGraspNet(in_dim=4, ratio=8, anchor_k=6)
+    changed = configure_model(demo.anchornet, config.method, config.modules)
+    demo.anchornet.cuda().eval()
     demo.localnet = (demo.PatchMultiGraspNet(49, theta_k_cls=6, feat_dim=256, anchor_w=60)
                      if rng else demo.PointMultiGraspNet(info_size=3, k_cls=49)).cuda().eval()
     state = torch.load(config.checkpoint, map_location='cuda', weights_only=True)
     print('stage: load checkpoint', flush=True)
-    demo.anchornet.load_state_dict(state['anchor'], strict=True)
+    transfer = load_checkpoint(demo.anchornet, state['anchor'], changed, config.checkpoint_policy)
     # Author checkpoints contain THOP profiling counters. They are not learned
     # parameters; remove only these counters, then require an exact model match.
     local_state = {k:v for k,v in state['local'].items() if k.rsplit('.',1)[-1] not in ('total_ops','total_params')}
@@ -104,6 +107,7 @@ def infer(config, out):
     (out/'predictions/manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     faulthandler.cancel_dump_traceback_later()
     return dict(stage='dataset_inference', method=config.method, camera=config.camera, split=config.split,
+                modules=config.modules, checkpoint_transfer=transfer,
                 workspace=config.workspace, frames=records, checkpoint_sha256=digest(config.checkpoint),
                 torch=torch.__version__, gpu=torch.cuda.get_device_name(), ap=None,
                 protocol_note='Original demo: RGB-D, fixed author camera intrinsics, depth clipped to 1 m, '

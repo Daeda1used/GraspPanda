@@ -23,6 +23,10 @@ BASELINE_SLOTS = (
 
 def slots(method):
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
+    if method in ('hggd','region_normalized_grasp'):
+        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4'),
+            'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
+            'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
     if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
         '512-channel sparse features, mapped to original input points by quantize2original.'),
@@ -57,7 +61,10 @@ def configure_model(model,method,selection,voxel_size=.005):
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
         native=getattr(parent,attribute)
-        if method=='graspness' and choice=='sparse_unet18':
+        if method in ('hggd','region_normalized_grasp'):
+            from .modules.image_pyramid import ImagePyramid,native_resnet
+            replacement=native_resnet(native,**options) if choice=='native_resnet' else ImagePyramid(choice,**options)
+        elif method=='graspness' and choice=='sparse_unet18':
             from models.backbone_resunet14 import MinkUNet18D
             replacement=MinkUNet18D(in_channels=3,out_channels=model.seed_feature_dim,D=3)
         elif method=='graspness' and choice=='pointnet':

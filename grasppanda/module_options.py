@@ -13,6 +13,16 @@ def unpack(value):
 def schema(method, slot, choice):
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
+    if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'native_resnet':
+            return {'variant': ('choice', ('18', '34', '50')), 'stage_depths': ('int_list', 4, 1, 32)}
+        variants = {'convnextv2': ('atto', 'tiny'), 'repvit': ('m0_9', 'm1_1'), 'mobilenetv4': ('small', 'medium')}
+        if choice in variants:
+            fields = {'variant': ('choice', variants[choice]), 'projection_norm': common['normalization']}
+            if choice != 'repvit': fields['drop_path'] = ('float', 0, .5)
+            if choice != 'mobilenetv4':
+                fields.update(stage_channels=('int_list', 4, 16, 1024), stage_depths=('int_list', 4, 1, 32))
+            return fields
     if slot == 'backbone' and choice == 'pointmlp':
         return {'embed_dim': ('int', 8, 128), 'dim_expansion': ('int_list', 4, 1, 4),
                 'pre_blocks': ('int_list', 4, 1, 12), 'pos_blocks': ('int_list', 4, 1, 12),
@@ -72,4 +82,6 @@ def validate_options(method, slot, choice, options):
             width *= factor
             if width > 2048:
                 raise ValueError('PointMLP expanded stage width must not exceed 2048')
+    if choice == 'repvit' and any(width % 8 for width in options.get('stage_channels', [])):
+        raise ValueError('RepViT stage channels must be multiples of 8')
     return options

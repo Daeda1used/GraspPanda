@@ -48,6 +48,8 @@ class Experiment:
     modules: dict = field(default_factory=dict)
     loss: dict = field(default_factory=dict)
     augmentation: dict = field(default_factory=dict)
+    optimizer: dict = field(default_factory=dict)
+    scheduler: dict = field(default_factory=dict)
     checkpoint_policy: str = "strict"
     method: str = "graspness"
     action: str = "probe"
@@ -66,6 +68,7 @@ class Experiment:
     batch_size: int = 2
     epochs: int = 1
     training_steps: int = 3
+    proposal_warmup_steps: int = 0
     train_checkpoint_mode: str = 'initialize'
     train_batch_limit: int = 0
     eval_batch_limit: int = 0
@@ -89,6 +92,12 @@ class Experiment:
         return obj
 
     def validate(self):
+        if type(self.proposal_warmup_steps) is not int or not 0 <= self.proposal_warmup_steps <= 10000:
+            raise ValueError('proposal_warmup_steps must be an integer in [0, 10000]')
+        if self.proposal_warmup_steps and (self.method != 'region_normalized_grasp' or self.action != 'train_check'):
+            raise ValueError('Proposal warmup is registered for RNG short training only')
+        from .optimization import validate as validate_optimization
+        validate_optimization(self)
         from .training_options import validate_training_options
         validate_training_options(self)
         from .datasets import get_dataset
@@ -101,6 +110,8 @@ class Experiment:
             raise ValueError('Component overrides require an inference or training action')
         if self.train_checkpoint_mode not in ('initialize','resume'):
             raise ValueError('train_checkpoint_mode must be initialize or resume')
+        if self.train_checkpoint_mode == 'resume' and self.action != 'train':
+            raise ValueError('Checkpoint resume requires native epoch training; use initialize for inference or short training')
         if self.action=='train' and self.train_checkpoint_mode=='resume':
             if not self.checkpoint:raise ValueError('Resume requires a checkpoint')
             if self.checkpoint_policy!='strict':raise ValueError('Resume requires strict checkpoint loading; use initialize for component transfer')

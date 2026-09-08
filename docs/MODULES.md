@@ -12,6 +12,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
+| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4` |
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
@@ -23,6 +24,10 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
 | `finegrasp` | `nsample`, `radius_factors`; native local attention and Transformer fusion across radius groups |
 | `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
+| Image `native_resnet` | `variant`: 18/34/50 (string); optional four-element `stage_depths` |
+| Image `convnextv2` | `variant`: atto/tiny; optional four-element `stage_channels`, `stage_depths`; `drop_path`, `projection_norm` |
+| Image `repvit` | `variant`: m0_9/m1_1; optional four-element `stage_channels` (multiples of 8), `stage_depths`; `projection_norm` |
+| Image `mobilenetv4` | `variant`: small/medium (convolutional models); `drop_path`, `projection_norm` |
 
 `pointnext` uses the [official PointNeXt encoder and decoder](https://github.com/guochengqian/PointNeXt) ([NeurIPS 2022 paper](https://arxiv.org/pdf/2206.04670)), followed by a feature projection and original-input seed sampling. Its OpenPoints operator has a separate compiled namespace to coexist with legacy grasp operators. Architecture settings do not automatically provide pretrained weights.
 
@@ -52,6 +57,22 @@ checkpoint_policy: reuse_unchanged
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
 
+## RGB-D image encoders
+
+HGGD and RNG use native `D,R,G,B` tensors shaped `[B,4,640,360]`, with the author's transposed spatial axes. Image adapters retain that convention and provide five feature maps with strides 2/4/8/16/32 and channels 8/16/32/64/128. Their anchor heads, losses, coordinate conversion, local refinement and collision filtering stay native. HGGD's detached features remain detached at the original point-fusion boundary.
+
+The modern encoders use the implementation in the locked [timm library](https://github.com/huggingface/pytorch-image-models). Paper and author-code references:
+
+| Family | Paper | Author implementation |
+|---|---|---|
+| ConvNeXt V2 | [CVPR 2023 PDF](https://openaccess.thecvf.com/content/CVPR2023/papers/Woo_ConvNeXt_V2_Co-Designing_and_Scaling_ConvNets_With_Masked_Autoencoders_CVPR_2023_paper.pdf) | [ConvNeXt-V2](https://github.com/facebookresearch/ConvNeXt-V2) |
+| RepViT | [CVPR 2024 PDF](https://arxiv.org/pdf/2307.09283) | [RepViT](https://github.com/THU-MIG/RepViT) |
+| MobileNetV4 | [ECCV 2024 PDF](https://arxiv.org/pdf/2404.10518) | [TensorFlow Models](https://github.com/tensorflow/models/blob/master/official/vision/modeling/backbones/mobilenet.py) |
+
+Inputs are zero-padded only at the high ends of the spatial axes. ConvNeXt patch-center offsets are resampled onto the native lattice with bilinear interpolation and border extension; RepViT/MobileNet use their centered, odd-kernel lattices. Encoders without stride-2 outputs gain a native-sized stem. Learned projections supply the expected channels; `projection_norm` accepts batch/group/none. These are explicit grasp adaptations, not reproductions of image-classification results.
+
+Selecting a new encoder initializes it and its projections from scratch. `reuse_unchanged` retains only the original anchor heads and complete local network; use `strict` for subsequent checkpoint inference. No ImageNet weights are downloaded implicitly. See [image composition example](../GraspNet-1B/examples/compose-hggd.yaml).
+
 ## Training controls
 
 Baseline, its PointNet2 port and Graspness accept `loss` and `augmentation` overrides in supported short-training or epoch-training actions. Other methods reject these controls until their supervision adapters implement them.
@@ -74,6 +95,40 @@ Loss weights are absolute coefficients. Unspecified components retain the native
 An empty augmentation mapping preserves the action's original behavior. `mode: none` disables augmentation; `mode: native` selects the author's transform. `mode: custom` applies a camera-axis rotation sampled uniformly within the specified degrees and an independent translation sampled within the specified metre range. Point coordinates and object poses transform together; sparse coordinates are recomputed. Clipped Gaussian jitter affects observations while clean grasp supervision is retained. Image crops, scaling and scene mixing require different label/intrinsic contracts and are not implied by these point-only controls.
 
 Loss/augmentation settings are training-only. Resume requires the same settings; checkpoint inference retains architecture settings and clears training-only options automatically.
+
+## Optimizers and schedules
+
+Baseline, its PointNet2 port, Graspness, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
+
+```yaml
+learning_rate: 0.00003
+optimizer:
+  type: lion
+  weight_decay: 0.01
+scheduler:
+  type: cosine
+  warmup_steps: 1
+  min_lr_ratio: 0.01
+```
+
+| Optimizer | Configurable parameters |
+|---|---|
+| `adam`, `adamw` | `weight_decay`, two-element `betas`, `eps` |
+| `sgd` | `weight_decay`, `momentum` (default 0.9), `nesterov` |
+| `lion` | `weight_decay`, two-element `betas` |
+| `muon` | `weight_decay`, `momentum`, `nesterov` (default true), `ns_steps`, `fallback_lr_scale`, two-element fallback `betas`, `eps` |
+
+The base learning rate always comes from `learning_rate`. Explicit optimizer overrides default to zero weight decay. Adam/AdamW/SGD use PyTorch; Lion and Muon use the locked timm implementations. [Lion](https://github.com/google/automl/tree/master/lion) ([NeurIPS 2023 paper](https://arxiv.org/pdf/2302.06675)) typically needs a smaller learning rate than AdamW. [Muon](https://github.com/KellerJordan/Muon) uses timm's matrix/convolution routing and AdamW fallback, with flattened convolution kernels. It is registered only for the dense baseline/PointNet2 and HGGD/RNG models; sparse-kernel parameter layouts need a separate routing contract. These choices do not imply improved grasp accuracy.
+
+| Schedule | Parameters and behavior |
+|---|---|
+| `constant` | Optional `warmup_steps`, then the base learning rate |
+| `cosine` | Optional `warmup_steps` and `min_lr_ratio` (default 0), decaying over the configured update horizon |
+| `multistep` | Increasing, unique `milestones` and `gamma` (default 0.1) |
+
+Schedule units are **completed optimizer updates**, including for epoch training. A milestone of 2 changes the third update's rate. Warmup starts at `base_lr / warmup_steps`; cosine reaches its floor after the final update. A short run's horizon is `training_steps`, plus RNG's optional `proposal_warmup_steps`; epoch training uses the loader length times `epochs`, including configured batch limits. Changing the loader or final epoch horizon on resume is rejected. Model, optimizer and schedule states are restored and checked before the next update.
+
+Optimizer and scheduler settings are training-only; clear them for manually authored inference configurations. UI checkpoint reuse does this automatically. Sweep paths such as `optimizer.type`, `optimizer.weight_decay` and `scheduler.min_lr_ratio` are supported, subject to each selected implementation's validation.
 
 ## Checkpoint policies
 
@@ -145,3 +200,9 @@ Each run saves native epoch checkpoints under `training/` and the last checkpoin
 ## Add a component
 
 Register a slot/choice in `grasppanda/components.py`, implement the adapter under `grasppanda/modules/`, and preserve its documented semantic contract. Test indices and gradient flow, strict checkpoint transfer, real-label optimization, checkpoint reload and downstream decoding. Document the input contract and available operation in the method table. Additional dataset integration also requires readers, supervision and an evaluator; metadata registration alone is insufficient.
+
+### RNG proposal initialization
+
+A newly initialized image encoder may produce proposals with no local grasp labels. For RNG short training, set `proposal_warmup_steps` to train the anchor on its native heatmap targets before preparing its own local patches. These updates are additional to `training_steps`; a custom learning-rate schedule spans both phases. The default is `0`. Warmup uses the selected optimizer and real targets, with no teacher model or replacement labels. Its loss is shown separately as **Anchor warmup**. The required duration depends on initialization, learning rate and scene; a positive proposal set is checked before local training.
+
+The browser exposes this setting under **Training & evaluation settings** for RNG. Checkpoint inference clears this training-only setting. This initialization procedure is a toolbox option; the unreleased RNG full training schedule is not reproduced.
