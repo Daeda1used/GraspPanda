@@ -161,3 +161,21 @@ Existing `scenes/scene_XXXX/CAMERA/normal/FFFF.npy` and `instance_norm_graspness
 Generated graspness follows the paper's per-instance min-max normalization and subsequent scene normalization. Applying this to an already scene-normalized map gives the same values for nonconstant objects; constant instances and background receive zero. Normal generation uses the author's Open3D estimator (0.1-metre radius, 30 neighbors) on the full valid workspace cloud. Signed float32 maps are stored scaled by 255 to match the native dataset reader. The author offline normal-generation script is not released, so this is a documented preprocessing adaptation, not a claim of identical author training data. Full normal maps can occupy substantial disk space; choose a writable cache with adequate capacity.
 
 The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](MODULES.md#finegrasp-training-and-composition) for training, loss and resume settings.
+
+## Pretrained image components
+
+The image encoders have separate initialization weights from the method's grasp checkpoint. Downloads stay under `checkpoints/components/`; the source repository and its archives do not contain these files. The registry pins each source revision, byte size, SHA256 and RGB normalization in `grasppanda/resources/component_weights.json`.
+
+```bash
+./panda component-weights dinov3_small
+./panda weights hggd --camera realsense
+```
+
+| ID | Weight conversion and source | Size | Terms |
+|---|---|---|---|
+| `dinov2_small` | [timm DINOv2 Small](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m) | 88 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
+| `dinov2_base` | [timm DINOv2 Base](https://huggingface.co/timm/vit_base_patch14_dinov2.lvd142m) | 346 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
+| `dinov3_small` | [timm DINOv3 Small](https://huggingface.co/timm/vit_small_patch16_dinov3.lvd1689m) | 86 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
+| `dinov3_base` | [timm DINOv3 Base](https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m) | 343 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
+
+These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](MODULES.md#pretrained-dino-image-features) for freezing and fine-tuning settings.

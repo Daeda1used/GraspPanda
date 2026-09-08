@@ -1,0 +1,82 @@
+[
+  {
+    "id": "dinov2_small",
+    "model": "vit_small_patch14_dinov2.lvd142m",
+    "source": "https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m/resolve/4610ca143709d58a633b6397a74412c2c3842454/model.safetensors",
+    "path": "checkpoints/components/dinov2_small.safetensors",
+    "bytes": 88240510,
+    "sha256": "04d27f3400d059fc0cfd7d17dd1909a75bf3ea8fb3eeb48b97cb99e57ee20081",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE"
+  },
+  {
+    "id": "dinov2_base",
+    "model": "vit_base_patch14_dinov2.lvd142m",
+    "source": "https://huggingface.co/timm/vit_base_patch14_dinov2.lvd142m/resolve/4685c99dabffe5affac90bd99dbffd25801ae58d/model.safetensors",
+    "path": "checkpoints/components/dinov2_base.safetensors",
+    "bytes": 346334872,
+    "sha256": "55cbb5d887b336d430e649c277b85a1429e724871f9d02ac16203235886d8c7b",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE"
+  },
+  {
+    "id": "dinov3_small",
+    "model": "vit_small_patch16_dinov3.lvd1689m",
+    "source": "https://huggingface.co/timm/vit_small_patch16_dinov3.lvd1689m/resolve/3bf4720a82ec2066db88137180ff1f83a675cef0/model.safetensors",
+    "path": "checkpoints/components/dinov3_small.safetensors",
+    "bytes": 86362376,
+    "sha256": "2a1ec16ae28ffa07bc0ead0241ee7df9fc26451fe6f9f839b7b3afa0a906b040",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "DINOv3 License",
+    "license_url": "https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md"
+  },
+  {
+    "id": "dinov3_base",
+    "model": "vit_base_patch16_dinov3.lvd1689m",
+    "source": "https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m/resolve/c6a5fb7d12bbd3cf3b0079253141c3332aaed7da/model.safetensors",
+    "path": "checkpoints/components/dinov3_base.safetensors",
+    "bytes": 342579728,
+    "sha256": "1f9ed8a2378d65e24bb710ba522ac9fa7be4e036d7aefb4384ce022833926332",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "DINOv3 License",
+    "license_url": "https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md"
+  }
+]

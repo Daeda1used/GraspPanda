@@ -288,6 +288,8 @@ def main():
                 path=ROOT/components[name]['path']
                 actual=subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()
                 if actual!=expected:raise ValueError('Component source revision changed while queued: '+name)
+        if provenance.get('component_weight_registry_sha256') and digest(ROOT/'grasppanda/resources/component_weights.json')!=provenance['component_weight_registry_sha256']:
+            raise ValueError('Pretrained component registry changed while queued')
         if provenance.get('checkpoint_sha256') and digest(config.checkpoint) != provenance['checkpoint_sha256']:
             raise ValueError('Queued checkpoint changed before execution')
         if provenance.get('model_config_sha256') and digest(Path(config.checkpoint).parent/'model.config.json')!=provenance['model_config_sha256']:

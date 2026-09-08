@@ -24,7 +24,7 @@ BASELINE_SLOTS = (
 def slots(method):
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
     if method in ('hggd','region_normalized_grasp'):
-        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4'),
+        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3'),
             'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
             'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
     if method=='finegrasp':return (
@@ -68,7 +68,10 @@ def configure_model(model,method,selection,voxel_size=.005):
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
         native=getattr(parent,attribute)
-        if method in ('hggd','region_normalized_grasp'):
+        if method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
+            from .modules.dino import DinoPyramid
+            replacement=DinoPyramid(choice,**options)
+        elif method in ('hggd','region_normalized_grasp'):
             from .modules.image_pyramid import ImagePyramid,native_resnet
             replacement=native_resnet(native,**options) if choice=='native_resnet' else ImagePyramid(choice,**options)
         elif choice=='sonata_ptv3':
@@ -133,5 +136,12 @@ def load_checkpoint(model,state,changed_prefixes=(),policy='strict'):
         if keep[key].shape!=current[key].shape:raise ValueError(f'Unchanged parameter shape mismatch: {key}')
     keep.update({k:current[k] for k in initialized})
     model.load_state_dict(keep,strict=True)
-    return dict(policy=policy,initialized=initialized,discarded=discarded,
-                note='Replaced components start from their constructor initialization; unchanged modules reuse the checkpoint.')
+    pretrained = {}
+    from .modules.dino import DinoPyramid
+    for prefix in changed_prefixes:
+        module = model.get_submodule(prefix.rstrip('.'))
+        if isinstance(module, DinoPyramid):
+            record = module.initialize_pretrained()
+            if record: pretrained[prefix.rstrip('.')] = record
+    return dict(policy=policy, initialized=initialized, discarded=discarded, pretrained=pretrained,
+                note='Replaced components use declared initialization; unchanged modules reuse the checkpoint.')

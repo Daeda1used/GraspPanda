@@ -23,6 +23,9 @@ def main():
     fetch_weights.add_argument("--camera", choices=["realsense","kinect"], default="realsense")
     sdf = commands.add_parser("prepare-sdf", help="Prepare object SDF grids for fusion training")
     sdf.add_argument("arguments", nargs=argparse.REMAINDER)
+    component_weights = commands.add_parser('component-weights', help='Download verified pretrained backbone weights')
+    from .weights import component_records
+    component_weights.add_argument('name', choices=list(component_records()))
     verify=commands.add_parser("verify", help="Run the documented fixed recipe or single-frame preset")
     verify.add_argument("method", choices=list(catalogue()))
     verify.add_argument("--dataset-root", default=default_dataset())
@@ -38,6 +41,9 @@ def main():
     args = parser.parse_args()
     if args.command == "install":
         raise SystemExit(subprocess.call(["bash", str(ROOT / "grasppanda/runtime/bootstrap.sh")], cwd=ROOT))
+    elif args.command == 'component-weights':
+        from .weights import fetch_component
+        print(fetch_component(args.name))
     elif args.command == "ui":
         from .ui import launch
         launch(args.host, args.port)

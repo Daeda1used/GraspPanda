@@ -24,6 +24,11 @@ def fetch(method, camera='realsense', progress=print):
     rows = records(method, camera)
     if not rows:
         raise ValueError(f'No registered weights for {method}/{camera}. Check the method card; weights for another camera are not substituted.')
+    fetch_rows(rows, progress)
+    return primary(method, camera)
+
+
+def fetch_rows(rows, progress=print):
     for record in rows:
         path = ROOT/record['path']; path.parent.mkdir(parents=True, exist_ok=True)
         with path.with_suffix(path.suffix+'.lock').open('a') as lock:
@@ -53,4 +58,15 @@ def fetch(method, camera='realsense', progress=print):
             payload.replace(path)
             if temporary.exists(): temporary.unlink()
             progress(f'Installed and verified {path.name}')
-    return primary(method, camera)
+
+
+def component_records():
+    return {r['id']: r for r in json.loads((ROOT/'grasppanda/resources/component_weights.json').read_text())}
+
+
+def fetch_component(name, progress=print):
+    rows = component_records()
+    if name not in rows: raise ValueError('Unknown pretrained component: '+name)
+    record = rows[name]
+    fetch_rows([record], progress)
+    return str(ROOT/record['path'])

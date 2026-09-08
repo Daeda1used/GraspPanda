@@ -1,0 +1,26 @@
+dataset: graspnet1b
+method: hggd
+action: train_check
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+camera: realsense
+split: train
+scene: 0
+frame: 0
+workspace: native_demo
+num_points: 15000
+training_steps: 10
+learning_rate: 0.0001
+checkpoint_policy: reuse_unchanged
+modules:
+  backbone:
+    type: dinov3
+    variant: small
+    pretrained: true
+    out_indices: [2, 5, 8, 11]
+    trainable_blocks: 2
+    gradient_checkpointing: true
+    projection_norm: batch
+optimizer:
+  type: adamw
+  weight_decay: 0.01

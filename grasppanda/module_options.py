@@ -36,6 +36,11 @@ def schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice in ('dinov2','dinov3'):
+            return {'variant': ('choice', ('small','base')), 'pretrained': ('bool',),
+                    'out_indices': ('int_list',4,0,11), 'trainable_blocks': ('int',0,12),
+                    'drop_path': ('float',0,.5), 'gradient_checkpointing': ('bool',),
+                    'projection_norm': common['normalization']}
         if choice == 'native_resnet':
             return {'variant': ('choice', ('18', '34', '50')), 'stage_depths': ('int_list', 4, 1, 32)}
         variants = {'convnextv2': ('atto', 'tiny'), 'repvit': ('m0_9', 'm1_1'), 'mobilenetv4': ('small', 'medium')}
@@ -98,6 +103,10 @@ def validate_options(method, slot, choice, options):
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
+    if choice in ('dinov2','dinov3'):
+        indices = options.get('out_indices', [2,5,8,11])
+        if indices[-1] != 11 or any(a >= b for a,b in zip(indices, indices[1:])):
+            raise ValueError('DINO output indices must increase strictly and end at block 11')
     if choice == 'pointmlp':
         sizes = options.get('stage_points', [1024, 256, 64, 16])
         neighbors = options.get('k_neighbors', [32, 32, 32, 16])

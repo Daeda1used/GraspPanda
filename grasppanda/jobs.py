@@ -158,6 +158,7 @@ class JobManager:
                       "upstream_tracked_changes": subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True),
                       "checkpoint_sha256": digest(config.checkpoint) if config.checkpoint and Path(config.checkpoint).is_file() else None}
         provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda/resources/patches').rglob('*.patch')}
+        provenance['component_weight_registry_sha256'] = digest(ROOT/'grasppanda/resources/component_weights.json')
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
         if config.method=='finegrasp' and config.checkpoint:
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')

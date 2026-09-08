@@ -144,6 +144,26 @@ def create_app(manager=None):
         except Exception as error:
             raise gr.Error(str(error)) from error
 
+    def download_component_weights(method, backbone, parameters, progress=gr.Progress()):
+        from .components import validate_selection
+        from .weights import fetch_component
+        try:
+            if backbone not in ('dinov2','dinov3'):
+                return 'Select a DINO image encoder to prepare its pretrained weights.'
+            parameters = json.loads(parameters or '{}')
+            if not isinstance(parameters, dict):
+                raise ValueError('Component parameters must be a mapping keyed by slot')
+            options = parameters.get('backbone', {})
+            if not isinstance(options, dict) or 'type' in options:
+                raise ValueError('Use the encoder selector for type and provide its parameters as a mapping')
+            validate_selection(method, {'backbone': dict(type=backbone, **options)})
+            if not options.get('pretrained', True): return 'This configuration uses random encoder initialization.'
+            name = backbone+'_'+options.get('variant','small')
+            fetch_component(name, lambda message: progress(.5, desc=message))
+            return 'Pretrained encoder weights verified. New projection and depth layers still require grasp training.'
+        except Exception as error:
+            raise gr.Error(str(error)) from error
+
     def apply_preset(method,dataset):
         config=preset(method,(dataset or '').strip())
         if not capabilities(method): raise gr.Error('This source has no runnable adapter. See the method card.')
@@ -355,6 +375,10 @@ def create_app(manager=None):
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
                         gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. The selectors supply each component type.')
+                        with gr.Accordion('Pretrained image encoders', open=False):
+                            gr.Markdown('DINO encoders use verified RGB pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
+                            component_download = gr.Button('Prepare selected component weights')
+                            component_download_message = gr.Markdown()
                         with gr.Accordion('Available component parameters', open=False):
                             parameter_help = gr.Markdown(component_parameters('graspnet_baseline', 'upstream', 'upstream'))
                     with gr.Accordion("Training & evaluation settings", open=False):
@@ -496,6 +520,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         group.change(filter_methods, group, method, api_name="filter_methods")
         method.change(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method")
         camera.change(checkpoint_for,[method,camera],checkpoint,api_name=False)
+        component_download.click(download_component_weights,[method,backbone,component_options],component_download_message,api_name='download_component_weights',concurrency_limit=1)
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
         action.change(lambda a: [gr.update(interactive=a!='pipeline_smoke') for _ in range(13)],action,[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],api_name=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False)

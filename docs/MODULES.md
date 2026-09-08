@@ -14,7 +14,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
-| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4` |
+| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3` |
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
@@ -26,6 +26,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
 | `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
 | `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
+| Image `dinov2` / `dinov3` | `variant`: small/base; `pretrained`, `out_indices`, `trainable_blocks`, `drop_path`, `gradient_checkpointing`, `projection_norm` |
 | Image `native_resnet` | `variant`: 18/34/50 (string); optional four-element `stage_depths` |
 | Image `convnextv2` | `variant`: atto/tiny; optional four-element `stage_channels`, `stage_depths`; `drop_path`, `projection_norm` |
 | Image `repvit` | `variant`: m0_9/m1_1; optional four-element `stage_channels` (multiples of 8), `stage_depths`; `projection_norm` |
@@ -97,6 +98,33 @@ The modern encoders use the implementation in the locked [timm library](https://
 Inputs are zero-padded only at the high ends of the spatial axes. ConvNeXt patch-center offsets are resampled onto the native lattice with bilinear interpolation and border extension; RepViT/MobileNet use their centered, odd-kernel lattices. Encoders without stride-2 outputs gain a native-sized stem. Learned projections supply the expected channels; `projection_norm` accepts batch/group/none. These are explicit grasp adaptations, not reproductions of image-classification results.
 
 Selecting a new encoder initializes it and its projections from scratch. `reuse_unchanged` retains only the original anchor heads and complete local network; use `strict` for subsequent checkpoint inference. No ImageNet weights are downloaded implicitly. See [image composition example](../GraspNet-1B/examples/compose-hggd.yaml).
+
+### Pretrained DINO image features
+
+HGGD and RNG accept `dinov2` and `dinov3` as image encoders. GraspPanda uses the locked timm implementations and verified timm conversions of the released weights. These are RGB feature encoders adapted to a grasp network; they are not independently trained GraspNet detectors.
+
+| Component | Paper | Author implementation | Available variants |
+|---|---|---|---|
+| DINOv2 | [Oquab et al., 2023](https://arxiv.org/pdf/2304.07193) | [DINOv2](https://github.com/facebookresearch/dinov2) | Small / Base, 14-pixel patches |
+| DINOv3 | [Simeoni et al., 2025](https://arxiv.org/pdf/2508.10104) | [DINOv3](https://github.com/facebookresearch/dinov3) | Small / Base, 16-pixel patches |
+
+The adapter restores conventional RGB image axes, applies the registered RGB normalization and pads the right/bottom boundary by replication to complete patches. Four intermediate block outputs are projected onto native pixel centers at strides 4/8/16/32. This resampling accounts for patch-center offsets and uses border clamping. Independent depth projections retain the method's centered depth values; a local RGB-D stem supplies stride 2. The original grasp heads, local refinement and five output lattices remain in place. This feature fusion is a toolbox adaptation, not an author-provided DINO grasp architecture.
+
+| Parameter | Default and behavior |
+|---|---|
+| `variant` | `small`; `base` uses a wider encoder. |
+| `pretrained` | `true`; initialize a replaced encoder from the registered weights. `false` gives random encoder weights. Projection, depth and stride-2 layers always initialize locally when replacing the backbone. |
+| `out_indices` | `[2, 5, 8, 11]`; four strictly increasing zero-based block indices ending at 11, assigned in order to strides 4/8/16/32. |
+| `trainable_blocks` | `12` trains the whole encoder. `1`–`11` train that many final blocks and the final normalization; earlier blocks, patch embedding and positional parameters are frozen. `0` freezes the entire encoder. Adapter layers stay trainable. |
+| `drop_path` | `0`; stochastic-depth rate up to 0.5. Frozen blocks stay in evaluation mode. |
+| `gradient_checkpointing` | `false`; enable to reduce intermediate activation memory at the cost of recomputation. |
+| `projection_norm` | `batch`; alternatives `group` and `none` apply to the RGB/depth projections. The stride-2 stem retains batch normalization. |
+
+Start with [the pretrained image example](../GraspNet-1B/examples/compose-dino.yaml). Use `checkpoint_policy: reuse_unchanged` with the method's grasp checkpoint to initialize its unchanged heads and local branch. Missing encoder weights are downloaded and checksum-verified during initialization; the UI's **Pretrained image encoders** panel or `./panda component-weights dinov3_small` can prepare them ahead of time. This uses the same shared runtime.
+
+After training, retain the module configuration and load the resulting grasp checkpoint with `strict`. Strict loading does not download or reapply DINO initialization, so it preserves the trained encoder and works without the original pretrained-weight file. Initialization provenance records the selected weight ID, immutable source URL and SHA256. Changing the source registry while a job waits causes the job to stop rather than use different initialization.
+
+Image pretraining does not train the new grasp feature projections. Run grasp training before interpreting predictions; use the existing RNG anchor warmup when a new feature adapter produces no labeled local proposals. Weight sources and licenses are in [Data & weights](DOWNLOADS.md#pretrained-image-components).
 
 ## Training controls
 

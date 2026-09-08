@@ -51,6 +51,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import re
           import tomllib
           from pathlib import Path
           from grasppanda import __version__
@@ -65,6 +66,15 @@ jobs:
               assert len(p['commit']) == 40
               if p['path'] in sources:
                   assert sources[p['path']] == p['commit']
+          weights = json.loads(Path('grasppanda/resources/component_weights.json').read_text())
+          assert len({p['id'] for p in weights}) == len(weights)
+          assert len({p['path'] for p in weights}) == len(weights)
+          for p in weights:
+              assert re.fullmatch(r'[0-9a-f]{64}', p['sha256'])
+              assert re.fullmatch(r'https://huggingface.co/timm/[^/]+/resolve/[0-9a-f]{40}/model.safetensors', p['source'])
+              assert p['path'] == 'checkpoints/components/' + p['id'] + '.safetensors'
+              assert p['bytes'] > 0 and p['license'] and p['license_url'].startswith('https://')
+              assert len(p['mean']) == len(p['std']) == 3 and all(v > 0 for v in p['std'])
           for mid in methods:
               for action in capabilities(mid):
                   assert action in ('probe', 'infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')

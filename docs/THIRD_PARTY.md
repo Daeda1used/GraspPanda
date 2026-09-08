@@ -10,10 +10,12 @@ PointNeXt/OpenPoints and FineGrasp components are fetched from pinned author sou
 
 PointMLP uses the author's point hierarchy and feature-propagation blocks, plus the bundled PointNet2 operators. The installer builds these operators locally with the selected CUDA architecture. Original source and license files remain in the pinned repository; GraspPanda does not redistribute a pretrained PointMLP model.
 
-ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementations. Author papers and original implementation links are listed in [Modules](MODULES.md). Image encoder replacements initialize without external pretrained weights.
+ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementations. Author papers and original implementation links are listed in [Modules](MODULES.md). These convolutional image encoder replacements initialize without external pretrained weights.
 
 Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda supplies input/output mappings and native attention-cache handling. The adapter does not download or redistribute the separately licensed pretrained Sonata weights.
 
 ASL single-label and Poly-1 are implemented from their documented mathematical objectives, with source references in [Training controls](MODULES.md#loss-formulations). ASL is checked against the locked timm implementation; its saturated-probability handling uses stable complements and bounded power bases. No classification datasets or pretrained loss-specific models are downloaded.
 
 Compatibility patches are stored in `grasppanda/resources/patches/` and applied only to local build copies or overlays. The scikit-geometry patch uses its exact-construction kernel consistently in skeleton bindings; this can change numerical behavior relative to the original mixed-kernel binding. Patches retain the underlying project licenses.
+
+DINOv2 and DINOv3 encoders use locked timm code and revision-pinned timm weight conversions, downloaded separately. DINOv2 weights retain Apache-2.0 terms; DINOv3 weights and derived checkpoints retain the [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md), including its redistribution and research-attribution requirements. GraspPanda's MIT license does not replace these terms. Sources and papers are linked in [Modules](MODULES.md#pretrained-dino-image-features).
