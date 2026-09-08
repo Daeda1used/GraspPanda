@@ -10,7 +10,7 @@ import sys
 import time
 
 from .compat import legacy_torch
-from .config import ROOT, Experiment, catalogue, probes
+from .config import ROOT, Experiment, catalogue
 from .jobs import digest
 
 
@@ -310,18 +310,7 @@ def main():
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.set_num_threads(4)
-    if config.action == "probe":
-        module, forward = probes()[config.method]
-        command = [sys.executable, str(ROOT / "grasppanda/runtime/probe_model.py"), config.method, "--module", module]
-        if forward:
-            command.append("--forward")
-        completed = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        print(completed.stdout, flush=True)
-        if completed.returncode:
-            raise SystemExit(completed.returncode)
-        marker = next(line for line in completed.stdout.splitlines() if line.startswith("GRASPPANDA_RESULT="))
-        result = json.loads(marker.split("=", 1)[1])
-    elif config.action == 'train_check':
+    if config.action == 'train_check':
         from .training import hggd,point_family,rng,contact,rgb_matters
         from .training_center import run as center
         from .training_gfla import run as gfla

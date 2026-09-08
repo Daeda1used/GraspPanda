@@ -2,7 +2,7 @@
 
 ## Start without GraspNet
 
-The baseline `probe` uses synthetic input and needs no dataset or checkpoint. ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered. Supplied samples do not establish GraspNet benchmark AP.
+ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered. Supplied samples do not establish GraspNet benchmark AP.
 
 ## GraspNet-1B
 

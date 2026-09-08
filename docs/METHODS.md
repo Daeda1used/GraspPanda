@@ -3,6 +3,7 @@
 Choose a method by its observation protocol and available operation. Status describes the pinned source used by this release (September 2026). **Inference** uses a configurable GraspNet frame adapter; **recipe** uses fixed native inputs; **short training** optimizes a bounded labelled sample; **epoch training** uses the native dataset loop. Demo and component rows state their narrower scope. Full-split AP and training convergence have not been established.
 
 PDF links point to publisher or author copies. “PDF not located” means no verified public PDF was found; the paper page is retained where available. Ports are identified separately from the underlying paper.
+## Integrated methods
 
 | Method / CLI ID | Year · venue | Observation | Available use / status | Paper | Implementation |
 |---|---|---|---|---|---|
@@ -33,25 +34,32 @@ PDF links point to publisher or author copies. “PDF not located” means no ve
 | ZeroGrasp<br>`zerograsp` | 2025 · CVPR | single view · rgbd | Recipe. Author RGB-D + masks sample; pretrained on ZeroGrasp-11B. | [PDF](https://arxiv.org/pdf/2504.10857) | [Code](https://github.com/sh8/ZeroGrasp) |
 | CenterGrasp<br>`centergrasp` | 2024 · IEEE RA-L | single view · rgbd | Recipe; short training. Kinect RGB/SGDF pair with native ICP and collision filtering. | [PDF](https://arxiv.org/pdf/2312.08240) | [Code](https://github.com/robot-learning-freiburg/CenterGrasp) |
 | FineGrasp<br>`finegrasp` | 2025 · preprint | single view · depth points + normals | Inference / evaluation; epoch training and configurable components/objectives. XYZ + normals; derived training inputs use the documented preprocessing adaptation. | [PDF](https://arxiv.org/pdf/2507.05978) | [Code](https://github.com/HorizonRobotics/RoboOrchardLab/tree/master/projects/finegrasp_graspnet1b) · [Weights](https://huggingface.co/HorizonRobotics/FineGrasp) |
-| Cross-view Grasp<br>`cross_view_grasp` | 2026 · CVPR | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2606.06878) | [Code](https://github.com/KJZhuAutomatic/Cross-view-Grasp) |
-| VRGraspNet<br>`vrgraspnet` | 2025 · TCSVT | single view · pointcloud | Unavailable: modified per-point PAConv component and compatible weights missing. | [Paper](https://doi.org/10.1109/tcsvt.2025.3639431) · PDF not located | [Code](https://github.com/huamo555/VRGraspNet) |
-| MG-Grasp<br>`mg_grasp` | 2026 · preprint | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2603.16270) | [Code](https://github.com/THU-VCLab/MG-Grasp) |
-| PointNetGPD (revised)<br>`pointnetgpd_revised` | 2019 · ICRA | adaptations | Reference only: classifier available; complete GraspNet workflow unavailable. | [PDF](https://arxiv.org/pdf/1809.06267) | [Code](https://github.com/graspnet/PointNetGPD_revised) |
-| GPD (revised)<br>`gpd_revised` | 2017 · IJRR | adaptations | Reference only: complete candidate pipeline unavailable. | [PDF](https://arxiv.org/pdf/1706.09911) | [Code](https://github.com/graspnet/gpd-revised) |
-| GL-MSDA<br>`gl_msda` | 2024 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2403.11511) | [Code](https://github.com/mahaoxiang822/GL-MSDA) |
-| DGCAN<br>`dgcan` | 2023 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2302.14264) | [Code](https://github.com/mahaoxiang822/dgcan) |
-| GraspSAM<br>`graspsam` | 2025 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2409.12521) | [Code](https://github.com/gist-ailab/GraspSAM) |
-| SPGrasp<br>`spgrasp` | 2025 · preprint | related · temporal | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2508.20547) | [Code](https://github.com/sejmoonwei/SPGrasp) |
-| VL-Grasp<br>`vl_grasp` | 2023 · IROS | related · language | Reference only: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2308.00640) | [Code](https://github.com/luyh20/VL-Grasp) |
-| Negative Prompt Grasp<br>`negative_prompt_grasp` | 2024 · ECCV | related · language | Reference only: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2407.13842) | [Code](https://github.com/Fsoft-AIC/Language-Driven-6-DoF-Grasp-Detection-Using-Negative-Prompt-Guidance) |
-| AnyGrasp SDK<br>`anygrasp_sdk` | 2023 · IEEE T-RO | sdk | Unavailable in this runtime: licensed binary SDK; no open training source. | [PDF](https://arxiv.org/pdf/2212.08333) | [Code](https://github.com/graspnet/anygrasp_sdk) |
-| Grasp Encyclopedia<br>`grasp_encyclopedia` | — · Not verified | reference · toolbox | Reference collection; no adapter. | No separate paper | [Code](https://github.com/YangXuanyi/grasp-encyclopedia) |
-| FlexLoG<br>`flexlog` | 2026 · Pattern Recognition (preprint 2024; online 2025) | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2403.15054) | [Code](https://github.com/THU-VCLab/FlexLoG) |
-| SGG-Net<br>`sgg_net` | 2025 · ICEE | single view · pointcloud | Reference only: complete grasp decoder unavailable. | [Paper](https://doi.org/10.1109/ICEE67339.2025.11213553) · PDF not located | [Code](https://github.com/TaarLab/SGG-Net) |
-| NICR Grasping<br>`nicr_grasping` | — · Not verified | reference · toolbox | Reference toolbox; no adapter. | No separate paper | [Code](https://github.com/TUI-NICR/nicr-grasping) |
-| GraphGrasp<br>`graphgrasp` | 2026 · AAAI | unreleased | No model code in the pinned repository; reference only. | [PDF](https://ojs.aaai.org/index.php/AAAI/article/view/38940/42902) | [Code](https://github.com/BIT-robot-group/GraphGrasp) |
-| SplitDiffGrasp<br>`splitdiffgrasp` | 2026 · ECCV (upstream claim) | related · prototype | Reference only: GraspNet adapter incomplete. | PDF not located | [Code](https://github.com/hritam-98/SplitDiffGrasp) |
-| Grasp the Graph 2.0 | 2025 · preprint | single view · candidate graphs | Reference only; integration pending. Released graph regressor, but graph/training interfaces disagree; the inference graph helper and extended evaluator are missing. Compatible ensemble weights are not registered. | [PDF](https://arxiv.org/pdf/2505.02664) | [Code](https://github.com/Ali-Rashidi/GtG2) |
+
+## References and unavailable implementations
+
+These entries are links for further reading. They are not installed or offered as runnable presets.
+
+| Method | Year · venue | Observation | Available use / status | Paper | Implementation |
+|---|---|---|---|---|---|
+| Cross-view Grasp | 2026 · CVPR | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2606.06878) | [Code](https://github.com/KJZhuAutomatic/Cross-view-Grasp) |
+| VRGraspNet | 2025 · TCSVT | single view · pointcloud | Unavailable: modified per-point PAConv component and compatible weights missing. | [Paper](https://doi.org/10.1109/tcsvt.2025.3639431) · PDF not located | [Code](https://github.com/huamo555/VRGraspNet) |
+| MG-Grasp | 2026 · preprint | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2603.16270) | [Code](https://github.com/THU-VCLab/MG-Grasp) |
+| PointNetGPD (revised) | 2019 · ICRA | adaptations | Reference only: classifier available; complete GraspNet workflow unavailable. | [PDF](https://arxiv.org/pdf/1809.06267) | [Code](https://github.com/graspnet/PointNetGPD_revised) |
+| GPD (revised) | 2017 · IJRR | adaptations | Reference only: complete candidate pipeline unavailable. | [PDF](https://arxiv.org/pdf/1706.09911) | [Code](https://github.com/graspnet/gpd-revised) |
+| GL-MSDA | 2024 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2403.11511) | [Code](https://github.com/mahaoxiang822/GL-MSDA) |
+| DGCAN | 2023 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2302.14264) | [Code](https://github.com/mahaoxiang822/dgcan) |
+| GraspSAM | 2025 · ICRA | related · planar | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2409.12521) | [Code](https://github.com/gist-ailab/GraspSAM) |
+| SPGrasp | 2025 · preprint | related · temporal | Reference only: planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2508.20547) | [Code](https://github.com/sejmoonwei/SPGrasp) |
+| VL-Grasp | 2023 · IROS | related · language | Reference only: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2308.00640) | [Code](https://github.com/luyh20/VL-Grasp) |
+| Negative Prompt Grasp | 2024 · ECCV | related · language | Reference only: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2407.13842) | [Code](https://github.com/Fsoft-AIC/Language-Driven-6-DoF-Grasp-Detection-Using-Negative-Prompt-Guidance) |
+| AnyGrasp SDK | 2023 · IEEE T-RO | sdk | Unavailable in this runtime: licensed binary SDK; no open training source. | [PDF](https://arxiv.org/pdf/2212.08333) | [Code](https://github.com/graspnet/anygrasp_sdk) |
+| Grasp Encyclopedia | — · Not verified | reference · toolbox | Reference collection; no adapter. | No separate paper | [Code](https://github.com/YangXuanyi/grasp-encyclopedia) |
+| FlexLoG | 2026 · Pattern Recognition (preprint 2024; online 2025) | unreleased | No model code in the pinned repository; reference only. | [PDF](https://arxiv.org/pdf/2403.15054) | [Code](https://github.com/THU-VCLab/FlexLoG) |
+| SGG-Net | 2025 · ICEE | single view · pointcloud | Reference only: complete grasp decoder unavailable. | [Paper](https://doi.org/10.1109/ICEE67339.2025.11213553) · PDF not located | [Code](https://github.com/TaarLab/SGG-Net) |
+| NICR Grasping | — · Not verified | reference · toolbox | Reference toolbox; no adapter. | No separate paper | [Code](https://github.com/TUI-NICR/nicr-grasping) |
+| GraphGrasp | 2026 · AAAI | unreleased | No model code in the pinned repository; reference only. | [PDF](https://ojs.aaai.org/index.php/AAAI/article/view/38940/42902) | [Code](https://github.com/BIT-robot-group/GraphGrasp) |
+| SplitDiffGrasp | 2026 · ECCV (upstream claim) | related · prototype | Reference only: GraspNet adapter incomplete. | PDF not located | [Code](https://github.com/hritam-98/SplitDiffGrasp) |
+| Grasp the Graph 2.0 | 2025 · preprint | single view · candidate graphs | Reference only: graph/training interfaces disagree; complete inference helpers and compatible ensemble weights are unavailable. | [PDF](https://arxiv.org/pdf/2505.02664) | [Code](https://github.com/Ali-Rashidi/GtG2) |
 | GraspLDP | 2026 · CVPR | related · visuomotor policy | Reference only: action-sequence policy using grasp priors. The author project page lists code as coming soon. | [PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Xiang_GraspLDP_Towards_Generalizable_Grasping_Policy_via_Latent_Diffusion_CVPR_2026_paper.pdf) | [Project / code status](https://coolmakersss.github.io/GraspLDP.github.io/) |
 | PSAGrasp | 2026 · Pattern Recognition | single view · pointcloud | Reference only: released utilities and entry points; the PSAGrasp model and loss modules are missing from the author checkout. | [Paper](https://doi.org/10.1016/j.patcog.2025.112099) · PDF not located | [Partial code](https://github.com/upc-ghy/PSAGrasp) |
 | GraRe | 2026 · preprint | single view · candidate re-ranking | Reference only: re-ranks frozen detector candidates using local geometry and object context. No verified author implementation located. | [PDF](https://arxiv.org/pdf/2608.00946) | [Paper page](https://arxiv.org/abs/2608.00946) |

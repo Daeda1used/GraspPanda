@@ -40,7 +40,7 @@ def main():
     out = args.out.resolve(); out.mkdir(parents=True, exist_ok=True)
     mid = args.method; repo = ROOT/catalogue()[mid]['path']; os.chdir(repo)
     sys.path[:0] = [str(repo/p) for p in ('', 'models', 'dataset', 'utils', 'pointnet2', 'knn')]
-    sys.argv = ['diagnostic.py']; legacy_torch()
+    sys.argv = ['recipe.py']; legacy_torch()
     import torch
     import numpy as np
     import open3d as o3d
@@ -71,21 +71,7 @@ def main():
         assert array.ndim == 2 and array.shape[1] == 17 and np.isfinite(array).all()
         np.save(out/'grasps.npy', array); result.update(grasps=len(array),prediction_sha256=digest(out/'grasps.npy'))
 
-    if mid == 'graspbalance':
-        sys.path[:0] = [str(repo/p) for p in ('TrainModel','PointNet','KNN','DataProcessing','ModifiedNetTools')]
-        mod = importlib.import_module('TrainModel.graspbalance')
-        model = mod.GraspBalance(is_training=False).cuda().eval()
-        with torch.no_grad(): pred = mod.pred_decode(model({'point_clouds':torch.from_numpy(real_xyz(15000))[None].cuda()}))
-        save_grasps(pred[0]); result['stage']='real_input_random_weight_forward_decode'
-    elif mid == 'granet':
-        from dataset.graph_generator import GraphGenerator
-        from models.granet_pipeline import GraNet, pred_decode
-        xyz = real_xyz(12000)
-        graph = GraphGenerator().init_knn_graph({'point_clouds':xyz})['graph'].to('cuda')
-        model = GraNet(batch_size=1,is_training=False).cuda().eval()
-        with torch.no_grad(): pred = pred_decode(model({'point_clouds':torch.from_numpy(xyz)[None].cuda(),'graph':[graph]}))
-        save_grasps(pred[0]); result['stage']='real_input_random_weight_forward_decode'
-    elif mid == 'generalizing_grasp':
+    if mid == 'generalizing_grasp':
         from mink_dataset import GraspNetDataset_fusion, minkowski_collate_fn
         from graspnet_sparseconv import GraspNet_MSCQ, pred_decode
         dataset = GraspNetDataset_fusion(args.dataset_root, valid_obj_idxs=None, grasp_labels=None,

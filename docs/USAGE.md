@@ -23,9 +23,8 @@ The **Guide** tab includes installation, downloads, module instructions and a da
 | Single training step | `train_smoke` | One native labelled optimizer step. |
 | Train across epochs | `train` | Native loader, augmentation, optimizer and schedule; supports initialization or checkpoint resume. |
 | Evaluate predictions | `evaluate` | Complete split predictions with a matching manifest; runs the official evaluator. |
-| Check model environment | `probe` | Fixed import or synthetic model diagnostic; no dataset required. |
 
-The available choices depend on the method. The internal action identifiers are retained for configuration compatibility. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
+The available choices depend on the method. The internal recipe and training action identifiers are retained for configuration compatibility. The former `probe` action has been removed; use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
 
 ## CLI
 

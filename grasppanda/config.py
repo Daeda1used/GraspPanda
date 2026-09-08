@@ -18,15 +18,10 @@ def catalogue():
     return {m["id"]: m for m in json.loads((ROOT / "grasppanda/resources/methods.json").read_text())}
 
 
-def probes():
-    from .probes import SPECS
-    return SPECS
-
-
 def capabilities(method):
     if method not in catalogue() or method == 'graspnet_api':
         return []
-    actions = ["probe"] if method in probes() else []
+    actions = []
     if method in CORE:
         actions += ["infer", "evaluate"]
     if method in (*HEATMAP,'finegrasp'):
@@ -54,7 +49,7 @@ class Experiment:
     trainer: dict = field(default_factory=dict)
     checkpoint_policy: str = "strict"
     method: str = "graspness"
-    action: str = "probe"
+    action: str = "infer"
     dataset_root: str = ""
     checkpoint: str = ""
     camera: str = "realsense"

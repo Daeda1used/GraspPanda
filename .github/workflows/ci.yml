@@ -77,7 +77,7 @@ jobs:
               assert len(p['mean']) == len(p['std']) == 3 and all(v > 0 for v in p['std'])
           for mid in methods:
               for action in capabilities(mid):
-                  assert action in ('probe', 'infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')
+                  assert action in ('infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')
           Experiment(method='graspnet_baseline').validate()
           sample = Sweep.from_dict({'base': {'method': 'graspnet_baseline', 'action': 'infer'}, 'grid': {'seed': [0, 1]}})
           assert [config.seed for config in sample.expand()] == [0, 1]

@@ -80,7 +80,7 @@ The adapter supplies XYZ features, decodes back to every original input point, p
 | `sa_layers`, `sa_use_res` | `1`, `false`; abstraction MLP depth and residual connection |
 | `decoder_layers` | `2`; MLP depth of native feature propagation |
 
-Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
+Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/components/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
 
 ## PointMetaBase encoder
 
@@ -100,7 +100,7 @@ The encoder updates point features before grouping and adds explicit positional 
 | `sa_layers`, `sa_use_res` | `1`, `false`; abstraction feature-MLP depth and residual connection. Its positional branch retains the native depth rule. |
 | `decoder_layers` | `2`; feature-propagation MLP depth. The native decoder retains ReLU and BatchNorm. |
 
-A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [the PointMetaBase composition example](../GraspNet-1B/examples/compose-pointmeta.yaml), which also replaces cylinder processing with ResLFE.
+A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [the PointMetaBase composition example](../GraspNet-1B/examples/components/compose-pointmeta.yaml), which also replaces cylinder processing with ResLFE.
 
 ## Residual local aggregation in cylinders
 
@@ -122,7 +122,7 @@ This is a local-block adaptation. It does not introduce DeepLA's scene segmentat
 | `activation` | `gelu`; also `relu` or `silu`, used in embeddings and feed-forward layers. |
 | `normalization` | `batch`; also `group` or `none`, for the input/position embeddings, output projection and radius fusion. Native ResLFE layers retain BatchNorm. |
 
-The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [the local aggregation example](../GraspNet-1B/examples/compose-reslfe.yaml). Source terms are described in [Third-party notices](THIRD_PARTY.md).
+The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [the local aggregation example](../GraspNet-1B/examples/components/compose-reslfe.yaml). Source terms are described in [Third-party notices](THIRD_PARTY.md).
 
 ## Point Transformer encoder
 
@@ -145,7 +145,7 @@ This is a trainable architecture adaptation with random initialization. It does 
 | `enable_rpe`, `upcast_attention`, `upcast_softmax` | Boolean controls; default false |
 | `layer_scale` | Optional positive residual scale, omitted by default |
 
-Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [PTv3 composition example](../GraspNet-1B/examples/compose-ptv3.yaml) for a smaller trainable configuration.
+Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [PTv3 composition example](../GraspNet-1B/examples/components/compose-ptv3.yaml) for a smaller trainable configuration.
 
 ## RGB-D image encoders
 
@@ -182,7 +182,7 @@ The native convolutional patch embedding and downsampling retain pixel-zero latt
 | `gradient_checkpointing` | `false`; recompute native blocks during training using non-reentrant checkpointing |
 | `projection_norm` | `batch`; alternatives `group`, `none` |
 
-Start with [the VMamba composition example](../GraspNet-1B/examples/compose-vmamba.yaml). Smaller stage widths/depths make configuration sweeps less expensive. HGGD also supports these components in [epoch training](#hggd-epoch-training). A larger state, stage or point count increases memory use; scan choices are architectural experiments, not an accuracy ranking.
+Start with [the VMamba composition example](../GraspNet-1B/examples/components/compose-vmamba.yaml). Smaller stage widths/depths make configuration sweeps less expensive. HGGD also supports these components in [epoch training](#hggd-epoch-training). A larger state, stage or point count increases memory use; scan choices are architectural experiments, not an accuracy ranking.
 
 ### Pretrained DINO image features
 
@@ -205,7 +205,7 @@ The adapter restores conventional RGB image axes, applies the registered RGB nor
 | `gradient_checkpointing` | `false`; enable to reduce intermediate activation memory at the cost of recomputation. |
 | `projection_norm` | `batch`; alternatives `group` and `none` apply to the RGB/depth projections. The stride-2 stem retains batch normalization. |
 
-Start with [the pretrained image example](../GraspNet-1B/examples/compose-dino.yaml). Use `checkpoint_policy: reuse_unchanged` with the method's grasp checkpoint to initialize its unchanged heads and local branch. Missing encoder weights are downloaded and checksum-verified during initialization; the UI's **Pretrained image encoders** panel or `./panda component-weights dinov3_small` can prepare them ahead of time. This uses the same shared runtime.
+Start with [the pretrained image example](../GraspNet-1B/examples/components/compose-dino.yaml). Use `checkpoint_policy: reuse_unchanged` with the method's grasp checkpoint to initialize its unchanged heads and local branch. Missing encoder weights are downloaded and checksum-verified during initialization; the UI's **Pretrained image encoders** panel or `./panda component-weights dinov3_small` can prepare them ahead of time. This uses the same shared runtime.
 
 After training, retain the module configuration and load the resulting grasp checkpoint with `strict`. Strict loading does not download or reapply DINO initialization, so it preserves the trained encoder and works without the original pretrained-weight file. Initialization provenance records the selected weight ID, immutable source URL and SHA256. Changing the source registry while a job waits causes the job to stop rather than use different initialization.
 

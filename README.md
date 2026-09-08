@@ -19,9 +19,11 @@ Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your
 
 ## Guides
 
-- [GraspNet-1B & examples](GraspNet-1B/README.md)
-- [Usage: UI, CLI, training, resume and sweeps](docs/USAGE.md)
-- [Compatible modules](docs/MODULES.md)
-- [Methods, availability, paper PDFs and original code](docs/METHODS.md)
+| Start here | Details |
+|---|---|
+| [Install](docs/INSTALL.md) · [Data & weights](docs/DOWNLOADS.md) | System requirements, dataset setup and author downloads |
+| [Use the toolbox](docs/USAGE.md) · [Examples](GraspNet-1B/README.md) | Inference, training, resume and experiment sweeps |
+| [Compose modules](docs/MODULES.md) | Compatible encoders, grouping, losses and optimization |
+| [Methods & papers](docs/METHODS.md) | Available operations, limitations, PDF and source links |
 
 [MIT license](LICENSE) · [Third-party terms](docs/THIRD_PARTY.md) · [Extend the toolbox](docs/EXTENDING.md)

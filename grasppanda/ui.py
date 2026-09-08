@@ -27,7 +27,6 @@ ACTION_LABELS = {
     'infer': 'Predict grasps', 'evaluate': 'Evaluate predictions',
     'pipeline_smoke': 'Run native recipe', 'train': 'Train across epochs',
     'train_check': 'Short training run', 'train_smoke': 'Single training step',
-    'probe': 'Check model environment',
 }
 
 
@@ -211,7 +210,7 @@ def create_app(manager=None):
             if name not in selection:raise gr.Error(f'Select a replacement for {name} before configuring its parameters')
             if not isinstance(values,dict) or 'type' in values:raise gr.Error('Use the component selector for type; supply only its parameters here')
             selection[name]={'type':selection[name],**values}
-        config = Experiment(trainer=trainer,proposal_warmup_steps=int(proposal_warmup_steps),dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,optimizer=optimizer,scheduler=scheduler,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "probe", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
+        config = Experiment(trainer=trainer,proposal_warmup_steps=int(proposal_warmup_steps),dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,optimizer=optimizer,scheduler=scheduler,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "infer", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
                             camera=camera, split=split, scene=int(scene), frame=int(frame), frames=int(count),
                             num_points=int(points), seed=int(seed), workspace=workspace, collision_thresh=collision,
                             epochs=int(epochs), batch_size=int(batch), learning_rate=lr,
@@ -468,7 +467,7 @@ def create_app(manager=None):
 2. Set the dataset root containing `scenes/`. **Download registered weights** prepares the required networks.
 3. Choose an operation and **Run current form**. View predictions, checkpoints and logs in **Runs & results**.
 
-**No dataset yet?** Use the baseline's **Check model environment**, or select ASGrasp, load its preset and download its weights to run the author's stereo sample.
+**No dataset yet?** Select ASGrasp, load its preset and download its weights to run the author's stereo sample.
 
 For component experiments, expand **Compose modules**. Full configuration editing is under **Configuration editor**. Short training repeats a bounded labelled sample; epoch training uses the native loader and schedule.
 """)

@@ -4,8 +4,6 @@ from .config import ROOT
 
 # Fixed recipes are intentionally distinct from configurable frame adapters.
 RECIPES = {
- 'graspbalance': ('realsense','Real frame → random-weight network → grasp decoder. No released checkpoint registered.'),
- 'granet': ('realsense','Real frame → graph construction → random-weight GraNet → decoder. Author weights target separately distributed old code.'),
  'generalizing_grasp': ('realsense','First test fused scene → MSCQ checkpoint → decoder. Requires fusion_scenes and upstream segmentation; excludes C-SJO.'),
  'contact_graspnet_g1b': ('realsense','Scene 0100/0000 → native GT bounding box → checkpoint → decoder → collision.'),
  'rngnet_sdk': ('realsense','Scene 0100/0000 RGB-D → bundled author weights → native SDK inference.'),
@@ -21,19 +19,21 @@ RECIPES = {
  'spahybgen': ('realsense','Author supplied voxel observation → checkpoint → Robotiq2f optimization, four starts and three steps. No converged robot result.'),
 }
 NO_DATA = {'zerograsp','asgrasp','spahybgen'}
-NO_WEIGHTS = {'graspbalance','granet','rngnet_sdk','spahybgen'}
+NO_WEIGHTS = {'rngnet_sdk','spahybgen'}
 CHECKPOINT_RECIPES = {'generalizing_grasp','contact_graspnet_g1b','gfla','centergrasp','motiongrasp','rgb_matters','spahybgen'}
 
 
 def preset(method, dataset_root=''):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
-    if method in RECIPES and ('infer' not in capabilities(method) or method in ('granet','graspbalance')):
+    if method in RECIPES and 'infer' not in capabilities(method):
         camera=RECIPES[method][0]
         return Experiment(method=method,action='pipeline_smoke',dataset_root=dataset_root,camera=camera,timeout_minutes=15)
     cameras=[r['camera'] for r in records(method,'realsense')]
     camera='realsense' if cameras else ('kinect' if records(method,'kinect') else 'realsense')
-    action='infer' if 'infer' in capabilities(method) else 'probe'
+    if 'infer' not in capabilities(method):
+        raise ValueError('No runnable preset for this entry; see docs/METHODS.md')
+    action='infer'
     return Experiment(method=method,action=action,dataset_root=dataset_root,camera=camera,checkpoint=primary(method,camera),
                       workspace='native_demo' if method in (*HEATMAP,'finegrasp') else 'official_gt_workspace',
                       num_points=25600 if method in HEATMAP else 15000)
