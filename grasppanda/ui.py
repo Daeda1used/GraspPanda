@@ -101,19 +101,37 @@ def create_app(manager=None):
                 'gpu':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
                 'scene_0100_depth':cameras, 'next_step':'Select method → Load preset → Download weights → Run current form.'}
 
-    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0):
+    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0, component_options='{}', loss_options='{}', augmentation_options='{}'):
+        def mapping(text, label):
+            try:
+                value=json.loads(text or '{}')
+            except (ValueError, TypeError) as error:
+                raise gr.Error(f'{label} must contain valid JSON') from error
+            if not isinstance(value,dict):raise gr.Error(f'{label} must be a mapping')
+            return value
+        parameters=mapping(component_options,'Component parameters')
+        loss=mapping(loss_options,'Loss configuration')
+        augmentation=mapping(augmentation_options,'Augmentation configuration')
         if action == 'pipeline_smoke':
+            if parameters or loss or augmentation or backbone!='upstream' or crop!='upstream':
+                raise gr.Error('The native recipe uses fixed components and settings. Load its preset to reset overrides.')
             from dataclasses import replace
             config=replace(preset(method,(dataset or '').strip()),gpu=int(gpu))
             if method in CHECKPOINT_RECIPES:config=replace(config,checkpoint=(checkpoint or '').strip())
             return json.dumps(config.to_dict(),indent=2)
         selection={s.name:{"backbone":backbone,"crop":crop}[s.name] for s in slots(method) if {"backbone":backbone,"crop":crop}[s.name]!="upstream"}
-        config = Experiment(dataset=dataset_key,modules=selection,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "probe", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
+        for name,values in parameters.items():
+            if name not in selection:raise gr.Error(f'Select a replacement for {name} before configuring its parameters')
+            if not isinstance(values,dict) or 'type' in values:raise gr.Error('Use the component selector for type; supply only its parameters here')
+            selection[name]={'type':selection[name],**values}
+        config = Experiment(dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "probe", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
                             camera=camera, split=split, scene=int(scene), frame=int(frame), frames=int(count),
                             num_points=int(points), seed=int(seed), workspace=workspace, collision_thresh=collision,
                             epochs=int(epochs), batch_size=int(batch), learning_rate=lr,
                             prediction_dir=(predictions or '').strip(), gpu=int(gpu),train_checkpoint_mode=train_checkpoint_mode,
                             train_batch_limit=int(train_batch_limit),eval_batch_limit=int(eval_batch_limit),data_workers=int(data_workers))
+        try:config.validate()
+        except ValueError as error:raise gr.Error(str(error)) from error
         return json.dumps(config.to_dict(), indent=2)
 
     def preflight(text):
@@ -176,7 +194,7 @@ def create_app(manager=None):
         path=manager.root/row['id']/'checkpoint.pt'
         if not path.exists():raise gr.Error('This run has no saved training checkpoint.')
         config=replace(Experiment.from_dict(row['config']),action='infer',checkpoint=str(path),
-                       checkpoint_policy='strict',split='test_seen',scene=100,frame=0,frames=1)
+                       checkpoint_policy='strict',split='test_seen',scene=100,frame=0,frames=1,loss={},augmentation={})
         if 'infer' not in capabilities(method):
             config=replace(preset(method,row['config']['dataset_root']),checkpoint=str(path),gpu=row['config']['gpu'])
         config.validate()
@@ -246,12 +264,16 @@ def create_app(manager=None):
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
                     with gr.Accordion("Compose modules",open=False):
                         gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Run a training check before using a new composition.")
-                        backbone=gr.Dropdown(['upstream','pointnet'],value='upstream',label='Point encoder')
-                        crop=gr.Dropdown(['upstream','multiscale'],value='upstream',label='Local cylindrical grouping')
+                        backbone=gr.Dropdown(['upstream','pointnet','pointnext'],value='upstream',label='Point encoder')
+                        crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
+                        component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
+                        gr.Markdown('Example: `{"backbone": {"local_channels": [64, 128], "activation": "gelu"}}`. Parameters are validated for the selected implementation.')
                     with gr.Accordion("Training & evaluation settings", open=False):
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,label='Optimizer steps (short training)')
+                        loss_options=gr.Code('{}',language='json',label='Loss configuration',lines=3)
+                        augmentation_options=gr.Code('{}',language='json',label='Augmentation configuration',lines=3)
                         label_root=gr.Textbox(label='HGGD / RNG preprocessed label root (optional)',placeholder='Leave blank to use HGGD_Preprocessed under the dataset root')
                         gr.Markdown('Training checks use fixed batches: HGGD, GraNet and fusion use batch 2; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
                         with gr.Row():
@@ -329,10 +351,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
             contract='\n\n'.join(f"**{s.name}**: {s.input_contract} → {s.output_contract}" for s in slots(method)) if enabled else 'This method currently retains its native components. No interchangeable slots are registered.'
             choices={s.name:list(s.choices) for s in slots(method)}
             return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract
-        method.change(select_components,method,[backbone,crop,component_contract],api_name='select_components')
+        method.change(select_components,method,[backbone,crop,component_contract],api_name='select_components').then(
+            lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
-            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp') else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
+            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','finegrasp') else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
             return ('train',0,2e-6 if m=='gfla' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
         action.change(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults')
         def training_checkpoint(a,m,c,path):
@@ -345,12 +368,14 @@ For component experiments, expand **Compose modules**. Full configuration editin
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
         action.change(lambda a: [gr.update(interactive=a!='pipeline_smoke') for _ in range(13)],action,[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],api_name=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False)
-        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers]
+        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')
-        preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,config_text],api_name='apply_preset')
+        preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,config_text],api_name='apply_preset').then(
+            lambda: ('upstream','upstream','strict','{}','{}','{}'),
+            outputs=[backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options],api_name=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")

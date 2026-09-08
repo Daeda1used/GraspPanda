@@ -16,6 +16,7 @@ fi
 "$UV_BIN" pip install --python .venv/bin/python --no-build-isolation grasp-nms==1.0.2
 python3 tools/clone_upstreams.py
 .venv/bin/python tools/build_native.py
+.venv/bin/python tools/build_components.py
 .venv/bin/python tools/build_extras.py
 "$UV_BIN" pip check --python .venv/bin/python
 echo 'GraspPanda installed. Run ./panda weights graspness, then ./panda ui.'

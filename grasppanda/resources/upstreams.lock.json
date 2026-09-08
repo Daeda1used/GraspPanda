@@ -154,5 +154,11 @@
     "repository": "https://github.com/robot-learning-freiburg/CenterGrasp",
     "path": "upstream/single_view/rgbd/centergrasp",
     "pinned_commit": "72bc8f1121937fb5b50164d4f5616b3074309281"
+  },
+  {
+    "id": "finegrasp",
+    "repository": "https://github.com/HorizonRobotics/RoboOrchardLab",
+    "path": "upstream/single_view/pointcloud/finegrasp",
+    "commit": "241bbc692ec83b9bb669c23e574aea44b4816300"
   }
 ]

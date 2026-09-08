@@ -50,6 +50,9 @@ def overlay(rgb_path, grasps, intr, destination):
 
 
 def infer(config, out):
+    if config.method=='finegrasp':
+        from .finegrasp import infer as finegrasp_infer
+        return finegrasp_infer(config,out)
     if config.method in ('economicgrasp', 'dograspnet'):
         from .native_points import infer as native_infer
         return native_infer(config, out)
@@ -270,8 +273,19 @@ def main():
         for path,expected in provenance.get('native_sources',{}).items():
             actual=subprocess.check_output(['git','-C',str(ROOT/path),'rev-parse','HEAD'],text=True).strip()
             if actual!=expected:raise ValueError('Native dependency revision changed while queued: '+path)
+        if 'component_source_lock_sha256' in provenance:
+            component_lock=ROOT/'grasppanda/resources/component_sources.lock.json'
+            if digest(component_lock)!=provenance['component_source_lock_sha256']:
+                raise ValueError('Component source lock changed while queued')
+            components={r['id']:r for r in json.loads(component_lock.read_text())}
+            for name,expected in provenance.get('component_sources',{}).items():
+                path=ROOT/components[name]['path']
+                actual=subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()
+                if actual!=expected:raise ValueError('Component source revision changed while queued: '+name)
         if provenance.get('checkpoint_sha256') and digest(config.checkpoint) != provenance['checkpoint_sha256']:
             raise ValueError('Queued checkpoint changed before execution')
+        if provenance.get('model_config_sha256') and digest(Path(config.checkpoint).parent/'model.config.json')!=provenance['model_config_sha256']:
+            raise ValueError('Queued model configuration changed before execution')
         for path,expected in provenance.get('recipe_weights',{}).items():
             if digest(ROOT/path)!=expected: raise ValueError('Recipe weight changed while queued; resubmit')
         for path,expected in provenance.get('workbench_sources',{}).items():

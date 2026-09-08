@@ -236,5 +236,23 @@
     "bytes": 194800971,
     "sha256": "ca9b16f537468fb02a1987d76a72e4afdfb209c9dbc72c8a28042020ce0b9bb4",
     "source": "https://media.githubusercontent.com/media/YZ-331/GraspFast/fa028134b3a1b0271da7acb8bac7463e6585985e/logs/trained_model_weight/graspfast_checkpoint.tar"
+  },
+  {
+    "method": "finegrasp",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/finegrasp/finegrasp_pipeline/model.safetensors",
+    "source": "https://huggingface.co/HorizonRobotics/FineGrasp/resolve/f09bb0ec25a883617e01552ae14b6f720b71572a/finegrasp_pipeline/model.safetensors",
+    "bytes": 76694428,
+    "sha256": "30c1f335567dcd726c11fb60249da65e26cc92c2f82928a4e4123ac235b38f79"
+  },
+  {
+    "method": "finegrasp",
+    "camera": "realsense",
+    "role": "model_config",
+    "path": "checkpoints/finegrasp/finegrasp_pipeline/model.config.json",
+    "source": "https://huggingface.co/HorizonRobotics/FineGrasp/resolve/f09bb0ec25a883617e01552ae14b6f720b71572a/finegrasp_pipeline/model.config.json",
+    "bytes": 552,
+    "sha256": "a152d95fa0b255fb6edd414a8876f22847b2053d04c1995ced31bd65507adf9d"
   }
 ]

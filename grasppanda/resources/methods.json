@@ -310,5 +310,17 @@
     "name": "CenterGrasp",
     "input_note": "Kinect RGB/SGDF pair with native ICP and collision filtering.",
     "pdf_url": "https://arxiv.org/pdf/2312.08240"
+  },
+  {
+    "id": "finegrasp",
+    "repository": "https://github.com/HorizonRobotics/RoboOrchardLab",
+    "path": "upstream/single_view/pointcloud/finegrasp",
+    "group": "single_view/pointcloud",
+    "paper_title": "FineGrasp: Towards Robust Grasping for Delicate Objects",
+    "year": 2025,
+    "venue": "preprint",
+    "name": "FineGrasp",
+    "input_note": "RGB-D wrapper; detector uses XYZ and depth-derived normals. Native camera-space bounds: x/y [-1,1] m, z [0,2] m.",
+    "pdf_url": "https://arxiv.org/pdf/2507.05978"
   }
 ]

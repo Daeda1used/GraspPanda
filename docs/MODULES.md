@@ -2,17 +2,73 @@
 
 Module replacement is an explicit contract, not a shape-only switch. Supported choices preserve coordinates, units, sample indices, label assignment and decoder semantics. The rest of each method remains authoritative.
 
-## Supported slots
+## Component selection and parameters
 
-| Method | Slot | Choices | Contract |
-|---|---|---|---|
-| GraspNet Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet` | Camera XYZ in metres → 1,024 seed coordinates, original point indices and 256-channel features |
-| GraspNet Baseline / PointNet2 port | `crop` | `upstream`, `multiscale` | Oriented neighborhoods → 256-channel features with the original four depth bins |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18` | Sparse features → 512 channels with unchanged coordinate mapping and voxel-to-point correspondence |
+A component can be a name (`backbone: pointnet`) or a mapping containing `type` and its parameters. Both forms serialize into the experiment and checkpoint. Unknown parameters are rejected.
 
-`pointnet` is a GraspPanda PointNet-style shared-MLP/global-pooling encoder. It does not claim checkpoint equivalence to the original PointNet paper. The baseline upstream encoder is PointNet++; returning to `upstream` restores it. The Graspness PointNet-style adapter operates on voxel coordinates and features. `sparse_unet18` uses the pinned implementation's MinkUNet18D. `multiscale` combines three native cylindrical crops at radius factors 0.5, 1 and 1.5 with a learned projection; it is not the entire SBG method.
+| Method | Slot | Choices |
+|---|---|---|
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext` |
+| Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18` |
+| Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
 
-HGGD, RNG and other methods currently retain their native components. Their image proposals, local refinement targets and decoding contracts cannot be replaced by a Graspness slot solely because tensor dimensions match.
+The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
+
+| Component | Parameters |
+|---|---|
+| Baseline `pointnet` | `local_channels`, `global_channels`, `fusion_channels` (layer widths); `activation`: relu/gelu/silu; `normalization`: batch/group/none; `dropout` |
+| `pointnext` | `width`, `blocks` (five stage depths), `nsample`, `radius` (metres), `radius_scaling`, `expansion`, `activation`, `reduction`: max/mean/sum, `decoder_layers` |
+| `multiscale` | `radius_factors` relative to the method's native cylinder radius |
+| `finegrasp` | `nsample`, `radius_factors`; native local attention and Transformer fusion across radius groups |
+| `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
+
+`pointnext` uses the [official PointNeXt encoder and decoder](https://github.com/guochengqian/PointNeXt) ([NeurIPS 2022 paper](https://arxiv.org/pdf/2206.04670)), followed by a feature projection and original-input seed sampling. Its OpenPoints operator has a separate compiled namespace to coexist with legacy grasp operators. Architecture settings do not automatically provide pretrained weights.
+
+`finegrasp` uses the author's [CylinderGroup and GroupTransformerFusion](https://github.com/HorizonRobotics/RoboOrchardLab/tree/master/robo_orchard_lab/models/finegrasp) from [FineGrasp (2025)](https://arxiv.org/pdf/2507.05978). This replacement retains Graspness seed features and decoder; it does not replace the complete method with FineGrasp. Start with `radius_factors: [0.25, 0.5, 0.75, 1.0]` and `nsample: 16`, then train the new grouping layers.
+
+`pointnet` is a toolbox shared-MLP/global-pooling adapter. `cylinder` exposes native oriented queries with configurable feature extraction and pooling; it is not a complete reproduction of a named attention or scale-balanced method. `sparse_unet18` uses MinkUNet18D. These choices are available only in their registered semantic slots.
+
+```yaml
+modules:
+  backbone:
+    type: pointnext
+    width: 32
+    blocks: [1, 2, 2, 2, 1]
+    radius: 0.05
+    nsample: 32
+  crop:
+    type: cylinder
+    hidden_channels: [64, 128]
+    radius_factors: [0.5, 1.0, 1.5]
+    pooling: attention
+checkpoint_policy: reuse_unchanged
+```
+
+In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## Training controls
+
+Baseline, its PointNet2 port and Graspness accept `loss` and `augmentation` overrides in supported short-training or epoch-training actions. Other methods reject these controls until their supervision adapters implement them.
+
+```yaml
+loss:
+  weights:
+    width: 0.4
+augmentation:
+  mode: custom
+  rotation_axis: x
+  rotation_degrees: 15
+  translation: 0.01
+  jitter_std: 0.001
+  jitter_clip: 0.003
+```
+
+Loss weights are absolute coefficients. Unspecified components retain the native coefficients and all masks/reductions remain native. Baseline defaults: objectness/view = 1; score/angle/width/tolerance = 0.2. Graspness defaults: objectness = 1, graspness = 10, view = 100, score = 15, width = 10. Identical defaults retain the original loss tensor.
+
+An empty augmentation mapping preserves the action's original behavior. `mode: none` disables augmentation; `mode: native` selects the author's transform. `mode: custom` applies a camera-axis rotation sampled uniformly within the specified degrees and an independent translation sampled within the specified metre range. Point coordinates and object poses transform together; sparse coordinates are recomputed. Clipped Gaussian jitter affects observations while clean grasp supervision is retained. Image crops, scaling and scene mixing require different label/intrinsic contracts and are not implied by these point-only controls.
+
+Loss/augmentation settings are training-only. Resume requires the same settings; checkpoint inference retains architecture settings and clears training-only options automatically.
 
 ## Checkpoint policies
 
@@ -75,7 +131,7 @@ eval_batch_limit: 1
 data_workers: 0
 ```
 
-`initialize` loads model weights with the selected transfer policy and starts a fresh optimizer at epoch 0. `resume` requires `strict`, restores the optimizer and epoch, and requires the same composition and data settings. Set `epochs` to the final epoch number, greater than the saved epoch. SBG's OneCycle schedule requires the original final-epoch horizon when resuming; initialize a new run to change that horizon.
+`initialize` loads model weights with the selected transfer policy and starts a fresh optimizer at epoch 0. `resume` requires `strict`, restores the optimizer and epoch, and requires the same composition and data settings. Restored model and optimizer tensors are checked before the next update. Native CUDA point operators use atomic gradient accumulation, so later loss trajectories are not guaranteed to be bitwise identical. Set `epochs` to the final epoch number, greater than the saved epoch. SBG's OneCycle schedule requires the original final-epoch horizon when resuming; initialize a new run to change that horizon.
 
 A nonzero training batch limit selects consecutive frames from `scene`/`frame` before native shuffling and augmentation. The native validation loop uses a prefix of test_seen for Baseline/SBG; Graspness has no validation loop in its released trainer. These validation losses are diagnostics, not benchmark AP or a recommended model-selection protocol. Set both limits to **0** for complete splits and increase `timeout_minutes` for a long run. Epoch-boundary seeds are controlled by the configured seed plus epoch.
 

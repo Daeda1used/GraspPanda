@@ -20,6 +20,11 @@ jobs:
           methods = catalogue()
           pins = json.loads(Path('grasppanda/resources/upstreams.lock.json').read_text())
           assert set(methods) == {p['id'] for p in pins}
+          sources = {p['path']: p.get('pinned_commit', p.get('commit')) for p in pins}
+          for p in json.loads(Path('grasppanda/resources/component_sources.lock.json').read_text()):
+              assert len(p['commit']) == 40
+              if p['path'] in sources:
+                  assert sources[p['path']] == p['commit']
           for mid in methods:
               for action in capabilities(mid):
                   assert action in ('probe', 'infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')

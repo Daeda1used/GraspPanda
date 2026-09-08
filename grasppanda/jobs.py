@@ -117,7 +117,13 @@ class JobManager:
                       "checkpoint_sha256": digest(config.checkpoint) if config.checkpoint and Path(config.checkpoint).is_file() else None}
         provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'patches').rglob('*.patch')}
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
+        if config.method=='finegrasp':
+            provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')
         provenance['native_source_lock_sha256']=digest(ROOT/'grasppanda/resources/native_sources.lock.json')
+        component_lock=ROOT/'grasppanda/resources/component_sources.lock.json'
+        if component_lock.exists():
+            provenance['component_source_lock_sha256']=digest(component_lock)
+            provenance['component_sources']={row['id']:subprocess.check_output(['git','-C',str(ROOT/row['path']),'rev-parse','HEAD'],text=True).strip() for row in json.loads(component_lock.read_text()) if (ROOT/row['path']/'.git').exists()}
         provenance['native_sources']={row['path']:subprocess.check_output(['git','-C',str(ROOT/row['path']),'rev-parse','HEAD'],text=True).strip()
             for row in json.loads((ROOT/'grasppanda/resources/native_sources.lock.json').read_text()) if (ROOT/row['path']/'.git').exists()}
         provenance['workbench_sources'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda').rglob('*.py')}

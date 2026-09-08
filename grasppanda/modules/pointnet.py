@@ -15,12 +15,15 @@ def mlp(channels):
 
 
 class PointNetBackbone(nn.Module):
-    def __init__(self,num_seeds=1024):
+    def __init__(self,num_seeds=1024,local_channels=(64,128),global_channels=(256,512),
+                 fusion_channels=(256,),activation='relu',normalization='batch',dropout=0.):
         super().__init__()
+        from .layers import point_mlp
         self.num_seeds=num_seeds
-        self.local=mlp([3,64,128])
-        self.global_features=mlp([128,256,512])
-        self.fusion=mlp([128+512,256,256])
+        self.local=point_mlp([3,*local_channels],activation=activation,normalization=normalization)
+        self.global_features=point_mlp([local_channels[-1],*global_channels],activation=activation,normalization=normalization)
+        self.fusion=point_mlp([local_channels[-1]+global_channels[-1],*fusion_channels,256],activation=activation,normalization=normalization)
+        self.dropout=nn.Dropout(dropout)
 
     def forward(self,pointcloud,end_points=None):
         from pointnet2 import _ext
@@ -30,7 +33,7 @@ class PointNetBackbone(nn.Module):
         xyz=pointcloud.contiguous()
         features=self.local(xyz.transpose(1,2).contiguous())
         global_features=self.global_features(features).amax(2,keepdim=True).expand(-1,-1,xyz.shape[1])
-        features=self.fusion(torch.cat([features,global_features],1))
+        features=self.dropout(self.fusion(torch.cat([features,global_features],1)))
         indices=_ext.furthest_point_sampling(xyz,self.num_seeds)
         seeds=xyz.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=features.gather(2,indices.long()[:,None,:].expand(-1,features.shape[1],-1))

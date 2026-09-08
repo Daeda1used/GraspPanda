@@ -52,11 +52,14 @@ def preflight(config):
     if config.action == "infer":
         if not config.checkpoint or not Path(config.checkpoint).is_file():
             raise ValueError("Inference requires a local checkpoint for this method/camera")
+        if config.method=='finegrasp' and not (Path(config.checkpoint).parent/'model.config.json').is_file():
+            raise ValueError('FineGrasp requires model.config.json alongside the selected safetensors checkpoint')
         root = Path(config.dataset_root)
         for index in range(config.scene * 256 + config.frame, config.scene * 256 + config.frame + config.frames):
             scene, frame = divmod(index, 256)
             directory = root / "scenes" / f"scene_{scene:04d}" / config.camera
             needed = [directory / "depth" / f"{frame:04d}.png", directory / "meta" / f"{frame:04d}.mat"]
+            if config.method=='finegrasp':needed += [directory/'rgb'/f'{frame:04d}.png']
             if config.method in HEATMAP:
                 needed = [directory / 'depth' / f'{frame:04d}.png', directory / 'rgb' / f'{frame:04d}.png']
             if config.workspace == "official_gt_workspace":
@@ -88,6 +91,8 @@ def preflight(config):
             if manifest['config'].get(key) != getattr(config,key):
                 raise ValueError(f'Prediction protocol mismatch: {key}')
         from ..jobs import digest
+        if config.method=='finegrasp' and manifest.get('model_config_sha256')!=digest(Path(config.checkpoint).parent/'model.config.json'):
+            raise ValueError('FineGrasp prediction architecture configuration differs from the selected checkpoint')
         hashes = manifest.get('files',{})
         for scene in range(low,high):
             for frame in range(256):

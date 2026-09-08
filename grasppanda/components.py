@@ -12,10 +12,10 @@ class ComponentSlot:
 
 
 BASELINE_SLOTS = (
-    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet'),
+    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
-    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale'),
+    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder'),
                   'Camera-frame seed points, scene points and proper approach rotations.',
                   'Features [B,256,1024,4] retaining the native four depth bins.'),
 )
@@ -25,7 +25,10 @@ def slots(method):
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
     if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
-        '512-channel sparse features, mapped to original input points by quantize2original.'),)
+        '512-channel sparse features, mapped to original input points by quantize2original.'),
+        ComponentSlot('crop','crop',('upstream','cylinder','finegrasp'),
+            'Graspable seed coordinates/features and approach rotations; native oriented cylinder queries.',
+            '256-channel seed features preserving the native approach and depth decoder semantics.'))
     return ()
 
 
@@ -33,8 +36,11 @@ def validate_selection(method,selection,checkpoint_policy='strict'):
     if not isinstance(selection,dict):raise ValueError('modules must be a mapping from slot name to implementation')
     available={s.name:s for s in slots(method)}
     for name,value in selection.items():
+        from .module_options import unpack,validate_options
         if name not in available:raise ValueError(f'{method} has no registered {name} slot')
-        if value not in available[name].choices:raise ValueError(f'{name} must be one of {available[name].choices}')
+        choice,options=unpack(value)
+        if choice not in available[name].choices:raise ValueError(f'{name} must be one of {available[name].choices}')
+        validate_options(method,name,choice,options)
     if checkpoint_policy not in ('strict','reuse_unchanged'):
         raise ValueError('checkpoint_policy must be strict or reuse_unchanged')
     return selection
@@ -45,7 +51,8 @@ def configure_model(model,method,selection,voxel_size=.005):
     validate_selection(method,selection)
     changes=[]
     for slot in slots(method):
-        choice=selection.get(slot.name,'upstream')
+        from .module_options import unpack
+        choice,options=unpack(selection.get(slot.name,'upstream'))
         if choice=='upstream':continue
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
@@ -56,12 +63,21 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method=='graspness' and choice=='pointnet':
             from .modules.sparse_pointnet import SparsePointNet
             replacement=SparsePointNet(model.seed_feature_dim,voxel_size)
+        elif method=='graspness' and slot.name=='crop' and choice=='finegrasp':
+            from .modules.finegrasp import FineGraspCrop
+            replacement=FineGraspCrop(native,**options)
+        elif slot.name=='crop' and choice=='cylinder':
+            from .modules.cylinder import CylindricalAggregation
+            replacement=CylindricalAggregation(native,'graspness' if method=='graspness' else 'baseline',**options)
+        elif choice=='pointnext':
+            from .modules.pointnext import PointNeXtBackbone
+            replacement=PointNeXtBackbone(**options)
         elif slot.name=='backbone':
             from .modules.pointnet import PointNetBackbone
-            replacement=PointNetBackbone()
+            replacement=PointNetBackbone(**options)
         elif slot.name=='crop':
             from .modules.multiscale import MultiScaleCrop
-            replacement=MultiScaleCrop(native)
+            replacement=MultiScaleCrop(native,**options)
         else:raise ValueError(slot.name)
         setattr(parent,attribute,replacement)
         changes.append(slot.model_path+'.')

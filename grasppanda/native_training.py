@@ -8,6 +8,25 @@ import sys
 import time
 
 
+def verify_restored_state(actual, expected, path='checkpoint'):
+    """Require exact restored model/optimizer values before the next update."""
+    import torch
+    if isinstance(expected, torch.Tensor):
+        equal = (isinstance(actual, torch.Tensor) and actual.dtype == expected.dtype
+                 and torch.equal(actual.detach().cpu(), expected.detach().cpu()))
+    elif isinstance(expected, Mapping):
+        equal = isinstance(actual, Mapping) and actual.keys() == expected.keys()
+        if equal:
+            for key in expected:verify_restored_state(actual[key], expected[key], f'{path}.{key}')
+    elif isinstance(expected, (list, tuple)):
+        equal = isinstance(actual, type(expected)) and len(actual) == len(expected)
+        if equal:
+            for index, (a, b) in enumerate(zip(actual, expected)):verify_restored_state(a, b, f'{path}[{index}]')
+    else:
+        equal = actual == expected
+    if not equal:raise ValueError(f'Restored training state differs at {path}')
+
+
 class LabelCache(Mapping):
     """Read native arrays on demand; cap retained objects/scenes per worker."""
     def __init__(self, root, kind, keys, capacity=2):
@@ -43,6 +62,7 @@ def run(config,out):
     from .worker import prepare
     from .components import configure_model,load_checkpoint
     from .jobs import digest
+    from .training_options import configure_dataset,weighted_loss
     implementation_hash=digest(__file__)
     repo=prepare(config.method)
     sparse=config.method=='graspness'
@@ -61,6 +81,7 @@ def run(config,out):
             dataset=_native(*args,load_label=False,**kwargs)
             dataset.load_label=enabled
             if enabled:dataset.collision_labels=LabelCache(config.dataset_root,'collision',dataset.sceneIds)
+            if dataset.split=='train':configure_dataset(dataset,config)
             return dataset
         module.GraspNetDataset=lazy_dataset
 
@@ -86,8 +107,8 @@ def run(config,out):
         if int(resume['epoch'])>=config.epochs:raise ValueError('Final epoch must exceed the resume checkpoint epoch')
         previous=resume.get('config')
         if previous:
-            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit'):
-                if previous.get(key)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
+            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','loss','augmentation'):
+                if previous.get(key,{} if key in ('loss','augmentation') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
             if config.method=='scale_balanced_grasp' and previous.get('epochs')!=config.epochs:
                 raise ValueError('Scale-Balanced-Grasp OneCycle resume requires its original final-epoch horizon')
 
@@ -124,6 +145,11 @@ def run(config,out):
         # The native scheduler constructor changes optimizer LR/momentum.
         # Restore the exact saved values after rebuilding its schedule.
         optimizer.load_state_dict(resume['optimizer_state_dict'])
+    if resume is not None:
+        verify_restored_state(model.state_dict(), resume['model_state_dict'], 'model')
+        verify_restored_state(optimizer.state_dict(), resume['optimizer_state_dict'], 'optimizer')
+        if scheduler is not None and 'scheduler_state_dict' in resume:
+            verify_restored_state(scheduler.state_dict(), resume['scheduler_state_dict'], 'scheduler')
     native_epoch=namespace['train_one_epoch']
     def seeded_epoch():
         # Epoch-local seeds also make an epoch-boundary resume repeatable.
@@ -135,6 +161,7 @@ def run(config,out):
     original_loss=namespace['get_loss'];original_step=optimizer.step
     def measured_loss(*args,**kwargs):
         loss,end=original_loss(*args,**kwargs)
+        loss,end=weighted_loss(loss,end,config)
         parts={k:float(v.detach()) for k,v in end.items() if 'loss' in k and isinstance(v,torch.Tensor) and v.numel()==1}
         if not torch.isfinite(loss) or not all(np.isfinite(v) for v in parts.values()):raise ValueError('Non-finite native epoch loss')
         undefined=[k for k,v in end.items() if isinstance(v,torch.Tensor) and v.numel()==1 and ('acc' in k or 'prec' in k or 'recall' in k) and not torch.isfinite(v)]
@@ -183,10 +210,11 @@ def run(config,out):
     import shutil
     shutil.copyfile(paths[-1],out/'checkpoint.pt')
     if transfer:(out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
-    return dict(stage='native_epoch_training',method=config.method,modules=config.modules,
+    return dict(stage='native_epoch_training',method=config.method,modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,
         implementation_sha256=implementation_hash,
-        checkpoint_mode=config.train_checkpoint_mode,start_epoch=namespace['start_epoch'],final_epoch=config.epochs,
+        checkpoint_mode=config.train_checkpoint_mode,resume_state_verified=resume is not None,
+        start_epoch=namespace['start_epoch'],final_epoch=config.epochs,
         optimizer_steps=len(updates),losses=losses,updates=updates,evaluation_losses=evaluations,
         train_batch_limit=config.train_batch_limit,eval_batch_limit=config.eval_batch_limit,
         seconds=time.monotonic()-start,checkpoint_sha256=digest(out/'checkpoint.pt'),
-        protocol='Original epoch driver, loss, augmentation, optimizer and learning-rate schedule; lazy native labels. Nonzero batch limits restrict real-frame coverage and do not establish full-dataset convergence.',ap=None)
+        protocol='Native epoch driver with configured loss coefficients and augmentation; original optimizer and learning-rate schedule; lazy native labels. Nonzero batch limits restrict real-frame coverage and do not establish full-dataset convergence.',ap=None)

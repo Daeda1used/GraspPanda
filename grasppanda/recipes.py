@@ -35,7 +35,7 @@ def preset(method, dataset_root=''):
     camera='realsense' if cameras else ('kinect' if records(method,'kinect') else 'realsense')
     action='infer' if 'infer' in capabilities(method) else 'probe'
     return Experiment(method=method,action=action,dataset_root=dataset_root,camera=camera,checkpoint=primary(method,camera),
-                      workspace='native_demo' if method in HEATMAP else 'official_gt_workspace',
+                      workspace='native_demo' if method in (*HEATMAP,'finegrasp') else 'official_gt_workspace',
                       num_points=25600 if method in HEATMAP else 15000)
 
 

@@ -161,6 +161,7 @@ def point_family(config, out, steps=3):
     import torch
     import scipy.io
     from .worker import prepare
+    from .training_options import augment_sample,weighted_loss
     repo=prepare(config.method)
     if config.method=='graspbalance':sys.path[:0]=[str(repo/p) for p in ('TrainModel','PointNet','KNN','DataProcessing','ModifiedNetTools')]
     sys.argv=['train.py','--dataset_root',config.dataset_root,'--camera',config.camera]
@@ -294,11 +295,12 @@ def point_family(config, out, steps=3):
         return value
     losses=[];updates=[];start=time.monotonic()
     for step in range(steps):
-        batch=cuda(collate([copy.deepcopy(data) for _ in range(2 if fusion or graph else 1)]))
+        batch=cuda(collate([augment_sample(copy.deepcopy(data),dataset,config) for _ in range(2 if fusion or graph else 1)]))
         optimizer.zero_grad(set_to_none=True)
         output=model(batch)
         if economic:output['epoch']=0
         loss,output=loss_module.get_loss(output)
+        loss,output=weighted_loss(loss,output,config)
         parts={k:float(v.detach()) for k,v in output.items() if 'loss' in k.lower() and isinstance(v,torch.Tensor) and v.numel()==1}
         if not torch.isfinite(loss) or not all(np.isfinite(x) for x in parts.values()):raise ValueError('Non-finite native loss')
         losses.append(dict(total=float(loss.detach()),components=parts))
@@ -324,10 +326,10 @@ def point_family(config, out, steps=3):
     torch.cuda.synchronize()
     torch.save({'model_state_dict':model.state_dict(),'optimizer_state_dict':optimizer.state_dict(),
                 'training_steps':steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
-    return dict(method=config.method,stage='real_label_training',modules=config.modules,checkpoint_transfer=transfer,optimizer_steps=len(updates),losses=losses,updates=updates,
+    return dict(method=config.method,stage='real_label_training',modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,checkpoint_transfer=transfer,optimizer_steps=len(updates),losses=losses,updates=updates,
         seconds=time.monotonic()-start,label_sha256=evidence,checkpoint_sha256=digest(config.checkpoint) if config.checkpoint else None,
         camera=config.camera,scene=config.scene,frame=config.frame,num_points=config.num_points,learning_rate=config.learning_rate,ap=None,
-        protocol=('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. '))+'No augmentation, Adam; reduced learning rate. Not full training convergence.',
+        protocol=('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. '))+('Configured augmentation, Adam. ' if config.augmentation else 'No augmentation, Adam. ')+'Loss coefficients are recorded in loss_config.',
         initialization='checkpoint' if config.checkpoint else 'random_constructor',
         limitation='The upstream GraspBalance driver references obsolete class names. This uses its actual GraspBalance detector and original loss with the native single-view loader; NcM augmentation and optional inference-time object balancing are not exercised.' if balance else None)
 

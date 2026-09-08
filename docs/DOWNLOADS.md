@@ -145,3 +145,11 @@ ActiveNGF performs online field optimization from multiple views through its nat
 GFLA short training prepares native contact labels and surface/visibility targets inside the run directory. First-time preparation may take several minutes. Set `data_workers: 1` to limit preparation concurrency; `label_root` can reuse a previous run's `prepared/ctt_grasp_label` cache. Its contact/SDF objective uses `learning_rate: 0.000002`.
 
 GraspFast short training generates native graspability targets in the run directory. It requires `grasp_label/`, `grasp_label_simplified/` and `collision_label/` and uses the released unweighted five-part objective.
+
+## FineGrasp
+
+`./panda weights finegrasp --camera realsense` downloads the author's pinned `model.safetensors` and companion `model.config.json`. Keep both files together; inference loads the exact selected checkpoint with its architecture configuration.
+
+[Author weights](https://huggingface.co/HorizonRobotics/FineGrasp) · [Original implementation](https://github.com/HorizonRobotics/RoboOrchardLab/tree/master/projects/finegrasp_graspnet1b)
+
+The preset accepts RGB-D and camera metadata. The detector uses depth-derived XYZ and estimated normals; RGB is retained by the native input wrapper and preview. Native camera-space limits are x/y in [-1, 1] metres and z in [0, 2] metres, with no GT segmentation mask. Point count, voxel size, collision threshold and random seed are configurable.

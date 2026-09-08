@@ -29,7 +29,7 @@ def capabilities(method):
     actions = ["probe"] if method in probes() else []
     if method in CORE:
         actions += ["infer", "evaluate"]
-    if method in HEATMAP:
+    if method in (*HEATMAP,'finegrasp'):
         actions += ['infer', 'evaluate']
     if method in NATIVE_POINTS or method in ('pointnet2_upgrade','graspfast','graspbalance','granet','graspness_modern'):
         actions += ['infer', 'evaluate']
@@ -45,7 +45,9 @@ def capabilities(method):
 @dataclass(frozen=True)
 class Experiment:
     dataset: str = "graspnet1b"
-    modules: dict[str,str] = field(default_factory=dict)
+    modules: dict = field(default_factory=dict)
+    loss: dict = field(default_factory=dict)
+    augmentation: dict = field(default_factory=dict)
     checkpoint_policy: str = "strict"
     method: str = "graspness"
     action: str = "probe"
@@ -87,6 +89,8 @@ class Experiment:
         return obj
 
     def validate(self):
+        from .training_options import validate_training_options
+        validate_training_options(self)
         from .datasets import get_dataset
         from .components import validate_selection
         spec=get_dataset(self.dataset)
@@ -109,8 +113,8 @@ class Experiment:
         if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"):
             raise ValueError("Unknown workspace policy")
         if self.action in ('infer', 'evaluate'):
-            if (self.method in HEATMAP) != (self.workspace == 'native_demo'):
-                raise ValueError('HGGD / RegionNormalizedGrasp require workspace: native_demo; point methods require a point-cloud workspace policy')
+            if (self.method in (*HEATMAP,'finegrasp')) != (self.workspace == 'native_demo'):
+                raise ValueError('HGGD / RegionNormalizedGrasp / FineGrasp require workspace: native_demo; point methods require a point-cloud workspace policy')
             if self.method in NATIVE_POINTS and self.workspace != 'official_gt_workspace':
                 raise ValueError('This adapter retains the upstream official_gt_workspace preprocessing')
         last_scene=max(stop for _,stop in spec.splits.values())

@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.6.1"
+version = "0.7.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -80,6 +80,11 @@ dependencies = [
   "sapien==2.2.2",
   "mesh-to-sdf==0.0.15",
   "pytorch-ignite>=0.5.5",
+  "accelerate==1.10.1",
+  "transformers==5.0.0",
+  "deprecated",
+  "timeout-decorator",
+  "robo-orchard-core",
 ]
 
 [tool.uv]
@@ -99,3 +104,5 @@ launchertemplate = { git = "https://github.com/Nx1021/LauncherTemplate", rev = "
 xformers = { index = "pytorch-cu118" }
 clip = { git = "https://github.com/openai/CLIP", rev = "d05afc436d78f1c48dc0dbf8e5980a9d471f35f6" }
 dgl = { url = "https://data.dgl.ai/wheels/cu118/dgl-1.1.3%2Bcu118-cp311-cp311-manylinux1_x86_64.whl" }
+
+robo-orchard-core = { git = "https://github.com/HorizonRobotics/RoboOrchardCore", rev = "f760a53f851c00dbde55a081dd2976f031911ec1" }

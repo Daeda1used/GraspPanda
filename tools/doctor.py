@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "knn_pytorch", "graspnetAPI"]
+modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers"]
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
 for name in modules:
     try:
@@ -20,13 +20,15 @@ result["torch"] = torch.__version__
 result["cuda_runtime"] = torch.version.cuda
 result["gpu"] = torch.cuda.get_device_name() if torch.cuda.is_available() else None
 result["sources"] = []
-for entry in json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text()):
+pins=json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text())
+pins+=json.loads((ROOT / "grasppanda/resources/component_sources.lock.json").read_text())
+for entry in {p["path"]:p for p in pins}.values():
     repo = ROOT / entry["path"]
     if not repo.exists():
         result["sources"].append({"id": entry["id"], "status": "missing"})
         continue
     sha = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
     changes = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True)
-    result["sources"].append({"id": entry["id"], "status": "ok" if sha == entry["pinned_commit"] and not changes else "changed"})
+    result["sources"].append({"id": entry["id"], "status": "ok" if sha == (entry.get("pinned_commit") or entry["commit"]) and not changes else "changed"})
 print(json.dumps(result, indent=2))
 raise SystemExit(0 if result["gpu"] and all(r["status"] == "ok" for r in result["modules"].values()) and all(r["status"] == "ok" for r in result["sources"]) else 1)

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "pointnext",
+    "repository": "https://github.com/guochengqian/PointNeXt",
+    "path": "environments/sources/cv/pointnext",
+    "commit": "b7ec10fd8b9acdb1c3b18e557f0d3465eb919164"
+  },
+  {
+    "id": "openpoints",
+    "repository": "https://github.com/guochengqian/openpoints",
+    "path": "environments/sources/cv/pointnext/openpoints",
+    "commit": "db31e0d94ede35bc672ef06d1b6e4073a9c269d5"
+  },
+  {
+    "id": "finegrasp",
+    "repository": "https://github.com/HorizonRobotics/RoboOrchardLab",
+    "path": "upstream/single_view/pointcloud/finegrasp",
+    "commit": "241bbc692ec83b9bb669c23e574aea44b4816300"
+  }
+]
