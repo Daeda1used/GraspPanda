@@ -1,10 +1,17 @@
 # Data and checkpoint downloads
 
-GtG2 uses locally prepared candidate graphs and an ensemble you train; no pretrained ensemble is registered. Follow [Candidate graph experiments](GTG2.md) for its required scene/model archives and preparation command.
+Choose the inputs for your first experiment; you can add training archives later.
+
+| Start with | What to prepare |
+|---|---|
+| An author sample, without GraspNet | Select ASGrasp in the UI, load its preset and download its registered weights. |
+| A GraspNet frame | Download `test_seen.zip`, set the dataset root and download weights for your method and camera. |
+| Training or evaluation | Add the models, labels and method-specific targets described below. |
+| GtG2 candidate graphs | Follow [Candidate graph experiments](GTG2.md) to prepare graphs and train an ensemble. |
 
 ## Start without GraspNet
 
-ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered. Supplied samples do not establish GraspNet benchmark AP.
+ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered.
 
 ## GraspNet-1B
 
@@ -39,7 +46,8 @@ Inspect the archive's top-level layout, extract it, then place the `scene_*` dir
 
 The supplied frame presets use scene 0100/frame 0000. Training-step examples use a training scene. The dataset and models retain the [publisher's terms](https://graspnet.net/datasets.html#license); this repository does not redistribute them.
 
-### Official archive links
+<details>
+<summary>All official archive links and mirrors</summary>
 
 Links were collected from the official page for this release. If a mirror changes or reports a quota, return to that page and select another mirror.
 
@@ -57,6 +65,8 @@ Links were collected from the official page for this release. If a mirror change
 | rect_labels.zip | [Google](https://drive.google.com/file/d/1lR6ZSgtgV1KlqzM14mKlQ8oKhE3UCltO/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/15k9ko5iCoLTgufbn_6YXaA?pwd=nhp2) |
 | dex_models.zip | [Google](https://drive.google.com/file/d/1RElNqUHNoA9l_muTGNu7yAc3ql_e7pL3/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1KTPJMAayVQkgx2uwUCNMOQ) |
 | models.zip | [Google](https://drive.google.com/file/d/1Gxwu2C5wRQ0QwjdA8CbMXx-bYf_wwPT5/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1SoaE_7AqfR5R6w8dO79rsg) · [Jbox](https://jbox.sjtu.edu.cn/l/jFF3no) |
+
+</details>
 
 ## Method-specific preprocessing
 
@@ -107,6 +117,9 @@ The UI's **Download registered weights** button invokes the same downloader. Eve
 
 Google Drive downloads support resume. Other HTTP downloads restart cleanly because some academic mirrors ignore range requests. If a host is unavailable, use the author link and retry later. Model availability and licensing are controlled by the authors.
 
+<details>
+<summary>All registered checkpoint files and author download links</summary>
+
 | Method | Camera | Role | Local target | Author download |
 |---|---|---|---|---|
 | graspness | realsense | primary | `checkpoints/graspness/checkpoint-rs.tar` | [Download](https://drive.google.com/file/d/1RfdpEM2y0x98rV28d7B2Dg8LLFKnBkfL/view) |
@@ -135,6 +148,8 @@ Google Drive downloads support resume. Other HTTP downloads restart cleanly beca
 | dreds | any | primary | `checkpoints/dreds/model.pth` | [Download](https://mirrors.pku.edu.cn/dl-release/DREDS_ECCV2022/checkpoint/SwinDRNet/models/model.pth) |
 | spahybgen | any | primary | `upstream/related/multi_hand/spahybgen/assets/trained_models/spahybgen_unet_64_voxel.pt` | [Download](https://raw.githubusercontent.com/wangzivector/SpaHybGen/39e5794506bbbf2fd41804f73c93b7b393be550e/assets/trained_models/spahybgen_unet_64_voxel.pt) |
 | graspfast | realsense | primary | `checkpoints/graspfast/graspfast_checkpoint.tar` | [Download](https://media.githubusercontent.com/media/YZ-331/GraspFast/fa028134b3a1b0271da7acb8bac7463e6585985e/logs/trained_model_weight/graspfast_checkpoint.tar) |
+
+</details>
 
 MotionGrasp also requires the baseline checkpoint; the downloader includes it. The PointNet2 compatibility port reuses the baseline weights. RNGNet SDK and SpaHybGen sample weights are included by their upstream repositories. GraNet's organized source and separately distributed legacy checkpoints are not interchangeable. Methods without registered, compatible weights are explicitly identified in [Methods & papers](METHODS.md); a random-weight diagnostic is never presented as trained inference.
 

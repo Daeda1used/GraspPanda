@@ -116,8 +116,10 @@ def documentation(name):
     text = (ROOT/'docs'/name).read_text()
     def link(match):
         target = match.group(2)
-        if '://' in target or target.startswith('#'):
+        if '://' in target:
             return match.group(0)
+        if target.startswith('#'):
+            target = name + target
         target = posixpath.normpath(posixpath.join('docs', target))
         return f"[{match.group(1)}](https://github.com/Daeda1used/GraspPanda/blob/main/{target})"
     return re.sub(r'\[([^\]]+)\]\(([^)]+)\)', link, text)

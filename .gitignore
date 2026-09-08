@@ -28,6 +28,9 @@
 **/outputs/
 **/checkpoints/
 **/.venv/
+**/upstream/
+**/environments/
+**/artifacts/
 **/.python-version
 **/.env
 **/.env.*

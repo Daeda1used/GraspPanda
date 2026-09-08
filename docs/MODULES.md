@@ -2,6 +2,15 @@
 
 Module replacement is an explicit contract, not a shape-only switch. Supported choices preserve coordinates, units, sample indices, label assignment and decoder semantics. The rest of each method remains authoritative.
 
+| Configure | Reference |
+|---|---|
+| Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [Point Transformer](#point-transformer-encoder) |
+| Local grouping | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [FineGrasp](#finegrasp-training-and-composition) |
+| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
+| Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
+| Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
+
 ## Component selection and parameters
 
 A component can be a name (`backbone: pointnet`) or a mapping containing `type` and its parameters. Both forms serialize into the experiment and checkpoint. Unknown parameters are rejected.
@@ -372,7 +381,7 @@ Optimizer and scheduler settings are training-only; clear them for manually auth
 
 Selecting a different encoder and silently accepting all missing keys would conceal implementation mistakes. GraspPanda rejects mismatches outside the chosen slots.
 
-## Run a bounded training check
+## Short training
 
 Download the baseline weights and prepare its training labels as described in [downloads](DOWNLOADS.md). Copy this configuration to `compose.local.yaml` and set your dataset path:
 
@@ -414,7 +423,7 @@ For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkp
 
 Baseline, Graspness, FineGrasp and HGGD accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
 
-To test the epoch workflow, change the example above:
+Start an epoch run by changing the example above. Use a small batch limit for an initial run; set both limits to `0` for the complete native ranges:
 
 ```yaml
 action: train
@@ -430,13 +439,9 @@ data_workers: 0
 
 A nonzero training batch limit selects consecutive frames from `scene`/`frame` before native shuffling and augmentation. The native validation loop uses a prefix of test_seen for Baseline/SBG; Graspness has no validation loop in its released trainer. These validation losses are diagnostics, not benchmark AP or a recommended model-selection protocol. Set both limits to **0** for the complete native training/validation ranges and increase `timeout_minutes` for a long run. Epoch-boundary seeds are controlled by the configured seed plus epoch.
 
-Each run saves native epoch checkpoints under `training/` and the last checkpoint as `checkpoint.pt`. The UI exposes initialization/resume, batch limits, worker count, losses and checkpoint inference. Bounded epoch execution and resume are checked; full-split convergence is not claimed.
+Each run saves native epoch checkpoints under `training/` and the last checkpoint as `checkpoint.pt`. The UI exposes initialization/resume, batch limits, worker count, losses and checkpoint inference.
 
-## Add a component
-
-Register a slot/choice in `grasppanda/components.py`, implement the adapter under `grasppanda/modules/`, and preserve its documented semantic contract. Test indices and gradient flow, strict checkpoint transfer, real-label optimization, checkpoint reload and downstream decoding. Document the input contract and available operation in the method table. Additional dataset integration also requires readers, supervision and an evaluator; metadata registration alone is insufficient.
-
-### RNG proposal initialization
+## RNG proposal initialization
 
 A newly initialized image encoder may produce proposals with no local grasp labels. For RNG short training, set `proposal_warmup_steps` to train the anchor on its native heatmap targets before preparing its own local patches. These updates are additional to `training_steps`; a custom learning-rate schedule spans both phases. The default is `0`. Warmup uses the selected optimizer and real targets, with no teacher model or replacement labels. Its loss is shown separately as **Anchor warmup**. The required duration depends on initialization, learning rate and scene; a positive proposal set is checked before local training.
 
@@ -490,3 +495,5 @@ An empty checkpoint starts FineGrasp from random weights; a supplied author or t
 Set `train_batch_limit: 0` for the complete training split. A positive limit selects consecutive frames from `scene` / `frame`, then shuffles them. Data-loader workers restart at epoch boundaries and receive explicit seeds, so a resumed epoch has the same sampling setup. This differs from the author's persistent-worker lifecycle. Resume restores model, optimizer and schedule state at an epoch boundary; keep the original final `epochs` horizon and data/optimization configuration. The checkpoint's update count must match its completed epochs. GPU operator results are not promised to be bitwise identical after restarting a process.
 
 FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. Short runs and bounded epoch checks do not establish full-training convergence or benchmark AP. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.
+
+For new adapters and datasets, see [Extending GraspPanda](EXTENDING.md).
