@@ -11,6 +11,35 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m compileall -q grasppanda tools
+      - name: Check public distribution contents
+        run: |
+          python - <<'PY'
+          import re
+          import subprocess
+          from pathlib import Path
+          files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')[:-1]
+          roots = {'.github', '.gitignore', 'GraspNet-1B', 'LICENSE', 'README.md',
+                   'docs', 'grasppanda', 'panda', 'patches', 'pyproject.toml', 'tools', 'uv.lock'}
+          private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
+                     'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version'}
+          extensions = {'.md', '.py', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}
+          for name in files:
+              path = Path(name)
+              assert path.parts[0] in roots, f'Unexpected distribution root: {name}'
+              assert not private.intersection(path.parts), f'Local artifact: {name}'
+              assert not path.is_symlink(), f'Local symlink: {name}'
+              assert path.suffix in extensions or name in {'panda', 'LICENSE', '.gitignore'}, name
+              text = path.read_text()
+              assert not re.search(r'[\u3400-\u9fff]', text), f'Use English in public files: {name}'
+              assert not re.search(r'/(?:home|root|Users)/', text), f'Personal filesystem path: {name}'
+              assert path.stat().st_size < 1_000_000, f'Unexpected large artifact: {name}'
+          for name in files:
+              if not name.endswith('.md'):
+                  continue
+              for target in re.findall(r'\]\(([^)]+)\)', Path(name).read_text()):
+                  if '://' not in target and not target.startswith('#'):
+                      assert (Path(name).parent / target.split('#')[0]).exists(), (name, target)
+          PY
       - name: Validate registered operations and source pins
         run: |
           python - <<'PY'

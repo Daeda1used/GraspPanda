@@ -12,7 +12,8 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then the 
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential git ca-certificates curl \
+sudo apt-get install -y build-essential cmake pkg-config python3 python3-dev \
+  git ca-certificates curl unzip \
   libopenblas-dev libeigen3-dev libcgal-dev libboost-all-dev \
   libgmp-dev libmpfr-dev libgl1 libglib2.0-0 libgomp1
 export GRASPPANDA_CUDA_HOME=/usr/local/cuda-11.8
@@ -20,7 +21,7 @@ bash tools/bootstrap.sh
 ./panda doctor
 ```
 
-`bootstrap.sh` fetches pinned original repositories, installs the locked Python dependencies and builds native extensions into the same `.venv`. It does not download GraspNet or the external checkpoint collection. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
+`bootstrap.sh` checks system prerequisites before downloading packages, fetches pinned sources for integrated methods and builds native extensions into the same `.venv`. Reference-only papers do not add downloads. It does not download GraspNet or the external checkpoint collection. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
 
 ```bash
 ./panda weights hggd --camera realsense
@@ -47,3 +48,16 @@ An exact `uv sync` removes packages outside the lock. Rerun the installer after 
 | Run directory already has a worker | CLI commands attach automatically. A second UI still needs another port/run directory; restart older workers after upgrading. |
 
 Build logs are in `logs/`. `./panda doctor` reports the active interpreter, GPU, core extensions and source revisions; it is a readiness check, not a full method benchmark.
+
+## Files created locally
+
+The clone contains source, guides, example configurations and dependency locks. Installation and use create the following ignored directories:
+
+| Directory | Created by |
+|---|---|
+| `.venv/`, `upstream/`, `environments/` | Shared runtime installer; downloaded sources and native build cache |
+| `checkpoints/` | Weight downloader |
+| `outputs/` | Experiment queue, predictions, trained checkpoints and exports |
+| `logs/` | Installation and source-download diagnostics |
+
+Keep GraspNet at a path of your choice and select that path in the UI. Copy examples to a `*.local.yaml` file before editing; local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.

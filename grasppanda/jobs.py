@@ -115,8 +115,7 @@ class JobManager:
 
     def _submit_many(self, configs, sweep=None):
         # Reject every invalid input before any experiment becomes runnable.
-        for config in configs:
-            config.preflight()
+        configs = [config.preflight() for config in configs]
         directories = []
         manifest = None
         group = uuid.uuid4().hex if sweep else None

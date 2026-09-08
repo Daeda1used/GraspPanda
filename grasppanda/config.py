@@ -1,5 +1,5 @@
 """Validated experiment contracts; no user supplied shell commands."""
-from dataclasses import asdict, dataclass, fields, field
+from dataclasses import asdict, dataclass, fields, field, replace
 import json
 import math
 import os
@@ -152,12 +152,20 @@ class Experiment:
 
     def preflight(self):
         self.validate()
+        paths = {}
+        for name in ('dataset_root', 'checkpoint', 'label_root', 'sdf_root', 'prediction_dir'):
+            value = getattr(self, name)
+            if not isinstance(value, str):
+                raise ValueError(f'{name} must be a path string')
+            if value:
+                paths[name] = os.path.abspath(ROOT / Path(value).expanduser())
+        config = replace(self, **paths)
         repo = ROOT / catalogue()[self.method]["path"]
         if not (repo / ".git").exists():
             raise ValueError("Source missing: run ./panda fetch")
         from .datasets import get_provider
-        get_provider(self.dataset).preflight(self)
-        return self
+        get_provider(config.dataset).preflight(config)
+        return config
 
     def to_dict(self):
         return asdict(self)

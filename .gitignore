@@ -16,7 +16,23 @@
 # Generated files and credentials remain local, including inside source folders.
 **/__pycache__/
 **/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
 **/*.egg-info/
+**/tests/
+**/reports/
+**/logs/
+**/outputs/
+**/checkpoints/
+**/.venv/
+**/.python-version
+**/.ipynb_checkpoints/
+.coverage
+coverage.xml
+*.sqlite*
+*.ipynb
+*.whl
+*.so
 *.py[cod]
 *.local.*
 *.log

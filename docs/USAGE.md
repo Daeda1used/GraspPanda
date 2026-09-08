@@ -38,7 +38,7 @@ The available choices depend on the method. The internal action identifiers are 
 ./panda run GraspNet-1B/examples/infer-graspness.example.yaml
 ```
 
-`verify` executes the method preset. `run` accepts YAML or JSON; edit the example paths before running. Relative data/checkpoint paths resolve from the repository root. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
+`verify` executes the method preset. `run` accepts YAML or JSON; edit the example paths before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
 
 Set a default dataset path for the UI and CLI presets:
 
