@@ -62,6 +62,14 @@ def schema(method, slot, choice):
             if choice != 'mobilenetv4':
                 fields.update(stage_channels=('int_list', 4, 16, 1024), stage_depths=('int_list', 4, 1, 32))
             return fields
+    if slot == 'backbone' and choice == 'pointmamba':
+        return {'dim': ('int',8,768), 'depth': ('int',1,48),
+                'num_group': ('int',4,2048), 'group_size': ('int',4,256),
+                'grid_size': ('float',.0001,1), 'd_state': ('int',4,256),
+                'd_conv': ('int',2,4), 'expand': ('int',1,4), 'dt_rank': ('int',1,128),
+                'rms_norm': ('bool',), 'drop_path': ('float',0,.8),
+                'dropout': ('float',0,.8), 'order_fusion': ('choice',('mean','concat')),
+                'gradient_checkpointing': ('bool',)}
     if slot == 'backbone' and choice == 'pointmlp':
         return {'embed_dim': ('int', 8, 128), 'dim_expansion': ('int_list', 4, 1, 4),
                 'pre_blocks': ('int_list', 4, 1, 12), 'pos_blocks': ('int_list', 4, 1, 12),
@@ -145,6 +153,8 @@ def validate_options(method, slot, choice, options):
             raise ValueError('DeepLA cylinder width must be a multiple of 8')
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
+    if choice == 'pointmamba' and options.get('dim',384) % 8:
+        raise ValueError('PointMamba token width must be a multiple of 8')
     if choice == 'pointmeta' and options.get('blocks',[1,3,5,3,3])[0] != 1:
         raise ValueError('PointMetaBase requires a single stem block in blocks[0]')
     if choice == 'pointmlp':

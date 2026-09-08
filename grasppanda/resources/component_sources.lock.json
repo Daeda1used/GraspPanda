@@ -46,5 +46,17 @@
     "repository": "https://github.com/linhaojia13/PointMetaBase",
     "path": "environments/sources/cv/pointmetabase",
     "commit": "c364a671ee255453c0a03b2474af555664604db9"
+  },
+  {
+    "id": "pointmamba",
+    "repository": "https://github.com/LMD0311/PointMamba",
+    "path": "environments/sources/cv/pointmamba",
+    "commit": "80858e096e33ff7470640fe1f2132e5c1e667074"
+  },
+  {
+    "id": "causal-conv1d",
+    "repository": "https://github.com/Dao-AILab/causal-conv1d",
+    "path": "environments/sources/cv/causal-conv1d",
+    "commit": "f8c246707eff3431b5cf2ce6defa4b7f309ea9fb"
   }
 ]

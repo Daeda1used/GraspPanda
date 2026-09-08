@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [Point Transformer](#point-transformer-encoder) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [Point Transformer](#point-transformer-encoder) |
 | Local grouping | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,7 +17,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
@@ -111,6 +111,28 @@ The encoder updates point features before grouping and adds explicit positional 
 | `decoder_layers` | `2`; feature-propagation MLP depth. The native decoder retains ReLU and BatchNorm. |
 
 A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [the PointMetaBase composition example](../GraspNet-1B/examples/components/compose-pointmeta.yaml), which also replaces cylinder processing with ResLFE.
+
+## PointMamba encoder
+
+`pointmamba` adapts [PointMamba (NeurIPS 2024 PDF)](https://arxiv.org/pdf/2402.10739) from the [author implementation](https://github.com/LMD0311/PointMamba). It retains the native local point encoder, two Hilbert sequences, order-specific scales and Mamba residual blocks. The pinned main branch provides classification and pretraining models; GraspPanda adds a grasp feature decoder. It is available for Baseline and its PointNet2 port.
+
+FPS centers and Euclidean nearest neighbors form centered local patches. Shared PointNet2/PyTorch3D operators replace the author's separate grouping packages; equal-distance neighbor ties can choose different points. Tokens follow `hilbert` and `hilbert-trans` orders. Each output sequence is restored to the original center order before mean or concatenation fusion. Three-neighbor interpolation and a learned projection produce 256-channel features at 1,024 original-input grasp seeds. Camera XYZ stays in metres; the dataset's seed/label correspondence is preserved.
+
+| Setting | Default / meaning |
+|---|---|
+| `dim`, `depth` | `384`, `12`; token width (multiple of eight) and native residual block count |
+| `num_group`, `group_size` | `128`, `32`; sampled patch centers and nearest neighbors per patch |
+| `grid_size` | `0.02` metres; spatial quantization for ordering, without averaging or removing input points |
+| `d_state`, `d_conv`, `expand` | `16`, `4`, `2`; state size, causal convolution width (2–4) and inner-width expansion |
+| `dt_rank` | Omit for the native automatic rank; otherwise a positive integer |
+| `rms_norm` | `false`; choose native RMSNorm instead of LayerNorm |
+| `drop_path`, `dropout` | `0.5`, `0.0`; linearly increasing block drop probability and dropout after each block |
+| `order_fusion` | `mean`; alternatively `concat`, doubling the projection input width |
+| `gradient_checkpointing` | `false`; recompute token blocks during training while preserving dropout RNG |
+
+The adapter keeps the native block constructor initialization, including the learned timestep bias initialization and depth-scaled output projections. It does not apply the classification trainer's outer scratch initializer, load classification weights or provide pretrained grasp weights. Start with [the composition example](../GraspNet-1B/examples/components/compose-pointmamba.yaml), use `reuse_unchanged` to retain the baseline's other modules, train the replacement, and use `strict` to reload the resulting grasp checkpoint. Width, depth, state size, grouping and fusion are saved with the experiment and can be swept through dotted configuration paths.
+
+Run `./panda install` to fetch the pinned sources and build both native CUDA extensions in the shared runtime. Fast Mamba convolution and selective scan use isolated extension names; no global `mamba_ssm` package is installed. Coordinates must be CUDA float32; extremely small grids that exceed the native 16-bit spatial encoding are rejected. Single-cell clouds retain a valid ordering. This encoder has one token resolution; it does not provide a hierarchical point decoder or make multi-view inputs interchangeable with single-view observations.
 
 ## Residual local aggregation in cylinders
 

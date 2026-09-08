@@ -960,7 +960,7 @@ wheels = [
 
 [[package]]
 name = "grasppanda"
-version = "0.21.1"
+version = "0.22.0"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },

@@ -12,7 +12,7 @@ class ComponentSlot:
 
 
 BASELINE_SLOTS = (
-    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmeta','pointmlp','sonata_ptv3'),
+    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmeta','pointmlp','pointmamba','sonata_ptv3'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
     ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder'),
@@ -115,6 +115,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif slot.name=='crop' and choice=='cylinder':
             from .modules.cylinder import CylindricalAggregation
             replacement=CylindricalAggregation(native,'graspness' if method=='graspness' else 'baseline',**options)
+        elif choice=='pointmamba':
+            from .modules.pointmamba import PointMambaBackbone
+            replacement=PointMambaBackbone(**options)
         elif choice=='pointmeta':
             from .modules.pointmeta import PointMetaBackbone
             replacement=PointMetaBackbone(**options)

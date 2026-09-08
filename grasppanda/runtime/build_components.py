@@ -9,6 +9,33 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def build_pointmamba(uv, source, causal, env):
+    flags = ['-O3', '-std=c++17', '--expt-relaxed-constexpr',
+             '--expt-extended-lambda', '--use_fast_math',
+             '-U__CUDA_NO_HALF_OPERATORS__', '-U__CUDA_NO_HALF_CONVERSIONS__',
+             '-U__CUDA_NO_BFLOAT16_OPERATORS__', '-U__CUDA_NO_BFLOAT16_CONVERSIONS__',
+             '-U__CUDA_NO_BFLOAT162_OPERATORS__', '-U__CUDA_NO_BFLOAT162_CONVERSIONS__']
+    for name, directory in (('_grasppanda_pointmamba_scan', source/'mamba/csrc/selective_scan'),
+                             ('_grasppanda_causal_conv1d', causal/'csrc')):
+        build = ROOT/'environments/build'/name
+        shutil.copytree(directory, build/'csrc', dirs_exist_ok=True)
+        files = sorted(str(p.relative_to(build)) for p in (build/'csrc').iterdir()
+                       if p.suffix in ('.cpp', '.cu'))
+        if not files:
+            raise RuntimeError('PointMamba native operator sources are missing')
+        # Build every native precision kernel against this interpreter/torch,
+        # without installing a global mamba_ssm or downloading a stock wheel.
+        (build/'setup.py').write_text(
+            'from setuptools import setup\n'
+            'from torch.utils.cpp_extension import CUDAExtension, BuildExtension\n'
+            f'setup(name={name.lstrip("_").replace("_", "-")!r},version="0.1.0",'
+            f'ext_modules=[CUDAExtension({name!r},{files!r},include_dirs=[{str(build/"csrc")!r}],'
+            f'extra_compile_args={{"cxx":["-O3","-std=c++17"],"nvcc":{flags!r}}})],'
+            'cmdclass={"build_ext":BuildExtension})\n')
+        subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                        '--no-build-isolation', str(build)], env=env, check=True)
+
+
 def build_vmamba(uv, source, env):
     build=ROOT/'environments/build/vmamba-scan'
     shutil.copytree(source/'kernels/selective_scan',build,dirs_exist_ok=True,
@@ -74,6 +101,7 @@ def main():
         actual=subprocess.check_output(['git','-C',str(dest),'rev-parse','HEAD'],text=True).strip()
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     verify_pointmeta_operators(ROOT/pins['pointmetabase']['path'], ROOT/pins['openpoints']['path'])
+    build_pointmamba(uv, ROOT/pins['pointmamba']['path'], ROOT/pins['causal-conv1d']['path'], env)
     build_vmamba(uv, ROOT/pins['vmamba']['path'], env)
     build_deepla(uv, ROOT/pins['deepla']['path'], env)
     # Native packaging generates the version module used by source imports.
