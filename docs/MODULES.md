@@ -9,9 +9,9 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Method | Slot | Choices |
 |---|---|---|
 | Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmlp`, `sonata_ptv3` |
-| Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
+| Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
-| Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
+| Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
@@ -27,6 +27,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
 | `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
 | `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
+| `reslfe_cylinder` | `width`, `depth`, `local_neighbors`, `nsample`, `radius_factors`, `mlp_ratio`, `drop_path`, `bn_momentum`, `pooling`, `activation`, `normalization` |
 | Image `dinov2` / `dinov3` | `variant`: small/base; `pretrained`, `out_indices`, `trainable_blocks`, `drop_path`, `gradient_checkpointing`, `projection_norm` |
 | Image `vmamba` | `stage_channels`, `stage_depths`, `state_dim`, `ssm_ratio`, `dt_rank`, `scan`, `ssm_conv`, `ssm_conv_bias`, `ssm_activation`, `ssm_dropout`, `mlp_ratio`, `mlp_activation`, `mlp_dropout`, `drop_path`, `gradient_checkpointing`, `projection_norm` |
 | Image `native_resnet` | `variant`: 18/34/50 (string); optional four-element `stage_depths` |
@@ -79,6 +80,28 @@ The adapter supplies XYZ features, decodes back to every original input point, p
 | `decoder_layers` | `2`; MLP depth of native feature propagation |
 
 Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
+
+## Residual local aggregation in cylinders
+
+`reslfe_cylinder` adapts the native ResLFE block from [DeepLA-Net (CVPR 2025 PDF)](https://openaccess.thecvf.com/content/CVPR2025/papers/Zeng_DeepLA-Net_Very_Deep_Local_Aggregation_Networks_for_Point_Cloud_Analysis_CVPR_2025_paper.pdf) ([pinned implementation](https://github.com/zeng-ziyin/DeepLA-Net/blob/7f572899de7db26d2c5eac538395d9932faafb89/S3DIS/deepla_semseg.py)) to the `crop` slot of Baseline, its PointNet2 port and Graspness. Run `./panda install` after upgrading to fetch the source and build its CUDA operators in the shared runtime.
+
+Each method retains its native oriented cylinder query. Within each cylinder, GraspPanda embeds the grouped input features and center-relative, approach-aligned XYZ, then constructs a local KNN graph among the grouped samples. Native ResLFE layers alternate feature-difference max pooling and residual feed-forward updates, with positional features added at each layer. The resulting features are projected to 256 channels, pooled within the cylinder and fused across radii. Baseline retains all four native depth bins; Graspness retains its seed order and native depth decoder. Relative-coordinate normalization follows the native query: Graspness divides offsets by the cylinder radius, while Baseline uses metres. Native padded query samples, including repeated points, are preserved.
+
+This is a local-block adaptation. It does not introduce DeepLA's scene segmentation hierarchy, segmentation labels or hybrid deep-supervision losses. It initializes without pretrained DeepLA weights. Use `reuse_unchanged` with the original grasp checkpoint, train the new component, then select the resulting checkpoint with `strict`.
+
+| Setting | Default / meaning |
+|---|---|
+| `width`, `depth` | `64`, `4`; feature width and number of native ResLFE iterations. Width must be a multiple of eight. |
+| `nsample`, `local_neighbors` | `16`, `8`; native cylinder samples and neighbors within that cylinder. Local neighbors must not exceed the sample count. |
+| `radius_factors` | `[1.0]`; multipliers of the method's native cylinder radius. |
+| `mlp_ratio` | `1.0`; hidden expansion of native feed-forward layers. |
+| `drop_path` | `0.1`; linearly increasing stochastic depth within the block, sampled independently per cylinder during training. A single iteration uses zero stochastic depth. |
+| `bn_momentum` | `0.02`; native ResLFE BatchNorm momentum. Native zero-initialized residual scales are retained. |
+| `pooling` | `max`; final cylinder pooling, also `mean` or `attention`. This does not change the native internal max-difference operator. |
+| `activation` | `gelu`; also `relu` or `silu`, used in embeddings and feed-forward layers. |
+| `normalization` | `batch`; also `group` or `none`, for the input/position embeddings, output projection and radius fusion. Native ResLFE layers retain BatchNorm. |
+
+The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [the local aggregation example](../GraspNet-1B/examples/compose-reslfe.yaml). Source terms are described in [Third-party notices](THIRD_PARTY.md).
 
 ## Point Transformer encoder
 

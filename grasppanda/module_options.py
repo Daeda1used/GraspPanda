@@ -86,6 +86,12 @@ def schema(method, slot, choice):
         return {'radius_factors': ('radii',)}
     if method == 'graspness' and slot == 'crop' and choice == 'finegrasp':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius_factors': ('radii',)}
+    if slot == 'crop' and choice == 'reslfe_cylinder':
+        return {**common, 'width': ('int',8,512), 'depth': ('int',1,60),
+                'local_neighbors': ('int',1,64), 'nsample': ('int',4,128),
+                'radius_factors': ('radii',), 'mlp_ratio': ('float',.5,8),
+                'drop_path': ('float',0,.8), 'bn_momentum': ('float',.001,1),
+                'pooling': ('choice',('max','mean','attention'))}
     if slot == 'crop' and choice == 'cylinder':
         return {**common, 'hidden_channels': ('channels',), 'radius_factors': ('radii',),
                 'nsample': ('int', 4, 256), 'pooling': ('choice', ('max', 'mean', 'attention'))}
@@ -122,6 +128,11 @@ def validate_options(method, slot, choice, options):
         indices = options.get('out_indices', [2,5,8,11])
         if indices[-1] != 11 or any(a >= b for a,b in zip(indices, indices[1:])):
             raise ValueError('DINO output indices must increase strictly and end at block 11')
+    if choice == 'reslfe_cylinder':
+        if options.get('width',64) % 8:
+            raise ValueError('DeepLA cylinder width must be a multiple of 8')
+        if options.get('local_neighbors',8) > options.get('nsample',16):
+            raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
     if choice == 'pointmlp':
         sizes = options.get('stage_points', [1024, 256, 64, 16])
         neighbors = options.get('k_neighbors', [32, 32, 32, 16])

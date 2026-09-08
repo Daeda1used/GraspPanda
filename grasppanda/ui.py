@@ -375,7 +375,7 @@ def create_app(manager=None):
                         gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
                         initial_components={slot.name:list(slot.choices) for slot in slots('graspnet_baseline')}
                         backbone=gr.Dropdown(initial_components['backbone'],value='upstream',label='Point encoder')
-                        crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
+                        crop=gr.Dropdown(initial_components['crop'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)

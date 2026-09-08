@@ -34,5 +34,11 @@
     "repository": "https://github.com/MzeroMiko/VMamba",
     "path": "environments/sources/cv/vmamba",
     "commit": "2ed52ead062a51a64521ed3871d52914bf532876"
+  },
+  {
+    "id": "deepla",
+    "repository": "https://github.com/zeng-ziyin/DeepLA-Net",
+    "path": "environments/sources/cv/deepla",
+    "commit": "7f572899de7db26d2c5eac538395d9932faafb89"
   }
 ]

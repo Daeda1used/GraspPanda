@@ -15,7 +15,7 @@ BASELINE_SLOTS = (
     ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmlp','sonata_ptv3'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
-    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder'),
+    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder'),
                   'Camera-frame seed points, scene points and proper approach rotations.',
                   'Features [B,256,1024,4] retaining the native four depth bins.'),
 )
@@ -37,7 +37,7 @@ def slots(method):
     if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
         '512-channel sparse features, mapped to original input points by quantize2original.'),
-        ComponentSlot('crop','crop',('upstream','cylinder','finegrasp'),
+        ComponentSlot('crop','crop',('upstream','cylinder','finegrasp','reslfe_cylinder'),
             'Graspable seed coordinates/features and approach rotations; native oriented cylinder queries.',
             '256-channel seed features preserving the native approach and depth decoder semantics.'))
     return ()
@@ -100,6 +100,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method=='graspness' and slot.name=='crop' and choice=='finegrasp':
             from .modules.finegrasp import FineGraspCrop
             replacement=FineGraspCrop(native,**options)
+        elif slot.name=='crop' and choice=='reslfe_cylinder':
+            from .modules.deepla import ResLFECylinder
+            replacement=ResLFECylinder(native,'graspness' if method=='graspness' else 'baseline',**options)
         elif slot.name=='crop' and choice=='cylinder':
             from .modules.cylinder import CylindricalAggregation
             replacement=CylindricalAggregation(native,'graspness' if method=='graspness' else 'baseline',**options)

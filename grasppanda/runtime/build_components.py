@@ -17,6 +17,34 @@ def build_vmamba(uv, source, env):
                     '--no-build-isolation',str(build)],env=env,check=True)
 
 
+def build_deepla(uv, source, env):
+    build = ROOT/'environments/build/deepla-ops'
+    shutil.copytree(source/'utils/cutils/srcs', build/'srcs', dirs_exist_ok=True)
+    # Native launches use the default stream. Preserve the operator arithmetic
+    # while honoring PyTorch's selected device and current CUDA stream.
+    for path in (build/'srcs').glob('*.cu'):
+        text = path.read_text()
+        if text.count('<<<grid, block>>>') != 3:
+            raise RuntimeError('DeepLA CUDA launch layout differs from the pinned source')
+        text = '#include <ATen/cuda/CUDAContext.h>\n#include <c10/cuda/CUDAGuard.h>\n' + text
+        text = text.replace('    const uint64_t grid =',
+            '    const c10::cuda::CUDAGuard device_guard(output.device());\n    const uint64_t grid =')
+        text = text.replace('<<<grid, block>>>',
+            '<<<grid, block, 0, at::cuda::getCurrentCUDAStream(output.get_device())>>>')
+        path.write_text(text)
+    (build/'setup.py').write_text("""from pathlib import Path
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+sources = sorted(str(p) for p in Path('srcs').glob('*') if p.suffix in ('.cpp', '.cu'))
+setup(name='grasppanda-deepla-ops', version='0.1.0',
+      ext_modules=[CUDAExtension('_grasppanda_deepla_cuda', sources,
+                   extra_compile_args={'cxx':['-O3'], 'nvcc':['-O3']})],
+      cmdclass={'build_ext': BuildExtension})
+""")
+    subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                    '--no-build-isolation', str(build)], env=env, check=True)
+
+
 def main():
     uv=ROOT/'environments/bootstrap/uv'
     uv=str(uv) if uv.exists() else shutil.which('uv')
@@ -36,6 +64,7 @@ def main():
         actual=subprocess.check_output(['git','-C',str(dest),'rev-parse','HEAD'],text=True).strip()
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     build_vmamba(uv, ROOT/pins['vmamba']['path'], env)
+    build_deepla(uv, ROOT/pins['deepla']['path'], env)
     # Native packaging generates the version module used by source imports.
     # The broader robotics application dependencies are outside this adapter.
     subprocess.run([uv,'build',str(ROOT/pins['finegrasp']['path']),'--wheel',
