@@ -189,7 +189,10 @@ class JobManager:
         with self._lock:
             self._db.execute("UPDATE jobs SET state=?,detail=? WHERE id=?", (state, detail, job_id))
             self._db.commit()
-        (self.root / job_id / "status.json").write_text(json.dumps({"state": state, "detail": detail, "updated": now()}, indent=2))
+            path = self.root / job_id / "status.json"
+            temporary = path.with_suffix(".json.tmp")
+            temporary.write_text(json.dumps({"state": state, "detail": detail, "updated": now()}, indent=2))
+            os.replace(temporary, path)
 
     def cancel(self, job_id):
         if self._client: return self._rpc('cancel', job_id)
