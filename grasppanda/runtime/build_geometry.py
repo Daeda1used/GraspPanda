@@ -7,7 +7,7 @@ import sys
 import setuptools  # activate its distutils shim before resolving compiler class
 from distutils.ccompiler import CCompiler
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 original = CCompiler.compile
 
 

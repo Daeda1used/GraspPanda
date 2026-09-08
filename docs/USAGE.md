@@ -7,7 +7,7 @@ Run `./panda ui` and open **http://127.0.0.1:7860**.
 1. In **Experiments**, select a protocol and method, then **Load preset**.
 2. Set the dataset root containing `scenes/`. **Download registered weights** prepares each required network for the selected camera and verifies its checksum.
 3. Select an operation, adjust its inputs and click **Run current form**.
-4. In **Runs & results**, select the job to view logs, predictions, loss curves and checkpoints. Cancel it or export the experiment as a ZIP.
+4. In **Runs & results**, select the job to view logs, predictions, loss curves and checkpoints. Predictions and loss curves appear first; expand **Run details & logs** for diagnostics, raw results and individual files. Cancel a run or export it as a ZIP.
 
 Expand **Method details & input requirements** for the selected method's input protocol and original implementation. **Compose modules** exposes registered replacements. **Configuration editor** lets you generate, edit, validate and run exact JSON. For a native recipe, the preset defines fixed inputs; disabled frame fields do not override them. Supported recipes accept a primary checkpoint override.
 

@@ -9,9 +9,7 @@
 !/docs/
 !/grasppanda/
 !/panda
-!/patches/
 !/pyproject.toml
-!/tools/
 !/uv.lock
 
 # Generated files and credentials remain local, including inside source folders.

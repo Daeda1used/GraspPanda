@@ -72,7 +72,7 @@ Basic frame inference does not require downloading all training targets. Additio
 | Generalizing-Grasp inference / short training | Matched `fusion_scenes/` points and segmentation; training also needs full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
 | ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |
 
-Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the extra dependencies built by `tools/build_extras.py`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
+Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the geometry dependencies installed by `./panda install`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
 
 GraspBalance requires original grasp/collision labels and tolerance. Graspness modern requires the same simplified labels and graspness maps as its ResUNet implementation. All preprocessing remains method-specific; an identical folder name does not guarantee compatible supervision.
 
@@ -83,7 +83,7 @@ Download the official `models.zip` and the author's [fused data](https://drive.g
 Generate the 88 SDF grids in a writable cache, keeping the source dataset read-only:
 
 ```bash
-.venv/bin/python tools/prepare_sdf.py \
+./panda prepare-sdf \
   --dataset-root /data/GraspNet-1B \
   --output-root /data/GraspPanda-cache/generalizing-sdf
 ```

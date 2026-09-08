@@ -7,14 +7,14 @@ from pathlib import Path
 import sys
 import time
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
 from grasppanda.config import catalogue
 from grasppanda.jobs import digest
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__)
+    parser=argparse.ArgumentParser(prog="panda prepare-sdf", description=__doc__)
     parser.add_argument('--dataset-root',type=Path,required=True)
     parser.add_argument('--output-root',type=Path,required=True,help='Writes models/ID/grid_sampled_sdf.npz below this directory')
     parser.add_argument('--objects',type=int,nargs='+',default=list(range(88)))

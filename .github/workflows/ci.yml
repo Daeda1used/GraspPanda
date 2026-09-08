@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m compileall -q grasppanda tools
+      - run: python -m compileall -q grasppanda
       - name: Check public distribution contents
         run: |
           python - <<'PY'
@@ -19,7 +19,7 @@ jobs:
           from pathlib import Path
           files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')[:-1]
           roots = {'.github', '.gitattributes', '.gitignore', 'GraspNet-1B', 'LICENSE', 'README.md',
-                   'docs', 'grasppanda', 'panda', 'patches', 'pyproject.toml', 'tools', 'uv.lock'}
+                   'docs', 'grasppanda', 'panda', 'pyproject.toml', 'uv.lock'}
           private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
                      'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version'}
           extensions = {'.md', '.py', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}

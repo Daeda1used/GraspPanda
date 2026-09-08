@@ -1,4 +1,4 @@
-"""Browser workbench for reproducible visual grasping experiments."""
+"""Browser interface for reproducible visual grasping experiments."""
 import json
 import os
 from pathlib import Path
@@ -416,13 +416,14 @@ def create_app(manager=None):
             job_message = gr.Markdown()
             with gr.Row():
                 with gr.Column():
-                    logs = gr.Textbox(label="Live log (last 32 KB)", lines=16, interactive=False)
-                    result = gr.JSON(label="Result")
                     loss_plot=gr.LinePlot(x='Batch',y='Loss',color='Stage',title='Training loss by stage',label='Training objective')
                 with gr.Column():
                     preview = gr.Image(label="Predicted gripper projection (first frame)", interactive=False)
-                    artifacts = gr.File(label="Configuration, provenance & logs", file_count="multiple")
                     bundle = gr.File(label="Exported experiment")
+            with gr.Accordion("Run details & logs", open=False):
+                logs = gr.Textbox(label="Live log (last 32 KB)", lines=16, interactive=False)
+                result = gr.JSON(label="Result")
+                artifacts = gr.File(label="Configuration, provenance & logs", file_count="multiple")
         with gr.Tab("Compare"):
             gr.Markdown("Only completed runs are listed. Compare AP only under identical dataset, camera, split, workspace, training data and postprocessing. `null` AP means not evaluated; it is never zero AP. Compare losses only when objectives, coefficients and sampled data match.")
             compare_button = gr.Button("Refresh comparison")

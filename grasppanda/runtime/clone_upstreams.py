@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import time
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 LOCK = ROOT/'grasppanda/resources/upstreams.lock.json'
 PINS = {m['id']:m.get('pinned_commit') or m.get('commit') for m in json.loads(LOCK.read_text())} if LOCK.exists() else {}
 

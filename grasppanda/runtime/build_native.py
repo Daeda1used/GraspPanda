@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 (ROOT/'logs').mkdir(exist_ok=True)
 (ROOT/'environments/state').mkdir(parents=True,exist_ok=True)
 wheelhouse=ROOT/'environments/wheels';wheelhouse.mkdir(exist_ok=True)

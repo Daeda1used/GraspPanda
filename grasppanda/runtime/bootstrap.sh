@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$PROJECT_ROOT"
 unset PYTHONPATH PYTHONHOME
 if [[ "$(uname -s)" != Linux || "$(uname -m)" != x86_64 ]]; then
@@ -29,9 +29,9 @@ if [[ -z "$UV_BIN" ]]; then
 fi
 "$UV_BIN" sync --python 3.11 --locked --inexact --no-dev
 "$UV_BIN" pip install --python .venv/bin/python --no-build-isolation grasp-nms==1.0.2
-python3 tools/clone_upstreams.py
-.venv/bin/python tools/build_native.py
-.venv/bin/python tools/build_components.py
-.venv/bin/python tools/build_extras.py
+python3 grasppanda/runtime/clone_upstreams.py
+.venv/bin/python grasppanda/runtime/build_native.py
+.venv/bin/python grasppanda/runtime/build_components.py
+.venv/bin/python grasppanda/runtime/build_extras.py
 "$UV_BIN" pip check --python .venv/bin/python
 echo 'GraspPanda installed. Run ./panda weights graspness, then ./panda ui.'

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import sysconfig
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 UV = str(ROOT / 'environments/bootstrap/uv') if (ROOT / 'environments/bootstrap/uv').exists() else shutil.which('uv')
 ENV = {**os.environ, 'CUDA_HOME': os.environ.get('GRASPPANDA_CUDA_HOME', '/usr/local/cuda-11.8'), 'MAX_JOBS': os.environ.get('MAX_JOBS', '4')}
 for key in ('CONDA_PREFIX','CONDA_DEFAULT_ENV','PYTHONPATH','PYTHONHOME'):
@@ -61,7 +61,7 @@ def main():
     original = ROOT / 'environments/sources/scikit-geometry'
     build = ROOT / 'environments/build/scikit-geometry'
     shutil.copytree(original, build, dirs_exist_ok=True, ignore=shutil.ignore_patterns('.git', 'build', '*.egg-info'))
-    patch = ROOT / 'patches/scikit-geometry/pybind11-property-lifetime.patch'
+    patch = ROOT / 'grasppanda/resources/patches/scikit-geometry/pybind11-property-lifetime.patch'
     run('skgeom-patch', ['git', 'apply', str(patch)], cwd=build)
     record_path = ROOT/'environments/state/extra_builds.json'
     previous = json.loads(record_path.read_text()) if record_path.exists() else {}
@@ -73,7 +73,7 @@ def main():
              and previous.get('python_abi')==sys.implementation.cache_tag
              and hashlib.sha256(cached.read_bytes()).hexdigest()==previous.get('skgeom_wheel_sha256'))
     if not reuse:
-        run('skgeom-build', [sys.executable,str(ROOT/'tools/build_geometry.py')])
+        run('skgeom-build', [sys.executable,str(ROOT/'grasppanda/runtime/build_geometry.py')])
     wheels = list((ROOT/'environments/wheels').glob('skgeom-*-cp311-*.whl'))
     if not wheels: raise RuntimeError('Missing geometry wheel')
     geometry_wheel = cached if reuse else max(wheels,key=lambda p:p.stat().st_mtime)

@@ -4,12 +4,11 @@
 
 ```text
 GraspNet-1B/              Dataset entry and example experiments
-grasppanda/              UI, queue, adapters, training and component registry
-  integrations/           Dataset readers, supervision and evaluation
-  modules/                Interchangeable model components
-  resources/              Method metadata, source pins and checkpoint records
-tools/                   Installation, preprocessing and worker entry points
-patches/                 Compatibility patches for pinned dependencies
+grasppanda/              UI, queue, adapters and training
+  integrations/          Dataset readers, supervision and evaluation
+  modules/               Interchangeable model components
+  resources/             Source pins, weight records and compatibility patches
+  runtime/               Installation and isolated worker entry points
 docs/                    User and extension guides
 ```
 
@@ -29,7 +28,7 @@ Keep local data, weights, credentials, logs, development reports and generated c
 
 Register a choice in `grasppanda/components.py` and implement it under `grasppanda/modules/`. Match coordinates, units, sample indices, feature dimensions, neighborhoods, supervision, loss and decoder semantics. A matching tensor shape alone does not establish interchangeability. See [Compose modules](MODULES.md) for existing contracts and strict checkpoint transfer.
 
-Declare accepted parameters and cross-stage constraints in `grasppanda/module_options.py`; the UI uses this schema for its parameter reference, and sweeps validate each expanded experiment against it. Pin external component sources in `component_sources.lock.json` and add any native build steps to `tools/build_components.py`. Keep adaptation differences explicit in the component documentation.
+Declare accepted parameters and cross-stage constraints in `grasppanda/module_options.py`; the UI uses this schema for its parameter reference, and sweeps validate each expanded experiment against it. Pin external component sources in `component_sources.lock.json` and add any native build steps to `grasppanda/runtime/build_components.py`. Keep adaptation differences explicit in the component documentation.
 
 Graspness, SBG and HGGD have different proposal, grouping and refinement structures. Replacing a branch may require its labels, losses and decoder as well as its forward method. Verify gradient flow into every replaced component and strict reload of the resulting checkpoint.
 
@@ -39,7 +38,7 @@ Register metadata in `grasppanda/datasets.py` and an executable provider under `
 
 ## Compatibility
 
-Build native operators against the locked runtime. Version source patches under `patches/`; generate overlays and build products locally under `environments/`. Do not edit downloaded checkouts or silently discard learned parameters to make weights load.
+Build native operators against the locked runtime. Version source patches under `grasppanda/resources/patches/`; generate overlays and build products locally under `environments/`. Do not edit downloaded checkouts or silently discard learned parameters to make weights load.
 
 | Component | Compatibility behavior |
 |---|---|

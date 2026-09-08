@@ -15,7 +15,7 @@ def preflight(config):
         if config.method=='generalizing_grasp':
             sdf_root=Path(config.sdf_root or config.dataset_root)
             missing=[i for i in range(88) if not (sdf_root/'models'/f'{i:03d}'/'grid_sampled_sdf.npz').is_file()]
-            if missing:raise ValueError('Native fusion contact loss requires all 88 object SDF grids. Run tools/prepare_sdf.py and set sdf_root; missing IDs: '+str(missing))
+            if missing:raise ValueError('Native fusion contact loss requires all 88 object SDF grids. Run ./panda prepare-sdf and set sdf_root; missing IDs: '+str(missing))
         if config.method=='motiongrasp':
             from ..weights import primary
             if not primary('graspnet_baseline',config.camera):raise ValueError('MotionGrasp also requires the author detector: run ./panda weights motiongrasp')

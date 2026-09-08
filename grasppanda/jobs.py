@@ -157,7 +157,7 @@ class JobManager:
                       "upstream_commit": subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip(),
                       "upstream_tracked_changes": subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True),
                       "checkpoint_sha256": digest(config.checkpoint) if config.checkpoint and Path(config.checkpoint).is_file() else None}
-        provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'patches').rglob('*.patch')}
+        provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda/resources/patches').rglob('*.patch')}
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
         if config.method=='finegrasp':
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')
@@ -168,10 +168,9 @@ class JobManager:
             provenance['component_sources']={row['id']:subprocess.check_output(['git','-C',str(ROOT/row['path']),'rev-parse','HEAD'],text=True).strip() for row in json.loads(component_lock.read_text()) if (ROOT/row['path']/'.git').exists()}
         provenance['native_sources']={row['path']:subprocess.check_output(['git','-C',str(ROOT/row['path']),'rev-parse','HEAD'],text=True).strip()
             for row in json.loads((ROOT/'grasppanda/resources/native_sources.lock.json').read_text()) if (ROOT/row['path']/'.git').exists()}
-        provenance['workbench_sources'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda').rglob('*.py')}
+        provenance['toolbox_sources'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda').rglob('*.py')}
         if config.action in ('pipeline_smoke','train_check'):
             from .weights import records
-            if config.action=='pipeline_smoke':provenance['workbench_sources']['tools/run_recipe.py']=digest(ROOT/'tools/run_recipe.py')
             provenance['recipe_weights']={r['path']:digest(ROOT/r['path']) for r in records(config.method,config.camera) if (ROOT/r['path']).is_file()}
         (directory / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
         return data

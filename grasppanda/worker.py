@@ -288,8 +288,8 @@ def main():
             raise ValueError('Queued model configuration changed before execution')
         for path,expected in provenance.get('recipe_weights',{}).items():
             if digest(ROOT/path)!=expected: raise ValueError('Recipe weight changed while queued; resubmit')
-        for path,expected in provenance.get('workbench_sources',{}).items():
-            if digest(ROOT/path)!=expected: raise ValueError('Workbench code changed while queued; resubmit')
+        for path,expected in provenance.get('toolbox_sources', provenance.get('workbench_sources', {})).items():
+            if digest(ROOT/path)!=expected: raise ValueError('Toolbox code changed while queued; resubmit')
         repo=ROOT/catalogue()[config.method]['path']
         commit=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
         if commit!=provenance['upstream_commit']: raise ValueError('Upstream revision changed while queued')
@@ -301,7 +301,7 @@ def main():
     torch.set_num_threads(4)
     if config.action == "probe":
         module, forward = probes()[config.method]
-        command = [sys.executable, str(ROOT / "tools/probe_model.py"), config.method, "--module", module]
+        command = [sys.executable, str(ROOT / "grasppanda/runtime/probe_model.py"), config.method, "--module", module]
         if forward:
             command.append("--forward")
         completed = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -320,7 +320,7 @@ def main():
         runner={'hggd':hggd,'region_normalized_grasp':rng,'contact_graspnet_g1b':contact,'rgb_matters':rgb_matters,'centergrasp':center,'gfla':gfla,'motiongrasp':motion,'spahybgen':spahybgen,'graspfast':graspfast}.get(config.method,point_family)
         result=runner(config,out,config.training_steps)
     elif config.action == 'pipeline_smoke':
-        command=[sys.executable,str(ROOT/'tools/run_recipe.py'),config.method,'--dataset-root',config.dataset_root,'--out',str(out)]
+        command=[sys.executable,str(ROOT/'grasppanda/runtime/run_recipe.py'),config.method,'--dataset-root',config.dataset_root,'--out',str(out)]
         if config.checkpoint:command+=['--checkpoint',config.checkpoint]
         subprocess.run(command,cwd=ROOT,check=True)
         result=json.loads((out/'result.json').read_text())

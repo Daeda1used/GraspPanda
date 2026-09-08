@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import time
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 parser=argparse.ArgumentParser()
 parser.add_argument('method')
 parser.add_argument('--module')

@@ -15,3 +15,5 @@ ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementati
 Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda supplies input/output mappings and native attention-cache handling. The adapter does not download or redistribute the separately licensed pretrained Sonata weights.
 
 ASL single-label and Poly-1 are implemented from their documented mathematical objectives, with source references in [Training controls](MODULES.md#loss-formulations). ASL is checked against the locked timm implementation; its saturated-probability handling uses stable complements and bounded power bases. No classification datasets or pretrained loss-specific models are downloaded.
+
+Compatibility patches are stored in `grasppanda/resources/patches/` and applied only to local build copies or overlays. The scikit-geometry patch uses its exact-construction kernel consistently in skeleton bindings; this can change numerical behavior relative to the original mixed-kernel binding. Patches retain the underlying project licenses.

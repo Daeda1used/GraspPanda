@@ -7,7 +7,7 @@ if [[ "${1:-}" == install ]]; then
     echo 'Usage: ./panda install' >&2
     exit 2
   fi
-  exec bash tools/bootstrap.sh
+  exec bash grasppanda/runtime/bootstrap.sh
 fi
 if [[ ! -x .venv/bin/python ]]; then
   if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then

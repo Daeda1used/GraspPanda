@@ -1,8 +1,4 @@
-"""Bounded, isolated reproduction attempts; every result states its actual scope.
-
-Run through run_attempts.py to retain failures, timeouts and source provenance.
-This is a diagnostic runner, not an AP benchmark.
-"""
+"""Execute a registered method recipe in an isolated worker process."""
 import argparse
 import ast
 import importlib
@@ -14,7 +10,7 @@ import sys
 import time
 from types import SimpleNamespace
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from grasppanda.config import catalogue
 from grasppanda.compat import legacy_torch
