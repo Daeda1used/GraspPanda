@@ -59,7 +59,7 @@ In the UI, select the component names under **Compose modules**, then enter para
 
 ## Point Transformer encoder
 
-`sonata_ptv3` uses the native encoder and decoder from [Sonata (CVPR 2025)](https://github.com/facebookresearch/sonata), based on [Point Transformer V3 (CVPR 2024)](https://github.com/Pointcept/PointTransformerV3). The installer fetches its pinned author source into the shared environment. Attention uses the native non-Flash path; no extra environment or FlashAttention build is needed.
+`sonata_ptv3` uses the native encoder and decoder from [Sonata (CVPR 2025 PDF)](https://arxiv.org/pdf/2503.16429) ([source](https://github.com/facebookresearch/sonata)), based on [Point Transformer V3 (CVPR 2024 PDF)](https://arxiv.org/pdf/2312.10035) ([source](https://github.com/Pointcept/PointTransformerV3)). The installer fetches its pinned author source into the shared environment. Attention uses the native non-Flash path; no extra environment or FlashAttention build is needed.
 
 Baseline and its PointNet2 port use XYZ features. Points in the same voxel are averaged separately per batch, then decoded features are mapped back to every original row. FPS selects the original camera-space points, preserving the grasp labels' indices. Graspness uses its existing integer lattice and concatenates camera-space lattice XYZ with the native three input features; output retains the exact Minkowski coordinate map and row order. The experiment's `voxel_size` controls both adapters. Coordinates remain in metres.
 
