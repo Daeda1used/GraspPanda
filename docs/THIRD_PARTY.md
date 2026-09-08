@@ -10,6 +10,8 @@ PointNeXt/OpenPoints and FineGrasp components are fetched from pinned author sou
 
 PointMLP uses the author's point hierarchy and feature-propagation blocks, plus the bundled PointNet2 operators. The installer builds these operators locally with the selected CUDA architecture. Original source and license files remain in the pinned repository; GraspPanda does not redistribute a pretrained PointMLP model.
 
+PointVector uses its native segmentation encoder, vector aggregation blocks and feature propagation from the pinned OpenPoints repository. The adapter provides XYZ inputs, feature projection, grasp seed mapping and configurable query sizes. Original source notices remain with OpenPoints; no PointVector pretrained weights are downloaded or redistributed.
+
 ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementations. Author papers and original implementation links are listed in [Modules](MODULES.md). These convolutional image encoder replacements initialize without external pretrained weights.
 
 Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda supplies input/output mappings and native attention-cache handling. The adapter does not download or redistribute the separately licensed pretrained Sonata weights.

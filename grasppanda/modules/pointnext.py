@@ -43,11 +43,11 @@ class PointNeXtBackbone(nn.Module):
     def forward(self,points,end_points=None):
         from pointnet2 import _ext
         if points.ndim!=3 or points.shape[2]!=3 or points.shape[1]<1024:
-            raise ValueError('PointNeXt requires camera XYZ [B,N,3] with N >= 1024')
+            raise ValueError(getattr(self,'family','PointNeXt')+' requires camera XYZ [B,N,3] with N >= 1024')
         points=points.contiguous()
         positions,features=self.encoder.forward_seg_feat(points)
         dense=self.projection(self.decoder(positions,features))
-        if dense.shape[-1]!=points.shape[1]:raise ValueError('PointNeXt decoder lost original point correspondence')
+        if dense.shape[-1]!=points.shape[1]:raise ValueError(getattr(self,'family','PointNeXt')+' decoder lost original point correspondence')
         indices=_ext.furthest_point_sampling(points,1024)
         seeds=points.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=dense.gather(2,indices.long()[:,None,:].expand(-1,256,-1)).contiguous()

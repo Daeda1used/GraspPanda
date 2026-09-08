@@ -373,7 +373,8 @@ def create_app(manager=None):
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
                     with gr.Accordion("Compose modules",open=False):
                         gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
-                        backbone=gr.Dropdown(['upstream','pointnet','pointnext','pointmlp','sonata_ptv3'],value='upstream',label='Point encoder')
+                        initial_components={slot.name:list(slot.choices) for slot in slots('graspnet_baseline')}
+                        backbone=gr.Dropdown(initial_components['backbone'],value='upstream',label='Point encoder')
                         crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')

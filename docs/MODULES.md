@@ -8,7 +8,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointmlp`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmlp`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
@@ -22,6 +22,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 |---|---|
 | Baseline `pointnet` | `local_channels`, `global_channels`, `fusion_channels` (layer widths); `activation`: relu/gelu/silu; `normalization`: batch/group/none; `dropout` |
 | `pointnext` | `width`, `blocks` (five stage depths), `nsample`, `radius` (metres), `radius_scaling`, `expansion`, `activation`, `reduction`: max/mean/sum, `decoder_layers` |
+| `pointvector` | `width`, `blocks` (five stages), `nsample`, `local_nsample`, `radius`, `radius_scaling`, `normalize_dp`, `sa_layers`, `sa_use_res`, `decoder_layers` |
 | `pointmlp` | `embed_dim`, `dim_expansion`, `pre_blocks`, `pos_blocks`, `stage_points`, `k_neighbors`, `decoder_channels`, `decoder_blocks`, `res_expansion`, `activation`, `normalize`: anchor/center |
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
 | `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
@@ -60,6 +61,24 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## PointVector encoder
+
+`pointvector` uses the native segmentation encoder and decoder from [PointVector (CVPR 2023 PDF)](https://openaccess.thecvf.com/content/CVPR2023/papers/Deng_PointVector_A_Vector_Representation_in_Point_Cloud_Analysis_CVPR_2023_paper.pdf), implemented in the [pinned OpenPoints source](https://github.com/guochengqian/openpoints/blob/db31e0d94ede35bc672ef06d1b6e4073a9c269d5/models/backbone/pointvector.py). It reuses the shared OpenPoints CUDA operators. No additional environment or component download is required after installation.
+
+The adapter supplies XYZ features, decodes back to every original input point, projects features to 256 channels and samples 1,024 grasp seeds at original-input indices. Camera coordinates and label indexing remain unchanged. It omits the segmentation classifier and does not load segmentation weights. Use `reuse_unchanged` with the grasp checkpoint, train the replacement and reload its checkpoint with `strict`.
+
+| Setting | Default / meaning |
+|---|---|
+| `width`, `blocks` | `32`, `[1,3,5,3,3]`; five stage depths, each including its initial abstraction/stem block |
+| `nsample` | `32`; neighbors for downsampling abstraction |
+| `local_nsample` | `8`; neighbors for the native vector aggregation blocks |
+| `radius`, `radius_scaling` | `0.05` metres, `2.0`; initial neighborhood radius and native stage scaling |
+| `normalize_dp` | `true`; divide relative query offsets by the neighborhood radius; absolute points stay in metres |
+| `sa_layers`, `sa_use_res` | `1`, `false`; abstraction MLP depth and residual connection |
+| `decoder_layers` | `2`; MLP depth of native feature propagation |
+
+Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
 
 ## Point Transformer encoder
 

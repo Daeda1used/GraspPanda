@@ -66,6 +66,12 @@ def schema(method, slot, choice):
                 'decoder_channels': ('int_list', 4, 8, 2048), 'decoder_blocks': ('int_list', 4, 1, 12),
                 'res_expansion': ('float', .25, 4), 'activation': common['activation'],
                 'normalize': ('choice', ('anchor', 'center'))}
+    if slot == 'backbone' and choice == 'pointvector':
+        return {'width': ('int',8,128), 'blocks': ('blocks',),
+                'nsample': ('int',4,128), 'local_nsample': ('int',4,128),
+                'radius': ('float',.005,.5), 'radius_scaling': ('float',1,4),
+                'normalize_dp': ('bool',), 'sa_layers': ('int',1,4),
+                'sa_use_res': ('bool',), 'decoder_layers': ('int',1,4)}
     if slot == 'backbone' and choice == 'pointnext':
         return {'width': ('int', 8, 128), 'blocks': ('blocks',),
                 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5),

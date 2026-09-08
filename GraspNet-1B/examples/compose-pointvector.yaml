@@ -1,0 +1,29 @@
+dataset: graspnet1b
+method: graspnet_baseline
+action: train_check
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+camera: realsense
+split: train
+scene: 0
+workspace: official_gt_workspace
+num_points: 4096
+training_steps: 3
+learning_rate: 0.0001
+checkpoint_policy: reuse_unchanged
+modules:
+  backbone:
+    type: pointvector
+    width: 16
+    blocks: [1, 2, 2, 2, 2]
+    nsample: 16
+    local_nsample: 12
+    normalize_dp: false
+    sa_layers: 2
+    sa_use_res: true
+    decoder_layers: 3
+  crop:
+    type: cylinder
+    radius_factors: [0.5, 1.0]
+    pooling: attention
+    nsample: 16
