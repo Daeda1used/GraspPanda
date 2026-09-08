@@ -57,6 +57,25 @@ To use a completed run's `checkpoint.pt`, click **Prepare inference from checkpo
 
 ## Outputs and evaluation
 
+### Configuration sweeps
+
+In **Configuration editor**, generate or edit the base experiment, expand **Configuration sweep**, and enter a parameter grid. **Preview sweep** shows every exact configuration without running. **Run sweep** validates all combinations and input paths before queueing them together in the shared runtime.
+
+```json
+{"seed": [0, 1], "modules.backbone.embed_dim": [32, 64]}
+```
+
+This example creates four PointMLP experiments when the base selects `backbone: pointmlp`. Use dotted configuration paths; lists such as layer widths must be nested inside the list of candidate values. To compare different architectures with different parameters, vary the entire `modules.backbone` mapping. Unsupported method/parameter combinations and duplicate configurations are rejected. A grid is limited to 128 experiments.
+
+```bash
+./panda sweep GraspNet-1B/examples/sweep-baseline.yaml --preview
+./panda sweep GraspNet-1B/examples/sweep-baseline.yaml
+```
+
+Edit the dataset/checkpoint paths first. Sweep YAML contains `base` and `grid`; its Cartesian product uses sorted parameter names and the supplied value order. Jobs run sequentially, each with its own seed, exact configuration and provenance. Group manifests are generated in `outputs/runs/sweeps/`; each run also carries `sweep.json`. Inspect or cancel individual jobs in **Runs & results** and compare their settings and results in **Compare**. Ctrl+C cancels the CLI sweep's remaining jobs.
+
+### Experiment artifacts
+
 Each experiment creates its own directory under `outputs/runs/`, containing configuration, logs, provenance, results and available predictions/checkpoints. These files are generated on your machine. The UI and CLI share a persistent queue and run one job at a time; a CLI client connects automatically to a running UI worker.
 
 Closing the browser leaves the job running. Stopping the server cancels the active process group. After a restart, abandoned jobs are marked interrupted; they do not silently resume. Use a separate `--runs-dir` for an independent CLI queue, with your own GPU allocation.

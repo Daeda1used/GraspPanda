@@ -15,8 +15,12 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import tomllib
           from pathlib import Path
+          from grasppanda import __version__
           from grasppanda.config import catalogue, capabilities, Experiment
+          from grasppanda.sweeps import Sweep
+          assert __version__ == tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
           methods = catalogue()
           pins = json.loads(Path('grasppanda/resources/upstreams.lock.json').read_text())
           assert set(methods) == {p['id'] for p in pins}
@@ -29,4 +33,6 @@ jobs:
               for action in capabilities(mid):
                   assert action in ('probe', 'infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')
           Experiment(method='graspnet_baseline').validate()
+          sample = Sweep.from_dict({'base': {'method': 'graspnet_baseline', 'action': 'infer'}, 'grid': {'seed': [0, 1]}})
+          assert [config.seed for config in sample.expand()] == [0, 1]
           PY

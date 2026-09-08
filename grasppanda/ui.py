@@ -44,6 +44,28 @@ def method_card(method):
             f"[Implementation]({item['repository']})\n\n{recipe or note}")
 
 
+def component_parameters(method, backbone, crop):
+    from .module_options import schema
+    rows = []
+    available = {slot.name: slot for slot in slots(method)}
+    for slot, choice in (('backbone', backbone), ('crop', crop)):
+        if slot not in available or choice not in available[slot].choices:
+            continue
+        for key, rule in schema(method, slot, choice).items():
+            if rule[0] == 'choice':
+                description = ', '.join(rule[1])
+            elif rule[0] in ('int', 'float'):
+                description = f'{rule[0]}: {rule[1]} to {rule[2]}'
+            elif rule[0] == 'int_list':
+                description = f'{rule[1]} integers, each {rule[2]} to {rule[3]}'
+            else:
+                description = {'channels': '1–8 layer widths, each 8–2048',
+                               'radii': '1–8 radius factors, each 0.1–4',
+                               'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            rows.append(f'| `{slot}.{key}` | {description} |')
+    return ('| Parameter | Accepted values |\n|---|---|\n'+'\n'.join(rows)+'\n\nOmitted parameters use component defaults. Cross-stage constraints are checked when generating or running the configuration.') if rows else 'The selected components use their native settings.'
+
+
 def documentation(name):
     """Render repository guides with usable links inside the browser app."""
     import re
@@ -154,6 +176,24 @@ def create_app(manager=None):
         job,message=submit(text)
         return job,message,text
 
+    def sweep_config(text, grid):
+        from .sweeps import Sweep
+        try:
+            return Sweep.from_dict(dict(base=json.loads(text), grid=json.loads(grid)))
+        except (ValueError, TypeError) as error:
+            raise gr.Error(str(error)) from error
+
+    def preview_sweep(text, grid):
+        return sweep_config(text, grid).preview()
+
+    def run_sweep(text, grid):
+        try:
+            specification = sweep_config(text, grid)
+            ids = manager.submit_sweep(specification.to_dict())
+            return ids[0], 'Queued sweep. Inspect each experiment in **Runs & results**.\n\n' + '\n'.join(f'- `{job}`' for job in ids)
+        except Exception as error:
+            raise gr.Error(str(error)) from error
+
     def job_rows():
         return [[j["id"], j["state"], j["config"]["method"], j["config"]["action"], j["config"]["camera"], j["config"]["split"], j["detail"]] for j in manager.list()]
 
@@ -226,8 +266,11 @@ def create_app(manager=None):
             if job["state"] != "succeeded" or not path.exists():
                 continue
             data, config = json.loads(path.read_text()), job["config"]
+            losses = data.get('losses', [])
+            last_loss = losses[-1].get('total') if isinstance(losses, list) and losses and isinstance(losses[-1], dict) else None
+            settings = {key: config.get(key) for key in ('learning_rate', 'loss', 'augmentation')}
             rows.append([job["id"], config.get('dataset','graspnet1b'),config["method"],json.dumps(config.get('modules',{})), data.get("stage"), config["camera"], config["split"],
-                         config["workspace"], config["seed"], (len(data["frames"]) if isinstance(data.get("frames"),list) else data.get("frames", "recipe")), json.dumps(data.get("ap"))])
+                         config["workspace"], config["seed"], json.dumps(settings), last_loss, (len(data["frames"]) if isinstance(data.get("frames"),list) else data.get("frames", "recipe")), json.dumps(data.get("ap"))])
         return rows
 
     with gr.Blocks(title="GraspPanda · Modular visual grasping") as app:
@@ -264,12 +307,14 @@ def create_app(manager=None):
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
                     with gr.Accordion("Compose modules",open=False):
                         gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Run a training check before using a new composition.")
-                        backbone=gr.Dropdown(['upstream','pointnet','pointnext'],value='upstream',label='Point encoder')
+                        backbone=gr.Dropdown(['upstream','pointnet','pointnext','pointmlp'],value='upstream',label='Point encoder')
                         crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
-                        gr.Markdown('Example: `{"backbone": {"local_channels": [64, 128], "activation": "gelu"}}`. Parameters are validated for the selected implementation.')
+                        gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. The selectors supply each component type.')
+                        with gr.Accordion('Available component parameters', open=False):
+                            parameter_help = gr.Markdown(component_parameters('graspnet_baseline', 'upstream', 'upstream'))
                     with gr.Accordion("Training & evaluation settings", open=False):
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,label='Optimizer steps (short training)')
                         loss_options=gr.Code('{}',language='json',label='Loss configuration',lines=3)
@@ -295,6 +340,13 @@ def create_app(manager=None):
                 with gr.Row():
                     check = gr.Button("Validate JSON")
                     run = gr.Button("Run edited JSON", variant="primary")
+                with gr.Accordion('Configuration sweep', open=False):
+                    gr.Markdown('Use the **Experiment configuration** above as the base. Enter lists of values by dotted path, such as `seed`, `learning_rate` or `modules.backbone.embed_dim`. Every combination is validated before queueing. The sweep uses the editor, so generate the configuration after changing form fields.')
+                    sweep_grid = gr.Code('{"seed": [0, 1]}', language='json', label='Parameter grid', lines=5)
+                    with gr.Row():
+                        sweep_preview_button = gr.Button('Preview sweep')
+                        sweep_run_button = gr.Button('Run sweep')
+                    sweep_preview = gr.JSON(label='Exact experiment configurations')
             message = gr.Markdown()
         with gr.Tab("Runs & results"):
             refresh = gr.Button("Refresh runs")
@@ -316,9 +368,9 @@ def create_app(manager=None):
                     artifacts = gr.File(label="Configuration, provenance & logs", file_count="multiple")
                     bundle = gr.File(label="Exported experiment")
         with gr.Tab("Compare"):
-            gr.Markdown("Only completed runs are listed. Compare AP only under identical dataset, camera, split, workspace, training data and postprocessing. `null` AP means not evaluated; it is never zero AP.")
+            gr.Markdown("Only completed runs are listed. Compare AP only under identical dataset, camera, split, workspace, training data and postprocessing. `null` AP means not evaluated; it is never zero AP. Compare losses only when objectives, coefficients and sampled data match.")
             compare_button = gr.Button("Refresh comparison")
-            comparisons = gr.Dataframe(headers=["ID", "Dataset", "Method", "Modules", "Stage", "Camera", "Split", "Workspace", "Seed", "Frames", "AP"], interactive=False)
+            comparisons = gr.Dataframe(headers=["ID", "Dataset", "Method", "Modules", "Stage", "Camera", "Split", "Workspace", "Seed", "Training settings", "Final loss", "Frames", "AP"], interactive=False)
         with gr.Tab("Guide"):
             gr.Markdown("""### Start an experiment
 1. Choose a method in **Experiments**, then **Load preset**.
@@ -353,6 +405,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract
         method.change(select_components,method,[backbone,crop,component_contract],api_name='select_components').then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
+        for selector in (method, backbone, crop):
+            selector.change(component_parameters,[method,backbone,crop],parameter_help,api_name=False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
             workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','finegrasp') else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
@@ -373,6 +427,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')
+        sweep_preview_button.click(preview_sweep,[config_text,sweep_grid],sweep_preview,api_name='preview_sweep')
+        sweep_run_button.click(run_sweep,[config_text,sweep_grid],[job_id,message],api_name='run_sweep')
         preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,config_text],api_name='apply_preset').then(
             lambda: ('upstream','upstream','strict','{}','{}','{}'),
             outputs=[backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options],api_name=False)

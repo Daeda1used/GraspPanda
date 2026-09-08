@@ -12,7 +12,7 @@ class ComponentSlot:
 
 
 BASELINE_SLOTS = (
-    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext'),
+    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointmlp'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
     ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder'),
@@ -72,6 +72,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif choice=='pointnext':
             from .modules.pointnext import PointNeXtBackbone
             replacement=PointNeXtBackbone(**options)
+        elif choice=='pointmlp':
+            from .modules.pointmlp import PointMLPBackbone
+            replacement=PointMLPBackbone(**options)
         elif slot.name=='backbone':
             from .modules.pointnet import PointNetBackbone
             replacement=PointNetBackbone(**options)

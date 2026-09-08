@@ -23,7 +23,7 @@ Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your
 |---|---|
 | [Installation](docs/INSTALL.md) | Shared runtime, prerequisites and troubleshooting |
 | [GraspNet-1B](GraspNet-1B/README.md) | Dataset entry and editable examples |
-| [Usage](docs/USAGE.md) | UI, CLI, training, resume and evaluation |
+| [Usage](docs/USAGE.md) | UI, CLI, sweeps, training, resume and evaluation |
 | [Data & weights](docs/DOWNLOADS.md) | Official downloads, local paths and preprocessing |
 | [Modules](docs/MODULES.md) | Compatible replacements and checkpoint transfer |
 | [Methods & papers](docs/METHODS.md) | Support status, paper PDFs and original implementations |

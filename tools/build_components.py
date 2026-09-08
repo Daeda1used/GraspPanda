@@ -43,6 +43,15 @@ def main():
     # The official OpenPoints operator and GraspBalance operator have the same
     # package/module names but different source. Give this build its own name.
     subprocess.run([uv,'pip','install','--python',sys.executable,'--no-deps','--no-build-isolation',str(build)],env=env,check=True)
+    source=ROOT/pins['pointmlp']['path']/'pointnet2_ops_lib'
+    build=ROOT/'environments/build/pointmlp-ops'
+    shutil.copytree(source,build,dirs_exist_ok=True,ignore=shutil.ignore_patterns('build','*.egg-info','__pycache__'))
+    setup=build/'setup.py'
+    text=setup.read_text()
+    original='os.environ["TORCH_CUDA_ARCH_LIST"] = "3.7+PTX;5.0;6.0;6.1;6.2;7.0;7.5"'
+    if original not in text:raise RuntimeError('PointMLP operator packaging differs from the registered source')
+    setup.write_text(text.replace(original, '# GPU architecture is supplied by the shared runtime installer.'))
+    subprocess.run([uv,'pip','install','--python',sys.executable,'--no-deps','--no-build-isolation',str(build)],env=env,check=True)
 
 
 if __name__=='__main__':main()

@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import socket
 import socketserver
 import sqlite3
@@ -85,6 +86,7 @@ class JobManager:
                     operation, payload = request['operation'], request.get('payload')
                     if operation == 'ping': result = 'ready'
                     elif operation == 'submit': result = manager.submit(Experiment.from_dict(payload))
+                    elif operation == 'sweep': result = manager.submit_sweep(payload)
                     elif operation == 'list': result = manager.list()
                     elif operation == 'get': result = manager.get(payload)
                     elif operation == 'cancel': result = manager.cancel(payload)
@@ -103,10 +105,51 @@ class JobManager:
 
     def submit(self, config):
         if self._client: return self._rpc('submit', config.to_dict())
-        config.preflight()
-        job_id = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8]
-        directory = self.root / job_id
-        directory.mkdir()
+        return self._submit_many([config])[0]
+
+    def submit_sweep(self, specification):
+        from .sweeps import Sweep
+        sweep = Sweep.from_dict(specification)
+        if self._client: return self._rpc('sweep', sweep.to_dict())
+        return self._submit_many(sweep.expand(), sweep.to_dict())
+
+    def _submit_many(self, configs, sweep=None):
+        # Reject every invalid input before any experiment becomes runnable.
+        for config in configs:
+            config.preflight()
+        directories = []
+        manifest = None
+        group = uuid.uuid4().hex if sweep else None
+        with self._lock:
+            if self._stop.is_set():
+                raise RuntimeError('Worker is shutting down')
+            try:
+                for index, config in enumerate(configs):
+                    job_id = dt.datetime.now(dt.timezone.utc).strftime('%Y%m%d-%H%M%S-') + uuid.uuid4().hex[:8]
+                    directory = self.root / job_id
+                    directory.mkdir()
+                    directories.append(directory)
+                    data = self._prepare(config, directory)
+                    if sweep:
+                        (directory/'sweep.json').write_text(json.dumps(dict(id=group, index=index, **sweep), indent=2)+'\n')
+                    self._db.execute('INSERT INTO jobs VALUES (?,?,?,?,?)', (job_id, now(), 'queued', json.dumps(data), ''))
+                ids = [directory.name for directory in directories]
+                if sweep:
+                    manifest = self.root/'sweeps'/f'{group}.json'
+                    manifest.parent.mkdir(exist_ok=True)
+                    manifest.write_text(json.dumps(dict(id=group, jobs=ids, **sweep), indent=2)+'\n')
+                self._db.commit()
+            except Exception:
+                self._db.rollback()
+                for directory in directories:
+                    shutil.rmtree(directory)
+                if manifest:
+                    manifest.unlink(missing_ok=True)
+                raise
+        self._wake.set()
+        return ids
+
+    def _prepare(self, config, directory):
         data = config.to_dict()
         (directory / "config.json").write_text(json.dumps(data, indent=2) + "\n")
         (directory / "experiment.log").touch()
@@ -132,13 +175,7 @@ class JobManager:
             if config.action=='pipeline_smoke':provenance['workbench_sources']['tools/run_recipe.py']=digest(ROOT/'tools/run_recipe.py')
             provenance['recipe_weights']={r['path']:digest(ROOT/r['path']) for r in records(config.method,config.camera) if (ROOT/r['path']).is_file()}
         (directory / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
-        with self._lock:
-            if self._stop.is_set():
-                raise RuntimeError("Worker is shutting down")
-            self._db.execute("INSERT INTO jobs VALUES (?,?,?,?,?)", (job_id, now(), "queued", json.dumps(data), ""))
-            self._db.commit()
-        self._wake.set()
-        return job_id
+        return data
 
     def list(self):
         if self._client: return self._rpc('list')

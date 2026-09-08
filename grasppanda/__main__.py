@@ -26,6 +26,10 @@ def main():
     run = commands.add_parser("run")
     run.add_argument("config", type=Path)
     run.add_argument("--runs-dir", type=Path)
+    sweep = commands.add_parser('sweep', help='Preview or run a validated configuration grid')
+    sweep.add_argument('config', type=Path)
+    sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
+    sweep.add_argument('--runs-dir', type=Path)
     args = parser.parse_args()
     if args.command == "ui":
         from .ui import launch
@@ -40,6 +44,31 @@ def main():
         if args.command == "weights":
             command += [args.method,"--camera",args.camera]
         raise SystemExit(subprocess.call(command, cwd=ROOT))
+    elif args.command == 'sweep':
+        import yaml
+        from .sweeps import Sweep
+        from .jobs import JobManager
+        sweep = Sweep.from_dict(yaml.safe_load(args.config.read_text()))
+        if args.preview:
+            print(json.dumps(sweep.preview(), indent=2))
+            return
+        manager = JobManager(args.runs_dir, allow_attach=True)
+        ids = []
+        try:
+            ids = manager.submit_sweep(sweep.to_dict())
+            print(json.dumps({'jobs': ids}), flush=True)
+            while any(manager.get(job)['state'] in ('queued', 'running') for job in ids):
+                time.sleep(.5)
+            rows = [manager.get(job) for job in ids]
+            print(json.dumps(rows, indent=2))
+            print(f'Artifacts: {manager.root}')
+            raise SystemExit(0 if all(row['state'] == 'succeeded' for row in rows) else 1)
+        except KeyboardInterrupt:
+            for job in ids:
+                manager.cancel(job)
+            raise
+        finally:
+            manager.close()
     elif args.command in ("run","verify"):
         import yaml
         from .jobs import JobManager

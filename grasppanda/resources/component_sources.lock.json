@@ -16,5 +16,11 @@
     "repository": "https://github.com/HorizonRobotics/RoboOrchardLab",
     "path": "upstream/single_view/pointcloud/finegrasp",
     "commit": "241bbc692ec83b9bb669c23e574aea44b4816300"
+  },
+  {
+    "id": "pointmlp",
+    "repository": "https://github.com/ma-xu/pointMLP-pytorch",
+    "path": "environments/sources/cv/pointmlp",
+    "commit": "1ab7f04e88d2aeb8fd16921a2b2fc4fba950b6df"
   }
 ]

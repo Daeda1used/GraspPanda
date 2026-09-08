@@ -29,6 +29,8 @@ Keep local data, weights, credentials, logs, development reports and generated c
 
 Register a choice in `grasppanda/components.py` and implement it under `grasppanda/modules/`. Match coordinates, units, sample indices, feature dimensions, neighborhoods, supervision, loss and decoder semantics. A matching tensor shape alone does not establish interchangeability. See [Compose modules](MODULES.md) for existing contracts and strict checkpoint transfer.
 
+Declare accepted parameters and cross-stage constraints in `grasppanda/module_options.py`; the UI uses this schema for its parameter reference, and sweeps validate each expanded experiment against it. Pin external component sources in `component_sources.lock.json` and add any native build steps to `tools/build_components.py`. Keep adaptation differences explicit in the component documentation.
+
 Graspness, SBG and HGGD have different proposal, grouping and refinement structures. Replacing a branch may require its labels, losses and decoder as well as its forward method. Verify gradient flow into every replaced component and strict reload of the resulting checkpoint.
 
 ## Add a dataset
