@@ -12,7 +12,7 @@ def native_module():
     if name not in sys.modules:
         path = ROOT / 'environments/sources/cv/sonata/sonata/__init__.py'
         if not path.is_file():
-            raise ValueError('Sonata source is missing; run bash tools/bootstrap.sh')
+            raise ValueError('Sonata source is missing; run ./panda install')
         spec = importlib.util.spec_from_file_location(name, path,
             submodule_search_locations=[str(path.parent)])
         module = importlib.util.module_from_spec(spec)

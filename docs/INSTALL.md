@@ -17,11 +17,11 @@ sudo apt-get install -y build-essential cmake pkg-config python3 python3-dev \
   libopenblas-dev libeigen3-dev libcgal-dev libboost-all-dev \
   libgmp-dev libmpfr-dev libgl1 libglib2.0-0 libgomp1
 export GRASPPANDA_CUDA_HOME=/usr/local/cuda-11.8
-bash tools/bootstrap.sh
+./panda install
 ./panda doctor
 ```
 
-`bootstrap.sh` checks system prerequisites before downloading packages, fetches pinned sources for integrated methods and builds native extensions into the same `.venv`. Reference-only papers do not add downloads. It does not download GraspNet or the external checkpoint collection. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
+`./panda install` checks system prerequisites before downloading packages, fetches pinned sources for integrated methods and builds native extensions into the same `.venv`. Reference-only papers do not add downloads. It does not download GraspNet or the external checkpoint collection. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
 
 ```bash
 ./panda weights hggd --camera realsense
@@ -41,7 +41,7 @@ An exact `uv sync` removes packages outside the lock. Rerun the installer after 
 | Symptom | Action |
 |---|---|
 | Missing `nvcc` or wrong CUDA release | Set `GRASPPANDA_CUDA_HOME` to the CUDA 11.8 toolkit directory. |
-| Undefined symbol / incompatible CUDA extension | Rebuild with `bash tools/bootstrap.sh` using the locked environment; do not reuse wheels from a different ABI. |
+| Undefined symbol / incompatible CUDA extension | Rebuild with `./panda install` using the locked environment; do not reuse wheels from a different ABI. |
 | Out of memory during compilation | Set `MAX_JOBS=2` before running the installer. |
 | Google Drive quota or academic mirror unavailable | Retry later or manually download the exact registered file; paths and checksums are in `grasppanda/resources/checkpoints.json`. |
 | A source revision has changed | Restore the pinned checkout or intentionally update its lock and rerun validation. |
@@ -51,7 +51,7 @@ Build logs are in `logs/`. `./panda doctor` reports the active interpreter, GPU,
 
 ## Files created locally
 
-The clone contains source, guides, example configurations and dependency locks. Installation and use create the following ignored directories:
+The clone contains source, guides, example configurations and dependency locks. GitHub source archives omit repository automation and use the same installation commands; Git is still required to fetch the original implementations. Installation and use create the following ignored directories:
 
 | Directory | Created by |
 |---|---|

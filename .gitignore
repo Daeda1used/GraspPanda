@@ -1,6 +1,7 @@
 # Only product directories and required root files belong in the repository.
 /*
 !/.github/
+!/.gitattributes
 !/.gitignore
 !/GraspNet-1B/
 !/LICENSE
@@ -26,6 +27,8 @@
 **/checkpoints/
 **/.venv/
 **/.python-version
+**/build/
+**/dist/
 **/.ipynb_checkpoints/
 .coverage
 coverage.xml
@@ -41,6 +44,15 @@ coverage.xml
 *.ckpt
 *.npy
 *.npz
+*.safetensors
+*.onnx
+*.h5
+*.hdf5
+*.ply
+*.pcd
+*.csv
+*.tsv
+*.jsonl
 *.zip
 *.tar
 *.tar.gz
@@ -48,6 +60,9 @@ coverage.xml
 .env.*
 *.pem
 *.key
+*.p12
+*.pfx
+*.kdbx
 .DS_Store
 .idea/
 .vscode/

@@ -35,10 +35,13 @@ The available choices depend on the method. The internal action identifiers are 
 ./panda weights hggd --camera realsense
 ./panda verify hggd --dataset-root /data/GraspNet-1B
 ./panda verify asgrasp
-./panda run GraspNet-1B/examples/infer-graspness.example.yaml
+./panda weights graspness --camera realsense
+cp GraspNet-1B/examples/infer-graspness.example.yaml graspness.local.yaml
+# Set dataset_root and checkpoint in graspness.local.yaml.
+./panda run graspness.local.yaml
 ```
 
-`verify` executes the method preset. `run` accepts YAML or JSON; edit the example paths before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
+`verify` executes the method preset. `run` accepts YAML or JSON; edit the local copy before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
 
 Set a default dataset path for the UI and CLI presets:
 

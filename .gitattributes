@@ -1,0 +1,3 @@
+# Source downloads contain the product; repository automation stays on GitHub.
+/.github export-ignore
+/.gitattributes export-ignore

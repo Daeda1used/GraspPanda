@@ -18,7 +18,7 @@ jobs:
           import subprocess
           from pathlib import Path
           files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')[:-1]
-          roots = {'.github', '.gitignore', 'GraspNet-1B', 'LICENSE', 'README.md',
+          roots = {'.github', '.gitattributes', '.gitignore', 'GraspNet-1B', 'LICENSE', 'README.md',
                    'docs', 'grasppanda', 'panda', 'patches', 'pyproject.toml', 'tools', 'uv.lock'}
           private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
                      'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version'}
@@ -28,7 +28,7 @@ jobs:
               assert path.parts[0] in roots, f'Unexpected distribution root: {name}'
               assert not private.intersection(path.parts), f'Local artifact: {name}'
               assert not path.is_symlink(), f'Local symlink: {name}'
-              assert path.suffix in extensions or name in {'panda', 'LICENSE', '.gitignore'}, name
+              assert path.suffix in extensions or name in {'panda', 'LICENSE', '.gitignore', '.gitattributes'}, name
               text = path.read_text()
               assert not re.search(r'[\u3400-\u9fff]', text), f'Use English in public files: {name}'
               assert not re.search(r'/(?:home|root|Users)/', text), f'Personal filesystem path: {name}'
@@ -39,6 +39,13 @@ jobs:
               for target in re.findall(r'\]\(([^)]+)\)', Path(name).read_text()):
                   if '://' not in target and not target.startswith('#'):
                       assert (Path(name).parent / target.split('#')[0]).exists(), (name, target)
+          import io
+          import tarfile
+          archive = subprocess.check_output(['git', 'archive', '--format=tar', 'HEAD'])
+          with tarfile.open(fileobj=io.BytesIO(archive)) as package:
+              names = package.getnames()
+              assert not any(name.startswith('.github') for name in names)
+              assert {'panda', 'README.md', 'pyproject.toml', 'uv.lock'} <= set(names)
           PY
       - name: Validate registered operations and source pins
         run: |

@@ -2,8 +2,22 @@
 set -euo pipefail
 PANDA_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PANDA_ROOT"
+if [[ "${1:-}" == install ]]; then
+  if [[ $# -ne 1 ]]; then
+    echo 'Usage: ./panda install' >&2
+    exit 2
+  fi
+  exec bash tools/bootstrap.sh
+fi
 if [[ ! -x .venv/bin/python ]]; then
-  echo 'Run bash tools/bootstrap.sh once to install the shared runtime.' >&2
+  if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+    echo 'GraspPanda · Modular visual grasping toolbox'
+    echo 'Install: ./panda install'
+    echo 'Start:   ./panda ui'
+    echo 'Guides:  docs/INSTALL.md · docs/DOWNLOADS.md · docs/USAGE.md'
+    exit 0
+  fi
+  echo 'Run ./panda install once to install the shared runtime. See docs/INSTALL.md.' >&2
   exit 1
 fi
 exec .venv/bin/python -m grasppanda "$@"

@@ -11,6 +11,7 @@ from .config import ROOT, Experiment, capabilities, catalogue, default_dataset
 def main():
     parser = argparse.ArgumentParser(prog="panda", description="GraspPanda · Modular visual grasping toolbox")
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser("install", help="Install or repair the shared runtime")
     ui = commands.add_parser("ui")
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=7860)
@@ -31,7 +32,9 @@ def main():
     sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
     sweep.add_argument('--runs-dir', type=Path)
     args = parser.parse_args()
-    if args.command == "ui":
+    if args.command == "install":
+        raise SystemExit(subprocess.call(["bash", str(ROOT / "tools/bootstrap.sh")], cwd=ROOT))
+    elif args.command == "ui":
         from .ui import launch
         launch(args.host, args.port)
     elif args.command == "list":
