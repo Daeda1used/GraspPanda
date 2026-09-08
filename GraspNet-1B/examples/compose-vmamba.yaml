@@ -1,0 +1,32 @@
+dataset: graspnet1b
+method: hggd
+action: train_check
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+camera: realsense
+split: train
+scene: 0
+frame: 0
+workspace: native_demo
+num_points: 15000
+training_steps: 3
+learning_rate: 0.0001
+checkpoint_policy: reuse_unchanged
+modules:
+  backbone:
+    type: vmamba
+    stage_channels: [32, 64, 128, 256]
+    stage_depths: [1, 1, 2, 1]
+    state_dim: 4
+    scan: cross2d
+    gradient_checkpointing: true
+optimizer:
+  type: adamw
+  weight_decay: 0.01
+loss:
+  functions:
+    anchor_location: asl
+    local_offset: huber
+augmentation:
+  brightness: 0.1
+  depth_noise_std: 0.0005

@@ -28,5 +28,11 @@
     "repository": "https://github.com/facebookresearch/sonata",
     "path": "environments/sources/cv/sonata",
     "commit": "18c09ff8d713494f78a8213792262b910977a65d"
+  },
+  {
+    "id": "vmamba",
+    "repository": "https://github.com/MzeroMiko/VMamba",
+    "path": "environments/sources/cv/vmamba",
+    "commit": "2ed52ead062a51a64521ed3871d52914bf532876"
   }
 ]

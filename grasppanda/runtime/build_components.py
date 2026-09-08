@@ -9,6 +9,14 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def build_vmamba(uv, source, env):
+    build=ROOT/'environments/build/vmamba-scan'
+    shutil.copytree(source/'kernels/selective_scan',build,dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns('build','*.egg-info','__pycache__','dist'))
+    subprocess.run([uv,'pip','install','--python',sys.executable,'--no-deps',
+                    '--no-build-isolation',str(build)],env=env,check=True)
+
+
 def main():
     uv=ROOT/'environments/bootstrap/uv'
     uv=str(uv) if uv.exists() else shutil.which('uv')
@@ -27,6 +35,7 @@ def main():
             subprocess.run(['git','-C',str(dest),'checkout','--detach',record['commit']],check=True)
         actual=subprocess.check_output(['git','-C',str(dest),'rev-parse','HEAD'],text=True).strip()
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
+    build_vmamba(uv, ROOT/pins['vmamba']['path'], env)
     # Native packaging generates the version module used by source imports.
     # The broader robotics application dependencies are outside this adapter.
     subprocess.run([uv,'build',str(ROOT/pins['finegrasp']['path']),'--wheel',

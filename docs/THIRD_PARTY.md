@@ -14,6 +14,8 @@ ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementati
 
 Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda supplies input/output mappings and native attention-cache handling. The adapter does not download or redistribute the separately licensed pretrained Sonata weights.
 
+VMamba is imported from its pinned MIT-licensed author repository, including its native selective-scan and cross-scan/merge implementations. The installer builds the CUDA operator locally; original notices remain with the downloaded source. GraspPanda adds RGB-D feature projections and scoped checkpoint/driver compatibility handling. No pretrained VMamba weights are redistributed or downloaded.
+
 ASL single-label and Poly-1 are implemented from their documented mathematical objectives, with source references in [Training controls](MODULES.md#loss-formulations). ASL is checked against the locked timm implementation; its saturated-probability handling uses stable complements and bounded power bases. No classification datasets or pretrained loss-specific models are downloaded.
 
 HGGD/RNG loss adapters invoke the locally downloaded, pinned native target generators with scoped loss primitives. Their sigmoid ASL and Poly-1 variants retain method-specific balancing and normalization, as described in [RGB-D training controls](MODULES.md#rgb-d-training-controls). RGB-D observation augmentation uses torchvision transforms and the native camera/input conventions. Original method source and its terms remain separate from the toolbox.

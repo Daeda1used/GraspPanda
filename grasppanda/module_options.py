@@ -36,6 +36,15 @@ def schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'vmamba':
+            return {'stage_channels': ('int_list',4,16,1024), 'stage_depths': ('int_list',4,1,24),
+                    'state_dim': ('int',1,64), 'ssm_ratio': ('float',.5,4), 'dt_rank': ('int',1,64),
+                    'scan': ('choice',('cross2d','unidirectional','bidirectional','cascade2d')),
+                    'ssm_conv': ('int',1,9), 'ssm_conv_bias': ('bool',),
+                    'ssm_activation': common['activation'], 'mlp_activation': common['activation'],
+                    'ssm_dropout': ('float',0,.5), 'mlp_dropout': ('float',0,.5),
+                    'mlp_ratio': ('float',1,8), 'drop_path': ('float',0,.5),
+                    'gradient_checkpointing': ('bool',), 'projection_norm': common['normalization']}
         if choice in ('dinov2','dinov3'):
             return {'variant': ('choice', ('small','base')), 'pretrained': ('bool',),
                     'out_indices': ('int_list',4,0,11), 'trainable_blocks': ('int',0,12),
@@ -119,6 +128,11 @@ def validate_options(method, slot, choice, options):
                 raise ValueError('PointMLP expanded stage width must not exceed 2048')
     if choice == 'repvit' and any(width % 8 for width in options.get('stage_channels', [])):
         raise ValueError('RepViT stage channels must be multiples of 8')
+    if choice == 'vmamba':
+        if any(width % 8 for width in options.get('stage_channels', [])):
+            raise ValueError('VMamba stage channels must be multiples of 8')
+        if options.get('ssm_conv', 3) % 2 != 1:
+            raise ValueError('VMamba local convolution requires an odd kernel size')
     if choice == 'sonata_ptv3':
         for prefix, widths, heads in (('enc', [48,96,192,384,512], [3,6,12,24,32]),
                                      ('dec', [96,96,192,384], [6,6,12,32])):

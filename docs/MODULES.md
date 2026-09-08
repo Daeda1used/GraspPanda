@@ -14,7 +14,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
-| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3` |
+| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
@@ -27,6 +27,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
 | `cylinder` | `hidden_channels`, `radius_factors`, `nsample`, `pooling`: max/mean/attention, `activation`, `normalization` |
 | Image `dinov2` / `dinov3` | `variant`: small/base; `pretrained`, `out_indices`, `trainable_blocks`, `drop_path`, `gradient_checkpointing`, `projection_norm` |
+| Image `vmamba` | `stage_channels`, `stage_depths`, `state_dim`, `ssm_ratio`, `dt_rank`, `scan`, `ssm_conv`, `ssm_conv_bias`, `ssm_activation`, `ssm_dropout`, `mlp_ratio`, `mlp_activation`, `mlp_dropout`, `drop_path`, `gradient_checkpointing`, `projection_norm` |
 | Image `native_resnet` | `variant`: 18/34/50 (string); optional four-element `stage_depths` |
 | Image `convnextv2` | `variant`: atto/tiny; optional four-element `stage_channels`, `stage_depths`; `drop_path`, `projection_norm` |
 | Image `repvit` | `variant`: m0_9/m1_1; optional four-element `stage_channels` (multiples of 8), `stage_depths`; `projection_norm` |
@@ -95,9 +96,30 @@ The modern encoders use the implementation in the locked [timm library](https://
 | RepViT | [CVPR 2024 PDF](https://arxiv.org/pdf/2307.09283) | [RepViT](https://github.com/THU-MIG/RepViT) |
 | MobileNetV4 | [ECCV 2024 PDF](https://arxiv.org/pdf/2404.10518) | [TensorFlow Models](https://github.com/tensorflow/models/blob/master/official/vision/modeling/backbones/mobilenet.py) |
 
-Inputs are zero-padded only at the high ends of the spatial axes. ConvNeXt patch-center offsets are resampled onto the native lattice with bilinear interpolation and border extension; RepViT/MobileNet use their centered, odd-kernel lattices. Encoders without stride-2 outputs gain a native-sized stem. Learned projections supply the expected channels; `projection_norm` accepts batch/group/none. These are explicit grasp adaptations, not reproductions of image-classification results.
+ConvNeXt/RepViT/MobileNet inputs are zero-padded only at the high ends of the spatial axes. ConvNeXt patch-center offsets are resampled onto the native lattice with bilinear interpolation and border extension; RepViT/MobileNet use their centered, odd-kernel lattices. Encoders without stride-2 outputs gain a native-sized stem. Learned projections supply the expected channels; `projection_norm` accepts batch/group/none. These are explicit grasp adaptations, not reproductions of image-classification results.
 
 Selecting a new encoder initializes it and its projections from scratch. `reuse_unchanged` retains only the original anchor heads and complete local network; use `strict` for subsequent checkpoint inference. No ImageNet weights are downloaded implicitly. See [image composition example](../GraspNet-1B/examples/compose-hggd.yaml).
+
+### VMamba state-space image features
+
+`vmamba` uses the native visual state-space backbone from [VMamba (NeurIPS 2024 PDF)](https://proceedings.neurips.cc/paper_files/paper/2024/file/baa2da9ae4bfed26520bb61d259a3653-Paper-Conference.pdf) and its [author implementation](https://github.com/MzeroMiko/VMamba). It replaces the HGGD/RNG image encoder while preserving their anchor and local branches. The installer builds the pinned `selective_scan_cuda_oflex` operator in the shared environment; native Triton kernels perform cross-scan/merge. There is no additional virtual environment or implicit slow scan fallback.
+
+The native convolutional patch embedding and downsampling retain pixel-zero lattice centers. This adapter processes the original `[B,4,640,360]` tensor without extra image padding, adds the required stride-2 stem and projects the four native stages into the grasp decoder's channels. Its input remains the method's native depth/RGB representation. ImageNet checkpoints are not loaded; use `reuse_unchanged` with author grasp weights, train the replacement and reload the resulting grasp checkpoint with `strict`.
+
+| Setting | Default / choices |
+|---|---|
+| `stage_channels`, `stage_depths` | `[96,192,384,768]`, `[2,2,5,2]`; four stages, widths divisible by 8 |
+| `state_dim`, `ssm_ratio` | `1`, `2.0`; state size and inner-channel expansion |
+| `dt_rank` | Native automatic rank; supply an integer to override |
+| `scan` | `cross2d`; native alternatives `unidirectional`, `bidirectional`, `cascade2d` |
+| `ssm_conv`, `ssm_conv_bias` | `3`, `false`; odd local convolution kernel from 1 to 9 |
+| `ssm_activation`, `mlp_activation` | `silu`, `gelu`; each also accepts relu/gelu/silu |
+| `ssm_dropout`, `mlp_dropout`, `mlp_ratio` | `0`, `0`, `4.0` |
+| `drop_path` | `0.2` |
+| `gradient_checkpointing` | `false`; recompute native blocks during training using non-reentrant checkpointing |
+| `projection_norm` | `batch`; alternatives `group`, `none` |
+
+Start with [the VMamba composition example](../GraspNet-1B/examples/compose-vmamba.yaml). Smaller stage widths/depths make configuration sweeps less expensive. HGGD also supports these components in [epoch training](#hggd-epoch-training). A larger state, stage or point count increases memory use; scan choices are architectural experiments, not an accuracy ranking.
 
 ### Pretrained DINO image features
 

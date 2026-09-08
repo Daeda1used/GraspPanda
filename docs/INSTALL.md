@@ -61,3 +61,5 @@ The clone contains source, guides, example configurations and dependency locks. 
 | `logs/` | Installation and source-download diagnostics |
 
 Keep GraspNet at a path of your choice and select that path in the UI. Copy examples to a `*.local.yaml` file before editing; local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
+
+VMamba builds its CUDA selective-scan extension during installation. The first invocation compiles its Triton cross-scan kernels into a local cache. When a container mounts only `libcuda.so.1`, GraspPanda creates a linker alias under `environments/triton-driver/`; system libraries are not modified. An explicit `TRITON_LIBCUDA_PATH` takes precedence.

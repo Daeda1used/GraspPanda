@@ -42,12 +42,17 @@ class ImagePyramid(nn.Module):
         else:
             kwargs['drop_path_rate'] = drop_path
         self.encoder = timm.create_model(name, **kwargs)
-        self.strides = tuple(self.encoder.feature_info.reduction())
+        self.configure_pyramid(family, self.encoder.feature_info.channels(),
+                               self.encoder.feature_info.reduction(), projection_norm)
+
+    def configure_pyramid(self, family, channels, strides, projection_norm, pad_to_stride=True):
+        self.strides = tuple(strides)
+        self.pad_to_stride = pad_to_stride
         if self.strides not in ((4, 8, 16, 32), (2, 4, 8, 16, 32)):
             raise ValueError('Image encoder does not expose the registered feature pyramid')
         self.family = family
         self.projections = nn.ModuleList()
-        for channels, stride in zip(self.encoder.feature_info.channels(), self.strides):
+        for channels, stride in zip(channels, self.strides):
             target = 4 * stride
             layers = [nn.Conv2d(channels, target, 1, bias=projection_norm == 'none')]
             if projection_norm == 'batch': layers.append(nn.BatchNorm2d(target))
@@ -65,7 +70,7 @@ class ImagePyramid(nn.Module):
         size = x.shape[-2:]
         # Padding keeps the input coordinate origin. It supplies the boundary
         # cells needed by the native ceil-stride feature maps.
-        padded = F.pad(x, (0, (-size[1]) % 32, 0, (-size[0]) % 32))
+        padded = F.pad(x, (0, (-size[1]) % 32, 0, (-size[0]) % 32)) if self.pad_to_stride else x
         maps = self.encoder(padded)
         result = [self.stem(x)] if self.stem is not None else []
         for value, project, stride in zip(maps, self.projections, self.strides):
