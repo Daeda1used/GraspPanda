@@ -1,0 +1,33 @@
+# Prepare baseline grasp, collision and tolerance labels first.
+# Copy to a *.local.yaml file and set your dataset path before running.
+dataset: graspnet1b
+method: graspnet_baseline
+action: train
+dataset_root: /data/GraspNet-1B
+camera: realsense
+split: train
+scene: 0
+frame: 0
+num_points: 15000
+epochs: 2
+batch_size: 2
+learning_rate: 0.0001
+train_batch_limit: 2
+eval_batch_limit: 1
+data_workers: 2
+optimizer:
+  type: adamw
+  weight_decay: 0.01
+loss:
+  functions:
+    objectness: {type: poly1, epsilon: 1.0}
+    width: {type: huber, delta: 0.5}
+augmentation:
+  mode: custom
+  rotation_degrees: 10
+  translation: 0.005
+  point_dropout: 0.2
+  cutout_fraction: 0.1
+  depth_noise_std: 0.001
+  depth_noise_clip: 0.003
+# Set batch limits to 0 and choose the final epoch/timeout for a full run.

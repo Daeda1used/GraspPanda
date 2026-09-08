@@ -82,7 +82,7 @@ def run(config,out):
             dataset=_native(*args,load_label=False,**kwargs)
             dataset.load_label=enabled
             if enabled:dataset.collision_labels=LabelCache(config.dataset_root,'collision',dataset.sceneIds)
-            if dataset.split=='train':configure_dataset(dataset,config)
+            if dataset.split=='train':dataset=configure_dataset(dataset,config)
             return dataset
         module.GraspNetDataset=lazy_dataset
 
@@ -108,14 +108,14 @@ def run(config,out):
         if int(resume['epoch'])>=config.epochs:raise ValueError('Final epoch must exceed the resume checkpoint epoch')
         previous=resume.get('config')
         if previous:
-            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','loss','augmentation','optimizer','scheduler','learning_rate'):
+            for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','scene','frame','seed','data_workers','loss','augmentation','optimizer','scheduler','learning_rate'):
                 if previous.get(key,{} if key in ('loss','augmentation','optimizer','scheduler') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
             if config.method=='scale_balanced_grasp' and previous.get('epochs')!=config.epochs:
                 raise ValueError('Scale-Balanced-Grasp OneCycle resume requires its original final-epoch horizon')
             if config.scheduler and previous.get('epochs')!=config.epochs:
                 raise ValueError('Configured scheduling requires the original final-epoch horizon when resuming')
-        elif config.optimizer or config.scheduler:
-            raise ValueError('Resume with optimization overrides requires saved configuration metadata')
+        elif config.optimizer or config.scheduler or config.loss or config.augmentation:
+            raise ValueError('Resume with training overrides requires saved configuration metadata')
         if config.scheduler and 'scheduler_state_dict' not in resume:
             raise ValueError('Resume checkpoint is missing the configured scheduler state')
 

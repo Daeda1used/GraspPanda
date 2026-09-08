@@ -98,26 +98,79 @@ Selecting a new encoder initializes it and its projections from scratch. `reuse_
 
 ## Training controls
 
-Baseline, its PointNet2 port and Graspness accept `loss` and `augmentation` overrides in supported short-training or epoch-training actions. Other methods reject these controls until their supervision adapters implement them.
+Baseline, its PointNet2 port and Graspness accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. Other methods retain their own supervision contracts. Start with [the training-controls example](../GraspNet-1B/examples/train-controls.yaml).
+
+In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
 ```yaml
 loss:
-  weights:
-    width: 0.4
+  weights: {width: 0.4}
+  functions:
+    objectness: {type: asl, gamma_pos: 0, gamma_neg: 4, label_smoothing: 0.1}
+    width: {type: huber, delta: 0.5}
 augmentation:
   mode: custom
   rotation_axis: x
   rotation_degrees: 15
   translation: 0.01
-  jitter_std: 0.001
-  jitter_clip: 0.003
+  point_dropout: 0.2
+  cutout_fraction: 0.1
+  depth_noise_std: 0.001
+  depth_noise_clip: 0.003
 ```
 
-Loss weights are absolute coefficients. Unspecified components retain the native coefficients and all masks/reductions remain native. Baseline defaults: objectness/view = 1; score/angle/width/tolerance = 0.2. Graspness defaults: objectness = 1, graspness = 10, view = 100, score = 15, width = 10. Identical defaults retain the original loss tensor.
+### Loss formulations
 
-An empty augmentation mapping preserves the action's original behavior. `mode: none` disables augmentation; `mode: native` selects the author's transform. `mode: custom` applies a camera-axis rotation sampled uniformly within the specified degrees and an independent translation sampled within the specified metre range. Point coordinates and object poses transform together; sparse coordinates are recomputed. Clipped Gaussian jitter affects observations while clean grasp supervision is retained. Image crops, scaling and scene mixing require different label/intrinsic contracts and are not implied by these point-only controls.
+Weights are absolute coefficients. Unspecified terms retain their native coefficients and formulations. Omit `functions`, or select `upstream`, to retain the native objective; identical coefficient overrides alone retain the original loss tensor.
 
-Loss/augmentation settings are training-only. Resume requires the same settings; checkpoint inference retains architecture settings and clears training-only options automatically.
+| Method | Classification terms | Regression terms | Native coefficients |
+|---|---|---|---|
+| Baseline / PointNet2 port | `objectness`, `angle` | `view`, `score`, `width`, `tolerance` | Objectness/view: 1; score/angle/width/tolerance: 0.2 |
+| Graspness | `objectness` | `graspness`, `view`, `score`, `width` | Objectness: 1; graspness: 10; view: 100; score: 15; width: 10 |
+
+Each `functions` value accepts a name or `{type: NAME, ...}`. The following parameters have bounded, finite values; omitted parameters use the defaults shown.
+
+| Formulation | Parameters: default [range] | Behavior |
+|---|---|---|
+| `cross_entropy` | `label_smoothing`: 0 [0, 0.5] | Softmax cross entropy with optional uniform smoothing |
+| `focal` | `gamma`: 2 [0, 8]; optional `alpha` [0, 1] | Softmax focal loss; alpha weights foreground versus background and is accepted only for binary objectness |
+| `poly1` | `epsilon`: 1 [-1, 10] | Cross entropy + epsilon × (1 − target-class probability); epsilon 0 recovers cross entropy |
+| `asl` | `gamma_pos`: 0 [0, 8]; `gamma_neg`: 4 [0, 8]; `label_smoothing`: 0.1 [0, 0.5] | Single-label softmax asymmetric loss, with the author's defaults |
+| `l1` / `mse` | None | Absolute / squared normalized error |
+| `smooth_l1` | `beta`: 1 [0, 10] | Quadratic-to-linear transition at beta; beta 0 is L1 |
+| `huber` | `delta`: 1 [0.000001, 10] | Huber transition at delta; its scale differs from Smooth L1 when delta is not 1 |
+| `charbonnier` | `epsilon`: 0.001 [0.000001, 1] | sqrt(error² + epsilon²) − epsilon |
+
+Softmax focal loss adapts [Focal Loss (ICCV 2017)](https://openaccess.thecvf.com/content_ICCV_2017/papers/Lin_Focal_Loss_for_ICCV_2017_paper.pdf) to the existing class heads. Regression transitions follow the [PyTorch Smooth L1](https://docs.pytorch.org/docs/stable/generated/torch.nn.SmoothL1Loss.html) and [Huber](https://docs.pytorch.org/docs/stable/generated/torch.nn.HuberLoss.html) definitions.
+
+The adapters retain native positive masks, angle-label argmax/gather and target units. Baseline width and tolerance errors are divided by the native maximum width/tolerance; its grasp terms divide by the float32 valid count plus 1e-6. Graspness width targets are multiplied by 10; width loss uses positive quality labels only. Other substituted terms retain native valid-item means. Empty masks produce a gradient-connected zero for **substituted** terms; unmodified upstream terms keep their original behavior. A non-finite training objective stops the run.
+
+[PolyLoss (ICLR 2022)](https://arxiv.org/pdf/2204.12511) uses the [author's Poly-1 formulation](https://waymo.com/research/polyloss-a-polynomial-expansion-perspective-of-classification-loss-functions/). [ASL (ICCV 2021)](https://arxiv.org/pdf/2009.14119) follows the [author's single-label softmax variant](https://github.com/Alibaba-MIIL/ASL), checked against the locked timm implementation. Probability complements and fractional powers use numerically stable evaluation at saturated logits. These are classification-head adaptations; no grasp accuracy improvement is implied.
+
+[Varifocal Loss](https://github.com/hyz-xmaster/VarifocalNet) assumes quality logits decoded through sigmoid. The current grasp-quality heads emit raw regression scores, so it requires an explicit head/decoder adaptation before becoming a selectable loss.
+
+### Point augmentation
+
+An empty mapping preserves the action's original behavior. `mode: none` disables augmentation; `mode: native` selects the author's transform. The following parameters require `mode: custom` (the default for a nonempty mapping).
+
+| Parameter | Default · accepted values | Meaning |
+|---|---|---|
+| `rotation_axis` | x · x/y/z | Rotation axis in camera coordinates |
+| `rotation_degrees` | 0 · [0, 180] | Uniform rotation within ± the selected angle |
+| `translation` | 0 · [0, 0.5] metres | Independent uniform translation per axis |
+| `jitter_std` / `jitter_clip` | 0 / 0.01 · [0, 0.02] / [0, 0.1] metres | Gaussian XYZ observation noise and absolute clipping bound |
+| `point_dropout` | 0 · [0, 0.8] | Fraction of remaining sampled rows discarded randomly |
+| `cutout_fraction` | 0 · [0, 0.5] | Fraction of sampled rows removed nearest a randomly chosen 3D point |
+| `depth_noise_std` | 0 · [0, 0.01] | Camera-depth noise coefficient: standard deviation in metres = coefficient × z², with z in metres |
+| `depth_noise_clip` | 0.01 · [0, 0.1] metres | Absolute depth perturbation bound |
+
+Depth noise follows each original camera ray before the rigid transform. Points and object poses then transform together; XYZ jitter affects observations only. Local cutout precedes random dropout. Removed rows are replaced by sampled retained rows, keeping the configured point count and at least min(1024, input count) retained source rows. This bound does not guarantee distinct geometric points.
+
+One row map updates points, colors/features, objectness and per-point graspness labels together. Sparse coordinates are recomputed afterward. Object-frame grasp annotations remain clean; their object poses carry the rigid transformation. Epoch augmentation applies to training samples only, including when using loader workers. Short training resamples the selected labelled sample each update.
+
+These are point-observation controls. Image crops, nonrigid warps, scaling and scene mixing need their own camera, grasp-pose, width and collision-label transformations; matching tensor sizes does not make their supervision interchangeable.
+
+Loss and augmentation settings are training-only. Resume requires saved configuration metadata for training overrides and the same objective, augmentation, sampled frame range, seed and loader worker count. **Prepare inference from checkpoint** retains architecture settings and clears training-only options automatically. To sweep a loss parameter, use a structured formulation in the base configuration and vary, for example, `loss.functions.objectness.epsilon`; augmentation uses paths such as `augmentation.point_dropout`.
 
 ## Optimizers and schedules
 
@@ -188,7 +241,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-The check repeats one labelled frame without augmentation, computes the native loss, and requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. The general `batch_size` and `epochs` fields apply to the full native `train` action, not this diagnostic.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. The general `batch_size` and `epochs` fields apply to the full native `train` action, not this diagnostic.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 
@@ -200,7 +253,7 @@ For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkp
 
 ## Train a composed model across epochs
 
-Baseline and Graspness accept these same module choices in `action: train`. SBG also exposes its native epoch trainer. The original loaders, augmentation, loss, optimizer and learning-rate schedule remain in use. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
+Baseline and Graspness accept these same module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
 
 To test the epoch workflow, change the example above:
 

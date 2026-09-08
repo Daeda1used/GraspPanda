@@ -13,3 +13,5 @@ PointMLP uses the author's point hierarchy and feature-propagation blocks, plus 
 ConvNeXt V2, RepViT, MobileNetV4, Lion and Muon use the locked timm implementations. Author papers and original implementation links are listed in [Modules](MODULES.md). Image encoder replacements initialize without external pretrained weights.
 
 Sonata PTv3 is imported from the pinned Apache-2.0 author source. GraspPanda supplies input/output mappings and native attention-cache handling. The adapter does not download or redistribute the separately licensed pretrained Sonata weights.
+
+ASL single-label and Poly-1 are implemented from their documented mathematical objectives, with source references in [Training controls](MODULES.md#loss-formulations). ASL is checked against the locked timm implementation; its saturated-probability handling uses stable complements and bounded power bases. No classification datasets or pretrained loss-specific models are downloaded.

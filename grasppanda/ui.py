@@ -70,6 +70,35 @@ def component_parameters(method, backbone, crop):
     return ('| Parameter | Accepted values |\n|---|---|\n'+'\n'.join(rows)+'\n\nOmitted parameters use component defaults. Cross-stage constraints are checked when generating or running the configuration.') if rows else 'The selected components use their native settings.'
 
 
+def loss_parameters(method):
+    from .training_options import LOSS_TERMS
+    from .losses import PARAMETERS
+    terms = LOSS_TERMS.get(method, {})
+    if not terms:
+        return 'This method uses its native objective and augmentation. Custom controls are not registered.'
+    rows = [f'| `{name}` | ' + (', '.join(f'`{key}`: {low} to {high}' for key, (low, high) in options.items()) or 'No parameters') + ' |'
+            for name, options in PARAMETERS.items() if name != 'upstream']
+    return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Objectness and angle use classification losses; the remaining terms use regression losses.\n\n'
+            '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
+            '\n\nUse `loss.functions.TERM: {"type": "NAME", ...}` in experiment JSON. Focal alpha applies only to binary objectness. '
+            'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#training-controls) for defaults, target units and augmentation parameters.')
+
+
+def loss_preset(method, classification, regression, current):
+    from .training_options import LOSS_TERMS
+    if method not in LOSS_TERMS:
+        raise gr.Error('This method uses its native objective; loss overrides are not registered.')
+    try:
+        value = json.loads(current or '{}')
+        if not isinstance(value, dict): raise ValueError('Loss configuration must be a mapping')
+        value['functions'] = {term: classification if term in ('objectness', 'angle') else regression
+                              for term in LOSS_TERMS[method]}
+        Experiment(method=method, action='train_check', split='train', scene=0, loss=value).validate()
+    except (ValueError, TypeError) as error:
+        raise gr.Error(str(error)) from error
+    return json.dumps(value, indent=2)
+
+
 def documentation(name):
     """Render repository guides with usable links inside the browser app."""
     import re
@@ -329,7 +358,16 @@ def create_app(manager=None):
                     with gr.Accordion("Training & evaluation settings", open=False):
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,label='Optimizer steps (short training)')
                         proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,label='RNG anchor warmup updates',info='Optional real-label anchor training before preparing local proposals. Added to short-training updates; 0 preserves the native preset.')
-                        loss_options=gr.Code('{}',language='json',label='Loss configuration',lines=3)
+                        with gr.Accordion('Choose loss formulations', open=False):
+                            from .losses import CLASSIFICATION, REGRESSION
+                            with gr.Row():
+                                classification_loss=gr.Dropdown(['upstream', *CLASSIFICATION],value='upstream',label='Classification loss',interactive=False)
+                                regression_loss=gr.Dropdown(['upstream', *REGRESSION],value='upstream',label='Regression loss',interactive=False)
+                            apply_loss=gr.Button('Apply loss choices',interactive=False)
+                            gr.Markdown('Apply writes the selected formulation to each matching term below and keeps your coefficients. Edit individual terms and parameters in Loss configuration. Training operations only.')
+                            with gr.Accordion('Loss parameters & augmentation guide', open=False):
+                                loss_help=gr.Markdown(loss_parameters('graspnet_baseline'))
+                        loss_options=gr.Code('{}',language='json',label='Loss configuration',lines=5)
                         augmentation_options=gr.Code('{}',language='json',label='Augmentation configuration',lines=3)
                         with gr.Accordion('Optimizer & learning-rate schedule', open=False):
                             optimizer_kind=gr.Dropdown(['upstream'],value='upstream',label='Optimizer',interactive=False)
@@ -380,7 +418,7 @@ def create_app(manager=None):
                 with gr.Column():
                     logs = gr.Textbox(label="Live log (last 32 KB)", lines=16, interactive=False)
                     result = gr.JSON(label="Result")
-                    loss_plot=gr.LinePlot(x='Batch',y='Loss',color='Stage',title='Training loss by stage',label='Native objective')
+                    loss_plot=gr.LinePlot(x='Batch',y='Loss',color='Stage',title='Training loss by stage',label='Training objective')
                 with gr.Column():
                     preview = gr.Image(label="Predicted gripper projection (first frame)", interactive=False)
                     artifacts = gr.File(label="Configuration, provenance & logs", file_count="multiple")
@@ -423,6 +461,14 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp') else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract
         method.change(select_components,method,[backbone,crop,component_contract],api_name='select_components').then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
+        apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
+        method.change(loss_parameters,method,loss_help,api_name='loss_parameters')
+        def loss_controls(method, action):
+            from .training_options import METHODS
+            enabled=method in METHODS and action in ('train','train_check')
+            return gr.update(value='upstream',interactive=enabled),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
+        for selector in (method, action):
+            selector.change(loss_controls,[method,action],[classification_loss,regression_loss,apply_loss],api_name=False)
         for selector in (method, backbone, crop):
             selector.change(component_parameters,[method,backbone,crop],parameter_help,api_name=False)
         def optimization_choices(method, action, backbone):
