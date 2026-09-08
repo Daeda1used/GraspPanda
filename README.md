@@ -7,7 +7,7 @@
 Requires Linux x86-64, an NVIDIA GPU and the CUDA 11.8 compiler toolkit. Install [uv and system prerequisites](docs/INSTALL.md), then:
 
 ```bash
-git clone https://github.com/Daeda1used/GraspPanda.git
+git clone --depth 1 https://github.com/Daeda1used/GraspPanda.git
 cd GraspPanda
 bash tools/bootstrap.sh
 ./panda ui

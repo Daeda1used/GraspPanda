@@ -3,8 +3,10 @@
 Select a method and its observation protocol in the UI, or copy an example and edit its local paths:
 
 ```bash
+cp GraspNet-1B/examples/infer-graspness.example.yaml graspness.local.yaml
+# Edit dataset_root and checkpoint in graspness.local.yaml.
 ./panda weights graspness --camera realsense
-./panda run GraspNet-1B/examples/infer-graspness.example.yaml
+./panda run graspness.local.yaml
 ```
 
 Run commands from the repository root. The dataset root is the directory containing `scenes/`; see [Data & weights](../docs/DOWNLOADS.md).

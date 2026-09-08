@@ -285,7 +285,7 @@ def create_app(manager=None):
         with gr.Tab("Experiments"):
             with gr.Row():
                 with gr.Column(scale=4):
-                    dataset_key=gr.Dropdown(choices=[(s.title,key) for key,s in datasets().items()],value="graspnet1b",label="Dataset integration")
+                    dataset_key=gr.Dropdown(choices=[(s.title,key) for key,s in datasets().items()],value="graspnet1b",label="Dataset")
                     group = gr.Dropdown(groups, value="All", label="Protocol & family")
                     method = gr.Dropdown([(v.get("name", m), m) for m, v in items.items()], value="graspnet_baseline", label="Method")
                     with gr.Accordion("Method details & input requirements", open=False):
@@ -313,7 +313,7 @@ def create_app(manager=None):
                         gr.Markdown("Official workspace uses dataset segmentation + poses. HGGD / RNG use native_demo. Load the preset to select the correct protocol.", elem_classes="panda-note")
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
                     with gr.Accordion("Compose modules",open=False):
-                        gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Run a training check before using a new composition.")
+                        gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
                         backbone=gr.Dropdown(['upstream','pointnet','pointnext','pointmlp'],value='upstream',label='Point encoder')
                         crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
@@ -334,12 +334,12 @@ def create_app(manager=None):
                             scheduler_options=gr.Code('{}',language='json',label='Scheduler parameters',lines=3)
                             gr.Markdown('The learning-rate field below sets the base rate. Scheduler warmup and milestones count **optimizer updates**, not epochs. Examples: optimizer `{"weight_decay": 0.01}`; cosine schedule `{"warmup_steps": 1, "min_lr_ratio": 0.01}`. Omit parameters to use the selected implementation defaults; see Guide → Modules for supported settings.')
                         label_root=gr.Textbox(label='HGGD / RNG preprocessed label root (optional)',placeholder='Leave blank to use HGGD_Preprocessed under the dataset root')
-                        gr.Markdown('Training checks use fixed batches: HGGD, GraNet and fusion use batch 2; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
+                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
                         with gr.Row():
                             epochs = gr.Number(1, precision=0, label="Final epoch (must exceed resume epoch)")
                             batch = gr.Number(2, precision=0, label="Batch size")
                             lr = gr.Number(0.001, label="Learning rate")
-                        train_checkpoint_mode=gr.Dropdown(['initialize','resume'],value='initialize',label='Epoch training checkpoint mode',info='Initialize loads model weights with a fresh optimizer. Resume restores model, optimizer and epoch; requires strict loading.')
+                        train_checkpoint_mode=gr.Dropdown(['initialize','resume'],value='initialize',label='Epoch training checkpoint mode',interactive=False,info='Initialize loads model weights with a fresh optimizer. Resume restores model, optimizer and epoch; requires strict loading.')
                         with gr.Row():
                             train_batch_limit=gr.Number(0,precision=0,minimum=0,label='Training batches per epoch (0 = full split)')
                             eval_batch_limit=gr.Number(0,precision=0,minimum=0,label='Validation batches per epoch (0 = full split)')
@@ -405,13 +405,13 @@ For component experiments, expand **Compose modules**. Full configuration editin
                         gr.Markdown(documentation('USAGE.md'))
                     with gr.Tab("Modules"):
                         gr.Markdown(documentation('MODULES.md'))
+                    with gr.Tab("Methods & papers"):
+                        gr.Markdown(documentation('METHODS.md'))
             with gr.Accordion("Check data and GPU", open=False):
                 setup_root=gr.Textbox(default_dataset(),label='Dataset root')
                 setup_button=gr.Button('Check data & GPU')
                 setup_result=gr.JSON(label='Readiness')
                 setup_button.click(setup_check,setup_root,setup_result,api_name='readiness')
-        with gr.Tab("Methods & papers"):
-            gr.Markdown(documentation('METHODS.md'))
         def select_components(method):
             enabled=bool(slots(method))
             contract='\n\n'.join(f"**{s.name}**: {s.input_contract} → {s.output_contract}" for s in slots(method)) if enabled else 'This method currently retains its native components. No interchangeable slots are registered.'

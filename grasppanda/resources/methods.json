@@ -4,312 +4,234 @@
     "repository": "https://github.com/graspnet/graspnet-baseline",
     "group": "single_view/pointcloud",
     "paper_title": "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping",
-    "year": 2020,
-    "venue": "CVPR",
     "path": "upstream/single_view/pointcloud/graspnet_baseline",
     "name": "GraspNet Baseline",
-    "input_note": "",
-    "pdf_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf"
+    "input_note": ""
   },
   {
     "id": "graspness",
     "repository": "https://github.com/graspnet/graspness_unofficial",
     "group": "single_view/pointcloud",
     "paper_title": "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection",
-    "year": 2021,
-    "venue": "ICCV",
     "path": "upstream/single_view/pointcloud/graspness",
     "name": "Graspness",
-    "input_note": "Third-party implementation; original weights.",
-    "pdf_url": "https://openaccess.thecvf.com/content/ICCV2021/papers/Wang_Graspness_Discovery_in_Clutters_for_Fast_and_Accurate_Grasp_Detection_ICCV_2021_paper.pdf"
+    "input_note": "Third-party implementation; original weights."
   },
   {
     "id": "scale_balanced_grasp",
     "repository": "https://github.com/mahaoxiang822/Scale-Balanced-Grasp",
     "group": "single_view/pointcloud",
     "paper_title": "Towards Scale Balanced 6-DoF Grasp Detection in Cluttered Scenes",
-    "year": 2022,
-    "venue": "CoRL",
     "path": "upstream/single_view/pointcloud/scale_balanced_grasp",
     "name": "Scale-Balanced-Grasp",
-    "input_note": "",
-    "pdf_url": "https://arxiv.org/pdf/2212.05275"
+    "input_note": ""
   },
   {
     "id": "fgc_graspnet",
     "repository": "https://github.com/luyh20/FGC-GraspNet",
     "group": "single_view/pointcloud",
     "paper_title": "Hybrid Physical Metric For 6-DoF Grasp Pose Detection",
-    "year": 2022,
-    "venue": "ICRA",
     "path": "upstream/single_view/pointcloud/fgc_graspnet",
     "name": "FGC-GraspNet",
-    "input_note": "",
-    "pdf_url": "https://arxiv.org/pdf/2206.11141"
+    "input_note": ""
   },
   {
     "id": "granet",
     "repository": "https://github.com/wang-h-w/GraNet",
     "group": "single_view/pointcloud",
     "paper_title": "GraNet: A Multi-Level Graph Network for 6-DoF Grasp Pose Generation in Cluttered Scenes",
-    "year": 2023,
-    "venue": "IROS",
     "path": "upstream/single_view/pointcloud/granet",
     "name": "GraNet",
-    "input_note": "Use your trained checkpoint; author weights require separately distributed old code.",
-    "pdf_url": "https://arxiv.org/pdf/2312.03345"
+    "input_note": "Use your trained checkpoint; author weights require separately distributed old code."
   },
   {
     "id": "hggd",
     "repository": "https://github.com/THU-VCLab/HGGD",
     "group": "single_view/rgbd",
     "paper_title": "Efficient Heatmap-Guided 6-Dof Grasp Detection in Cluttered Scenes",
-    "year": 2023,
-    "venue": "RA-L",
     "path": "upstream/single_view/rgbd/hggd",
     "name": "HGGD",
-    "input_note": "",
-    "pdf_url": "https://arxiv.org/pdf/2403.18546"
+    "input_note": ""
   },
   {
     "id": "economicgrasp",
     "repository": "https://github.com/iSEE-Laboratory/EconomicGrasp",
     "group": "single_view/pointcloud",
     "paper_title": "An Economic Framework for 6-DoF Grasp Detection",
-    "year": 2024,
-    "venue": "ECCV",
     "path": "upstream/single_view/pointcloud/economicgrasp",
     "name": "EconomicGrasp",
-    "input_note": "",
-    "pdf_url": "https://arxiv.org/pdf/2407.08366"
+    "input_note": ""
   },
   {
     "id": "generalizing_grasp",
     "repository": "https://github.com/mahaoxiang822/Generalizing-Grasp",
     "group": "multi_view/fusion",
     "paper_title": "Generalizing 6-DoF Grasp Detection via Domain Prior Knowledge",
-    "year": 2024,
-    "venue": "CVPR",
     "path": "upstream/multi_view/fusion/generalizing_grasp",
     "name": "Generalizing-Grasp",
-    "input_note": "Fused scene inference and short training; MSCQ only, without C-SJO.",
-    "pdf_url": "https://openaccess.thecvf.com/content/CVPR2024/papers/Ma_Generalizing_6-DoF_Grasp_Detection_via_Domain_Prior_Knowledge_CVPR_2024_paper.pdf"
+    "input_note": "Fused scene inference and short training; MSCQ only, without C-SJO."
   },
   {
     "id": "active_ngf",
     "repository": "https://github.com/mahaoxiang822/ActiveNGF",
     "group": "multi_view/active",
     "paper_title": "Active Perception for Grasp Detection via Neural Graspness Field",
-    "year": 2024,
-    "venue": "NeurIPS",
     "path": "upstream/multi_view/active/active_ngf",
     "name": "ActiveNGF",
-    "input_note": "Two-view online field optimization and next-view selection.",
-    "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4364fef031fdf7bfd9d1c9c56b287084-Paper-Conference.pdf"
+    "input_note": "Two-view online field optimization and next-view selection."
   },
   {
     "id": "dograspnet",
     "repository": "https://github.com/huamo555/DOGraspNet",
     "group": "single_view/rgbd",
     "paper_title": "A Multi-Modal Framework with Offset-Driven Local Feature Aggregation for 6-DoF Grasp Pose Estimation",
-    "year": 2026,
-    "venue": "IROS (accepted; upstream claim)",
     "path": "upstream/single_view/rgbd/dograspnet",
     "name": "DOGraspNet",
-    "input_note": "",
-    "pdf_url": ""
+    "input_note": ""
   },
   {
     "id": "graspbalance",
     "repository": "https://github.com/upc-ghy/GraspBalance",
     "group": "single_view/pointcloud",
     "paper_title": "Balanced Grasp Pose Detection for Multi-scale Objects with Point Cloud",
-    "year": null,
-    "venue": null,
     "path": "upstream/single_view/pointcloud/graspbalance",
     "name": "GraspBalance",
-    "input_note": "Use your trained checkpoint; no released weights registered.",
-    "pdf_url": ""
+    "input_note": "Use your trained checkpoint; no released weights registered."
   },
   {
     "id": "graspfast",
     "repository": "https://github.com/YZ-331/GraspFast",
     "group": "single_view/pointcloud",
     "paper_title": "GraspFast: Multi-stage Lightweight 6-DoF Grasp Pose Fast Detection with RGB-D Image",
-    "year": 2025,
-    "venue": "Pattern Recognition",
     "path": "upstream/single_view/pointcloud/graspfast",
     "name": "GraspFast",
-    "input_note": "Available mirror; paper-linked original repository is unavailable.",
-    "pdf_url": ""
+    "input_note": "Available mirror; paper-linked original repository is unavailable."
   },
   {
     "id": "gfla",
     "repository": "https://github.com/Nx1021/GFLA-release",
     "group": "single_view/rgbd",
     "paper_title": "GFLA: A Grasping Framework With Learning-Based Perception and Analytical Modeling for Single-View Scenes",
-    "year": 2026,
-    "venue": "IEEE T-RO",
     "path": "upstream/single_view/rgbd/gfla",
     "name": "GFLA",
-    "input_note": "RGB-D, table pose, FastSAM and scene completion.",
-    "pdf_url": ""
+    "input_note": "RGB-D, table pose, FastSAM and scene completion."
   },
   {
     "id": "region_normalized_grasp",
     "repository": "https://github.com/THU-VCLab/RegionNormalizedGrasp",
     "group": "single_view/rgbd",
     "paper_title": "Region-aware Grasp Framework with Normalized Grasp Space for Efficient 6-DoF Grasping",
-    "year": 2024,
-    "venue": "CoRL",
     "path": "upstream/single_view/rgbd/region_normalized_grasp",
     "name": "RegionNormalizedGrasp",
-    "input_note": "",
-    "pdf_url": "https://arxiv.org/pdf/2406.01767"
+    "input_note": ""
   },
   {
     "id": "rgb_matters",
     "repository": "https://github.com/GouMinghao/rgb_matters",
     "group": "single_view/rgbd",
     "paper_title": "RGB Matters: Learning 7-DoF Grasp Poses on Monocular RGBD Images",
-    "year": 2021,
-    "venue": "ICRA",
     "path": "upstream/single_view/rgbd/rgb_matters",
     "name": "RGB Matters",
-    "input_note": "RGB-D with generated surface normals.",
-    "pdf_url": "https://arxiv.org/pdf/2103.02184"
+    "input_note": "RGB-D with generated surface normals."
   },
   {
     "id": "motiongrasp",
     "repository": "https://github.com/ChenN-Scott/MotionGrasp",
     "group": "temporal",
     "paper_title": "MotionGrasp: Long-Term Grasp Motion Tracking for Dynamic Grasping",
-    "year": 2025,
-    "venue": "IEEE RA-L",
     "path": "upstream/temporal/motiongrasp",
     "name": "MotionGrasp",
-    "input_note": "Temporal tracking recipe and short sequence training.",
-    "pdf_url": ""
+    "input_note": "Temporal tracking recipe and short sequence training."
   },
   {
     "id": "spahybgen",
     "repository": "https://github.com/wangzivector/SpaHybGen",
     "group": "related/multi_hand",
     "paper_title": "Learning contact representations in real-world clutter for universal robotic grasping",
-    "year": 2026,
-    "venue": "Nature Machine Intelligence",
     "path": "upstream/related/multi_hand/spahybgen",
     "name": "SpaHybGen",
-    "input_note": "Author voxel sample / contact optimization; GraspNet contact training.",
-    "pdf_url": ""
+    "input_note": "Author voxel sample / contact optimization; GraspNet contact training."
   },
   {
     "id": "contact_graspnet_g1b",
     "repository": "https://github.com/SeungBack/gc6d-contact-graspnet",
     "group": "adaptations",
     "paper_title": "Contact-GraspNet: Efficient 6-DoF Grasp Generation in Cluttered Scenes",
-    "year": 2021,
-    "venue": "ICRA",
     "path": "upstream/adaptations/contact_graspnet_g1b",
     "name": "Contact-GraspNet (GraspNet port)",
-    "input_note": "GraspNet adaptation; native GT object bounds.",
-    "pdf_url": "https://arxiv.org/pdf/2103.14127"
+    "input_note": "GraspNet adaptation; native GT object bounds."
   },
   {
     "id": "dreds",
     "repository": "https://github.com/PKU-EPIC/DREDS",
     "group": "auxiliary",
     "paper_title": "Domain Randomization-Enhanced Depth Simulation and Restoration for Perceiving and Grasping Specular and Transparent Objects",
-    "year": 2022,
-    "venue": "ECCV",
     "path": "upstream/auxiliary/dreds",
     "name": "DREDS",
-    "input_note": "Auxiliary depth restoration only.",
-    "pdf_url": "https://arxiv.org/pdf/2208.03792"
+    "input_note": "Auxiliary depth restoration only."
   },
   {
     "id": "rngnet_sdk",
     "repository": "https://github.com/THU-VCLab/RNGNet",
     "group": "sdk",
     "paper_title": "Region-aware Grasp Framework with Normalized Grasp Space for Efficient 6-DoF Grasping",
-    "year": 2024,
-    "venue": "CoRL (underlying paper; compiled SDK variant)",
     "path": "upstream/sdk/rngnet_sdk",
     "name": "RNGNet SDK",
-    "input_note": "Binary inference only; training source not released.",
-    "pdf_url": "https://arxiv.org/pdf/2406.01767"
+    "input_note": "Binary inference only; training source not released."
   },
   {
     "id": "graspness_modern",
     "repository": "https://github.com/SimonHanrath/graspness_modern",
     "group": "modernization",
     "paper_title": "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection",
-    "year": 2021,
-    "venue": "ICCV",
     "path": "upstream/modernization/graspness_modern",
     "name": "Graspness modern",
-    "input_note": "",
-    "pdf_url": "https://openaccess.thecvf.com/content/ICCV2021/papers/Wang_Graspness_Discovery_in_Clutters_for_Fast_and_Accurate_Grasp_Detection_ICCV_2021_paper.pdf"
+    "input_note": ""
   },
   {
     "id": "pointnet2_upgrade",
     "repository": "https://github.com/H-Freax/GraspNet-PointNet2-Pytorch-General-Upgrade",
     "group": "modernization",
     "paper_title": "",
-    "year": null,
-    "venue": null,
     "path": "upstream/modernization/pointnet2_upgrade",
     "name": "Baseline PointNet2 port",
-    "input_note": "",
-    "pdf_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf"
+    "input_note": ""
   },
   {
     "id": "graspnet_api",
     "repository": "https://github.com/graspnet/graspnetAPI",
     "group": "infrastructure",
     "paper_title": "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping",
-    "year": 2020,
-    "venue": "CVPR",
     "path": "upstream/infrastructure/graspnet_api",
     "name": "GraspNet API",
-    "input_note": "Dataset reader and official evaluator.",
-    "pdf_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf"
+    "input_note": "Dataset reader and official evaluator."
   },
   {
     "id": "asgrasp",
     "repository": "https://github.com/jun7-shi/ASGrasp",
     "group": "auxiliary/stereo",
     "paper_title": "ASGrasp: Generalizable Transparent Object Reconstruction and 6-DoF Grasp Detection from RGB-D Active Stereo Camera",
-    "year": 2024,
-    "venue": "ICRA",
     "path": "upstream/auxiliary/stereo/asgrasp",
     "name": "ASGrasp",
-    "input_note": "Author RGB + stereo IR sample; standard RGB-D lacks the IR pair.",
-    "pdf_url": "https://arxiv.org/pdf/2405.05648"
+    "input_note": "Author RGB + stereo IR sample; standard RGB-D lacks the IR pair."
   },
   {
     "id": "zerograsp",
     "repository": "https://github.com/sh8/ZeroGrasp",
     "group": "single_view/rgbd",
     "paper_title": "ZeroGrasp: Zero-Shot Shape Reconstruction Enabled Robotic Grasping",
-    "year": 2025,
-    "venue": "CVPR",
     "path": "upstream/single_view/rgbd/zerograsp",
     "name": "ZeroGrasp",
-    "input_note": "Author RGB-D + masks sample; pretrained on ZeroGrasp-11B.",
-    "pdf_url": "https://arxiv.org/pdf/2504.10857"
+    "input_note": "Author RGB-D + masks sample; pretrained on ZeroGrasp-11B."
   },
   {
     "id": "centergrasp",
     "repository": "https://github.com/robot-learning-freiburg/CenterGrasp",
     "group": "single_view/rgbd",
     "paper_title": "CenterGrasp: Object-Aware Implicit Representation Learning for Simultaneous Shape Reconstruction and 6-DoF Grasp Estimation",
-    "year": 2024,
-    "venue": "IEEE RA-L",
     "path": "upstream/single_view/rgbd/centergrasp",
     "name": "CenterGrasp",
-    "input_note": "Kinect RGB/SGDF pair with native ICP and collision filtering.",
-    "pdf_url": "https://arxiv.org/pdf/2312.08240"
+    "input_note": "Kinect RGB/SGDF pair with native ICP and collision filtering."
   },
   {
     "id": "finegrasp",
@@ -317,10 +239,7 @@
     "path": "upstream/single_view/pointcloud/finegrasp",
     "group": "single_view/pointcloud",
     "paper_title": "FineGrasp: Towards Robust Grasping for Delicate Objects",
-    "year": 2025,
-    "venue": "preprint",
     "name": "FineGrasp",
-    "input_note": "RGB-D wrapper; detector uses XYZ and depth-derived normals. Native camera-space bounds: x/y [-1,1] m, z [0,2] m.",
-    "pdf_url": "https://arxiv.org/pdf/2507.05978"
+    "input_note": "RGB-D wrapper; detector uses XYZ and depth-derived normals. Native camera-space bounds: x/y [-1,1] m, z [0,2] m."
   }
 ]

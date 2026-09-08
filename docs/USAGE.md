@@ -11,7 +11,7 @@ Run `./panda ui` and open **http://127.0.0.1:7860**.
 
 Expand **Method details & input requirements** for the selected method's input protocol and original implementation. **Compose modules** exposes registered replacements. **Configuration editor** lets you generate, edit, validate and run exact JSON. For a native recipe, the preset defines fixed inputs; disabled frame fields do not override them. Supported recipes accept a primary checkpoint override.
 
-The **Guide** tab includes installation, downloads, module instructions and a data/GPU readiness check. The **Methods & papers** tab contains the complete method table.
+The **Guide** tab includes installation, downloads, module instructions and a data/GPU readiness check. Expand the guide's instructions and select **Methods & papers** for availability, paper PDFs and original implementations.
 
 ## Operations
 
@@ -92,7 +92,7 @@ The server binds to localhost. Use SSH forwarding on a remote machine:
 ssh -L 7860:localhost:7860 USER@SERVER
 ```
 
-Optional `GRASPPANDA_USER` and `GRASPPANDA_PASSWORD` enable authentication. Keep this local research workbench behind trusted access.
+Optional `GRASPPANDA_USER` and `GRASPPANDA_PASSWORD` enable authentication. Keep the experiment server behind trusted access.
 
 | Problem | Next step |
 |---|---|
