@@ -1,0 +1,158 @@
+[
+  {
+    "id": "graspnet_baseline",
+    "repository": "https://github.com/graspnet/graspnet-baseline",
+    "path": "upstream/single_view/pointcloud/graspnet_baseline",
+    "pinned_commit": "280c215129f759ed8649cb4e89fc5dfee55f4f80"
+  },
+  {
+    "id": "graspness",
+    "repository": "https://github.com/graspnet/graspness_unofficial",
+    "path": "upstream/single_view/pointcloud/graspness",
+    "pinned_commit": "b5abf5aaaf3a797514f89161d8ccc8dfc2ec0eca"
+  },
+  {
+    "id": "scale_balanced_grasp",
+    "repository": "https://github.com/mahaoxiang822/Scale-Balanced-Grasp",
+    "path": "upstream/single_view/pointcloud/scale_balanced_grasp",
+    "pinned_commit": "995d6f892474c91fbfcdf58f7d79589be4cbb41c"
+  },
+  {
+    "id": "fgc_graspnet",
+    "repository": "https://github.com/luyh20/FGC-GraspNet",
+    "path": "upstream/single_view/pointcloud/fgc_graspnet",
+    "pinned_commit": "dedc17ced937b00d81d9dde7c34a1a4de982c0c9"
+  },
+  {
+    "id": "granet",
+    "repository": "https://github.com/wang-h-w/GraNet",
+    "path": "upstream/single_view/pointcloud/granet",
+    "pinned_commit": "d9992e16defd648bd33f4b971926ec1fc8ae3e69"
+  },
+  {
+    "id": "hggd",
+    "repository": "https://github.com/THU-VCLab/HGGD",
+    "path": "upstream/single_view/rgbd/hggd",
+    "pinned_commit": "69580ffefc70247e982f08f3d80d619561919b5e"
+  },
+  {
+    "id": "economicgrasp",
+    "repository": "https://github.com/iSEE-Laboratory/EconomicGrasp",
+    "path": "upstream/single_view/pointcloud/economicgrasp",
+    "pinned_commit": "4119bdcd6bf5d3712a110f78ca87504dd359eec0"
+  },
+  {
+    "id": "generalizing_grasp",
+    "repository": "https://github.com/mahaoxiang822/Generalizing-Grasp",
+    "path": "upstream/multi_view/fusion/generalizing_grasp",
+    "pinned_commit": "45fdb5f533f97588666f95ece2d8a6c9bb7f980a"
+  },
+  {
+    "id": "active_ngf",
+    "repository": "https://github.com/mahaoxiang822/ActiveNGF",
+    "path": "upstream/multi_view/active/active_ngf",
+    "pinned_commit": "2c64df657d50c4a68fe81dfe6ce2a32fb08b70bd"
+  },
+  {
+    "id": "dograspnet",
+    "repository": "https://github.com/huamo555/DOGraspNet",
+    "path": "upstream/single_view/rgbd/dograspnet",
+    "pinned_commit": "a619808a802492c7f5a3b9468815cab508818eca"
+  },
+  {
+    "id": "graspbalance",
+    "repository": "https://github.com/upc-ghy/GraspBalance",
+    "path": "upstream/single_view/pointcloud/graspbalance",
+    "pinned_commit": "e78d196a2e07f56f4f6dfee0f257d41896e91460"
+  },
+  {
+    "id": "graspfast",
+    "repository": "https://github.com/YZ-331/GraspFast",
+    "path": "upstream/single_view/pointcloud/graspfast",
+    "pinned_commit": "fa028134b3a1b0271da7acb8bac7463e6585985e"
+  },
+  {
+    "id": "gfla",
+    "repository": "https://github.com/Nx1021/GFLA-release",
+    "path": "upstream/single_view/rgbd/gfla",
+    "pinned_commit": "314dbe069d835957461fbd1078aafb246abecc83"
+  },
+  {
+    "id": "region_normalized_grasp",
+    "repository": "https://github.com/THU-VCLab/RegionNormalizedGrasp",
+    "path": "upstream/single_view/rgbd/region_normalized_grasp",
+    "pinned_commit": "25a60d0a4232e9e6061193200837dc4f8a18a508"
+  },
+  {
+    "id": "rgb_matters",
+    "repository": "https://github.com/GouMinghao/rgb_matters",
+    "path": "upstream/single_view/rgbd/rgb_matters",
+    "pinned_commit": "2e176728f6dae5e878447240ce6a2423bf770f36"
+  },
+  {
+    "id": "motiongrasp",
+    "repository": "https://github.com/ChenN-Scott/MotionGrasp",
+    "path": "upstream/temporal/motiongrasp",
+    "pinned_commit": "d0aa2ed8dafcbe2939019163ff664af3bfbf95f5"
+  },
+  {
+    "id": "spahybgen",
+    "repository": "https://github.com/wangzivector/SpaHybGen",
+    "path": "upstream/related/multi_hand/spahybgen",
+    "pinned_commit": "39e5794506bbbf2fd41804f73c93b7b393be550e"
+  },
+  {
+    "id": "contact_graspnet_g1b",
+    "repository": "https://github.com/SeungBack/gc6d-contact-graspnet",
+    "path": "upstream/adaptations/contact_graspnet_g1b",
+    "pinned_commit": "2caa95b9d0d88d086209cc9c4b20ba478e5c7010"
+  },
+  {
+    "id": "dreds",
+    "repository": "https://github.com/PKU-EPIC/DREDS",
+    "path": "upstream/auxiliary/dreds",
+    "pinned_commit": "1b0ac3091dbf0af91a48ce28d000fb4e2fe31350"
+  },
+  {
+    "id": "rngnet_sdk",
+    "repository": "https://github.com/THU-VCLab/RNGNet",
+    "path": "upstream/sdk/rngnet_sdk",
+    "pinned_commit": "b3ad0f0963f478a46d63eb66bde49d0416499caa"
+  },
+  {
+    "id": "graspness_modern",
+    "repository": "https://github.com/SimonHanrath/graspness_modern",
+    "path": "upstream/modernization/graspness_modern",
+    "pinned_commit": "dda1d7586d4a9aea53da1636ffe64ae2c362e861"
+  },
+  {
+    "id": "pointnet2_upgrade",
+    "repository": "https://github.com/H-Freax/GraspNet-PointNet2-Pytorch-General-Upgrade",
+    "path": "upstream/modernization/pointnet2_upgrade",
+    "pinned_commit": "a01e9c87cd0658d63685da53de29f70360a3c32d"
+  },
+  {
+    "id": "graspnet_api",
+    "repository": "https://github.com/graspnet/graspnetAPI",
+    "path": "upstream/infrastructure/graspnet_api",
+    "pinned_commit": "eb57dd2092d8dbe05312a29c3d0c22f3226efbfc"
+  },
+  {
+    "id": "asgrasp",
+    "repository": "https://github.com/jun7-shi/ASGrasp",
+    "path": "upstream/auxiliary/stereo/asgrasp",
+    "pinned_commit": "a5064d1e0552ce23e5fc45c4a8e393804dc33d52"
+  },
+  {
+    "id": "zerograsp",
+    "repository": "https://github.com/sh8/ZeroGrasp",
+    "path": "upstream/single_view/rgbd/zerograsp",
+    "pinned_commit": "152f67c27269ff3f089783bd2f041d67641fa506"
+  },
+  {
+    "id": "centergrasp",
+    "repository": "https://github.com/robot-learning-freiburg/CenterGrasp",
+    "path": "upstream/single_view/rgbd/centergrasp",
+    "pinned_commit": "72bc8f1121937fb5b50164d4f5616b3074309281"
+  }
+]

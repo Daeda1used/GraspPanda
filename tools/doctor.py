@@ -1,0 +1,32 @@
+"""Read-only shared runtime and pinned source checks."""
+import importlib
+import json
+from pathlib import Path
+import platform
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "knn_pytorch", "graspnetAPI"]
+result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
+for name in modules:
+    try:
+        mod = importlib.import_module(name)
+        result["modules"][name] = {"status": "ok", "file": mod.__file__}
+    except Exception as error:
+        result["modules"][name] = {"status": "failed", "error": str(error)}
+import torch
+result["torch"] = torch.__version__
+result["cuda_runtime"] = torch.version.cuda
+result["gpu"] = torch.cuda.get_device_name() if torch.cuda.is_available() else None
+result["sources"] = []
+for entry in json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text()):
+    repo = ROOT / entry["path"]
+    if not repo.exists():
+        result["sources"].append({"id": entry["id"], "status": "missing"})
+        continue
+    sha = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
+    changes = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], text=True)
+    result["sources"].append({"id": entry["id"], "status": "ok" if sha == entry["pinned_commit"] and not changes else "changed"})
+print(json.dumps(result, indent=2))
+raise SystemExit(0 if result["gpu"] and all(r["status"] == "ok" for r in result["modules"].values()) and all(r["status"] == "ok" for r in result["sources"]) else 1)

@@ -1,0 +1,30 @@
+--- a/centergrasp/mesh_utils.py
++++ b/centergrasp/mesh_utils.py
+@@ -3,15 +3,15 @@
+ import numpy as np
+ import open3d as o3d
+ import xml.etree.ElementTree as ET
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+ 
+ 
+ @dataclass
+ class SceneObject:
+     visual_fpath: pathlib.Path
+     collision_fpath: pathlib.Path
+-    pose4x4: np.ndarray = np.eye(4)
+-    scale: np.ndarray = np.ones(3)
++    pose4x4: np.ndarray = field(default_factory=lambda: np.eye(4))
++    scale: np.ndarray = field(default_factory=lambda: np.ones(3))
+     density: float = 1000.0
+     name: str = ""
+ 
+@@ -78,7 +78,7 @@
+     return scene
+ 
+ 
+-def get_volume_from_mesh(mesh_path: pathlib.Path, scale: np.ndarray = np.ones(3)) -> float:
++def get_volume_from_mesh(mesh_path: pathlib.Path, scale: np.ndarray = field(default_factory=lambda: np.ones(3))) -> float:
+     mesh = trimesh.load(mesh_path)
+     volume = np.prod(scale) * mesh.volume
+     return volume

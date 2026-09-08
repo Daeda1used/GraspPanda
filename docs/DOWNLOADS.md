@@ -1,0 +1,147 @@
+# Data and checkpoint downloads
+
+## Start without GraspNet
+
+The baseline `probe` uses synthetic input and needs no dataset or checkpoint. ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered. Supplied samples do not establish GraspNet benchmark AP.
+
+## GraspNet-1B
+
+Use the [official dataset download page](https://graspnet.net/datasets.html), which lists Google Drive, Baidu and SJTU Jbox mirrors. Its archives contain 190 scenes across two cameras. For the real-frame examples, begin with **test_seen.zip** (approximately 20 GB compressed), containing scene 0100. Training images are separate archives. Evaluation additionally needs the object models and grasp/collision labels; the optional Dex-Net cache accelerates evaluation. See the [official API documentation](https://graspnetapi.readthedocs.io/en/latest/) for data and evaluation formats.
+
+Download a listed archive through your browser. On a server, use the exact Google Drive link with the installed `gdown` CLI:
+
+```bash
+.venv/bin/gdown 'https://drive.google.com/file/d/1_nxiCmHhtsjCgA1IKJn3AuMq4SH_fseW/view' -O test_seen.zip
+mkdir -p /data/GraspNet-1B
+unzip -l test_seen.zip | head
+```
+
+Inspect the archive's top-level layout, extract it, then place the `scene_*` directories under `/data/GraspNet-1B/scenes/`. Do not add an extra nested `scenes/scenes/`. The toolkit never downloads the full dataset automatically.
+
+```text
+/data/GraspNet-1B/
+├── scenes/
+│   └── scene_0100/
+│       ├── kinect/
+│       └── realsense/
+│           ├── rgb/0000.png
+│           ├── depth/0000.png
+│           ├── label/0000.png
+│           ├── meta/0000.mat
+│           ├── camera_poses.npy
+│           └── cam0_wrt_table.npy
+├── models/             # official evaluation
+├── grasp_label/        # training/evaluation
+└── collision_label/    # training/evaluation
+```
+
+The supplied frame presets use scene 0100/frame 0000. Training-step examples use a training scene. The dataset and models retain the [publisher's terms](https://graspnet.net/datasets.html#license); this repository does not redistribute them.
+
+### Official archive links
+
+Links were collected from the official page for this release. If a mirror changes or reports a quota, return to that page and select another mirror.
+
+| Archive | Mirrors |
+|---|---|
+| train_1.zip | [Google](https://drive.google.com/file/d/1wQx8IJ_Lok3hVK_nchQUzgw88QBGZ5iq/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1hchwl8Sk9kk_i8t1JbcLXw) · [Jbox](https://jbox.sjtu.edu.cn/l/71Kb9K) |
+| train_2.zip | [Google](https://drive.google.com/file/d/1b1Z1goPV0o_wdwXZ8qTlHd2TBRU5-CmH/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/158mOzU6bx4cvexQx5FXn_A) · [Jbox](https://jbox.sjtu.edu.cn/l/G57uyS) |
+| train_3.zip | [Google](https://drive.google.com/file/d/1oNcmZno2ymsDUWTmfFOxewMBjTXhL95c/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1D9Mq6VsIHE7Pra8QplEWkQ) · [Jbox](https://jbox.sjtu.edu.cn/l/wJorXZ) |
+| train_4.zip | [Google](https://drive.google.com/file/d/1e8Xy7-lFhiXk0ugPOKvHKDiGTparmx00/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1A3Tyc7l_u9UwgKqhVJSrNg) · [Jbox](https://jbox.sjtu.edu.cn/l/SHwJVL) |
+| grasp_label.zip | [Google](https://drive.google.com/file/d/1FCV6j2J2eQpVk_ddJXljJvjRT1KU3sJ6/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/18yLPWIwM9uJBih6GMoQRNg) · [Jbox](https://jbox.sjtu.edu.cn/l/noXqUa) |
+| collision_label.zip | [Google](https://drive.google.com/file/d/1p43sntiN9HJZRDFDNpzaEaEYoPY6IWsu/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1cj3Wea0RtgHrLb4iGUyA1g) · [Jbox](https://jbox.sjtu.edu.cn/l/DuUptQ) |
+| test_seen.zip | [Google](https://drive.google.com/file/d/1_nxiCmHhtsjCgA1IKJn3AuMq4SH_fseW/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/11_mTb5p0g6PqE8ZrOw2T8A) · [Jbox](https://jbox.sjtu.edu.cn/l/XH2KQl) |
+| test_similar.zip | [Google](https://drive.google.com/file/d/1njgthC-uUvTXgG99qq1fjS-fzofttFms/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1gVkvNS2Q9P0SS_N9Lm7hFQ) · [Jbox](https://jbox.sjtu.edu.cn/l/k03rDE) |
+| test_novel.zip | [Google](https://drive.google.com/file/d/1xixvgY0yK7TEALq3k7JcJk2_SP_6r8nk/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1KNcLMwJCTxKGMSt7WPyZOw) · [Jbox](https://jbox.sjtu.edu.cn/l/iJFKg4) |
+| rect_labels.zip | [Google](https://drive.google.com/file/d/1lR6ZSgtgV1KlqzM14mKlQ8oKhE3UCltO/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/15k9ko5iCoLTgufbn_6YXaA?pwd=nhp2) |
+| dex_models.zip | [Google](https://drive.google.com/file/d/1RElNqUHNoA9l_muTGNu7yAc3ql_e7pL3/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1KTPJMAayVQkgx2uwUCNMOQ) |
+| models.zip | [Google](https://drive.google.com/file/d/1Gxwu2C5wRQ0QwjdA8CbMXx-bYf_wwPT5/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1SoaE_7AqfR5R6w8dO79rsg) · [Jbox](https://jbox.sjtu.edu.cn/l/jFF3no) |
+
+## Method-specific preprocessing
+
+Basic frame inference does not require downloading all training targets. Additional processing is method-specific:
+
+| Workflow | Additional requirements | Instructions |
+|---|---|---|
+| Baseline / SBG training | `tolerance/` plus original grasp and collision labels | [Baseline](https://github.com/graspnet/graspnet-baseline), [SBG](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) |
+| Graspness training | `graspness/` and `grasp_label_simplified/`, plus original labels | [Graspness implementation](https://github.com/rhett-chen/graspness_implementation) |
+| HGGD short training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
+| RNG short training | HGGD preprocessed labels; native proposals and local targets are prepared in the experiment directory. The unreleased training schedule is not reproduced | [RNG](https://github.com/THU-VCLab/RegionNormalizedGrasp) |
+| FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
+| EconomicGrasp short training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
+| DOGraspNet short training | Simplified grasp/collision labels and `graspness_label/`; the pinned equivalent `graspness/` targets are accepted | [DOGraspNet](https://github.com/huamo555/DOGraspNet) |
+| Generalizing-Grasp inference / short training | Matched `fusion_scenes/` points and segmentation; training also needs full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
+| ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |
+
+Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the extra dependencies built by `tools/build_extras.py`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
+
+GraspBalance requires original grasp/collision labels and tolerance. Graspness modern requires the same simplified labels and graspness maps as its ResUNet implementation. All preprocessing remains method-specific; an identical folder name does not guarantee compatible supervision.
+
+### Generalizing-Grasp SDF grids
+
+Download the official `models.zip` and the author's [fused data](https://drive.google.com/file/d/12YODD0ZUu6XTudU1fZBhVtAmIpMZk8xQ/view?usp=sharing). Follow the [native fusion preparation](https://github.com/mahaoxiang822/Generalizing-Grasp) for matched point/segmentation arrays. The toolbox rejects mismatched row counts instead of guessing correspondence.
+
+Generate the 88 SDF grids in a writable cache, keeping the source dataset read-only:
+
+```bash
+.venv/bin/python tools/prepare_sdf.py \
+  --dataset-root /data/GraspNet-1B \
+  --output-root /data/GraspPanda-cache/generalizing-sdf
+```
+
+Set `sdf_root: /data/GraspPanda-cache/generalizing-sdf` in experiment JSON/YAML. The generated layout is `models/000/grid_sampled_sdf.npz` through `models/087/grid_sampled_sdf.npz`; omit `sdf_root` if those files already exist under the dataset root. `--objects 0` checks one object's preprocessing; the native training loss initializes all 88 objects and therefore requires the complete set. Existing files are not overwritten. Preparation records include source/output hashes and sampler settings.
+
+Check each original README for the full training-data preparation. Keep large derived files in a dataset/cache location or ignored experiment directory.
+
+## Registered checkpoints
+
+```bash
+./panda weights hggd --camera realsense
+./panda weights region_normalized_grasp --camera kinect
+./panda weights economicgrasp --camera kinect
+./panda weights asgrasp
+```
+
+The UI's **Download registered weights** button invokes the same downloader. Every required role is downloaded, extracted when necessary, and verified against `grasppanda/resources/checkpoints.json`. A mismatched file is not installed. For manual downloads, place the exact file at the registered path. Camera-agnostic weights are marked `any`; the recipe camera still defines the input format.
+
+Google Drive downloads support resume. Other HTTP downloads restart cleanly because some academic mirrors ignore range requests. If a host is unavailable, use the author link and retry later. Model availability and licensing are controlled by the authors.
+
+| Method | Camera | Role | Local target | Author download |
+|---|---|---|---|---|
+| graspness | realsense | primary | `checkpoints/graspness/checkpoint-rs.tar` | [Download](https://drive.google.com/file/d/1RfdpEM2y0x98rV28d7B2Dg8LLFKnBkfL/view) |
+| graspnet_baseline | realsense | primary | `checkpoints/graspnet_baseline/checkpoint-rs.tar` | [Download](https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view) |
+| fgc_graspnet | realsense | primary | `checkpoints/fgc_graspnet/checkpoint-rs.tar` | [Download](https://drive.google.com/file/d/1Y-CWHr_eZDoZm3XJocrUJq1SA5tfrONX/view) |
+| scale_balanced_grasp | realsense | primary | `checkpoints/scale_balanced_grasp/checkpoint-rs.tar` | [Download](https://drive.google.com/file/d/1Pp-xFL0QrWcEK1tpVXM3c0RnpMcRwzIX/view) |
+| hggd | realsense | primary | `checkpoints/hggd/checkpoint-realsense.tar` | [Download](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FHGGD_realsense_checkpoint&dl=1) |
+| hggd | kinect | primary | `checkpoints/hggd/checkpoint-kinect.tar` | [Download](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FHGGD_kinect_checkpoint&dl=1) |
+| region_normalized_grasp | realsense | primary | `checkpoints/region_normalized_grasp/checkpoint-realsense.tar` | [Download](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FRNGNet_realsense_checkpoint&dl=1) |
+| region_normalized_grasp | kinect | primary | `checkpoints/region_normalized_grasp/checkpoint-kinect.tar` | [Download](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FRNGNet_kinect_checkpoint&dl=1) |
+| dograspnet | realsense | primary | `checkpoints/dograspnet/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1ykH4W5KZEG5u-ERXyFqf5PTzXuvhKm3z/view) |
+| contact_graspnet_g1b | realsense | primary | `checkpoints/contact_graspnet_g1b/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1biNXRIZ6V--ivLIYGgjojXIzrCiJeZXl/view) |
+| active_ngf | realsense | primary | `checkpoints/active_ngf/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1OswUcXVJv_LAgyyNt_KjfOPhIE4LEyk7/view) |
+| motiongrasp | realsense | primary | `checkpoints/motiongrasp/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1EjVGnWOMxLAfnebaC_b6Z-IkHTcIg5f7/view) |
+| zerograsp | any | primary | `checkpoints/zerograsp/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1xUmFdgT_Ozu4zIPIsh_1SJMcegeQUWqQ/view) |
+| rgb_matters | realsense | primary | `checkpoints/rgb_matters/checkpoint-realsense.tar` | [Download](https://drive.google.com/file/d/1H4JF3saXgbP5FfYlaXctbsF-6onx_MUz/view) |
+| economicgrasp | kinect | primary | `checkpoints/economicgrasp/checkpoint-kinect.tar` | [Download](https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_kinect.tar) |
+| generalizing_grasp | realsense | primary | `checkpoints/generalizing_grasp/model.tar` | [Download](https://drive.google.com/file/d/1WJj54l7MxFO1kgXoXA9tF6FCfB2okKr3/view) |
+| gfla | realsense | primary | `checkpoints/gfla/checkpoint-realsense.tar` | [Download](https://github.com/Nx1021/GFLA-release/releases/download/v1.0.0/realsense_best.pth) |
+| gfla | realsense | segmentation | `checkpoints/gfla/FastSAM-s.pt` | [Download](https://github.com/Nx1021/GFLA-release/releases/download/v1.0.0/FastSAM-s.pt) |
+| centergrasp | kinect | primary | `checkpoints/centergrasp/ckpt_rgb/el6oa23g/epoch=704-step=564000.ckpt` | [Download](https://centergrasp.cs.uni-freiburg.de/download/ckpt_rgb/el6oa23g.zip) |
+| centergrasp | kinect | shape | `checkpoints/centergrasp/ckpt_sgdf/6953cfxt/epoch=199-step=35200.ckpt` | [Download](https://centergrasp.cs.uni-freiburg.de/download/ckpt_sgdf/6953cfxt.zip) |
+| graspness_modern | realsense | primary | `checkpoints/graspness_modern/checkpoint-realsense.tar` | [Download](https://github.com/SimonHanrath/graspness_modern/releases/download/v1.0.0/gsnet_resunet14_epoch10.tar) |
+| asgrasp | realsense | primary | `checkpoints/asgrasp/graspness.tar` | [Download](https://drive.google.com/file/d/1T8-4UaH1MBWqKt_YacDE0jM2-rHqpgJR/view) |
+| asgrasp | realsense | stereo | `checkpoints/asgrasp/raftmvs.pth` | [Download](https://drive.google.com/file/d/1EDfJEVfumWRKhvGv0e9WQ0lHPBr8Y1dO/view) |
+| dreds | any | primary | `checkpoints/dreds/model.pth` | [Download](https://mirrors.pku.edu.cn/dl-release/DREDS_ECCV2022/checkpoint/SwinDRNet/models/model.pth) |
+| spahybgen | any | primary | `upstream/related/multi_hand/spahybgen/assets/trained_models/spahybgen_unet_64_voxel.pt` | [Download](https://raw.githubusercontent.com/wangzivector/SpaHybGen/39e5794506bbbf2fd41804f73c93b7b393be550e/assets/trained_models/spahybgen_unet_64_voxel.pt) |
+| graspfast | realsense | primary | `checkpoints/graspfast/graspfast_checkpoint.tar` | [Download](https://media.githubusercontent.com/media/YZ-331/GraspFast/fa028134b3a1b0271da7acb8bac7463e6585985e/logs/trained_model_weight/graspfast_checkpoint.tar) |
+
+MotionGrasp also requires the baseline checkpoint; the downloader includes it. The PointNet2 compatibility port reuses the baseline weights. RNGNet SDK and SpaHybGen sample weights are included by their upstream repositories. GraNet's organized source and separately distributed legacy checkpoints are not interchangeable. Methods without registered, compatible weights are explicitly identified in [Methods & papers](METHODS.md); a random-weight diagnostic is never presented as trained inference.
+
+## Additional inputs
+
+ZeroGrasp's inference recipe uses the author's RGB-D and instance-mask sample. Its separate reconstruction training dataset is available through the [author download script](https://github.com/sh8/ZeroGrasp/blob/main/download.sh). Standard GraspNet frames do not provide that supervision.
+
+ActiveNGF performs online field optimization from multiple views through its native recipe. SpaHybGen uses an author voxel sample for its contact optimization recipe. These input protocols are listed in [Methods & papers](METHODS.md).
+
+GFLA short training prepares native contact labels and surface/visibility targets inside the run directory. First-time preparation may take several minutes. Set `data_workers: 1` to limit preparation concurrency; `label_root` can reuse a previous run's `prepared/ctt_grasp_label` cache. Its contact/SDF objective uses `learning_rate: 0.000002`.
+
+GraspFast short training generates native graspability targets in the run directory. It requires `grasp_label/`, `grasp_label_simplified/` and `collision_label/` and uses the released unweighted five-part objective.

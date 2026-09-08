@@ -1,0 +1,27 @@
+name: Source integrity
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m compileall -q grasppanda tools
+      - name: Validate registered operations and source pins
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from grasppanda.config import catalogue, capabilities, Experiment
+          methods = catalogue()
+          pins = json.loads(Path('grasppanda/resources/upstreams.lock.json').read_text())
+          assert set(methods) == {p['id'] for p in pins}
+          for mid in methods:
+              for action in capabilities(mid):
+                  assert action in ('probe', 'infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')
+          Experiment(method='graspnet_baseline').validate()
+          PY

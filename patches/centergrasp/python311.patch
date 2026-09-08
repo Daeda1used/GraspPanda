@@ -1,0 +1,11 @@
+--- a/simnet/lib/transform.py
++++ b/simnet/lib/transform.py
+@@ -10,7 +10,7 @@
+ @dataclasses.dataclass
+ class Pose:
+   camera_T_object: np.ndarray
+-  scale_matrix: np.ndarray = np.eye(4)
++  scale_matrix: np.ndarray = dataclasses.field(default_factory=lambda: np.eye(4))
+ 
+ 
+ class Transform:

@@ -1,0 +1,26 @@
+--- a/models/segment.py
++++ b/models/segment.py
+@@ -203,9 +203,9 @@
+         self.fsam_size = self.config["fsam_size"]
+         self.wohead = wohead
+         if self.fsam_size == "s":
+-            weight_path = r"base_weights\FastSAM-s.pt"
++            weight_path = os.path.join(os.environ["GRASPPANDA_WEIGHTS_ROOT"], "FastSAM-s.pt")
+         elif self.fsam_size == "x":
+-            weight_path = r"base_weights\FastSAM-x.pt"
++            weight_path = os.path.join(os.environ["GRASPPANDA_WEIGHTS_ROOT"], "FastSAM-x.pt")
+         else:
+             raise ValueError("fsam_size should be 's' or 'x'.")
+         if os.path.exists(weight_path):
+@@ -269,9 +269,9 @@
+         self.fsam_size = self.config["fsam_size"]
+         self.wohead = wohead
+         if self.fsam_size == "s":
+-            weight_path = r"base_weights\FastSAM-s.pt"
++            weight_path = os.path.join(os.environ["GRASPPANDA_WEIGHTS_ROOT"], "FastSAM-s.pt")
+         elif self.fsam_size == "x":
+-            weight_path = r"base_weights\FastSAM-x.pt"
++            weight_path = os.path.join(os.environ["GRASPPANDA_WEIGHTS_ROOT"], "FastSAM-x.pt")
+         else:
+             raise ValueError("fsam_size should be 's' or 'x'.")
+         if os.path.exists(weight_path):

@@ -1,0 +1,90 @@
+"""Semantic component slots and explicit checkpoint-transfer policies."""
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ComponentSlot:
+    name: str
+    model_path: str
+    choices: tuple[str, ...]
+    input_contract: str
+    output_contract: str
+
+
+BASELINE_SLOTS = (
+    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet'),
+                  'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
+                  'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
+    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale'),
+                  'Camera-frame seed points, scene points and proper approach rotations.',
+                  'Features [B,256,1024,4] retaining the native four depth bins.'),
+)
+
+
+def slots(method):
+    if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
+    if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18'),
+        'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
+        '512-channel sparse features, mapped to original input points by quantize2original.'),)
+    return ()
+
+
+def validate_selection(method,selection,checkpoint_policy='strict'):
+    if not isinstance(selection,dict):raise ValueError('modules must be a mapping from slot name to implementation')
+    available={s.name:s for s in slots(method)}
+    for name,value in selection.items():
+        if name not in available:raise ValueError(f'{method} has no registered {name} slot')
+        if value not in available[name].choices:raise ValueError(f'{name} must be one of {available[name].choices}')
+    if checkpoint_policy not in ('strict','reuse_unchanged'):
+        raise ValueError('checkpoint_policy must be strict or reuse_unchanged')
+    return selection
+
+
+def configure_model(model,method,selection,voxel_size=.005):
+    """Replace registered submodules only; return the exact changed state prefixes."""
+    validate_selection(method,selection)
+    changes=[]
+    for slot in slots(method):
+        choice=selection.get(slot.name,'upstream')
+        if choice=='upstream':continue
+        parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
+        parent=model.get_submodule(parent_name) if parent_name else model
+        native=getattr(parent,attribute)
+        if method=='graspness' and choice=='sparse_unet18':
+            from models.backbone_resunet14 import MinkUNet18D
+            replacement=MinkUNet18D(in_channels=3,out_channels=model.seed_feature_dim,D=3)
+        elif method=='graspness' and choice=='pointnet':
+            from .modules.sparse_pointnet import SparsePointNet
+            replacement=SparsePointNet(model.seed_feature_dim,voxel_size)
+        elif slot.name=='backbone':
+            from .modules.pointnet import PointNetBackbone
+            replacement=PointNetBackbone()
+        elif slot.name=='crop':
+            from .modules.multiscale import MultiScaleCrop
+            replacement=MultiScaleCrop(native)
+        else:raise ValueError(slot.name)
+        setattr(parent,attribute,replacement)
+        changes.append(slot.model_path+'.')
+    return changes
+
+
+def load_checkpoint(model,state,changed_prefixes=(),policy='strict'):
+    """Never hide unexpected mismatches outside explicitly replaced components."""
+    if policy=='strict' or not changed_prefixes:
+        model.load_state_dict(state,strict=True)
+        return dict(policy='strict',initialized=[],discarded=[])
+    if policy!='reuse_unchanged':raise ValueError('Unknown checkpoint policy')
+    current=model.state_dict()
+    selected=lambda key:any(key.startswith(prefix) for prefix in changed_prefixes)
+    initialized=sorted(k for k in current if selected(k))
+    discarded=sorted(k for k in state if selected(k))
+    keep={k:v for k,v in state.items() if not selected(k)}
+    expected={k for k in current if not selected(k)}
+    if set(keep)!=expected:
+        raise ValueError(f'Unchanged modules do not match: missing={sorted(expected-set(keep))}, unexpected={sorted(set(keep)-expected)}')
+    for key in expected:
+        if keep[key].shape!=current[key].shape:raise ValueError(f'Unchanged parameter shape mismatch: {key}')
+    keep.update({k:current[k] for k in initialized})
+    model.load_state_dict(keep,strict=True)
+    return dict(policy=policy,initialized=initialized,discarded=discarded,
+                note='Replaced components start from their constructor initialization; unchanged modules reuse the checkpoint.')

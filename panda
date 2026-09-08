@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PANDA_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PANDA_ROOT"
+if [[ ! -x .venv/bin/python ]]; then
+  echo 'Run bash tools/bootstrap.sh once to install the shared runtime.' >&2
+  exit 1
+fi
+exec .venv/bin/python -m grasppanda "$@"

@@ -1,0 +1,37 @@
+[
+  {
+    "path": "environments/sources/MinkowskiEngine",
+    "repository": "https://github.com/NVIDIA/MinkowskiEngine",
+    "commit": "02fc608bea4c0549b0a7b00ca1bf15dee4a0b228"
+  },
+  {
+    "path": "environments/sources/pytorch3d",
+    "repository": "https://github.com/facebookresearch/pytorch3d",
+    "commit": "0a7d4c1a171e8b768c63f15b17564f9ad495f49b"
+  },
+  {
+    "path": "environments/sources/DatasetTemplate",
+    "repository": "https://github.com/Nx1021/DatasetTemplate",
+    "commit": "9543930258cf4ba98e543ad6b654d2088049a329"
+  },
+  {
+    "path": "environments/sources/LauncherTemplate",
+    "repository": "https://github.com/Nx1021/LauncherTemplate",
+    "commit": "eb8d0df9a0fa1d0b66934e013df6fe64030d8e33"
+  },
+  {
+    "path": "environments/sources/scikit-geometry",
+    "repository": "https://github.com/scikit-geometry/scikit-geometry",
+    "commit": "e4a25c0cde054a3a4bd6b21d3ca30db8e7e6a178"
+  },
+  {
+    "path": "environments/sources/centergrasp-mesh-to-sdf",
+    "repository": "https://github.com/chisarie/mesh_to_sdf",
+    "commit": "0230999821643f3c7a5bf396d76a00f68dc7a528"
+  },
+  {
+    "path": "environments/sources/manifold_python",
+    "repository": "https://github.com/PRBonn/manifold_python",
+    "commit": "2548ad89a633a35e48933647537e07a4e2de8ebe"
+  }
+]

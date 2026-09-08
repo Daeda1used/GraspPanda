@@ -1,0 +1,220 @@
+diff --git a/src/arrangement.cpp b/src/arrangement.cpp
+index b855c7b..f88cb18 100644
+--- a/src/arrangement.cpp
++++ b/src/arrangement.cpp
+@@ -179,15 +179,15 @@ void init_arrangement(py::module &m) {
+ 
+     py::class_<Segment_Arrangement_2>(sub, "Arrangement")
+         .def(py::init<>())
+-        .def_property_readonly("halfedges", [](Segment_Arrangement_2& s) {
++        .def_property_readonly("halfedges", py::cpp_function([](Segment_Arrangement_2& s) {
+            return skgeom::make_handle_iterator<py::return_value_policy::reference_internal, Halfedge_handle>(s.halfedges_begin(), s.halfedges_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("faces", [](Segment_Arrangement_2& s) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("faces", py::cpp_function([](Segment_Arrangement_2& s) {
+            return skgeom::make_handle_iterator<py::return_value_policy::reference_internal, Face_handle>(s.faces_begin(), s.faces_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("vertices", [](Segment_Arrangement_2& s) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("vertices", py::cpp_function([](Segment_Arrangement_2& s) {
+            return skgeom::make_handle_iterator<py::return_value_policy::reference_internal, Vertex_handle>(s.vertices_begin(), s.vertices_end());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+         .def("insert_non_intersecting_curve", &insert_non_intersecting_curve_in_arr)
+         .def("insert_non_intersecting_curves", &insert_non_intersecting_curves_in_arr)
+         .def("insert", &insert_segment_in_arr)
+@@ -207,9 +207,9 @@ void init_arrangement(py::module &m) {
+ 
+     py::class_<Vertex, Vertex_handle>(sub, "Vertex")
+         .def("point", [](Vertex& self) { return self.point(); })
+-        .def_property_readonly("incident_halfedges", [](Vertex& self) {
++        .def_property_readonly("incident_halfedges", py::cpp_function([](Vertex& self) {
+             return skgeom::make_circulator<py::return_value_policy::reference_internal, Halfedge_handle>(self.incident_halfedges());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+     ;
+ 
+     py::class_<Halfedge, Halfedge_handle>(sub, "Halfedge")
+@@ -222,9 +222,9 @@ void init_arrangement(py::module &m) {
+             return he.curve();
+         })
+         .def("face", static_cast<Face_handle (Halfedge::*)()>(&Halfedge::face))
+-        // .def_property_readonly("ccb", [](Halfedge& self) {
++        // .def_property_readonly("ccb", py::cpp_function([](Halfedge& self) {
+         //     return py::make_circulator(self.ccb());
+-        // }, py::keep_alive<0, 1>())
++        // }, py::keep_alive<0, 1>()))
+     ;
+ 
+     py::class_<Face, Face_handle>(sub, "Face")
+@@ -232,15 +232,15 @@ void init_arrangement(py::module &m) {
+         .def("has_outer_ccb", &Face::has_outer_ccb)
+         .def("number_of_holes", &Face::number_of_holes)
+         .def("number_of_isolated_vertices", [](Face & f) -> int { return f.number_of_isolated_vertices(); })
+-        .def_property_readonly("isolated_vertices", [](Face& self) {
++        .def_property_readonly("isolated_vertices", py::cpp_function([](Face& self) {
+             return py::make_iterator(self.isolated_vertices_begin(), self.isolated_vertices_end()); 
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("outer_ccb", [](Face& self) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("outer_ccb", py::cpp_function([](Face& self) {
+             return skgeom::make_circulator<py::return_value_policy::reference_internal, Halfedge_handle>(self.outer_ccb()); 
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("holes", [](Face& self) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("holes", py::cpp_function([](Face& self) {
+             return skgeom::make_hole_iterator(self.holes_begin(), self.holes_end()); 
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+     ;
+ 
+ // Rat_point_2 to_rat_point(Point_2 & p) {
+diff --git a/src/polygon.cpp b/src/polygon.cpp
+index 0a02664..106c61e 100644
+--- a/src/polygon.cpp
++++ b/src/polygon.cpp
+@@ -54,12 +54,12 @@ void init_polygon(py::module &m) {
+         }))
+         .def("push_back", &Polygon_2::push_back)
+         .def("append", &Polygon_2::push_back)
+-        .def_property_readonly("vertices", [](Polygon_2& s) {
++        .def_property_readonly("vertices", py::cpp_function([](Polygon_2& s) {
+             return py::make_iterator(s.vertices_begin(), s.vertices_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("edges", [](Polygon_2& s) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("edges", py::cpp_function([](Polygon_2& s) {
+             return py::make_iterator(s.edges_begin(), s.edges_end()); 
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+         .def_property_readonly("coords", [](Polygon_2& s) {
+             py::array_t<double, py::array::c_style> coords;
+             coords.resize({s.size(), size_t(2)});
+@@ -132,9 +132,9 @@ void init_polygon(py::module &m) {
+             return new Polygon_with_holes_2(outer_poly, holes_poly.begin(), holes_poly.end());
+         }))
+         .def("outer_boundary", py::overload_cast<>(&Polygon_with_holes_2::outer_boundary))
+-        .def_property_readonly("holes", [](const Polygon_with_holes_2& p) {
++        .def_property_readonly("holes", py::cpp_function([](const Polygon_with_holes_2& p) {
+             return py::make_iterator(p.holes_begin(), p.holes_end());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+         .def("__repr__", &toString<Polygon_with_holes_2>)
+         .def("_ipython_display_", [](Polygon_with_holes_2& s) {
+             py::module::import("skgeom.draw").attr("draw_polygon")(
+diff --git a/src/voronoi_delaunay.cpp b/src/voronoi_delaunay.cpp
+index e6fc0a1..f8531f3 100644
+--- a/src/voronoi_delaunay.cpp
++++ b/src/voronoi_delaunay.cpp
+@@ -72,15 +72,15 @@ void init_voronoi_delaunay(py::module & m) {
+         .def("number_of_vertices", &VD::number_of_vertices)
+         .def("number_of_faces", &VD::number_of_faces)
+         .def("number_of_halfedges", &VD::number_of_halfedges)
+-        .def_property_readonly("vertices", [](const VD& vd) {
++        .def_property_readonly("vertices", py::cpp_function([](const VD& vd) {
+             return py::make_iterator(vd.vertices_begin(), vd.vertices_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("sites", [](const VD& vd) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("sites", py::cpp_function([](const VD& vd) {
+             return py::make_iterator(vd.sites_begin(), vd.sites_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("edges", [](const VD& vd) { 
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("edges", py::cpp_function([](const VD& vd) { 
+             return py::make_iterator(vd.edges_begin(), vd.edges_end());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+         .def_property_readonly("finite_edges", [](const VD& vd) {
+             Segment_2 s;
+             Ray_2 r;
+@@ -114,28 +114,28 @@ void init_voronoi_delaunay(py::module & m) {
+     py::class_<Triangulation>(sub, "Triangulation")
+         .def(py::init<>())
+         .def("insert", &Triangulation::push_back)
+-        .def_property_readonly("all_edges", [](Triangulation& s) { 
++        .def_property_readonly("all_edges", py::cpp_function([](Triangulation& s) { 
+             return py::make_iterator(s.all_edges_begin(), s.all_edges_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("edges", [](Triangulation& s) { 
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("edges", py::cpp_function([](Triangulation& s) { 
+             return py::make_iterator(s.edges_begin(), s.edges_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("points", [](const Triangulation& dt) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("points", py::cpp_function([](const Triangulation& dt) {
+             return py::make_iterator(dt.points_begin(), dt.points_end());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+     ;
+ 
+     py::class_<DT>(sub, "DelaunayTriangulation")
+         .def(py::init<>())
+         .def("insert", &DT::push_back)
+-        .def_property_readonly("all_edges", [](DT& s) { 
++        .def_property_readonly("all_edges", py::cpp_function([](DT& s) { 
+             return py::make_iterator(s.all_edges_begin(), s.all_edges_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("edges", [](DT& s) { 
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("edges", py::cpp_function([](DT& s) { 
+             return py::make_iterator(s.edges_begin(), s.edges_end());
+-        }, py::keep_alive<0, 1>())
+-        .def_property_readonly("points", [](const DT& dt) {
++        }, py::keep_alive<0, 1>()))
++        .def_property_readonly("points", py::cpp_function([](const DT& dt) {
+             return py::make_iterator(dt.points_begin(), dt.points_end());
+-        }, py::keep_alive<0, 1>())
++        }, py::keep_alive<0, 1>()))
+     ;
+ }
+\ No newline at end of file
+diff --git a/src/skeleton.cpp b/src/skeleton.cpp
+index 355fc10..c4b2ba2 100644
+--- a/src/skeleton.cpp
++++ b/src/skeleton.cpp
+@@ -2,7 +2,8 @@
+ #include <CGAL/create_straight_skeleton_from_polygon_with_holes_2.h>
+ #include <CGAL/create_offset_polygons_2.h>
+ 
+-typedef CGAL::Exact_predicates_inexact_constructions_kernel   Kernel;
++#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
++typedef CGAL::Exact_predicates_exact_constructions_kernel   Kernel;
+ #define KERNEL_PRESCRIBED
+ 
+ typedef CGAL::Straight_skeleton_2<Kernel> Skeleton_2;
+@@ -102,7 +103,7 @@ void init_skeleton(py::module & m) {
+         })
+ 		.def("offset_polygons", [](const Skeleton_2_Ref &s, double offset) -> py::list {
+ 			py::list r;
+-			auto result = CGAL::create_offset_polygons_2<Polygon_2>(offset, *s);
++			auto result = CGAL::create_offset_polygons_2<Polygon_2>(offset, *s, Kernel());
+ 			for (const auto &polygon : result) {
+ 				r.append(py::cast(new Polygon_2(*polygon), pybind11::return_value_policy::automatic));
+ 			}
+@@ -149,7 +150,7 @@ void init_skeleton(py::module & m) {
+ 
+ 	sub.def("create_interior_straight_skeleton", [](
+ 		const Polygon_with_holes_2 &polygon) -> Skeleton_2_Ref {
+-		return to_std(CGAL::create_interior_straight_skeleton_2(polygon));
++		return to_std(CGAL::create_interior_straight_skeleton_2(polygon, Kernel()));
+ 	});
+ 
+ 	sub.def("create_exterior_straight_skeleton", [](
+diff --git a/setup.py b/setup.py
+index adc0374..25e8d87 100644
+--- a/setup.py
++++ b/setup.py
+@@ -229,8 +229,8 @@ setup(
+     description='scikit-geometry, the python computational geometry library',
+     long_description='',
+     ext_modules=ext_modules,
+-    install_requires=['pybind11>=2.3,<2.8', 'numpy'],
+-    setup_requires=['pybind11>=2.3,<2.8'],
++    install_requires=['pybind11>=2.10,<4', 'numpy'],
++    setup_requires=['pybind11>=2.10,<4'],
+     extras_require={
+         "drawing": ["matplotlib"],
+     },

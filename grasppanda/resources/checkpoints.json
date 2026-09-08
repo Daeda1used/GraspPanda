@@ -1,0 +1,240 @@
+[
+  {
+    "method": "graspness",
+    "path": "checkpoints/graspness/checkpoint-rs.tar",
+    "source": "https://drive.google.com/file/d/1RfdpEM2y0x98rV28d7B2Dg8LLFKnBkfL/view",
+    "sha256": "a0b9d85b300e40c76b66d092de62138d74757d6b7c2037f0d364f33960c54aa9",
+    "bytes": 184429769,
+    "camera": "realsense",
+    "role": "primary"
+  },
+  {
+    "method": "graspnet_baseline",
+    "path": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
+    "source": "https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view",
+    "sha256": "60680087c61cba2b6791614fef1519071e294f6dcaf99b3f581bb95f7c51a868",
+    "bytes": 12468415,
+    "camera": "realsense",
+    "role": "primary"
+  },
+  {
+    "method": "fgc_graspnet",
+    "path": "checkpoints/fgc_graspnet/checkpoint-rs.tar",
+    "source": "https://drive.google.com/file/d/1Y-CWHr_eZDoZm3XJocrUJq1SA5tfrONX/view",
+    "sha256": "018598d60d38f916e1587829ad0799c4306c4f80583e73dc86ca11264ad12fde",
+    "bytes": 13568772,
+    "camera": "realsense",
+    "role": "primary"
+  },
+  {
+    "method": "scale_balanced_grasp",
+    "path": "checkpoints/scale_balanced_grasp/checkpoint-rs.tar",
+    "source": "https://drive.google.com/file/d/1Pp-xFL0QrWcEK1tpVXM3c0RnpMcRwzIX/view",
+    "sha256": "ebf63c146a7dfd8ced4543b9b9e5b9506cff320bb4b8157cab0c78b3e6ce5aef",
+    "bytes": 19107817,
+    "camera": "realsense",
+    "note": "Author full-model checkpoint; OBS variant requires separate segmentation model",
+    "role": "primary"
+  },
+  {
+    "method": "hggd",
+    "camera": "realsense",
+    "path": "checkpoints/hggd/checkpoint-realsense.tar",
+    "source": "https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FHGGD_realsense_checkpoint&dl=1",
+    "sha256": "b95da06d8723298ad28e4c720c3a6a8af73dfe6f2e8126f43de8845bf62ad6df",
+    "bytes": 41460595,
+    "role": "primary"
+  },
+  {
+    "method": "hggd",
+    "camera": "kinect",
+    "path": "checkpoints/hggd/checkpoint-kinect.tar",
+    "source": "https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FHGGD_kinect_checkpoint&dl=1",
+    "sha256": "721d0cccad7cf80a9910bfba95d9aaf164a5117f731cd1a0ba5e21a04e4cad49",
+    "bytes": 41460595,
+    "role": "primary"
+  },
+  {
+    "method": "region_normalized_grasp",
+    "camera": "realsense",
+    "path": "checkpoints/region_normalized_grasp/checkpoint-realsense.tar",
+    "source": "https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FRNGNet_realsense_checkpoint&dl=1",
+    "sha256": "0974f68d9e28b8adbeb18ef2cfab9e055f36f8c9d13b41a84e6d18f415bfedf8",
+    "bytes": 41291235,
+    "role": "primary"
+  },
+  {
+    "method": "region_normalized_grasp",
+    "camera": "kinect",
+    "path": "checkpoints/region_normalized_grasp/checkpoint-kinect.tar",
+    "source": "https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/files/?p=%2FRNGNet_kinect_checkpoint&dl=1",
+    "sha256": "b1f3eb9dec6fdd61ede05ca00fb7dfe00a22d83af88c537e439e04cd1ccb18ef",
+    "bytes": 41291235,
+    "role": "primary"
+  },
+  {
+    "method": "dograspnet",
+    "path": "checkpoints/dograspnet/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1ykH4W5KZEG5u-ERXyFqf5PTzXuvhKm3z/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "d9f5281807dc1490e127eb04d3dea3529b70b6796cd72ae5cdfaf2bf42f9bdb5",
+    "bytes": 365041965
+  },
+  {
+    "method": "contact_graspnet_g1b",
+    "path": "checkpoints/contact_graspnet_g1b/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1biNXRIZ6V--ivLIYGgjojXIzrCiJeZXl/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "1f1870194e08b840a1fca7441a4c0ca4a1f784e91e52f1534ee4c48528be1453",
+    "bytes": 26541572
+  },
+  {
+    "method": "active_ngf",
+    "path": "checkpoints/active_ngf/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1OswUcXVJv_LAgyyNt_KjfOPhIE4LEyk7/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "a977d5df9d9135015c1cb320cd49dd58930355b3f300a973681c823b7972b9e3",
+    "bytes": 262745138
+  },
+  {
+    "method": "motiongrasp",
+    "path": "checkpoints/motiongrasp/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1EjVGnWOMxLAfnebaC_b6Z-IkHTcIg5f7/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "7350c392b56a5cfc02110007027decd59b45fa3c949d6fd3eae10652b6442847",
+    "bytes": 103173910
+  },
+  {
+    "method": "zerograsp",
+    "path": "checkpoints/zerograsp/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1xUmFdgT_Ozu4zIPIsh_1SJMcegeQUWqQ/view",
+    "camera": "any",
+    "role": "primary",
+    "sha256": "0460111a60b31b7b35f6a256e17a95be96ff31bc4abfec3f9a341df93213bc65",
+    "bytes": 223756102
+  },
+  {
+    "method": "rgb_matters",
+    "path": "checkpoints/rgb_matters/checkpoint-realsense.tar",
+    "source": "https://drive.google.com/file/d/1H4JF3saXgbP5FfYlaXctbsF-6onx_MUz/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "ad8e782c0e248193bb19aa6ecb7d9e4ee8021a5318cc4868ebc3509f37430e37",
+    "bytes": 451674297
+  },
+  {
+    "method": "economicgrasp",
+    "path": "checkpoints/economicgrasp/checkpoint-kinect.tar",
+    "source": "https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_kinect.tar",
+    "camera": "kinect",
+    "role": "primary",
+    "sha256": "a47b717ad41870e9b34e85b1487de2a3f0f134ddc1a71a98a1b55bca7fc5804a",
+    "bytes": 189277946
+  },
+  {
+    "method": "generalizing_grasp",
+    "path": "checkpoints/generalizing_grasp/model.tar",
+    "source": "https://drive.google.com/file/d/1WJj54l7MxFO1kgXoXA9tF6FCfB2okKr3/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "5f08c3cffc2ecd335b24825539bc10bc5afb03e443f1b28ffff273b647fb62ea",
+    "bytes": 269873315,
+    "archive_member": "log_phy/checkpoint.tar"
+  },
+  {
+    "method": "gfla",
+    "path": "checkpoints/gfla/checkpoint-realsense.tar",
+    "source": "https://github.com/Nx1021/GFLA-release/releases/download/v1.0.0/realsense_best.pth",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "627db867f13d798cb92862fe0d169c41cb0258ce2e2d96f5d958bfb2f73870b9",
+    "bytes": 159477634
+  },
+  {
+    "method": "gfla",
+    "path": "checkpoints/gfla/FastSAM-s.pt",
+    "source": "https://github.com/Nx1021/GFLA-release/releases/download/v1.0.0/FastSAM-s.pt",
+    "camera": "realsense",
+    "role": "segmentation",
+    "sha256": "e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d",
+    "bytes": 23832055
+  },
+  {
+    "method": "centergrasp",
+    "path": "checkpoints/centergrasp/ckpt_rgb/el6oa23g/epoch=704-step=564000.ckpt",
+    "source": "https://centergrasp.cs.uni-freiburg.de/download/ckpt_rgb/el6oa23g.zip",
+    "camera": "kinect",
+    "role": "primary",
+    "sha256": "125702074542e95e67216cbcc21ec0c438b0a4a39b8173749a69f9a1e7269ffb",
+    "bytes": 56644286,
+    "archive_member": "el6oa23g/epoch=704-step=564000.ckpt"
+  },
+  {
+    "method": "centergrasp",
+    "path": "checkpoints/centergrasp/ckpt_sgdf/6953cfxt/epoch=199-step=35200.ckpt",
+    "source": "https://centergrasp.cs.uni-freiburg.de/download/ckpt_sgdf/6953cfxt.zip",
+    "camera": "kinect",
+    "role": "shape",
+    "sha256": "6e7beeb8b95bd51d8b03942d5054b41eb69cae4d494af760c8bef38b7d6a64a8",
+    "bytes": 22247783,
+    "archive_member": "6953cfxt/epoch=199-step=35200.ckpt"
+  },
+  {
+    "method": "graspness_modern",
+    "path": "checkpoints/graspness_modern/checkpoint-realsense.tar",
+    "source": "https://github.com/SimonHanrath/graspness_modern/releases/download/v1.0.0/gsnet_resunet14_epoch10.tar",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "e646797fa21cd8bfd4ec2c613c108f1bde8877856b593f31f699107a1a54d98a",
+    "bytes": 184463659
+  },
+  {
+    "method": "asgrasp",
+    "path": "checkpoints/asgrasp/graspness.tar",
+    "source": "https://drive.google.com/file/d/1T8-4UaH1MBWqKt_YacDE0jM2-rHqpgJR/view",
+    "camera": "realsense",
+    "role": "primary",
+    "sha256": "ef33fadc016638c1b7e6673d0427067d6ad11f994487d055e3e379502cbc75db",
+    "bytes": 184432457
+  },
+  {
+    "method": "asgrasp",
+    "path": "checkpoints/asgrasp/raftmvs.pth",
+    "source": "https://drive.google.com/file/d/1EDfJEVfumWRKhvGv0e9WQ0lHPBr8Y1dO/view",
+    "camera": "realsense",
+    "role": "stereo",
+    "sha256": "fb7f06d0bfc7405e5a332b4aad32ef75ac725a959d2b0f46749f0d86528b6d17",
+    "bytes": 47278451
+  },
+  {
+    "method": "dreds",
+    "path": "checkpoints/dreds/model.pth",
+    "source": "https://mirrors.pku.edu.cn/dl-release/DREDS_ECCV2022/checkpoint/SwinDRNet/models/model.pth",
+    "camera": "any",
+    "role": "primary",
+    "sha256": "26559f0e6daa772b178cf1d08a5cb1391ea4521d1c5b9b7f27ac07f4bb18b5b3",
+    "bytes": 1872388181
+  },
+  {
+    "method": "spahybgen",
+    "camera": "any",
+    "role": "primary",
+    "path": "upstream/related/multi_hand/spahybgen/assets/trained_models/spahybgen_unet_64_voxel.pt",
+    "bytes": 4808456,
+    "sha256": "f74f5a953de0125d82a2f7ea22f490ea3b3abaab15fd49221ede929997795405",
+    "source": "https://raw.githubusercontent.com/wangzivector/SpaHybGen/39e5794506bbbf2fd41804f73c93b7b393be550e/assets/trained_models/spahybgen_unet_64_voxel.pt"
+  },
+  {
+    "method": "graspfast",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/graspfast/graspfast_checkpoint.tar",
+    "bytes": 194800971,
+    "sha256": "ca9b16f537468fb02a1987d76a72e4afdfb209c9dbc72c8a28042020ce0b9bb4",
+    "source": "https://media.githubusercontent.com/media/YZ-331/GraspFast/fa028134b3a1b0271da7acb8bac7463e6585985e/logs/trained_model_weight/graspfast_checkpoint.tar"
+  }
+]
