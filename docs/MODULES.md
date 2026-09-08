@@ -8,7 +8,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmlp`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
@@ -23,6 +23,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | Baseline `pointnet` | `local_channels`, `global_channels`, `fusion_channels` (layer widths); `activation`: relu/gelu/silu; `normalization`: batch/group/none; `dropout` |
 | `pointnext` | `width`, `blocks` (five stage depths), `nsample`, `radius` (metres), `radius_scaling`, `expansion`, `activation`, `reduction`: max/mean/sum, `decoder_layers` |
 | `pointvector` | `width`, `blocks` (five stages), `nsample`, `local_nsample`, `radius`, `radius_scaling`, `normalize_dp`, `sa_layers`, `sa_use_res`, `decoder_layers` |
+| `pointmeta` | `width`, `blocks`, `nsample`, `radius`, `radius_scaling`, `expansion`, `normalize_dp`, `local_reduction`, `activation`, `use_res`, `sa_layers`, `sa_use_res`, `decoder_layers` |
 | `pointmlp` | `embed_dim`, `dim_expansion`, `pre_blocks`, `pos_blocks`, `stage_points`, `k_neighbors`, `decoder_channels`, `decoder_blocks`, `res_expansion`, `activation`, `normalize`: anchor/center |
 | `multiscale` | `radius_factors` relative to the method's native cylinder radius |
 | `finegrasp` / `native_cylinder` | `nsample`, `radius_factors`; FineGrasp also accepts `radius`. Cross-radius attention: `fusion_layers`, `fusion_heads`, `fusion_ffn_dim`, `fusion_dropout`, `fusion_activation`, `fusion_pre_norm` |
@@ -80,6 +81,26 @@ The adapter supplies XYZ features, decodes back to every original input point, p
 | `decoder_layers` | `2`; MLP depth of native feature propagation |
 
 Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
+
+## PointMetaBase encoder
+
+`pointmeta` uses the native PointMetaBase encoder and its PointNext decoder from [Meta Architecture for Point Cloud Analysis (CVPR 2023 PDF)](https://arxiv.org/pdf/2211.14462) ([pinned implementation](https://github.com/linhaojia13/PointMetaBase/blob/c364a671ee255453c0a03b2474af555664604db9/openpoints/models/backbone/pointmetabase.py)). It is available for Baseline and its PointNet2 port. Run `./panda install` after upgrading to fetch the pinned source; the installer verifies that its CUDA sources are identical to the shared OpenPoints operators before reusing them. The author's Python layers load in a separate namespace from PointNeXt and PointVector.
+
+The encoder updates point features before grouping and adds explicit positional features shared by the local blocks in each stage. The adapter supplies XYZ input features, decodes back to every original input point, projects to 256 channels and gathers grasp seeds at original-input FPS indices. Coordinates and labels retain their camera-frame correspondence. It does not use the segmentation classifier, height features or pretrained segmentation weights.
+
+| Setting | Default / meaning |
+|---|---|
+| `width`, `blocks` | `32`, `[1,3,5,3,3]`; five stage depths, including each stage's abstraction/stem block. `blocks[0]` must be one because the native stem has no local positional embedding. |
+| `nsample` | `32`; neighbors per query. Local features and shared positional features use matching queries. |
+| `radius`, `radius_scaling` | `0.05` metres, `2.0`; starting radius and native stage scaling. |
+| `expansion` | `1`; hidden expansion in local point-update MLPs. |
+| `normalize_dp` | `true`; radius-normalize relative position offsets. Absolute XYZ remains in metres. |
+| `local_reduction` | `max`; also `mean` or `sum`, for local feature aggregation. Downsampling abstraction retains native max pooling. |
+| `activation`, `use_res` | `relu`, `true`; encoder activation (also `gelu` or `silu`) and local residual connections. |
+| `sa_layers`, `sa_use_res` | `1`, `false`; abstraction feature-MLP depth and residual connection. Its positional branch retains the native depth rule. |
+| `decoder_layers` | `2`; feature-propagation MLP depth. The native decoder retains ReLU and BatchNorm. |
+
+A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [the PointMetaBase composition example](../GraspNet-1B/examples/compose-pointmeta.yaml), which also replaces cylinder processing with ResLFE.
 
 ## Residual local aggregation in cylinders
 

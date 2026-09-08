@@ -66,6 +66,13 @@ def schema(method, slot, choice):
                 'decoder_channels': ('int_list', 4, 8, 2048), 'decoder_blocks': ('int_list', 4, 1, 12),
                 'res_expansion': ('float', .25, 4), 'activation': common['activation'],
                 'normalize': ('choice', ('anchor', 'center'))}
+    if slot == 'backbone' and choice == 'pointmeta':
+        return {'width': ('int',8,128), 'blocks': ('blocks',), 'nsample': ('int',4,128),
+                'radius': ('float',.005,.5), 'radius_scaling': ('float',1,4),
+                'expansion': ('int',1,8), 'normalize_dp': ('bool',),
+                'local_reduction': ('choice',('max','mean','sum')),
+                'activation': common['activation'], 'use_res': ('bool',),
+                'sa_layers': ('int',1,4), 'sa_use_res': ('bool',), 'decoder_layers': ('int',1,4)}
     if slot == 'backbone' and choice == 'pointvector':
         return {'width': ('int',8,128), 'blocks': ('blocks',),
                 'nsample': ('int',4,128), 'local_nsample': ('int',4,128),
@@ -133,6 +140,8 @@ def validate_options(method, slot, choice, options):
             raise ValueError('DeepLA cylinder width must be a multiple of 8')
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
+    if choice == 'pointmeta' and options.get('blocks',[1,3,5,3,3])[0] != 1:
+        raise ValueError('PointMetaBase requires a single stem block in blocks[0]')
     if choice == 'pointmlp':
         sizes = options.get('stage_points', [1024, 256, 64, 16])
         neighbors = options.get('k_neighbors', [32, 32, 32, 16])

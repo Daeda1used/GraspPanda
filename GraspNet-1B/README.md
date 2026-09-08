@@ -21,6 +21,7 @@ Run commands from the repository root. The dataset root is the directory contain
 | [Component composition](examples/compose-baseline.yaml) | Train a different encoder and cylindrical grouping |
 | [Point Transformer](examples/compose-ptv3.yaml) | Configure native PTv3 stages, attention windows and optimization |
 | [Residual local aggregation](examples/compose-reslfe.yaml) | Configure native ResLFE layers inside oriented cylinders |
+| [PointMetaBase](examples/compose-pointmeta.yaml) | Configure feature updates, explicit position encoding and local aggregation |
 | [PointVector](examples/compose-pointvector.yaml) | Compose native vector aggregation features with oriented cylindrical grouping |
 | [RGB-D composition](examples/compose-hggd.yaml) | Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation |
 | [Pretrained image features](examples/compose-dino.yaml) | Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks |

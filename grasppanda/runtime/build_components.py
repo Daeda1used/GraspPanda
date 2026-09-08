@@ -45,6 +45,16 @@ setup(name='grasppanda-deepla-ops', version='0.1.0',
                     '--no-build-isolation', str(build)], env=env, check=True)
 
 
+def verify_pointmeta_operators(source, openpoints):
+    native = source/'openpoints/cpp/pointnet2_batch/src'
+    shared = openpoints/'cpp/pointnet2_batch/src'
+    files = {p.name for p in native.iterdir() if p.is_file()}
+    if not files or files != {p.name for p in shared.iterdir() if p.is_file()}:
+        raise RuntimeError('PointMetaBase and shared OpenPoints operator files differ')
+    if any((native/name).read_bytes() != (shared/name).read_bytes() for name in files):
+        raise RuntimeError('PointMetaBase requires a different native operator build')
+
+
 def main():
     uv=ROOT/'environments/bootstrap/uv'
     uv=str(uv) if uv.exists() else shutil.which('uv')
@@ -63,6 +73,7 @@ def main():
             subprocess.run(['git','-C',str(dest),'checkout','--detach',record['commit']],check=True)
         actual=subprocess.check_output(['git','-C',str(dest),'rev-parse','HEAD'],text=True).strip()
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
+    verify_pointmeta_operators(ROOT/pins['pointmetabase']['path'], ROOT/pins['openpoints']['path'])
     build_vmamba(uv, ROOT/pins['vmamba']['path'], env)
     build_deepla(uv, ROOT/pins['deepla']['path'], env)
     # Native packaging generates the version module used by source imports.

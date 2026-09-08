@@ -40,5 +40,11 @@
     "repository": "https://github.com/zeng-ziyin/DeepLA-Net",
     "path": "environments/sources/cv/deepla",
     "commit": "7f572899de7db26d2c5eac538395d9932faafb89"
+  },
+  {
+    "id": "pointmetabase",
+    "repository": "https://github.com/linhaojia13/PointMetaBase",
+    "path": "environments/sources/cv/pointmetabase",
+    "commit": "c364a671ee255453c0a03b2474af555664604db9"
   }
 ]
