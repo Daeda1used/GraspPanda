@@ -128,7 +128,7 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 ## Training controls
 
-Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD/RNG expose method-specific controls in `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [the point training-controls example](../GraspNet-1B/examples/train-controls.yaml).
+Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [the point training-controls example](../GraspNet-1B/examples/train-controls.yaml).
 
 In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -195,7 +195,7 @@ HGGD and RNG use independent sigmoid classification targets. The UI's classifica
 | `local_theta` | RNG | 5 | Normalized within-bin angle offsets |
 | `local_width` | RNG | 1 | Log width relative to the 60-mm local width anchor |
 
-Coefficients follow the registered short-training presets, including HGGD's published joint-training shell configuration. The anchor regression coefficient 5 is divided equally across its three terms. Coefficients are absolute: setting one to zero removes that objective; it does not freeze shared parameters or disable optimizer weight decay. At least one objective must remain positive, and RNG warmup requires a positive anchor objective.
+Coefficients follow the registered training presets, including HGGD's published joint-training shell configuration. The anchor regression coefficient 5 is divided equally across its three terms. Coefficients are absolute: setting one to zero removes that objective; it does not freeze shared parameters or disable optimizer weight decay. At least one objective must remain positive, and RNG warmup requires a positive anchor objective.
 
 Classification keeps the native positive-count denominator (or an unnormalized sum when there are no positives), negative heatmap suppression and class balancing: positive alpha 0.25 for anchor/local-theta classes and 0.5 for location/orientation. `focal.alpha` can override alpha per classification term. Probability clipping remains 1e-6 for HGGD and 1e-4 for RNG. `cross_entropy.label_smoothing` mixes binary labels with 0.5. `poly1.epsilon` adds the binary Poly-1 term before the same weighting and reduction.
 
@@ -205,7 +205,7 @@ All loss choices use the pinned native target builders. Regression retains nativ
 
 #### RGB-D observation augmentation
 
-Use `augmentation.mode: custom` or omit `mode` when providing the following parameters. An empty mapping, `native` or `none` retains the current unaugmented short-training preset. These settings are separate from the point augmentation schema.
+Use `augmentation.mode: custom` or omit `mode` when providing the following parameters. An empty mapping, `native` or `none` retains the unaugmented short-training preset. HGGD epoch training uses the stage-dependent behavior described [below](#hggd-epoch-training). These settings are separate from the point augmentation schema.
 
 | Parameter | Default · accepted values | Meaning |
 |---|---|---|
@@ -275,7 +275,7 @@ The base learning rate always comes from `learning_rate`. Explicit optimizer ove
 | `cosine` | Optional `warmup_steps` and `min_lr_ratio` (default 0), decaying over the configured update horizon |
 | `multistep` | Increasing, unique `milestones` and `gamma` (default 0.1) |
 
-Schedule units are **completed optimizer updates**, including for epoch training. A milestone of 2 changes the third update's rate. Warmup starts at `base_lr / warmup_steps`; cosine reaches its floor after the final update. A short run's horizon is `training_steps`, plus RNG's optional `proposal_warmup_steps`; epoch training uses the loader length times `epochs`, including configured batch limits. Changing the loader or final epoch horizon on resume is rejected. Model, optimizer and schedule states are restored and checked before the next update.
+Schedule units are **completed optimizer updates**, including for epoch training. A milestone of 2 changes the third update's rate. Warmup starts at `base_lr / warmup_steps`; cosine reaches its floor after the final update. A short run's horizon is `training_steps`, plus RNG's optional `proposal_warmup_steps`; epoch training uses updates per epoch times `epochs`, including configured batch limits. HGGD divides the loader length by `trainer.accumulation_steps`, rounding up for the final partial group. Changing the loader or final epoch horizon on resume is rejected. Model, optimizer and schedule states are restored and checked before the next update.
 
 Optimizer and scheduler settings are training-only; clear them for manually authored inference configurations. UI checkpoint reuse does this automatically. Sweep paths such as `optimizer.type`, `optimizer.weight_decay` and `scheduler.min_lr_ratio` are supported, subject to each selected implementation's validation.
 
@@ -326,7 +326,7 @@ For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkp
 
 ## Train a composed model across epochs
 
-Baseline, Graspness and FineGrasp accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
+Baseline, Graspness, FineGrasp and HGGD accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
 
 To test the epoch workflow, change the example above:
 
@@ -342,7 +342,7 @@ data_workers: 0
 
 `initialize` loads model weights with the selected transfer policy and starts a fresh optimizer at epoch 0. `resume` requires `strict`, restores the optimizer and epoch, and requires the same composition and data settings. Restored model and optimizer tensors are checked before the next update. Native CUDA point operators use atomic gradient accumulation, so later loss trajectories are not guaranteed to be bitwise identical. Set `epochs` to the final epoch number, greater than the saved epoch. SBG's OneCycle schedule requires the original final-epoch horizon when resuming; initialize a new run to change that horizon.
 
-A nonzero training batch limit selects consecutive frames from `scene`/`frame` before native shuffling and augmentation. The native validation loop uses a prefix of test_seen for Baseline/SBG; Graspness has no validation loop in its released trainer. These validation losses are diagnostics, not benchmark AP or a recommended model-selection protocol. Set both limits to **0** for complete splits and increase `timeout_minutes` for a long run. Epoch-boundary seeds are controlled by the configured seed plus epoch.
+A nonzero training batch limit selects consecutive frames from `scene`/`frame` before native shuffling and augmentation. The native validation loop uses a prefix of test_seen for Baseline/SBG; Graspness has no validation loop in its released trainer. These validation losses are diagnostics, not benchmark AP or a recommended model-selection protocol. Set both limits to **0** for the complete native training/validation ranges and increase `timeout_minutes` for a long run. Epoch-boundary seeds are controlled by the configured seed plus epoch.
 
 Each run saves native epoch checkpoints under `training/` and the last checkpoint as `checkpoint.pt`. The UI exposes initialization/resume, batch limits, worker count, losses and checkpoint inference. Bounded epoch execution and resume are checked; full-split convergence is not claimed.
 
@@ -355,6 +355,33 @@ Register a slot/choice in `grasppanda/components.py`, implement the adapter unde
 A newly initialized image encoder may produce proposals with no local grasp labels. For RNG short training, set `proposal_warmup_steps` to train the anchor on its native heatmap targets before preparing its own local patches. These updates are additional to `training_steps`; a custom learning-rate schedule spans both phases. The default is `0`. Warmup uses the selected optimizer and real targets, with no teacher model or replacement labels. Its loss is shown separately as **Anchor warmup**. The required duration depends on initialization, learning rate and scene; a positive proposal set is checked before local training.
 
 The browser exposes this setting under **Training & evaluation settings** for RNG. Checkpoint inference clears this training-only setting. This initialization procedure is a toolbox option; the unreleased RNG full training schedule is not reproduced.
+
+## HGGD epoch training
+
+Copy [train-hggd.yaml](../GraspNet-1B/examples/train-hggd.yaml), set your dataset/checkpoint paths and run it with `./panda run`. The example fine-tunes author weights at a conservative learning rate; it is not a reproduction of the paper's training hyperparameters. Prepare the camera-specific [HGGD targets](DOWNLOADS.md#method-specific-preprocessing) for training scenes 0000-0099 and validation scene 0100. `workspace: native_demo` retains the native RGB-D geometry and target generation. Batch size must be at least 2.
+
+Set `trainer` in YAML/JSON or expand **Training & evaluation settings → Method training stages** in the UI:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `joint_training` | `true` | Keep the anchor network trainable after the local stage starts; `false` freezes it, including batch-normalization state |
+| `pre_epochs` | `0` | Initial anchor-only epochs; local training starts afterward |
+| `shift_epochs` | `5` | Refine gamma/beta anchors during these initial epochs when local labels are available; `0` disables refinement |
+| `accumulation_steps` | `2` | Average gradients across this many full mini-batches per optimizer update |
+| `center_num` | `128` | Proposed local training centers per image |
+| `group_num` | `512` | Points per local training group |
+| `local_grasp_num` | `500` | Maximum local grasp labels per group |
+| `shift_min_labels` | `1000000` | Collected local labels needed to trigger native anchor refinement; collection resets each epoch |
+
+`initialize` loads both available network branches and gamma/beta anchors, then creates fresh optimizer state. Use `checkpoint_policy: reuse_unchanged` when replacing the image encoder. An empty checkpoint starts the grasp networks from their constructors; select positive `pre_epochs` to establish anchor proposals before local training. Configured DINO pretraining still applies. A batch with no local proposals stops with an actionable error.
+
+Empty optimization settings use AdamW with weight decay `0.01`, epoch StepLR (factor `0.1` every 5 epochs) and the author's anchor batch-normalization momentum schedule. Each accumulated update uses mean gradients and native value clipping at 1; the final partial accumulation group is also stepped. This corrects the native loop's first-group/tail handling, so its original learning rate may need adjustment. Registered [optimizers and update schedules](#optimizers-and-schedules) can replace these defaults.
+
+Empty or `native` augmentation preserves the author's extra anchor-pretraining augmentation when `joint_training: false`. `none` disables it; `custom` applies only the configured RGB-D observation perturbations to each training item. Validation stays unaugmented. Rotation and zoom remain disabled to preserve camera and label correspondence.
+
+`train_batch_limit: 0` selects all training frames, with incomplete mini-batches dropped. A positive limit selects consecutive frames from `scene`/`frame` before shuffling. Native validation always uses scene 0100: `eval_batch_limit: 0` selects its 256 frames, otherwise its first N frames. Its outputs are geometric matching, coverage and 2D overlap, not official AP. Generate full-split predictions and use `evaluate` for the benchmark metric.
+
+Each completed training epoch is saved before validation to `training/checkpoints/epoch_NNNN.tar` and `checkpoint.pt`. Resume requires a complete epoch checkpoint, `checkpoint_policy: strict` and unchanged data, components, objectives, augmentation, trainer and optimization settings. It restores and checks both networks, optimizer, schedule, batch-normalization momentum and anchors. Frame inventory checking uses paths, sizes and modification times, not image-content hashes. Native StepLR permits increasing the final `epochs`; configured update schedules require the original horizon. Workers restart with explicit epoch seeds; later GPU training trajectories are not guaranteed to be bitwise identical after process restart.
 
 ## FineGrasp training and composition
 

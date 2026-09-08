@@ -67,12 +67,19 @@ def preflight(config):
             if any(not p.is_file() for p in needed):
                 raise ValueError(f"Missing frame input: {next(p for p in needed if not p.is_file())}")
     if config.action in ("train", "train_smoke"):
-        labels = ["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"]
-        if config.method != "finegrasp":
+        labels = [] if config.method == 'hggd' else (["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"])
+        if config.method not in ("finegrasp", 'hggd'):
             labels += ["graspness", "grasp_label_simplified"] if config.method == "graspness" else ["tolerance"]
         for label in labels:
             if not (Path(config.dataset_root) / label).is_dir():
                 raise ValueError(f"Required preprocessing directory missing: {label}")
+        if config.method == 'hggd':
+            labelroot=Path(config.label_root or Path(config.dataset_root)/'HGGD_Preprocessed'/f'6dto2drefine_{config.camera}')
+            scene,frame=(config.scene,config.frame) if config.train_batch_limit else (0,0)
+            for scene,frame in ((scene,frame),(100,0)):
+                if not (labelroot/'6d_dataset'/f'scene_{scene}'/'grasp_labels'/f'{frame}_view.npz').is_file():
+                    raise ValueError('HGGD epoch training needs preprocessed training and scene-100 validation labels')
+            if config.checkpoint and not Path(config.checkpoint).is_file(): raise ValueError('HGGD initialization checkpoint is missing')
     if config.method == 'finegrasp' and config.action in ('train', 'train_check', 'train_smoke'):
         root = Path(config.dataset_root)
         if not (root/'instance_norm_graspness').is_dir() and not (root/'graspness').is_dir():

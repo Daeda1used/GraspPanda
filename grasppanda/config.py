@@ -37,6 +37,7 @@ def capabilities(method):
         actions += ["train_check"]
     if method in TRAIN:
         actions += ["train_smoke", "train"]
+    if method == 'hggd': actions += ['train']
     from .recipes import RECIPES
     if method in RECIPES: actions += ["pipeline_smoke"]
     return actions
@@ -50,6 +51,7 @@ class Experiment:
     augmentation: dict = field(default_factory=dict)
     optimizer: dict = field(default_factory=dict)
     scheduler: dict = field(default_factory=dict)
+    trainer: dict = field(default_factory=dict)
     checkpoint_policy: str = "strict"
     method: str = "graspness"
     action: str = "probe"
@@ -100,6 +102,8 @@ class Experiment:
         validate_optimization(self)
         from .training_options import validate_training_options
         validate_training_options(self)
+        from .hggd_options import validate as validate_trainer
+        validate_trainer(self)
         from .datasets import get_dataset
         from .components import validate_selection
         spec=get_dataset(self.dataset)
@@ -149,8 +153,9 @@ class Experiment:
                 raise ValueError("Requested frame range crosses the selected split")
         if self.action in ("train", "train_smoke", "train_check") and self.split != "train":
             raise ValueError("Training requires split: train")
-        if self.action in ('train','train_smoke') and self.workspace!='official_gt_workspace':
-            raise ValueError('Upstream training adapters use official_gt_workspace')
+        if self.action in ('train','train_smoke'):
+            expected = 'native_demo' if self.method == 'hggd' else 'official_gt_workspace'
+            if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
         if self.action=='train_check':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp checks support 1–6 temporal updates per native seven-frame sequence')
             if self.method=='centergrasp' and self.camera!='kinect':raise ValueError('The native CenterGrasp training adapter requires camera: kinect')

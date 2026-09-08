@@ -167,6 +167,9 @@ def infer(config, out):
 
 
 def train(config, out):
+    if config.method=='hggd':
+        from .training_hggd import run
+        return run(config,out)
     if config.method=='finegrasp':
         from .training_finegrasp import run
         return run(config,out)

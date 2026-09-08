@@ -1,0 +1,24 @@
+dataset: graspnet1b
+method: hggd
+action: train
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+camera: realsense
+split: train
+scene: 0
+frame: 0
+workspace: native_demo
+num_points: 25600
+batch_size: 4
+epochs: 15
+learning_rate: 0.0001
+data_workers: 2
+train_batch_limit: 0
+eval_batch_limit: 0
+timeout_minutes: 14400
+train_checkpoint_mode: initialize
+trainer:
+  joint_training: true
+  pre_epochs: 0
+  shift_epochs: 5
+  accumulation_steps: 2

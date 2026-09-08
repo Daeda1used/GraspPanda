@@ -64,7 +64,7 @@ Basic frame inference does not require downloading all training targets. Additio
 |---|---|---|
 | Baseline / SBG training | `tolerance/` plus original grasp and collision labels | [Baseline](https://github.com/graspnet/graspnet-baseline), [SBG](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) |
 | Graspness training | `graspness/` and `grasp_label_simplified/`, plus original labels | [Graspness implementation](https://github.com/rhett-chen/graspness_implementation) |
-| HGGD short training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
+| HGGD training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
 | RNG short training | HGGD preprocessed labels; native proposals and local targets are prepared in the experiment directory. The unreleased training schedule is not reproduced | [RNG](https://github.com/THU-VCLab/RegionNormalizedGrasp) |
 | FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
 | EconomicGrasp short training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
