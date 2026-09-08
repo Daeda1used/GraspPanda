@@ -22,5 +22,11 @@
     "repository": "https://github.com/ma-xu/pointMLP-pytorch",
     "path": "environments/sources/cv/pointmlp",
     "commit": "1ab7f04e88d2aeb8fd16921a2b2fc4fba950b6df"
+  },
+  {
+    "id": "sonata",
+    "repository": "https://github.com/facebookresearch/sonata",
+    "path": "environments/sources/cv/sonata",
+    "commit": "18c09ff8d713494f78a8213792262b910977a65d"
   }
 ]

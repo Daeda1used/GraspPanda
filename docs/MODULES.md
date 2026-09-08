@@ -8,9 +8,9 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointmlp` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointmlp`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4` |
 
@@ -56,6 +56,29 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## Point Transformer encoder
+
+`sonata_ptv3` uses the native encoder and decoder from [Sonata (CVPR 2025)](https://github.com/facebookresearch/sonata), based on [Point Transformer V3 (CVPR 2024)](https://github.com/Pointcept/PointTransformerV3). The installer fetches its pinned author source into the shared environment. Attention uses the native non-Flash path; no extra environment or FlashAttention build is needed.
+
+Baseline and its PointNet2 port use XYZ features. Points in the same voxel are averaged separately per batch, then decoded features are mapped back to every original row. FPS selects the original camera-space points, preserving the grasp labels' indices. Graspness uses its existing integer lattice and concatenates camera-space lattice XYZ with the native three input features; output retains the exact Minkowski coordinate map and row order. The experiment's `voxel_size` controls both adapters. Coordinates remain in metres.
+
+This is a trainable architecture adaptation with random initialization. It does not load Sonata's self-supervised checkpoint or synthesize absent color/normal channels. Use `reuse_unchanged` to retain the grasp heads when replacing a native backbone, then `strict` with the resulting composition checkpoint.
+
+| Setting | Meaning / default |
+|---|---|
+| `enc_depths`, `enc_channels`, `enc_num_head` | Five fine-to-coarse stages; defaults `[3,3,3,12,3]`, `[48,96,192,384,512]`, `[3,6,12,24,32]` |
+| `dec_depths`, `dec_channels`, `dec_num_head` | Four fine-to-coarse stages; defaults `[3,3,3,3]`, `[96,96,192,384]`, `[6,6,12,32]` |
+| `enc_patch_size`, `dec_patch_size` | Five/four attention-window caps; 128 at each stage by default; native attention reduces the cap to the smallest batch member's point count |
+| `stride` | Four pooling strides, each 1/2/4/8; default `[2,2,2,2]` |
+| `order` | `z`, `z-trans`, `hilbert`, `hilbert-trans`, paired orders or all four joined by `+`; default `z+z-trans` |
+| `pooling` | Native hierarchy reduction: max/mean/sum/min; default max |
+| `mlp_ratio`, `drop_path`, `attn_drop`, `proj_drop` | Defaults 4, 0.3, 0, 0 |
+| `qkv_bias`, `pre_norm`, `shuffle_orders` | Boolean controls; default true. Order shuffling applies at every pooling stage, including inference |
+| `enable_rpe`, `upcast_attention`, `upcast_softmax` | Boolean controls; default false |
+| `layer_scale` | Optional positive residual scale, omitted by default |
+
+Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [PTv3 composition example](../GraspNet-1B/examples/compose-ptv3.yaml) for a smaller trainable configuration.
 
 ## RGB-D image encoders
 
@@ -118,7 +141,7 @@ scheduler:
 | `lion` | `weight_decay`, two-element `betas` |
 | `muon` | `weight_decay`, `momentum`, `nesterov` (default true), `ns_steps`, `fallback_lr_scale`, two-element fallback `betas`, `eps` |
 
-The base learning rate always comes from `learning_rate`. Explicit optimizer overrides default to zero weight decay. Adam/AdamW/SGD use PyTorch; Lion and Muon use the locked timm implementations. [Lion](https://github.com/google/automl/tree/master/lion) ([NeurIPS 2023 paper](https://arxiv.org/pdf/2302.06675)) typically needs a smaller learning rate than AdamW. [Muon](https://github.com/KellerJordan/Muon) uses timm's matrix/convolution routing and AdamW fallback, with flattened convolution kernels. It is registered only for the dense baseline/PointNet2 and HGGD/RNG models; sparse-kernel parameter layouts need a separate routing contract. These choices do not imply improved grasp accuracy.
+The base learning rate always comes from `learning_rate`. Explicit optimizer overrides default to zero weight decay. Adam/AdamW/SGD use PyTorch; Lion and Muon use the locked timm implementations. [Lion](https://github.com/google/automl/tree/master/lion) ([NeurIPS 2023 paper](https://arxiv.org/pdf/2302.06675)) typically needs a smaller learning rate than AdamW. [Muon](https://github.com/KellerJordan/Muon) uses timm's matrix/convolution routing and AdamW fallback, with flattened convolution kernels. It is registered only for dense baseline/PointNet2 compositions and HGGD/RNG models; PTv3 uses spconv and is excluded; sparse-kernel parameter layouts need a separate routing contract. These choices do not imply improved grasp accuracy.
 
 | Schedule | Parameters and behavior |
 |---|---|

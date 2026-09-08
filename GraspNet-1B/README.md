@@ -16,6 +16,7 @@ Run commands from the repository root. The dataset root is the directory contain
 | [Frame inference](examples/infer-graspness.example.yaml) | Predict grasps from a GraspNet frame |
 | [Epoch training](examples/train-baseline.yaml) | Train the baseline with its native dataset loop |
 | [Component composition](examples/compose-baseline.yaml) | Train a different encoder and cylindrical grouping |
+| [Point Transformer](examples/compose-ptv3.yaml) | Configure native PTv3 stages, attention windows and optimization |
 | [RGB-D composition](examples/compose-hggd.yaml) | Train an HGGD image encoder with a chosen optimizer and schedule |
 | [Configuration sweep](examples/sweep-baseline.yaml) | Compare PointMLP widths and random seeds |
 

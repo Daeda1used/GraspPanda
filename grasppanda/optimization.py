@@ -26,6 +26,10 @@ def validate(config):
             raise ValueError('Unknown optimizer type or parameters')
         if kind == 'muon' and config.method not in MUON_METHODS:
             raise ValueError('Muon is registered only for dense HGGD/RNG and baseline/PointNet2 models')
+        if kind == 'muon' and isinstance(config.modules, dict):
+            from .module_options import unpack
+            if unpack(config.modules.get('backbone', 'upstream'))[0] == 'sonata_ptv3':
+                raise ValueError('Muon has no registered spconv kernel routing; use Adam, AdamW, SGD or Lion with PTv3')
         for key, value in options.items():
             if key == 'type': continue
             if key in ('weight_decay', 'momentum', 'eps', 'fallback_lr_scale'):

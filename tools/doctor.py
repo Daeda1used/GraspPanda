@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "pointnet2_ops._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers"]
+modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "pointnet2_ops._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers", "spconv.pytorch", "torch_scatter", "timm"]
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
 for name in modules:
     try:

@@ -13,6 +13,23 @@ def unpack(value):
 def schema(method, slot, choice):
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
+    if slot == 'backbone' and choice == 'sonata_ptv3':
+        fields = {}
+        for prefix, count in (('enc', 5), ('dec', 4)):
+            fields.update({prefix + '_depths': ('int_list', count, 1, 24),
+                           prefix + '_channels': ('int_list', count, 8, 1024),
+                           prefix + '_num_head': ('int_list', count, 1, 64),
+                           prefix + '_patch_size': ('int_list', count, 8, 1024)})
+        fields.update(stride=('int_list', 4, 1, 8),
+            order=('choice', ('z', 'z-trans', 'hilbert', 'hilbert-trans',
+                'z+z-trans', 'hilbert+hilbert-trans', 'z+z-trans+hilbert+hilbert-trans')),
+            pooling=('choice', ('max', 'mean', 'sum', 'min')),
+            mlp_ratio=('float', 1, 8), drop_path=('float', 0, .8),
+            attn_drop=('float', 0, .8), proj_drop=('float', 0, .8),
+            layer_scale=('float', 1e-8, 1))
+        fields.update({key: ('bool',) for key in ('qkv_bias', 'pre_norm', 'shuffle_orders',
+            'enable_rpe', 'upcast_attention', 'upcast_softmax')})
+        return fields
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
         if choice == 'native_resnet':
             return {'variant': ('choice', ('18', '34', '50')), 'stage_depths': ('int_list', 4, 1, 32)}
@@ -59,6 +76,8 @@ def validate_options(method, slot, choice, options):
         valid = False
         if rule[0] == 'choice':
             valid = isinstance(value, str) and value in rule[1]
+        elif rule[0] == 'bool':
+            valid = type(value) is bool
         elif rule[0] in ('int', 'float'):
             valid = (type(value) in ((int,) if rule[0] == 'int' else (int, float))
                      and math.isfinite(value) and rule[1] <= value <= rule[2])
@@ -84,4 +103,12 @@ def validate_options(method, slot, choice, options):
                 raise ValueError('PointMLP expanded stage width must not exceed 2048')
     if choice == 'repvit' and any(width % 8 for width in options.get('stage_channels', [])):
         raise ValueError('RepViT stage channels must be multiples of 8')
+    if choice == 'sonata_ptv3':
+        for prefix, widths, heads in (('enc', [48,96,192,384,512], [3,6,12,24,32]),
+                                     ('dec', [96,96,192,384], [6,6,12,32])):
+            for width, head in zip(options.get(prefix+'_channels', widths), options.get(prefix+'_num_head', heads)):
+                if width % head or width % 8:
+                    raise ValueError('PTv3 stage channels must be divisible by their attention heads and by 8')
+        if any(value not in (1,2,4,8) for value in options.get('stride', [])):
+            raise ValueError('PTv3 pooling strides must be 1, 2, 4 or 8')
     return options

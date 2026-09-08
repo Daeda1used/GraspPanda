@@ -56,8 +56,12 @@ def component_parameters(method, backbone, crop):
                 description = ', '.join(rule[1])
             elif rule[0] in ('int', 'float'):
                 description = f'{rule[0]}: {rule[1]} to {rule[2]}'
+            elif choice == 'sonata_ptv3' and key == 'stride':
+                description = '4 pooling strides, each 1, 2, 4 or 8'
             elif rule[0] == 'int_list':
                 description = f'{rule[1]} integers, each {rule[2]} to {rule[3]}'
+            elif rule[0] == 'bool':
+                description = 'true or false'
             else:
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
@@ -314,7 +318,7 @@ def create_app(manager=None):
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
                     with gr.Accordion("Compose modules",open=False):
                         gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
-                        backbone=gr.Dropdown(['upstream','pointnet','pointnext','pointmlp'],value='upstream',label='Point encoder')
+                        backbone=gr.Dropdown(['upstream','pointnet','pointnext','pointmlp','sonata_ptv3'],value='upstream',label='Point encoder')
                         crop=gr.Dropdown(['upstream','multiscale','cylinder'],value='upstream',label='Local cylindrical grouping')
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
@@ -421,13 +425,13 @@ For component experiments, expand **Compose modules**. Full configuration editin
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
         for selector in (method, backbone, crop):
             selector.change(component_parameters,[method,backbone,crop],parameter_help,api_name=False)
-        def optimization_choices(method, action):
+        def optimization_choices(method, action, backbone):
             from .optimization import METHODS,MUON_METHODS
             enabled=method in METHODS and action in ('train','train_check')
-            optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS else [])
+            optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone!='sonata_ptv3' else [])
             return gr.update(choices=optimizers if enabled else ['upstream'],value='upstream',interactive=enabled),gr.update(choices=['upstream','constant','cosine','multistep'] if enabled else ['upstream'],value='upstream',interactive=enabled),'{}','{}'
-        for selector in (method, action):
-            selector.change(optimization_choices,[method,action],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name=False)
+        for selector in (method, action, backbone):
+            selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name=False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
             workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','finegrasp') else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
