@@ -280,7 +280,13 @@ def create_app(manager=None):
     def apply_preset(method,dataset):
         config=preset(method,(dataset or '').strip())
         if not capabilities(method): raise gr.Error('This source has no runnable adapter. See the method card.')
-        return gr.update(choices=action_choices(method), value=config.action), config.camera, config.checkpoint, config.workspace, config.num_points, config.split, config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2), config.collision_thresh
+        # Apply the complete preset in one response, so delayed reset callbacks
+        # cannot overwrite a composition edited after the preset has loaded.
+        return (gr.update(choices=action_choices(method), value=config.action), config.camera, config.checkpoint, config.workspace, config.num_points, config.split, config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2), config.collision_thresh,
+                'upstream', gr.update(value='upstream', visible=any(s.name=='crop' for s in slots(method))),
+                'strict', '{}', '{}', '{}', 'upstream', '{}', 'upstream', '{}',
+                '{}', 'upstream', 'upstream', '[]', '{}', 0, config.training_steps,
+                'initialize', 0, 0, 0, None, 'Preset ready. Configure your experiment and run.')
 
     def setup_check(dataset):
         import torch
@@ -470,6 +476,7 @@ def create_app(manager=None):
                         card = gr.Markdown(method_card("graspnet_baseline"))
                     action = gr.Dropdown(action_choices("graspnet_baseline"), value="infer", label="Operation")
                     preset_button=gr.Button("Load preset",variant="primary")
+                    preset_status=gr.Markdown()
                 with gr.Column(scale=6):
                     dataset = gr.Textbox(first["dataset_root"], label="Dataset root on server", placeholder="/data/GraspNet-1B")
                     checkpoint = gr.Textbox(first["checkpoint"], label="Checkpoint on server")
@@ -694,7 +701,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             selector.change(lambda m,a:gr.update(visible=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_check')),[method,action],trainer_panel,api_name=False, preprocess=False)
             selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('graspness','finegrasp','economicgrasp') and a=='train'),[method,action],eval_batch_limit,api_name=False, preprocess=False)
         action.change(lambda a:gr.update(visible=a=='train_check'),action,training_steps,api_name=False, preprocess=False)
-        action.change(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults', preprocess=False)
+        action.input(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults', preprocess=False, queue=False)
         action.change(lambda a: gr.update(value='initialize',interactive=a=='train',visible=a=='train'),action,train_checkpoint_mode,api_name=False, preprocess=False)
         def training_checkpoint(a,m,c,path):
             from .weights import primary
@@ -703,8 +710,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
         group.change(filter_methods, group, method, api_name="filter_methods", preprocess=False)
         load_prompt_frame.click(prompt_frame, [dataset,camera,scene,frame], [prompt_image,prompt_options], api_name='load_prompt_frame')
         prompt_image.select(add_prompt_point, [prompt_options,prompt_object,prompt_label,prompt_image], [prompt_options,prompt_image], api_name=False)
-        for selector in (dataset,camera,scene,frame,method):
-            selector.change(lambda: (None,'[]'), outputs=[prompt_image,prompt_options], api_name=False)
+        gr.on([dataset.change,camera.change,scene.change,frame.change,method.change],
+            lambda: (None,'[]'), outputs=[prompt_image,prompt_options], api_name=False,
+            queue=False, trigger_mode='always_last')
         method.change(lambda: '{}', outputs=planar_options, api_name=False)
         method.change(lambda m: gr.update(value=0 if m=='spgrasp' else .01), method, collision, api_name=False, preprocess=False)
         gr.on([method.change, action.change],
@@ -712,7 +720,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             [method,action], [planar_panel,prompt_panel], api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         action.change(lambda a: gr.update() if a=='infer' else gr.update(value='[]'), action, prompt_options, api_name=False, preprocess=False)
         method.change(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method", concurrency_id="method-preset", concurrency_limit=1, preprocess=False)
-        camera.change(checkpoint_for,[method,camera],checkpoint,api_name=False, preprocess=False)
+        camera.input(checkpoint_for,[method,camera],checkpoint,api_name=False, preprocess=False, queue=False)
         component_download.click(download_component_weights,[method,backbone,component_options],component_download_message,api_name='download_component_weights',concurrency_limit=1)
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
         for selector in (action, method):
@@ -723,7 +731,6 @@ For component experiments, expand **Compose modules**. Full configuration editin
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
         for selector in (method,action):
             selector.change(lambda m,a: gr.update(value=0,interactive=m in ('region_normalized_grasp','economicgrasp') and a=='train_check',visible=m in ('region_normalized_grasp','economicgrasp') and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False, preprocess=False)
-        preset_button.click(lambda: 0,outputs=proposal_warmup_steps,api_name=False)
         inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head,memory,prompt_options,planar_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
         check.click(preflight, config_text, message, api_name="validate_config")
@@ -731,11 +738,12 @@ For component experiments, expand **Compose modules**. Full configuration editin
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')
         sweep_preview_button.click(preview_sweep,[config_text,sweep_grid],sweep_preview,api_name='preview_sweep')
         sweep_run_button.click(run_sweep,[config_text,sweep_grid],[job_id,message],api_name='run_sweep')
-        preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text,collision],api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1).then(
-            lambda m: ('upstream',gr.update(value='upstream',visible=any(s.name=='crop' for s in slots(m))),'strict','{}','{}','{}','upstream','{}','upstream','{}'), inputs=method,
-            outputs=[backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options],api_name=False)
-        preset_button.click(lambda:'{}',outputs=trainer_options,api_name=False)
-        preset_button.click(lambda:('upstream','upstream','[]','{}'),outputs=[head,memory,prompt_options,planar_options],api_name=False)
+        preset_button.click(apply_preset,[method,dataset],
+            [action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text,collision,
+             backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,
+             trainer_options,head,memory,prompt_options,planar_options,proposal_warmup_steps,training_steps,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,prompt_image,preset_status],
+            api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1)
+        method.input(lambda: '', outputs=preset_status, api_name=False, queue=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False, preprocess=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")
