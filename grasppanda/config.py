@@ -33,7 +33,7 @@ def capabilities(method):
         actions += ["train_check"]
     if method in TRAIN:
         actions += ["train_smoke", "train"]
-    if method == 'hggd': actions += ['train']
+    if method in ('hggd','economicgrasp'): actions += ['train']
     from .recipes import RECIPES
     if method in RECIPES: actions += ["pipeline_smoke"]
     return actions
@@ -124,6 +124,8 @@ class Experiment:
             raise ValueError(f"{self.method}: no implemented {self.action} adapter; consult method card")
         if self.method == 'finegrasp' and self.eval_batch_limit:
             raise ValueError('FineGrasp training has no validation loop; evaluate complete split predictions separately')
+        if self.method == 'economicgrasp' and self.eval_batch_limit:
+            raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
         if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"):

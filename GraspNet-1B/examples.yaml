@@ -35,6 +35,28 @@ train-baseline:
     eval_batch_limit: 0
     data_workers: 4
     timeout_minutes: 43200
+train-economicgrasp:
+  description: Train EconomicGrasp with native epoch scheduling and resumable component experiments
+  config:
+    dataset: graspnet1b
+    method: economicgrasp
+    action: train
+    dataset_root: /data/GraspNet-1B
+    camera: kinect
+    split: train
+    scene: 0
+    frame: 0
+    workspace: official_gt_workspace
+    num_points: 20000
+    voxel_size: 0.005
+    batch_size: 4
+    epochs: 10
+    learning_rate: 0.001
+    train_checkpoint_mode: initialize
+    train_batch_limit: 0
+    eval_batch_limit: 0
+    data_workers: 2
+    timeout_minutes: 43200
 train-hggd:
   description: Train RGB-D anchor/local stages with gradient accumulation and checkpoint resume
   config:

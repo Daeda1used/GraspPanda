@@ -73,11 +73,14 @@ def preflight(config):
             raise ValueError('GtG2 initialization or resume checkpoint is missing')
     if config.action in ("train", "train_smoke") and config.method != 'gtg2':
         labels = [] if config.method == 'hggd' else (["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"])
-        if config.method not in ("finegrasp", 'hggd'):
+        if config.method == 'economicgrasp':labels=['economic_grasp_label_300views','graspness']
+        if config.method not in ("finegrasp", 'hggd', 'economicgrasp'):
             labels += ["graspness", "grasp_label_simplified"] if config.method == "graspness" else ["tolerance"]
         for label in labels:
             if not (Path(config.dataset_root) / label).is_dir():
                 raise ValueError(f"Required preprocessing directory missing: {label}")
+        if config.method == 'economicgrasp' and config.checkpoint and not Path(config.checkpoint).is_file():
+            raise ValueError('EconomicGrasp initialization or resume checkpoint is missing')
         if config.method == 'hggd':
             labelroot=Path(config.label_root or Path(config.dataset_root)/'HGGD_Preprocessed'/f'6dto2drefine_{config.camera}')
             scene,frame=(config.scene,config.frame) if config.train_batch_limit else (0,0)

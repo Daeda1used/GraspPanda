@@ -165,6 +165,6 @@ def native_driver(source, path, config, adapt_loader=False):
     if config.optimizer and counts['optimizer'] != 1: raise ValueError('Native optimizer assignment was not found exactly once')
     if config.scheduler and counts['scheduler'] != int(config.method == 'scale_balanced_grasp'):
         raise ValueError('Native scheduler assignments differ from the registered driver')
-    if adapt_loader and counts['loader'] != (1 if config.method == 'graspness' else 2):
+    if adapt_loader and counts['loader'] != (1 if config.method in ('graspness','economicgrasp') else 2):
         raise ValueError('Native data loader assignments differ from the registered driver')
     return compile(ast.fix_missing_locations(tree), str(path), 'exec')

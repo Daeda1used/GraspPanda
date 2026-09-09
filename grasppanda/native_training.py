@@ -66,18 +66,32 @@ def run(config,out):
     from .optimization import build_optimizer,UpdateSchedule,NativeScheduleDisabled,native_driver
     implementation_hash=digest(__file__)
     repo=prepare(config.method)
+    economic=config.method=='economicgrasp'
     sparse=config.method=='graspness'
-    dataset_names=['dataset.graspnet_dataset'] if sparse else ['graspnet_dataset']
+    args=[str(repo/'train.py'),'--dataset_root',config.dataset_root,'--camera',config.camera,
+          '--log_dir',str(out/'training'),'--num_point',str(config.num_points),
+          '--batch_size',str(config.batch_size),'--max_epoch',str(config.epochs),'--learning_rate',str(config.learning_rate)]
+    if sparse:args+=['--voxel_size',str(config.voxel_size),'--model_name','grasppanda']
+    if economic:args+=['--voxel_size',str(config.voxel_size),'--model','economicgrasp']
+    if config.checkpoint and config.train_checkpoint_mode=='resume':
+        args+=['--checkpoint_path',config.checkpoint]
+        if sparse or economic:args+=['--resume']
+    # EconomicGrasp parses arguments when its dataset/model modules import.
+    sys.argv=args
+    dataset_names=['dataset.graspnet_dataset'] if sparse or economic else ['graspnet_dataset']
     if config.method=='scale_balanced_grasp':dataset_names+=['graspnet_wonoise_dataset']
     keys=list(range(1,89)) if sparse else [i for i in range(1,89) if i!=19]
     labels=LabelCache(config.dataset_root,'simplified' if sparse else 'full',keys)
     def load_labels(root):return labels if sparse else (keys,labels)
     for name in dataset_names:
         module=importlib.import_module(name)
-        module.load_grasp_labels=load_labels
+        if not economic:module.load_grasp_labels=load_labels
         native=getattr(module,'GraspNetDataset',None)
         if native is None:continue
         def lazy_dataset(*args,_native=native,**kwargs):
+            if economic:
+                # Native EconomicGrasp stores paths and opens scene labels per item.
+                return configure_dataset(_native(*args,**kwargs),config)
             enabled=kwargs.pop('load_label',True)
             dataset=_native(*args,load_label=False,**kwargs)
             dataset.load_label=enabled
@@ -86,8 +100,8 @@ def run(config,out):
             return dataset
         module.GraspNetDataset=lazy_dataset
 
-    model_module=importlib.import_module('models.graspnet' if sparse else 'graspnet')
-    class_name='GraspNet_MSCQ' if config.method=='scale_balanced_grasp' else 'GraspNet'
+    model_module=importlib.import_module('models.economicgrasp' if economic else ('models.graspnet' if sparse else 'graspnet'))
+    class_name='economicgrasp' if economic else ('GraspNet_MSCQ' if config.method=='scale_balanced_grasp' else 'GraspNet')
     native_class=getattr(model_module,class_name)
     changed=[];transfer=None
     def composed(*args,**kwargs):
@@ -112,21 +126,14 @@ def run(config,out):
                 if previous.get(key,{} if key in ('loss','augmentation','optimizer','scheduler') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
             if config.method=='scale_balanced_grasp' and previous.get('epochs')!=config.epochs:
                 raise ValueError('Scale-Balanced-Grasp OneCycle resume requires its original final-epoch horizon')
+            if economic and not config.scheduler and previous.get('epochs')!=config.epochs:
+                raise ValueError('EconomicGrasp native cosine resume requires its original final-epoch horizon')
             if config.scheduler and previous.get('epochs')!=config.epochs:
                 raise ValueError('Configured scheduling requires the original final-epoch horizon when resuming')
         elif config.optimizer or config.scheduler or config.loss or config.augmentation:
             raise ValueError('Resume with training overrides requires saved configuration metadata')
         if config.scheduler and 'scheduler_state_dict' not in resume:
             raise ValueError('Resume checkpoint is missing the configured scheduler state')
-
-    args=[str(repo/'train.py'),'--dataset_root',config.dataset_root,'--camera',config.camera,
-          '--log_dir',str(out/'training'),'--num_point',str(config.num_points),
-          '--batch_size',str(config.batch_size),'--max_epoch',str(config.epochs),'--learning_rate',str(config.learning_rate)]
-    if sparse:args+=['--voxel_size',str(config.voxel_size),'--model_name','grasppanda']
-    if resume is not None:
-        args+=['--checkpoint_path',config.checkpoint]
-        if sparse:args+=['--resume']
-    sys.argv=args
 
     # Use the native sampler and collator. Explicit batch limits select a
     # prefix of real frames, while preserving augmentation and epoch logic.
@@ -179,11 +186,12 @@ def run(config,out):
         return native_epoch()
     namespace['train_one_epoch']=seeded_epoch
     losses=[];updates=[];evaluations=[]
-    original_loss=namespace['get_loss'];original_step=optimizer.step
+    loss_name='get_loss_economicgrasp' if economic else 'get_loss'
+    original_loss=namespace[loss_name];original_step=optimizer.step
     def measured_loss(*args,**kwargs):
         loss,end=original_loss(*args,**kwargs)
         loss,end=weighted_loss(loss,end,config)
-        parts={k:float(v.detach()) for k,v in end.items() if 'loss' in k and isinstance(v,torch.Tensor) and v.numel()==1}
+        parts={k:float(v.detach()) for k,v in end.items() if 'loss' in k.lower() and isinstance(v,torch.Tensor) and v.numel()==1}
         if not torch.isfinite(loss) or not all(np.isfinite(v) for v in parts.values()):raise ValueError('Non-finite native epoch loss')
         undefined=[k for k,v in end.items() if isinstance(v,torch.Tensor) and v.numel()==1 and ('acc' in k or 'prec' in k or 'recall' in k) and not torch.isfinite(v)]
         record=dict(epoch=namespace['EPOCH_CNT'],total=float(loss.detach()),components=parts,undefined_metrics=undefined)
@@ -208,7 +216,7 @@ def run(config,out):
         updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,learning_rate=used_lr))
         if config.scheduler:scheduler.step()
         return result
-    namespace['get_loss']=measured_loss;optimizer.step=measured_step
+    namespace[loss_name]=measured_loss;optimizer.step=measured_step
     # The author checkpoints omit composition metadata. Add it to each native
     # epoch checkpoint so resumed runs retain an auditable contract.
     original_save=torch.save
@@ -228,10 +236,10 @@ def run(config,out):
         for name in ('TRAIN_WRITER','TEST_WRITER','LOG_FOUT'):
             if name in namespace:namespace[name].close()
     torch.cuda.synchronize()
-    paths=sorted((out/'training').glob('*.tar'))
+    paths=list((out/'training/checkpoints').glob('epoch_*.tar'))
     if not updates or not paths:raise ValueError('Native trainer did not produce updates and a checkpoint')
     import shutil
-    shutil.copyfile(paths[-1],out/'checkpoint.pt')
+    shutil.copyfile(max(paths,key=lambda path:int(path.stem.removeprefix('epoch_'))),out/'checkpoint.pt')
     if transfer:(out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
     return dict(stage='native_epoch_training',method=config.method,modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,
         optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,

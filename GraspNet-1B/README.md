@@ -24,7 +24,7 @@ Examples are defined in one [template catalogue](examples.yaml). Generate only t
 | Workflow | Example names |
 |---|---|
 | Inference | `infer-graspness` or `--method METHOD` for any runnable preset |
-| Training | `train-baseline`, `train-hggd`, `train-finegrasp`, `train-gtg2` |
+| Training | `train-baseline`, `train-economicgrasp`, `train-hggd`, `train-finegrasp`, `train-gtg2` |
 | Losses and augmentation | `train-controls`, `compose-hggd` |
 | Point encoders and grouping | `compose-baseline`, `compose-ptv3`, `compose-octformer`, `compose-pcm`, `compose-pointmamba`, `compose-pointmeta`, `compose-pointvector`, `compose-reslfe` |
 | EconomicGrasp composition | `compose-economicgrasp`; [native stages, grouping and training controls](../docs/MODULES.md#economicgrasp-components) |

@@ -79,7 +79,7 @@ Basic frame inference does not require downloading all training targets. Additio
 | HGGD training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
 | RNG short training | HGGD preprocessed labels; native proposals and local targets are prepared in the experiment directory. The unreleased training schedule is not reproduced | [RNG](https://github.com/THU-VCLab/RegionNormalizedGrasp) |
 | FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
-| EconomicGrasp short training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
+| EconomicGrasp training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
 | DOGraspNet short training | Simplified grasp/collision labels and `graspness_label/`; the pinned equivalent `graspness/` targets are accepted | [DOGraspNet](https://github.com/huamo555/DOGraspNet) |
 | Generalizing-Grasp inference / short training | Matched `fusion_scenes/` points and segmentation; training also needs full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
 | ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |

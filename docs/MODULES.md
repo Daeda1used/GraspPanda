@@ -108,7 +108,7 @@ The `cylinder` and `reslfe_cylinder` choices replace the native within-cylinder 
 
 Default `native_tdunet` and `native_cylinder` retain native state names and shapes, so author weights can load with `strict`. Geometry, dropout, dilation and head count are configuration values rather than learned tensors: matching weight shapes alone does not establish matching behavior. Architecture changes use `reuse_unchanged`, which initializes each selected replacement slot and retains the rest of the checkpoint. Train the replacement, then use `strict` with the saved composition for inference.
 
-EconomicGrasp short training also supports [loss formulations and coefficients](#loss-formulations), [aligned point augmentation](#point-augmentation), Adam/AdamW/SGD/Lion and update-based schedules. Score remains a six-class objective; angle/depth retain their native invalid classes and validity masks. Width targets remain scaled by ten. Augmentation transforms object poses with observations, updates per-point labels through one sampling map and regenerates `coordinates_for_voxel`; native flips retain float32 observations. Full epoch training/resume is not exposed by this adapter.
+EconomicGrasp training also supports [loss formulations and coefficients](#loss-formulations), [aligned point augmentation](#point-augmentation), Adam/AdamW/SGD/Lion and update-based schedules. Score remains a six-class objective; angle/depth retain their native invalid classes and validity masks. Width targets remain scaled by ten. Augmentation transforms object poses with observations, updates per-point labels through one sampling map and regenerates `coordinates_for_voxel`; native flips retain float32 observations. Use `action: train` for native epoch training and checkpoint resume; see [EconomicGrasp epoch training](#economicgrasp-epoch-training).
 
 ## Grouped seed interaction
 
@@ -140,7 +140,7 @@ The implementation loads the pinned `GraspGNN` attention classes from [GCF-Graph
 
 The adapter preserves seed order and 256-channel output features. It processes scenes independently and, for Baseline's `[B,256,N,4]` output, processes each depth bin independently. Inputs and computation use float32. Attention memory grows quadratically with the number of seeds and linearly with batch, depth bins, heads and layers; changing the scene point count does not necessarily change the method's seed count.
 
-When retaining the original grouping, `reuse_unchanged` loads its existing weights and initializes only the added interaction layers. Train the composition before inference, then load its checkpoint with `strict` and the same module settings. If you also replace the grouping or encoder, those replacements follow their usual initialization policy. Baseline and Graspness support this composition in epoch training and resume; EconomicGrasp and the PointNet2 port use their registered short-training operations.
+When retaining the original grouping, `reuse_unchanged` loads its existing weights and initializes only the added interaction layers. Train the composition before inference, then load its checkpoint with `strict` and the same module settings. If you also replace the grouping or encoder, those replacements follow their usual initialization policy. Baseline, Graspness and EconomicGrasp support this composition in epoch training and resume; the PointNet2 port uses its registered short-training operation.
 
 This component uses each selected method's own data, supervision, seed selection and decoder. It does not reproduce the GCF fork's SAM/patch-feature preprocessing or its changed angle/depth decoding. GCF's README cites EconomicGrasp; a separate GCF publication and pretrained checkpoint have not been verified. The full-method entry remains in [Methods & papers](METHODS.md).
 
@@ -573,7 +573,7 @@ For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkp
 
 ## Train a composed model across epochs
 
-Baseline, Graspness, FineGrasp and HGGD accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
+Baseline, Graspness, EconomicGrasp, FineGrasp and HGGD accept their registered module choices in `action: train`. SBG also exposes its native epoch trainer. Native dataset loops remain in use; omitted controls retain the author's augmentation, objective, optimizer and schedule. Object/collision labels load through bounded caches instead of eagerly occupying memory for every scene.
 
 Start an epoch run by changing the example above. Use a small batch limit for an initial run; set both limits to `0` for the complete native ranges:
 
@@ -592,6 +592,18 @@ data_workers: 0
 A nonzero training batch limit selects consecutive frames from `scene`/`frame` before native shuffling and augmentation. The native validation loop uses a prefix of test_seen for Baseline/SBG; Graspness has no validation loop in its released trainer. These validation losses are diagnostics, not benchmark AP or a recommended model-selection protocol. Set both limits to **0** for the complete native training/validation ranges and increase `timeout_minutes` for a long run. Epoch-boundary seeds are controlled by the configured seed plus epoch.
 
 Each run saves native epoch checkpoints under `training/` and the last checkpoint as `checkpoint.pt`. The UI exposes initialization/resume, batch limits, worker count, losses and checkpoint inference.
+
+## EconomicGrasp epoch training
+
+Generate `./panda init --example train-economicgrasp`, set the dataset path, then run the generated file. The template starts without pretrained weights and uses the author's ten-epoch Kinect recipe with Adam, batch size 4, 20,000 points and learning rate 0.001. Prepare `economic_grasp_label_300views/` and `graspness/` for training scenes 0000–0099 using the [author instructions](https://github.com/iSEE-Laboratory/EconomicGrasp#training). These scene labels are opened by the native dataset reader as needed; full grasp/collision archives are not consumed by this training loop.
+
+The native driver retains its sampler, collator, selected-view supervision, optimizer updates and epoch checkpoints. Empty `augmentation`, `loss`, `optimizer` and `scheduler` mappings preserve native settings, including YZ reflection and epoch-based cosine learning rate. Registered [components](#economicgrasp-components), objectives, point augmentation and optimization controls can be combined in the same epoch run. A configured scheduler uses optimizer updates instead of epochs.
+
+For a bounded first run, set `train_batch_limit: 1`; the selected range begins at `scene`/`frame` and contains up to `batch_size` frames per batch. Set it to `0` for all 25,600 training views. There is no native validation loop: keep `eval_batch_limit: 0` and evaluate complete split predictions separately.
+
+To continue an interrupted run, select its last completed `training/checkpoints/epoch_XXXX.tar`, set `train_checkpoint_mode: resume` and `checkpoint_policy: strict`, and retain its module, data, loss, augmentation and optimizer settings. Keep `epochs` at the **original final epoch**, greater than the saved epoch: the native cosine schedule depends on that horizon. A configured schedule also requires its saved state and original update horizon. Author checkpoints without toolbox metadata can restore native model/optimizer/epoch state with no training overrides; supply the original horizon yourself because those files do not record it. Use `initialize` to change the experiment or fine-tune a completed checkpoint.
+
+Model and optimizer state are checked exactly before the resumed update. Subsequent CUDA reductions can vary numerically; epoch-boundary seeds do not guarantee bitwise-identical trajectories. The last completed epoch is exported as `checkpoint.pt` for strict inference with the same module settings. Short or bounded runs establish operation, not full-split AP or convergence.
 
 ## RNG proposal initialization
 

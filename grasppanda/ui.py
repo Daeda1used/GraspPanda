@@ -444,7 +444,7 @@ def create_app(manager=None):
                             train_batch_limit=gr.Number(0,precision=0,minimum=0,label='Training batches per epoch (0 = full split)')
                             eval_batch_limit=gr.Number(0,precision=0,minimum=0,label='Validation batches per epoch (0 = native range)')
                             data_workers=gr.Number(0,precision=0,minimum=0,maximum=32,label='Data loader workers')
-                        gr.Markdown('Frame trainers use First scene / First frame when batch limits are set. GtG2 limits graph batches from trainer.scenes and validates scene-disjoint folds. Baseline and SBG validate on test_seen; HGGD uses scene 100; Graspness and FineGrasp have no validation loop. Set a suitable run time limit for full training.')
+                        gr.Markdown('Frame trainers use First scene / First frame when batch limits are set. GtG2 limits graph batches from trainer.scenes and validates scene-disjoint folds. Baseline and SBG validate on test_seen; HGGD uses scene 100; Graspness, FineGrasp and EconomicGrasp have no validation loop. Set a suitable run time limit for full training.')
                         predictions = gr.Textbox(label="Complete predictions directory for evaluation")
             run_form=gr.Button('Run current form',variant='primary')
             with gr.Accordion("Configuration editor", open=False):
@@ -544,7 +544,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         for selector in (method, action):
             selector.change(lambda m,a:gr.update(value='{}',interactive=m in ('hggd','gtg2') and a=='train'),[method,action],trainer_options,api_name=False)
             selector.change(lambda m,a:gr.update(visible=m in ('hggd','gtg2') and a=='train'),[method,action],trainer_panel,api_name=False)
-            selector.change(lambda m,a: gr.update(value=0,interactive=m!='finegrasp' and a=='train'),[method,action],eval_batch_limit,api_name=False)
+            selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('finegrasp','economicgrasp') and a=='train'),[method,action],eval_batch_limit,api_name=False)
         action.change(lambda a:gr.update(visible=a=='train_check'),action,training_steps,api_name=False)
         action.change(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults')
         action.change(lambda a: gr.update(value='initialize',interactive=a=='train'),action,train_checkpoint_mode,api_name=False)
