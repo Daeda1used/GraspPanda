@@ -645,8 +645,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
             contract='\n\n'.join(f"**{s.name}**: {s.input_contract} → {s.output_contract}" for s in slots(method)) if enabled else 'This method currently retains its native components. No interchangeable slots are registered.'
             choices={s.name:list(s.choices) for s in slots(method)}
             return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp','spgrasp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices,visible='crop' in choices),contract,gr.update(choices=choices.get('head',['upstream']),value='upstream',visible='head' in choices,interactive='head' in choices),gr.update(choices=choices.get('memory',['upstream']),value='upstream',visible='memory' in choices,interactive='memory' in choices)
-        method.change(select_components,method,[backbone,crop,component_contract,head,memory],api_name='select_components', preprocess=False).then(
-            lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
+        method.input(select_components,method,[backbone,crop,component_contract,head,memory],api_name='select_components', preprocess=False, queue=False).then(
+            lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False, queue=False)
         method.change(lambda m: gr.update(choices=['strict'] if m=='spgrasp' else ['strict','reuse_unchanged'], value='strict'),
             method, checkpoint_policy, api_name=False, preprocess=False)
         method.change(lambda m: 'Configure the Hiera encoder and temporal memory, then train from the SAM2 initializer. A trained SPGrasp checkpoint loads strictly and carries its architecture and width units.' if m=='spgrasp' else 'Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.',
@@ -707,7 +707,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
             from .weights import primary
             return primary(m,c) if a in ('train_check','train_smoke','train') and not path else path
         action.change(training_checkpoint,[action,method,camera,checkpoint],checkpoint,api_name=False, preprocess=False)
-        group.change(filter_methods, group, method, api_name="filter_methods", preprocess=False)
+        group.input(filter_methods, group, method, api_name="filter_methods", preprocess=False, queue=False).then(
+            select_method, [method,camera], [card,action,run,checkpoint,camera,workspace,points], api_name=False, preprocess=False, queue=False).then(
+            select_components, method, [backbone,crop,component_contract,head,memory], api_name=False, preprocess=False, queue=False)
         load_prompt_frame.click(prompt_frame, [dataset,camera,scene,frame], [prompt_image,prompt_options], api_name='load_prompt_frame')
         prompt_image.select(add_prompt_point, [prompt_options,prompt_object,prompt_label,prompt_image], [prompt_options,prompt_image], api_name=False)
         gr.on([dataset.change,camera.change,scene.change,frame.change,method.change],
@@ -719,7 +721,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
             lambda m,a: (gr.update(visible=m=='spgrasp'),gr.update(visible=m=='spgrasp' and a=='infer')),
             [method,action], [planar_panel,prompt_panel], api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         action.change(lambda a: gr.update() if a=='infer' else gr.update(value='[]'), action, prompt_options, api_name=False, preprocess=False)
-        method.change(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method", concurrency_id="method-preset", concurrency_limit=1, preprocess=False)
+        # Only a user's selection resets method defaults. Programmatic change
+        # notifications can arrive again after a preset or form edit.
+        method.input(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method", preprocess=False, queue=False)
         camera.input(checkpoint_for,[method,camera],checkpoint,api_name=False, preprocess=False, queue=False)
         component_download.click(download_component_weights,[method,backbone,component_options],component_download_message,api_name='download_component_weights',concurrency_limit=1)
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
@@ -743,7 +747,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
              backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,
              trainer_options,head,memory,prompt_options,planar_options,proposal_warmup_steps,training_steps,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,prompt_image,preset_status],
             api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1)
-        method.input(lambda: '', outputs=preset_status, api_name=False, queue=False)
+        gr.on([method.input,group.input], lambda: '', outputs=preset_status, api_name=False, queue=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False, preprocess=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")
