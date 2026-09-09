@@ -28,7 +28,10 @@ def slots(method):
             '512-channel sparse features in the input sparse row order, before quantize2original.'),
         ComponentSlot('crop', 'cy_group', ('upstream', 'native_cylinder', 'cylinder', 'reslfe_cylinder'),
             'Camera-frame seed XYZ in metres, native cylinder grouping and approach rotations.',
-            '256-channel seed features for the native interactive grasp head.'),)
+            '256-channel seed features for the native interactive grasp head.'),
+        ComponentSlot('head', 'grasp_head', ('upstream', 'native_interactive'),
+            '256-channel grouped seed features; angle, depth, width and score interact independently per seed.',
+            'Native angle/depth classes including invalid bins, six score classes and one scaled width.'))
     if method == 'gtg2': return (
         ComponentSlot('backbone', 'block', ('upstream', 'gtg_sage', 'gtg_gatv2'),
             'Candidate-local XYZ and inside/outside flags with undirected k-nearest graph edges.',
@@ -91,6 +94,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method == 'economicgrasp' and choice == 'native_cylinder':
             from .modules.economic import cylinder
             replacement = cylinder(native, **options)
+        elif method == 'economicgrasp' and choice == 'native_interactive':
+            from .modules.economic import head
+            replacement = head(native, **options)
         elif method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
             from .modules.dino import DinoPyramid
             replacement=DinoPyramid(choice,**options)

@@ -43,11 +43,11 @@ def method_card(method):
             f"[Implementation]({item['repository']})\n\n{recipe or note}")
 
 
-def component_parameters(method, backbone, crop):
+def component_parameters(method, backbone, crop, head='upstream'):
     from .module_options import schema
     rows = []
     available = {slot.name: slot for slot in slots(method)}
-    for slot, choice in (('backbone', backbone), ('crop', crop)):
+    for slot, choice in (('backbone', backbone), ('crop', crop), ('head', head)):
         if slot not in available or choice not in available[slot].choices:
             continue
         for key, rule in schema(method, slot, choice).items():
@@ -64,13 +64,13 @@ def component_parameters(method, backbone, crop):
             elif rule[0] == 'per_stage':
                 scalar = rule[2]
                 values = 'true or false' if scalar[0] == 'bool' else f'number: {scalar[1]} to {scalar[2]}'
-                description = values + '; one value for all stages, or a list with one value per stage'
+                description = values + ('; one value for all attention layers, or one per layer' if slot == 'head' else '; one value for all stages, or a list with one value per stage')
             elif rule[0] == 'float_list':
                 description = f'{rule[1]}–{rule[2]} numbers, each {rule[3]} to {rule[4]}'
             elif rule[0] == 'per_block':
                 scalar = rule[2]
                 values = 'true or false' if scalar[0] == 'bool' else f'integer: {scalar[1]} to {scalar[2]}'
-                description = values + '; one value for all scan blocks, or a list with one value per active block'
+                description = values + ('; one value for all attention layers, or one per layer' if slot == 'head' else '; one value for all scan blocks, or a list with one value per active block')
             elif rule[0] == 'choice_list':
                 description = f'{rule[1]}–{rule[2]} orders: ' + ', '.join(rule[3])
             elif rule[0] == 'bool':
@@ -202,7 +202,7 @@ def create_app(manager=None):
                 'gpu':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
                 'scene_0100_depth':cameras, 'next_step':'Select method → Load preset → Download weights → Run current form.'}
 
-    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0, component_options='{}', loss_options='{}', augmentation_options='{}', optimizer_kind='upstream', optimizer_options='{}', scheduler_kind='upstream', scheduler_options='{}', proposal_warmup_steps=0, trainer_options='{}', timeout_minutes=60):
+    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0, component_options='{}', loss_options='{}', augmentation_options='{}', optimizer_kind='upstream', optimizer_options='{}', scheduler_kind='upstream', scheduler_options='{}', proposal_warmup_steps=0, trainer_options='{}', timeout_minutes=60, head='upstream'):
         def mapping(text, label):
             try:
                 value=json.loads(text or '{}')
@@ -222,13 +222,13 @@ def create_app(manager=None):
         optimizer={'type':optimizer_kind,**optimizer} if optimizer_kind!='upstream' else {}
         scheduler={'type':scheduler_kind,**scheduler} if scheduler_kind!='upstream' else {}
         if action == 'pipeline_smoke':
-            if parameters or loss or augmentation or optimizer or scheduler or trainer or proposal_warmup_steps or backbone!='upstream' or crop!='upstream':
+            if parameters or loss or augmentation or optimizer or scheduler or trainer or proposal_warmup_steps or backbone!='upstream' or crop!='upstream' or head!='upstream':
                 raise gr.Error('The native recipe uses fixed components and settings. Load its preset to reset overrides.')
             from dataclasses import replace
             config=replace(preset(method,(dataset or '').strip()),gpu=int(gpu),timeout_minutes=int(timeout_minutes))
             if method in CHECKPOINT_RECIPES:config=replace(config,checkpoint=(checkpoint or '').strip())
             return json.dumps(config.to_dict(),indent=2)
-        selected={s.name:{"backbone":backbone,"crop":crop}[s.name] for s in slots(method)}
+        selected={s.name:{"backbone":backbone,"crop":crop,"head":head}[s.name] for s in slots(method)}
         selection={name:choice for name,choice in selected.items() if choice != 'upstream'}
         for name,values in parameters.items():
             if name not in selected:raise gr.Error(f'This method has no configurable {name} slot')
@@ -399,6 +399,7 @@ def create_app(manager=None):
                         initial_components={slot.name:list(slot.choices) for slot in slots('graspnet_baseline')}
                         backbone=gr.Dropdown(initial_components['backbone'],value='upstream',label='Point encoder')
                         crop=gr.Dropdown(initial_components['crop'],value='upstream',label='Local cylindrical grouping')
+                        head=gr.Dropdown(['upstream'],value='upstream',label='Grasp prediction head',visible=False)
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
@@ -517,8 +518,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
             enabled=bool(slots(method))
             contract='\n\n'.join(f"**{s.name}**: {s.input_contract} → {s.output_contract}" for s in slots(method)) if enabled else 'This method currently retains its native components. No interchangeable slots are registered.'
             choices={s.name:list(s.choices) for s in slots(method)}
-            return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract
-        method.change(select_components,method,[backbone,crop,component_contract],api_name='select_components').then(
+            return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract,gr.update(choices=choices.get('head',['upstream']),value='upstream',visible='head' in choices,interactive='head' in choices)
+        method.change(select_components,method,[backbone,crop,component_contract,head],api_name='select_components').then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters')
@@ -528,8 +529,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
         for selector in (method, action):
             selector.change(loss_controls,[method,action],[classification_loss,regression_loss,apply_loss],api_name=False)
-        for selector in (method, backbone, crop):
-            selector.change(component_parameters,[method,backbone,crop],parameter_help,api_name=False)
+        for selector in (method, backbone, crop, head):
+            selector.change(component_parameters,[method,backbone,crop,head],parameter_help,api_name=False)
         def optimization_choices(method, action, backbone):
             from .optimization import METHODS,MUON_METHODS
             enabled=method in METHODS and action in ('train','train_check')
@@ -566,7 +567,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         for selector in (method,action):
             selector.change(lambda m,a: gr.update(value=0,interactive=m=='region_normalized_grasp' and a=='train_check',visible=m=='region_normalized_grasp' and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False)
         preset_button.click(lambda: 0,outputs=proposal_warmup_steps,api_name=False)
-        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout]
+        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head]
         generate.click(compose, inputs, config_text, api_name="compose_config")
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
@@ -577,6 +578,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             lambda: ('upstream','upstream','strict','{}','{}','{}','upstream','{}','upstream','{}'),
             outputs=[backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options],api_name=False)
         preset_button.click(lambda:'{}',outputs=trainer_options,api_name=False)
+        preset_button.click(lambda:'upstream',outputs=head,api_name=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")

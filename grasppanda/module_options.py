@@ -28,6 +28,13 @@ def schema(method, slot, choice):
 
 def _schema(method, slot, choice):
     if method == 'economicgrasp':
+        if slot == 'head' and choice == 'native_interactive':
+            return {'feature_channels': ('int', 16, 512), 'branch_depths': ('int_list', 4, 1, 4),
+                    'activation': ('choice', ('relu', 'gelu', 'silu')),
+                    'interaction': ('choice', ('attention', 'none')),
+                    'attention_layers': ('int', 1, 8),
+                    'attention_heads': ('per_block', 8, ('int', 1, 64)),
+                    'attention_dropout': ('per_stage', 8, ('float', 0, .8))}
         if slot == 'backbone' and choice == 'native_tdunet':
             return {'channels': ('int_list', 8, 8, 512), 'blocks': ('int_list', 8, 1, 8),
                     'dilations': ('int_list', 8, 1, 8), 'stem_channels': ('int', 8, 128),
@@ -193,6 +200,19 @@ def validate_options(method, slot, choice, options):
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
+    if method == 'economicgrasp' and slot == 'head' and choice == 'native_interactive':
+        if 'activation' in options and max(options.get('branch_depths', [1]*4)) == 1:
+            raise ValueError('Head activation applies only to branches with depth greater than one')
+        if options.get('interaction', 'attention') == 'none' and any(k.startswith('attention_') for k in options):
+            raise ValueError('Attention parameters require interaction: attention')
+        count = options.get('attention_layers', 1)
+        for key in ('attention_heads', 'attention_dropout'):
+            value = options.get(key, 1 if key == 'attention_heads' else .05)
+            values = value if isinstance(value, list) else [value]*count
+            if len(values) != count:
+                raise ValueError(f'{key} needs one value per attention layer, or a scalar for all layers')
+            if key == 'attention_heads' and any(options.get('feature_channels', 64) % n for n in values):
+                raise ValueError('Each head attention count must divide feature_channels')
     if method == 'economicgrasp' and choice == 'native_cylinder':
         if 259 % options.get('attention_heads', 1):
             raise ValueError('EconomicGrasp cylinder attention uses 256 features plus XYZ; heads must divide 259 (1, 7 or 37)')

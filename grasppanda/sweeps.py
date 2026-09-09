@@ -48,7 +48,7 @@ class Sweep:
                 node = data
                 for key in keys[:-1]:
                     # Component names can use the compact string notation.
-                    if key in ('backbone', 'crop') and isinstance(node.get(key), str):
+                    if key in ('backbone', 'crop', 'head') and isinstance(node.get(key), str):
                         node[key] = {'type': node[key]}
                     node = node.setdefault(key, {})
                     if not isinstance(node, dict):

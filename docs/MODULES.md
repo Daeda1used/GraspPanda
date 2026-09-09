@@ -23,6 +23,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
 | EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
+| EconomicGrasp | `head` | `upstream`, `native_interactive` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
@@ -109,6 +110,26 @@ The `cylinder` and `reslfe_cylinder` choices replace the native within-cylinder 
 Default `native_tdunet` and `native_cylinder` retain native state names and shapes, so author weights can load with `strict`. Geometry, dropout, dilation and head count are configuration values rather than learned tensors: matching weight shapes alone does not establish matching behavior. Architecture changes use `reuse_unchanged`, which initializes each selected replacement slot and retains the rest of the checkpoint. Train the replacement, then use `strict` with the saved composition for inference.
 
 EconomicGrasp training also supports [loss formulations and coefficients](#loss-formulations), [aligned point augmentation](#point-augmentation), Adam/AdamW/SGD/Lion and update-based schedules. Score remains a six-class objective; angle/depth retain their native invalid classes and validity masks. Width targets remain scaled by ten. Augmentation transforms object poses with observations, updates per-point labels through one sampling map and regenerates `coordinates_for_voxel`; native flips retain float32 observations. Use `action: train` for native epoch training and checkpoint resume; see [EconomicGrasp epoch training](#economicgrasp-epoch-training).
+
+## EconomicGrasp interactive head
+
+Select `head: native_interactive` to configure the [author's interactive grasp head](https://github.com/iSEE-Laboratory/EconomicGrasp/blob/main/models/modules_economicgrasp.py). It consumes `[B,256,N]` grouped features. For each seed independently, four task tokens interact in **angle, depth, width, score** order. This is separate from attention over cylinder neighbors or over spatial seeds.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `feature_channels` | `64` | Shared task-token width, 16–512; every attention head count must divide it. |
+| `branch_depths` | `[1,1,1,1]` | Convolution count per angle/depth/width/score feature branch, each 1–4. The first maps 256 input channels to the task width; subsequent layers retain it. |
+| `activation` | `relu` | `relu`, `gelu` or `silu` between additional branch layers. Only accepted when a branch has depth greater than one. |
+| `interaction` | `attention` | Native attention with residual addition and LayerNorm, or `none` for independent task branches without that normalization. |
+| `attention_layers` | `1` | Number of native attention blocks, 1–8. |
+| `attention_heads` | `1` | Head count, 1–64; scalar shared across blocks or a list of exactly one value per block. |
+| `attention_dropout` | `0.05` | Attention-probability dropout, 0–0.8; scalar or one value per block. |
+
+Generate `./panda init --example compose-economic-head`. Its three interaction layers use different head counts and dropout settings; branch depths are independently configured. In the browser, **Compose modules → Grasp prediction head** appears only for methods with a registered head slot. Choose `native_interactive` and enter fields under `head` in **Component parameters**. The parameter reference and configuration preview include the new slot. Sweep `modules.head.feature_channels`, layer settings, or complete head mappings; an incompatible combination is rejected before execution.
+
+The default configuration preserves native parameter names, initialization and forward behavior and can load author weights with `strict`. Width, branch depth, interaction removal or stacked blocks change parameter structure: initialize the replaced head using `reuse_unchanged`, train it and reuse the saved configuration for strict inference or epoch resume. Changing only head counts/dropout can retain compatible weight shapes while changing behavior; those settings are still part of the resume contract. Attention fields are rejected with `interaction: none`.
+
+Angle and depth outputs retain their additional invalid classes, score retains six classes, and width remains one regression output with the native target scaling. Loss masks, selected-view supervision, seed ordering and decoding remain unchanged. Width specialization uses the pinned native forward; additional branch layers and stacked attention are toolbox architecture options, not separate pretrained methods. This head is registered for EconomicGrasp only: other detectors need their own supervision and decoder contracts.
 
 ## Grouped seed interaction
 

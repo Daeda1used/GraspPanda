@@ -29,6 +29,7 @@ Examples are defined in one [template catalogue](examples.yaml). Generate only t
 | Point encoders and grouping | `compose-baseline`, `compose-ptv3`, `compose-octformer`, `compose-pcm`, `compose-pointmamba`, `compose-pointmeta`, `compose-pointvector`, `compose-reslfe` |
 | EconomicGrasp composition | `compose-economicgrasp`; [native stages, grouping and training controls](../docs/MODULES.md#economicgrasp-components) |
 | Grouped seed interaction | `compose-seed-interaction`; [parameters and method compatibility](../docs/MODULES.md#grouped-seed-interaction) |
+| Grasp prediction heads | `compose-economic-head`; [branch and attention settings](../docs/MODULES.md#economicgrasp-interactive-head) |
 | Image encoders | `compose-hggd`, `compose-dino`, `compose-vmamba` |
 | Parameter sweeps | `sweep-baseline`; use `./panda sweep FILE --preview` before execution |
 

@@ -898,3 +898,27 @@ compose-economicgrasp:
       mode: custom
       rotation_degrees: 10
       point_dropout: 0.1
+compose-economic-head:
+  description: Compose per-task feature branches and per-layer attention in the EconomicGrasp head
+  config:
+    method: economicgrasp
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/economicgrasp/checkpoint-kinect.tar
+    camera: kinect
+    split: train
+    scene: 0
+    num_points: 4096
+    workspace: official_gt_workspace
+    checkpoint_policy: reuse_unchanged
+    training_steps: 3
+    learning_rate: 0.0001
+    modules:
+      head:
+        type: native_interactive
+        feature_channels: 96
+        branch_depths: [1, 2, 3, 4]
+        activation: gelu
+        attention_layers: 3
+        attention_heads: [3, 6, 12]
+        attention_dropout: [0.0, 0.1, 0.2]
