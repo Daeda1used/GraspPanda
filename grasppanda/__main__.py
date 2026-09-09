@@ -8,6 +8,13 @@ import time
 from .config import ROOT, Experiment, capabilities, catalogue, default_dataset
 
 
+def read_configuration(path):
+    """Preserve JSON number types, including scientific notation."""
+    import yaml
+    text = path.read_text()
+    return json.loads(text) if path.suffix.lower() == '.json' else yaml.safe_load(text)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="panda", description="GraspPanda · Modular visual grasping toolbox")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -85,10 +92,9 @@ def main():
             command += [args.method,"--camera",args.camera]
         raise SystemExit(subprocess.call(command, cwd=ROOT))
     elif args.command == 'sweep':
-        import yaml
         from .sweeps import Sweep
         from .jobs import JobManager
-        sweep = Sweep.from_dict(yaml.safe_load(args.config.read_text()))
+        sweep = Sweep.from_dict(read_configuration(args.config))
         if args.preview:
             print(json.dumps(sweep.preview(), indent=2))
             return
@@ -110,14 +116,13 @@ def main():
         finally:
             manager.close()
     elif args.command in ("run","verify"):
-        import yaml
         from .jobs import JobManager
         if args.command=='verify':
             from .recipes import preset,RECIPES
             config=preset(args.method,args.dataset_root)
             print(RECIPES.get(args.method,('', 'Configurable single-frame adapter'))[1],flush=True)
             print(json.dumps(config.to_dict(),indent=2),flush=True)
-        else: config = Experiment.from_dict(yaml.safe_load(args.config.read_text()))
+        else: config = Experiment.from_dict(read_configuration(args.config))
         manager = JobManager(getattr(args,'runs_dir',None), allow_attach=True)
         try:
             job = manager.submit(config)

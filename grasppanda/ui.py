@@ -676,9 +676,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
                     gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto')),
                     gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
-        for selector in (method, action, backbone):
-            selector.change(operation_layout, [method, action, backbone],
-                [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel], api_name=False, preprocess=False)
+        gr.on([method.change, action.change, backbone.change], operation_layout, [method, action, backbone],
+            [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel],
+            api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         def reset_inactive_training(action):
             training = action in ('train', 'train_check', 'train_smoke')
             return ([gr.update() if training else gr.update(value='{}') for _ in range(2)] +
@@ -707,9 +707,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
             selector.change(lambda: (None,'[]'), outputs=[prompt_image,prompt_options], api_name=False)
         method.change(lambda: '{}', outputs=planar_options, api_name=False)
         method.change(lambda m: gr.update(value=0 if m=='spgrasp' else .01), method, collision, api_name=False, preprocess=False)
-        for selector in (method,action):
-            selector.change(lambda m,a: (gr.update(visible=m=='spgrasp'),gr.update(visible=m=='spgrasp' and a=='infer')),
-                [method,action], [planar_panel,prompt_panel], api_name=False, preprocess=False)
+        gr.on([method.change, action.change],
+            lambda m,a: (gr.update(visible=m=='spgrasp'),gr.update(visible=m=='spgrasp' and a=='infer')),
+            [method,action], [planar_panel,prompt_panel], api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         action.change(lambda a: gr.update() if a=='infer' else gr.update(value='[]'), action, prompt_options, api_name=False, preprocess=False)
         method.change(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method", concurrency_id="method-preset", concurrency_limit=1, preprocess=False)
         camera.change(checkpoint_for,[method,camera],checkpoint,api_name=False, preprocess=False)
