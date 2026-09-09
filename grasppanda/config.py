@@ -169,6 +169,8 @@ class Experiment:
             raise ValueError('Bounded native training requires a scene in the training split')
         from .pcm_options import validate_config as validate_pcm_config
         validate_pcm_config(self)
+        from .ptv2_options import validate_config as validate_ptv2_config
+        validate_ptv2_config(self)
         return self
 
     def preflight(self):

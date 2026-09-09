@@ -48,15 +48,17 @@ def run(config, out, steps=None):
     cache = Path(config.label_root) if config.label_root else out/'prepared/finegrasp'
     dataset = FineGraspDataset(config, cache, augment=not short or bool(config.augmentation))
     start = config.scene*256 + config.frame
+    from grasppanda.ptv2_options import selected as ptv2_selected
+    ptv2 = ptv2_selected(config)
     if short:
-        dataset = Subset(dataset, [start]*config.batch_size)
+        dataset = Subset(dataset, range(start, start+config.batch_size) if ptv2 else [start]*config.batch_size)
     elif config.train_batch_limit:
         stop = min(start + config.train_batch_limit*config.batch_size, len(dataset))
         dataset = Subset(dataset, range(start, stop))
     generator = torch.Generator()
     loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=not short,
         num_workers=config.data_workers, collate_fn=collate_batch_dict, generator=generator,
-        worker_init_fn=seed_worker, persistent_workers=False,
+        worker_init_fn=seed_worker, persistent_workers=False, drop_last=ptv2,
         **({'multiprocessing_context': 'spawn'} if config.data_workers else {}))
     if not len(loader): raise ValueError('FineGrasp training range is empty')
     total = steps if short else len(loader)*config.epochs

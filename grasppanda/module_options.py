@@ -53,6 +53,9 @@ def _schema(method, slot, choice):
               'fusion_activation': ('choice', ('relu', 'gelu')), 'fusion_pre_norm': ('bool',)}
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
+    if slot == 'backbone' and choice == 'point_transformer_v2':
+        from .ptv2_options import schema as ptv2_schema
+        return ptv2_schema()
     if slot == 'backbone' and choice == 'sonata_ptv3':
         fields = {}
         for prefix, count in (('enc', 5), ('dec', 4)):
@@ -234,6 +237,9 @@ def validate_options(method, slot, choice, options):
             raise ValueError('DeepLA cylinder width must be a multiple of 8')
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
+    if choice == 'point_transformer_v2':
+        from .ptv2_options import validate as validate_ptv2
+        validate_ptv2(options)
     if choice == 'octformer':
         from .octformer_options import validate as validate_octformer
         validate_octformer(options)

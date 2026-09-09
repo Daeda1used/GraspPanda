@@ -82,5 +82,11 @@
     "repository": "https://github.com/qzsrh/GCF-GraphGrasp",
     "path": "environments/sources/cv/gcf-graphgrasp",
     "commit": "8ab374104f1559005f292f163bcf3b17e8211575"
+  },
+  {
+    "id": "pointcept",
+    "repository": "https://github.com/Pointcept/Pointcept",
+    "path": "environments/sources/cv/pointcept",
+    "commit": "9f37497e4f3005c90bbbe7221b86439c29d60611"
   }
 ]

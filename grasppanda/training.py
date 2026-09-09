@@ -200,11 +200,12 @@ def point_family(config, out, steps=3):
     root=Path(config.dataset_root);scene=f'scene_{config.scene:04d}'
     directory=root/'scenes'/scene/config.camera
     from .pcm_options import selected as pcm_selected
-    pcm=pcm_selected(config)
-    frame_ids=list(range(config.frame, config.frame+config.batch_size)) if pcm else [config.frame]
+    from .ptv2_options import selected as ptv2_selected
+    multi_frame=pcm_selected(config) or ptv2_selected(config)
+    frame_ids=list(range(config.frame, config.frame+config.batch_size)) if multi_frame else [config.frame]
     metadata=[scipy.io.loadmat(directory/'meta'/f'{frame:04d}.mat') for frame in frame_ids]
     evidence={};labels={}
-    if pcm:
+    if multi_frame:
         for frame in frame_ids:
             for folder, suffix in (('depth','.png'),('label','.png'),('meta','.mat')):
                 evidence[f'{folder}_{frame:04d}']=digest(directory/folder/(f'{frame:04d}'+suffix))
@@ -275,7 +276,7 @@ def point_family(config, out, steps=3):
         if len(cloud['xyz'])!=len(segmentation):
             raise ValueError('Fused points and segmentation have different row counts. Rebuild matched fusion/segmentation files or select another intact training scene; the toolbox will not guess a correspondence.')
     data=dataset[config.scene if fusion else config.scene*256+config.frame]
-    samples=([data]+[dataset[config.scene*256+frame] for frame in frame_ids[1:]] if pcm
+    samples=([data]+[dataset[config.scene*256+frame] for frame in frame_ids[1:]] if multi_frame
              else [data]*(2 if fusion or graph else 1))
     if fusion:
         evidence['fusion_points']=digest(root/'fusion_scenes'/scene/config.camera/'points.npy')
@@ -363,7 +364,7 @@ def point_family(config, out, steps=3):
         seconds=time.monotonic()-start,label_sha256=evidence,checkpoint_sha256=digest(config.checkpoint) if config.checkpoint else None,
         camera=config.camera,scene=config.scene,frame=config.frame,num_points=config.num_points,learning_rate=config.learning_rate,ap=None,
         training_frames=frame_ids,batch_size=len(samples),
-        protocol=(f'Repeated batch of {len(samples)} consecutive labelled frames with native PCM global context. ' if pcm else ('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. ')))+('Configured augmentation. ' if config.augmentation else 'No augmentation. ')+'Loss and optimization settings are recorded in the result.',
+        protocol=(f'Repeated batch of {len(samples)} consecutive labelled frames with native batch-normalized point features. ' if multi_frame else ('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. ')))+('Configured augmentation. ' if config.augmentation else 'No augmentation. ')+'Loss and optimization settings are recorded in the result.',
         initialization='checkpoint' if config.checkpoint else 'random_constructor',
         limitation='The upstream GraspBalance driver references obsolete class names. This uses its actual GraspBalance detector and original loss with the native single-view loader; NcM augmentation and optional inference-time object balancing are not exercised.' if balance else None)
 

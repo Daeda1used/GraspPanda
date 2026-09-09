@@ -922,3 +922,76 @@ compose-economic-head:
         attention_layers: 3
         attention_heads: [3, 6, 12]
         attention_dropout: [0.0, 0.1, 0.2]
+
+compose-ptv2:
+  description: Compose original PTv2 grouped attention and metric grid pooling with
+    GraspNet supervision
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 4096
+    batch_size: 2
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: point_transformer_v2
+        patch_embed_channels: 12
+        patch_embed_groups: 3
+        enc_depths:
+        - 1
+        - 1
+        - 1
+        - 1
+        enc_channels:
+        - 24
+        - 48
+        - 96
+        - 192
+        enc_groups:
+        - 3
+        - 6
+        - 12
+        - 24
+        enc_neighbours:
+        - 8
+        - 8
+        - 8
+        - 8
+        dec_depths:
+        - 1
+        - 1
+        - 1
+        - 1
+        dec_channels:
+        - 12
+        - 24
+        - 48
+        - 96
+        dec_groups:
+        - 3
+        - 3
+        - 6
+        - 12
+        dec_neighbours:
+        - 8
+        - 8
+        - 8
+        - 8
+        grid_sizes:
+        - 0.01
+        - 0.025
+        - 0.06
+        - 0.12
+        pe_multiplier: true
+        enable_checkpoint: true
+        attn_drop_rate: 0.05
+        drop_path_rate: 0.1

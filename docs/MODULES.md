@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [Point Transformer](#point-transformer-encoder) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,14 +17,14 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -89,7 +89,7 @@ In the UI, select the component names under **Compose modules**, then enter para
 
 EconomicGrasp retains its native sparse quantization, graspable-point selection, economic labels, interactive grasp head and decoder. Its [author implementation](https://github.com/iSEE-Laboratory/EconomicGrasp) is described in the [ECCV 2024 paper](https://arxiv.org/pdf/2407.08366). Generate an editable composition with `./panda init --example compose-economicgrasp`.
 
-The backbone receives constant input features on the quantized camera lattice and returns 512-channel features in the same sparse row order. `pointnet` uses the toolbox's sparse PointNet-style encoder; `sonata_ptv3` uses the [PTv3 adapter and its stage settings](#point-transformer-encoder). Both reconstruct camera positions from lattice coordinates and voxel size and preserve the map used by `quantize2original`.
+The backbone receives constant input features on the quantized camera lattice and returns 512-channel features in the same sparse row order. `pointnet` uses the toolbox's sparse PointNet-style encoder; `sonata_ptv3` uses the [PTv3 adapter](#point-transformer-encoder), and `point_transformer_v2` uses [PTv2 grouped vector attention](#point-transformer-v2). Each reconstructs camera positions from lattice coordinates and voxel size and preserves the map used by `quantize2original`.
 
 `native_tdunet` configures the author's eight-stage encoder/decoder without changing its down/up-sampling strides or skip connections:
 
@@ -305,7 +305,7 @@ Training requires **`batch_size >= 2`** because native global-context BatchNorm 
 </details>
 
 <details>
-<summary>Cylinder aggregation and Point Transformer</summary>
+<summary>Cylinder aggregation and Point Transformers</summary>
 
 ## Residual local aggregation in cylinders
 
@@ -328,6 +328,28 @@ This is a local-block adaptation. It does not introduce DeepLA's scene segmentat
 | `normalization` | `batch`; also `group` or `none`, for the input/position embeddings, output projection and radius fusion. Native ResLFE layers retain BatchNorm. |
 
 The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [`compose-reslfe`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-reslfe`). Source terms are described in [Third-party notices](THIRD_PARTY.md).
+
+## Point Transformer V2
+
+`point_transformer_v2` loads the original **mode 1** implementation of [Point Transformer V2 (NeurIPS 2022 PDF)](https://arxiv.org/pdf/2210.05666) from [Pointcept's pinned source](https://github.com/Pointcept/Pointcept/blob/9f37497e4f3005c90bbbe7221b86439c29d60611/pointcept/models/point_transformer_v2/point_transformer_v2m1_origin.py). It retains grouped linear weight encoding, grouped vector attention, metric grid pooling and the native skip decoder. Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp expose it in their `backbone` slot. Run `./panda install` after upgrading to build its isolated pointops extension in the shared runtime.
+
+Start with `./panda init --example compose-ptv2`. The example uses a smaller hierarchy and metre-scale grasp neighborhoods; omitted settings follow the original constructor. Each encoder/decoder list describes stages **from fine to coarse**, although decoding executes in reverse. All stage lists must have the same length, from one to six stages.
+
+| Configure | Parameters and native defaults |
+|---|---|
+| Patch embedding | `patch_embed_depth: 1`, `patch_embed_channels: 48`, `patch_embed_groups: 6`, `patch_embed_neighbours: 8` |
+| Encoder stages | `enc_depths: [2,2,6,2]`, `enc_channels: [96,192,384,512]`, `enc_groups: [12,24,48,64]`, `enc_neighbours: [16,16,16,16]` |
+| Decoder stages | `dec_depths: [1,1,1,1]`, `dec_channels: [48,96,192,384]`, `dec_groups: [6,12,24,48]`, `dec_neighbours: [16,16,16,16]` |
+| Partition pooling | `grid_sizes: [0.06,0.12,0.24,0.48]` in metres; coordinates stay in the method's camera frame |
+| Attention | `attn_qkv_bias: true`, `pe_multiplier: false`, `pe_bias: true`, `attn_drop_rate: 0` |
+| Regularization and memory | `drop_path_rate: 0`, `enable_checkpoint: false` |
+| Upsampling | `unpool_backend: map` uses saved grid membership; `interp` uses native inverse-distance interpolation with missing neighbors masked |
+
+Each channel width must be divisible by its attention group count. Neighborhood sizes are at most 128, matching the native CUDA operator. `pe_multiplier: true` enables the paper's additional multiplicative position encoding; the original constructor defaults to false. The example enables it explicitly. Drop-path rates follow the native linear encoder/decoder schedules; attention dropout applies to every attention block. Training requires `batch_size >= 2`, since pooling can leave one coarse point per scene. Short runs use consecutive labelled frames; epoch loaders drop incomplete final batches. Inference supports a single frame.
+
+The dense adapter projects decoded features to 256 channels and samples original-input seed indices. Sparse adapters reconstruct camera XYZ from the lattice, combine it with the original sparse features, and restore the identical coordinate map and row order. The method retains its own seed prediction, crop, losses and decoder. FineGrasp retains its XYZ/normal features. Changing the backbone requires grasp training; these adapters do not supply pretrained grasp weights. Use `reuse_unchanged` for initialization and `strict` when reloading the resulting composed checkpoint.
+
+Compatibility changes fix the original grouped-linear divisibility assertion, keep native CUDA work on the selected device/current stream, mask absent interpolation neighbors to prevent cross-scene feature leakage, and avoid counting BatchNorm updates twice during checkpoint recomputation. Native attention's neighbor masking and pooling reductions are retained. These are feature adapters; they do not reproduce a semantic-segmentation experiment or establish grasp AP.
 
 ## Point Transformer encoder
 
@@ -612,7 +634,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp and PCM compositions use the configured `batch_size`; PCM requires at least 2 distinct consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp and PCM compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM and PTv2 compositions use the configured `batch_size`; PCM and PTv2 require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM and PTv2 compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 
@@ -695,7 +717,7 @@ FineGrasp exposes its own native training adapter, alongside the FineGrasp group
 
 | Part | Configuration and contract |
 |---|---|
-| Point encoder | `modules.backbone: upstream` keeps the released MinkUNet. `sonata_ptv3` exposes the same per-stage PTv3 settings documented above; its adapter concatenates lattice XYZ with the six native XYZ/normal features and restores the sparse row map before the 512-channel projection. |
+| Point encoder | `modules.backbone: upstream` keeps the released MinkUNet. `sonata_ptv3` and `point_transformer_v2` expose their documented stage settings; each adapter concatenates lattice XYZ with the six native XYZ/normal features and projects to 512 channels while preserving the sparse row map. |
 | Cylinder grouping | `modules.crop.type: native_cylinder` keeps the author's oriented queries and local interaction. `nsample` defaults to 16; `radius` to 0.07 metres; `radius_factors` to `[0.25, 0.5, 0.75, 1.0]`. |
 | Cross-radius attention | Optional `fusion_layers` (2), `fusion_heads` (8), `fusion_ffn_dim` (1024), `fusion_dropout` (0.1), `fusion_activation` (`relu`) and `fusion_pre_norm` (`false`) configure the native Transformer. Heads must divide 256. The learned attention reduction across groups stays native. These settings also apply to Graspness's `crop: finegrasp`. |
 | Classification objectives | `objectness`, `angle`, `depth` and `score`; retain the native target classes and validity masks. Unlike Graspness, FineGrasp's depth and quality scores are classification tasks. |

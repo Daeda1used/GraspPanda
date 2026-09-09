@@ -9,6 +9,46 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def build_pointcept(uv, source, env):
+    import re
+    build = ROOT/'environments/build/pointcept-ops'
+    shutil.copytree(source/'libs/pointops', build, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns('build', 'dist', '*.egg-info', '__pycache__'))
+    launches = guards = 0
+    for path in (build/'src').rglob('*.cu'):
+        text = path.read_text()
+        def current_stream(match):
+            fields = match.group(1).split(',')
+            if len(fields) != 3:
+                raise RuntimeError('Pointcept CUDA launch differs from the pinned source')
+            return '<<<' + match.group(1) + ', at::cuda::getCurrentCUDAStream()>>>'
+        text, count = re.subn(r'<<<([^>]+)>>>', current_stream, text)
+        launches += count
+        path.write_text('#include <ATen/cuda/CUDAContext.h>\n' + text)
+    for path in (build/'src').rglob('*.cpp'):
+        text, count = re.subn(r'(void\s+\w+\s*\([^)]*\bat::Tensor\s+(\w+)[^)]*\)\s*\{)',
+            lambda m: m[1] + '\n    const c10::cuda::CUDAGuard device_guard(' + m[2] + '.device());', path.read_text())
+        guards += count
+        path.write_text('#include <c10/cuda/CUDAGuard.h>\n' + text)
+    if (launches, guards) != (27, 16):
+        raise RuntimeError('Pointcept native CUDA entry points were not found')
+    for path in (build/'functions').glob('*.py'):
+        path.write_text(path.read_text().replace('from pointops._C import', 'from _grasppanda_pointcept_cuda import')
+                        .replace('from pointops import', 'from _grasppanda_pointops import'))
+    (build/'setup.py').write_text("""from pathlib import Path
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+sources = sorted(str(p) for p in Path('src').rglob('*') if p.suffix in ('.cpp', '.cu'))
+setup(name='grasppanda-pointcept-ops', version='0.1.0',
+      packages=['_grasppanda_pointops'], package_dir={'_grasppanda_pointops':'functions'},
+      ext_modules=[CUDAExtension('_grasppanda_pointcept_cuda', sources,
+                   extra_compile_args={'cxx':['-O2'], 'nvcc':['-O2']})],
+      cmdclass={'build_ext': BuildExtension})
+""")
+    subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                    '--no-build-isolation', str(build)], env=env, check=True)
+
+
 def build_mamba_operators(uv, operators, env):
     flags = ['-O3', '-std=c++17', '--expt-relaxed-constexpr',
              '--expt-extended-lambda', '--use_fast_math',
@@ -122,6 +162,7 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    build_pointcept(uv, ROOT/pins['pointcept']['path'], env)
     build_octree(uv, ROOT/pins['octree-dwconv']['path'], env)
     build_pcm(uv, ROOT/pins['pointcloudmamba']['path'], env)
     build_pointmamba(uv, ROOT/pins['pointmamba']['path'], ROOT/pins['causal-conv1d']['path'], env)

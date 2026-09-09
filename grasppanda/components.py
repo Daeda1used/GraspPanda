@@ -12,7 +12,7 @@ class ComponentSlot:
 
 
 BASELINE_SLOTS = (
-    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmeta','pointmlp','pointmamba','pointcloud_mamba','octformer','sonata_ptv3'),
+    ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmeta','pointmlp','pointmamba','pointcloud_mamba','octformer','sonata_ptv3','point_transformer_v2'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
     ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder'),
@@ -23,7 +23,7 @@ BASELINE_SLOTS = (
 
 def slots(method):
     if method == 'economicgrasp': return (
-        ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3'),
+        ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3', 'point_transformer_v2'),
             'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
             '512-channel sparse features in the input sparse row order, before quantize2original.'),
         ComponentSlot('crop', 'cy_group', ('upstream', 'native_cylinder', 'cylinder', 'reslfe_cylinder'),
@@ -45,13 +45,13 @@ def slots(method):
             'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
             'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
     if method=='finegrasp':return (
-        ComponentSlot('backbone','backbone',('upstream','sonata_ptv3'),
+        ComponentSlot('backbone','backbone',('upstream','sonata_ptv3','point_transformer_v2'),
             'Sparse camera XYZ and normal features; preserve voxel coordinate map and row order.',
             '512-channel sparse features for the native FineGrasp seed selector.'),
         ComponentSlot('crop','cy_groups',('upstream','native_cylinder'),
             'FineGrasp seed XYZ, 512-channel features and native approach rotations.',
             'Native 256-channel cylinder features per radius, consumed by multi-range attention.'))
-    if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3'),
+    if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3','point_transformer_v2'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
         '512-channel sparse features, mapped to original input points by quantize2original.'),
         ComponentSlot('crop','crop',('upstream','cylinder','finegrasp','reslfe_cylinder'),
@@ -106,6 +106,11 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method in ('hggd','region_normalized_grasp'):
             from .modules.image_pyramid import ImagePyramid,native_resnet
             replacement=native_resnet(native,**options) if choice=='native_resnet' else ImagePyramid(choice,**options)
+        elif choice=='point_transformer_v2':
+            from .modules.ptv2 import PTv2Backbone, SparsePTv2Backbone
+            replacement = (SparsePTv2Backbone(model.seed_feature_dim, voxel_size,
+                feature_channels=6 if method=='finegrasp' and model.use_normal else 3, **options)
+                if method in ('graspness','finegrasp','economicgrasp') else PTv2Backbone(**options))
         elif choice=='sonata_ptv3':
             from .modules.sonata import SonataBackbone,SparseSonataBackbone
             replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,feature_channels=6 if method=='finegrasp' and model.use_normal else 3,**options) if method in ('graspness','finegrasp','economicgrasp') else SonataBackbone(voxel_size,**options)

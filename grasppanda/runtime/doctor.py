@@ -9,7 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "pointnet2_ops._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers", "spconv.pytorch", "torch_scatter", "timm", "selective_scan_cuda_oflex", "_grasppanda_deepla_cuda"]
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
-modules += ['ocnn', 'dwconv.core', '_grasppanda_gpg', 'fpsample', 'torch_cluster', '_grasppanda_pointmamba_scan', '_grasppanda_causal_conv1d', '_grasppanda_pcm_scan', '_grasppanda_pcm_causal']
+modules += ['_grasppanda_pointops', '_grasppanda_pointcept_cuda', 'ocnn', 'dwconv.core', '_grasppanda_gpg', 'fpsample', 'torch_cluster', '_grasppanda_pointmamba_scan', '_grasppanda_causal_conv1d', '_grasppanda_pcm_scan', '_grasppanda_pcm_causal']
 for name in modules:
     try:
         mod = importlib.import_module(name)

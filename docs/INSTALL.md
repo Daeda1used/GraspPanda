@@ -67,6 +67,8 @@ Keep GraspNet at a path of your choice and select that path in the UI. Use `./pa
 
 VMamba builds its CUDA selective-scan extension during installation. The first invocation compiles its Triton cross-scan kernels into a local cache. When a container mounts only `libcuda.so.1`, GraspPanda creates a linker alias under `environments/triton-driver/`; system libraries are not modified. An explicit `TRITON_LIBCUDA_PATH` takes precedence.
 
+Point Transformer V2 builds the pinned Pointcept pointops with a separate Python/CUDA namespace. It shares the same interpreter, PyTorch and CUDA toolkit with the other point encoders. No Pointcept training environment or pretrained model is downloaded.
+
 The ResLFE cylindrical component builds the pinned DeepLA CUDA operators under `environments/build/deepla-ops/`. Existing installations need another `./panda install` after upgrading; no separate environment is required. Original downloaded source remains unchanged.
 
 GtG2 candidate generation builds GPG against system PCL using the shared Python interpreter. Matching verified binaries are reused locally. The build copy receives a deterministic sampling seed and an array binding; the original source stays intact. [Candidate graph experiments](GTG2.md) describes data preparation and training.

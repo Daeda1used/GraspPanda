@@ -435,7 +435,7 @@ def create_app(manager=None):
                             gr.Markdown('The learning-rate field below sets the base rate. Scheduler warmup and milestones count **optimizer updates**, not epochs. Examples: optimizer `{"weight_decay": 0.01}`; cosine schedule `{"warmup_steps": 1, "min_lr_ratio": 0.01}`. Omit parameters to use the selected implementation defaults; see Guide → Modules for supported settings.')
                         label_root=gr.Textbox(label='Prepared targets / cache root (optional)',placeholder='HGGD/RNG: preprocessed labels. FineGrasp: writable derived-input cache.')
                         timeout = gr.Number(60, precision=0, minimum=1, maximum=43200, label='Run time limit (minutes)')
-                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; FineGrasp and PCM compositions use the configured batch size (PCM requires at least 2); other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. Epoch controls apply to native epoch training.')
+                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; FineGrasp, PCM and PTv2 compositions use the configured batch size (PCM/PTv2 require at least 2); other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. Epoch controls apply to native epoch training.')
                         with gr.Row():
                             epochs = gr.Number(1, precision=0, label="Final epoch (must exceed resume epoch)")
                             batch = gr.Number(2, precision=0, label="Batch size")
