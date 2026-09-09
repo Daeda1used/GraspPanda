@@ -89,6 +89,10 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'pointcnnpp':
+                if key == 'block_kernel_sizes': description = '1, 3 or 5; one value for all residual blocks, or one per block in encoder then decoder order'
+                elif key == 'block_radius_scalers': description = '0.1 to 8; one value for all residual blocks, or one per block; scales the neighborhood sphere volume'
+                elif key == 'block_activations': description = 'One relu, gelu or silu per residual block; list length equals the sum of depths'
             if choice == 'flash3d':
                 if rule[0] in ('per_block', 'per_stage'):
                     scalar = rule[2]

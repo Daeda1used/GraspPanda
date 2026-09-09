@@ -957,3 +957,27 @@ compose-flash3d-economic:
     scheduler: {type: multistep, milestones: [300], gamma: 0.01}
     modules:
       backbone: flash3d
+
+compose-pointcnnpp:
+  description: Train native PointCNN++ with configurable encoder and decoder stages
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 4096
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: pointcnnpp
+        grid_size: 0.01
+        base_channels: 16
+        channels: [16, 32, 48, 64, 64, 48, 32, 16]
+        depths: [1, 1, 1, 1, 1, 1, 1, 1]
+        block_kernel_sizes: 3
+        block_radius_scalers: 2.5

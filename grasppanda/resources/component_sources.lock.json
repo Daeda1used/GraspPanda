@@ -138,5 +138,11 @@
     "repository": "https://github.com/H-EmbodVis/PointTPA",
     "commit": "a8acb4cda7d705a63c21c78202a6ed20ff0cc957",
     "path": "environments/sources/cv/pointtpa"
+  },
+  {
+    "id": "pointcnnpp",
+    "repository": "https://github.com/robbyant-research/pointelligence",
+    "commit": "e8a078e73cb38a1995bd8389f8729caa27d9eee4",
+    "path": "environments/sources/cv/pointcnnpp"
   }
 ]

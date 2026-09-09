@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -1221,5 +1221,42 @@ Outputs are `planar-grasps.json` and a last-frame preview. Each grasp includes o
 **Adaptation details:** the released reader casts continuous angle/width maps to uint8, and its error-point sampler overwrites predictions with targets. The scoped source patch preserves float32 targets and samples corrections from semantic prediction errors. Training always uses point/box prompts instead of the original full grasp-map mask shortcut. RGB and continuous labels share the explicit letterbox transform.
 
 The author width divisor of 100 produces values above one for some GraspNet rectangles, outside the native BCE target range. This adapter uses the explicit pixel scale and rejects widths exceeding it instead of clipping. Every training batch must reach the native width positive-weight cap of ten. Decoding uses `sigmoid(width_logit - log(10)) * width_scale_pixels` to undo weighted BCE's continuous-target shift. The checkpoint stores that calibration; prediction does not estimate it from annotations. The native height-edge angle is converted to the opening-edge convention. Setting correction clicks to zero bypasses the original empty-loop return while retaining the initial prediction. These are documented adaptations, not an identical reproduction of the original training pipeline or paper metrics.
+
+</details>
+
+## PointCNN++ native point convolution
+
+<details>
+<summary>Configure encoder stages and residual neighborhoods</summary>
+
+`pointcnnpp` selects the author's native ResUNet point convolution for Baseline, the PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp and FineGrasp. The dense adapter restores every input point before selecting the native 1,024 seeds. Sparse adapters preserve their coordinate map and all input feature channels. `grid_size` controls the point network's geometric scale; it does not replace the method's input voxel size.
+
+```yaml
+modules:
+  backbone:
+    type: pointcnnpp
+    grid_size: 0.01
+    base_channels: 32
+    channels: [32, 64, 128, 256, 256, 128, 96, 96]
+    depths: [2, 3, 4, 6, 2, 2, 2, 2]
+    block_kernel_sizes: 3
+    block_radius_scalers: 2.5
+    activation: relu
+    bn_momentum: 0.01
+    bn_eps: 0.001
+    normalize_features: false
+```
+
+`channels` and `depths` have eight entries: four encoder stages from fine to coarse, followed by four decoder stages from coarse to fine. `base_channels` controls the stem width. The three encoder downsampling strides remain 2, and the stem and output kernels remain 5 and 1.
+
+`block_kernel_sizes` accepts 1, 3 or 5, either one value for every residual block or a list whose length equals `sum(depths)`. `block_radius_scalers` has the same scalar/list convention and accepts 0.1–8. It multiplies the neighborhood sphere **volume**, following the author operator; it is not a radius in metres. Both convolutions within each residual block share these settings. Neighborhood indices are rebuilt when their kernel or geometric scale changes. The adapter also clears the author decoder's cached cross-resolution upsampling indices before residual convolutions on the restored point set. This corrects a stale-rulebook issue in the pinned source, so outputs are not numerically identical to that unmodified decoder. Native decoder upsampling keeps its kernel 3 and volume scaler 2.5.
+
+`activation` selects `relu`, `gelu` or `silu`; optional `block_activations` overrides it with one value per residual block. Batch normalization remains native, with configurable momentum and epsilon. `normalize_features: true` applies the author's final L2 feature normalization. Dense methods also support the [seed sampling policies](#network-sampling-policies).
+
+Use `./panda init --example compose-pointcnnpp` for a smaller training configuration. An upstream grasp checkpoint can initialize unchanged heads with `checkpoint_policy: reuse_unchanged`; the replacement backbone requires training. Predict with that run's checkpoint and `checkpoint_policy: strict`.
+
+The installer compiles the pinned author CUDA/CUTLASS operators in the shared Python environment. Native binaries, downloaded source and build intermediates are generated locally. This component adapts the segmentation/registration encoder to grasp detection; it does not provide author-trained GraspNet weights.
+
+[Paper PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Li_PointCNN_Performant_Convolution_on_Native_Points_CVPR_2026_paper.pdf) · [Author implementation](https://github.com/robbyant-research/pointelligence)
 
 </details>
