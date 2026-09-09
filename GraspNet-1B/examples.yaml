@@ -1,5 +1,32 @@
 # Generate only the configuration you need: ./panda init --example NAME
 # Omitted experiment fields use the shared defaults; module settings remain explicit.
+compose-pointtpa:
+  description: Train PointTPA branches inside a frozen pretrained Concerto encoder
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 4096
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: concerto
+        variant: tiny
+        trainable_blocks: [0, 0, 0, 0, 0]
+        adaptation:
+          type: pointtpa
+          bottleneck_channels: 16
+          experts: 4
+          group_size: 16
+          group_mode: num
+          dynamic_down: true
+          dynamic_up: false
 compose-pretrained-points:
   description: Fine-tune pretrained Concerto point features with native Baseline grasp heads
   config:
@@ -896,3 +923,37 @@ train-spgrasp:
     modules:
       backbone: {type: hiera, resolution: 512, trainable_blocks: 4}
       memory: {type: temporal, frames: 7, layers: 4, heads: 1}
+
+compose-flash3d:
+  description: Initialize native Flash3D features and train the Graspness detector
+  config:
+    method: graspness
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspness/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    training_steps: 10
+    proposal_warmup_steps: 50
+    learning_rate: 0.0001
+    modules:
+      backbone: flash3d
+compose-flash3d-economic:
+  description: Train EconomicGrasp with Flash3D and a scheduled seed-to-grasp transition
+  config:
+    method: economicgrasp
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/economicgrasp/checkpoint-kinect.tar
+    checkpoint_policy: reuse_unchanged
+    camera: kinect
+    split: train
+    scene: 0
+    training_steps: 20
+    proposal_warmup_steps: 300
+    learning_rate: 0.001
+    scheduler: {type: multistep, milestones: [300], gamma: 0.01}
+    modules:
+      backbone: flash3d

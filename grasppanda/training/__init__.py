@@ -295,11 +295,11 @@ def point_family(config, out, steps=3):
             state.setdefault('rotation.template_views',model.rotation.template_views.detach().cpu())
         transfer=load_checkpoint(model,state,prefixes,config.checkpoint_policy)
     warming_up = False
-    from grasppanda.methods.economic_warmup import SeedWarmup, objective as seed_objective
+    from grasppanda.methods.seed_warmup import SeedWarmup, objective as seed_objective
     if sparse or economic:
         threshold=model_module.cfgs.graspness_threshold if economic else model_module.GRASPNESS_THRESHOLD
         def guard(_module,_inputs,end):
-            if economic and warming_up: raise SeedWarmup(end)
+            if warming_up: raise SeedWarmup(end)
             mask=(end['objectness_score'].argmax(1)==1)&(end['graspness_score'].squeeze(1)>threshold)
             if (mask.sum(1)==0).any():raise ValueError('Native graspable-point sampling would receive an empty set')
         model.graspable.register_forward_hook(guard)
@@ -319,7 +319,7 @@ def point_family(config, out, steps=3):
         for obj in labels:evidence['sdf_'+str(obj-1)]=digest(sdf_root/'models'/f'{obj-1:03d}'/'grid_sampled_sdf.npz')
     loss_module=importlib.import_module('models.loss_economicgrasp' if economic else ('TrainModel.loss' if balance else ('loss' if config.method=='dograspnet' or fusion else 'models.loss')))
     optimizer=build_optimizer(model.parameters(),config) if config.optimizer else torch.optim.Adam(model.parameters(),lr=config.learning_rate)
-    total_steps = steps + (config.proposal_warmup_steps if economic else 0)
+    total_steps = steps + config.proposal_warmup_steps
     schedule=UpdateSchedule(optimizer,config.scheduler,total_steps) if config.scheduler else None
     def cuda(value):
         if graph and type(value).__module__.startswith('dgl.'):return value.to('cuda')
@@ -329,7 +329,7 @@ def point_family(config, out, steps=3):
         return value
     losses=[];updates=[];start=time.monotonic()
     for step in range(total_steps):
-        warming_up = economic and step < config.proposal_warmup_steps
+        warming_up = step < config.proposal_warmup_steps
         batch=cuda(collate([augment_sample(copy.deepcopy(sample),dataset,config) for sample in samples]))
         optimizer.zero_grad(set_to_none=True)
         try:

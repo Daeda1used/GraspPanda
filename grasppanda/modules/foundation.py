@@ -37,7 +37,7 @@ class FoundationFeatures(nn.Module):
                  trainable_blocks=(0, 0, 0, 0, 0), train_embedding=False,
                  feature_levels=(0, 1, 2, 3, 4), input_scale=None, grid_size=None,
                  enc_patch_size=None, drop_path=None, attn_drop=None,
-                 proj_drop=None, shuffle_orders=True, projection_norm='none'):
+                 proj_drop=None, shuffle_orders=True, projection_norm='none', adaptation=None):
         super().__init__()
         from ..weights import component_records
         self.weight_id = 'utonia' if family == 'utonia' else 'concerto_' + variant
@@ -73,6 +73,11 @@ class FoundationFeatures(nn.Module):
             # The grasp input has no masked-pretraining token positions.
             if self.network.embedding.mask_token is not None:
                 self.network.embedding.mask_token.requires_grad_(False)
+        self.adaptation = None
+        if adaptation is not None:
+            from .pointtpa import attach
+            self.adaptation = attach(self.network, source.model.Block, adaptation,
+                                     config['enc_depths'], max(self.feature_levels))
         self.projection = nn.Linear(sum(config['enc_channels'][i] for i in self.feature_levels), out_channels)
         if projection_norm not in ('none', 'layer'):
             raise ValueError('projection_norm must be none or layer')
@@ -94,7 +99,7 @@ class FoundationFeatures(nn.Module):
         super().train(mode)
         if not hasattr(self, 'network'): return self
         self.network.eval()
-        self.network.shuffle_orders = mode and self.shuffle_orders and any(self.trainable_blocks)
+        self.network.shuffle_orders = mode and self.shuffle_orders and (any(self.trainable_blocks) or self.adaptation is not None)
         native = native_module(self.family)
         for module in self.network.modules():
             if isinstance(module, native.model.GridPooling):
@@ -106,6 +111,9 @@ class FoundationFeatures(nn.Module):
                 if name == 'down' or (name.startswith('block') and int(name[5:]) >= self.native_config['enc_depths'][index] - count):
                     module.train(mode)
         if self.train_embedding: self.network.embedding.train(mode)
+        if self.adaptation is not None:
+            for module in self.network.modules():
+                if hasattr(module, 'adaptive_module'): module.adaptive_module.train(mode)
         return self
 
     def initialize_pretrained(self):
@@ -115,7 +123,11 @@ class FoundationFeatures(nn.Module):
         checkpoint = torch.load(fetch_component(self.weight_id), map_location='cpu', weights_only=True)
         if json.loads(json.dumps(checkpoint['config'])) != self.native_config:
             raise ValueError('Pretrained point encoder architecture differs from its registered configuration')
-        self.network.load_state_dict(checkpoint['state_dict'], strict=True)
+        if self.adaptation is None:
+            self.network.load_state_dict(checkpoint['state_dict'], strict=True)
+        else:
+            from .pointtpa import load_base_state
+            load_base_state(self.network, checkpoint['state_dict'])
         return dict(id=self.weight_id, source=record['source'], sha256=record['sha256'],
                     trainable_blocks=list(self.trainable_blocks), train_embedding=self.train_embedding)
 

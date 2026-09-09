@@ -1,0 +1,26 @@
+{
+  "cuda_nvcc": {
+    "relative_path": "cuda_nvcc/linux-x86_64/cuda_nvcc-linux-x86_64-12.2.140-archive.tar.xz",
+    "sha256": "3feaab191e1ae3fded02c02b0f24453069ada96b2e3a750251293b36079dc2f1",
+    "md5": "65d90cb219e8e7a204ec2f4e642c3e43",
+    "size": "46728284"
+  },
+  "cuda_cudart": {
+    "relative_path": "cuda_cudart/linux-x86_64/cuda_cudart-linux-x86_64-12.2.140-archive.tar.xz",
+    "sha256": "baebd331249bca0edf36776ead90e6b2024ffee01ea26cd9dd07344bebeaff08",
+    "md5": "030e85f4d0305c2924e2b76e84e2da32",
+    "size": "1058992"
+  },
+  "cuda_cccl": {
+    "relative_path": "cuda_cccl/linux-x86_64/cuda_cccl-linux-x86_64-12.2.140-archive.tar.xz",
+    "sha256": "90fa538e41f7f444896b61d573d502ea501f44126f8ff64442987e192a8a39dd",
+    "md5": "00ea502586a8c17e086292690d6680d6",
+    "size": "1150676"
+  },
+  "libcurand": {
+    "relative_path": "libcurand/linux-x86_64/libcurand-linux-x86_64-10.3.3.141-archive.tar.xz",
+    "sha256": "105ce31a3e83e8e548e35efe8e3b9f18b4fdb30048d0305015c2cf62257a090c",
+    "md5": "d1bd0610eb7014957b802f9d349bbcfc",
+    "size": "81947124"
+  }
+}

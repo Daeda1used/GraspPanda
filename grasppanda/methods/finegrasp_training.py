@@ -61,7 +61,7 @@ def run(config, out, steps=None):
         worker_init_fn=seed_worker, persistent_workers=False, drop_last=multi_frame,
         **({'multiprocessing_context': 'spawn'} if config.data_workers else {}))
     if not len(loader): raise ValueError('FineGrasp training range is empty')
-    total = steps if short else len(loader)*config.epochs
+    total = steps + config.proposal_warmup_steps if short else len(loader)*config.epochs
     model.cuda().train()
     native = author_config()
     trainer_cfg = SimpleNamespace(lr=config.learning_rate, max_step=total, max_epoch=1 if short else config.epochs)
@@ -102,7 +102,15 @@ def run(config, out, steps=None):
         verify_restored_state(model.state_dict(), payload['model_state_dict'], 'model')
         verify_restored_state(optimizer.state_dict(), payload['optimizer_state_dict'], 'optimizer')
         if scheduler is not None: verify_restored_state(scheduler.state_dict(), payload['scheduler_state_dict'], 'scheduler')
+    from grasppanda.methods.seed_warmup import SeedWarmup, objective as seed_objective
+    from robo_orchard_lab.models.finegrasp.losses import ObjectnessLoss, GraspnessLoss
+    seed_losses = [function for function in model.loss if isinstance(function, (ObjectnessLoss, GraspnessLoss))]
+    if len(seed_losses) != 2:
+        raise ValueError('FineGrasp seed warmup requires its registered objectness and graspness losses')
+    warming_up = False
     def valid_seeds(_module, _args, end):
+        if warming_up:
+            raise SeedWarmup(end)
         mask = (end['objectness_score'].argmax(1) == 1) & (end['graspness_score'].squeeze(1) > model.graspness_threshold)
         if not torch.all(mask.any(1)):
             raise ValueError('FineGrasp has no predicted graspable seeds in a batch item. Use a trained initialization or train the seed-prediction stage before the full grasp objective.')
@@ -116,12 +124,22 @@ def run(config, out, steps=None):
     terms = LOSS_TERMS['finegrasp']
     losses, updates = [], []
     def step(batch, epoch):
-        nonlocal completed
+        nonlocal completed, warming_up
+        warming_up = short and completed < config.proposal_warmup_steps
         optimizer.zero_grad(set_to_none=True)
-        end = model(device(batch))
-        native_loss = sum(coefficient*end[key] for key, coefficient in terms.values())
-        loss, end = weighted_loss(native_loss, end, config)
-        parts = {name: float(end[key].detach()) for name, (key, _) in terms.items()}
+        try:
+            end = model(device(batch))
+        except SeedWarmup as signal:
+            end = signal.end_points
+        if warming_up:
+            for function in seed_losses:
+                end = function(end)
+            loss, end = seed_objective(end, config)
+        else:
+            native_loss = sum(coefficient*end[key] for key, coefficient in terms.values())
+            loss, end = weighted_loss(native_loss, end, config)
+        active_terms = ('objectness', 'graspness') if warming_up else terms
+        parts = {name: float(end[terms[name][0]].detach()) for name in active_terms}
         if not torch.isfinite(loss) or not all(np.isfinite(value) for value in parts.values()):
             raise ValueError('FineGrasp produced a non-finite training loss')
         loss.backward()
@@ -130,7 +148,8 @@ def run(config, out, steps=None):
             raise ValueError('FineGrasp gradients are missing or non-finite')
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 10., error_if_nonfinite=True)
         from grasppanda.training.options import snapshot_components
-        _, zero_gradients = snapshot_components(model, changed)
+        active_prefixes = [prefix for prefix in changed if prefix == 'backbone.'] if warming_up else changed
+        _, zero_gradients = snapshot_components(model, active_prefixes)
         selected = [(name, parameter) for name, parameter in named if torch.count_nonzero(parameter.grad)]
         if not selected: raise ValueError('FineGrasp gradients are all zero')
         # Include zero-initialized biases: native warmup can start below the
@@ -141,7 +160,7 @@ def run(config, out, steps=None):
         deltas = {name: float((parameter.detach()-before).norm()) for name, parameter, before in snapshots}
         if not any(value > 0 for value in deltas.values()) or not all(torch.isfinite(parameter).all() for parameter in model.parameters()):
             raise ValueError('FineGrasp parameters did not receive a finite update')
-        component_updates = {prefix: sum(value for name, value in deltas.items() if name.startswith(prefix)) for prefix in changed}
+        component_updates = {prefix: sum(value for name, value in deltas.items() if name.startswith(prefix)) for prefix in active_prefixes}
         if not all(value > 0 for prefix, value in component_updates.items() if prefix not in zero_gradients):
             raise ValueError('A replaced FineGrasp component received no update')
         completed += 1
@@ -150,6 +169,8 @@ def run(config, out, steps=None):
         losses.append(row)
         updates.append(dict(gradient_norm=float(norm), learning_rate=rate, component_updates=component_updates, zero_gradient_components=zero_gradients,
                             parameter_update_norm=sum(deltas.values())))
+        if config.proposal_warmup_steps:
+            row['stage'] = updates[-1]['stage'] = 'Seed warmup' if warming_up else 'Grasp training'
         print('LOSS', json.dumps(row), flush=True)
     def save(path, epoch):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -162,7 +183,7 @@ def run(config, out, steps=None):
         (path.parent/'model.config.json').write_text(json.dumps(architecture, indent=2)+'\n')
     if short:
         generator.manual_seed(config.seed)
-        for _ in range(steps): step(next(iter(loader)), 0)
+        for _ in range(total): step(next(iter(loader)), 0)
     else:
         for epoch in range(first_epoch, config.epochs):
             random.seed(config.seed+epoch)
@@ -174,6 +195,7 @@ def run(config, out, steps=None):
     save(out/'checkpoint.pt', 0 if short else config.epochs)
     return dict(stage='labeled_training' if short else 'epoch_training', method='finegrasp',
         losses=losses, updates=updates, completed_updates=completed, resume_state_verified=resumed,
+        proposal_warmup_steps=config.proposal_warmup_steps,
         checkpoint='checkpoint.pt', checkpoint_sha256=digest(out/'checkpoint.pt'),
         modules=config.modules, checkpoint_transfer=transfer, ap=None,
         protocol_note='Native FineGrasp economic labels and losses. Derived normals and instance-normalized graspness are cached locally; native flips transform normals with points. Full-split AP is evaluated separately.')

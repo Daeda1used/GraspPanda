@@ -51,8 +51,12 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
         if slot not in available or choice not in available[slot].choices:
             continue
         for key, rule in schema(method, slot, choice).items():
-            if rule[0] in ('sampler', 'samplers'):
+            if rule[0] == 'pointtpa':
+                description = 'Mapping with type: pointtpa; optional blocks selects flat encoder block indices. bottleneck_channels, experts, group_size, group_mode (num/length), dynamic_down, dynamic_up and scale accept one value or one per selected block. See Guide → Modules for pretrained and freezing behavior.'
+            elif rule[0] in ('sampler', 'samplers'):
                 description = ('One output-seed policy' if rule[0] == 'sampler' else 'Four policies, one per downsampling stage') + '; name or {type, ...}: upstream, uniform, fps, pointsp_wrs, pointsp_ffps. Density policies accept neighbors and density_quantile; FFPS adds keep_ratio; FPS/FFPS accept start: first or random. Use {train: POLICY, eval: POLICY} for mode-specific sampling.'
+            elif rule[0] == 'flash3d_pooling':
+                description = 'mean, sum, min or max; one name for all transitions, or a list with one name between each pair of hierarchy levels'
             elif rule[0] == 'mscq_branches':
                 description = 'Four branch policies in increasing native radius order. Each accepts type and radius_scale; upstream accepts nsample. Replacements accept their Baseline crop parameters. Native fusion, gate and heads remain in place.'
             elif rule[0] == 'choice':
@@ -85,6 +89,13 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'flash3d':
+                if rule[0] in ('per_block', 'per_stage'):
+                    scalar = rule[2]
+                    values = 'true or false' if scalar[0] == 'bool' else f'{scalar[0]}: {scalar[1]} to {scalar[2]}'
+                    description = values + '; scalar for all encoder/decoder blocks, or one value per block in fine-to-coarse level order'
+                elif rule[0] == 'choice_list':
+                    description = 'Repeating block pattern: ' + ', '.join(rule[3]) + '; follows encoder/decoder blocks in fine-to-coarse level order'
             if choice == 'kpconvx_cylinder':
                 if rule[0] in ('per_block', 'per_stage'):
                     description = values + '; one value for all kernel blocks, or one per block'
@@ -528,7 +539,7 @@ def create_app(manager=None):
                             parameter_help = gr.Markdown(component_parameters('graspnet_baseline', 'upstream', 'upstream'))
                     with gr.Accordion("Training settings", open=False, visible=False) as training_panel:
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,visible=False,label='Optimizer steps (short training)')
-                        proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,visible=False,label='Proposal warmup updates',info='Optional real-label seed training (EconomicGrasp) or anchor training (RNG) before grasp training. Added to short-training updates; 0 preserves the native preset.')
+                        proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,visible=False,label='Proposal warmup updates',info='Optional real-label seed training (Graspness, EconomicGrasp, FineGrasp) or anchor training (RNG) before grasp training. Added to short-training updates; 0 preserves the native preset.')
                         with gr.Accordion('Choose loss formulations', open=False):
                             from grasppanda.training.losses import CLASSIFICATION, REGRESSION
                             with gr.Row():
@@ -733,8 +744,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
         method.change(lambda m: ('Configure objects (1–8), box_probability (0–1), correction_clicks (0–7), conditioning_frames and correction_frames (1–4). Training simulates prompts from instance labels. conditioning_frames <= correction_frames <= frame count.' if m=='spgrasp' else 'Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/GTG2.md)' if m == 'gtg2' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
         method.change(lambda m:gr.update(label='Prepared graph root (required for training)' if m == 'gtg2' else 'Prepared targets / cache root (optional)'),method,label_root,api_name=False, preprocess=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
-        for selector in (method,action):
-            selector.change(lambda m,a: gr.update(value=0,interactive=m in ('region_normalized_grasp','economicgrasp') and a=='train_check',visible=m in ('region_normalized_grasp','economicgrasp') and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False, preprocess=False)
+        def seed_warmup_control(method, action):
+            enabled = method in ('region_normalized_grasp','economicgrasp','graspness','finegrasp') and action == 'train_check'
+            return gr.update(interactive=enabled, visible=enabled, **({} if enabled else {'value': 0}))
+        gr.on([method.change, action.change], seed_warmup_control, [method, action], proposal_warmup_steps,
+            api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head,memory,prompt_options,planar_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
         check.click(preflight, config_text, message, api_name="validate_config")

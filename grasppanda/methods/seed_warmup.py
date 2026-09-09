@@ -1,4 +1,4 @@
-"""Native EconomicGrasp seed supervision before candidate-dependent training."""
+"""Native seed supervision before candidate-dependent grasp training."""
 from dataclasses import replace
 
 
@@ -7,11 +7,15 @@ class SeedWarmup(Exception):
         self.end_points = end_points
 
 
-def objective(end_points, config, native):
+SEED_METHODS = ('economicgrasp', 'graspness', 'finegrasp')
+
+
+def objective(end_points, config, native=None):
     from ..training.losses import replace_losses
     from ..training.options import LOSS_TERMS
-    native.compute_objectness_loss(end_points)
-    native.compute_graspness_loss(end_points)
+    if native is not None:
+        native.compute_objectness_loss(end_points)
+        native.compute_graspness_loss(end_points)
     names = ('objectness', 'graspness')
     functions = {key: value for key, value in config.loss.get('functions', {}).items() if key in names}
     if functions:

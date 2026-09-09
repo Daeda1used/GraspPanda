@@ -65,6 +65,8 @@ Keep GraspNet at a path of your choice and select that path in the UI. Use `./pa
 <details>
 <summary>Native component build details</summary>
 
+Flash3D builds its native hierarchy and Transformer Engine in the same Python environment. The installer downloads a checksum-pinned CUDA 12.2 compiler and a private CUDA 12 runtime for the Flash3D extension; Transformer Engine builds against the shared CUDA 11.8 toolkit. No system toolkit or Python package is replaced. Native files live in versioned directories under `environments/native/flash3d/`. Before selecting a new build, the installer verifies forward/backward computation, an optimizer update and strict checkpoint reloading without a dataset. A failed check leaves the previous build selected. This additional compilation can take substantial time; its build tools and downloads are cached locally.
+
 VMamba builds its CUDA selective-scan extension during installation. The first invocation compiles its Triton cross-scan kernels into a local cache. When a container mounts only `libcuda.so.1`, GraspPanda creates a linker alias under `environments/triton-driver/`; system libraries are not modified. An explicit `TRITON_LIBCUDA_PATH` takes precedence.
 
 LitePT uses a checksum-locked FlashAttention wheel matching the shared Python/PyTorch/CUDA ABI. Its PointROPE CUDA extension is compiled locally for the selected GPU; `rope_backend: torch` selects the author’s PyTorch rotation implementation. Attention still requires a supported Ampere-or-newer GPU.

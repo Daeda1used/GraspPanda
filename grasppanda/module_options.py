@@ -21,6 +21,8 @@ def unpack(value):
 
 def schema(method, slot, choice):
     fields = _schema(method, slot, choice)
+    if slot == 'backbone' and choice in ('sonata_ptv3', 'concerto', 'utonia'):
+        fields = {**fields, 'adaptation': ('pointtpa',)}
     if method in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp') and slot == 'backbone':
         from .modules.sampling_options import DENSE_BACKBONES, HIERARCHIES
         if choice in DENSE_BACKBONES: fields = {**fields, 'seed_sampling': ('sampler',)}
@@ -72,6 +74,9 @@ def _schema(method, slot, choice):
     if slot == 'backbone' and choice == 'kpconvx':
         from .modules.kpconvx_options import schema as kpconvx_schema
         return kpconvx_schema()
+    if slot == 'backbone' and choice == 'flash3d':
+        from .modules.flash3d_options import schema as flash3d_schema
+        return flash3d_schema()
     if slot == 'backbone' and choice == 'oacnns':
         from .modules.oacnns_options import schema as oacnns_schema
         return oacnns_schema()
@@ -193,8 +198,15 @@ def validate_options(method, slot, choice, options):
         raise ValueError(f'{method}/{slot}/{choice}: unknown parameters {sorted(set(options)-set(fields))}')
     for key, value in options.items():
         rule = fields[key]
+        if rule[0] == 'pointtpa':
+            if not isinstance(value, dict):
+                raise ValueError('adaptation must be a mapping with type: pointtpa')
+            continue
         valid = False
-        if rule[0] == 'mscq_branches':
+        if rule[0] == 'flash3d_pooling':
+            values = value if isinstance(value, list) else [value]
+            valid = 1 <= len(values) <= 4 and all(isinstance(v, str) and v in ('mean', 'sum', 'min', 'max') for v in values)
+        elif rule[0] == 'mscq_branches':
             from .modules.mscq import validate_branches
             validate_branches(value)
             valid = True
@@ -299,6 +311,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'kpconvx':
         from .modules.kpconvx_options import validate as validate_kpconvx
         validate_kpconvx(options)
+    if choice == 'flash3d':
+        from .modules.flash3d_options import validate as validate_flash3d
+        validate_flash3d(options)
     if choice == 'oacnns':
         from .modules.oacnns_options import validate as validate_oacnns
         validate_oacnns(options)
@@ -343,4 +358,11 @@ def validate_options(method, slot, choice, options):
                     raise ValueError('PTv3 stage channels must be divisible by their attention heads and by 8')
         if any(value not in (1,2,4,8) for value in options.get('stride', [])):
             raise ValueError('PTv3 pooling strides must be 1, 2, 4 or 8')
+    if 'adaptation' in options:
+        from .modules.pointtpa_options import resolve
+        if choice == 'sonata_ptv3':
+            depths, max_level = options.get('enc_depths', [3,3,3,12,3]), 4
+        else:
+            depths, max_level = depth, max(options.get('feature_levels', list(range(5))))
+        resolve(options['adaptation'], depths, max_level)
     return options

@@ -72,7 +72,7 @@ class SonataFeatures(nn.Module):
                  mlp_ratio=4., drop_path=.3, attn_drop=0., proj_drop=0.,
                  qkv_bias=True, pre_norm=True, shuffle_orders=True,
                  enable_rpe=False, upcast_attention=False, upcast_softmax=False,
-                 layer_scale=None):
+                 layer_scale=None, adaptation=None):
         super().__init__()
         native = native_module()
         self.voxel_size = voxel_size
@@ -92,6 +92,9 @@ class SonataFeatures(nn.Module):
             elif isinstance(module, native.SerializedAttention):
                 module.register_forward_pre_hook(attention_cache)
         self.projection = nn.Linear(dec_channels[0], out_channels)
+        if adaptation is not None:
+            from .pointtpa import attach
+            self.adaptation = attach(self.network, native.Block, adaptation, enc_depths)
 
     def forward(self, xyz, features, batch, grid=None):
         data, inverse = voxelize(xyz, features, batch, self.voxel_size, grid)

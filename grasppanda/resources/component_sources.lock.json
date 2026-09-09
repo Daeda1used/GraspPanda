@@ -114,5 +114,29 @@
     "commit": "5b41117160cdd92c3538be1911277b17e7ef5871",
     "path": "environments/sources/cv/concerto",
     "license": "Apache-2.0"
+  },
+  {
+    "id": "flash3d",
+    "repository": "https://github.com/cruise-automation/Flash3D",
+    "commit": "cc15549a7bb12b908148d82fee81f43d8a3cf800",
+    "path": "environments/sources/cv/flash3d"
+  },
+  {
+    "id": "flash3d-transformer-engine",
+    "repository": "https://github.com/NVIDIA/TransformerEngine",
+    "commit": "3ec998e96c82bc30247560ced6170c4221ca2b5a",
+    "path": "environments/sources/cv/flash3d-transformer-engine"
+  },
+  {
+    "id": "flash3d-glog",
+    "repository": "https://github.com/google/glog",
+    "commit": "b33e3bad4c46c8a6345525fd822af355e5ef9446",
+    "path": "environments/sources/cv/flash3d-glog"
+  },
+  {
+    "id": "pointtpa",
+    "repository": "https://github.com/H-EmbodVis/PointTPA",
+    "commit": "a8acb4cda7d705a63c21c78202a6ed20ff0cc957",
+    "path": "environments/sources/cv/pointtpa"
   }
 ]

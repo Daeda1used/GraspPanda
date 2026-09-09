@@ -205,6 +205,8 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    from build_flash3d import build as build_flash3d
+    build_flash3d(uv, pins, env)
     build_sampling(uv, env)
     build_pointrope(uv, ROOT/pins['litept']['path'], env)
     build_pointcept(uv, ROOT/pins['pointcept']['path'], env)

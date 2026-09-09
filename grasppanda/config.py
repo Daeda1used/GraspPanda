@@ -95,15 +95,18 @@ class Experiment:
     def validate(self):
         if type(self.proposal_warmup_steps) is not int or not 0 <= self.proposal_warmup_steps <= 10000:
             raise ValueError('proposal_warmup_steps must be an integer in [0, 10000]')
-        if self.proposal_warmup_steps and (self.method not in ('region_normalized_grasp', 'economicgrasp') or self.action != 'train_check'):
-            raise ValueError('Proposal warmup is registered for RNG and EconomicGrasp short training only')
+        from .methods.seed_warmup import SEED_METHODS
+        if self.proposal_warmup_steps and (self.method not in ('region_normalized_grasp', *SEED_METHODS) or self.action != 'train_check'):
+            raise ValueError('Proposal warmup requires RNG, EconomicGrasp, Graspness or FineGrasp short training')
         from grasppanda.training.optimization import validate as validate_optimization
         validate_optimization(self)
         from grasppanda.training.options import validate_training_options
         validate_training_options(self)
-        if self.proposal_warmup_steps and self.method == 'economicgrasp' and not any(
-                self.loss.get('weights', {}).get(name, weight) > 0 for name, weight in (('objectness', 1), ('graspness', 10))):
-            raise ValueError('EconomicGrasp proposal warmup requires an active seed objective')
+        if self.proposal_warmup_steps and self.method in SEED_METHODS:
+            from .training.options import LOSS_TERMS
+            if not any(self.loss.get('weights', {}).get(name, LOSS_TERMS[self.method][name][1]) > 0
+                       for name in ('objectness', 'graspness')):
+                raise ValueError('Proposal warmup requires an active objectness or graspness objective')
         if self.method != 'spgrasp':
             if self.method == 'gtg2':
                 from grasppanda.methods.gtg2_options import validate_config as validate_trainer

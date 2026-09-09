@@ -1,0 +1,153 @@
+--- a/src/psh/bucket_swin_attn_bwd.cuh
++++ b/src/psh/bucket_swin_attn_bwd.cuh
+@@ -146,7 +146,7 @@
+   const bf16 * __restrict__ Q_base, const bf16 * __restrict__ K_base, const bf16 * __restrict__ V_base,
+   const bf16 * __restrict__ O_base, const bf16 * __restrict__ dO_base, const float * __restrict__ L_base,
+   const float * __restrict__ Delta_base,
+-  bf16 * __restrict__ dQ_base, bf16 * __restrict__ dK_base, bf16 * __restrict__ dV_base,
++  float * __restrict__ dQ_base, bf16 * __restrict__ dK_base, bf16 * __restrict__ dV_base,
+   uint32_t B_size, uint32_t L_scope, uint32_t N_head,
+   uint32_t stride_batchB, uint32_t stride_seqL, uint32_t stride_headN,
+   uint32_t stride_batchB_colvec, uint32_t stride_seqL_colvec, uint32_t stride_headN_colvec,
+@@ -179,7 +179,7 @@
+   const bf16* K_batch       = K_base   + batchid * stride_batchB + headid * stride_headN;
+   const bf16* V_batch       = V_base   + batchid * stride_batchB + headid * stride_headN;
+   const bf16* dO_batch      = dO_base  + batchid * stride_batchB + headid * stride_headN;
+-  bf16* dQ_batch            = dQ_base  + batchid * stride_batchB + headid * stride_headN;
++  float* dQ_batch            = dQ_base  + batchid * stride_batchB + headid * stride_headN;
+   bf16* dK_batch            = dK_base  + batchid * stride_batchB + headid * stride_headN;
+   bf16* dV_batch            = dV_base  + batchid * stride_batchB + headid * stride_headN;
+   const float* L_batch      = L_base     + batchid * stride_batchB_colvec;
+@@ -193,6 +193,7 @@
+   // Declare register tiles.
+   tk::rt_bf<1, HeadD/16u> q_reg;
+   tk::rt_bf<1, HeadD/16u> k_reg;
++  tk::rt_bf<1, HeadD/16u, tk::ducks::rt_layout::col> k_col;
+   tk::rt_bf<1, HeadD/16u> v_reg;
+   tk::rt_fl_1x1<> s_reg;   // to compute S = Q * K^T
+   tk::rt_fl_1x1<> dp_reg;  // to compute dP = dO * V^T
+@@ -200,7 +201,8 @@
+   tk::rt_bf_1x1<> ds_reg_bf;
+   tk::rt_bf_1x1<> P_reg_half;   // to hold P = exp(S - L)
+   tk::rt_bf<1, HeadD/16u, tk::ducks::rt_layout::col> dO_reg;  // dO tile
+-  tk::rt_fl<1, HeadD/16u> dQ_reg;  // dQ tile accumulator
++  tk::rt_fl<1, HeadD/16u> dQ_reg, dQ_partial;
++  auto (&dQ_shmem)[WarpPerBlock * 16u * HeadD] = al.allocate<float, WarpPerBlock * 16u * HeadD>();
+   tk::rt_fl<1, HeadD/16u> dK_reg;  // dK accumulator in float
+   tk::rt_fl<1, HeadD/16u> dV_reg;  // dV accumulator in float
+ 
+@@ -225,6 +227,7 @@
+ 
+     // Load K and V tiles directly from HMB into register tiles.
+     tk::load(k_reg, K_bucket + kv_tile_offset, int32_t(stride_seqL));
++    tk::swap_layout(k_col, k_reg);
+     tk::load(v_reg, V_bucket + kv_tile_offset, int32_t(stride_seqL));
+ 
+     // Initialize dK and dV accumulators.
+@@ -241,13 +244,13 @@
+       // Compute pointers for current Q, O, dO, dQ tiles.
+       const bf16* Q_bucket  = Q_batch  + qo_buck_id * bucket_stride;
+       const bf16* dO_bucket = dO_batch + qo_buck_id * bucket_stride;
+-      bf16* dQ_bucket       = dQ_batch + qo_buck_id * bucket_stride;
++      float* dQ_bucket       = dQ_batch + qo_buck_id * bucket_stride;
+ 
+       uint32_t tile_offset = qo_buck_blk_off * qo_blk_stride + warpid * qo_warp_stride;
+       const bf16* Q_tile_ptr  = Q_bucket  + tile_offset;
+       //const bf16* O_tile_ptr  = O_bucket  + tile_offset;
+       const bf16* dO_tile_ptr = dO_bucket + tile_offset;
+-      bf16* dQ_tile_ptr       = dQ_bucket + tile_offset;
++
+ 
+       // TODO: double-buffering shmem
+       // Load Q, O, dO, dQ tiles into register tiles.
+@@ -274,7 +277,7 @@
+         tk::mul(s_reg, s_reg, 1.0 / sqrt(HeadD));
+ 
+         // Step 2: Compute P = exp(S - L) elementwise.
+-        tk::load(lse_vec_reg, lse_vec[warpid]);
++        tk::load(lse_vec_reg, lse_vec[subtile]);
+         tk::sub_row(s_reg, s_reg, lse_vec_reg);
+         //exp2(s_tile, s_tile);
+         tk::exp(s_reg, s_reg);
+@@ -292,23 +295,35 @@
+         tk::mma_ABt(dp_reg, dO_reg_trans, v_reg, dp_reg);
+ 
+         // Step 5: Compute dS = P ∘ (dP - Delta) elementwise.
+-        tk::load(d_vec_reg, d_vec[warpid]);
++        tk::load(d_vec_reg, d_vec[subtile]);
+         tk::sub_row(dp_reg, dp_reg, d_vec_reg);
+         tk::mul(ds_reg, s_reg, dp_reg);
++        tk::mul(ds_reg, ds_reg, 1.0 / sqrt(HeadD));
+         tk::copy(ds_reg_bf, ds_reg);
+-        // TODO: multiply ds by a small_scale
+ 
+         // Step 6: Update dQ: dQ_reg += dS * K_tile.
+-        tk::load(dQ_reg, dQ_tile_ptr, int32_t(stride_seqL));
+-        tk::mma_AB(dQ_reg, ds_reg_bf, tk::swap_layout_inplace(k_reg), dQ_reg);
++        tk::zero(dQ_reg);
++        tk::mma_AB(dQ_reg, ds_reg_bf, k_col, dQ_reg);
++        tk::store(dQ_shmem + warpid * 16u * HeadD, dQ_reg, HeadD);
+ 
+         // Step 7: Update dK: dK_reg += (dS)^T * Q_tile.
+         auto & ds_reg_trans = tk::swap_layout_inplace(ds_reg_bf);
+         auto & q_reg_trans = tk::swap_layout_inplace(q_reg);
+         tk::mma_AtB(dK_reg, ds_reg_trans, q_reg_trans, dK_reg);
+ 
+-        // Store updated dQ tile back to global memory.
+-        tk::store(dQ_tile_ptr, dQ_reg, int32_t(stride_seqL));
++        // K tiles belong to different warps. Reduce their contributions once
++        // for the current Q tile, without races or repeated BF16 rounding.
++        __syncthreads();
++        if (warpid == subtile) {
++          float* dQ_tile_ptr = dQ_bucket + qo_buck_blk_off * qo_blk_stride + subtile * qo_warp_stride;
++          tk::load(dQ_reg, dQ_tile_ptr, int32_t(stride_seqL));
++          for (uint32_t w = 0; w < WarpPerBlock; ++w) {
++            tk::load(dQ_partial, dQ_shmem + w * 16u * HeadD, HeadD);
++            tk::add(dQ_reg, dQ_reg, dQ_partial);
++          }
++          tk::store(dQ_tile_ptr, dQ_reg, int32_t(stride_seqL));
++        }
++        __syncthreads();
+       }
+     } // End inner loop over Q blocks
+ 
+--- a/src/psh/bucket_swin_attn_bwd_dispatcher.cuh
++++ b/src/psh/bucket_swin_attn_bwd_dispatcher.cuh
+@@ -29,7 +29,7 @@
+     const bf16 * __restrict__ Q_base, const bf16 * __restrict__ K_base, const bf16 * __restrict__ V_base,
+     const bf16 * __restrict__ O_base, const bf16 * __restrict__ dO_base, const float * __restrict__ L_base,
+     const float * __restrict__ Delta_base,
+-    bf16 * __restrict__ dQ_base, bf16 * __restrict__ dK_base, bf16 * __restrict__ dV_base,
++    float * __restrict__ dQ_base, bf16 * __restrict__ dK_base, bf16 * __restrict__ dV_base,
+     uint32_t B_size, uint32_t L_scope, uint32_t N_head,
+     uint32_t stride_batchB, uint32_t stride_seqL, uint32_t stride_headN,
+     uint32_t stride_batchB_colvec, uint32_t stride_seqL_colvec, uint32_t stride_headN_colvec,
+--- a/src/psh/bucket_swin_attn_bwd_dispatcher.cu
++++ b/src/psh/bucket_swin_attn_bwd_dispatcher.cu
+@@ -97,7 +97,8 @@
+   auto & bwd_disp = BuckSwinAttnBwdDispatcher::instance();
+ 
+   auto delta_ker = delta_disp.get_kernel_instance(headd, warp_per_cta, pipe_stage);
+-  auto bwd_ker = bwd_disp.get_kernel_instance(headd, 8, 1);
++  auto bwd_ker = bwd_disp.get_kernel_instance(headd, warp_per_cta_bwd, 1);
++  auto dQ_accum = at::zeros(dQ.sizes(), dQ.options().dtype(at::ScalarType::Float));
+   cudaFuncSetAttribute(delta_ker, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem_size);
+   cudaCheckLastErr();
+   cudaFuncSetAttribute(bwd_ker, cudaFuncAttributeMaxDynamicSharedMemorySize, shmem_size);
+@@ -117,7 +118,7 @@
+   bwd_ker<<<bwd_grid, warp_per_cta_bwd * WarpSize, shmem_size, stream>>>(
+     (bf16 *) Q.data_ptr(), (bf16 *) K.data_ptr(), (bf16 *) V.data_ptr(), (bf16 *) O.data_ptr(),
+     (bf16 *) dO.data_ptr(), (float *) LSE.data_ptr(), (float *) Delta.data_ptr(),
+-    (bf16 *) dQ.data_ptr(), (bf16 *) dK.data_ptr(), (bf16 *) dV.data_ptr(),
++    (float *) dQ_accum.data_ptr(), (bf16 *) dK.data_ptr(), (bf16 *) dV.data_ptr(),
+     Q.size(0), bucket_size * Scope_buckets.size(1), Q.size(2),
+     Q.stride(0), Q.stride(1), Q.stride(2),
+     LSE.stride(0), LSE.stride(1), LSE.stride(2),
+@@ -125,6 +126,7 @@
+     Scope_buckets.stride(0), bucket_size
+     );
+   cudaCheckLastErr();
++  dQ.copy_(dQ_accum);
+ 
+   if (dev_mgr.get_sync_stream()) {
+     cudaStreamSynchronize(stream);

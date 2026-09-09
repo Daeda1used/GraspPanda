@@ -1,0 +1,74 @@
+--- a/src/common/rand.cuh
++++ b/src/common/rand.cuh
+@@ -120,7 +120,7 @@
+   };
+ 
+ __global__ inline void init_kernel(curandState * global_base, uint64_t seed) {
+-  uint64_t seq = threadIdx.x;
++  uint64_t seq = blockIdx.x * blockDim.x + threadIdx.x;
+   curand_init(seed, seq, 0u, global_base + seq);
+ }
+ 
+--- a/src/psh/batch_psh_subbuck_reduce_bwd.cuh
++++ b/src/psh/batch_psh_subbuck_reduce_bwd.cuh
+@@ -100,11 +100,9 @@
+           input_row = unpool_ind[global_reduced_row * stride_unpoolN + sb_iter];
+           if (input_row < total_N) {
+             auto & val = input_feat[input_row * stride_featN + dim_feat_elem];
+-            if (O_MIN == red_op) {
+-              candidate = min(candidate, float(val));
+-              subbuck_activated = sb_iter;
+-            } else {
+-              candidate = max(candidate, float(val));
++            if ((O_MIN == red_op && float(val) < candidate) ||
++                (O_MAX == red_op && float(val) > candidate)) {
++              candidate = float(val);
+               subbuck_activated = sb_iter;
+             }
+           }
+--- a/flash3dxfmr/layers/buck_swin.py
++++ b/flash3dxfmr/layers/buck_swin.py
+@@ -35,10 +35,8 @@
+         """
+         Performs the forward pass of the buck_swin operation.
+ 
+-        This dummy implementation creates auxiliary buffers using the provided query tensor Q.
+-        It computes a dummy LSE by applying log-sum-exp over the last dimension of Q and computes
+-        the output tensor O as the element-wise sum of Q and V. The auxiliary buffers are stored
+-        in the ctx for backward computation.
++        The native CUDA kernel computes scaled dot-product attention within each
++        bucket scope. Output and log-sum-exp buffers are retained for backward.
+ 
+         Parameters:
+             Q (torch.Tensor): Query tensor of shape (B, L, H, D).
+@@ -88,7 +86,7 @@
+         # Create backward auxiliary buffers.
+         bwd_buff = sa.BuckSwinBwdBuffers.create_buckswin_buffers(O, scope_buckets, buck_size)
+         # Call the actual backward implementation.
+-        pshattn.buck_swin_bwd(Q, K, V, O, grad_output, lse, bwd_buff.Delta,
++        pshattn.buck_swin_bwd(Q, K, V, O, grad_output.contiguous(), lse, bwd_buff.Delta,
+                               bwd_buff.dQ, bwd_buff.dK, bwd_buff.dV, scope_buckets, buck_size)
+ 
+         # Return gradients for Q, K, V; non-tensor inputs receive None.
+--- a/flash3dxfmr/layers/pooling.py
++++ b/flash3dxfmr/layers/pooling.py
+@@ -103,7 +103,7 @@
+ 
+         # Call the backward kernel to compute grad_input_feat.
+         pshattn.batch_subbuck_reduce_backward(
+-            grad_reduced_feat,  # gradient with respect to reduced_feat
++            grad_reduced_feat.contiguous(),  # gradient with respect to reduced_feat
+             input_feat,
+             unpool_ind,
+             grad_input_feat,
+--- a/flash3dxfmr/layers/unpool.py
++++ b/flash3dxfmr/layers/unpool.py
+@@ -70,7 +70,7 @@
+         pshattn.additive_unpool_bwd(
+             unpool_grad.grad_res,
+             unpool_grad.grad_down,
+-            grad_up_add_feat,
++            grad_up_add_feat.contiguous(),
+             buffers.unpool_ind,
+             subbuck_size
+         )

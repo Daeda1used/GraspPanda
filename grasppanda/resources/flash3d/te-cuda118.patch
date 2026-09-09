@@ -1,0 +1,85 @@
+diff --git a/transformer_engine/common/util/cuda_driver.cpp b/transformer_engine/common/util/cuda_driver.cpp
+index 797a11c..5708861 100644
+--- a/transformer_engine/common/util/cuda_driver.cpp
++++ b/transformer_engine/common/util/cuda_driver.cpp
+@@ -95,10 +95,15 @@ namespace cuda_driver {
+ 
+ void *get_symbol(const char *symbol) {
+   void *entry_point;
++#if CUDART_VERSION >= 12000
+   cudaDriverEntryPointQueryResult driver_result;
+   NVTE_CHECK_CUDA(cudaGetDriverEntryPoint(symbol, &entry_point, cudaEnableDefault, &driver_result));
+   NVTE_CHECK(driver_result == cudaDriverEntryPointSuccess,
+              "Could not find CUDA driver entry point for ", symbol);
++#else
++  NVTE_CHECK_CUDA(cudaGetDriverEntryPoint(symbol, &entry_point, cudaEnableDefault));
++  NVTE_CHECK(entry_point != nullptr, "Could not find CUDA driver entry point for ", symbol);
++#endif
+   return entry_point;
+ }
+ 
+diff --git a/transformer_engine/pytorch/csrc/userbuffers/userbuffers-host.cpp b/transformer_engine/pytorch/csrc/userbuffers/userbuffers-host.cpp
+index 60ae619..1373f70 100644
+--- a/transformer_engine/pytorch/csrc/userbuffers/userbuffers-host.cpp
++++ b/transformer_engine/pytorch/csrc/userbuffers/userbuffers-host.cpp
+@@ -192,6 +192,7 @@ int create_communicator_grouped2(
+   (*comm)->asyncblocks = 16;
+ 
+ #define NBUF 2
++#if CUDA_VERSION >= 12010
+   if ((*comm)->sm_arch >= 9 && (*comm)->ar2_nvsize > 1 &&
+       !getenv("UB_SKIPMC")) {  // multicast init only for TP ops (____2 operations)
+     size_t mc_maxsize = MULTICAST_GB_TOTAL * (1ull << 30);
+@@ -265,7 +266,9 @@ int create_communicator_grouped2(
+     (*comm)->mc_baseptr = reinterpret_cast<void *>(mc_va);
+     (*comm)->_barrier((*comm)->comm_world);
+     if (!(*comm)->myrank) printf("MC initialized succesfully, window size = %ld\n", mc_maxsize);
+-  } else {
++  } else
++#endif
++  {
+     if (!(*comm)->myrank) printf("MC NOT initialized and used\n");
+     (*comm)->mc_maxsize = 0;
+     (*comm)->mc_offset = 0;
+@@ -472,10 +475,11 @@ int register_user_buffer_collective(void **gpubuff, size_t bytes, communicator *
+     size_t granularity = 0;
+     NVTE_CALL_CHECK_CUDA_DRIVER(
+         cuMemGetAllocationGranularity, &granularity, &prop,
+-        static_cast<CUmemAllocationGranularity_flags>(CU_MULTICAST_GRANULARITY_MINIMUM));
++        static_cast<CUmemAllocationGranularity_flags>(CU_MEM_ALLOC_GRANULARITY_MINIMUM));
+     // MPI_Allreduce MAX of granularity check
+     aligned_size = (bytes + granularity - 1) / granularity * granularity;
+ 
++#if CUDA_VERSION >= 12010
+     if (comm->use_mc) {
+       CUmulticastObjectProp mcProp = {};
+       mcProp.numDevices = nranks;
+@@ -486,6 +490,7 @@ int register_user_buffer_collective(void **gpubuff, size_t bytes, communicator *
+           static_cast<CUmemAllocationGranularity_flags>(CU_MULTICAST_GRANULARITY_MINIMUM));
+       aligned_size = (aligned_size + granularity - 1) / granularity * granularity;
+     }
++#endif
+ 
+     prop.location.id = comm->mydev;
+     comm->uchandles[hndl] = reinterpret_cast<CUmemGenericAllocationHandle *>(
+diff --git a/transformer_engine/pytorch/csrc/userbuffers/userbuffers.cu b/transformer_engine/pytorch/csrc/userbuffers/userbuffers.cu
+index 7168741..8cf0f91 100644
+--- a/transformer_engine/pytorch/csrc/userbuffers/userbuffers.cu
++++ b/transformer_engine/pytorch/csrc/userbuffers/userbuffers.cu
+@@ -6,6 +6,7 @@
+ 
+ #include <cuda.h>
+ #include <cuda_runtime.h>
++#include <cuda_fp16.h>
+ 
+ #if __CUDA_ARCH__ >= 800
+ #include <cuda_bf16.h>
+@@ -401,7 +402,7 @@ __global__ void __launch_bounds__(MAX_THREADS) userbuffers_fp16_sum_inplace_gpu_
+   if (threadIdx.x == 0 && lastSM) *reduceidptr = reduce_id;
+ }  // fp16 reduce-scatter kernel (out of place)
+ 
+-#if __CUDA_ARCH__ >= 900
++#if __CUDA_ARCH__ >= 900 && CUDA_VERSION >= 12010
+ // All MC kernels here
+ template <int RANKS>
+ __global__ void __launch_bounds__(MAX_THREADS)
