@@ -7,7 +7,7 @@ GtG2 generates grasp candidates with GPG, constructs a local graph for each cand
 Install the shared runtime using [Installation](INSTALL.md). Download the selected GraspNet training scenes and object models; `dex_models` avoids rebuilding the object geometry cache. Dataset links are in [Data & weights](DOWNLOADS.md). This workflow creates candidate labels from official collision and force-closure primitives; it does not require Graspness maps.
 
 ```bash
-cp GraspNet-1B/examples/train-gtg2.yaml gtg2.local.yaml
+./panda init --example train-gtg2 -o gtg2.local.yaml
 # Set dataset_root and label_root in gtg2.local.yaml.
 ./panda prepare-gtg2 --config gtg2.local.yaml
 ./panda run gtg2.local.yaml

@@ -1,44 +1,39 @@
 # GraspNet-1B
 
-Select a method and its observation protocol in the UI, or copy an example and edit its local paths:
+Choose a method in the browser and **Load preset**, or generate an editable configuration:
 
 ```bash
-cp GraspNet-1B/examples/infer-graspness.example.yaml graspness.local.yaml
-# Edit dataset_root and checkpoint in graspness.local.yaml.
+./panda init --method graspness -o graspness.local.yaml
 ./panda weights graspness --camera realsense
+# Set dataset_root in graspness.local.yaml to the directory containing scenes/.
 ./panda run graspness.local.yaml
 ```
 
-Run commands from the repository root. The dataset root is the directory containing `scenes/`; see [Data & weights](../docs/DOWNLOADS.md).
+Run commands from the repository root after [installation](../docs/INSTALL.md). Configuration generation does not require data, weights or a GPU, and never overwrites an existing file. [Data & weights](../docs/DOWNLOADS.md) explains downloads and preprocessing. [Using GraspPanda](../docs/USAGE.md) covers training, checkpoint resume and evaluation.
 
-| Example | Purpose |
+## Configuration examples
+
+Examples are defined in one [template catalogue](examples.yaml). Generate only the files you need:
+
+```bash
+./panda init --list
+./panda init --example compose-baseline -o composition.local.yaml
+./panda init --example train-hggd -o training.local.yaml
+```
+
+| Workflow | Example names |
 |---|---|
-| [Frame inference](examples/infer-graspness.example.yaml) | Predict grasps from a GraspNet frame |
-| [Epoch training](examples/train-baseline.yaml) | Train the baseline with its native dataset loop |
-| [HGGD training](examples/train-hggd.yaml) | Train RGB-D anchor/local stages with gradient accumulation and checkpoint resume |
-| [FineGrasp training](examples/train-finegrasp.yaml) | Configure native grouping, cross-radius attention and classification objectives |
-| [Candidate graph training](examples/train-gtg2.yaml) | Prepare GtG2 graphs and train scene-disjoint ensembles; [guide](../docs/GTG2.md) |
-| [Training controls](examples/train-controls.yaml) | Select loss formulations and label-aligned point augmentation |
-| [Component composition](examples/compose-baseline.yaml) | Train a different encoder and cylindrical grouping |
-| [RGB-D composition](examples/compose-hggd.yaml) | Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation |
-| [Configuration sweep](examples/sweep-baseline.yaml) | Compare PointMLP widths and random seeds |
+| Inference | `infer-graspness` or `--method METHOD` for any runnable preset |
+| Training | `train-baseline`, `train-hggd`, `train-finegrasp`, `train-gtg2` |
+| Losses and augmentation | `train-controls`, `compose-hggd` |
+| Point encoders and grouping | `compose-baseline`, `compose-ptv3`, `compose-octformer`, `compose-pcm`, `compose-pointmamba`, `compose-pointmeta`, `compose-pointvector`, `compose-reslfe` |
+| Image encoders | `compose-hggd`, `compose-dino`, `compose-vmamba` |
+| Parameter sweeps | `sweep-baseline`; use `./panda sweep FILE --preview` before execution |
 
-<details>
-<summary>Advanced component examples</summary>
+Each generated file includes its method, operation and settings. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters. Files named `*.local.yaml` are ignored by Git.
 
-| Example | Purpose |
-|---|---|
-| [Point Transformer](examples/components/compose-ptv3.yaml) | Configure native PTv3 stages, attention windows and optimization |
-| [Residual local aggregation](examples/components/compose-reslfe.yaml) | Configure native ResLFE layers inside oriented cylinders |
-| [PointMetaBase](examples/components/compose-pointmeta.yaml) | Configure feature updates, explicit position encoding and local aggregation |
-| [PointMamba](examples/components/compose-pointmamba.yaml) | Configure native state-space tokens, Hilbert ordering and grasp seed interpolation |
-| [Point Cloud Mamba](examples/components/compose-pcm.yaml) | Configure point hierarchy stages, local windows, scan orders and native dense decoding |
-| [PointVector](examples/components/compose-pointvector.yaml) | Compose native vector aggregation features with oriented cylindrical grouping |
-| [Pretrained image features](examples/components/compose-dino.yaml) | Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks |
-| [Visual state-space encoder](examples/components/compose-vmamba.yaml) | Configure VMamba stages, state size and scan directions |
+## Observation protocols
 
-</details>
+Single-view point clouds, RGB-D, fused views, active perception and temporal sequences have different input contracts. The selected preset preserves its method's protocol. Find operation availability, limitations, PDFs and original implementations in [Methods & papers](../docs/METHODS.md).
 
-Single-view point clouds, RGB-D, fused views, active perception and temporal sequences have different input contracts. Choose the corresponding preset; use the [method table](../docs/METHODS.md) to compare available operations and find source code. Presets are generated by the toolbox, so there is no separate manifest to maintain for every method.
-
-Original sources are downloaded into `upstream/` by the installer. Weights, caches and your experiment outputs are created locally.
+Original implementations are fetched into `upstream/` by protocol. Runtime caches, weights and experiment outputs are generated locally; see the [local directory layout](../docs/INSTALL.md#files-created-locally).

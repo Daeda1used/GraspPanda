@@ -35,10 +35,12 @@ The available choices depend on the method. Use `./panda doctor` for installatio
 ./panda verify hggd --dataset-root /data/GraspNet-1B
 ./panda verify asgrasp
 ./panda weights graspness --camera realsense
-cp GraspNet-1B/examples/infer-graspness.example.yaml graspness.local.yaml
+./panda init --method graspness -o graspness.local.yaml
 # Set dataset_root and checkpoint in graspness.local.yaml.
 ./panda run graspness.local.yaml
 ```
+
+`init` writes a local YAML configuration without downloading weights or running a model. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
 
 `verify` executes the method preset. `run` accepts YAML or JSON; edit the local copy before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
 
@@ -55,7 +57,7 @@ Prepare the method's labels using [Data & weights](DOWNLOADS.md). For native epo
 
 `initialize` loads model weights and starts a fresh optimizer. `resume` is available only for native epoch training; inference and short training use `initialize`. `resume` restores the model, optimizer and epoch with strict loading; keep the same component/data/optimization settings and set `epochs` above the saved epoch. SBG's native OneCycle schedule, FineGrasp's native schedule and configured update schedules require the original final-epoch horizon. [Optimization settings](MODULES.md#optimizers-and-schedules) cover the available choices and update units.
 
-For RGB-D epoch training, start with [the HGGD example](../GraspNet-1B/examples/train-hggd.yaml). Its [training guide](MODULES.md#hggd-epoch-training) explains joint/frozen stages, prepared labels and accumulation.
+For RGB-D epoch training, start with [`train-hggd`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-hggd`). Its [training guide](MODULES.md#hggd-epoch-training) explains joint/frozen stages, prepared labels and accumulation.
 
 To use a completed run's `checkpoint.pt`, click **Prepare inference from checkpoint** in **Runs & results**, open **Configuration editor**, review the generated configuration and **Run edited JSON**. Frame adapters retain the module choices. Native recipes retain their fixed input protocol. CenterGrasp's RGB checkpoint stays paired with the SGDF model that provided its embedding targets.
 
@@ -72,8 +74,10 @@ In **Configuration editor**, generate or edit the base experiment, expand **Conf
 This example creates four PointMLP experiments when the base selects `backbone: pointmlp`. Use dotted configuration paths; lists such as layer widths must be nested inside the list of candidate values. To compare different architectures with different parameters, vary the entire `modules.backbone` mapping. Unsupported method/parameter combinations and duplicate configurations are rejected. A grid is limited to 128 experiments.
 
 ```bash
-./panda sweep GraspNet-1B/examples/sweep-baseline.yaml --preview
-./panda sweep GraspNet-1B/examples/sweep-baseline.yaml
+./panda init --example sweep-baseline -o sweep.local.yaml
+# Edit the dataset and checkpoint paths in sweep.local.yaml.
+./panda sweep sweep.local.yaml --preview
+./panda sweep sweep.local.yaml
 ```
 
 Edit the dataset/checkpoint paths first. Sweep YAML contains `base` and `grid`; its Cartesian product uses sorted parameter names and the supplied value order. Jobs run sequentially, each with its own seed, exact configuration and provenance. Group manifests are generated in `outputs/runs/sweeps/`; each run also carries `sweep.json`. Inspect or cancel individual jobs in **Runs & results** and compare their settings and results in **Compare**. Ctrl+C cancels the CLI sweep's remaining jobs.

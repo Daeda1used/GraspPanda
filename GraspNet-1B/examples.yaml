@@ -1,0 +1,788 @@
+# Generate a local copy: ./panda init --example NAME -o experiment.local.yaml
+infer-graspness:
+  description: Predict grasps from a GraspNet frame
+  config:
+    method: graspness
+    action: infer
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspness/checkpoint-rs.tar
+    camera: realsense
+    split: test_seen
+    scene: 100
+    frame: 0
+    frames: 1
+    num_points: 15000
+    voxel_size: 0.005
+    collision_thresh: 0.01
+    workspace: official_gt_workspace
+    seed: 0
+train-baseline:
+  description: Train the baseline with its native dataset loop
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: official_gt_workspace
+    batch_size: 2
+    epochs: 18
+    learning_rate: 0.001
+    train_checkpoint_mode: initialize
+    train_batch_limit: 0
+    eval_batch_limit: 0
+    data_workers: 4
+    timeout_minutes: 43200
+train-hggd:
+  description: Train RGB-D anchor/local stages with gradient accumulation and checkpoint resume
+  config:
+    dataset: graspnet1b
+    method: hggd
+    action: train
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: native_demo
+    num_points: 25600
+    batch_size: 4
+    epochs: 15
+    learning_rate: 0.0001
+    data_workers: 2
+    train_batch_limit: 0
+    eval_batch_limit: 0
+    timeout_minutes: 14400
+    train_checkpoint_mode: initialize
+    trainer:
+      joint_training: true
+      pre_epochs: 0
+      shift_epochs: 5
+      accumulation_steps: 2
+train-finegrasp:
+  description: Configure native grouping, cross-radius attention and classification objectives
+  config:
+    dataset: graspnet1b
+    method: finegrasp
+    action: train
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/finegrasp/finegrasp_pipeline/model.safetensors
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: official_gt_workspace
+    num_points: 15000
+    voxel_size: 0.005
+    batch_size: 4
+    epochs: 10
+    learning_rate: 0.008
+    data_workers: 2
+    train_batch_limit: 0
+    eval_batch_limit: 0
+    timeout_minutes: 14400
+    label_root: /data/GraspPanda-cache/finegrasp
+    train_checkpoint_mode: initialize
+    checkpoint_policy: reuse_unchanged
+    modules:
+      crop:
+        type: native_cylinder
+        nsample: 24
+        radius: 0.07
+        radius_factors:
+        - 0.25
+        - 0.5
+        - 0.75
+        - 1.0
+        fusion_layers: 3
+        fusion_heads: 8
+        fusion_ffn_dim: 1024
+        fusion_dropout: 0.1
+    loss:
+      functions:
+        objectness: cross_entropy
+        depth: focal
+        score: poly1
+    augmentation:
+      mode: native
+train-gtg2:
+  description: Prepare GtG2 graphs and train scene-disjoint ensembles
+  config:
+    method: gtg2
+    action: train
+    dataset_root: /data/GraspNet-1B
+    label_root: outputs/prepared/gtg2
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    checkpoint: ''
+    epochs: 500
+    batch_size: 128
+    learning_rate: 0.01
+    timeout_minutes: 43200
+    modules:
+      backbone:
+        type: gtg_sage
+        hidden: 64
+        layers: 3
+        aggregation: max
+      crop:
+        type: grasp_graph
+        k: 5
+        max_points: 70
+        include_outside: true
+        encoding: binary
+        candidate_limit: 0
+    trainer:
+      folds:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      sampling: balanced
+      refresh_epochs: 10
+      negative_per_class: 50000
+train-controls:
+  description: Select loss formulations and label-aligned point augmentation
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    epochs: 2
+    batch_size: 2
+    learning_rate: 0.0001
+    train_batch_limit: 2
+    eval_batch_limit: 1
+    data_workers: 2
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+    loss:
+      functions:
+        objectness:
+          type: poly1
+          epsilon: 1.0
+        width:
+          type: huber
+          delta: 0.5
+    augmentation:
+      mode: custom
+      rotation_degrees: 10
+      translation: 0.005
+      point_dropout: 0.2
+      cutout_fraction: 0.1
+      depth_noise_std: 0.001
+      depth_noise_clip: 0.003
+compose-baseline:
+  description: Train a different encoder and cylindrical grouping
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 4096
+    workspace: official_gt_workspace
+    modules:
+      backbone: pointnet
+      crop: multiscale
+    checkpoint_policy: reuse_unchanged
+    training_steps: 3
+    learning_rate: 0.0001
+compose-hggd:
+  description: Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation
+  config:
+    dataset: graspnet1b
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: native_demo
+    training_steps: 3
+    learning_rate: 3.0e-05
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: convnextv2
+        variant: atto
+        stage_channels:
+        - 24
+        - 48
+        - 96
+        - 192
+        stage_depths:
+        - 1
+        - 1
+        - 2
+        - 1
+        projection_norm: group
+    optimizer:
+      type: lion
+      weight_decay: 0.01
+    scheduler:
+      type: cosine
+      warmup_steps: 1
+      min_lr_ratio: 0.1
+    loss:
+      functions:
+        anchor_location:
+          type: asl
+          gamma_pos: 0
+          gamma_neg: 2
+          clip: 0.02
+        anchor_theta:
+          type: huber
+          delta: 0.5
+        local_orientation: poly1
+      weights:
+        local_offset: 0.8
+    augmentation:
+      mode: custom
+      brightness: 0.1
+      contrast: 0.1
+      depth_noise_std: 0.0005
+      depth_noise_clip: 0.002
+sweep-baseline:
+  description: Compare PointMLP widths and random seeds
+  config:
+    base:
+      dataset: graspnet1b
+      method: graspnet_baseline
+      action: train_check
+      dataset_root: /data/GraspNet-1B
+      checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+      camera: realsense
+      split: train
+      scene: 0
+      num_points: 4096
+      workspace: official_gt_workspace
+      checkpoint_policy: reuse_unchanged
+      training_steps: 3
+      learning_rate: 0.0001
+      modules:
+        backbone:
+          type: pointmlp
+          pre_blocks:
+          - 1
+          - 2
+          - 1
+          - 2
+          pos_blocks:
+          - 1
+          - 1
+          - 2
+          - 1
+          decoder_channels:
+          - 128
+          - 64
+          - 32
+          - 32
+          stage_points:
+          - 512
+          - 128
+          - 32
+          - 8
+          k_neighbors:
+          - 16
+          - 16
+          - 16
+          - 8
+    grid:
+      seed:
+      - 0
+      - 1
+      modules.backbone.embed_dim:
+      - 16
+      - 32
+compose-dino:
+  description: Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks
+  config:
+    dataset: graspnet1b
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: native_demo
+    num_points: 15000
+    training_steps: 10
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: dinov3
+        variant: small
+        pretrained: true
+        out_indices:
+        - 2
+        - 5
+        - 8
+        - 11
+        trainable_blocks: 2
+        gradient_checkpointing: true
+        projection_norm: batch
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+compose-octformer:
+  description: Configure an octree hierarchy, attention windows and stage ablations
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /path/to/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 8192
+    modules:
+      backbone:
+        type: octformer
+        channels:
+        - 32
+        - 64
+        - 128
+        - 128
+        num_blocks:
+        - 2
+        - 2
+        - 4
+        - 2
+        num_heads:
+        - 2
+        - 4
+        - 8
+        - 8
+        patch_size: 32
+        dilation: 4
+        mlp_ratio:
+        - 2
+        - 3
+        - 4
+        - 4
+        use_rpe:
+        - false
+        - true
+        - true
+        - true
+        use_checkpoint: true
+        fpn_channel: 64
+      crop:
+        type: cylinder
+        radius_factors:
+        - 0.5
+        - 1.0
+        - 1.5
+        pooling: attention
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+compose-pcm:
+  description: Configure point hierarchy stages, local windows, scan orders and native dense decoding
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: official_gt_workspace
+    num_points: 4096
+    batch_size: 2
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: pointcloud_mamba
+        embed_dim: 32
+        dim_expansion:
+        - 1
+        - 2
+        - 2
+        - 2
+        pre_blocks:
+        - 1
+        - 1
+        - 1
+        - 1
+        pos_blocks:
+        - 0
+        - 0
+        - 0
+        - 0
+        mamba_blocks:
+        - 0
+        - 1
+        - 0
+        - 2
+        orders:
+        - xyz
+        - hilbert
+        - z-trans
+        d_state:
+        - 16
+        - 32
+        - 64
+        d_conv:
+        - 2
+        - 3
+        - 4
+        expand: 2
+        dt_rank:
+        - 2
+        - 4
+        - 4
+        k_neighbors:
+        - 12
+        - 12
+        - 12
+        - 12
+        k_strides:
+        - 1
+        - 1
+        - 1
+        - 1
+        reducers:
+        - 4
+        - 4
+        - 2
+        - 2
+        use_windows: true
+        window_sizes:
+        - 512
+        - 256
+        - 128
+        - 64
+        use_order_prompt: true
+        prompt_num_per_order: 4
+        mamba_pos: true
+        pos_type: per_layer
+        pos_proj_type: mlp
+        grid_size: 0.04
+        decoder_channels:
+        - 128
+        - 64
+        - 32
+        - 32
+        decoder_mamba_blocks:
+        - 1
+        - 1
+        - 0
+        - 0
+        decoder_orders:
+        - xyz
+        - z-trans
+        decoder_d_state:
+        - 16
+        - 32
+        decoder_d_conv: 3
+      crop:
+        type: cylinder
+        hidden_channels:
+        - 64
+        - 128
+        radius_factors:
+        - 0.5
+        - 1.0
+        pooling: attention
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+compose-pointmamba:
+  description: Configure native state-space tokens, Hilbert ordering and grasp seed interpolation
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: official_gt_workspace
+    num_points: 4096
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: pointmamba
+        dim: 96
+        depth: 3
+        num_group: 64
+        group_size: 24
+        d_state: 32
+        d_conv: 2
+        expand: 1
+        dt_rank: 8
+        grid_size: 0.02
+        rms_norm: true
+        order_fusion: concat
+        drop_path: 0.2
+        dropout: 0.1
+        gradient_checkpointing: true
+      crop:
+        type: cylinder
+        hidden_channels:
+        - 64
+        - 128
+        radius_factors:
+        - 0.5
+        - 1.0
+        pooling: attention
+compose-pointmeta:
+  description: Configure feature updates, explicit position encoding and local aggregation
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: official_gt_workspace
+    num_points: 4096
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: pointmeta
+        width: 16
+        blocks:
+        - 1
+        - 2
+        - 2
+        - 2
+        - 2
+        nsample: 16
+        expansion: 3
+        local_reduction: mean
+        normalize_dp: false
+        activation: gelu
+        use_res: false
+        sa_layers: 2
+        sa_use_res: true
+        decoder_layers: 3
+      crop:
+        type: reslfe_cylinder
+        width: 32
+        depth: 2
+        nsample: 12
+        local_neighbors: 6
+        radius_factors:
+        - 0.5
+        - 1.0
+        pooling: attention
+compose-pointvector:
+  description: Compose native vector aggregation features with oriented cylindrical grouping
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: official_gt_workspace
+    num_points: 4096
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: pointvector
+        width: 16
+        blocks:
+        - 1
+        - 2
+        - 2
+        - 2
+        - 2
+        nsample: 16
+        local_nsample: 12
+        normalize_dp: false
+        sa_layers: 2
+        sa_use_res: true
+        decoder_layers: 3
+      crop:
+        type: cylinder
+        radius_factors:
+        - 0.5
+        - 1.0
+        pooling: attention
+        nsample: 16
+compose-ptv3:
+  description: Configure native PTv3 stages, attention windows and optimization
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 4096
+    voxel_size: 0.005
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: sonata_ptv3
+        enc_depths:
+        - 1
+        - 1
+        - 1
+        - 1
+        - 1
+        enc_channels:
+        - 32
+        - 64
+        - 128
+        - 256
+        - 512
+        enc_num_head:
+        - 2
+        - 4
+        - 8
+        - 16
+        - 32
+        enc_patch_size:
+        - 64
+        - 64
+        - 64
+        - 64
+        - 64
+        dec_depths:
+        - 1
+        - 1
+        - 1
+        - 1
+        dec_channels:
+        - 32
+        - 64
+        - 128
+        - 256
+        dec_num_head:
+        - 2
+        - 4
+        - 8
+        - 16
+        dec_patch_size:
+        - 32
+        - 32
+        - 32
+        - 32
+        shuffle_orders: false
+        drop_path: 0
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+    scheduler:
+      type: cosine
+      warmup_steps: 1
+      min_lr_ratio: 0.1
+compose-reslfe:
+  description: Configure native ResLFE layers inside oriented cylinders
+  config:
+    dataset: graspnet1b
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: official_gt_workspace
+    num_points: 4096
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      crop:
+        type: reslfe_cylinder
+        width: 32
+        depth: 3
+        local_neighbors: 6
+        nsample: 12
+        radius_factors:
+        - 0.5
+        - 1.0
+        mlp_ratio: 2.0
+        drop_path: 0.2
+        pooling: attention
+        activation: silu
+        normalization: group
+compose-vmamba:
+  description: Configure VMamba stages, state size and scan directions
+  config:
+    dataset: graspnet1b
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    workspace: native_demo
+    num_points: 15000
+    training_steps: 3
+    learning_rate: 0.0001
+    checkpoint_policy: reuse_unchanged
+    modules:
+      backbone:
+        type: vmamba
+        stage_channels:
+        - 32
+        - 64
+        - 128
+        - 256
+        stage_depths:
+        - 1
+        - 1
+        - 2
+        - 1
+        state_dim: 4
+        scan: cross2d
+        gradient_checkpointing: true
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+    loss:
+      functions:
+        anchor_location: asl
+        local_offset: huber
+    augmentation:
+      brightness: 0.1
+      depth_noise_std: 0.0005

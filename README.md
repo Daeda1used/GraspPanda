@@ -15,7 +15,7 @@ cd GraspPanda
 
 Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your dataset root → **Download registered weights** → **Run current form**. View predictions and checkpoints in **Runs & results**.
 
-**No dataset yet?** Start with the ASGrasp preset and its bundled stereo sample, or follow [Data & weights](docs/DOWNLOADS.md) to download GraspNet. Sources, weights and experiment outputs are prepared locally.
+**No dataset yet?** Start with the ASGrasp preset and its bundled stereo sample, or follow [Data & weights](docs/DOWNLOADS.md) to download GraspNet. Use `./panda init --method graspness` for a local CLI configuration. Sources, weights and experiment outputs are prepared locally.
 
 ## Guides
 

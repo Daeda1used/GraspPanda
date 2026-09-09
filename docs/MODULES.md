@@ -76,7 +76,7 @@ In the UI, select the component names under **Compose modules**, then enter para
 
 ## OctFormer hierarchy
 
-`octformer` adapts the [author implementation](https://github.com/octree-nn/octformer) of [OctFormer (SIGGRAPH / TOG 2023 PDF)](https://arxiv.org/pdf/2305.03045) to Baseline and its PointNet2 port. It retains the native octree convolution stem, alternating regular/dilated window attention, positional convolution, MLP blocks and multi-scale segmentation decoder. Camera XYZ replaces the ScanNet input features; the decoder produces 256-channel features sampled at the original grasp seed indices. Start with [the composition example](../GraspNet-1B/examples/components/compose-octformer.yaml).
+`octformer` adapts the [author implementation](https://github.com/octree-nn/octformer) of [OctFormer (SIGGRAPH / TOG 2023 PDF)](https://arxiv.org/pdf/2305.03045) to Baseline and its PointNet2 port. It retains the native octree convolution stem, alternating regular/dilated window attention, positional convolution, MLP blocks and multi-scale segmentation decoder. Camera XYZ replaces the ScanNet input features; the decoder produces 256-channel features sampled at the original grasp seed indices. Start with [`compose-octformer`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-octformer`).
 
 | Configure | Parameters and defaults |
 |---|---|
@@ -109,7 +109,7 @@ The adapter supplies XYZ features, decodes back to every original input point, p
 | `sa_layers`, `sa_use_res` | `1`, `false`; abstraction MLP depth and residual connection |
 | `decoder_layers` | `2`; MLP depth of native feature propagation |
 
-Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [the PointVector composition example](../GraspNet-1B/examples/components/compose-pointvector.yaml). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
+Vector blocks retain the author's angle-based scalar-to-vector transforms, channel-grouped projection, ReLU/batch normalization and sum reduction. Increasing `local_nsample` changes both support and the scale of that sum. A stage depth of one omits its additional vector blocks; choosing one for every stage is an explicit no-vector ablation. Start with [`compose-pointvector`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-pointvector`). Baseline also supports this encoder in epoch training; the PointNet2 port uses its registered short-training and inference operations.
 
 ## PointMetaBase encoder
 
@@ -129,7 +129,7 @@ The encoder updates point features before grouping and adds explicit positional 
 | `sa_layers`, `sa_use_res` | `1`, `false`; abstraction feature-MLP depth and residual connection. Its positional branch retains the native depth rule. |
 | `decoder_layers` | `2`; feature-propagation MLP depth. The native decoder retains ReLU and BatchNorm. |
 
-A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [the PointMetaBase composition example](../GraspNet-1B/examples/components/compose-pointmeta.yaml), which also replaces cylinder processing with ResLFE.
+A stage depth of one omits its extra local blocks, so local reduction, expansion and residual settings have no effect in that stage. Selecting one in all stages gives an abstraction-only ablation. Use `reuse_unchanged` with the original grasp checkpoint, train the replacement, then use `strict` for the resulting checkpoint. Baseline supports epoch training and resume; the PointNet2 port supports its registered short-training and inference operations. Start with [`compose-pointmeta`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-pointmeta`), which also replaces cylinder processing with ResLFE.
 
 ## PointMamba encoder
 
@@ -149,7 +149,7 @@ FPS centers and Euclidean nearest neighbors form centered local patches. Shared 
 | `order_fusion` | `mean`; alternatively `concat`, doubling the projection input width |
 | `gradient_checkpointing` | `false`; recompute token blocks during training while preserving dropout RNG |
 
-The adapter keeps the native block constructor initialization, including the learned timestep bias initialization and depth-scaled output projections. It does not apply the classification trainer's outer scratch initializer, load classification weights or provide pretrained grasp weights. Start with [the composition example](../GraspNet-1B/examples/components/compose-pointmamba.yaml), use `reuse_unchanged` to retain the baseline's other modules, train the replacement, and use `strict` to reload the resulting grasp checkpoint. Width, depth, state size, grouping and fusion are saved with the experiment and can be swept through dotted configuration paths.
+The adapter keeps the native block constructor initialization, including the learned timestep bias initialization and depth-scaled output projections. It does not apply the classification trainer's outer scratch initializer, load classification weights or provide pretrained grasp weights. Start with [`compose-pointmamba`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-pointmamba`), use `reuse_unchanged` to retain the baseline's other modules, train the replacement, and use `strict` to reload the resulting grasp checkpoint. Width, depth, state size, grouping and fusion are saved with the experiment and can be swept through dotted configuration paths.
 
 Run `./panda install` to fetch the pinned sources and build both native CUDA extensions in the shared runtime. Fast Mamba convolution and selective scan use isolated extension names; no global `mamba_ssm` package is installed. Coordinates must be CUDA float32; extremely small grids that exceed the native 16-bit spatial encoding are rejected. Single-cell clouds retain a valid ordering. This encoder has one token resolution; it does not provide a hierarchical point decoder or make multi-view inputs interchangeable with single-view observations.
 
@@ -189,7 +189,7 @@ Stage widths must be multiples of eight and at most 2,048. Each neighbor count m
 
 GraspPanda applies three correspondence fixes to the pinned source: CTS uses per-point coordinates with a zero-based serpentine endpoint convention and separate batch ranges; prompt IDs follow first occurrence instead of unordered set iteration; each decoder scan stage restores feature rows before the next spatial interpolation. These fixes affect serialized ordering and optional decoder scans, so the adapter does not claim numerical equivalence to the unmodified upstream model. The scoped loader also removes an unsupported, redundant keyword from the native standalone RMSNorm wrapper, allowing non-fused RMSNorm blocks. Native grouping, normalization mathematics, Mamba layers, global context and propagation remain in use.
 
-Use [the composition example](../GraspNet-1B/examples/components/compose-pcm.yaml), or select `pointcloud_mamba` and enter parameters in the UI. `./panda install` downloads the pinned source and builds its two CUDA extensions with isolated names in the shared runtime; its older causal-convolution ABI coexists with `pointmamba`. Source terms are described in [Third-party notices](THIRD_PARTY.md).
+Use [`compose-pcm`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-pcm`), or select `pointcloud_mamba` and enter parameters in the UI. `./panda install` downloads the pinned source and builds its two CUDA extensions with isolated names in the shared runtime; its older causal-convolution ABI coexists with `pointmamba`. Source terms are described in [Third-party notices](THIRD_PARTY.md).
 
 Training requires **`batch_size >= 2`** because native global-context BatchNorm operates on one pooled feature per sample. Short training uses a fixed batch of consecutive labelled frames within the selected scene; epoch training drops an incomplete final batch. Inference accepts one frame. Keep the exact component configuration when reloading weights; use `reuse_unchanged` for initial component replacement, train it, then use `strict` with the resulting checkpoint. Epoch `resume` restores the saved composition and optimizer contract. Run full training and held-out evaluation before interpreting grasp quality.
 
@@ -213,7 +213,7 @@ This is a local-block adaptation. It does not introduce DeepLA's scene segmentat
 | `activation` | `gelu`; also `relu` or `silu`, used in embeddings and feed-forward layers. |
 | `normalization` | `batch`; also `group` or `none`, for the input/position embeddings, output projection and radius fusion. Native ResLFE layers retain BatchNorm. |
 
-The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [the local aggregation example](../GraspNet-1B/examples/components/compose-reslfe.yaml). Source terms are described in [Third-party notices](THIRD_PARTY.md).
+The native operator supports float32 and float16; bfloat16 is rejected. CUDA launches use the current PyTorch stream and tensor device. More samples increase the within-cylinder distance matrix quadratically; start with [`compose-reslfe`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-reslfe`). Source terms are described in [Third-party notices](THIRD_PARTY.md).
 
 ## Point Transformer encoder
 
@@ -236,7 +236,7 @@ This is a trainable architecture adaptation with random initialization. It does 
 | `enable_rpe`, `upcast_attention`, `upcast_softmax` | Boolean controls; default false |
 | `layer_scale` | Optional positive residual scale, omitted by default |
 
-Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [PTv3 composition example](../GraspNet-1B/examples/components/compose-ptv3.yaml) for a smaller trainable configuration.
+Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [`compose-ptv3`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-ptv3`) for a smaller trainable configuration.
 
 ## RGB-D image encoders
 
@@ -252,7 +252,7 @@ The modern encoders use the implementation in the locked [timm library](https://
 
 ConvNeXt/RepViT/MobileNet inputs are zero-padded only at the high ends of the spatial axes. ConvNeXt patch-center offsets are resampled onto the native lattice with bilinear interpolation and border extension; RepViT/MobileNet use their centered, odd-kernel lattices. Encoders without stride-2 outputs gain a native-sized stem. Learned projections supply the expected channels; `projection_norm` accepts batch/group/none. These are explicit grasp adaptations, not reproductions of image-classification results.
 
-Selecting a new encoder initializes it and its projections from scratch. `reuse_unchanged` retains only the original anchor heads and complete local network; use `strict` for subsequent checkpoint inference. No ImageNet weights are downloaded implicitly. See [image composition example](../GraspNet-1B/examples/compose-hggd.yaml).
+Selecting a new encoder initializes it and its projections from scratch. `reuse_unchanged` retains only the original anchor heads and complete local network; use `strict` for subsequent checkpoint inference. No ImageNet weights are downloaded implicitly. See [`compose-hggd`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-hggd`).
 
 ### VMamba state-space image features
 
@@ -273,7 +273,7 @@ The native convolutional patch embedding and downsampling retain pixel-zero latt
 | `gradient_checkpointing` | `false`; recompute native blocks during training using non-reentrant checkpointing |
 | `projection_norm` | `batch`; alternatives `group`, `none` |
 
-Start with [the VMamba composition example](../GraspNet-1B/examples/components/compose-vmamba.yaml). Smaller stage widths/depths make configuration sweeps less expensive. HGGD also supports these components in [epoch training](#hggd-epoch-training). A larger state, stage or point count increases memory use; scan choices are architectural experiments, not an accuracy ranking.
+Start with [`compose-vmamba`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-vmamba`). Smaller stage widths/depths make configuration sweeps less expensive. HGGD also supports these components in [epoch training](#hggd-epoch-training). A larger state, stage or point count increases memory use; scan choices are architectural experiments, not an accuracy ranking.
 
 ### Pretrained DINO image features
 
@@ -296,7 +296,7 @@ The adapter restores conventional RGB image axes, applies the registered RGB nor
 | `gradient_checkpointing` | `false`; enable to reduce intermediate activation memory at the cost of recomputation. |
 | `projection_norm` | `batch`; alternatives `group` and `none` apply to the RGB/depth projections. The stride-2 stem retains batch normalization. |
 
-Start with [the pretrained image example](../GraspNet-1B/examples/components/compose-dino.yaml). Use `checkpoint_policy: reuse_unchanged` with the method's grasp checkpoint to initialize its unchanged heads and local branch. Missing encoder weights are downloaded and checksum-verified during initialization; the UI's **Pretrained image encoders** panel or `./panda component-weights dinov3_small` can prepare them ahead of time. This uses the same shared runtime.
+Start with [`compose-dino`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-dino`). Use `checkpoint_policy: reuse_unchanged` with the method's grasp checkpoint to initialize its unchanged heads and local branch. Missing encoder weights are downloaded and checksum-verified during initialization; the UI's **Pretrained image encoders** panel or `./panda component-weights dinov3_small` can prepare them ahead of time. This uses the same shared runtime.
 
 After training, retain the module configuration and load the resulting grasp checkpoint with `strict`. Strict loading does not download or reapply DINO initialization, so it preserves the trained encoder and works without the original pretrained-weight file. Initialization provenance records the selected weight ID, immutable source URL and SHA256. Changing the source registry while a job waits causes the job to stop rather than use different initialization.
 
@@ -304,7 +304,7 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 ## Training controls
 
-Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [the point training-controls example](../GraspNet-1B/examples/train-controls.yaml).
+Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-controls`).
 
 In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -396,7 +396,7 @@ Use `augmentation.mode: custom` or omit `mode` when providing the following para
 
 RGB and depth perturbations are applied at full resolution before the native anchor resize. The same modified observations feed the local point cloud (HGGD) or local image patches (RNG). Invalid depth stays zero, valid noisy depth stays positive, and absolute grasp poses remain fixed. Native relative-depth targets are generated from the modified depth observation. Geometric image rotation/cropping and point-only perturbations are rejected because they require additional camera and local-label transforms.
 
-HGGD samples augmentation for each dataset item. RNG samples once before creating its fixed training frame, optional anchor warmup and local patches; it retains its bounded native-objective training protocol. Start with the loss and augmentation section of [the RGB-D composition example](../GraspNet-1B/examples/compose-hggd.yaml). Sweeps can vary paths such as `loss.functions.local_orientation`, `loss.weights.local_offset` and `augmentation.depth_noise_std`.
+HGGD samples augmentation for each dataset item. RNG samples once before creating its fixed training frame, optional anchor warmup and local patches; it retains its bounded native-objective training protocol. Start with the loss and augmentation section of [`compose-hggd`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-hggd`). Sweeps can vary paths such as `loss.functions.local_orientation`, `loss.weights.local_offset` and `augmentation.depth_noise_std`.
 
 ### Point augmentation
 
@@ -530,7 +530,7 @@ The browser exposes this setting under **Training & evaluation settings** for RN
 
 ## HGGD epoch training
 
-Copy [train-hggd.yaml](../GraspNet-1B/examples/train-hggd.yaml), set your dataset/checkpoint paths and run it with `./panda run`. The example fine-tunes author weights at a conservative learning rate; it is not a reproduction of the paper's training hyperparameters. Prepare the camera-specific [HGGD targets](DOWNLOADS.md#method-specific-preprocessing) for training scenes 0000-0099 and validation scene 0100. `workspace: native_demo` retains the native RGB-D geometry and target generation. Batch size must be at least 2.
+Generate the [`train-hggd` example](../GraspNet-1B/README.md#configuration-examples) with `./panda init --example train-hggd`, set your dataset/checkpoint paths in `experiment.local.yaml`, then use `./panda run experiment.local.yaml`. The example fine-tunes author weights at a conservative learning rate; it is not a reproduction of the paper's training hyperparameters. Prepare the camera-specific [HGGD targets](DOWNLOADS.md#method-specific-preprocessing) for training scenes 0000-0099 and validation scene 0100. `workspace: native_demo` retains the native RGB-D geometry and target generation. Batch size must be at least 2.
 
 Set `trainer` in YAML/JSON or expand **Training & evaluation settings → Method training stages** in the UI:
 
@@ -557,7 +557,7 @@ Each completed training epoch is saved before validation to `training/checkpoint
 
 ## FineGrasp training and composition
 
-FineGrasp exposes its own native training adapter, alongside the FineGrasp grouping replacement available to Graspness. Use [the training example](../GraspNet-1B/examples/train-finegrasp.yaml) with the economic labels described in [Data & weights](DOWNLOADS.md#finegrasp).
+FineGrasp exposes its own native training adapter, alongside the FineGrasp grouping replacement available to Graspness. Use [`train-finegrasp`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-finegrasp`) with the economic labels described in [Data & weights](DOWNLOADS.md#finegrasp).
 
 | Part | Configuration and contract |
 |---|---|

@@ -60,7 +60,7 @@ The clone contains source, guides, example configurations and dependency locks. 
 | `outputs/` | Experiment queue, predictions, trained checkpoints and exports |
 | `logs/` | Installation and source-download diagnostics |
 
-Keep GraspNet at a path of your choice and select that path in the UI. Copy examples to a `*.local.yaml` file before editing; local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
+Keep GraspNet at a path of your choice and select that path in the UI. Use `./panda init --method graspness` or choose a [configuration example](../GraspNet-1B/README.md#configuration-examples) to generate a `*.local.yaml` file before editing. Local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
 
 <details>
 <summary>Native component build details</summary>

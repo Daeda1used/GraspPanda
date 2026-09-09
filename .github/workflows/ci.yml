@@ -10,6 +10,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: python -m pip install PyYAML==6.0.3
       - run: python -m compileall -q grasppanda
       - name: Check public distribution contents
         run: |
@@ -57,6 +58,7 @@ jobs:
           from grasppanda import __version__
           from grasppanda.config import catalogue, capabilities, Experiment
           from grasppanda.sweeps import Sweep
+          from grasppanda.templates import examples, configuration
           assert __version__ == tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
           methods = catalogue()
           pins = json.loads(Path('grasppanda/resources/upstreams.lock.json').read_text())
@@ -81,4 +83,10 @@ jobs:
           Experiment(method='graspnet_baseline').validate()
           sample = Sweep.from_dict({'base': {'method': 'graspnet_baseline', 'action': 'infer'}, 'grid': {'seed': [0, 1]}})
           assert [config.seed for config in sample.expand()] == [0, 1]
+          for name, entry in examples().items():
+              assert entry['description'] and set(entry) == {'description', 'config'}
+              configuration(example=name)
+          for mid in methods:
+              if capabilities(mid):
+                  configuration(method=mid)
           PY
