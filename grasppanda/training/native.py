@@ -205,11 +205,18 @@ def run(config,out):
         selected=[p for p in params if torch.count_nonzero(p.grad)]
         if not selected:raise ValueError('All native epoch gradients are zero')
         from grasppanda.training.options import snapshot_components
-        snapshots, zero_gradients = snapshot_components(model, changed)
-        snapshots['model']=(selected[0],selected[0].detach().clone())
+        _, zero_gradients = snapshot_components(model, changed)
+        # A single representative tensor can round small scheduled updates to
+        # zero while biases and other tensors in the same component change.
+        # Measure complete connected parameter groups.
+        named = [(name, p) for name, p in model.named_parameters() if p.grad is not None]
+        snapshots = {name: p.detach().clone() for name, p in named}
         norm=float(torch.sqrt(sum(p.grad.detach().square().sum() for p in params)))
         result=original_step(*args,**kwargs)
-        delta={name:float((p.detach()-before).norm()) for name,(p,before) in snapshots.items()}
+        squared = {name: (p.detach() - snapshots[name]).square().sum() for name, p in named}
+        delta = {prefix: float(torch.stack([value for name, value in squared.items()
+                                           if name.startswith(prefix)]).sum().sqrt()) for prefix in changed}
+        delta['model'] = float(torch.stack(list(squared.values())).sum().sqrt())
         if not all(v>0 for name,v in delta.items() if name not in zero_gradients) or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('Invalid native epoch parameter update')
         updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,zero_gradient_components=zero_gradients,learning_rate=used_lr))
         if config.scheduler:scheduler.step()

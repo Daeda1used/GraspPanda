@@ -15,6 +15,7 @@ jobs:
       - name: Check public distribution contents
         run: |
           python - <<'PY'
+          import fnmatch
           import re
           import subprocess
           from pathlib import Path
@@ -22,12 +23,17 @@ jobs:
           roots = {'.github', '.gitattributes', '.gitignore', 'GraspNet-1B', 'LICENSE', 'README.md',
                    'docs', 'grasppanda', 'panda', 'pyproject.toml', 'uv.lock'}
           private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
-                     'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version'}
+                     'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version',
+                     'benchmarks', 'probes', 'test-results', 'playwright-report', 'audit-results',
+                     '.cache', '.codex', '.claude', 'AGENTS.md', 'CLAUDE.md'}
+          local_names = ('test_*.py', '*_test.py', 'test-*.yaml', '*.local.*', '.env', '.env.*',
+                         '*handoff*', '*progress*.json', '*report*.json', '*report*.md', '*report*.html')
           extensions = {'.md', '.py', '.cpp', '.cu', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}
           for name in files:
               path = Path(name)
               assert path.parts[0] in roots, f'Unexpected distribution root: {name}'
               assert not private.intersection(path.parts), f'Local artifact: {name}'
+              assert not any(fnmatch.fnmatch(path.name, pattern) for pattern in local_names), f'Local file: {name}'
               assert not path.is_symlink(), f'Local symlink: {name}'
               assert path.suffix in extensions or name in {'panda', 'LICENSE', '.gitignore', '.gitattributes'}, name
               text = path.read_text()
@@ -47,6 +53,9 @@ jobs:
               names = package.getnames()
               assert not any(name.startswith('.github') for name in names)
               assert {'panda', 'README.md', 'pyproject.toml', 'uv.lock'} <= set(names)
+              exported = {member.name for member in package.getmembers() if member.isfile()}
+              expected = {name for name in files if not name.startswith('.github/') and name != '.gitattributes'}
+              assert exported == expected, 'Source archive must contain exactly the product files'
           PY
       - name: Validate registered operations and source pins
         run: |
@@ -78,6 +87,7 @@ jobs:
               assert p['bytes'] > 0 and p['license'] and p['license_url'].startswith('https://')
               assert len(p['mean']) == len(p['std']) == 3 and all(v > 0 for v in p['std'])
           for mid in methods:
+              assert capabilities(mid) or mid == 'graspnet_api', f'Reference-only method in installer: {mid}'
               for action in capabilities(mid):
                   assert action in ('infer', 'evaluate', 'train_check', 'train_smoke', 'train', 'pipeline_smoke')
           Experiment(method='graspnet_baseline').validate()

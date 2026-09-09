@@ -17,7 +17,7 @@ PARAMETERS = {
 def is_classification(method, term):
     if method in ('hggd', 'region_normalized_grasp'):
         return term in ('anchor_location', 'anchor_classification', 'local_orientation', 'local_theta_classification')
-    return term in ('objectness', 'angle') or (method in ('finegrasp', 'economicgrasp') and term in ('depth', 'score'))
+    return term in ('objectness', 'graspable', 'angle') or (method in ('finegrasp', 'economicgrasp') and term in ('depth', 'score'))
 
 
 def parameter_schema(method, kind):
@@ -39,8 +39,8 @@ def validate(method, functions):
         kind, options = unpack(value)
         if kind not in choices(term, method) or set(options) - set(parameter_schema(method, kind)):
             raise ValueError(f'{method}/{term}: unsupported loss formulation or parameters')
-        if 'alpha' in options and term != 'objectness' and method not in ('hggd', 'region_normalized_grasp'):
-            raise ValueError('Focal alpha is registered only for binary objectness')
+        if 'alpha' in options and term not in ('objectness', 'graspable') and method not in ('hggd', 'region_normalized_grasp'):
+            raise ValueError('Focal alpha is registered only for binary objectness or graspability')
         for key, value in options.items():
             low, high = parameter_schema(method, kind)[key]
             if type(value) not in (float, int) or not math.isfinite(value) or not low <= value <= high:
@@ -143,6 +143,9 @@ def targets(end, method, term):
 
 
 def replace_losses(end_points, config):
+    if config.method == 'scale_balanced_grasp':
+        from grasppanda.methods.scale_balanced_losses import replace
+        return replace(end_points, config)
     from grasppanda.module_options import unpack
     from grasppanda.training.options import LOSS_TERMS
     for term, value in config.loss.get('functions', {}).items():

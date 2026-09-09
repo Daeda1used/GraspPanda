@@ -53,6 +53,8 @@ def component_parameters(method, backbone, crop, head='upstream'):
         for key, rule in schema(method, slot, choice).items():
             if rule[0] in ('sampler', 'samplers'):
                 description = ('One output-seed policy' if rule[0] == 'sampler' else 'Four policies, one per downsampling stage') + '; name or {type, ...}: upstream, uniform, fps, pointsp_wrs, pointsp_ffps. Density policies accept neighbors and density_quantile; FFPS adds keep_ratio; FPS/FFPS accept start: first or random. Use {train: POLICY, eval: POLICY} for mode-specific sampling.'
+            elif rule[0] == 'mscq_branches':
+                description = 'Four branch policies in increasing native radius order. Each accepts type and radius_scale; upstream accepts nsample. Replacements accept their Baseline crop parameters. Native fusion, gate and heads remain in place.'
             elif rule[0] == 'choice':
                 description = ', '.join(rule[1])
             elif rule[0] in ('int', 'float'):
@@ -114,7 +116,9 @@ def loss_parameters(method):
                  if method in ('hggd', 'region_normalized_grasp') else 'Focal alpha applies only to binary objectness. ')
     if method == 'gtg2':
         semantics = 'Graph score regression uses one scalar per candidate. Graph augmentation supports native, none, or custom half_turn_probability and point_dropout. '
-    if method in ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'economicgrasp', 'finegrasp'):
+    if method == 'scale_balanced_grasp':
+        semantics = 'graspable uses the native robust graspability target; focal alpha applies to this binary term. View and grasp losses retain the native scale prior and weighted denominators, including the score mask shared across depths. '
+    if method in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'economicgrasp', 'finegrasp'):
         semantics += ('Point augmentation accepts `resampling: {"type": "pointsp_wrs", "keep_ratio": [0.5, 1.0], "neighbors": 20}` '
                       'in custom mode. Alternatives are `uniform` and `pointsp_lgd`; the latter accepts `global_fraction` '
                       '(0: local removal, 1: global removal, "random": random range). Point labels follow the same selected rows. ')
@@ -143,7 +147,7 @@ def loss_preset(method, classification, regression, current):
 
 
 def sampling_preset(method, action, kind, minimum, maximum, current):
-    if method not in ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'economicgrasp', 'finegrasp') or action not in ('train', 'train_check'):
+    if method not in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'economicgrasp', 'finegrasp') or action not in ('train', 'train_check'):
         raise gr.Error('Observation sampling requires a registered point training operation.')
     try:
         value = json.loads(current or '{}')
@@ -576,7 +580,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
         apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
         for selector in (method, action):
-            selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),
+            selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','scale_balanced_grasp','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),
                 [method,action],sampling_panel,api_name=False,preprocess=False)
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters', preprocess=False)
         def loss_controls(method, action):

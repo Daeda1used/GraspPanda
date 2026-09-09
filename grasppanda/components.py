@@ -22,6 +22,11 @@ BASELINE_SLOTS = (
 
 
 def slots(method):
+    if method == 'scale_balanced_grasp': return (
+        BASELINE_SLOTS[0],
+        ComponentSlot('crop', 'grasp_generator', ('upstream', 'native_mscq'),
+            'Native MSCQ endpoints: scene XYZ, seed XYZ/features, approach rotations and training labels.',
+            'Native endpoint dictionary; four [B,256,1024,4] branch features feed unchanged scale fusion, seed gate and grasp heads.'))
     if method == 'economicgrasp': return (
         ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3', 'point_transformer_v2','litept','oacnns','kpconvx'),
             'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
@@ -93,6 +98,10 @@ def configure_model(model,method,selection,voxel_size=.005):
         options = {key:value for key,value in options.items() if key not in SEED_INTERACTION_FIELDS}
         sampling_options = {key: options.pop(key) for key in ('seed_sampling', 'stage_sampling') if key in options}
         if choice=='upstream':continue
+        if method == 'scale_balanced_grasp' and slot.name == 'crop':
+            from .modules.mscq import configure
+            changes.extend(configure(model.grasp_generator, options))
+            continue
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
         native=getattr(parent,attribute)

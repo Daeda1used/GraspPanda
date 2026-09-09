@@ -21,7 +21,7 @@ def unpack(value):
 
 def schema(method, slot, choice):
     fields = _schema(method, slot, choice)
-    if method in ('graspnet_baseline', 'pointnet2_upgrade') and slot == 'backbone':
+    if method in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp') and slot == 'backbone':
         from .modules.sampling_options import DENSE_BACKBONES, HIERARCHIES
         if choice in DENSE_BACKBONES: fields = {**fields, 'seed_sampling': ('sampler',)}
         if choice in HIERARCHIES: fields = {**fields, 'stage_sampling': ('samplers', 4)}
@@ -31,6 +31,8 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if method == 'scale_balanced_grasp' and slot == 'crop' and choice == 'native_mscq':
+        return {'branches': ('mscq_branches', 4)}
     if method == 'economicgrasp':
         if slot == 'head' and choice == 'native_interactive':
             return {'feature_channels': ('int', 16, 512), 'branch_depths': ('int_list', 4, 1, 4),
@@ -182,7 +184,11 @@ def validate_options(method, slot, choice, options):
     for key, value in options.items():
         rule = fields[key]
         valid = False
-        if rule[0] in ('sampler', 'samplers'):
+        if rule[0] == 'mscq_branches':
+            from .modules.mscq import validate_branches
+            validate_branches(value)
+            valid = True
+        elif rule[0] in ('sampler', 'samplers'):
             from .modules.sampling_options import normalize
             if rule[0] == 'sampler':
                 normalize(value)

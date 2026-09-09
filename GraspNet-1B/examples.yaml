@@ -1,4 +1,37 @@
 # Generate a local copy: ./panda init --example NAME -o experiment.local.yaml
+compose-sbg:
+  description: Compose Scale-Balanced-Grasp encoders and individual MSCQ branches
+  config:
+    method: scale_balanced_grasp
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/scale_balanced_grasp/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    workspace: official_gt_workspace
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: pointnext
+        seed_sampling: {train: pointsp_wrs, eval: pointsp_ffps}
+      crop:
+        type: native_mscq
+        branches:
+          - {type: upstream, radius_scale: 1.1, nsample: 32}
+          - {type: cylinder, hidden_channels: [64, 128], pooling: mean}
+          - {type: reslfe_cylinder, nsample: 16}
+          - {type: kpconvx_cylinder, nsample: 16, local_neighbors: 8}
+    loss:
+      functions:
+        graspable: {type: poly1, epsilon: 0.5}
+        width: {type: huber, delta: 0.2}
+    augmentation: {mode: custom, rotation_degrees: 10, point_dropout: 0.1}
+    optimizer: {type: adamw, weight_decay: 0.01}
 sample-network:
   description: Compose mode-specific seed and hierarchy sampling
   config:

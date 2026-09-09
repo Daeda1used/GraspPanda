@@ -4,9 +4,10 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 
 | Configure | Reference |
 |---|---|
-| Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
-| Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
+| Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
+| Point encoders | [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
+| Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
@@ -18,6 +19,8 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Method | Slot | Choices |
 |---|---|---|
 | Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
+| Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
+| Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
@@ -32,11 +35,44 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
 <details>
+<summary>Scale-Balanced-Grasp encoders, MSCQ branches and training</summary>
+
+## Scale-Balanced-Grasp components
+
+Generate `./panda init --example compose-sbg` for a composed short training run. Select **Scale-Balanced-Grasp → Compose modules** in the browser to configure the same slots. Its [native architecture](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) uses a point transformer encoder, four cylindrical branches, a learned scale fusion and a gated seed-feature connection. The [CoRL paper](https://proceedings.mlr.press/v205/ma23a.html) describes the complete method.
+
+`backbone` accepts the dense point encoders listed above, their layer controls and [network sampling](#network-sampling-policies). Replacements return 256-channel features and original-input seed indices. Their outputs feed the native approach predictor and MSCQ stage.
+
+```yaml
+modules:
+  backbone:
+    type: pointnext
+    seed_sampling: {train: pointsp_wrs, eval: pointsp_ffps}
+  crop:
+    type: native_mscq
+    branches:
+      - {type: upstream, radius_scale: 1.1, nsample: 32}
+      - {type: cylinder, hidden_channels: [64, 128], pooling: mean}
+      - {type: reslfe_cylinder, nsample: 16}
+      - {type: kpconvx_cylinder, nsample: 16, local_neighbors: 8}
+```
+
+`branches` contains exactly four policies in native branch order (base radii 0.02, 0.04, 0.06 and 0.08 metres). Each is a name or `{type, ...}` mapping. Available types are `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` and `kpconvx_cylinder`. Every branch accepts `radius_scale` from 0.1 to 4, multiplying its own native radius. Upstream branches accept `nsample` from 4 to 128 (default 64); replacements accept the corresponding Baseline crop parameters. Branches also accept the registered `seed_interaction` settings. An omitted branch list preserves all four native branches.
+
+Each branch retains the four depth bins and 256 output channels. Scale fusion, the seed gate, operation head and tolerance head stay native. `reuse_unchanged` initializes only replaced parameter groups; changing only an upstream branch's geometry retains its weights. Save the configuration alongside the checkpoint because geometry and sampling policies are not learnable state.
+
+Training accepts loss coefficients and formulations for `graspable`, `view`, `score`, `angle`, `width` and `tolerance`. `graspable` is the author's robust binary target, rather than raw foreground objectness. View and grasp terms retain the scale-distribution prior and weighted denominators. The score term retains its native mask shared across depths; width and tolerance retain their physical normalization. Equivalent CE/MSE/Huber settings preserve the native objective. [Loss parameters](#training-controls), point augmentation, Adam/AdamW/SGD/Lion and update-based schedules are available. Epoch training retains the native optimizer and schedule by default; resume retains the original final-epoch horizon.
+
+The current frame and epoch adapters use the native ordinary point loader and `obs=False`. These component settings do not enable the separate inference segmentation/OBS pipeline or the optional noisy-clean mixing (NcM) dataset. `augmentation.mode: native` retains the ordinary loader's flips and rotations. Custom rigid transforms update object poses; observation perturbations and sampling retain their label correspondence. The loader's `aug_trans` field records inverse rotation; translations are represented in the transformed object poses.
+
+</details>
+
+<details>
 <summary>Network sampling: output seeds and hierarchy stages</summary>
 
 ## Network sampling policies
 
-Baseline and its PointNet2 port accept `seed_sampling` on every listed replacement point encoder. It selects original-input grasp seed rows and gathers or reconstructs their features. `pointnext`, `pointvector` and `pointmeta` additionally accept four `stage_sampling` policies, in fine-to-coarse order. These change native downsampling centers while retaining grouping, feature propagation and supervision. The original `upstream` backbone and sparse-method encoders do not expose these controls.
+Baseline, its PointNet2 port and Scale-Balanced-Grasp accept `seed_sampling` on every listed replacement point encoder. It selects original-input grasp seed rows and gathers or reconstructs their features. `pointnext`, `pointvector` and `pointmeta` additionally accept four `stage_sampling` policies, in fine-to-coarse order. These change native downsampling centers while retaining grouping, feature propagation and supervision. The original `upstream` backbone and sparse-method encoders do not expose these controls.
 
 ```yaml
 modules:
@@ -240,7 +276,7 @@ The **stage behavior** fields accept a scalar for all stages or a list with one 
 
 Stage lists must have equal lengths (one to six stages); widths must be divisible by their head counts, and grouped positional convolution requires widths divisible by eight. Zero `num_blocks` retains the convolutional hierarchy at that stage. The coarsest stage depth, `depth - stem_down - stage_count + 1`, must be at least `full_depth`, which is at least two. `head_up` cannot exceed `stem_down`. Larger depth creates finer voxels; it does not add encoder stages. More input points, channels or larger attention windows increase memory use. Degenerate training inputs with fewer than two nodes at a used resolution require a larger batch or a non-degenerate point cloud.
 
-Each scene is normalized isotropically into the octree cube while its feature channels retain camera XYZ in meters. Querying the decoder preserves original input rows, including duplicate voxel assignments. Windows are padded independently per scene: changing a preceding scene's node count cannot shift another scene's window origin. Native batch normalization still shares training statistics across the batch. This is a grasp adaptation with no pretrained OctFormer grasp checkpoint; initialize compatible unchanged grasp layers, then train the new backbone. Use `train` for epoch training and `strict` checkpoint loading for resume/inference. No benchmark AP or convergence is implied by short training.
+Each scene is normalized isotropically into the octree cube while its feature channels retain camera XYZ in meters. Querying the decoder preserves original input rows, including duplicate voxel assignments. Windows are padded independently per scene: changing a preceding scene's node count cannot shift another scene's window origin. Native batch normalization still shares training statistics across the batch. This is a grasp adaptation with no pretrained OctFormer grasp checkpoint; initialize compatible unchanged grasp layers, then train the new backbone. Use `train` for epoch training and `strict` checkpoint loading for resume/inference.
 
 ## PointVector encoder
 
@@ -505,7 +541,7 @@ Each channel width must be divisible by its attention group count. Neighborhood 
 
 The dense adapter projects decoded features to 256 channels and samples original-input seed indices. Sparse adapters reconstruct camera XYZ from the lattice, combine it with the original sparse features, and restore the identical coordinate map and row order. The method retains its own seed prediction, crop, losses and decoder. FineGrasp retains its XYZ/normal features. Changing the backbone requires grasp training; these adapters do not supply pretrained grasp weights. Use `reuse_unchanged` for initialization and `strict` when reloading the resulting composed checkpoint.
 
-Compatibility changes fix the original grouped-linear divisibility assertion, keep native CUDA work on the selected device/current stream, mask absent interpolation neighbors to prevent cross-scene feature leakage, and avoid counting BatchNorm updates twice during checkpoint recomputation. Native attention's neighbor masking and pooling reductions are retained. These are feature adapters; they do not reproduce a semantic-segmentation experiment or establish grasp AP.
+Compatibility changes fix the original grouped-linear divisibility assertion, keep native CUDA work on the selected device/current stream, mask absent interpolation neighbors to prevent cross-scene feature leakage, and avoid counting BatchNorm updates twice during checkpoint recomputation. Native attention's neighbor masking and pooling reductions are retained. These are grasp feature adapters; their training uses the selected grasp method.
 
 ## LitePT encoder
 
@@ -861,13 +897,13 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions use the configured `batch_size`; PCM, PTv2, LitePT and OA-CNNs require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
+By default, short training repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions use the configured `batch_size`; PCM, PTv2, LitePT and OA-CNNs require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 
 ## Use the saved model
 
-Choose a completed training check in **Runs & results**, click **Prepare inference from checkpoint**, review the generated JSON in **Experiments**, then click **Run edited JSON**. This retains the same module choices and switches to `strict` checkpoint loading for a test frame.
+Choose a completed training run in **Runs & results**, click **Prepare inference from checkpoint**, review the generated JSON in **Experiments**, then click **Run edited JSON**. This retains the same module choices and switches to `strict` checkpoint loading for a test frame.
 
 For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkpoint_policy` to `strict`, `split` to `test_seen` and `scene` to `100`. Keep `modules` unchanged. Short training does not establish quality, especially when an encoder was newly initialized; an empty graspable-point set is reported explicitly.
 
@@ -908,7 +944,7 @@ For a bounded first run, set `train_batch_limit: 1`; the selected range begins a
 
 To continue an interrupted run, select its last completed `training/checkpoints/epoch_XXXX.tar`, set `train_checkpoint_mode: resume` and `checkpoint_policy: strict`, and retain its module, data, loss, augmentation and optimizer settings. Keep `epochs` at the **original final epoch**, greater than the saved epoch: the native cosine schedule depends on that horizon. A configured schedule also requires its saved state and original update horizon. Author checkpoints without toolbox metadata can restore native model/optimizer/epoch state with no training overrides; supply the original horizon yourself because those files do not record it. Use `initialize` to change the experiment or fine-tune a completed checkpoint.
 
-Model and optimizer state are checked exactly before the resumed update. Subsequent CUDA reductions can vary numerically; epoch-boundary seeds do not guarantee bitwise-identical trajectories. The last completed epoch is exported as `checkpoint.pt` for strict inference with the same module settings. Short or bounded runs establish operation, not full-split AP or convergence.
+Model and optimizer state are checked exactly before the resumed update. Subsequent CUDA reductions can vary numerically; epoch-boundary seeds do not guarantee bitwise-identical trajectories. The last completed epoch is exported as `checkpoint.pt` for strict inference with the same module settings.
 
 ## RNG proposal initialization
 
@@ -963,7 +999,7 @@ An empty checkpoint starts FineGrasp from random weights; a supplied author or t
 
 Set `train_batch_limit: 0` for the complete training split. A positive limit selects consecutive frames from `scene` / `frame`, then shuffles them. Data-loader workers restart at epoch boundaries and receive explicit seeds, so a resumed epoch has the same sampling setup. This differs from the author's persistent-worker lifecycle. Resume restores model, optimizer and schedule state at an epoch boundary; keep the original final `epochs` horizon and data/optimization configuration. The checkpoint's update count must match its completed epochs. GPU operator results are not promised to be bitwise identical after restarting a process.
 
-FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. Short runs and bounded epoch checks do not establish full-training convergence or benchmark AP. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.
+FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.
 
 For new adapters and datasets, see [Extending GraspPanda](EXTENDING.md).
 

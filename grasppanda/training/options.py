@@ -2,7 +2,7 @@
 import math
 
 IMAGE_METHODS = ('hggd', 'region_normalized_grasp')
-METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp', 'gtg2', 'economicgrasp') + IMAGE_METHODS
+METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'finegrasp', 'gtg2', 'economicgrasp') + IMAGE_METHODS
 LOSS_TERMS = {
     'graspnet_baseline': {
         'objectness': ('loss/stage1_objectness_loss', 1.),
@@ -21,6 +21,9 @@ LOSS_TERMS = {
     },
 }
 LOSS_TERMS['pointnet2_upgrade'] = LOSS_TERMS['graspnet_baseline']
+LOSS_TERMS['scale_balanced_grasp'] = {
+    'graspable': ('loss/stage1_graspable_loss', 1.),
+    **{k: v for k, v in LOSS_TERMS['graspnet_baseline'].items() if k != 'objectness'}}
 LOSS_TERMS['gtg2'] = {'score': ('score_loss', 1.)}
 LOSS_TERMS['finegrasp'] = {name: (name + '_loss', weight) for name, weight in
     (('objectness', 1.), ('graspness', 10.), ('view', 100.), ('angle', 1.),
@@ -108,7 +111,7 @@ def weighted_loss(native_loss, end_points, config):
     return loss, end_points
 
 
-def transform_points(points, poses, options):
+def transform_points(points, poses, options, *, return_rotation=False):
     """Rigidly transform observations and poses; noise affects observations only."""
     import numpy as np
     depth_std = options.get('depth_noise_std', 0)
@@ -139,7 +142,8 @@ def transform_points(points, poses, options):
     if std:
         clip = options.get('jitter_clip', .01)
         points = points + np.clip(np.random.normal(0, std, points.shape), -clip, clip)
-    return points.astype(np.float32), transformed
+    result = (points.astype(np.float32), transformed)
+    return (*result, rotation.T.copy()) if return_rotation else result
 
 
 def configure_dataset(dataset, config):
@@ -150,7 +154,8 @@ def configure_dataset(dataset, config):
     mode = config.augmentation.get('mode', 'custom')
     dataset.augment = mode != 'none'
     if mode == 'custom':
-        dataset.augment_data = partial(transform_points, options=config.augmentation)
+        dataset.augment_data = partial(transform_points, options=config.augmentation,
+                                      return_rotation=config.method == 'scale_balanced_grasp')
         if config.augmentation.get('point_dropout', 0) or config.augmentation.get('cutout_fraction', 0) or 'resampling' in config.augmentation:
             return PointSamplingDataset(dataset, config)
     return dataset
@@ -207,8 +212,11 @@ def augment_sample(sample, dataset, config):
     if not config.augmentation or config.augmentation.get('mode') == 'none':
         return sample
     fn = dataset.augment_data if config.augmentation.get('mode') == 'native' else None
-    points, poses = (fn(sample['point_clouds'], sample['object_poses_list']) if fn
-                     else transform_points(sample['point_clouds'], sample['object_poses_list'], config.augmentation))
+    transformed = (fn(sample['point_clouds'], sample['object_poses_list']) if fn
+                   else transform_points(sample['point_clouds'], sample['object_poses_list'], config.augmentation,
+                                         return_rotation=config.method == 'scale_balanced_grasp'))
+    points, poses = transformed[:2]
+    if config.method == 'scale_balanced_grasp': sample['aug_trans'] = transformed[2]
     # Native loaders cast observations after augmentation; retain that contract here.
     points = points.astype(sample['point_clouds'].dtype, copy=False)
     sample['point_clouds'], sample['object_poses_list'] = points, poses
