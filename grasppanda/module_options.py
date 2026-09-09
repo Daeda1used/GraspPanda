@@ -31,6 +31,9 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if method == 'spgrasp':
+        from .methods.spgrasp_options import BACKBONE, MEMORY
+        return BACKBONE if (slot, choice) == ('backbone', 'hiera') else MEMORY if (slot, choice) == ('memory', 'temporal') else {}
     if method == 'scale_balanced_grasp' and slot == 'crop' and choice == 'native_mscq':
         return {'branches': ('mscq_branches', 4)}
     if method == 'economicgrasp':

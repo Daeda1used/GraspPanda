@@ -12,6 +12,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
+| Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
 
 ## Component selection and parameters
 
@@ -32,6 +33,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
+| SPGrasp | `backbone` / `memory` | `upstream`, `hiera` / `upstream`, `temporal`; [planar sequence settings](#prompted-planar-sequences) |
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
@@ -1052,5 +1054,60 @@ Set `train_batch_limit: 0` for the complete training split. A positive limit sel
 FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.
 
 For new adapters and datasets, see [Extending GraspPanda](EXTENDING.md).
+
+</details>
+
+<details>
+<summary>SPGrasp: prompted RGB sequences, Hiera and temporal memory</summary>
+
+## Prompted planar sequences
+
+SPGrasp uses consecutive RGB frames and explicit first-frame point or box prompts. It outputs **planar** grasp centers, opening angles and widths in original image coordinates. Its temporal `memory` slot is separate from point-cloud grouping. It does not produce the 6-DoF GraspNet representation or expose the official AP evaluator.
+
+```bash
+./panda weights spgrasp
+./panda init --example train-spgrasp -o planar.local.yaml
+# Set dataset_root and prepare rectangle and instance labels.
+./panda run planar.local.yaml
+```
+
+The preset performs short training on consecutive labelled clips, reapplying photometric augmentation each update. `batch_size` selects 1–4 adjacent clips; each contains `frames` images and must stay within the selected scene's 256 frames. The default uses eight frames and one clip. Longer sequences, more objects and larger resolutions increase memory use. Epoch training and optimizer-state resume are not exposed by this adapter. A trained checkpoint can initialize another short run with a fresh optimizer.
+
+| Configuration | Values and meaning |
+|---|---|
+| `modules.backbone.type` | `upstream` retains defaults; `hiera` exposes the native Base+ encoder parameters below. |
+| `backbone.resolution` | 256, 512 (default), 768 or 1024; square letterbox with original aspect ratio. |
+| `backbone.drop_path` | 0–0.5; default 0.1. |
+| `backbone.trainable_blocks` | -1 trains the complete encoder; 0 freezes it; 1–24 trains only the last N Hiera blocks, keeping the embedding and neck frozen. Frozen stochastic layers remain in evaluation mode. |
+| `modules.memory.type` | `upstream` retains defaults; `temporal` exposes native memory parameters. |
+| `memory.frames` / `layers` | Spatial memory length 2–16 (default 7); attention layers 1–8 (default 4). The separate native object-pointer history is retained. |
+| `memory.heads` / `dropout` | Heads: 1, 2, 4 or 8 (default 1); dropout: 0–0.5 (default 0.1). |
+| `trainer.objects` | Maximum objects per clip, 1–8 (default 3), sampled from first-frame instances with positive rectangle targets. |
+| `trainer.box_probability` | Probability of a box instead of point initialization, 0–1 (default 0.5). |
+| `trainer.correction_clicks` | Iterative correction clicks per selected frame, 0–7 (default 7). |
+| `trainer.conditioning_frames` / `correction_frames` | Upper bounds used by native frame sampling, 1–4 (both default 2); conditioning <= correction <= clip length. |
+| `loss.weights` | `position` (default 2), `angle`, `width`, `semantic` (default 1 each); nonnegative coefficients on the released loss terms. Custom loss formulations are not registered. |
+| `augmentation.mode` | `native`, `none`, or `custom`. Custom accepts `brightness`, `contrast`, `saturation`, `grayscale` in [0,1], and boolean `consistent` for transforms shared across a clip. Geometry and target correspondence remain fixed. |
+| `optimizer` / `scheduler` | Native AdamW, image-encoder layer decay 0.9, no bias/LayerNorm weight decay and cosine LR by default. Shared Adam, AdamW, SGD, Lion and update schedules are configurable. An optimizer override replaces native parameter grouping and defaults to cosine with a 0.1 LR floor. A scheduler-only override retains native groups. |
+| `planar.width_scale_pixels` | Explicit training width normalization, default 1280; recorded in the checkpoint and reused during prediction. |
+| `planar.score_threshold` / `semantic_threshold` | Output thresholds in [0,1], both default 0.5. |
+| `planar.max_grasps` / `min_distance` | Up to 1–100 grasps per object (default 10); minimum center spacing in original pixels (default 20). |
+
+The learning-rate field sets the base rate (preset 0.000005); the native encoder rate is 0.6 times that rate before layer decay. Gradient clipping retains the native norm limit 0.1 and computation uses CUDA bfloat16 autocast.
+
+**Prediction:** select your completed run's `checkpoint.pt`, choose **Predict grasps**, and open **Planar sequence**. Load the first RGB frame and click foreground/background points for each object ID, or edit the prompt JSON. IDs identify independently tracked objects; they do not need to match dataset instance labels. Changing the first frame clears the displayed prompts. Boxes and points can be combined:
+
+```json
+[{"id": 1, "box": [430, 260, 590, 410]},
+ {"id": 2, "points": [[640, 360, 1], [730, 360, 0]]}]
+```
+
+Coordinates must lie inside the selected original RGB image. Replace these illustrative coordinates with your own object prompts. The CLI uses the same list in `prompts`. Training generates prompts from its labels and requires `prompts: []`; prediction never reads depth, segmentation or rectangle labels. **Prepare inference from checkpoint** retains the architecture and sequence length in the JSON editor; add your first-frame prompts before running that JSON. Omitted component settings during prediction use the checkpoint architecture; explicit settings must match it.
+
+Outputs are `planar-grasps.json` and a last-frame preview. Each grasp includes object ID, center `[x,y]`, opening angle in radians modulo pi, opening width in original pixels, grasp score and semantic score. The preview draws opening segments; its finger ticks are decorative, since this decoder predicts no rectangle height. Rectangle IoU evaluation and 3D collision checks are not supplied.
+
+**Adaptation details:** the released reader casts continuous angle/width maps to uint8, and its error-point sampler overwrites predictions with targets. The scoped source patch preserves float32 targets and samples corrections from semantic prediction errors. Training always uses point/box prompts instead of the original full grasp-map mask shortcut. RGB and continuous labels share the explicit letterbox transform.
+
+The author width divisor of 100 produces values above one for some GraspNet rectangles, outside the native BCE target range. This adapter uses the explicit pixel scale and rejects widths exceeding it instead of clipping. Every training batch must reach the native width positive-weight cap of ten. Decoding uses `sigmoid(width_logit - log(10)) * width_scale_pixels` to undo weighted BCE's continuous-target shift. The checkpoint stores that calibration; prediction does not estimate it from annotations. The native height-edge angle is converted to the opening-edge convention. Setting correction clicks to zero bypasses the original empty-loop return while retaining the initial prediction. These are documented adaptations, not an identical reproduction of the original training pipeline or paper metrics.
 
 </details>

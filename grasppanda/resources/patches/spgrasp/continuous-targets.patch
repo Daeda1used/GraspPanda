@@ -1,0 +1,71 @@
+--- a/training/grasp_dataset/grasp_OCID.py
++++ b/training/grasp_dataset/grasp_OCID.py
+@@ -1,4 +1,3 @@
+-import mmcv
+ import numpy as np
+ import cv2
+ import math
+--- a/training/dataset/vos_dataset.py
++++ b/training/dataset/vos_dataset.py
+@@ -98,8 +98,7 @@
+                         segments[obj_id] is not None
+                     ), "None targets are not supported"
+                     segment = segments[obj_id]
+-                    if segment.dtype != torch.uint8:
+-                        segment = segment.to(torch.uint8)
++                    segment = segment.to(torch.float32)
+                     if len(segment.shape) != 3:
+                         raise ValueError(
+                             f"Expected segment with shape (C, H, W), got {tuple(segment.shape)}."
+@@ -108,7 +107,7 @@
+                     # There is no target, we either use a zero mask target or drop this object
+                     if not self.always_target:
+                         continue
+-                    segment = torch.zeros(5, h, w, dtype=torch.uint8)
++                    segment = torch.zeros(5, h, w, dtype=torch.float32)
+ 
+                 images[frame_idx].objects.append(
+                     Object(
+--- a/spgrasp/modeling/spgrasp_utils.py
++++ b/spgrasp/modeling/spgrasp_utils.py
+@@ -214,9 +214,14 @@
+       negative clicks
+     """
+ 
+-    if len(gt_masks.shape) == 5 : #fix OCID
+-        gt_masks = gt_masks[:,:,-1,:,:].to(dtype=torch.bool)
+-        pred_masks = gt_masks.clone()
++    if gt_masks.ndim == 5:
++        gt_masks = gt_masks[:, :, -1].bool()
++        if pred_masks is not None:
++            if pred_masks.ndim == 5:
++                pred_masks = pred_masks[:, :, -1]
++            elif pred_masks.ndim == 4 and pred_masks.shape[1] == 5:
++                pred_masks = pred_masks[:, -1:]
++            pred_masks = pred_masks.bool()
+ 
+     if pred_masks is None:  # if pred_masks is not provided, treat it as empty
+         pred_masks = torch.zeros_like(gt_masks)
+@@ -273,9 +278,14 @@
+ 
+     if pred_masks is None:
+         pred_masks = torch.zeros_like(gt_masks)
+-    if len(gt_masks.shape) == 5 : #fix OCID
+-        gt_masks = gt_masks[:,:,-1,:,:].to(dtype=torch.bool)
+-        pred_masks = gt_masks.clone()
++    if gt_masks.ndim == 5:
++        gt_masks = gt_masks[:, :, -1].bool()
++        if pred_masks is not None:
++            if pred_masks.ndim == 5:
++                pred_masks = pred_masks[:, :, -1]
++            elif pred_masks.ndim == 4 and pred_masks.shape[1] == 5:
++                pred_masks = pred_masks[:, -1:]
++            pred_masks = pred_masks.bool()
+     assert gt_masks.dtype == torch.bool and gt_masks.size(1) == 1
+     assert pred_masks.dtype == torch.bool and pred_masks.shape == gt_masks.shape
+ 
+--- a/training/model/spgrasp.py
++++ b/training/model/spgrasp.py
+@@ -411,1 +411,1 @@
+-        if frame_idx in frames_to_add_correction_pt:
++        if frame_idx in frames_to_add_correction_pt and self.num_correction_pt_per_frame > 0:

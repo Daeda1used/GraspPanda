@@ -26,6 +26,10 @@ CHECKPOINT_RECIPES = {'generalizing_grasp','contact_graspnet_g1b','gfla','center
 def preset(method, dataset_root=''):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if method == 'spgrasp':
+        return Experiment(method=method, action='train_check', dataset_root=dataset_root, split='train', scene=0,
+            frames=8, batch_size=1, learning_rate=5e-6, workspace='native_demo', collision_thresh=0,
+            checkpoint=primary(method, 'realsense') or 'checkpoints/spgrasp/sam2.1_hiera_base_plus.pt')
     if method == 'gtg2':
         return Experiment(method=method, action='train', dataset_root=dataset_root, split='train', scene=0,
             label_root='outputs/prepared/gtg2', epochs=500, batch_size=128, learning_rate=.01, timeout_minutes=43200)

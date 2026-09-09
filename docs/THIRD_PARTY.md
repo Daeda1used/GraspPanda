@@ -1,5 +1,7 @@
 # Third-party notices
 
+SPGrasp and its SAM2-derived source retain the author repository's Apache-2.0 `LICENSE` and `LICENSE-sam2.txt` in the local compatibility overlay. The adapter retains the native model and rasterizer, with explicit continuous-target, prompt-sampling and width-decoding corrections described in the [planar sequence guide](MODULES.md#prompted-planar-sequences). SAM2 initialization weights follow the [SAM2 terms](https://github.com/facebookresearch/sam2#license).
+
 The root MIT license covers GraspPanda-authored code only. Downloaded repositories retain their own licenses. Origins and commits are recorded in `grasppanda/resources/upstreams.lock.json`; per-method notes are in [Methods & papers](METHODS.md).
 
 GraspNet baseline/Graspness and derivatives may carry academic-use terms. Public source does not imply commercial permission. CGAL/scikit-geometry and Ultralytics/FastSAM include GPL/LGPL/AGPL terms; review the exact components before redistributing a combined image or wheel bundle. SDKs, checkpoints and GraspNet-1B data have separate terms.

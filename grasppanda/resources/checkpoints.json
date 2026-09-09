@@ -254,5 +254,15 @@
     "source": "https://huggingface.co/HorizonRobotics/FineGrasp/resolve/f09bb0ec25a883617e01552ae14b6f720b71572a/finegrasp_pipeline/model.config.json",
     "bytes": 552,
     "sha256": "a152d95fa0b255fb6edd414a8876f22847b2053d04c1995ced31bd65507adf9d"
+  },
+  {
+    "method": "spgrasp",
+    "camera": "any",
+    "role": "primary",
+    "path": "checkpoints/spgrasp/sam2.1_hiera_base_plus.pt",
+    "source": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt",
+    "sha256": "a2345aede8715ab1d5d31b4a509fb160c5a4af1970f199d9054ccfb746c004c5",
+    "bytes": 323606802,
+    "description": "SAM2.1 initialization only; not a trained grasp detector."
   }
 ]

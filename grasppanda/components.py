@@ -22,6 +22,13 @@ BASELINE_SLOTS = (
 
 
 def slots(method):
+    if method == 'spgrasp': return (
+        ComponentSlot('backbone', 'image_encoder', ('upstream', 'hiera'),
+            'Letterboxed, ImageNet-normalized RGB sequence [T,3,R,R].',
+            'Native Hiera feature pyramid for prompt decoding and temporal memory.'),
+        ComponentSlot('memory', 'memory_attention', ('upstream', 'temporal'),
+            'Native image features, first-frame object prompts and prior frame memories.',
+            'Conditioned features for five planar grasp and semantic output channels.'))
     if method == 'scale_balanced_grasp': return (
         BASELINE_SLOTS[0],
         ComponentSlot('crop', 'grasp_generator', ('upstream', 'native_mscq'),
@@ -89,6 +96,8 @@ def validate_selection(method,selection,checkpoint_policy='strict'):
 def configure_model(model,method,selection,voxel_size=.005):
     """Replace registered submodules only; return the exact changed state prefixes."""
     validate_selection(method,selection)
+    if method == 'spgrasp':
+        raise ValueError('SPGrasp constructs its image encoder and temporal memory together from the selected architecture')
     if method == 'gtg2':
         raise ValueError('GtG2 uses GraphRegressor with resolved graph options; its crop configures data construction, not a network submodule')
     changes=[]

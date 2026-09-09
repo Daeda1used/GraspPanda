@@ -166,5 +166,11 @@
     "repository": "https://github.com/Ali-Rashidi/GtG2",
     "path": "upstream/single_view/candidate_graphs/gtg2",
     "pinned_commit": "99d378476f3b30164d486fce5d1833794cadd169"
+  },
+  {
+    "id": "spgrasp",
+    "repository": "https://github.com/sejmoonwei/SPGrasp",
+    "path": "upstream/temporal/planar/spgrasp",
+    "pinned_commit": "0f8462cdc9bf7fee5a5f402d37a47fedafea2301"
   }
 ]

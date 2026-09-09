@@ -10,6 +10,9 @@ def preflight(config):
     if config.action in ("infer", "train", "train_smoke", "train_check", "evaluate"):
         if not config.dataset_root or not (Path(config.dataset_root) / "scenes").is_dir():
             raise ValueError("Select a dataset root containing scenes/")
+    if config.method == 'spgrasp':
+        from ..methods.spgrasp import preflight
+        return preflight(config)
     if config.action == 'train_check':
         root=Path(config.dataset_root)
         if config.method=='generalizing_grasp':

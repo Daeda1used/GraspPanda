@@ -250,5 +250,14 @@
     "path": "upstream/single_view/candidate_graphs/gtg2",
     "name": "GtG2 reconstruction",
     "input_note": "Reconstructed candidate-graph workflow; train your own ensemble. Author helpers and compatible weights are incomplete."
+  },
+  {
+    "id": "spgrasp",
+    "name": "SPGrasp",
+    "repository": "https://github.com/sejmoonwei/SPGrasp",
+    "group": "temporal/planar",
+    "path": "upstream/temporal/planar/spgrasp",
+    "paper_title": "SPGrasp: Spatiotemporal Prompt-Driven Grasp Synthesis in Dynamic Scenes",
+    "input_note": "RGB sequences and explicit first-frame boxes or points; planar grasp outputs. SAM2 weights initialize training only. Inference requires a trained SPGrasp checkpoint."
   }
 ]

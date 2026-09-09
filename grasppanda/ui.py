@@ -43,11 +43,11 @@ def method_card(method):
             f"[Implementation]({item['repository']})\n\n{recipe or note}")
 
 
-def component_parameters(method, backbone, crop, head='upstream'):
+def component_parameters(method, backbone, crop, head='upstream', memory='upstream'):
     from .module_options import schema
     rows = []
     available = {slot.name: slot for slot in slots(method)}
-    for slot, choice in (('backbone', backbone), ('crop', crop), ('head', head)):
+    for slot, choice in (('backbone', backbone), ('crop', crop), ('head', head), ('memory', memory)):
         if slot not in available or choice not in available[slot].choices:
             continue
         for key, rule in schema(method, slot, choice).items():
@@ -105,6 +105,8 @@ def component_parameters(method, backbone, crop, head='upstream'):
 def loss_parameters(method):
     from grasppanda.training.options import LOSS_TERMS
     from grasppanda.training.losses import PARAMETERS, is_classification, parameter_schema
+    if method == 'spgrasp':
+        return 'Planar training accepts loss.weights for position (default 2), angle, width and semantic (default 1 each). Native loss formulations are retained. Photometric augmentation accepts native, none, or custom brightness, contrast, saturation, grayscale and consistent. See Guide → Modules for units and prompt supervision.'
     terms = LOSS_TERMS.get(method, {})
     if not terms:
         return 'This method uses its native objective and augmentation. Custom controls are not registered.'
@@ -183,6 +185,46 @@ def documentation(name):
     return re.sub(r'\[([^\]]+)\]\(([^)]+)\)', link, text)
 
 
+def prompt_frame(dataset, camera, scene, frame):
+    from PIL import Image
+    from .methods.spgrasp_data import frame_paths
+    try:
+        path = frame_paths(str(ROOT / Path(dataset).expanduser()), int(scene), camera, int(frame), 1)[0]
+        with Image.open(path) as image:
+            return image.convert('RGB'), '[]'
+    except (OSError, ValueError, TypeError) as error:
+        raise gr.Error(str(error)) from error
+
+
+def add_prompt_point(current, object_id, label, canvas, evt: gr.SelectData):
+    from PIL import ImageDraw
+    try:
+        if canvas is None:
+            raise ValueError('Load the selected RGB frame first')
+        objects = json.loads(current or '[]')
+        if not isinstance(objects, list) or type(object_id) not in (int, float) or int(object_id) != object_id or object_id < 0:
+            raise ValueError('Use an object list and a nonnegative integer object ID')
+        oid = int(object_id)
+        x, y = (int(value) for value in evt.index)
+        if not 0 <= x < canvas.width or not 0 <= y < canvas.height:
+            raise ValueError('Prompt point is outside the image')
+        obj = next((obj for obj in objects if isinstance(obj, dict) and obj.get('id') == oid), None)
+        if obj is None:
+            obj = dict(id=oid, points=[])
+            objects.append(obj)
+        obj.setdefault('points', []).append([x, y, 1 if label == 'Foreground' else 0])
+        from .methods.spgrasp_data import Letterbox, prepare_prompts
+        prepare_prompts(objects, Letterbox(canvas.height, canvas.width))
+        preview = canvas.copy()
+        draw = ImageDraw.Draw(preview)
+        color = '#39d98a' if label == 'Foreground' else '#ff6767'
+        draw.ellipse((x-5, y-5, x+5, y+5), fill=color, outline='white', width=2)
+        draw.text((x+8, y-8), str(oid), fill=color)
+        return json.dumps(objects, indent=2), preview
+    except (ValueError, TypeError, AttributeError) as error:
+        raise gr.Error(str(error)) from error
+
+
 def create_app(manager=None):
     manager = manager or JobManager()
     items = {mid: item for mid, item in catalogue().items() if capabilities(mid)}
@@ -211,7 +253,7 @@ def create_app(manager=None):
             progress(0,desc='Downloading / verifying author weights…')
             value=fetch(method,camera,lambda message: progress(.5,desc=message))
             progress(1,desc='Verified')
-            return value, 'Weights downloaded and verified. Set your inputs, then run the experiment.'
+            return value, ('SAM2 initialization downloaded. Train SPGrasp first; this file is not a trained grasp checkpoint.' if method == 'spgrasp' else 'Weights downloaded and verified. Set your inputs, then run the experiment.')
         except Exception as error:
             raise gr.Error(str(error)) from error
 
@@ -238,7 +280,7 @@ def create_app(manager=None):
     def apply_preset(method,dataset):
         config=preset(method,(dataset or '').strip())
         if not capabilities(method): raise gr.Error('This source has no runnable adapter. See the method card.')
-        return gr.update(choices=action_choices(method), value=config.action), config.camera, config.checkpoint, config.workspace, config.num_points, config.split, config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2)
+        return gr.update(choices=action_choices(method), value=config.action), config.camera, config.checkpoint, config.workspace, config.num_points, config.split, config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2), config.collision_thresh
 
     def setup_check(dataset):
         import torch
@@ -248,7 +290,7 @@ def create_app(manager=None):
                 'gpu':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
                 'scene_0100_depth':cameras, 'next_step':'Select method → Load preset → Download weights → Run current form.'}
 
-    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0, component_options='{}', loss_options='{}', augmentation_options='{}', optimizer_kind='upstream', optimizer_options='{}', scheduler_kind='upstream', scheduler_options='{}', proposal_warmup_steps=0, trainer_options='{}', timeout_minutes=60, head='upstream'):
+    def compose(method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu, dataset_key="graspnet1b", backbone="upstream", crop="upstream", checkpoint_policy="strict", training_steps=3, label_root="", train_checkpoint_mode='initialize', train_batch_limit=0, eval_batch_limit=0, data_workers=0, component_options='{}', loss_options='{}', augmentation_options='{}', optimizer_kind='upstream', optimizer_options='{}', scheduler_kind='upstream', scheduler_options='{}', proposal_warmup_steps=0, trainer_options='{}', timeout_minutes=60, head='upstream', memory='upstream', prompt_options='[]', planar_options='{}'):
         def mapping(text, label):
             try:
                 value=json.loads(text or '{}')
@@ -262,25 +304,31 @@ def create_app(manager=None):
         optimizer=mapping(optimizer_options,'Optimizer parameters')
         scheduler=mapping(scheduler_options,'Scheduler parameters')
         trainer=mapping(trainer_options,'Trainer parameters')
+        planar=mapping(planar_options,'Planar settings')
+        try:
+            prompts=json.loads(prompt_options or '[]')
+        except (ValueError, TypeError) as error:
+            raise gr.Error('First-frame prompts must contain valid JSON') from error
+        if not isinstance(prompts,list): raise gr.Error('First-frame prompts must be an object list')
         for kind, options, name in ((optimizer_kind, optimizer, 'optimizer'),(scheduler_kind, scheduler, 'scheduler')):
             if 'type' in options:raise gr.Error(f'Choose the {name} type with its selector')
             if kind=='upstream' and options:raise gr.Error(f'Select a custom {name} before setting its parameters')
         optimizer={'type':optimizer_kind,**optimizer} if optimizer_kind!='upstream' else {}
         scheduler={'type':scheduler_kind,**scheduler} if scheduler_kind!='upstream' else {}
         if action == 'pipeline_smoke':
-            if parameters or loss or augmentation or optimizer or scheduler or trainer or proposal_warmup_steps or backbone!='upstream' or crop!='upstream' or head!='upstream':
+            if parameters or loss or augmentation or optimizer or scheduler or trainer or proposal_warmup_steps or backbone!='upstream' or crop!='upstream' or head!='upstream' or memory!='upstream' or prompts or planar:
                 raise gr.Error('The native recipe uses fixed components and settings. Load its preset to reset overrides.')
             from dataclasses import replace
             config=replace(preset(method,(dataset or '').strip()),gpu=int(gpu),timeout_minutes=int(timeout_minutes))
             if method in CHECKPOINT_RECIPES:config=replace(config,checkpoint=(checkpoint or '').strip())
             return json.dumps(config.to_dict(),indent=2)
-        selected={s.name:{"backbone":backbone,"crop":crop,"head":head}[s.name] for s in slots(method)}
+        selected={s.name:{"backbone":backbone,"crop":crop,"head":head,"memory":memory}[s.name] for s in slots(method)}
         selection={name:choice for name,choice in selected.items() if choice != 'upstream'}
         for name,values in parameters.items():
             if name not in selected:raise gr.Error(f'This method has no configurable {name} slot')
             if not isinstance(values,dict) or 'type' in values:raise gr.Error('Use the component selector for type; supply only its parameters here')
             selection[name]={'type':selected[name],**values}
-        config = Experiment(timeout_minutes=int(timeout_minutes),trainer=trainer,proposal_warmup_steps=int(proposal_warmup_steps),dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,optimizer=optimizer,scheduler=scheduler,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "infer", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
+        config = Experiment(prompts=prompts,planar=planar,timeout_minutes=int(timeout_minutes),trainer=trainer,proposal_warmup_steps=int(proposal_warmup_steps),dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,optimizer=optimizer,scheduler=scheduler,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "infer", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
                             camera=camera, split=split, scene=int(scene), frame=int(frame), frames=int(count),
                             num_points=int(points), seed=int(seed), workspace=workspace, collision_thresh=collision,
                             epochs=int(epochs), batch_size=int(batch), learning_rate=lr,
@@ -370,10 +418,12 @@ def create_app(manager=None):
         config=replace(Experiment.from_dict(row['config']),action='infer',checkpoint=str(path),
                        checkpoint_policy='strict',split='test_seen',scene=100,frame=0,frames=1,loss={},augmentation={},optimizer={},scheduler={},trainer={},proposal_warmup_steps=0,train_checkpoint_mode='initialize')
         if method=='finegrasp': config=replace(config,workspace='native_demo')
+        if method=='spgrasp': config=replace(config,frames=row['config']['frames'],prompts=[])
         if 'infer' not in capabilities(method):
             config=replace(preset(method,row['config']['dataset_root']),checkpoint=str(path),gpu=row['config']['gpu'])
         config.validate()
         note='The fixed native input recipe is retained.' if config.action=='pipeline_smoke' else 'Review the selected test frame.'
+        if method=='spgrasp': note='Set first-frame prompts in the generated JSON before running; use the Planar sequence panel to inspect your selected frame and create prompts.'
         return json.dumps(config.to_dict(),indent=2), 'Inference JSON prepared in Experiments. '+note+' Click Run edited JSON.'
 
     def cancel(job_id):
@@ -440,16 +490,29 @@ def create_app(manager=None):
                         workspace = gr.Dropdown(["official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"], value="official_gt_workspace", label="Workspace policy")
                         gr.Markdown("Official workspace uses dataset segmentation + poses. HGGD / RNG use native_demo. Load the preset to select the correct protocol.", elem_classes="panda-note")
                         collision = gr.Number(0.01, label="Collision threshold (0 disables)")
+                    with gr.Accordion('Planar sequence', open=False, visible=False) as planar_panel:
+                        gr.Markdown('SPGrasp predicts planar grasps from RGB sequences. Train with the SAM2 initializer, then select your trained checkpoint for prediction. Settings and units are explained in Guide → Modules.')
+                        planar_options = gr.Code('{}', language='json', label='Planar settings', lines=4)
+                        with gr.Column(visible=False) as prompt_panel:
+                            gr.Markdown('Load the first frame and click foreground/background points for each object ID. Coordinates use original RGB pixels. You can also enter boxes as `{"id": 1, "box": [x0, y0, x1, y1]}`. Reloading or changing the frame clears prompts.')
+                            load_prompt_frame = gr.Button('Load first RGB frame / clear points')
+                            prompt_image = gr.Image(type='pil', interactive=False, label='Click to add a prompt point', height=350, buttons=['download','fullscreen'])
+                            with gr.Row():
+                                prompt_object = gr.Number(1, precision=0, minimum=0, label='Prompt object ID')
+                                prompt_label = gr.Radio(['Foreground', 'Background'], value='Foreground', label='Point label')
+                            prompt_options = gr.Code('[]', language='json', label='First-frame object prompts', lines=6)
                     with gr.Accordion("Compose modules",open=False) as composition_panel:
-                        gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
+                        composition_intro = gr.Markdown("Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.")
                         initial_components={slot.name:list(slot.choices) for slot in slots('graspnet_baseline')}
                         backbone=gr.Dropdown(initial_components['backbone'],value='upstream',label='Point encoder')
-                        crop=gr.Dropdown(initial_components['crop'],value='upstream',label='Local cylindrical grouping')
+                        with gr.Column() as crop_panel:
+                            crop=gr.Dropdown(initial_components['crop'],value='upstream',label='Local cylindrical grouping')
                         head=gr.Dropdown(['upstream'],value='upstream',label='Grasp prediction head',visible=False)
+                        memory=gr.Dropdown(['upstream'],value='upstream',label='Temporal memory',visible=False)
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
-                        gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.')
+                        composition_hint = gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.')
                         with gr.Accordion('Pretrained encoder weights', open=False, visible=False) as pretraining_panel:
                             gr.Markdown('Registered image and point encoders use author pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning; see the parameter guide for the selected encoder. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
                             component_download = gr.Button('Prepare selected component weights')
@@ -574,9 +637,15 @@ For component experiments, expand **Compose modules**. Full configuration editin
             enabled=bool(slots(method))
             contract='\n\n'.join(f"**{s.name}**: {s.input_contract} → {s.output_contract}" for s in slots(method)) if enabled else 'This method currently retains its native components. No interchangeable slots are registered.'
             choices={s.name:list(s.choices) for s in slots(method)}
-            return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices),contract,gr.update(choices=choices.get('head',['upstream']),value='upstream',visible='head' in choices,interactive='head' in choices)
-        method.change(select_components,method,[backbone,crop,component_contract,head],api_name='select_components', preprocess=False).then(
+            return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp','spgrasp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices,visible='crop' in choices),contract,gr.update(choices=choices.get('head',['upstream']),value='upstream',visible='head' in choices,interactive='head' in choices),gr.update(choices=choices.get('memory',['upstream']),value='upstream',visible='memory' in choices,interactive='memory' in choices)
+        method.change(select_components,method,[backbone,crop,component_contract,head,memory],api_name='select_components', preprocess=False).then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
+        method.change(lambda m: gr.update(choices=['strict'] if m=='spgrasp' else ['strict','reuse_unchanged'], value='strict'),
+            method, checkpoint_policy, api_name=False, preprocess=False)
+        method.change(lambda m: 'Configure the Hiera encoder and temporal memory, then train from the SAM2 initializer. A trained SPGrasp checkpoint loads strictly and carries its architecture and width units.' if m=='spgrasp' else 'Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.',
+            method, composition_intro, api_name=False, preprocess=False)
+        method.change(lambda m: 'Select **hiera** and **temporal** to edit their parameters. For example: `{"backbone": {"resolution": 256}, "memory": {"frames": 3, "layers": 2}}`.' if m=='spgrasp' else 'Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.',
+            method, composition_hint, api_name=False, preprocess=False)
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
         apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
         for selector in (method, action):
@@ -589,8 +658,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
         for selector in (method, action):
             selector.change(loss_controls,[method,action],[classification_loss,regression_loss,apply_loss],api_name=False, preprocess=False)
-        for selector in (method, backbone, crop, head):
-            selector.change(component_parameters,[method,backbone,crop,head],parameter_help,api_name=False, preprocess=False)
+        for selector in (method, backbone, crop, head, memory):
+            selector.change(component_parameters,[method,backbone,crop,head,memory],parameter_help,api_name=False, preprocess=False)
         def optimization_choices(method, action, backbone):
             from grasppanda.training.optimization import METHODS,MUON_METHODS,SPARSE_BACKBONES
             enabled=method in METHODS and action in ('train','train_check')
@@ -605,10 +674,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
-                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto')))
+                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto')),
+                    gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
         for selector in (method, action, backbone):
             selector.change(operation_layout, [method, action, backbone],
-                [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel], api_name=False, preprocess=False)
+                [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel], api_name=False, preprocess=False)
         def reset_inactive_training(action):
             training = action in ('train', 'train_check', 'train_smoke')
             return ([gr.update() if training else gr.update(value='{}') for _ in range(2)] +
@@ -617,11 +687,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
             [loss_options, augmentation_options, train_batch_limit, eval_batch_limit, data_workers], api_name=False, preprocess=False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
-            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
-            return ('train',0,2e-6 if m=='gfla' else .01 if m == 'gtg2' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
+            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','spgrasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
+            return ('train',0,5e-6 if m=='spgrasp' else 2e-6 if m=='gfla' else .01 if m == 'gtg2' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
         for selector in (method, action):
-            selector.change(lambda m,a:gr.update(value='{}',interactive=m in ('hggd','gtg2') and a=='train'),[method,action],trainer_options,api_name=False, preprocess=False)
-            selector.change(lambda m,a:gr.update(visible=m in ('hggd','gtg2') and a=='train'),[method,action],trainer_panel,api_name=False, preprocess=False)
+            selector.change(lambda m,a:gr.update(value='{}',interactive=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_check')),[method,action],trainer_options,api_name=False, preprocess=False)
+            selector.change(lambda m,a:gr.update(visible=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_check')),[method,action],trainer_panel,api_name=False, preprocess=False)
             selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('graspness','finegrasp','economicgrasp') and a=='train'),[method,action],eval_batch_limit,api_name=False, preprocess=False)
         action.change(lambda a:gr.update(visible=a=='train_check'),action,training_steps,api_name=False, preprocess=False)
         action.change(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults', preprocess=False)
@@ -631,31 +701,41 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return primary(m,c) if a in ('train_check','train_smoke','train') and not path else path
         action.change(training_checkpoint,[action,method,camera,checkpoint],checkpoint,api_name=False, preprocess=False)
         group.change(filter_methods, group, method, api_name="filter_methods", preprocess=False)
+        load_prompt_frame.click(prompt_frame, [dataset,camera,scene,frame], [prompt_image,prompt_options], api_name='load_prompt_frame')
+        prompt_image.select(add_prompt_point, [prompt_options,prompt_object,prompt_label,prompt_image], [prompt_options,prompt_image], api_name=False)
+        for selector in (dataset,camera,scene,frame,method):
+            selector.change(lambda: (None,'[]'), outputs=[prompt_image,prompt_options], api_name=False)
+        method.change(lambda: '{}', outputs=planar_options, api_name=False)
+        method.change(lambda m: gr.update(value=0 if m=='spgrasp' else .01), method, collision, api_name=False, preprocess=False)
+        for selector in (method,action):
+            selector.change(lambda m,a: (gr.update(visible=m=='spgrasp'),gr.update(visible=m=='spgrasp' and a=='infer')),
+                [method,action], [planar_panel,prompt_panel], api_name=False, preprocess=False)
+        action.change(lambda a: gr.update() if a=='infer' else gr.update(value='[]'), action, prompt_options, api_name=False, preprocess=False)
         method.change(select_method, [method,camera], [card, action, run, checkpoint,camera,workspace,points], api_name="select_method", concurrency_id="method-preset", concurrency_limit=1, preprocess=False)
         camera.change(checkpoint_for,[method,camera],checkpoint,api_name=False, preprocess=False)
         component_download.click(download_component_weights,[method,backbone,component_options],component_download_message,api_name='download_component_weights',concurrency_limit=1)
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
         for selector in (action, method):
-            selector.change(lambda a,m: [gr.update(interactive=a!='pipeline_smoke' and not (m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)))) for i in range(13)],
+            selector.change(lambda a,m: [gr.update(interactive=a!='pipeline_smoke' and not (m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8))) for i in range(13)],
                 [action,method],[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],api_name=False, preprocess=False)
-        method.change(lambda m: ('Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/GTG2.md)' if m == 'gtg2' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
+        method.change(lambda m: ('Configure objects (1–8), box_probability (0–1), correction_clicks (0–7), conditioning_frames and correction_frames (1–4). Training simulates prompts from instance labels. conditioning_frames <= correction_frames <= frame count.' if m=='spgrasp' else 'Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/GTG2.md)' if m == 'gtg2' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
         method.change(lambda m:gr.update(label='Prepared graph root (required for training)' if m == 'gtg2' else 'Prepared targets / cache root (optional)'),method,label_root,api_name=False, preprocess=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
         for selector in (method,action):
             selector.change(lambda m,a: gr.update(value=0,interactive=m in ('region_normalized_grasp','economicgrasp') and a=='train_check',visible=m in ('region_normalized_grasp','economicgrasp') and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False, preprocess=False)
         preset_button.click(lambda: 0,outputs=proposal_warmup_steps,api_name=False)
-        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head]
+        inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head,memory,prompt_options,planar_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')
         sweep_preview_button.click(preview_sweep,[config_text,sweep_grid],sweep_preview,api_name='preview_sweep')
         sweep_run_button.click(run_sweep,[config_text,sweep_grid],[job_id,message],api_name='run_sweep')
-        preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text],api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1).then(
-            lambda: ('upstream','upstream','strict','{}','{}','{}','upstream','{}','upstream','{}'),
+        preset_button.click(apply_preset,[method,dataset],[action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text,collision],api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1).then(
+            lambda m: ('upstream',gr.update(value='upstream',visible=any(s.name=='crop' for s in slots(m))),'strict','{}','{}','{}','upstream','{}','upstream','{}'), inputs=method,
             outputs=[backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options],api_name=False)
         preset_button.click(lambda:'{}',outputs=trainer_options,api_name=False)
-        preset_button.click(lambda:'upstream',outputs=head,api_name=False)
+        preset_button.click(lambda:('upstream','upstream','[]','{}'),outputs=[head,memory,prompt_options,planar_options],api_name=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False, preprocess=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")

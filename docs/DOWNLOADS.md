@@ -8,6 +8,7 @@ Choose the inputs for your first experiment; you can add training archives later
 | A GraspNet frame | Download `test_seen.zip`, set the dataset root and download weights for your method and camera. |
 | Training or evaluation | Add the models, labels and method-specific targets described below. |
 | GtG2 candidate graphs | Follow [Candidate graph experiments](GTG2.md) to prepare graphs and train an ensemble. |
+| SPGrasp planar sequences | Training needs RGB, instance labels and `rect_labels.zip`; prediction needs RGB, first-frame prompts and your trained checkpoint. |
 
 ## Start without GraspNet
 
@@ -164,6 +165,8 @@ Google Drive downloads support resume. Other HTTP downloads restart cleanly beca
 MotionGrasp also requires the baseline checkpoint; the downloader includes it. The PointNet2 compatibility port reuses the baseline weights. RNGNet SDK and SpaHybGen sample weights are included by their upstream repositories. GraNet's organized source and separately distributed legacy checkpoints are not interchangeable. Methods without registered, compatible weights are explicitly identified in [Methods & papers](METHODS.md).
 
 ## Additional inputs
+
+**SPGrasp:** `./panda weights spgrasp` downloads the [SAM2.1 Hiera Base+ initializer](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt) to `checkpoints/spgrasp/sam2.1_hiera_base_plus.pt`. This initializes training; it is not a trained grasp detector and inference rejects it. No author fine-tuned SPGrasp weights are registered. Use your training run's `checkpoint.pt` for prediction. Training requires consecutive RGB and instance-label frames, with rectangle labels in `rect_labels/scene_XXXX/CAMERA/FFFF.npy` or `scenes/scene_XXXX/CAMERA/rect/FFFF.npy`. Set `label_root` to select another rectangle root containing `scene_XXXX/CAMERA/`. The [SAM2 author instructions](https://github.com/facebookresearch/sam2#download-checkpoints) describe the initializer, and the [SPGrasp guide](MODULES.md#prompted-planar-sequences) explains prompts and width units.
 
 ZeroGrasp's inference recipe uses the author's RGB-D and instance-mask sample. Its separate reconstruction training dataset is available through the [author download script](https://github.com/sh8/ZeroGrasp/blob/main/download.sh). Standard GraspNet frames do not provide that supervision.
 

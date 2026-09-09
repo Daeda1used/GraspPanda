@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.38.2"
+version = "0.39.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -88,6 +88,7 @@ dependencies = [
   "timeout-decorator",
   "robo-orchard-core",
   "fpsample==0.3.3",
+  "tensordict==0.6.2",
 ]
 
 [tool.uv]

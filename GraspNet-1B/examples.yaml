@@ -877,3 +877,22 @@ compose-kernel-cylinders:
         pooling: attention
         chunk_size: 128
         checkpoint: true
+train-spgrasp:
+  description: Train a prompted RGB sequence with configurable Hiera and temporal memory
+  config:
+    method: spgrasp
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/spgrasp/sam2.1_hiera_base_plus.pt
+    camera: realsense
+    split: train
+    scene: 0
+    frames: 8
+    batch_size: 1
+    workspace: native_demo
+    collision_thresh: 0
+    learning_rate: 0.000005
+    training_steps: 20
+    modules:
+      backbone: {type: hiera, resolution: 512, trainable_blocks: 4}
+      memory: {type: temporal, frames: 7, layers: 4, heads: 1}

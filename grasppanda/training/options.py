@@ -44,6 +44,9 @@ def finite(value, low, high):
 
 
 def validate_training_options(config):
+    if config.method == 'spgrasp':
+        from ..methods.spgrasp_options import validate_training
+        return validate_training(config)
     for name in ('loss', 'augmentation'):
         value = getattr(config, name)
         if not isinstance(value, dict):

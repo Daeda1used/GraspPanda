@@ -50,6 +50,9 @@ def overlay(rgb_path, grasps, intr, destination):
 
 
 def infer(config, out):
+    if config.method == 'spgrasp':
+        from .methods.spgrasp import infer as planar_infer
+        return planar_infer(config, out)
     if config.method == 'gtg2':
         from grasppanda.methods.gtg2 import infer as graph_infer
         return graph_infer(config, out)
@@ -322,7 +325,10 @@ def main():
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.set_num_threads(4)
-    if config.action == 'train_check':
+    if config.action == 'train_check' and config.method == 'spgrasp':
+        from .methods.spgrasp import train as train_planar
+        result = train_planar(config, out, config.training_steps)
+    elif config.action == 'train_check':
         from .training import hggd,point_family,rng,contact,rgb_matters
         from grasppanda.methods.center_training import run as center
         from grasppanda.methods.gfla_training import run as gfla

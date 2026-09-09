@@ -23,6 +23,7 @@ def capabilities(method):
         return []
     actions = []
     if method == 'gtg2': return ['infer', 'evaluate', 'train']
+    if method == 'spgrasp': return ['infer', 'train_check']
     if method in CORE:
         actions += ["infer", "evaluate"]
     if method in (*HEATMAP,'finegrasp'):
@@ -48,6 +49,8 @@ class Experiment:
     optimizer: dict = field(default_factory=dict)
     scheduler: dict = field(default_factory=dict)
     trainer: dict = field(default_factory=dict)
+    prompts: list = field(default_factory=list)
+    planar: dict = field(default_factory=dict)
     checkpoint_policy: str = "strict"
     method: str = "graspness"
     action: str = "infer"
@@ -101,11 +104,12 @@ class Experiment:
         if self.proposal_warmup_steps and self.method == 'economicgrasp' and not any(
                 self.loss.get('weights', {}).get(name, weight) > 0 for name, weight in (('objectness', 1), ('graspness', 10))):
             raise ValueError('EconomicGrasp proposal warmup requires an active seed objective')
-        if self.method == 'gtg2':
-            from grasppanda.methods.gtg2_options import validate_config as validate_trainer
-        else:
-            from grasppanda.methods.hggd_options import validate as validate_trainer
-        validate_trainer(self)
+        if self.method != 'spgrasp':
+            if self.method == 'gtg2':
+                from grasppanda.methods.gtg2_options import validate_config as validate_trainer
+            else:
+                from grasppanda.methods.hggd_options import validate as validate_trainer
+            validate_trainer(self)
         from .datasets import get_dataset
         from .components import validate_selection
         spec=get_dataset(self.dataset)
@@ -134,8 +138,8 @@ class Experiment:
         if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"):
             raise ValueError("Unknown workspace policy")
         if self.action in ('infer', 'evaluate'):
-            if (self.method in (*HEATMAP,'finegrasp')) != (self.workspace == 'native_demo'):
-                raise ValueError('HGGD / RegionNormalizedGrasp / FineGrasp require workspace: native_demo; point methods require a point-cloud workspace policy')
+            if (self.method in (*HEATMAP,'finegrasp','spgrasp')) != (self.workspace == 'native_demo'):
+                raise ValueError('HGGD / RegionNormalizedGrasp / FineGrasp / SPGrasp require workspace: native_demo; point methods require a point-cloud workspace policy')
             if self.method in NATIVE_POINTS and self.workspace != 'official_gt_workspace':
                 raise ValueError('This adapter retains the upstream official_gt_workspace preprocessing')
         last_scene=max(stop for _,stop in spec.splits.values())
@@ -163,7 +167,7 @@ class Experiment:
         if self.action=='train_check':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp checks support 1–6 temporal updates per native seven-frame sequence')
             if self.method=='centergrasp' and self.camera!='kinect':raise ValueError('The native CenterGrasp training adapter requires camera: kinect')
-            expected='native_demo' if self.method in HEATMAP else ('fused_gt_workspace' if self.method=='generalizing_grasp' else 'official_gt_workspace')
+            expected='native_demo' if self.method in (*HEATMAP,'spgrasp') else ('fused_gt_workspace' if self.method=='generalizing_grasp' else 'official_gt_workspace')
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
             if self.workspace!=expected:raise ValueError(f'This training check requires workspace: {expected}')
         if self.action in ('train_smoke','train_check') and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
@@ -180,6 +184,8 @@ class Experiment:
         validate_oacnns_config(self)
         from .modules.kpconvx_options import validate_config as validate_kpconvx_config
         validate_kpconvx_config(self)
+        from .methods.spgrasp_options import validate as validate_planar
+        validate_planar(self)
         return self
 
     def preflight(self):

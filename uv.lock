@@ -987,7 +987,7 @@ wheels = [
 
 [[package]]
 name = "grasppanda"
-version = "0.38.2"
+version = "0.39.0"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1056,6 +1056,7 @@ dependencies = [
     { name = "spconv-cu118" },
     { name = "tensorboard" },
     { name = "tensorboardx" },
+    { name = "tensordict" },
     { name = "thop" },
     { name = "timeout-decorator" },
     { name = "timm" },
@@ -1144,6 +1145,7 @@ requires-dist = [
     { name = "spconv-cu118", specifier = "==2.3.8" },
     { name = "tensorboard" },
     { name = "tensorboardx" },
+    { name = "tensordict", specifier = "==0.6.2" },
     { name = "thop", specifier = ">=0.1.1.post2209072238" },
     { name = "timeout-decorator" },
     { name = "timm" },
@@ -3367,6 +3369,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/48/a9/fc520ea91ab1f3ba51cbf3fe24f2b6364ed3b49046969e0868d46d6da372/tensorboardx-2.6.5.tar.gz", hash = "sha256:ca176db3997ee8c07d2eb77381225956a3fd1c10c91beafab1f17069adc47017", size = 4770195, upload-time = "2026-04-03T15:40:23.803Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/0f/69fbab4c30b2f3a76e6de67585ea72a8eccf381751f5c0046b966fde9658/tensorboardx-2.6.5-py3-none-any.whl", hash = "sha256:c10b891d00af306537cb8b58a039b2ba41571f0da06f433a41c4ca8d6abe1373", size = 87510, upload-time = "2026-04-03T15:40:22.111Z" },
+]
+
+[[package]]
+name = "tensordict"
+version = "0.6.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cloudpickle" },
+    { name = "numpy" },
+    { name = "orjson" },
+    { name = "torch" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fd/c4/ddbd7109fef983a726cc135bdd748a7b3747cd3e77dc300ab4cc577a8d64/tensordict-0.6.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:e5132b369ac9e84eb0e9e28d1954f6d1370e06927ab3c502e02a6d35a1ed629a", size = 669700, upload-time = "2024-11-14T15:02:33.772Z" },
+    { url = "https://files.pythonhosted.org/packages/29/04/a58ed454ad7f8f8a65f6ebe2df279c4d6921234cad3603318cf8a150b0f3/tensordict-0.6.2-cp311-cp311-manylinux1_x86_64.whl", hash = "sha256:3e036ae56532b6308a9e95de29db97f1ec9b83f569c716a602d7d48dc0b47ef5", size = 360364, upload-time = "2024-11-14T15:02:35.838Z" },
 ]
 
 [[package]]
