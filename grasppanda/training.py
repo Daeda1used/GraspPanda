@@ -201,7 +201,8 @@ def point_family(config, out, steps=3):
     directory=root/'scenes'/scene/config.camera
     from .pcm_options import selected as pcm_selected
     from .ptv2_options import selected as ptv2_selected
-    multi_frame=pcm_selected(config) or ptv2_selected(config)
+    from .litept_options import selected as litept_selected
+    multi_frame=pcm_selected(config) or ptv2_selected(config) or litept_selected(config)
     frame_ids=list(range(config.frame, config.frame+config.batch_size)) if multi_frame else [config.frame]
     metadata=[scipy.io.loadmat(directory/'meta'/f'{frame:04d}.mat') for frame in frame_ids]
     evidence={};labels={}

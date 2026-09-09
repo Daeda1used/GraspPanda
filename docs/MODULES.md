@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,14 +17,14 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -350,6 +350,32 @@ Each channel width must be divisible by its attention group count. Neighborhood 
 The dense adapter projects decoded features to 256 channels and samples original-input seed indices. Sparse adapters reconstruct camera XYZ from the lattice, combine it with the original sparse features, and restore the identical coordinate map and row order. The method retains its own seed prediction, crop, losses and decoder. FineGrasp retains its XYZ/normal features. Changing the backbone requires grasp training; these adapters do not supply pretrained grasp weights. Use `reuse_unchanged` for initialization and `strict` when reloading the resulting composed checkpoint.
 
 Compatibility changes fix the original grouped-linear divisibility assertion, keep native CUDA work on the selected device/current stream, mask absent interpolation neighbors to prevent cross-scene feature leakage, and avoid counting BatchNorm updates twice during checkpoint recomputation. Native attention's neighbor masking and pooling reductions are retained. These are feature adapters; they do not reproduce a semantic-segmentation experiment or establish grasp AP.
+
+## LitePT encoder
+
+`litept` uses the standalone [LitePT implementation](https://github.com/prs-eth/LitePT) ([CVPR 2026 PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Yue_LitePT_Lighter_Yet_Stronger_Point_Transformer_CVPR_2026_paper.pdf)): sparse convolutions in early stages, serialized attention with three-axis PointROPE in later stages, and a lightweight skip decoder. It is available for Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp. It retains each detector's own supervision and grasp decoder.
+
+Generate `./panda init --example compose-litept`. In the browser, select **Point encoder → litept** and enter overrides under `backbone` in **Component parameters by slot**. Omitted parameters use the native small model. The example enables additional decoder attention to illustrate independent encoder/decoder settings.
+
+| Parameter | Native default / meaning |
+|---|---|
+| `enc_depths`, `enc_channels` | `[2,2,2,6,2]`, `[36,72,144,252,504]`; define 1–6 encoder stages |
+| `dec_depths`, `dec_channels` | `[0,0,0,0]`, `[72,72,144,252]`; one fewer stage, ordered from fine to coarse. Zero depth retains native projection and skip unpooling without extra blocks |
+| `stride` | `[2,2,2,2]`; integer grid-pooling strides, 1–8, one between each encoder stage |
+| `enc_conv`, `enc_attn` | `[true,true,true,false,false]`, `[false,false,false,true,true]`; boolean or one boolean per encoder stage |
+| `dec_conv`, `dec_attn` | Both false by default; boolean or one per decoder stage. Attention may be enabled independently of the corresponding encoder stage |
+| `enc_num_head`, `dec_num_head` | `[2,4,8,14,28]`, `[4,4,8,14]`; head counts for active attention |
+| `enc_patch_size`, `dec_patch_size` | `1024` at every stage; lists of window sizes, 1–4096. Padding remains within each scene |
+| `enc_rope_freq`, `dec_rope_freq` | `100`; scalar or one frequency base per stage, 1–10000 |
+| `order`, `shuffle_orders` | `['z','z-trans','hilbert','hilbert-trans']`, true; serialization orders and training/evaluation order shuffling |
+| `pooling` | `max`; native feature reduction can also be `mean`, `min` or `sum`. Coordinates retain mean pooling |
+| `mlp_ratio`, `qkv_bias`, `qk_scale` | `4`, true, native inverse-square-root head scaling; set a positive `qk_scale` to override the scale |
+| `attn_drop`, `proj_drop`, `drop_path`, `pre_norm` | `0`, `0`, `0.3`, true; native attention/MLP dropout, stochastic depth and normalization placement |
+| `rope_backend` | `cuda` for the native arithmetic with safe stream/gradient handling, or `torch` for the author's PyTorch implementation. Both use FlashAttention; small floating-point differences are expected |
+
+Every stage list must match the chosen hierarchy. Active attention requires channels divisible by heads, with head width divisible by six and at most 252. Decoder controls act only where `dec_depths` is positive. Input lattice resolution comes from the experiment's `voxel_size`, in metres. Points sharing a cell are mean-coalesced; outputs map back to every original point. Sparse adapters preserve the original coordinate map, and dense adapters preserve the original FPS seed indices. Decoder serialization and attention caches are refreshed when required by a configured stage.
+
+Run `./panda install` after upgrading: the lock installs the author's compatible FlashAttention wheel, and the installer builds the small PointROPE extension in the shared runtime. LitePT attention requires an Ampere or newer GPU supported by that runtime. Training requires `batch_size >= 2` for coarse-stage batch normalization; short runs use consecutive frames in one scene, and epoch loaders omit incomplete final batches. The architecture starts with random weights: use `reuse_unchanged` with the method checkpoint, train the composition, then use `strict` for inference or native epoch resume. No pretrained LitePT grasp detector or paper-level grasp accuracy is implied.
 
 ## Point Transformer encoder
 
@@ -717,7 +743,7 @@ FineGrasp exposes its own native training adapter, alongside the FineGrasp group
 
 | Part | Configuration and contract |
 |---|---|
-| Point encoder | `modules.backbone: upstream` keeps the released MinkUNet. `sonata_ptv3` and `point_transformer_v2` expose their documented stage settings; each adapter concatenates lattice XYZ with the six native XYZ/normal features and projects to 512 channels while preserving the sparse row map. |
+| Point encoder | `modules.backbone: upstream` keeps the released MinkUNet. `sonata_ptv3`, `point_transformer_v2` and `litept` expose their documented stage settings; each adapter concatenates lattice XYZ with the six native XYZ/normal features and projects to 512 channels while preserving the sparse row map. |
 | Cylinder grouping | `modules.crop.type: native_cylinder` keeps the author's oriented queries and local interaction. `nsample` defaults to 16; `radius` to 0.07 metres; `radius_factors` to `[0.25, 0.5, 0.75, 1.0]`. |
 | Cross-radius attention | Optional `fusion_layers` (2), `fusion_heads` (8), `fusion_ffn_dim` (1024), `fusion_dropout` (0.1), `fusion_activation` (`relu`) and `fusion_pre_norm` (`false`) configure the native Transformer. Heads must divide 256. The learned attention reduction across groups stays native. These settings also apply to Graspness's `crop: finegrasp`. |
 | Classification objectives | `objectness`, `angle`, `depth` and `score`; retain the native target classes and validity masks. Unlike Graspness, FineGrasp's depth and quality scores are classification tasks. |

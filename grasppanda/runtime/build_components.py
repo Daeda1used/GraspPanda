@@ -9,6 +9,33 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def build_pointrope(uv, source, env):
+    build = ROOT/'environments/build/litept-pointrope'
+    build.mkdir(parents=True, exist_ok=True)
+    for name in ('pointrope.cpp', 'kernels.cu'):
+        shutil.copy2(source/'libs/pointrope'/name, build/name)
+    path = build/'kernels.cu';text = path.read_text()
+    launch = '<<<N_BLOCKS, THREADS_PER_BLOCK, SHARED_MEM>>>'
+    tail = 'tokens[b][n][h][threadIdx.x] = v*cos + u*sin;'
+    if text.count(launch) != 1 or text.count(tail) != 1:
+        raise RuntimeError('PointROPE kernel differs from the pinned source')
+    text = '#include <ATen/cuda/CUDAContext.h>\n#include <c10/cuda/CUDAGuard.h>\n' + text
+    text = text.replace(launch, '<<<N_BLOCKS, THREADS_PER_BLOCK, SHARED_MEM, at::cuda::getCurrentCUDAStream()>>>')
+    # Finish every shared-memory read before another head overwrites that storage.
+    text = text.replace(tail, tail+'\n        __syncthreads();')
+    text = text.replace('    const int B = tokens.size(0);', '    const c10::cuda::CUDAGuard guard(tokens.device());\n    const int B = tokens.size(0);')
+    path.write_text(text)
+    (build/'setup.py').write_text("""from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+setup(name='grasppanda-pointrope-ops', version='0.1.0',
+      ext_modules=[CUDAExtension('_grasppanda_pointrope_cuda', ['pointrope.cpp', 'kernels.cu'],
+          extra_compile_args={'cxx':['-O3'], 'nvcc':['-O3','--use_fast_math']})],
+      cmdclass={'build_ext':BuildExtension})
+""")
+    subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                    '--no-build-isolation', str(build)], env=env, check=True)
+
+
 def build_pointcept(uv, source, env):
     import re
     build = ROOT/'environments/build/pointcept-ops'
@@ -162,6 +189,7 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    build_pointrope(uv, ROOT/pins['litept']['path'], env)
     build_pointcept(uv, ROOT/pins['pointcept']['path'], env)
     build_octree(uv, ROOT/pins['octree-dwconv']['path'], env)
     build_pcm(uv, ROOT/pins['pointcloudmamba']['path'], env)

@@ -88,5 +88,11 @@
     "repository": "https://github.com/Pointcept/Pointcept",
     "path": "environments/sources/cv/pointcept",
     "commit": "9f37497e4f3005c90bbbe7221b86439c29d60611"
+  },
+  {
+    "id": "litept",
+    "repository": "https://github.com/prs-eth/LitePT",
+    "path": "environments/sources/cv/litept",
+    "commit": "436d04801c8151faebe66a1b2d368a9711e7e6aa"
   }
 ]

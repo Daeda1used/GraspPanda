@@ -149,7 +149,8 @@ def run(config,out):
         kwargs['num_workers']=config.data_workers
         from .pcm_options import selected as pcm_selected
         from .ptv2_options import selected as ptv2_selected
-        if train and (pcm_selected(config) or ptv2_selected(config)):
+        from .litept_options import selected as litept_selected
+        if train and (pcm_selected(config) or ptv2_selected(config) or litept_selected(config)):
             if len(dataset) < config.batch_size:
                 raise ValueError('The selected point encoder requires at least one full training batch')
             # The native coarse/global BatchNorm cannot train on a singleton

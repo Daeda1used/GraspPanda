@@ -171,6 +171,8 @@ class Experiment:
         validate_pcm_config(self)
         from .ptv2_options import validate_config as validate_ptv2_config
         validate_ptv2_config(self)
+        from .litept_options import validate_config as validate_litept_config
+        validate_litept_config(self)
         return self
 
     def preflight(self):
