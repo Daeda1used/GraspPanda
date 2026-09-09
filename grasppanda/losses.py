@@ -17,7 +17,7 @@ PARAMETERS = {
 def is_classification(method, term):
     if method in ('hggd', 'region_normalized_grasp'):
         return term in ('anchor_location', 'anchor_classification', 'local_orientation', 'local_theta_classification')
-    return term in ('objectness', 'angle') or (method == 'finegrasp' and term in ('depth', 'score'))
+    return term in ('objectness', 'angle') or (method in ('finegrasp', 'economicgrasp') and term in ('depth', 'score'))
 
 
 def parameter_schema(method, kind):
@@ -94,7 +94,7 @@ def regression(error, kind, options):
 
 def targets(end, method, term):
     """Return prediction/target, optional mask, normalization and denominator offset."""
-    if method == 'finegrasp':
+    if method in ('finegrasp', 'economicgrasp'):
         if term == 'objectness':
             return end['objectness_score'], end['objectness_label'].long(), None, 1., 0.
         if term == 'graspness':

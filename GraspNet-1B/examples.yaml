@@ -810,3 +810,69 @@ compose-seed-interaction:
         interaction_sigma: 0.05
         interaction_layers: 1
         interaction_dropout: 0.1
+
+compose-economicgrasp:
+  description: Configure EconomicGrasp sparse stages, cylinder attention and labelled training controls
+  config:
+    method: economicgrasp
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/economicgrasp/checkpoint-kinect.tar
+    camera: kinect
+    split: train
+    scene: 0
+    num_points: 4096
+    workspace: official_gt_workspace
+    checkpoint_policy: reuse_unchanged
+    training_steps: 3
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: native_tdunet
+        channels:
+        - 16
+        - 32
+        - 64
+        - 128
+        - 64
+        - 64
+        - 64
+        - 64
+        blocks:
+        - 1
+        - 2
+        - 1
+        - 2
+        - 1
+        - 1
+        - 2
+        - 1
+        dilations:
+        - 1
+        - 2
+        - 1
+        - 2
+        - 1
+        - 2
+        - 1
+        - 2
+        stem_channels: 16
+        bn_momentum: 0.03
+      crop:
+        type: native_cylinder
+        nsample: 24
+        radius: 0.08
+        attention_heads: 7
+        seed_interaction: gaussian
+        interaction_heads: 8
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
+    loss:
+      functions:
+        score: poly1
+        width: huber
+    augmentation:
+      mode: custom
+      rotation_degrees: 10
+      point_dropout: 0.1

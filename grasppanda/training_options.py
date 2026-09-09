@@ -2,7 +2,7 @@
 import math
 
 IMAGE_METHODS = ('hggd', 'region_normalized_grasp')
-METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp', 'gtg2') + IMAGE_METHODS
+METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'finegrasp', 'gtg2', 'economicgrasp') + IMAGE_METHODS
 LOSS_TERMS = {
     'graspnet_baseline': {
         'objectness': ('loss/stage1_objectness_loss', 1.),
@@ -25,6 +25,9 @@ LOSS_TERMS['gtg2'] = {'score': ('score_loss', 1.)}
 LOSS_TERMS['finegrasp'] = {name: (name + '_loss', weight) for name, weight in
     (('objectness', 1.), ('graspness', 10.), ('view', 100.), ('angle', 1.),
      ('depth', 1.), ('score', 1.), ('width', 10.))}
+LOSS_TERMS['economicgrasp'] = {name: ('B: ' + name.capitalize() + ' Loss', weight)
+    for name, weight in (('objectness', 1.), ('graspness', 10.), ('view', 100.),
+                         ('angle', 1.), ('depth', 1.), ('score', 1.), ('width', 10.))}
 LOSS_TERMS['hggd'] = {name: (name, weight) for name, weight in
     (('anchor_location', 1.), ('anchor_classification', 1.), ('anchor_theta', 5/3),
      ('anchor_depth', 5/3), ('anchor_width', 5/3), ('local_orientation', 1.), ('local_offset', 1.))}
@@ -91,14 +94,14 @@ def weighted_loss(native_loss, end_points, config):
         replace_losses(end_points, config)
         loss = sum(config.loss.get('weights', {}).get(name, coefficient) * end_points[key]
                    for name, (key, coefficient) in LOSS_TERMS[config.method].items())
-        end_points['loss/overall_loss'] = loss
-        return loss, end_points
-    loss = native_loss
-    for name, value in config.loss.get('weights', {}).items():
-        key, original = LOSS_TERMS[config.method][name]
-        if value != original:
-            loss = loss + (value-original)*end_points[key]
+    else:
+        loss = native_loss
+        for name, value in config.loss.get('weights', {}).items():
+            key, original = LOSS_TERMS[config.method][name]
+            if value != original:
+                loss = loss + (value-original)*end_points[key]
     end_points['loss/overall_loss'] = loss
+    if config.method == 'economicgrasp': end_points['A: Overall Loss'] = loss
     return loss, end_points
 
 
@@ -189,7 +192,8 @@ def sample_points(sample, config):
         if key in sample:
             if len(sample[key]) != count: raise ValueError(f'Per-point field {key} has mismatched rows')
             sample[key] = sample[key][indices].copy()
-    if 'coors' in sample: sample['coors'] = sample['point_clouds'] / config.voxel_size
+    for key in ('coors', 'coordinates_for_voxel'):
+        if key in sample: sample[key] = sample['point_clouds'] / config.voxel_size
     return sample
 
 
@@ -199,7 +203,9 @@ def augment_sample(sample, dataset, config):
     fn = dataset.augment_data if config.augmentation.get('mode') == 'native' else None
     points, poses = (fn(sample['point_clouds'], sample['object_poses_list']) if fn
                      else transform_points(sample['point_clouds'], sample['object_poses_list'], config.augmentation))
+    # Native loaders cast observations after augmentation; retain that contract here.
+    points = points.astype(sample['point_clouds'].dtype, copy=False)
     sample['point_clouds'], sample['object_poses_list'] = points, poses
-    if 'coors' in sample:
-        sample['coors'] = points / config.voxel_size
+    for key in ('coors', 'coordinates_for_voxel'):
+        if key in sample: sample[key] = points / config.voxel_size
     return sample_points(sample, config)

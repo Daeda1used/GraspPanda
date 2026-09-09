@@ -27,6 +27,17 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if method == 'economicgrasp':
+        if slot == 'backbone' and choice == 'native_tdunet':
+            return {'channels': ('int_list', 8, 8, 512), 'blocks': ('int_list', 8, 1, 8),
+                    'dilations': ('int_list', 8, 1, 8), 'stem_channels': ('int', 8, 128),
+                    'block': ('choice', ('basic', 'bottleneck')), 'bn_momentum': ('float', .001, 1)}
+        if slot == 'backbone' and choice == 'pointnet': return {}
+        if slot == 'crop' and choice == 'native_cylinder':
+            return {'nsample': ('int', 4, 128), 'radius': ('float', .005, .5),
+                    'hmin': ('float', -.2, 0), 'hmax': ('float', 0, .2),
+                    'attention_heads': ('int', 1, 37), 'attention_dropout': ('float', 0, .8),
+                    'local_attention': ('bool',)}
     if method == 'gtg2':
         from .gtg2_options import schema as graph_schema
         return graph_schema(slot, choice)
@@ -182,6 +193,13 @@ def validate_options(method, slot, choice, options):
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
+    if method == 'economicgrasp' and choice == 'native_cylinder':
+        if 259 % options.get('attention_heads', 1):
+            raise ValueError('EconomicGrasp cylinder attention uses 256 features plus XYZ; heads must divide 259 (1, 7 or 37)')
+        if options.get('hmin', -.02) >= options.get('hmax', .04):
+            raise ValueError('Cylinder hmin must be below hmax')
+        if not options.get('local_attention', True) and {'attention_heads', 'attention_dropout'} & set(options):
+            raise ValueError('Attention parameters require local_attention: true')
     if any(key.startswith('interaction_') for key in options):
         if options.get('seed_interaction', 'none') != 'gaussian':
             raise ValueError('Interaction parameters require seed_interaction: gaussian')

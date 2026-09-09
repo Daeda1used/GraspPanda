@@ -4,7 +4,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 
 | Configure | Reference |
 |---|---|
-| Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
+| Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [EconomicGrasp](#economicgrasp-components) |
 | Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [Point Transformer](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
@@ -21,7 +21,8 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
-| EconomicGrasp | `crop` | `upstream`, with optional seed interaction |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3` |
+| EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
@@ -74,6 +75,40 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## EconomicGrasp components
+
+EconomicGrasp retains its native sparse quantization, graspable-point selection, economic labels, interactive grasp head and decoder. Its [author implementation](https://github.com/iSEE-Laboratory/EconomicGrasp) is described in the [ECCV 2024 paper](https://arxiv.org/pdf/2407.08366). Generate an editable composition with `./panda init --example compose-economicgrasp`.
+
+The backbone receives constant input features on the quantized camera lattice and returns 512-channel features in the same sparse row order. `pointnet` uses the toolbox's sparse PointNet-style encoder; `sonata_ptv3` uses the [PTv3 adapter and its stage settings](#point-transformer-encoder). Both reconstruct camera positions from lattice coordinates and voxel size and preserve the map used by `quantize2original`.
+
+`native_tdunet` configures the author's eight-stage encoder/decoder without changing its down/up-sampling strides or skip connections:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `channels` | `[32,64,128,256,192,192,192,192]` | Eight stage plane widths, each 8–512; Bottleneck expands residual output widths by four |
+| `blocks` | `[1,1,1,1,1,1,1,1]` | Residual blocks per stage, each 1–8 |
+| `dilations` | `[1,1,1,1,1,1,1,1]` | Residual convolution dilation per stage in lattice cells, each 1–8 |
+| `stem_channels` | `32` | Stem width, 8–128; the native 5-cell kernel is retained |
+| `block` | `basic` | Native MinkowskiEngine `basic` or `bottleneck` residual blocks |
+| `bn_momentum` | `0.1` | Momentum of all sparse batch-normalization layers, 0.001–1 |
+
+`native_cylinder` retains the native two MLP stacks and cylinder query while exposing the following controls:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `nsample` | `16` | Samples per oriented cylinder, 4–128 |
+| `radius` | `0.05` | Cylinder radius in metres, 0.005–0.5 |
+| `hmin`, `hmax` | `-0.02`, `0.04` | Axial bounds in metres; -0.2–0 and 0–0.2, with `hmin < hmax` |
+| `attention_heads` | `1` | Within-cylinder attention heads: 1, 7 or 37, dividing the native 259-dimensional feature-plus-XYZ vector |
+| `attention_dropout` | `0.05` | Attention-probability dropout, 0–0.8 |
+| `local_attention` | `true` | Set false to bypass the within-cylinder attention and its LayerNorm; omit attention parameters in this ablation |
+
+The `cylinder` and `reslfe_cylinder` choices replace the native within-cylinder processing with the toolbox's configurable aggregation or [ResLFE](#residual-local-aggregation-in-cylinders). All grouping choices can add [seed interaction](#grouped-seed-interaction) afterward. Its `interaction_heads` divides 256 and is independent of `native_cylinder.attention_heads`.
+
+Default `native_tdunet` and `native_cylinder` retain native state names and shapes, so author weights can load with `strict`. Geometry, dropout, dilation and head count are configuration values rather than learned tensors: matching weight shapes alone does not establish matching behavior. Architecture changes use `reuse_unchanged`, which initializes each selected replacement slot and retains the rest of the checkpoint. Train the replacement, then use `strict` with the saved composition for inference.
+
+EconomicGrasp short training also supports [loss formulations and coefficients](#loss-formulations), [aligned point augmentation](#point-augmentation), Adam/AdamW/SGD/Lion and update-based schedules. Score remains a six-class objective; angle/depth retain their native invalid classes and validity masks. Width targets remain scaled by ten. Augmentation transforms object poses with observations, updates per-point labels through one sampling map and regenerates `coordinates_for_voxel`; native flips retain float32 observations. Full epoch training/resume is not exposed by this adapter.
 
 ## Grouped seed interaction
 
@@ -339,7 +374,7 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 ## Training controls
 
-Baseline, its PointNet2 port, Graspness and FineGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-controls`).
+Baseline, its PointNet2 port, Graspness, FineGrasp and EconomicGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-controls`).
 
 In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -369,6 +404,7 @@ Weights are absolute coefficients. Unspecified terms retain their native coeffic
 | Baseline / PointNet2 port | `objectness`, `angle` | `view`, `score`, `width`, `tolerance` | Objectness/view: 1; score/angle/width/tolerance: 0.2 |
 | Graspness | `objectness` | `graspness`, `view`, `score`, `width` | Objectness: 1; graspness: 10; view: 100; score: 15; width: 10 |
 | FineGrasp | `objectness`, `angle`, `depth`, `score` | `graspness`, `view`, `width` | See the FineGrasp training section below |
+| EconomicGrasp | `objectness`, `angle`, `depth`, `score` | `graspness`, `view`, `width` | Objectness/angle/depth/score: 1; graspness/width: 10; view: 100 |
 
 Each `functions` value accepts a name or `{type: NAME, ...}`. The following parameters have bounded, finite values; omitted parameters use the defaults shown.
 
@@ -458,7 +494,7 @@ Loss and augmentation settings are training-only. Resume requires saved configur
 
 ## Optimizers and schedules
 
-Baseline, its PointNet2 port, Graspness, FineGrasp, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
+Baseline, its PointNet2 port, Graspness, FineGrasp, EconomicGrasp, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
 
 ```yaml
 learning_rate: 0.00003

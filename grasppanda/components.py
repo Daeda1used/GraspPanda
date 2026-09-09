@@ -23,7 +23,10 @@ BASELINE_SLOTS = (
 
 def slots(method):
     if method == 'economicgrasp': return (
-        ComponentSlot('crop', 'cy_group', ('upstream',),
+        ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3'),
+            'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
+            '512-channel sparse features in the input sparse row order, before quantize2original.'),
+        ComponentSlot('crop', 'cy_group', ('upstream', 'native_cylinder', 'cylinder', 'reslfe_cylinder'),
             'Camera-frame seed XYZ in metres, native cylinder grouping and approach rotations.',
             '256-channel seed features for the native interactive grasp head.'),)
     if method == 'gtg2': return (
@@ -82,7 +85,13 @@ def configure_model(model,method,selection,voxel_size=.005):
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
         native=getattr(parent,attribute)
-        if method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
+        if method == 'economicgrasp' and choice == 'native_tdunet':
+            from .modules.economic import tdunet
+            replacement = tdunet(native, **options)
+        elif method == 'economicgrasp' and choice == 'native_cylinder':
+            from .modules.economic import cylinder
+            replacement = cylinder(native, **options)
+        elif method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
             from .modules.dino import DinoPyramid
             replacement=DinoPyramid(choice,**options)
         elif method in ('hggd','region_normalized_grasp') and choice == 'vmamba':
@@ -93,7 +102,7 @@ def configure_model(model,method,selection,voxel_size=.005):
             replacement=native_resnet(native,**options) if choice=='native_resnet' else ImagePyramid(choice,**options)
         elif choice=='sonata_ptv3':
             from .modules.sonata import SonataBackbone,SparseSonataBackbone
-            replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,feature_channels=6 if method=='finegrasp' and model.use_normal else 3,**options) if method in ('graspness','finegrasp') else SonataBackbone(voxel_size,**options)
+            replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,feature_channels=6 if method=='finegrasp' and model.use_normal else 3,**options) if method in ('graspness','finegrasp','economicgrasp') else SonataBackbone(voxel_size,**options)
         elif method=='finegrasp' and choice=='native_cylinder':
             from torch import nn
             from .finegrasp import native_module
@@ -108,7 +117,7 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method=='graspness' and choice=='sparse_unet18':
             from models.backbone_resunet14 import MinkUNet18D
             replacement=MinkUNet18D(in_channels=3,out_channels=model.seed_feature_dim,D=3)
-        elif method=='graspness' and choice=='pointnet':
+        elif method in ('graspness','economicgrasp') and choice=='pointnet':
             from .modules.sparse_pointnet import SparsePointNet
             replacement=SparsePointNet(model.seed_feature_dim,voxel_size)
         elif method=='graspness' and slot.name=='crop' and choice=='finegrasp':
@@ -116,10 +125,10 @@ def configure_model(model,method,selection,voxel_size=.005):
             replacement=FineGraspCrop(native,**options)
         elif slot.name=='crop' and choice=='reslfe_cylinder':
             from .modules.deepla import ResLFECylinder
-            replacement=ResLFECylinder(native,'graspness' if method=='graspness' else 'baseline',**options)
+            replacement=ResLFECylinder(native,'graspness' if method in ('graspness','economicgrasp') else 'baseline',**options)
         elif slot.name=='crop' and choice=='cylinder':
             from .modules.cylinder import CylindricalAggregation
-            replacement=CylindricalAggregation(native,'graspness' if method=='graspness' else 'baseline',**options)
+            replacement=CylindricalAggregation(native,'graspness' if method in ('graspness','economicgrasp') else 'baseline',**options)
         elif choice=='octformer':
             from .modules.octformer import OctFormerBackbone
             replacement=OctFormerBackbone(**options)
