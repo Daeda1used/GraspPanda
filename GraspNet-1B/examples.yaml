@@ -1084,3 +1084,35 @@ compose-kpconvx:
         shell_sizes: [1, 14, 28]
         kp_influence: linear
         modulation_scope: point
+compose-kernel-cylinders:
+  description: Compare kernel point aggregation inside native grasp cylinders
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    workspace: official_gt_workspace
+    batch_size: 2
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      crop:
+        type: kpconvx_cylinder
+        channels: [64, 96, 128]
+        local_neighbors: [8, 12]
+        expansion: [2, 4]
+        kernel_radius: [0.5, 1.0]
+        kernel_sigma: [0.25, 0.5]
+        radius_factors: [0.5, 1.0]
+        nsample: 16
+        normalization: layer
+        modulation_scope: cylinder
+        pooling: attention
+        chunk_size: 128
+        checkpoint: true

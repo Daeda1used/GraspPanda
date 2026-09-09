@@ -15,7 +15,7 @@ BASELINE_SLOTS = (
     ComponentSlot('backbone','view_estimator.backbone',('upstream','pointnet','pointnext','pointvector','pointmeta','pointmlp','pointmamba','pointcloud_mamba','octformer','sonata_ptv3','point_transformer_v2','litept','oacnns','kpconvx'),
                   'Camera-frame point cloud [B,N,3], metres; N >= 1024.',
                   'Features [B,256,1024], coordinates [B,1024,3], and original-input fp2_inds.'),
-    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder'),
+    ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder','kpconvx_cylinder'),
                   'Camera-frame seed points, scene points and proper approach rotations.',
                   'Features [B,256,1024,4] retaining the native four depth bins.'),
 )
@@ -26,7 +26,7 @@ def slots(method):
         ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3', 'point_transformer_v2','litept','oacnns','kpconvx'),
             'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
             '512-channel sparse features in the input sparse row order, before quantize2original.'),
-        ComponentSlot('crop', 'cy_group', ('upstream', 'native_cylinder', 'cylinder', 'reslfe_cylinder'),
+        ComponentSlot('crop', 'cy_group', ('upstream', 'native_cylinder', 'cylinder', 'reslfe_cylinder','kpconvx_cylinder'),
             'Camera-frame seed XYZ in metres, native cylinder grouping and approach rotations.',
             '256-channel seed features for the native interactive grasp head.'),
         ComponentSlot('head', 'grasp_head', ('upstream', 'native_interactive'),
@@ -48,13 +48,13 @@ def slots(method):
         ComponentSlot('backbone','backbone',('upstream','sonata_ptv3','point_transformer_v2','litept','oacnns','kpconvx'),
             'Sparse camera XYZ and normal features; preserve voxel coordinate map and row order.',
             '512-channel sparse features for the native FineGrasp seed selector.'),
-        ComponentSlot('crop','cy_groups',('upstream','native_cylinder'),
+        ComponentSlot('crop','cy_groups',('upstream','native_cylinder','kpconvx_cylinder'),
             'FineGrasp seed XYZ, 512-channel features and native approach rotations.',
             'Native 256-channel cylinder features per radius, consumed by multi-range attention.'))
     if method=='graspness':return (ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3','point_transformer_v2','litept','oacnns','kpconvx'),
         'Sparse RGB/constant features and voxel coordinates; retain the coordinate map and row order.',
         '512-channel sparse features, mapped to original input points by quantize2original.'),
-        ComponentSlot('crop','crop',('upstream','cylinder','finegrasp','reslfe_cylinder'),
+        ComponentSlot('crop','crop',('upstream','cylinder','finegrasp','reslfe_cylinder','kpconvx_cylinder'),
             'Graspable seed coordinates/features and approach rotations; native oriented cylinder queries.',
             '256-channel seed features preserving the native approach and depth decoder semantics.'))
     return ()
@@ -156,6 +156,21 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method=='graspness' and slot.name=='crop' and choice=='finegrasp':
             from .modules.finegrasp import FineGraspCrop
             replacement=FineGraspCrop(native,**options)
+        elif slot.name=='crop' and choice=='kpconvx_cylinder':
+            from .modules.kpconvx_cylinder import KPConvXCylinder
+            if method=='finegrasp':
+                import copy
+                from torch import nn
+                from .modules.finegrasp import configure_fusion
+                fusion={k:v for k,v in options.items() if k.startswith('fusion_')}
+                options={k:v for k,v in options.items() if k not in fusion}
+                if configure_fusion(model.fuse_multi_scale,fusion):changes.append('fuse_multi_scale.transformer.')
+                factors=options.pop('radius_factors',model.cylinder_groups)
+                radius=options.pop('radius',model.cylinder_radius)
+                prototype=copy.deepcopy(native[0]);prototype.grouper.radius=radius
+                replacement=nn.ModuleList(KPConvXCylinder(prototype,'graspness',radius_factors=[factor],**options) for factor in factors)
+            else:
+                replacement=KPConvXCylinder(native,'graspness' if method in ('graspness','economicgrasp') else 'baseline',**options)
         elif slot.name=='crop' and choice=='reslfe_cylinder':
             from .modules.deepla import ResLFECylinder
             replacement=ResLFECylinder(native,'graspness' if method in ('graspness','economicgrasp') else 'baseline',**options)

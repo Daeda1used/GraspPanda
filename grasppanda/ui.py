@@ -81,6 +81,19 @@ def component_parameters(method, backbone, crop, head='upstream'):
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'kpconvx_cylinder':
+                if rule[0] in ('per_block', 'per_stage'):
+                    description = values + '; one value for all kernel blocks, or one per block'
+                if key in ('kernel_radius', 'kernel_sigma'):
+                    description += '; in units of the query radius'
+                elif key == 'channels':
+                    description += '; embedding width followed by one output width per block'
+                elif key == 'chunk_size':
+                    description += '; complete cylinders per memory chunk; 0 processes all'
+                elif key == 'normalization':
+                    description += '; batch requires chunk_size: 0; group statistics are per cylinder'
+                elif key == 'checkpoint':
+                    description += '; recompute activations during backward to reduce memory'
             rows.append(f'| `{slot}.{key}` | {description} |')
     return ('| Parameter | Accepted values |\n|---|---|\n'+'\n'.join(rows)+'\n\nOmitted parameters use component defaults. Cross-stage constraints are checked when generating or running the configuration.') if rows else 'The selected components use their native settings.'
 

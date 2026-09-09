@@ -156,6 +156,9 @@ def _schema(method, slot, choice):
         return {'radius_factors': ('radii',)}
     if method == 'graspness' and slot == 'crop' and choice == 'finegrasp':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius_factors': ('radii',)}
+    if slot == 'crop' and choice == 'kpconvx_cylinder':
+        from .modules.kpconvx_cylinder_options import schema as kernel_schema
+        return {**kernel_schema(), **(dict(fusion, radius=('float',.005,.5)) if method=='finegrasp' else {})}
     if slot == 'crop' and choice == 'reslfe_cylinder':
         return {**common, 'width': ('int',8,512), 'depth': ('int',1,60),
                 'local_neighbors': ('int',1,64), 'nsample': ('int',4,128),
@@ -245,6 +248,9 @@ def validate_options(method, slot, choice, options):
         indices = options.get('out_indices', [2,5,8,11])
         if indices[-1] != 11 or any(a >= b for a,b in zip(indices, indices[1:])):
             raise ValueError('DINO output indices must increase strictly and end at block 11')
+    if choice == 'kpconvx_cylinder':
+        from .modules.kpconvx_cylinder_options import validate as validate_kernel_cylinder
+        validate_kernel_cylinder(options)
     if choice == 'reslfe_cylinder':
         if options.get('width',64) % 8:
             raise ValueError('DeepLA cylinder width must be a multiple of 8')

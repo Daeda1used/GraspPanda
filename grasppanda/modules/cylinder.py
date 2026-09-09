@@ -30,6 +30,9 @@ class CylindricalAggregation(nn.Module):
         self.attention = nn.Conv2d(256, 1, 1) if pooling == 'attention' else None
         self.fusion = point_mlp([256*len(radius_factors), 256], 2, activation, normalization)
 
+    def _encode(self, grouped, group):
+        return self.encoder(grouped)
+
     def forward(self, seeds, inputs, rotations):
         scales = []
         for offset in range(0, len(self.groups), self.depths):
@@ -37,7 +40,7 @@ class CylindricalAggregation(nn.Module):
             for group in self.groups[offset:offset+self.depths]:
                 grouped = (group(inputs, seeds, rotations) if self.protocol == 'baseline'
                            else group(seeds, seeds, rotations, inputs))
-                encoded = self.encoder(grouped)
+                encoded = self._encode(grouped, group)
                 if self.pooling == 'max':
                     pooled = encoded.amax(-1)
                 elif self.pooling == 'mean':

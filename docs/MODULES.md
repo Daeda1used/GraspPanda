@@ -18,14 +18,14 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Method | Slot | Choices |
 |---|---|---|
 | Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
-| Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
+| Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
-| Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
+| Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
 | EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
-| EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
+| EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
-| FineGrasp | `crop` | `upstream`, `native_cylinder` |
+| FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
 
@@ -375,6 +375,48 @@ The published wrapper uses **KNN**, not a hard radius cutoff, and **grid pooling
 Kernel dispositions are cached locally by the complete shell tuple, avoiding collisions between layouts with the same point count. The default uses the author's supplied disposition. Other layouts use the author optimizer with an isolated fixed initialization seed; the first use can take longer. Native per-layer rotations/noise follow the experiment seed, and kernel buffers are stored in checkpoints. Downloaded source stays unchanged.
 
 There are no registered GraspNet-pretrained KPConvX weights. Start with `reuse_unchanged`, train the replacement, then use `strict`; epoch resume retains the complete configuration and optimizer state. Training uses at least two frame samples per batch, consecutive frames for short runs, and drops incomplete epoch batches. Existing loss, augmentation and optimizer settings follow the selected grasp method. Paper segmentation scores do not establish grasp accuracy.
+
+</details>
+
+<details>
+<summary>Kernel point aggregation inside cylinders</summary>
+
+## Kernel point cylinder aggregation
+
+`kpconvx_cylinder` uses the [official KPConvX blocks](https://github.com/apple/ml-kpconvx/blob/54e644a9f3bddd4c344a58193897a44582b0fea4/Pointcept-wrapper/models/kpconvx/utils/kpnext_blocks.py) ([CVPR 2024 paper](https://openaccess.thecvf.com/content/CVPR2024/papers/Thomas_KPConvX_Modernizing_Kernel_Point_Convolution_with_Kernel_Attention_CVPR_2024_paper.pdf)) as a configurable **local aggregation component** for Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp. This is a GraspPanda adaptation of the native blocks; it does not reproduce a published KPConvX grasp detector or add the scene segmentation hierarchy.
+
+Each method retains its oriented cylinder queries, native padding/repeated samples, seed order and depth semantics. Within each cylinder, the adapter projects grouped features, constructs an independent local KNN graph and applies native kernel-attention or depthwise residual blocks. The output projects to 256 channels before max, mean or learned attention pooling. No neighbors are drawn from another cylinder. Explicit seed interaction, when selected separately, still operates after local aggregation.
+
+Aligned local XYZ is expressed in units of that cylinder's radius. Baseline query coordinates are divided by radius; Graspness-style queries already perform this normalization. Thus `kernel_radius: 1` means one query radius, including its scale factor. Feature channels are retained. Kernel radius controls geometry, not a hard neighbor-distance cutoff. Native frame coordinates and supervision remain unchanged.
+
+Generate `./panda init --example compose-kernel-cylinders` or choose **kpconvx_cylinder** for **Local cylindrical grouping** in the UI. Replace the `crop` slot independently of the backbone, losses and optimizer. Run `./panda install` after upgrading to ensure the pinned KPConvX source is available in the shared runtime.
+
+| Parameter | Default | Control |
+|---|---|---|
+| `channels` | `[64,64,64]` | Embedding width followed by one output width per block; 1–8 blocks, widths 16–256 in multiples of 8 |
+| `local_neighbors` | `8` | KNN count, at most `nsample` |
+| `expansion` | `4` | Native inverted-block expansion, 1–8 |
+| `attention_groups` | `8` | Must divide the input width; negative means channels per group, zero selects depthwise blocks |
+| `kernel_radius`, `kernel_sigma` | `1`, `0.5` | Kernel geometry and influence scales, in query-radius units |
+| `layer_scale`, `drop_path` | `0`, `0` | Optional native residual scaling and stochastic-depth probability |
+| `block` | `kpconvx` | Kernel attention or `kpconvd` depthwise convolution |
+| `shell_sizes`, `influence` | `[1,14,28]`, `linear` | Centered kernel shells and `constant`, `linear` or `gaussian` influence |
+| `attention_activation` | `sigmoid` | `sigmoid`, `tanh`, `softmax` or `none` |
+| `modulation_norm`, `modulation_scope` | `true`, `cylinder` | Kernel-modulation GroupNorm per complete cylinder, or `point` for per-point statistics |
+| `normalization`, `bn_momentum` | `layer`, `0.1` | Feature normalization: `layer`, per-cylinder `group`, full-batch `batch`, or bias-only `none` |
+| `activation` | `gelu` | GELU, ReLU, SiLU or native LeakyReLU(0.1) |
+| `use_upcut` | `false` | Expanded-feature shortcut; consecutive expanded input widths must match |
+| `nsample`, `radius_factors` | `16`, `[1]` | Native query sample count and radius multipliers; FineGrasp defaults to its original radius groups |
+| `pooling` | `max` | `max`, `mean` or learned `attention` within each cylinder |
+| `chunk_size`, `checkpoint` | `128`, `true` | Complete cylinders per memory chunk; `0` processes all. Activation recomputation reduces training memory |
+
+`local_neighbors`, `expansion`, `attention_groups`, `kernel_radius`, `kernel_sigma`, `layer_scale` and `drop_path` accept a scalar or a list with one entry per block. For example, `channels: [64,96,128]` has two blocks and accepts `local_neighbors: [8,12]`. Attention settings are inactive in depthwise-only blocks.
+
+LayerNorm and per-cylinder GroupNorm keep different candidates' statistics separate. BatchNorm deliberately uses all grouped samples in a query call and requires `chunk_size: 0`; activation recomputation preserves its running statistics. Chunk size leaves evaluation and deterministic (`drop_path: 0`) training mathematics unchanged up to floating-point roundoff. With stochastic depth enabled, keep chunk size fixed for identical random-mask assignment. Scale fusion is pointwise linear/LayerNorm/activation, without statistics shared across candidates or depth bins.
+
+Baseline retains four depth outputs at each radius. Graspness and EconomicGrasp fuse radius outputs into one seed feature. FineGrasp retains its native cross-radius attention and receives one new local encoder per radius; `radius` and the existing `fusion_*` options control its base radius and fusion Transformer. This replacement includes local interaction, so FineGrasp's original local-attention block is not appended a second time.
+
+No pretrained grasp weights are provided for this local component. Initialize with `reuse_unchanged`, train with the selected method's labels, then load the saved composition with `strict`. Native epoch resume restores its full configuration and optimizer state. The source and kernel disposition cache are shared with the [KPConvX backbone](#kpconvx-kernel-point-hierarchy).
 
 </details>
 
