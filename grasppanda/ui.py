@@ -112,6 +112,10 @@ def loss_parameters(method):
                  if method in ('hggd', 'region_normalized_grasp') else 'Focal alpha applies only to binary objectness. ')
     if method == 'gtg2':
         semantics = 'Graph score regression uses one scalar per candidate. Graph augmentation supports native, none, or custom half_turn_probability and point_dropout. '
+    if method in ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'economicgrasp', 'finegrasp'):
+        semantics += ('Point augmentation accepts `resampling: {"type": "pointsp_wrs", "keep_ratio": [0.5, 1.0], "neighbors": 20}` '
+                      'in custom mode. Alternatives are `uniform` and `pointsp_lgd`; the latter accepts `global_fraction` '
+                      '(0: local removal, 1: global removal, "random": random range). Point labels follow the same selected rows. ')
     classification = ', '.join(f'`{term}`' for term in terms if is_classification(method, term)) or 'none'
     return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Classification terms: ' + classification + '; remaining terms use regression losses.\n\n'
             '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
@@ -131,6 +135,27 @@ def loss_preset(method, classification, regression, current):
                               for term in LOSS_TERMS[method]}
         from grasppanda.training.options import validate_training_options
         validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_check', loss=value))
+    except (ValueError, TypeError) as error:
+        raise gr.Error(str(error)) from error
+    return json.dumps(value, indent=2)
+
+
+def sampling_preset(method, action, kind, minimum, maximum, current):
+    if method not in ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'economicgrasp', 'finegrasp') or action not in ('train', 'train_check'):
+        raise gr.Error('Observation sampling requires a registered point training operation.')
+    try:
+        value = json.loads(current or '{}')
+        if not isinstance(value, dict): raise ValueError('Augmentation configuration must be a mapping')
+        previous = value.pop('resampling', {})
+        if not isinstance(previous, dict): raise ValueError('Existing resampling configuration must be a mapping')
+        if kind != 'none':
+            # Preserve advanced settings for the same rule; carry only shared
+            # controls across rules so incompatible parameters cannot linger.
+            options = previous if previous.get('type', 'uniform') == kind else {k: v for k, v in previous.items() if k == 'probability'}
+            options.update(type=kind, keep_ratio=minimum if minimum == maximum else [minimum, maximum])
+            value.update(mode='custom', resampling=options)
+        from grasppanda.training.options import validate_training_options
+        validate_training_options(Experiment(method=method, action=action, augmentation=value))
     except (ValueError, TypeError) as error:
         raise gr.Error(str(error)) from error
     return json.dumps(value, indent=2)
@@ -438,6 +463,13 @@ def create_app(manager=None):
                             with gr.Accordion('Loss parameters & augmentation guide', open=False):
                                 loss_help=gr.Markdown(loss_parameters('graspnet_baseline'))
                         loss_options=gr.Code('{}',language='json',label='Loss configuration',lines=5)
+                        with gr.Accordion('Choose observation sampling', open=False, visible=False) as sampling_panel:
+                            sampling_rule=gr.Dropdown([('Uniform retained rows','uniform'),('Density-weighted (PointSP)','pointsp_wrs'),('Local/global removal (PointSP)','pointsp_lgd'),('Remove sampling override','none')],value='pointsp_wrs',label='Sampling rule')
+                            with gr.Row():
+                                sampling_min=gr.Number(.5,minimum=.1,maximum=1,label='Minimum keep ratio')
+                                sampling_max=gr.Number(1.,minimum=.1,maximum=1,label='Maximum keep ratio')
+                            apply_sampling=gr.Button('Apply sampling choices')
+                            gr.Markdown('Equal limits give a fixed ratio; otherwise each sample draws a log-uniform ratio. At least 1,024 rows remain. Apply switches to custom point augmentation and writes the rule below, preserving other transforms. Advanced parameters stay editable in JSON. Removing the override keeps the selected augmentation mode.')
                         augmentation_options=gr.Code('{}',language='json',label='Augmentation configuration',lines=3)
                         with gr.Accordion('Method training stages', open=False, visible=False) as trainer_panel:
                             trainer_options=gr.Code('{}',language='json',label='Trainer parameters',lines=4,interactive=False)
@@ -540,6 +572,10 @@ For component experiments, expand **Compose modules**. Full configuration editin
         method.change(select_components,method,[backbone,crop,component_contract,head],api_name='select_components', preprocess=False).then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False)
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
+        apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
+        for selector in (method, action):
+            selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),
+                [method,action],sampling_panel,api_name=False,preprocess=False)
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters', preprocess=False)
         def loss_controls(method, action):
             from grasppanda.training.options import METHODS

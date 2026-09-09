@@ -706,6 +706,36 @@ Depth noise follows each original camera ray before the rigid transform. Points 
 
 One row map updates points, colors/features, objectness and per-point graspness labels together. Sparse coordinates are recomputed afterward. Object-frame grasp annotations remain clean; their object poses carry the rigid transformation. Epoch augmentation applies to training samples only, including when using loader workers. Short training resamples the selected labelled sample each update.
 
+#### Density and local/global sampling
+
+Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp accept `augmentation.resampling` in custom mode, with any registered backbone or crop. The controls use sampling rules from [PointSP (IJCAI 2025)](https://www.ijcai.org/proceedings/2025/48), [paper PDF](https://arxiv.org/pdf/2408.12062) and [pinned author implementation](https://github.com/tangsankou/PointSP/blob/8206043f27e8b849fecde48841ff4b2513e88439/PCT_Pytorch/sampling.py).
+
+```yaml
+augmentation:
+  mode: custom
+  rotation_degrees: 10
+  resampling:
+    type: pointsp_wrs
+    keep_ratio: [0.5, 1.0]
+    neighbors: 20
+    density_quantile: 0.5
+```
+
+| Parameter | Default / meaning |
+|---|---|
+| `type` | `uniform`: uniformly choose retained rows; `pointsp_wrs`: choose without replacement using density weights; `pointsp_lgd`: remove points from a random local/global neighborhood. |
+| `keep_ratio` | `[0.5, 1.0]`: draw a fresh log-uniform retention ratio per sample. A scalar fixes the ratio; values must be in `[0.1, 1]`. At least 1,024 rows are retained. |
+| `probability` | `1.0`: probability of applying this sampling step, from 0 to 1. |
+| `neighbors` | WRS only; `20`, from 1 to 128, including self and repeated observations. |
+| `density_quantile` | WRS only; `0.5`, from 0 to 1. Compute the selected quantile of per-point mean squared neighbor distances, count each point's neighbors below that threshold, then normalize counts into sampling probabilities. |
+| `global_fraction` | LGD only; `random` draws uniformly from `[0, 1)`. `0` removes the nearest points to a randomly selected center; `1` permits removal anywhere. Intermediate values expand the eligible neighborhood. |
+
+Sampling runs after the native loader, configured rigid/noise transforms, cutout and dropout, before collation. LGD follows the author's removal count and neighborhood formula; WRS uses an exact CPU KD-tree with double-precision distances instead of the author's dense pairwise tensor. Exact self-distances are zero, avoiding the dense formula's floating-point cancellation when neighborhoods collapse to a point. It requires no new environment or CUDA build. NumPy follows the experiment/loader seeds; its random draws do not reproduce the author's Torch RNG sequence.
+
+These are **training observation adaptations**: retained rows keep their original positions, and removed positions are filled with randomly repeated retained rows to maintain `num_points`. Colors, normals and per-point labels use the identical index map; voxel coordinates are rebuilt. Object grasp labels and poses retain their native supervision. Padding does not create new geometry, and duplicate rows are still repeated observations, not additional coverage. The full PointSP classification protocol, filtered FPS and tangent-plane interpolation are not enabled by this setting. Validation and inference keep their original sampling.
+
+Generate `./panda init --example augment-pointsp`. In the UI, open **Training settings → Choose observation sampling**, select a rule and retention limits, then **Apply sampling choices**. This switches to custom augmentation and writes **Augmentation configuration**, preserving other transforms. Advanced options remain editable there; switching rules retains shared probability but removes parameters belonging to the previous rule. **Remove sampling override** leaves the augmentation mode and other transforms unchanged. Compare sampling rules with `augmentation.resampling.type` in a sweep, removing type-specific fields from the base when comparing different rules. Keep the same observation count, seed and training budget when assessing their effect. See [third-party notices](THIRD_PARTY.md) for provenance.
+
 These are point-observation controls. Image crops, nonrigid warps, scaling and scene mixing need their own camera, grasp-pose, width and collision-label transformations; matching tensor sizes does not make their supervision interchangeable.
 
 Masked objectives can give a connected component zero gradient for a batch. Point trainers retain the native update and record `zero_gradient_components` in run details; disconnected components, non-finite gradients and missing updates from active components remain errors.

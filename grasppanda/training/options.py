@@ -70,7 +70,7 @@ def validate_training_options(config):
         return
     aug = config.augmentation
     allowed = {'mode', 'rotation_axis', 'rotation_degrees', 'translation', 'jitter_std', 'jitter_clip',
-               'point_dropout', 'cutout_fraction', 'depth_noise_std', 'depth_noise_clip'}
+               'point_dropout', 'cutout_fraction', 'depth_noise_std', 'depth_noise_clip', 'resampling'}
     if set(aug) - allowed:
         raise ValueError(f'Unknown augmentation options: {sorted(set(aug)-allowed)}')
     mode = aug.get('mode', 'custom')
@@ -78,6 +78,9 @@ def validate_training_options(config):
         raise ValueError('augmentation.mode must be native, none or custom')
     if mode != 'custom' and set(aug) - {'mode'}:
         raise ValueError('Custom augmentation parameters require mode: custom')
+    if 'resampling' in aug:
+        from .point_sampling import validate
+        validate(aug['resampling'])
     if aug.get('rotation_axis', 'x') not in ('x', 'y', 'z'):
         raise ValueError('rotation_axis must be x, y or z in camera coordinates')
     for key, maximum in (('rotation_degrees', 180), ('translation', .5), ('jitter_std', .02), ('jitter_clip', .1),
@@ -148,7 +151,7 @@ def configure_dataset(dataset, config):
     dataset.augment = mode != 'none'
     if mode == 'custom':
         dataset.augment_data = partial(transform_points, options=config.augmentation)
-        if config.augmentation.get('point_dropout', 0) or config.augmentation.get('cutout_fraction', 0):
+        if config.augmentation.get('point_dropout', 0) or config.augmentation.get('cutout_fraction', 0) or 'resampling' in config.augmentation:
             return PointSamplingDataset(dataset, config)
     return dataset
 
@@ -171,7 +174,7 @@ def sample_points(sample, config):
     import numpy as np
     options = config.augmentation
     dropout, cutout = options.get('point_dropout', 0), options.get('cutout_fraction', 0)
-    if not dropout and not cutout: return sample
+    if not dropout and not cutout and 'resampling' not in options: return sample
     points = sample['point_clouds']
     count = len(points)
     retained = np.arange(count)
@@ -184,6 +187,9 @@ def sample_points(sample, config):
     if dropout:
         keep = max(minimum, int(np.ceil(len(retained) * (1 - dropout))))
         retained = np.sort(np.random.choice(retained, keep, replace=False))
+    if 'resampling' in options:
+        from .point_sampling import retained_indices
+        retained = retained[retained_indices(points[retained], options['resampling'])]
     missing = np.ones(count, dtype=bool)
     missing[retained] = False
     indices = np.arange(count)
