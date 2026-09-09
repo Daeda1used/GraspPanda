@@ -199,10 +199,8 @@ def point_family(config, out, steps=3):
     model_module=importlib.import_module(module_name)
     root=Path(config.dataset_root);scene=f'scene_{config.scene:04d}'
     directory=root/'scenes'/scene/config.camera
-    from grasppanda.modules.pcm_options import selected as pcm_selected
-    from grasppanda.modules.ptv2_options import selected as ptv2_selected
-    from grasppanda.modules.litept_options import selected as litept_selected
-    multi_frame=pcm_selected(config) or ptv2_selected(config) or litept_selected(config)
+    from grasppanda.components import requires_scene_batch
+    multi_frame=requires_scene_batch(config)
     frame_ids=list(range(config.frame, config.frame+config.batch_size)) if multi_frame else [config.frame]
     metadata=[scipy.io.loadmat(directory/'meta'/f'{frame:04d}.mat') for frame in frame_ids]
     evidence={};labels={}
@@ -340,11 +338,8 @@ def point_family(config, out, steps=3):
         if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError('Missing or non-finite gradients')
         nonzero=[p for p in params if torch.count_nonzero(p.grad)]
         if not nonzero:raise ValueError('All gradients are zero')
-        component_snapshots={}
-        for prefix in prefixes:
-            selected=[p for name,p in model.named_parameters() if name.startswith(prefix) and p.grad is not None and torch.count_nonzero(p.grad)]
-            if not selected:raise ValueError(f'No nonzero gradient reaches replacement component {prefix}')
-            component_snapshots[prefix]=(selected[0],selected[0].detach().clone())
+        from grasppanda.training.options import snapshot_components
+        component_snapshots, zero_gradients = snapshot_components(model, prefixes)
         before=nonzero[0].detach().clone()
         norm=float(torch.sqrt(sum(p.grad.detach().square().sum() for p in params)))
         used_lr=optimizer.param_groups[0]['lr']
@@ -352,8 +347,8 @@ def point_family(config, out, steps=3):
         update=float((nonzero[0].detach()-before).norm())
         if not update>0 or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('No valid parameter update')
         component_updates={name:float((p.detach()-old).norm()) for name,(p,old) in component_snapshots.items()}
-        if not all(value>0 for value in component_updates.values()):raise ValueError('Replacement component did not update')
-        updates.append(dict(gradient_tensors=len(params),gradient_norm=norm,parameter_update_norm=update,component_updates=component_updates,learning_rate=used_lr))
+        if not all(value>0 for name,value in component_updates.items() if name not in zero_gradients):raise ValueError('Replacement component did not update')
+        updates.append(dict(gradient_tensors=len(params),gradient_norm=norm,parameter_update_norm=update,component_updates=component_updates,zero_gradient_components=zero_gradients,learning_rate=used_lr))
         if schedule:schedule.step()
         print('TRAINING_STEP',step+1,losses[-1],updates[-1],flush=True)
     torch.cuda.synchronize()

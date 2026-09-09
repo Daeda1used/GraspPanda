@@ -147,10 +147,8 @@ def run(config,out):
             if stop<=start:raise ValueError('Bounded training frame range is empty')
             dataset=torch.utils.data.Subset(dataset,range(start,stop))
         kwargs['num_workers']=config.data_workers
-        from grasppanda.modules.pcm_options import selected as pcm_selected
-        from grasppanda.modules.ptv2_options import selected as ptv2_selected
-        from grasppanda.modules.litept_options import selected as litept_selected
-        if train and (pcm_selected(config) or ptv2_selected(config) or litept_selected(config)):
+        from grasppanda.components import requires_scene_batch
+        if train and requires_scene_batch(config):
             if len(dataset) < config.batch_size:
                 raise ValueError('The selected point encoder requires at least one full training batch')
             # The native coarse/global BatchNorm cannot train on a singleton
@@ -206,16 +204,14 @@ def run(config,out):
         if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError('Invalid native epoch gradients')
         selected=[p for p in params if torch.count_nonzero(p.grad)]
         if not selected:raise ValueError('All native epoch gradients are zero')
-        snapshots={'model':(selected[0],selected[0].detach().clone())}
-        for prefix in changed:
-            subset=[p for name,p in model.named_parameters() if name.startswith(prefix) and p.grad is not None and torch.count_nonzero(p.grad)]
-            if not subset:raise ValueError(f'No gradient reaches {prefix}')
-            snapshots[prefix]=(subset[0],subset[0].detach().clone())
+        from grasppanda.training.options import snapshot_components
+        snapshots, zero_gradients = snapshot_components(model, changed)
+        snapshots['model']=(selected[0],selected[0].detach().clone())
         norm=float(torch.sqrt(sum(p.grad.detach().square().sum() for p in params)))
         result=original_step(*args,**kwargs)
         delta={name:float((p.detach()-before).norm()) for name,(p,before) in snapshots.items()}
-        if not all(v>0 for v in delta.values()) or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('Invalid native epoch parameter update')
-        updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,learning_rate=used_lr))
+        if not all(v>0 for name,v in delta.items() if name not in zero_gradients) or not all(torch.isfinite(p).all() for p in model.parameters()):raise ValueError('Invalid native epoch parameter update')
+        updates.append(dict(gradient_norm=norm,parameter_update_norms=delta,zero_gradient_components=zero_gradients,learning_rate=used_lr))
         if config.scheduler:scheduler.step()
         return result
     namespace[loss_name]=measured_loss;optimizer.step=measured_step

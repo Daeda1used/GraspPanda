@@ -1026,3 +1026,35 @@ compose-litept:
         enc_patch_size: [128, 128, 128, 256, 256]
         dec_patch_size: [64, 64, 128, 128]
         rope_backend: cuda
+
+compose-oacnns:
+  description: Compose OA-CNNs adaptive sparse stages with a grasp detector
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    voxel_size: 0.005
+    workspace: official_gt_workspace
+    batch_size: 2
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: oacnns
+        embed_channels: 64
+        stem_depth: 3
+        enc_channels: [64, 64, 128, 256]
+        enc_depth: [2, 3, 6, 4]
+        dec_channels: [96, 96, 128, 256]
+        decoder_layers: [2, 3, 2, 2]
+        point_grid_size: [[16, 32, 64], [8, 16, 24], [4, 8, 12], [2, 4, 6]]
+        relation_normalization: cluster
+        grid_origin: zero
+        sparse_padding: stride

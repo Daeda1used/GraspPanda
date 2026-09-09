@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,14 +17,14 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -301,6 +301,39 @@ GraspPanda applies three correspondence fixes to the pinned source: CTS uses per
 Use [`compose-pcm`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-pcm`), or select `pointcloud_mamba` and enter parameters in the UI. `./panda install` downloads the pinned source and builds its two CUDA extensions with isolated names in the shared runtime; its older causal-convolution ABI coexists with `pointmamba`. Source terms are described in [Third-party notices](THIRD_PARTY.md).
 
 Training requires **`batch_size >= 2`** because native global-context BatchNorm operates on one pooled feature per sample. Short training uses a fixed batch of consecutive labelled frames within the selected scene; epoch training drops an incomplete final batch. Inference accepts one frame. Keep the exact component configuration when reloading weights; use `reuse_unchanged` for initial component replacement, train it, then use `strict` with the resulting checkpoint. Epoch `resume` restores the saved composition and optimizer contract. Run full training and held-out evaluation before interpreting grasp quality.
+
+</details>
+
+<details>
+<summary>OA-CNNs: adaptive sparse receptive fields</summary>
+
+## OA-CNNs adaptive sparse hierarchy
+
+`oacnns` uses the official [Pointcept implementation](https://github.com/Pointcept/Pointcept/blob/9f37497e4f3005c90bbbe7221b86439c29d60611/pointcept/models/oacnns/oacnns_v1m1_base.py) of [OA-CNNs (CVPR 2024, PDF)](https://arxiv.org/pdf/2403.14418). Its encoder learns point relations within several grid scales, then learns how to combine their receptive fields. Sparse convolutions, inverse convolutions and decoder skip fusion remain native. It shares the installed spconv and PyG operators; no additional environment or segmentation weights are needed.
+
+Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp accept this encoder. Baseline retains original-input FPS indices and 256-channel seed features. Sparse methods retain their Minkowski coordinate map and 512-channel row correspondence. The native final 1×1 sparse projection supplies grasp features. Each method retains its own seeds, labels, grouping and grasp decoder.
+
+Generate `./panda init --example compose-oacnns`, then set your paths. In the UI, select **oacnns** under **Compose modules** and edit **Component parameters by slot**. All stage lists have the same length, from 1 to 6, ordered from fine to coarse. Downsampling is fixed at stride 2. Changing the number of stages requires supplying every stage list.
+
+| Parameter | Default | Control |
+|---|---|---|
+| `embed_channels`, `stem_depth` | `64`, `3` | Stem width (8–512) and actual convolution layers (1–6) |
+| `enc_channels`, `enc_depth` | `[64,64,128,256]`, `[2,3,6,4]` | Stage widths (8–512) and adaptive blocks (0–24); zero retains downsampling |
+| `dec_channels`, `decoder_layers` | `[96,96,128,256]`, `[2,2,2,2]` | Decoder widths (8–512) and actual linear/normalization/activation layers (1–6) |
+| `point_grid_size` | `[[16,32,64],[8,16,24],[4,8,12],[2,4,6]]` | One list per stage; 1–8 scales, each 1–512 stage lattice cells; repeated scales are allowed |
+| `activation` | `relu` | ReLU, GELU or SiLU throughout the native blocks and fusion |
+| `bn_eps`, `bn_momentum` | `0.001`, `0.01` | BatchNorm epsilon (0.000001–0.1) and momentum (0.001–1) |
+| `relation_normalization` | `cluster` | Per-cluster/channel stable softmax; `native` retains the author's global maximum and epsilon denominator |
+| `grid_origin` | `zero` | Fixed origin on the shifted lattice; `native` uses the batch-wide minimum at each stage |
+| `sparse_padding` | `stride` | Pad spatial extents to multiples of the total stride; `native` uses maximum coordinate plus one |
+
+A scale of `g` at encoder stage `i` (zero-based) spans `g × 2**(i+1) × voxel_size` metres on each axis. Lattice origins shift per scene; camera coordinates and supervision remain unchanged. Mean voxel coalescing retains an inverse mapping to every original point. Padding adds spatial extent, not synthetic occupied voxels, and keeps narrow or odd-sized clouds valid through the full hierarchy.
+
+The default relation normalization avoids underflow and cross-scene numerical coupling from the native global shift. `grid_origin: zero` fixes cluster partitions when another scene joins the batch. For comparison with the original forward computation, select `native` for all three numerical/geometry options and use sufficiently large extents. Native normalization can underflow for large logits. Training BatchNorm still mixes statistics across the batch in either mode.
+
+`stem_depth`, `decoder_layers` and the numerical/geometry policies are toolbox controls. The source's `groups`, `enc_num_ref`, `down_ratio` and `dec_depth` do not control the advertised computations; they are not accepted as experimental parameters. Native default widths and block counts are preserved.
+
+Train a changed encoder with `checkpoint_policy: reuse_unchanged`, then infer with the saved checkpoint and `strict`. No GraspNet-pretrained OA-CNNs checkpoint is registered. Short training uses consecutive frames and requires `batch_size >= 2`; epoch training drops incomplete batches. Loss, point augmentation, Adam/AdamW/SGD/Lion and update schedules follow the selected method's training contract. Muon is excluded because sparse convolution kernels have no registered routing. Segmentation results from the paper do not establish grasp accuracy.
 
 </details>
 
@@ -592,6 +625,8 @@ One row map updates points, colors/features, objectness and per-point graspness 
 
 These are point-observation controls. Image crops, nonrigid warps, scaling and scene mixing need their own camera, grasp-pose, width and collision-label transformations; matching tensor sizes does not make their supervision interchangeable.
 
+Masked objectives can give a connected component zero gradient for a batch. Point trainers retain the native update and record `zero_gradient_components` in run details; disconnected components, non-finite gradients and missing updates from active components remain errors.
+
 Loss and augmentation settings are training-only. Resume requires saved configuration metadata for training overrides and the same objective, augmentation, sampled frame range, seed and loader worker count. **Prepare inference from checkpoint** retains architecture settings and clears training-only options automatically. To sweep a loss parameter, use a structured formulation in the base configuration and vary, for example, `loss.functions.objectness.epsilon`; augmentation uses paths such as `augmentation.point_dropout`.
 
 </details>
@@ -621,7 +656,7 @@ scheduler:
 | `lion` | `weight_decay`, two-element `betas` |
 | `muon` | `weight_decay`, `momentum`, `nesterov` (default true), `ns_steps`, `fallback_lr_scale`, two-element fallback `betas`, `eps` |
 
-The base learning rate always comes from `learning_rate`. Explicit optimizer overrides default to zero weight decay. Adam/AdamW/SGD use PyTorch; Lion and Muon use the locked timm implementations. [Lion](https://github.com/google/automl/tree/master/lion) ([NeurIPS 2023 paper](https://arxiv.org/pdf/2302.06675)) typically needs a smaller learning rate than AdamW. [Muon](https://github.com/KellerJordan/Muon) uses timm's matrix/convolution routing and AdamW fallback, with flattened convolution kernels. It is registered only for dense baseline/PointNet2 compositions and HGGD/RNG models; PTv3 uses spconv and is excluded; sparse-kernel parameter layouts need a separate routing contract. These choices do not imply improved grasp accuracy.
+The base learning rate always comes from `learning_rate`. Explicit optimizer overrides default to zero weight decay. Adam/AdamW/SGD use PyTorch; Lion and Muon use the locked timm implementations. [Lion](https://github.com/google/automl/tree/master/lion) ([NeurIPS 2023 paper](https://arxiv.org/pdf/2302.06675)) typically needs a smaller learning rate than AdamW. [Muon](https://github.com/KellerJordan/Muon) uses timm's matrix/convolution routing and AdamW fallback, with flattened convolution kernels. It is registered only for dense baseline/PointNet2 compositions and HGGD/RNG models; PTv3, LitePT and OA-CNNs use spconv and are excluded; sparse-kernel parameter layouts need a separate routing contract. These choices do not imply improved grasp accuracy.
 
 | Schedule | Parameters and behavior |
 |---|---|
@@ -673,7 +708,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM, PTv2 and LitePT compositions use the configured `batch_size`; PCM, PTv2 and LitePT require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM, PTv2 and LitePT compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions use the configured `batch_size`; PCM, PTv2, LitePT and OA-CNNs require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM, PTv2, LitePT and OA-CNNs compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 

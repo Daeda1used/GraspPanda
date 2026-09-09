@@ -209,3 +209,20 @@ def augment_sample(sample, dataset, config):
     for key in ('coors', 'coordinates_for_voxel'):
         if key in sample: sample[key] = points / config.voxel_size
     return sample_points(sample, config)
+
+
+def snapshot_components(model, prefixes):
+    """Distinguish graph-connected masked zeros from disconnected components."""
+    import torch
+    snapshots, zero_gradients = {}, []
+    for prefix in prefixes:
+        connected = [p for name, p in model.named_parameters()
+                     if name.startswith(prefix) and p.grad is not None]
+        if not connected:
+            raise ValueError(f'No gradient graph reaches replacement component {prefix}')
+        active = [p for p in connected if torch.count_nonzero(p.grad)]
+        if not active:
+            zero_gradients.append(prefix)
+        parameter = (active or connected)[0]
+        snapshots[prefix] = (parameter, parameter.detach().clone())
+    return snapshots, zero_gradients

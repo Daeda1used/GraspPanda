@@ -48,9 +48,8 @@ def run(config, out, steps=None):
     cache = Path(config.label_root) if config.label_root else out/'prepared/finegrasp'
     dataset = FineGraspDataset(config, cache, augment=not short or bool(config.augmentation))
     start = config.scene*256 + config.frame
-    from grasppanda.modules.ptv2_options import selected as ptv2_selected
-    from grasppanda.modules.litept_options import selected as litept_selected
-    multi_frame = ptv2_selected(config) or litept_selected(config)
+    from grasppanda.components import requires_scene_batch
+    multi_frame = requires_scene_batch(config)
     if short:
         dataset = Subset(dataset, range(start, start+config.batch_size) if multi_frame else [start]*config.batch_size)
     elif config.train_batch_limit:
@@ -130,6 +129,8 @@ def run(config, out, steps=None):
         if not named or not all(torch.isfinite(parameter.grad).all() for _, parameter in named):
             raise ValueError('FineGrasp gradients are missing or non-finite')
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 10., error_if_nonfinite=True)
+        from grasppanda.training.options import snapshot_components
+        _, zero_gradients = snapshot_components(model, changed)
         selected = [(name, parameter) for name, parameter in named if torch.count_nonzero(parameter.grad)]
         if not selected: raise ValueError('FineGrasp gradients are all zero')
         # Include zero-initialized biases: native warmup can start below the
@@ -141,13 +142,13 @@ def run(config, out, steps=None):
         if not any(value > 0 for value in deltas.values()) or not all(torch.isfinite(parameter).all() for parameter in model.parameters()):
             raise ValueError('FineGrasp parameters did not receive a finite update')
         component_updates = {prefix: sum(value for name, value in deltas.items() if name.startswith(prefix)) for prefix in changed}
-        if not all(value > 0 for value in component_updates.values()):
+        if not all(value > 0 for prefix, value in component_updates.items() if prefix not in zero_gradients):
             raise ValueError('A replaced FineGrasp component received no update')
         completed += 1
         if scheduler is not None: scheduler.step()
         row = dict(epoch=epoch, total=float(loss.detach()), components=parts)
         losses.append(row)
-        updates.append(dict(gradient_norm=float(norm), learning_rate=rate, component_updates=component_updates,
+        updates.append(dict(gradient_norm=float(norm), learning_rate=rate, component_updates=component_updates, zero_gradient_components=zero_gradients,
                             parameter_update_norm=sum(deltas.values())))
         print('LOSS', json.dumps(row), flush=True)
     def save(path, epoch):

@@ -185,8 +185,8 @@ def train(config, out):
 
 def train_smoke(config, out):
     """One real-label optimizer step, using upstream data/model/loss code."""
-    from grasppanda.modules.pcm_options import selected as pcm_selected
-    if pcm_selected(config):
+    from .components import requires_scene_batch
+    if requires_scene_batch(config) and config.method != 'finegrasp':
         from .training import point_family
         return point_family(config, out, 1)
     if config.method=='finegrasp':

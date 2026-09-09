@@ -4,6 +4,7 @@ import math
 
 METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'scale_balanced_grasp', 'hggd', 'region_normalized_grasp', 'finegrasp', 'gtg2', 'economicgrasp')
 MUON_METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'hggd', 'region_normalized_grasp')
+SPARSE_BACKBONES = ('sonata_ptv3', 'litept', 'oacnns')
 
 
 def validate(config):
@@ -28,8 +29,8 @@ def validate(config):
             raise ValueError('Muon is registered only for dense HGGD/RNG and baseline/PointNet2 models')
         if kind == 'muon' and isinstance(config.modules, dict):
             from grasppanda.module_options import unpack
-            if unpack(config.modules.get('backbone', 'upstream'))[0] == 'sonata_ptv3':
-                raise ValueError('Muon has no registered spconv kernel routing; use Adam, AdamW, SGD or Lion with PTv3')
+            if unpack(config.modules.get('backbone', 'upstream'))[0] in SPARSE_BACKBONES:
+                raise ValueError('Muon has no registered spconv kernel routing; use Adam, AdamW, SGD or Lion with sparse backbones')
         for key, value in options.items():
             if key == 'type': continue
             if key in ('weight_decay', 'momentum', 'eps', 'fallback_lr_scale'):

@@ -65,6 +65,8 @@ def component_parameters(method, backbone, crop, head='upstream'):
                 scalar = rule[2]
                 values = 'true or false' if scalar[0] == 'bool' else f'number: {scalar[1]} to {scalar[2]}'
                 description = values + ('; one value for all attention layers, or one per layer' if slot == 'head' else '; one value for all stages, or a list with one value per stage')
+            elif rule[0] == 'float_matrix':
+                description = f'{rule[1]}–{rule[2]} stage lists; each has {rule[3]}–{rule[4]} grid sizes from {rule[5]} to {rule[6]} stage lattice cells'
             elif rule[0] == 'float_list':
                 description = f'{rule[1]}–{rule[2]} numbers, each {rule[3]} to {rule[4]}'
             elif rule[0] == 'per_block':
@@ -535,9 +537,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
         for selector in (method, backbone, crop, head):
             selector.change(component_parameters,[method,backbone,crop,head],parameter_help,api_name=False, preprocess=False)
         def optimization_choices(method, action, backbone):
-            from grasppanda.training.optimization import METHODS,MUON_METHODS
+            from grasppanda.training.optimization import METHODS,MUON_METHODS,SPARSE_BACKBONES
             enabled=method in METHODS and action in ('train','train_check')
-            optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone!='sonata_ptv3' else [])
+            optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone not in SPARSE_BACKBONES else [])
             return gr.update(choices=optimizers if enabled else ['upstream'],value='upstream',interactive=enabled),gr.update(choices=['upstream','constant','cosine','multistep'] if enabled else ['upstream'],value='upstream',interactive=enabled),'{}','{}'
         for selector in (method, action, backbone):
             selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name='optimization_choices' if selector is action else False, preprocess=False)
