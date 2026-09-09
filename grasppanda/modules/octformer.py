@@ -12,7 +12,7 @@ import ocnn
 from torch import nn
 from torch.utils.checkpoint import checkpoint as torch_checkpoint
 from ..config import ROOT
-from ..octformer_options import resolve, stage_value, STAGE_FIELDS
+from grasppanda.modules.octformer_options import resolve, stage_value, STAGE_FIELDS
 
 PREFIX = '_grasppanda_octformer'
 SOURCE_HASHES = {'octformer.py': 'a9d145a89a18942a0694cab0fd62803d00f4f8f356e902f12b1a0c7074d52b9c', 'octformerseg.py': 'df0f1efbfd444e8f34ed00a729a353e0799d3b243f0cdf79d0be32b993f5cf39'}
@@ -95,7 +95,7 @@ def source_module(path, name):
         raise RuntimeError('OctFormer constructor layout differs from the pinned source')
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
-    from ..octformer_options import DEFAULTS
+    from grasppanda.modules.octformer_options import DEFAULTS
     module.__dict__.update(stage_value=stage_value, DEFAULTS=DEFAULTS)
     sys.modules[name] = module
     exec(compile(ast.fix_missing_locations(tree), str(path), 'exec'), module.__dict__)

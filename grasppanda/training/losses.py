@@ -31,8 +31,8 @@ def choices(term, method=None):
 
 
 def validate(method, functions):
-    from .training_options import LOSS_TERMS
-    from .module_options import unpack
+    from grasppanda.training.options import LOSS_TERMS
+    from grasppanda.module_options import unpack
     if not isinstance(functions, dict) or set(functions) - set(LOSS_TERMS.get(method, {})):
         raise ValueError('loss.functions must map registered loss terms to formulations')
     for term, value in functions.items():
@@ -143,8 +143,8 @@ def targets(end, method, term):
 
 
 def replace_losses(end_points, config):
-    from .module_options import unpack
-    from .training_options import LOSS_TERMS
+    from grasppanda.module_options import unpack
+    from grasppanda.training.options import LOSS_TERMS
     for term, value in config.loss.get('functions', {}).items():
         kind, options = unpack(value)
         if kind == 'upstream': continue

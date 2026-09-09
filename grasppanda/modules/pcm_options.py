@@ -128,14 +128,14 @@ def validate_points(p, count):
 
 
 def selected(config):
-    from .module_options import unpack
+    from grasppanda.module_options import unpack
     return unpack(config.modules.get('backbone', 'upstream'))[0] == 'pointcloud_mamba'
 
 
 def validate_config(config):
     if not selected(config):
         return
-    from .module_options import unpack
+    from grasppanda.module_options import unpack
     _, options = unpack(config.modules['backbone'])
     validate_points(resolve(options), config.num_points)
     if config.action in ('train', 'train_check', 'train_smoke') and config.batch_size < 2:

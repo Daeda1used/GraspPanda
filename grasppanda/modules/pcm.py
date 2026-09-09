@@ -8,7 +8,7 @@ import sys
 import types
 from functools import lru_cache
 from ..config import ROOT
-from ..pcm_options import CTS_ORDERS as ORDERS, native_options, resolve, validate_points
+from grasppanda.modules.pcm_options import CTS_ORDERS as ORDERS, native_options, resolve, validate_points
 from torch import nn
 import torch
 PREFIX = '_grasppanda_pcm'

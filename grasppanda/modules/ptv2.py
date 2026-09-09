@@ -9,7 +9,7 @@ import sys
 import torch
 from torch import nn
 from torch.utils.checkpoint import checkpoint as torch_checkpoint
-from ..ptv2_options import resolve
+from grasppanda.modules.ptv2_options import resolve
 
 SOURCE_HASHES = {'point_transformer_v2/point_transformer_v2m1_origin.py': '403ad195bb57f6ff01830f162c91a9e8e548f9e8d5e45f7e04347e1f7dcacb11', 'utils/misc.py': 'abb01683e69f569921400251686247d2527eecc250ecdb7d073add65bd297b8b'}
 

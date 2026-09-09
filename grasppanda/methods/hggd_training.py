@@ -99,10 +99,10 @@ def run(config, out):
     from grasppanda.components import configure_model, load_checkpoint
     from grasppanda.methods.hggd_options import resolved
     from grasppanda.methods.hggd_driver import compile_functions
-    from grasppanda.image_augmentation import configure_dataset
-    from grasppanda.image_losses import ImageLosses
-    from grasppanda.optimization import build_optimizer, UpdateSchedule
-    from grasppanda.native_training import verify_restored_state
+    from grasppanda.training.image_augmentation import configure_dataset
+    from grasppanda.training.image_losses import ImageLosses
+    from grasppanda.training.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.training.native import verify_restored_state
     from grasppanda.jobs import digest
     options = resolved(config)
     out = Path(out); prepare('hggd')

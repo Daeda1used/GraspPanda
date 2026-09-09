@@ -129,9 +129,9 @@ def run(config, out):
     import torch
     from torch_geometric.loader import DataLoader
     from grasppanda.modules.gtg2 import GraphRegressor
-    from grasppanda.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.training.optimization import build_optimizer, UpdateSchedule
     from grasppanda.module_options import unpack
-    from grasppanda.losses import regression
+    from grasppanda.training.losses import regression
     encoder, graph = resolved(config.modules)
     trainer = {**TRAINER, **config.trainer}
     packets = packet_paths(config, graph)

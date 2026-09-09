@@ -1,5 +1,5 @@
 """Observation augmentation shared by the native RGB-D and local branches."""
-from .training_options import finite
+from grasppanda.training.options import finite
 
 
 LIMITS = {'brightness': 1., 'contrast': 1., 'saturation': 1., 'hue': .5,

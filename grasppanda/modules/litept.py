@@ -8,7 +8,7 @@ import types
 
 import torch
 from torch import nn
-from ..litept_options import resolve
+from grasppanda.modules.litept_options import resolve
 
 SOURCE_HASHES = {'libs/pointrope/kernels.cu': 'c76dae3c016566a86d6915f35af3ea976e5d2858fbb91cdf6b24214c144db6ed',
  'libs/pointrope/pointrope.cpp': 'c8c3e609306da50eb15ee79b1850460879b42a8829e7a166555e134bed908675',

@@ -41,7 +41,7 @@ def validate(options):
 
 
 def selected(config):
-    from .module_options import unpack
+    from grasppanda.module_options import unpack
     return unpack(config.modules.get('backbone', 'upstream'))[0] == 'point_transformer_v2'
 
 

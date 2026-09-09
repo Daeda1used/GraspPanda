@@ -129,7 +129,7 @@ class FineGraspDataset:
 
     def __getitem__(self, index):
         import numpy as np
-        from grasppanda.training_options import sample_points, transform_points
+        from grasppanda.training.options import sample_points, transform_points
         self.prepare(index)
         sample = self.native[index]
         options = self.config.augmentation

@@ -94,9 +94,9 @@ class Experiment:
             raise ValueError('proposal_warmup_steps must be an integer in [0, 10000]')
         if self.proposal_warmup_steps and (self.method != 'region_normalized_grasp' or self.action != 'train_check'):
             raise ValueError('Proposal warmup is registered for RNG short training only')
-        from .optimization import validate as validate_optimization
+        from grasppanda.training.optimization import validate as validate_optimization
         validate_optimization(self)
-        from .training_options import validate_training_options
+        from grasppanda.training.options import validate_training_options
         validate_training_options(self)
         if self.method == 'gtg2':
             from grasppanda.methods.gtg2_options import validate_config as validate_trainer
@@ -167,11 +167,11 @@ class Experiment:
             raise ValueError('Training checks require a scene in the training split')
         if self.action=='train' and self.train_batch_limit and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
             raise ValueError('Bounded native training requires a scene in the training split')
-        from .pcm_options import validate_config as validate_pcm_config
+        from grasppanda.modules.pcm_options import validate_config as validate_pcm_config
         validate_pcm_config(self)
-        from .ptv2_options import validate_config as validate_ptv2_config
+        from grasppanda.modules.ptv2_options import validate_config as validate_ptv2_config
         validate_ptv2_config(self)
-        from .litept_options import validate_config as validate_litept_config
+        from grasppanda.modules.litept_options import validate_config as validate_litept_config
         validate_litept_config(self)
         return self
 

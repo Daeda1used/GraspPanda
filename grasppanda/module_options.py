@@ -54,10 +54,10 @@ def _schema(method, slot, choice):
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
     if slot == 'backbone' and choice == 'litept':
-        from .litept_options import schema as litept_schema
+        from grasppanda.modules.litept_options import schema as litept_schema
         return litept_schema()
     if slot == 'backbone' and choice == 'point_transformer_v2':
-        from .ptv2_options import schema as ptv2_schema
+        from grasppanda.modules.ptv2_options import schema as ptv2_schema
         return ptv2_schema()
     if slot == 'backbone' and choice == 'sonata_ptv3':
         fields = {}
@@ -103,10 +103,10 @@ def _schema(method, slot, choice):
                 fields.update(stage_channels=('int_list', 4, 16, 1024), stage_depths=('int_list', 4, 1, 32))
             return fields
     if slot == 'backbone' and choice == 'octformer':
-        from .octformer_options import schema as octformer_schema
+        from grasppanda.modules.octformer_options import schema as octformer_schema
         return octformer_schema()
     if slot == 'backbone' and choice == 'pointcloud_mamba':
-        from .pcm_options import schema as pcm_schema
+        from grasppanda.modules.pcm_options import schema as pcm_schema
         return pcm_schema()
     if slot == 'backbone' and choice == 'pointmamba':
         return {'dim': ('int',8,768), 'depth': ('int',1,48),
@@ -241,16 +241,16 @@ def validate_options(method, slot, choice, options):
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
     if choice == 'litept':
-        from .litept_options import validate as validate_litept
+        from grasppanda.modules.litept_options import validate as validate_litept
         validate_litept(options)
     if choice == 'point_transformer_v2':
-        from .ptv2_options import validate as validate_ptv2
+        from grasppanda.modules.ptv2_options import validate as validate_ptv2
         validate_ptv2(options)
     if choice == 'octformer':
-        from .octformer_options import validate as validate_octformer
+        from grasppanda.modules.octformer_options import validate as validate_octformer
         validate_octformer(options)
     if choice == 'pointcloud_mamba':
-        from .pcm_options import validate as validate_pcm
+        from grasppanda.modules.pcm_options import validate as validate_pcm
         validate_pcm(options)
     if choice == 'pointmamba' and options.get('dim',384) % 8:
         raise ValueError('PointMamba token width must be a multiple of 8')

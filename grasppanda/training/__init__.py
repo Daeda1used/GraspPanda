@@ -4,7 +4,7 @@ import itertools
 from pathlib import Path
 import sys
 import time
-from .jobs import digest
+from grasppanda.jobs import digest
 
 
 def rgb_matters(config,out,steps=3):
@@ -13,7 +13,7 @@ def rgb_matters(config,out,steps=3):
     import numpy as np
     import torch
     import open3d as o3d
-    from .worker import prepare
+    from grasppanda.worker import prepare
     repo=prepare(config.method)
     from rgbd_graspnet.net.rgb_normal_net import RGBNormalNet
     from rgbd_graspnet.data import GraspNetDataset
@@ -78,9 +78,9 @@ def rgb_matters(config,out,steps=3):
 def hggd(config, out, steps=3, label_root=None):
     import numpy as np
     import torch
-    from .worker import prepare
-    from .components import configure_model,load_checkpoint
-    from .optimization import build_optimizer,UpdateSchedule
+    from grasppanda.worker import prepare
+    from grasppanda.components import configure_model,load_checkpoint
+    from grasppanda.training.optimization import build_optimizer,UpdateSchedule
     prepare('hggd')
     camera=importlib.import_module('dataset.config')
     intrinsic=camera.get_camera_intrinsic
@@ -98,8 +98,8 @@ def hggd(config, out, steps=3, label_root=None):
     dataset=module.GraspnetPointDataset(args.all_points_num,str(labels),config.dataset_root,[config.scene],
         noise=0,sigma=args.sigma,ratio=args.ratio,anchor_k=args.anchor_k,anchor_z=args.anchor_z,
         anchor_w=args.anchor_w,grasp_count=args.grasp_count,output_size=(640,360),random_rotate=False,random_zoom=False)
-    from .image_augmentation import configure_dataset
-    from .image_losses import ImageLosses
+    from grasppanda.training.image_augmentation import configure_dataset
+    from grasppanda.training.image_losses import ImageLosses
     configure_dataset(dataset, config)
     objectives=ImageLosses(importlib.import_module('models.losses'), config)
     # Native trainer skips the update at batch index 0. N+1 batches yield N updates.
@@ -178,9 +178,9 @@ def point_family(config, out, steps=3):
     import numpy as np
     import torch
     import scipy.io
-    from .worker import prepare
-    from .training_options import augment_sample,weighted_loss
-    from .optimization import build_optimizer,UpdateSchedule
+    from grasppanda.worker import prepare
+    from grasppanda.training.options import augment_sample,weighted_loss
+    from grasppanda.training.optimization import build_optimizer,UpdateSchedule
     repo=prepare(config.method)
     if config.method=='graspbalance':sys.path[:0]=[str(repo/p) for p in ('TrainModel','PointNet','KNN','DataProcessing','ModifiedNetTools')]
     sys.argv=['train.py','--dataset_root',config.dataset_root,'--camera',config.camera]
@@ -190,7 +190,7 @@ def point_family(config, out, steps=3):
     balance=config.method=='graspbalance'
     graph=config.method=='granet'
     if graph:
-        from .compat import legacy_dgl
+        from grasppanda.compat import legacy_dgl
         legacy_dgl()
     sparse=config.method in ('graspness','dograspnet','graspness_modern')
     fgc=config.method=='fgc_graspnet'
@@ -199,9 +199,9 @@ def point_family(config, out, steps=3):
     model_module=importlib.import_module(module_name)
     root=Path(config.dataset_root);scene=f'scene_{config.scene:04d}'
     directory=root/'scenes'/scene/config.camera
-    from .pcm_options import selected as pcm_selected
-    from .ptv2_options import selected as ptv2_selected
-    from .litept_options import selected as litept_selected
+    from grasppanda.modules.pcm_options import selected as pcm_selected
+    from grasppanda.modules.ptv2_options import selected as ptv2_selected
+    from grasppanda.modules.litept_options import selected as litept_selected
     multi_frame=pcm_selected(config) or ptv2_selected(config) or litept_selected(config)
     frame_ids=list(range(config.frame, config.frame+config.batch_size)) if multi_frame else [config.frame]
     metadata=[scipy.io.loadmat(directory/'meta'/f'{frame:04d}.mat') for frame in frame_ids]
@@ -285,7 +285,7 @@ def point_family(config, out, steps=3):
     collate=dataset_module.spconv_collate_fn if modern else (dataset_module.minkowski_collate_fn if sparse or fusion else dataset_module.collate_fn)
     cls=getattr(model_module,{'economicgrasp':'economicgrasp','fgc_graspnet':'FGC_graspnet','scale_balanced_grasp':'GraspNet_MSCQ','generalizing_grasp':'GraspNet_MSCQ','graspbalance':'GraspBalance','granet':'GraNet'}.get(config.method,'GraspNet'))
     model=cls(is_training=True,**({'is_demo':False} if fgc else ({'backbone':'resunet'} if modern else ({'batch_size':2} if graph else {})))).cuda().train()
-    from .components import configure_model,load_checkpoint
+    from grasppanda.components import configure_model,load_checkpoint
     prefixes=configure_model(model,config.method,config.modules,config.voxel_size);model.cuda()
     transfer=None
     if config.checkpoint:
@@ -380,9 +380,9 @@ def rng(config,out,steps=3,label_root=None):
     from types import SimpleNamespace
     import numpy as np
     import torch
-    from .worker import prepare
-    from .components import configure_model,load_checkpoint
-    from .optimization import build_optimizer,UpdateSchedule
+    from grasppanda.worker import prepare
+    from grasppanda.components import configure_model,load_checkpoint
+    from grasppanda.training.optimization import build_optimizer,UpdateSchedule
     prepare('region_normalized_grasp')
     camera=importlib.import_module('dataset.config')
     intrinsic=camera.get_camera_intrinsic
@@ -407,8 +407,8 @@ def rng(config,out,steps=3,label_root=None):
     dataset=cls(str(labels),config.dataset_root,[config.scene],ratio=8,anchor_k=6,anchor_z=20,
                 anchor_w=75,grasp_count=5000,sigma=10,noise=0,random_rotate=False,random_zoom=False)
     dataset.is_aug=False;dataset.aug=None
-    from .image_augmentation import configure_dataset
-    from .image_losses import ImageLosses
+    from grasppanda.training.image_augmentation import configure_dataset
+    from grasppanda.training.image_losses import ImageLosses
     configure_dataset(dataset, config)
     x,target,*_=dataset[config.frame]
     x=x.cuda()[None];target=[v.cuda()[None].repeat(2,*([1]*v.ndim)) for v in target]
@@ -532,7 +532,7 @@ def contact(config,out,steps=3):
     import numpy as np
     import torch
     import h5py
-    from .worker import prepare
+    from grasppanda.worker import prepare
     repo=prepare(config.method)
     sys.path.remove(str(repo/'utils'))
     preprocess=importlib.import_module('scripts.preprocess_g1b')

@@ -4,10 +4,11 @@
 
 ```text
 GraspNet-1B/              Dataset entry and example experiments
-grasppanda/              Configuration, UI, queue and shared training
+grasppanda/              Configuration, UI and experiment queue
   methods/               Method-specific inference, data and training adapters
   integrations/          Dataset contracts, readiness and evaluation
-  modules/               Interchangeable model components
+  modules/               Interchangeable components and architecture options
+  training/              Shared trainers, objectives, augmentation and optimization
   resources/             Source pins, weight records and compatibility patches
   runtime/               Installation and isolated worker entry points
 docs/                    User and extension guides

@@ -59,11 +59,11 @@ class LabelCache(Mapping):
 def run(config,out):
     import numpy as np
     import torch
-    from .worker import prepare
-    from .components import configure_model,load_checkpoint
-    from .jobs import digest
-    from .training_options import configure_dataset,weighted_loss
-    from .optimization import build_optimizer,UpdateSchedule,NativeScheduleDisabled,native_driver
+    from grasppanda.worker import prepare
+    from grasppanda.components import configure_model,load_checkpoint
+    from grasppanda.jobs import digest
+    from grasppanda.training.options import configure_dataset,weighted_loss
+    from grasppanda.training.optimization import build_optimizer,UpdateSchedule,NativeScheduleDisabled,native_driver
     implementation_hash=digest(__file__)
     repo=prepare(config.method)
     economic=config.method=='economicgrasp'
@@ -147,9 +147,9 @@ def run(config,out):
             if stop<=start:raise ValueError('Bounded training frame range is empty')
             dataset=torch.utils.data.Subset(dataset,range(start,stop))
         kwargs['num_workers']=config.data_workers
-        from .pcm_options import selected as pcm_selected
-        from .ptv2_options import selected as ptv2_selected
-        from .litept_options import selected as litept_selected
+        from grasppanda.modules.pcm_options import selected as pcm_selected
+        from grasppanda.modules.ptv2_options import selected as ptv2_selected
+        from grasppanda.modules.litept_options import selected as litept_selected
         if train and (pcm_selected(config) or ptv2_selected(config) or litept_selected(config)):
             if len(dataset) < config.batch_size:
                 raise ValueError('The selected point encoder requires at least one full training batch')

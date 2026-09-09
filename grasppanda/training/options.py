@@ -50,7 +50,7 @@ def validate_training_options(config):
     loss = config.loss
     if set(loss) - {'weights', 'functions'} or not isinstance(loss.get('weights', {}), dict):
         raise ValueError('loss accepts weights and functions mappings')
-    from .losses import validate
+    from grasppanda.training.losses import validate
     validate(config.method, loss.get('functions', {}))
     terms = LOSS_TERMS.get(config.method, {})
     weights = loss.get('weights', {})
@@ -65,7 +65,7 @@ def validate_training_options(config):
     if config.method in IMAGE_METHODS:
         if config.proposal_warmup_steps and not any(weights.get(k, v) > 0 for k, (_, v) in terms.items() if k.startswith('anchor_')):
             raise ValueError('Anchor warmup requires at least one positive anchor loss weight')
-        from .image_augmentation import validate
+        from grasppanda.training.image_augmentation import validate
         validate(config.augmentation)
         return
     aug = config.augmentation
@@ -88,9 +88,9 @@ def validate_training_options(config):
 
 def weighted_loss(native_loss, end_points, config):
     """Keep native masks/reductions; override coefficients without double counting."""
-    from .module_options import unpack
+    from grasppanda.module_options import unpack
     if any(unpack(value)[0] != 'upstream' for value in config.loss.get('functions', {}).values()):
-        from .losses import replace_losses
+        from grasppanda.training.losses import replace_losses
         replace_losses(end_points, config)
         loss = sum(config.loss.get('weights', {}).get(name, coefficient) * end_points[key]
                    for name, (key, coefficient) in LOSS_TERMS[config.method].items())

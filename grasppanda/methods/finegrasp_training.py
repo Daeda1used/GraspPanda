@@ -32,9 +32,9 @@ def run(config, out, steps=None):
     from torch.utils.data import DataLoader, Subset
     from grasppanda.methods.finegrasp import load_model
     from grasppanda.methods.finegrasp_data import FineGraspDataset
-    from grasppanda.native_training import verify_restored_state
-    from grasppanda.optimization import build_optimizer, UpdateSchedule
-    from grasppanda.training_options import LOSS_TERMS, weighted_loss
+    from grasppanda.training.native import verify_restored_state
+    from grasppanda.training.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.training.options import LOSS_TERMS, weighted_loss
     from grasppanda.jobs import digest
     short = steps is not None
     out = Path(out)
@@ -48,8 +48,8 @@ def run(config, out, steps=None):
     cache = Path(config.label_root) if config.label_root else out/'prepared/finegrasp'
     dataset = FineGraspDataset(config, cache, augment=not short or bool(config.augmentation))
     start = config.scene*256 + config.frame
-    from grasppanda.ptv2_options import selected as ptv2_selected
-    from grasppanda.litept_options import selected as litept_selected
+    from grasppanda.modules.ptv2_options import selected as ptv2_selected
+    from grasppanda.modules.litept_options import selected as litept_selected
     multi_frame = ptv2_selected(config) or litept_selected(config)
     if short:
         dataset = Subset(dataset, range(start, start+config.batch_size) if multi_frame else [start]*config.batch_size)

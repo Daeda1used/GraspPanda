@@ -6,8 +6,8 @@ target construction, masks, units and reductions are left intact. The explicit
 primitive routes are checked against the pinned source's call contract.
 """
 from types import FunctionType
-from .module_options import unpack
-from .training_options import LOSS_TERMS
+from grasppanda.module_options import unpack
+from grasppanda.training.options import LOSS_TERMS
 
 
 def binary_classification(prediction, target, kind, options, threshold, alpha, gamma, suppress, epsilon):
@@ -64,7 +64,7 @@ class ImageLosses:
         if not self.config.loss:
             return getattr(self.native, name)(*args, **kwargs)
         import torch.nn.functional as functional
-        from .losses import regression
+        from grasppanda.training.losses import regression
         classification_terms, regression_terms = self.ROUTES[name]
         used = {'classification': 0, 'regression': 0}
 

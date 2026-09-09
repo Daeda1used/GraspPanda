@@ -84,12 +84,12 @@ def component_parameters(method, backbone, crop, head='upstream'):
 
 
 def loss_parameters(method):
-    from .training_options import LOSS_TERMS
-    from .losses import PARAMETERS, is_classification, parameter_schema
+    from grasppanda.training.options import LOSS_TERMS
+    from grasppanda.training.losses import PARAMETERS, is_classification, parameter_schema
     terms = LOSS_TERMS.get(method, {})
     if not terms:
         return 'This method uses its native objective and augmentation. Custom controls are not registered.'
-    from .losses import choices
+    from grasppanda.training.losses import choices
     available = {kind for term in terms for kind in choices(term, method)}
     rows = [f'| `{name}` | ' + (', '.join(f'`{key}`: {low} to {high}' for key, (low, high) in options.items()) or 'No parameters') + ' |'
             for name in PARAMETERS if name != 'upstream' and name in available for options in [parameter_schema(method, name)]]
@@ -105,8 +105,8 @@ def loss_parameters(method):
 
 
 def loss_preset(method, classification, regression, current):
-    from .training_options import LOSS_TERMS
-    from .losses import is_classification
+    from grasppanda.training.options import LOSS_TERMS
+    from grasppanda.training.losses import is_classification
     if method not in LOSS_TERMS:
         raise gr.Error('This method uses its native objective; loss overrides are not registered.')
     try:
@@ -114,7 +114,7 @@ def loss_preset(method, classification, regression, current):
         if not isinstance(value, dict): raise ValueError('Loss configuration must be a mapping')
         value['functions'] = {term: classification if is_classification(method, term) else regression
                               for term in LOSS_TERMS[method]}
-        from .training_options import validate_training_options
+        from grasppanda.training.options import validate_training_options
         validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_check', loss=value))
     except (ValueError, TypeError) as error:
         raise gr.Error(str(error)) from error
@@ -165,7 +165,7 @@ def create_app(manager=None):
             progress(0,desc='Downloading / verifying author weights…')
             value=fetch(method,camera,lambda message: progress(.5,desc=message))
             progress(1,desc='Verified')
-            return value, 'All registered weight roles downloaded and SHA256 verified. Ready to run.'
+            return value, 'Weights downloaded and verified. Set your inputs, then run the experiment.'
         except Exception as error:
             raise gr.Error(str(error)) from error
 
@@ -318,7 +318,7 @@ def create_app(manager=None):
         if not row or row['state']!='succeeded':raise gr.Error('Choose a completed training run first.')
         method=row['config']['method']
         if 'infer' not in capabilities(method) and method not in CHECKPOINT_RECIPES:
-            raise gr.Error('Checkpoint saved, but this method currently exposes only a fixed inference recipe. Configurable checkpoint inference is not yet integrated; see its method card.')
+            raise gr.Error('This method does not accept a trained checkpoint through the inference form. See Guide → Methods & papers for its supported recipe.')
         path=manager.root/row['id']/'checkpoint.pt'
         if not path.exists():raise gr.Error('This run has no saved training checkpoint.')
         config=replace(Experiment.from_dict(row['config']),action='infer',checkpoint=str(path),
@@ -414,7 +414,7 @@ def create_app(manager=None):
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,visible=False,label='Optimizer steps (short training)')
                         proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,visible=False,label='RNG anchor warmup updates',info='Optional real-label anchor training before preparing local proposals. Added to short-training updates; 0 preserves the native preset.')
                         with gr.Accordion('Choose loss formulations', open=False):
-                            from .losses import CLASSIFICATION, REGRESSION
+                            from grasppanda.training.losses import CLASSIFICATION, REGRESSION
                             with gr.Row():
                                 classification_loss=gr.Dropdown(['upstream', *CLASSIFICATION],value='upstream',label='Classification loss',interactive=False)
                                 regression_loss=gr.Dropdown(['upstream', *REGRESSION],value='upstream',label='Regression loss',interactive=False)
@@ -527,7 +527,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters', preprocess=False)
         def loss_controls(method, action):
-            from .training_options import METHODS
+            from grasppanda.training.options import METHODS
             enabled=method in METHODS and action in ('train','train_check')
             return gr.update(value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
         for selector in (method, action):
@@ -535,7 +535,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         for selector in (method, backbone, crop, head):
             selector.change(component_parameters,[method,backbone,crop,head],parameter_help,api_name=False, preprocess=False)
         def optimization_choices(method, action, backbone):
-            from .optimization import METHODS,MUON_METHODS
+            from grasppanda.training.optimization import METHODS,MUON_METHODS
             enabled=method in METHODS and action in ('train','train_check')
             optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone!='sonata_ptv3' else [])
             return gr.update(choices=optimizers if enabled else ['upstream'],value='upstream',interactive=enabled),gr.update(choices=['upstream','constant','cosine','multistep'] if enabled else ['upstream'],value='upstream',interactive=enabled),'{}','{}'

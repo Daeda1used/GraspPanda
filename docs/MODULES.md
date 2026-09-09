@@ -471,11 +471,14 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 </details>
 
+<details>
+<summary>Losses and data augmentation</summary>
+
 ## Training controls
 
 Baseline, its PointNet2 port, Graspness, FineGrasp and EconomicGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-controls`).
 
-In the browser, expand **Training & evaluation settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
+In the browser, expand **Training settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
 ```yaml
 loss:
@@ -591,9 +594,14 @@ These are point-observation controls. Image crops, nonrigid warps, scaling and s
 
 Loss and augmentation settings are training-only. Resume requires saved configuration metadata for training overrides and the same objective, augmentation, sampled frame range, seed and loader worker count. **Prepare inference from checkpoint** retains architecture settings and clears training-only options automatically. To sweep a loss parameter, use a structured formulation in the base configuration and vary, for example, `loss.functions.objectness.epsilon`; augmentation uses paths such as `augmentation.point_dropout`.
 
+</details>
+
+<details>
+<summary>Optimizers and learning-rate schedules</summary>
+
 ## Optimizers and schedules
 
-Baseline, its PointNet2 port, Graspness, FineGrasp, EconomicGrasp, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training & evaluation settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
+Baseline, its PointNet2 port, Graspness, FineGrasp, EconomicGrasp, SBG, HGGD and RNG accept optimization overrides in their registered training actions. Empty mappings retain the method's optimizer and schedule. Select the optimizer/schedule under **Training settings** in the UI, then enter parameters without `type`; full experiment files include `type` as below.
 
 ```yaml
 learning_rate: 0.00003
@@ -625,12 +633,17 @@ Schedule units are **completed optimizer updates**, including for epoch training
 
 Optimizer and scheduler settings are training-only; clear them for manually authored inference configurations. UI checkpoint reuse does this automatically. Sweep paths such as `optimizer.type`, `optimizer.weight_decay` and `scheduler.min_lr_ratio` are supported, subject to each selected implementation's validation.
 
+</details>
+
 ## Checkpoint policies
 
 - `strict`: every checkpoint key and parameter shape must match. Use this for original models and a saved checkpoint of the same composition.
 - `reuse_unchanged`: discard checkpoint parameters only inside explicitly replaced modules, retain their constructor initialization, and load all remaining parameters strictly. The result records exactly which keys were initialized or discarded.
 
 Selecting a different encoder and silently accepting all missing keys would conceal implementation mistakes. GraspPanda rejects mismatches outside the chosen slots.
+
+<details>
+<summary>Short training and checkpoint reuse</summary>
 
 ## Short training
 
@@ -660,7 +673,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM and PTv2 compositions use the configured `batch_size`; PCM and PTv2 require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM and PTv2 compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. HGGD, GraNet and fusion use batch size 2; FineGrasp, PCM, PTv2 and LitePT compositions use the configured `batch_size`; PCM, PTv2 and LitePT require at least 2 consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, PCM, PTv2 and LitePT compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 
@@ -669,6 +682,11 @@ The output directory contains `checkpoint.pt`, `result.json`, the configuration,
 Choose a completed training check in **Runs & results**, click **Prepare inference from checkpoint**, review the generated JSON in **Experiments**, then click **Run edited JSON**. This retains the same module choices and switches to `strict` checkpoint loading for a test frame.
 
 For CLI use, change `action` to `infer`, `checkpoint` to the saved file, `checkpoint_policy` to `strict`, `split` to `test_seen` and `scene` to `100`. Keep `modules` unchanged. Short training does not establish quality, especially when an encoder was newly initialized; an empty graspable-point set is reported explicitly.
+
+</details>
+
+<details>
+<summary>Epoch training: Baseline, Graspness, EconomicGrasp, HGGD and FineGrasp</summary>
 
 ## Train a composed model across epochs
 
@@ -708,13 +726,13 @@ Model and optimizer state are checked exactly before the resumed update. Subsequ
 
 A newly initialized image encoder may produce proposals with no local grasp labels. For RNG short training, set `proposal_warmup_steps` to train the anchor on its native heatmap targets before preparing its own local patches. These updates are additional to `training_steps`; a custom learning-rate schedule spans both phases. The default is `0`. Warmup uses the selected optimizer and real targets, with no teacher model or replacement labels. Its loss is shown separately as **Anchor warmup**. The required duration depends on initialization, learning rate and scene; a positive proposal set is checked before local training.
 
-The browser exposes this setting under **Training & evaluation settings** for RNG. Checkpoint inference clears this training-only setting. This initialization procedure is a toolbox option; the unreleased RNG full training schedule is not reproduced.
+The browser exposes this setting under **Training settings** for RNG. Checkpoint inference clears this training-only setting. This initialization procedure is a toolbox option; the unreleased RNG full training schedule is not reproduced.
 
 ## HGGD epoch training
 
 Generate the [`train-hggd` example](../GraspNet-1B/README.md#configuration-examples) with `./panda init --example train-hggd`, set your dataset/checkpoint paths in `experiment.local.yaml`, then use `./panda run experiment.local.yaml`. The example fine-tunes author weights at a conservative learning rate; it is not a reproduction of the paper's training hyperparameters. Prepare the camera-specific [HGGD targets](DOWNLOADS.md#method-specific-preprocessing) for training scenes 0000-0099 and validation scene 0100. `workspace: native_demo` retains the native RGB-D geometry and target generation. Batch size must be at least 2.
 
-Set `trainer` in YAML/JSON or expand **Training & evaluation settings → Method training stages** in the UI:
+Set `trainer` in YAML/JSON or expand **Training settings → Method training stages** in the UI:
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -760,3 +778,5 @@ Set `train_batch_limit: 0` for the complete training split. A positive limit sel
 FineGrasp has no automatic validation loop in this adapter: leave `eval_batch_limit: 0`, generate complete split predictions and run `evaluate` separately. Short runs and bounded epoch checks do not establish full-training convergence or benchmark AP. A batch item with no predicted graspable seeds stops with an explicit error; do not use ground-truth seeds to conceal an unusable initialization.
 
 For new adapters and datasets, see [Extending GraspPanda](EXTENDING.md).
+
+</details>
