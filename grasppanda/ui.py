@@ -89,6 +89,8 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'rala' and rule[0] == 'choice_list':
+                description = 'One rala or softmax attention choice per encoder block; list length equals sum(stage_depths), in fine-to-coarse stage order'
             if choice == 'pointcnnpp':
                 if key == 'block_kernel_sizes': description = '1, 3 or 5; one value for all residual blocks, or one per block in encoder then decoder order'
                 elif key == 'block_radius_scalers': description = '0.1 to 8; one value for all residual blocks, or one per block; scales the neighborhood sphere volume'

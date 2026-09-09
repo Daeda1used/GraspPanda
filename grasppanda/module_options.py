@@ -109,6 +109,9 @@ def _schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'rala':
+            from .modules.rala_options import schema as rala_schema
+            return rala_schema()
         if choice == 'vmamba':
             return {'stage_channels': ('int_list',4,16,1024), 'stage_depths': ('int_list',4,1,24),
                     'state_dim': ('int',1,64), 'ssm_ratio': ('float',.5,4), 'dt_rank': ('int',1,64),
@@ -323,6 +326,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'pointcnnpp':
         from .modules.pointcnnpp_options import validate as validate_pointcnnpp
         validate_pointcnnpp(options)
+    if choice == 'rala':
+        from .modules.rala_options import validate as validate_rala
+        validate_rala(options)
     if choice == 'litept':
         from grasppanda.modules.litept_options import validate as validate_litept
         validate_litept(options)

@@ -53,7 +53,7 @@ def slots(method):
             'Inside/outside point sets, explicit sampling caps and graph features.'))
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
     if method in ('hggd','region_normalized_grasp'):
-        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3','vmamba'),
+        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3','vmamba','rala'),
             'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
             'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
     if method=='finegrasp':return (
@@ -126,6 +126,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
             from .modules.dino import DinoPyramid
             replacement=DinoPyramid(choice,**options)
+        elif method in ('hggd','region_normalized_grasp') and choice == 'rala':
+            from .modules.rala import RALAPyramid
+            replacement = RALAPyramid(**options)
         elif method in ('hggd','region_normalized_grasp') and choice == 'vmamba':
             from .modules.vmamba import VMambaPyramid
             replacement = VMambaPyramid(**options)

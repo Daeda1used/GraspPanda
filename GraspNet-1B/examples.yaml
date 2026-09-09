@@ -981,3 +981,26 @@ compose-pointcnnpp:
         depths: [1, 1, 1, 1, 1, 1, 1, 1]
         block_kernel_sizes: 3
         block_radius_scalers: 2.5
+
+compose-rala:
+  description: RALA image hierarchy with per-block attention in HGGD
+  config:
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: native_demo
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    checkpoint_policy: reuse_unchanged
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: rala
+        stage_channels: [32, 64, 128, 256]
+        stage_depths: [1, 1, 2, 1]
+        stage_heads: [2, 4, 8, 16]
+        block_attention: [rala, rala, rala, softmax, softmax]
+        gradient_checkpointing: true

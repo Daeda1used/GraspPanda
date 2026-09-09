@@ -10,7 +10,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
-| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
+| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
 | Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
@@ -1258,5 +1258,42 @@ Use `./panda init --example compose-pointcnnpp` for a smaller training configura
 The installer compiles the pinned author CUDA/CUTLASS operators in the shared Python environment. Native binaries, downloaded source and build intermediates are generated locally. This component adapts the segmentation/registration encoder to grasp detection; it does not provide author-trained GraspNet weights.
 
 [Paper PDF](https://openaccess.thecvf.com/content/CVPR2026/papers/Li_PointCNN_Performant_Convolution_on_Native_Points_CVPR_2026_paper.pdf) · [Author implementation](https://github.com/robbyant-research/pointelligence)
+
+</details>
+
+## RALA image hierarchy
+
+<details>
+<summary>Configure rank-augmented attention and RGB-D stages</summary>
+
+`rala` replaces the HGGD or RegionNormalizedGrasp image encoder with the author's RAVLT feature hierarchy. It retains rank-augmented linear attention, 2D rotary positions, local positional convolutions and native feature merging. The four-channel input remains D,R,G,B with the method's preprocessing and axis convention. A stride-2 stem and channel projections produce the five native anchor/refinement feature lattices; the original grasp heads and local point branch remain in place.
+
+```yaml
+modules:
+  backbone:
+    type: rala
+    stage_channels: [64, 128, 256, 512]
+    stage_depths: [2, 2, 6, 2]
+    stage_heads: [1, 2, 4, 8]
+    mlp_ratios: 3.5
+    layer_scale: true
+    layer_scale_init: 1.0
+    drop_path: 0.1
+    gradient_checkpointing: false
+    freeze_norm_stats: false
+    projection_norm: batch
+```
+
+Stage lists have four entries in fine-to-coarse order. Each stage width must be divisible by four times its head count, preserving 2D rotary position dimensions. `mlp_ratios` (1–8), `layer_scale` and `layer_scale_init` (1e-8–1) accept a scalar or four stage values. Widths range from 16 to 1,024, depths from 1 to 24 and head counts from 1 to 64. `drop_path` sets the maximum of the native linearly increasing block schedule.
+
+Optional `block_attention` supplies exactly `sum(stage_depths)` entries, each `rala` or `softmax`, in stage/block order. Omitted values use RALA in stages 1–2 and softmax in stages 3–4, matching the native default attention layout. For depths `[1,1,2,1]`, `[rala,rala,rala,softmax,softmax]` changes the first block of stage 3 to RALA. Softmax at early, high-resolution stages uses a quadratic attention matrix and can require substantial GPU memory.
+
+`gradient_checkpointing: true` recomputes native residual blocks during backward while preserving stochastic-depth randomness. `freeze_norm_stats: true` freezes running statistics for both BatchNorm and SyncBatchNorm, including the projection/stem; affine parameters remain trainable. This is an explicit toolbox control: the original `norm_eval` checks only BatchNorm2d and does not freeze its SyncBatchNorm layers. `projection_norm` chooses `batch`, `group` or `none` for the output projections; the native encoder normalizations are retained.
+
+Use `./panda init --example compose-rala` for a smaller hybrid configuration. The image encoder initializes randomly; `checkpoint_policy: reuse_unchanged` transfers unchanged parts of the selected grasp method's checkpoint. Train the replacement, then use its saved checkpoint with strict loading. Author image-classification and segmentation checkpoints are not registered as grasp checkpoints.
+
+The installer fetches pinned source in the shared environment. The wrapper loads the segmentation backbone directly, omitting only framework registration and the framework-specific weight loader; a separate MMSegmentation environment is unnecessary.
+
+[Paper PDF](https://openaccess.thecvf.com/content/CVPR2025/papers/Fan_Breaking_the_Low-Rank_Dilemma_of_Linear_Attention_CVPR_2025_paper.pdf) · [Author implementation](https://github.com/qhfan/RALA)
 
 </details>
