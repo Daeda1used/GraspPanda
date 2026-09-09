@@ -11,9 +11,9 @@ def run(config, out, steps=3):
     import numpy as np
     import scipy.io
     import torch
-    from .graspfast import prepare, checkpoint_state, guard
-    from .config import ROOT, catalogue
-    from .jobs import digest
+    from grasppanda.methods.graspfast import prepare, checkpoint_state, guard
+    from grasppanda.config import ROOT, catalogue
+    from grasppanda.jobs import digest
     module = prepare()
     repo = ROOT / catalogue()['graspfast']['path']
     root = Path(config.dataset_root)

@@ -7,8 +7,8 @@ import os
 from pathlib import Path
 import tempfile
 
-from .config import ROOT, catalogue
-from .jobs import digest
+from grasppanda.config import ROOT, catalogue
+from grasppanda.jobs import digest
 
 FORMAT = 'grasppanda_gtg2_samples_v1'
 ARRAYS = ('inside', 'outside', 'inside_offsets', 'outside_offsets', 'targets', 'grasps', 'candidate_ids')

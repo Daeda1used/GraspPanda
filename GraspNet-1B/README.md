@@ -21,18 +21,6 @@ Examples are defined in one [template catalogue](examples.yaml). Generate only t
 ./panda init --example train-hggd -o training.local.yaml
 ```
 
-| Workflow | Example names |
-|---|---|
-| Inference | `infer-graspness` or `--method METHOD` for any runnable preset |
-| Training | `train-baseline`, `train-economicgrasp`, `train-hggd`, `train-finegrasp`, `train-gtg2` |
-| Losses and augmentation | `train-controls`, `compose-hggd` |
-| Point encoders and grouping | `compose-baseline`, `compose-ptv3`, `compose-octformer`, `compose-pcm`, `compose-pointmamba`, `compose-pointmeta`, `compose-pointvector`, `compose-reslfe` |
-| EconomicGrasp composition | `compose-economicgrasp`; [native stages, grouping and training controls](../docs/MODULES.md#economicgrasp-components) |
-| Grouped seed interaction | `compose-seed-interaction`; [parameters and method compatibility](../docs/MODULES.md#grouped-seed-interaction) |
-| Grasp prediction heads | `compose-economic-head`; [branch and attention settings](../docs/MODULES.md#economicgrasp-interactive-head) |
-| Image encoders | `compose-hggd`, `compose-dino`, `compose-vmamba` |
-| Parameter sweeps | `sweep-baseline`; use `./panda sweep FILE --preview` before execution |
-
 Each generated file includes its method, operation and settings. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters. Files named `*.local.yaml` are ignored by Git.
 
 ## Observation protocols

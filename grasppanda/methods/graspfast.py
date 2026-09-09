@@ -5,7 +5,7 @@ import types
 
 
 def prepare():
-    from .worker import prepare as prepare_source
+    from grasppanda.worker import prepare as prepare_source
     repo=prepare_source('graspfast')
     sys.path[:0]=[str(repo/'GraspFastModel'),str(repo/'PointNetTool/_ext_src')]
     package=types.ModuleType('PointNetTool');package.__path__=[str(repo/'PointNetTool/_ext_src')]

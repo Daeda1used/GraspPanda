@@ -59,7 +59,7 @@ def validate_training_options(config):
     if weights and not any(weights.get(k, default) > 0 for k, (_, default) in terms.items()):
         raise ValueError('At least one loss component must retain positive weight')
     if config.method == 'gtg2':
-        from .gtg2_options import validate_augmentation
+        from grasppanda.methods.gtg2_options import validate_augmentation
         validate_augmentation(config.augmentation)
         return
     if config.method in IMAGE_METHODS:

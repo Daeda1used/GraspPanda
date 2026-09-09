@@ -95,15 +95,15 @@ def run(config, out):
     import numpy as np
     import torch
     from torch.utils.data import DataLoader
-    from .worker import prepare
-    from .components import configure_model, load_checkpoint
-    from .hggd_options import resolved
-    from .hggd_driver import compile_functions
-    from .image_augmentation import configure_dataset
-    from .image_losses import ImageLosses
-    from .optimization import build_optimizer, UpdateSchedule
-    from .native_training import verify_restored_state
-    from .jobs import digest
+    from grasppanda.worker import prepare
+    from grasppanda.components import configure_model, load_checkpoint
+    from grasppanda.methods.hggd_options import resolved
+    from grasppanda.methods.hggd_driver import compile_functions
+    from grasppanda.image_augmentation import configure_dataset
+    from grasppanda.image_losses import ImageLosses
+    from grasppanda.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.native_training import verify_restored_state
+    from grasppanda.jobs import digest
     options = resolved(config)
     out = Path(out); prepare('hggd')
     camera = importlib.import_module('dataset.config')
@@ -151,7 +151,7 @@ def run(config, out):
         local.load_state_dict({k:v for k,v in payload['local'].items() if k.rsplit('.',1)[-1] not in ('total_ops','total_params')}, strict=True)
         anchors = {k:payload[k].cuda() for k in ('gamma','beta')}
     else:
-        from .modules.dino import DinoPyramid
+        from grasppanda.modules.dino import DinoPyramid
         pretrained = {}
         for prefix in changed:
             module = anchor.get_submodule(prefix.rstrip('.'))

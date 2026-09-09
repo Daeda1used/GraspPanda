@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import time
 
-from .jobs import digest
+from grasppanda.jobs import digest
 
 
 def infer(config, out):
@@ -13,8 +13,8 @@ def infer(config, out):
     import scipy.io
     import torch
     from graspnetAPI import GraspGroup
-    from .worker import prepare, overlay
-    from .config import SPLITS
+    from grasppanda.worker import prepare, overlay
+    from grasppanda.config import SPLITS
 
     prepare(config.method)
     sys.argv = ['test.py', '--dataset_root', config.dataset_root, '--camera', config.camera]
@@ -22,7 +22,7 @@ def infer(config, out):
     mod = importlib.import_module('models.economicgrasp' if economic else 'graspnet')
     dataset_mod = importlib.import_module('dataset.graspnet_dataset')
     model = (mod.economicgrasp if economic else mod.GraspNet)(is_training=False)
-    from .components import configure_model, load_checkpoint
+    from grasppanda.components import configure_model, load_checkpoint
     changed = configure_model(model, config.method, config.modules, config.voxel_size)
     state = torch.load(config.checkpoint, map_location='cpu', weights_only=True)
     transfer = load_checkpoint(model, state['model_state_dict'], changed, config.checkpoint_policy)

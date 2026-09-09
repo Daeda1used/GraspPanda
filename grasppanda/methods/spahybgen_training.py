@@ -8,8 +8,8 @@ import time
 def run(config,out,steps=3):
     import numpy as np
     import torch
-    from .worker import prepare
-    from .jobs import digest
+    from grasppanda.worker import prepare
+    from grasppanda.jobs import digest
     repo=prepare('spahybgen');sys.path.insert(0,str(repo/'src'))
     prepared=out/'prepared';prepared.mkdir()
     script=repo/'scripts/generate_dataset.py'

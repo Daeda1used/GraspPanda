@@ -9,16 +9,16 @@ from types import SimpleNamespace
 
 
 def _context():
-    from .config import ROOT
-    from .worker import prepare
-    from .overlays import prepare_overlay
+    from grasppanda.config import ROOT
+    from grasppanda.worker import prepare
+    from grasppanda.overlays import prepare_overlay
     repo=prepare('gfla')
     for path in (prepare_overlay('gfla'),ROOT/'environments/extensions',prepare_overlay('gfla_source')):sys.path.insert(0,str(path))
     os.environ['GRASPPANDA_WEIGHTS_ROOT']=str(ROOT/'checkpoints/gfla')
     import grasp_nms_cpp
     sys.modules['models.my_grasp_nms.grasp_nms_cpp']=grasp_nms_cpp
     import models.contact_grasp as contact
-    from .sdf_queries import install_gfla_sampler
+    from grasppanda.sdf_queries import install_gfla_sampler
     install_gfla_sampler(contact)
     return repo,contact
 
@@ -42,7 +42,7 @@ def run(config,out,steps=3):
     import numpy as np
     import torch
     import scipy.io
-    from .jobs import digest
+    from grasppanda.jobs import digest
     repo,contact=_context()
     from LauncherTemplate import load_yaml,LossManager
     import models.CFG_main as module

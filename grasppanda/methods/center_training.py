@@ -9,10 +9,10 @@ def run(config,out,steps=3):
     import numpy as np
     import torch
     import mplib
-    from .config import ROOT
-    from .worker import prepare
-    from .overlays import prepare_overlay
-    from .jobs import digest
+    from grasppanda.config import ROOT
+    from grasppanda.worker import prepare
+    from grasppanda.overlays import prepare_overlay
+    from grasppanda.jobs import digest
     prepare(config.method)
     # This author's fork has different sampling and watertight-mesh semantics.
     # Scope it to this worker rather than replacing the shared base package.

@@ -7,8 +7,8 @@ import types
 def native_module():
     name = 'robo_orchard_lab.models.finegrasp.finegrasp'
     if name in sys.modules: return sys.modules[name]
-    from .config import ROOT, catalogue
-    from .compat import legacy_torch
+    from grasppanda.config import ROOT, catalogue
+    from grasppanda.compat import legacy_torch
     root=ROOT/catalogue()['finegrasp']['path']
     if not (root/'robo_orchard_lab/version.py').is_file():
         raise ValueError('FineGrasp source metadata is missing; run the component installer')
@@ -38,7 +38,7 @@ def load_model(config, training=False):
     from pathlib import Path
     import torch
     from safetensors.torch import load_file
-    from .components import configure_model, load_checkpoint
+    from grasppanda.components import configure_model, load_checkpoint
     source = native_module()
     payload, state = None, None
     if config.checkpoint:
@@ -84,8 +84,8 @@ def infer(config, out):
     import numpy as np
     import scipy.io
     import torch
-    from .jobs import digest
-    from .worker import overlay
+    from grasppanda.jobs import digest
+    from grasppanda.worker import overlay
     checkpoint=Path(config.checkpoint)
     metadata=checkpoint.parent/'model.config.json'
     model, architecture, payload, changed, transfer = load_model(config)

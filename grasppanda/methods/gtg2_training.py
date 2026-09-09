@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 import random
 
-from .gtg2_options import resolved, TRAINER
-from .gtg2_data import contract, cache_path, load_cache
-from .jobs import digest
+from grasppanda.methods.gtg2_options import resolved, TRAINER
+from grasppanda.methods.gtg2_data import contract, cache_path, load_cache
+from grasppanda.jobs import digest
 
 FORMAT = 'grasppanda_gtg2_ensemble_v1'
 
@@ -41,7 +41,7 @@ class GraphDataset:
 
     def __getitem__(self, index):
         import numpy as np
-        from .modules.gtg2 import build_graph
+        from grasppanda.modules.gtg2 import build_graph
         index = int(index)
         packet = bisect.bisect_right(self.ends, index)
         local = index - (self.ends[packet-1] if packet else 0)
@@ -123,15 +123,15 @@ def atomic_checkpoint(path, state):
 
 
 def run(config, out):
-    from .compat import legacy_torch
+    from grasppanda.compat import legacy_torch
     legacy_torch()
     import numpy as np
     import torch
     from torch_geometric.loader import DataLoader
-    from .modules.gtg2 import GraphRegressor
-    from .optimization import build_optimizer, UpdateSchedule
-    from .module_options import unpack
-    from .losses import regression
+    from grasppanda.modules.gtg2 import GraphRegressor
+    from grasppanda.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.module_options import unpack
+    from grasppanda.losses import regression
     encoder, graph = resolved(config.modules)
     trainer = {**TRAINER, **config.trainer}
     packets = packet_paths(config, graph)

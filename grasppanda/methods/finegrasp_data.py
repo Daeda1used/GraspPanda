@@ -23,7 +23,7 @@ def instance_graspness(values, instances):
 
 
 def normals(points):
-    from .finegrasp import native_module
+    from grasppanda.methods.finegrasp import native_module
     native_module()
     from robo_orchard_lab.models.finegrasp.processor import FineGraspProcessor
     # The native constructor resets global RNGs; this stateless method does not.
@@ -46,7 +46,7 @@ def save_array(path, array):
 class FineGraspDataset:
     def __init__(self, config, cache, augment=True):
         from types import SimpleNamespace
-        from .finegrasp import native_module
+        from grasppanda.methods.finegrasp import native_module
         native_module()
         from robo_orchard_lab.dataset.graspnet1b import EconomicGraspNet1BDataset
         self.config, self.cache, self.augment = config, Path(cache), augment
@@ -59,14 +59,14 @@ class FineGraspDataset:
     def __len__(self): return len(self.native)
 
     def prepare(self, index):
-        from .finegrasp import native_module
+        from grasppanda.methods.finegrasp import native_module
         native_module()
         import fcntl
         import numpy as np
         import scipy.io
         import torch
         from PIL import Image
-        from .jobs import digest
+        from grasppanda.jobs import digest
         from robo_orchard_lab.utils.geometry import depth_to_range_image
         scene, frame = divmod(index, 256)
         root = Path(self.config.dataset_root)
@@ -129,7 +129,7 @@ class FineGraspDataset:
 
     def __getitem__(self, index):
         import numpy as np
-        from .training_options import sample_points, transform_points
+        from grasppanda.training_options import sample_points, transform_points
         self.prepare(index)
         sample = self.native[index]
         options = self.config.augmentation

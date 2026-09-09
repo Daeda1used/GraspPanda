@@ -6,9 +6,9 @@ import time
 def run(config,out,steps=3):
     import numpy as np
     import torch
-    from .worker import prepare
-    from .weights import primary
-    from .jobs import digest
+    from grasppanda.worker import prepare
+    from grasppanda.weights import primary
+    from grasppanda.jobs import digest
     prepare('motiongrasp')
     from models.motion_encoder import TemporalEncoderLayer,pred_decode
     from models.grasp_aligner import AttnEncoderLayer

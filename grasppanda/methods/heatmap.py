@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 import time
 
-from .jobs import digest
+from grasppanda.jobs import digest
 
 
 def infer(config, out):
@@ -20,8 +20,8 @@ def infer(config, out):
     import torch.nn.functional as F
     from PIL import Image
     from graspnetAPI import GraspGroup
-    from .worker import prepare, overlay
-    from .components import configure_model, load_checkpoint
+    from grasppanda.worker import prepare, overlay
+    from grasppanda.components import configure_model, load_checkpoint
 
     prepare(config.method)
     camera_config = importlib.import_module('dataset.config')

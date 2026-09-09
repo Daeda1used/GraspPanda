@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--candidate-limit', type=int, help='Explicitly limit scored candidates per frame; 0 keeps all')
     parser.add_argument('--scoring-batch', type=int, default=64, help='Geometry evaluation batch size; does not cap candidates')
     args = parser.parse_args()
-    from grasppanda.gtg2_options import resolved, TRAINER
+    from grasppanda.methods.gtg2_options import resolved, TRAINER
     modules = {}
     raw = {}
     if args.config:
@@ -51,7 +51,7 @@ def main():
         parser.error('Invalid frame, seed or scoring batch size')
     from grasppanda.compat import legacy_torch
     legacy_torch()
-    from grasppanda.gtg2_data import prepare_frame
+    from grasppanda.methods.gtg2_data import prepare_frame
     for scene in scenes:
         path = prepare_frame(args.dataset_root.resolve(), args.output_root.resolve(), scene, args.camera,
                              args.frame, options, args.seed, args.scoring_batch)

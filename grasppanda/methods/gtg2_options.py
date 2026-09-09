@@ -36,7 +36,7 @@ def schema(slot, choice):
 
 
 def resolved(modules):
-    from .module_options import unpack, validate_options
+    from grasppanda.module_options import unpack, validate_options
     unknown = set(modules) - {'backbone', 'crop'}
     if unknown: raise ValueError('Unknown GtG2 component slots: ' + str(sorted(unknown)))
     encoder, enc = unpack(modules.get('backbone', 'gtg_sage'))

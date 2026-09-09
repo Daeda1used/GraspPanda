@@ -6,7 +6,7 @@ from torch import nn
 class FineGraspCrop(nn.Module):
     def __init__(self,native,nsample=16,radius_factors=(.25,.5,.75,1.),**fusion_options):
         super().__init__()
-        from ..finegrasp import native_module
+        from grasppanda.methods.finegrasp import native_module
         source=native_module()
         self.groups=nn.ModuleList(source.CylinderGroup(
             nsample=nsample,seed_feature_dim=native.in_dim,

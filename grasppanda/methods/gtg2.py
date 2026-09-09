@@ -3,15 +3,15 @@ import json
 from pathlib import Path
 import time
 
-from .config import ROOT, catalogue
-from .jobs import digest
+from grasppanda.config import ROOT, catalogue
+from grasppanda.jobs import digest
 
 
 def load_ensemble(config):
     import torch
-    from .gtg2_options import resolved
-    from .training_gtg2 import FORMAT
-    from .modules.gtg2 import GraphRegressor
+    from grasppanda.methods.gtg2_options import resolved
+    from grasppanda.methods.gtg2_training import FORMAT
+    from grasppanda.modules.gtg2 import GraphRegressor
     encoder, graph = resolved(config.modules)
     state = torch.load(config.checkpoint, map_location='cpu', weights_only=True)
     if state.get('format') != FORMAT:
@@ -32,7 +32,7 @@ def load_ensemble(config):
 
 
 def infer(config, out):
-    from .compat import legacy_torch
+    from grasppanda.compat import legacy_torch
     legacy_torch()
     import importlib.util
     import numpy as np
@@ -40,9 +40,9 @@ def infer(config, out):
     import torch
     from torch_geometric.data import Batch
     from graspnetAPI import GraspNet, GraspGroup
-    from .gtg2_data import candidates, native_geometry
-    from .modules.gtg2 import build_graph
-    from .worker import overlay
+    from grasppanda.methods.gtg2_data import candidates, native_geometry
+    from grasppanda.modules.gtg2 import build_graph
+    from grasppanda.worker import overlay
     models, graph, checkpoint = load_ensemble(config)
     g = GraspNet(config.dataset_root, camera=config.camera, split=config.split)
     crop = native_geometry()['to_gripper_coord']

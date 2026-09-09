@@ -99,9 +99,9 @@ class Experiment:
         from .training_options import validate_training_options
         validate_training_options(self)
         if self.method == 'gtg2':
-            from .gtg2_options import validate_config as validate_trainer
+            from grasppanda.methods.gtg2_options import validate_config as validate_trainer
         else:
-            from .hggd_options import validate as validate_trainer
+            from grasppanda.methods.hggd_options import validate as validate_trainer
         validate_trainer(self)
         from .datasets import get_dataset
         from .components import validate_selection

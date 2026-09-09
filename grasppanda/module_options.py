@@ -46,7 +46,7 @@ def _schema(method, slot, choice):
                     'attention_heads': ('int', 1, 37), 'attention_dropout': ('float', 0, .8),
                     'local_attention': ('bool',)}
     if method == 'gtg2':
-        from .gtg2_options import schema as graph_schema
+        from grasppanda.methods.gtg2_options import schema as graph_schema
         return graph_schema(slot, choice)
     fusion = {'fusion_layers': ('int', 1, 8), 'fusion_heads': ('int', 1, 32),
               'fusion_ffn_dim': ('int', 64, 4096), 'fusion_dropout': ('float', 0, .8),

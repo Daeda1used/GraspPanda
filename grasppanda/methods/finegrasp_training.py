@@ -15,7 +15,7 @@ def seed_worker(_worker):
 def author_config():
     import importlib.util
     import sys
-    from .config import ROOT, catalogue
+    from grasppanda.config import ROOT, catalogue
     path = ROOT/catalogue()['finegrasp']['path']/'projects/finegrasp_graspnet1b/configs/config_finegrasp_minkunet.py'
     sys.path.insert(0, str(path.parent))
     spec = importlib.util.spec_from_file_location('_grasppanda_finegrasp_training_config', path)
@@ -30,12 +30,12 @@ def run(config, out, steps=None):
     import numpy as np
     import torch
     from torch.utils.data import DataLoader, Subset
-    from .finegrasp import load_model
-    from .finegrasp_data import FineGraspDataset
-    from .native_training import verify_restored_state
-    from .optimization import build_optimizer, UpdateSchedule
-    from .training_options import LOSS_TERMS, weighted_loss
-    from .jobs import digest
+    from grasppanda.methods.finegrasp import load_model
+    from grasppanda.methods.finegrasp_data import FineGraspDataset
+    from grasppanda.native_training import verify_restored_state
+    from grasppanda.optimization import build_optimizer, UpdateSchedule
+    from grasppanda.training_options import LOSS_TERMS, weighted_loss
+    from grasppanda.jobs import digest
     short = steps is not None
     out = Path(out)
     random.seed(config.seed)

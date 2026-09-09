@@ -111,7 +111,7 @@ def configure_model(model,method,selection,voxel_size=.005):
             replacement=SparseSonataBackbone(model.seed_feature_dim,voxel_size,feature_channels=6 if method=='finegrasp' and model.use_normal else 3,**options) if method in ('graspness','finegrasp','economicgrasp') else SonataBackbone(voxel_size,**options)
         elif method=='finegrasp' and choice=='native_cylinder':
             from torch import nn
-            from .finegrasp import native_module
+            from grasppanda.methods.finegrasp import native_module
             source=native_module()
             from .modules.finegrasp import configure_fusion
             if configure_fusion(model.fuse_multi_scale, {k:v for k,v in options.items() if k.startswith('fusion_')}):

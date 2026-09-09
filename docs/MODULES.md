@@ -31,6 +31,9 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
+<details>
+<summary>Parameter reference and configuration example</summary>
+
 | Component | Parameters |
 |---|---|
 | Baseline `pointnet` | `local_channels`, `global_channels`, `fusion_channels` (layer widths); `activation`: relu/gelu/silu; `normalization`: batch/group/none; `dropout` |
@@ -76,6 +79,11 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+</details>
+
+<details>
+<summary>EconomicGrasp encoder, grouping and prediction head</summary>
 
 ## EconomicGrasp components
 
@@ -131,6 +139,11 @@ The default configuration preserves native parameter names, initialization and f
 
 Angle and depth outputs retain their additional invalid classes, score retains six classes, and width remains one regression output with the native target scaling. Loss masks, selected-view supervision, seed ordering and decoding remain unchanged. Width specialization uses the pinned native forward; additional branch layers and stacked attention are toolbox architecture options, not separate pretrained methods. This head is registered for EconomicGrasp only: other detectors need their own supervision and decoder contracts.
 
+</details>
+
+<details>
+<summary>Grouped seed interaction</summary>
+
 ## Grouped seed interaction
 
 Baseline, its PointNet2 port, Graspness and EconomicGrasp support `seed_interaction: gaussian` inside `modules.crop`. It adds distance-biased attention **after the selected grouping**. You can retain `type: upstream` or combine it with a registered grouping replacement. Native FineGrasp, HGGD/RNG and GtG2 have different feature contracts and do not expose this option.
@@ -164,6 +177,11 @@ The adapter preserves seed order and 256-channel output features. It processes s
 When retaining the original grouping, `reuse_unchanged` loads its existing weights and initializes only the added interaction layers. Train the composition before inference, then load its checkpoint with `strict` and the same module settings. If you also replace the grouping or encoder, those replacements follow their usual initialization policy. Baseline, Graspness and EconomicGrasp support this composition in epoch training and resume; the PointNet2 port uses its registered short-training operation.
 
 This component uses each selected method's own data, supervision, seed selection and decoder. It does not reproduce the GCF fork's SAM/patch-feature preprocessing or its changed angle/depth decoding. GCF's README cites EconomicGrasp; a separate GCF publication and pretrained checkpoint have not been verified. The full-method entry remains in [Methods & papers](METHODS.md).
+
+</details>
+
+<details>
+<summary>Point encoders: OctFormer, PointVector, PointMetaBase and Mamba</summary>
 
 ## OctFormer hierarchy
 
@@ -284,6 +302,11 @@ Use [`compose-pcm`](../GraspNet-1B/README.md#configuration-examples) (`./panda i
 
 Training requires **`batch_size >= 2`** because native global-context BatchNorm operates on one pooled feature per sample. Short training uses a fixed batch of consecutive labelled frames within the selected scene; epoch training drops an incomplete final batch. Inference accepts one frame. Keep the exact component configuration when reloading weights; use `reuse_unchanged` for initial component replacement, train it, then use `strict` with the resulting checkpoint. Epoch `resume` restores the saved composition and optimizer contract. Run full training and held-out evaluation before interpreting grasp quality.
 
+</details>
+
+<details>
+<summary>Cylinder aggregation and Point Transformer</summary>
+
 ## Residual local aggregation in cylinders
 
 `reslfe_cylinder` adapts the native ResLFE block from [DeepLA-Net (CVPR 2025 PDF)](https://openaccess.thecvf.com/content/CVPR2025/papers/Zeng_DeepLA-Net_Very_Deep_Local_Aggregation_Networks_for_Point_Cloud_Analysis_CVPR_2025_paper.pdf) ([pinned implementation](https://github.com/zeng-ziyin/DeepLA-Net/blob/7f572899de7db26d2c5eac538395d9932faafb89/S3DIS/deepla_semseg.py)) to the `crop` slot of Baseline, its PointNet2 port and Graspness. Run `./panda install` after upgrading to fetch the source and build its CUDA operators in the shared runtime.
@@ -328,6 +351,11 @@ This is a trainable architecture adaptation with random initialization. It does 
 | `layer_scale` | Optional positive residual scale, omitted by default |
 
 Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [`compose-ptv3`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-ptv3`) for a smaller trainable configuration.
+
+</details>
+
+<details>
+<summary>RGB-D encoders, VMamba and pretrained DINO</summary>
 
 ## RGB-D image encoders
 
@@ -392,6 +420,8 @@ Start with [`compose-dino`](../GraspNet-1B/README.md#configuration-examples) (`.
 After training, retain the module configuration and load the resulting grasp checkpoint with `strict`. Strict loading does not download or reapply DINO initialization, so it preserves the trained encoder and works without the original pretrained-weight file. Initialization provenance records the selected weight ID, immutable source URL and SHA256. Changing the source registry while a job waits causes the job to stop rather than use different initialization.
 
 Image pretraining does not train the new grasp feature projections. Run grasp training before interpreting predictions; use the existing RNG anchor warmup when a new feature adapter produces no labeled local proposals. Weight sources and licenses are in [Data & weights](DOWNLOADS.md#pretrained-image-components).
+
+</details>
 
 ## Training controls
 

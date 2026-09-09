@@ -4,8 +4,9 @@
 
 ```text
 GraspNet-1B/              Dataset entry and example experiments
-grasppanda/              UI, queue, adapters and training
-  integrations/          Dataset readers, supervision and evaluation
+grasppanda/              Configuration, UI, queue and shared training
+  methods/               Method-specific inference, data and training adapters
+  integrations/          Dataset contracts, readiness and evaluation
   modules/               Interchangeable model components
   resources/             Source pins, weight records and compatibility patches
   runtime/               Installation and isolated worker entry points
@@ -18,7 +19,7 @@ GraspPanda resolves one Python/PyTorch/CUDA environment. Each job runs in its ow
 
 1. Add its source URL, pinned revision, input protocol and license information to `grasppanda/resources/`.
 2. Register checkpoint URLs, exact sizes, hashes and network roles in `checkpoints.json`.
-3. Add an adapter or native recipe and register its actual operations in `grasppanda/config.py`. Keep source metadata separate from executable support.
+3. Place method-specific adapters and trainers under `grasppanda/methods/`, or add a native recipe. Register actual operations in `grasppanda/config.py`; reference-only papers belong only in [Methods & papers](METHODS.md).
 4. Define input readiness in the dataset provider. Write outputs using the official grasp representation and save the experiment manifest.
 5. Exercise the relevant inference, loss, gradient, checkpoint reload and cancellation paths locally. Describe the supported operation in [Methods & papers](METHODS.md), with the paper PDF and original implementation.
 

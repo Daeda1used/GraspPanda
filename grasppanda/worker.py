@@ -51,16 +51,16 @@ def overlay(rgb_path, grasps, intr, destination):
 
 def infer(config, out):
     if config.method == 'gtg2':
-        from .gtg2 import infer as graph_infer
+        from grasppanda.methods.gtg2 import infer as graph_infer
         return graph_infer(config, out)
     if config.method=='finegrasp':
-        from .finegrasp import infer as finegrasp_infer
+        from grasppanda.methods.finegrasp import infer as finegrasp_infer
         return finegrasp_infer(config,out)
     if config.method in ('economicgrasp', 'dograspnet'):
-        from .native_points import infer as native_infer
+        from grasppanda.methods.native_points import infer as native_infer
         return native_infer(config, out)
     if config.method in ('hggd', 'region_normalized_grasp'):
-        from .heatmap import infer as heatmap_infer
+        from grasppanda.methods.heatmap import infer as heatmap_infer
         return heatmap_infer(config, out)
     import numpy as np
     import torch
@@ -69,7 +69,7 @@ def infer(config, out):
     if config.method == 'graspbalance':
         sys.path[:0] = [str(repo/p) for p in ('TrainModel','PointNet','KNN','DataProcessing','ModifiedNetTools')]
     if config.method == 'graspfast':
-        from .graspfast import prepare as prepare_graspfast
+        from grasppanda.methods.graspfast import prepare as prepare_graspfast
         module = prepare_graspfast()
         model, pred_decode = module.GraspFast(is_training=False), module.pred_decode
     elif config.method == 'graspbalance':
@@ -90,7 +90,7 @@ def infer(config, out):
         model, pred_decode = cls(is_training=False, **({'backbone':'resunet'} if config.method=='graspness_modern' else {})), module.pred_decode
     state = torch.load(config.checkpoint, map_location="cpu", weights_only=True)
     if config.method == 'graspfast':
-        from .graspfast import checkpoint_state
+        from grasppanda.methods.graspfast import checkpoint_state
         state = checkpoint_state(state)
     if config.method == 'graspness_modern':
         state = {k.removeprefix('module.'):v for k,v in state.get('model_state_dict',state).items()}
@@ -101,7 +101,7 @@ def infer(config, out):
     (out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
     model.cuda().eval()
     if config.method == 'graspfast':
-        from .graspfast import guard as guard_graspfast
+        from grasppanda.methods.graspfast import guard as guard_graspfast
         guard_graspfast(model, module)
     if config.method in ('graspness','graspness_modern'):
         def guard(_module, _inputs, end):
@@ -171,13 +171,13 @@ def infer(config, out):
 
 def train(config, out):
     if config.method == 'gtg2':
-        from .training_gtg2 import run
+        from grasppanda.methods.gtg2_training import run
         return run(config, out)
     if config.method=='hggd':
-        from .training_hggd import run
+        from grasppanda.methods.hggd_training import run
         return run(config,out)
     if config.method=='finegrasp':
-        from .training_finegrasp import run
+        from grasppanda.methods.finegrasp_training import run
         return run(config,out)
     from .native_training import run
     return run(config,out)
@@ -190,7 +190,7 @@ def train_smoke(config, out):
         from .training import point_family
         return point_family(config, out, 1)
     if config.method=='finegrasp':
-        from .training_finegrasp import run
+        from grasppanda.methods.finegrasp_training import run
         return run(config,out,1)
     import numpy as np
     import torch
@@ -322,12 +322,12 @@ def main():
     torch.set_num_threads(4)
     if config.action == 'train_check':
         from .training import hggd,point_family,rng,contact,rgb_matters
-        from .training_center import run as center
-        from .training_gfla import run as gfla
-        from .training_motion import run as motion
-        from .training_spahybgen import run as spahybgen
-        from .training_graspfast import run as graspfast
-        from .training_finegrasp import run as finegrasp
+        from grasppanda.methods.center_training import run as center
+        from grasppanda.methods.gfla_training import run as gfla
+        from grasppanda.methods.motion_training import run as motion
+        from grasppanda.methods.spahybgen_training import run as spahybgen
+        from grasppanda.methods.graspfast_training import run as graspfast
+        from grasppanda.methods.finegrasp_training import run as finegrasp
         runner={'finegrasp':finegrasp,'hggd':hggd,'region_normalized_grasp':rng,'contact_graspnet_g1b':contact,'rgb_matters':rgb_matters,'centergrasp':center,'gfla':gfla,'motiongrasp':motion,'spahybgen':spahybgen,'graspfast':graspfast}.get(config.method,point_family)
         result=runner(config,out,config.training_steps)
     elif config.action == 'pipeline_smoke':
