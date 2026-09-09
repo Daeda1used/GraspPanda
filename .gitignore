@@ -12,6 +12,11 @@
 !/pyproject.toml
 !/uv.lock
 
+# The dataset entry contains guides and templates, never local dataset contents.
+/GraspNet-1B/*
+!/GraspNet-1B/README.md
+!/GraspNet-1B/examples.yaml
+
 # Generated files and credentials remain local, including inside source folders.
 **/__pycache__/
 **/.pytest_cache/
@@ -96,6 +101,12 @@ coverage.xml
 *.webm
 *.ply
 *.pcd
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.exr
 *.csv
 *.tsv
 *.jsonl

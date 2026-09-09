@@ -17,6 +17,8 @@ Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your
 
 **No dataset yet?** Follow the [sample walkthrough](docs/DOWNLOADS.md#start-without-graspnet), or [download GraspNet](docs/DOWNLOADS.md#graspnet-1b). To use the CLI, generate a configuration with `./panda init --method graspness`.
 
+Prefer a source archive? Download and extract the [latest release](https://github.com/Daeda1used/GraspPanda/releases/latest), then use the same install commands.
+
 ## Guides
 
 | Start here | Details |

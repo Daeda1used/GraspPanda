@@ -13,7 +13,7 @@ Run commands from the repository root after [installation](../docs/INSTALL.md). 
 
 ## Configuration examples
 
-Examples are defined in one [template catalogue](examples.yaml). Generate only the files you need:
+Use `--method` for an original method preset, or choose a composition, training or sweep from the [template catalogue](examples.yaml). Generate only the files you need:
 
 ```bash
 ./panda init --list
@@ -21,7 +21,7 @@ Examples are defined in one [template catalogue](examples.yaml). Generate only t
 ./panda init --example train-hggd -o training.local.yaml
 ```
 
-Each generated file includes its method, operation and settings. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters. Files named `*.local.yaml` are ignored by Git.
+Each template contains the relevant settings; omitted fields use the shared experiment defaults. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters. Files named `*.local.yaml` are ignored by Git.
 
 ## Observation protocols
 

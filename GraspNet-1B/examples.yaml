@@ -1,4 +1,5 @@
-# Generate a local copy: ./panda init --example NAME -o experiment.local.yaml
+# Generate only the configuration you need: ./panda init --example NAME
+# Omitted experiment fields use the shared defaults; module settings remain explicit.
 compose-pretrained-points:
   description: Fine-tune pretrained Concerto point features with native Baseline grasp heads
   config:
@@ -10,10 +11,7 @@ compose-pretrained-points:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     num_points: 4096
-    batch_size: 2
-    workspace: official_gt_workspace
     training_steps: 20
     learning_rate: 0.0001
     modules:
@@ -33,28 +31,43 @@ compose-sbg:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    workspace: official_gt_workspace
     training_steps: 20
     learning_rate: 0.0001
     modules:
       backbone:
         type: pointnext
-        seed_sampling: {train: pointsp_wrs, eval: pointsp_ffps}
+        seed_sampling:
+          train: pointsp_wrs
+          eval: pointsp_ffps
       crop:
         type: native_mscq
         branches:
-          - {type: upstream, radius_scale: 1.1, nsample: 32}
-          - {type: cylinder, hidden_channels: [64, 128], pooling: mean}
-          - {type: reslfe_cylinder, nsample: 16}
-          - {type: kpconvx_cylinder, nsample: 16, local_neighbors: 8}
+        - type: upstream
+          radius_scale: 1.1
+          nsample: 32
+        - type: cylinder
+          hidden_channels: [64, 128]
+          pooling: mean
+        - type: reslfe_cylinder
+          nsample: 16
+        - type: kpconvx_cylinder
+          nsample: 16
+          local_neighbors: 8
     loss:
       functions:
-        graspable: {type: poly1, epsilon: 0.5}
-        width: {type: huber, delta: 0.2}
-    augmentation: {mode: custom, rotation_degrees: 10, point_dropout: 0.1}
-    optimizer: {type: adamw, weight_decay: 0.01}
+        graspable:
+          type: poly1
+          epsilon: 0.5
+        width:
+          type: huber
+          delta: 0.2
+    augmentation:
+      mode: custom
+      rotation_degrees: 10
+      point_dropout: 0.1
+    optimizer:
+      type: adamw
+      weight_decay: 0.01
 sample-network:
   description: Compose mode-specific seed and hierarchy sampling
   config:
@@ -66,22 +79,27 @@ sample-network:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    workspace: official_gt_workspace
     training_steps: 20
     learning_rate: 0.0001
     modules:
       backbone:
         type: pointnext
         seed_sampling:
-          train: {type: pointsp_wrs, neighbors: 20}
-          eval: {type: pointsp_ffps, neighbors: 20, keep_ratio: 0.95}
+          train:
+            type: pointsp_wrs
+            neighbors: 20
+          eval:
+            type: pointsp_ffps
+            neighbors: 20
+            keep_ratio: 0.95
         stage_sampling:
-          - {train: pointsp_wrs, eval: pointsp_ffps}
-          - {type: pointsp_ffps, neighbors: 16}
-          - {train: uniform, eval: fps}
-          - upstream
+        - train: pointsp_wrs
+          eval: pointsp_ffps
+        - type: pointsp_ffps
+          neighbors: 16
+        - train: uniform
+          eval: fps
+        - upstream
 augment-pointsp:
   description: Train with density-weighted observation sampling
   config:
@@ -92,9 +110,6 @@ augment-pointsp:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    workspace: official_gt_workspace
     training_steps: 20
     learning_rate: 0.0001
     augmentation:
@@ -113,58 +128,35 @@ infer-graspness:
     camera: realsense
     split: test_seen
     scene: 100
-    frame: 0
-    frames: 1
-    num_points: 15000
-    voxel_size: 0.005
-    collision_thresh: 0.01
-    workspace: official_gt_workspace
-    seed: 0
 train-baseline:
   description: Train the baseline with its native dataset loop
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train
     dataset_root: /data/GraspNet-1B
     camera: realsense
     split: train
     scene: 0
-    workspace: official_gt_workspace
-    batch_size: 2
     epochs: 18
-    learning_rate: 0.001
-    train_checkpoint_mode: initialize
-    train_batch_limit: 0
-    eval_batch_limit: 0
     data_workers: 4
     timeout_minutes: 43200
 train-economicgrasp:
   description: Train EconomicGrasp with native epoch scheduling and resumable component experiments
   config:
-    dataset: graspnet1b
     method: economicgrasp
     action: train
     dataset_root: /data/GraspNet-1B
     camera: kinect
     split: train
     scene: 0
-    frame: 0
-    workspace: official_gt_workspace
     num_points: 20000
-    voxel_size: 0.005
     batch_size: 4
     epochs: 10
-    learning_rate: 0.001
-    train_checkpoint_mode: initialize
-    train_batch_limit: 0
-    eval_batch_limit: 0
     data_workers: 2
     timeout_minutes: 43200
 train-hggd:
   description: Train RGB-D anchor/local stages with gradient accumulation and checkpoint resume
   config:
-    dataset: graspnet1b
     method: hggd
     action: train
     dataset_root: /data/GraspNet-1B
@@ -172,17 +164,13 @@ train-hggd:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     workspace: native_demo
     num_points: 25600
     batch_size: 4
     epochs: 15
     learning_rate: 0.0001
     data_workers: 2
-    train_batch_limit: 0
-    eval_batch_limit: 0
     timeout_minutes: 14400
-    train_checkpoint_mode: initialize
     trainer:
       joint_training: true
       pre_epochs: 0
@@ -191,7 +179,6 @@ train-hggd:
 train-finegrasp:
   description: Configure native grouping, cross-radius attention and classification objectives
   config:
-    dataset: graspnet1b
     method: finegrasp
     action: train
     dataset_root: /data/GraspNet-1B
@@ -199,30 +186,19 @@ train-finegrasp:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    workspace: official_gt_workspace
-    num_points: 15000
-    voxel_size: 0.005
     batch_size: 4
     epochs: 10
     learning_rate: 0.008
     data_workers: 2
-    train_batch_limit: 0
-    eval_batch_limit: 0
     timeout_minutes: 14400
     label_root: /data/GraspPanda-cache/finegrasp
-    train_checkpoint_mode: initialize
     checkpoint_policy: reuse_unchanged
     modules:
       crop:
         type: native_cylinder
         nsample: 24
         radius: 0.07
-        radius_factors:
-        - 0.25
-        - 0.5
-        - 0.75
-        - 1.0
+        radius_factors: [0.25, 0.5, 0.75, 1.0]
         fusion_layers: 3
         fusion_heads: 8
         fusion_ffn_dim: 1024
@@ -244,7 +220,6 @@ train-gtg2:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     checkpoint: ''
     epochs: 500
     batch_size: 128
@@ -264,29 +239,20 @@ train-gtg2:
         encoding: binary
         candidate_limit: 0
     trainer:
-      folds:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
+      folds: [0, 1, 2, 3, 4]
       sampling: balanced
       refresh_epochs: 10
       negative_per_class: 50000
 train-controls:
   description: Select loss formulations and label-aligned point augmentation
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train
     dataset_root: /data/GraspNet-1B
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
     epochs: 2
-    batch_size: 2
     learning_rate: 0.0001
     train_batch_limit: 2
     eval_batch_limit: 1
@@ -313,7 +279,6 @@ train-controls:
 compose-baseline:
   description: Train a different encoder and cylindrical grouping
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -322,17 +287,14 @@ compose-baseline:
     split: train
     scene: 0
     num_points: 4096
-    workspace: official_gt_workspace
     modules:
       backbone: pointnet
       crop: multiscale
     checkpoint_policy: reuse_unchanged
-    training_steps: 3
     learning_rate: 0.0001
 compose-hggd:
   description: Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation
   config:
-    dataset: graspnet1b
     method: hggd
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -340,25 +302,15 @@ compose-hggd:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     workspace: native_demo
-    training_steps: 3
     learning_rate: 3.0e-05
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: convnextv2
         variant: atto
-        stage_channels:
-        - 24
-        - 48
-        - 96
-        - 192
-        stage_depths:
-        - 1
-        - 1
-        - 2
-        - 1
+        stage_channels: [24, 48, 96, 192]
+        stage_depths: [1, 1, 2, 1]
         projection_norm: group
     optimizer:
       type: lion
@@ -390,7 +342,6 @@ sweep-baseline:
   description: Compare PointMLP widths and random seeds
   config:
     base:
-      dataset: graspnet1b
       method: graspnet_baseline
       action: train_check
       dataset_root: /data/GraspNet-1B
@@ -399,49 +350,22 @@ sweep-baseline:
       split: train
       scene: 0
       num_points: 4096
-      workspace: official_gt_workspace
       checkpoint_policy: reuse_unchanged
-      training_steps: 3
       learning_rate: 0.0001
       modules:
         backbone:
           type: pointmlp
-          pre_blocks:
-          - 1
-          - 2
-          - 1
-          - 2
-          pos_blocks:
-          - 1
-          - 1
-          - 2
-          - 1
-          decoder_channels:
-          - 128
-          - 64
-          - 32
-          - 32
-          stage_points:
-          - 512
-          - 128
-          - 32
-          - 8
-          k_neighbors:
-          - 16
-          - 16
-          - 16
-          - 8
+          pre_blocks: [1, 2, 1, 2]
+          pos_blocks: [1, 1, 2, 1]
+          decoder_channels: [128, 64, 32, 32]
+          stage_points: [512, 128, 32, 8]
+          k_neighbors: [16, 16, 16, 8]
     grid:
-      seed:
-      - 0
-      - 1
-      modules.backbone.embed_dim:
-      - 16
-      - 32
+      seed: [0, 1]
+      modules.backbone.embed_dim: [16, 32]
 compose-dino:
   description: Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks
   config:
-    dataset: graspnet1b
     method: hggd
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -449,9 +373,7 @@ compose-dino:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     workspace: native_demo
-    num_points: 15000
     training_steps: 10
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
@@ -460,11 +382,7 @@ compose-dino:
         type: dinov3
         variant: small
         pretrained: true
-        out_indices:
-        - 2
-        - 5
-        - 8
-        - 11
+        out_indices: [2, 5, 8, 11]
         trainable_blocks: 2
         gradient_checkpointing: true
         projection_norm: batch
@@ -486,41 +404,18 @@ compose-octformer:
     modules:
       backbone:
         type: octformer
-        channels:
-        - 32
-        - 64
-        - 128
-        - 128
-        num_blocks:
-        - 2
-        - 2
-        - 4
-        - 2
-        num_heads:
-        - 2
-        - 4
-        - 8
-        - 8
+        channels: [32, 64, 128, 128]
+        num_blocks: [2, 2, 4, 2]
+        num_heads: [2, 4, 8, 8]
         patch_size: 32
         dilation: 4
-        mlp_ratio:
-        - 2
-        - 3
-        - 4
-        - 4
-        use_rpe:
-        - false
-        - true
-        - true
-        - true
+        mlp_ratio: [2, 3, 4, 4]
+        use_rpe: [false, true, true, true]
         use_checkpoint: true
         fpn_channel: 64
       crop:
         type: cylinder
-        radius_factors:
-        - 0.5
-        - 1.0
-        - 1.5
+        radius_factors: [0.5, 1.0, 1.5]
         pooling: attention
     optimizer:
       type: adamw
@@ -528,7 +423,6 @@ compose-octformer:
 compose-pcm:
   description: Configure point hierarchy stages, local windows, scan orders and native dense decoding
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -536,106 +430,42 @@ compose-pcm:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    workspace: official_gt_workspace
     num_points: 4096
-    batch_size: 2
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: pointcloud_mamba
         embed_dim: 32
-        dim_expansion:
-        - 1
-        - 2
-        - 2
-        - 2
-        pre_blocks:
-        - 1
-        - 1
-        - 1
-        - 1
-        pos_blocks:
-        - 0
-        - 0
-        - 0
-        - 0
-        mamba_blocks:
-        - 0
-        - 1
-        - 0
-        - 2
-        orders:
-        - xyz
-        - hilbert
-        - z-trans
-        d_state:
-        - 16
-        - 32
-        - 64
-        d_conv:
-        - 2
-        - 3
-        - 4
+        dim_expansion: [1, 2, 2, 2]
+        pre_blocks: [1, 1, 1, 1]
+        pos_blocks: [0, 0, 0, 0]
+        mamba_blocks: [0, 1, 0, 2]
+        orders: [xyz, hilbert, z-trans]
+        d_state: [16, 32, 64]
+        d_conv: [2, 3, 4]
         expand: 2
-        dt_rank:
-        - 2
-        - 4
-        - 4
-        k_neighbors:
-        - 12
-        - 12
-        - 12
-        - 12
-        k_strides:
-        - 1
-        - 1
-        - 1
-        - 1
-        reducers:
-        - 4
-        - 4
-        - 2
-        - 2
+        dt_rank: [2, 4, 4]
+        k_neighbors: [12, 12, 12, 12]
+        k_strides: [1, 1, 1, 1]
+        reducers: [4, 4, 2, 2]
         use_windows: true
-        window_sizes:
-        - 512
-        - 256
-        - 128
-        - 64
+        window_sizes: [512, 256, 128, 64]
         use_order_prompt: true
         prompt_num_per_order: 4
         mamba_pos: true
         pos_type: per_layer
         pos_proj_type: mlp
         grid_size: 0.04
-        decoder_channels:
-        - 128
-        - 64
-        - 32
-        - 32
-        decoder_mamba_blocks:
-        - 1
-        - 1
-        - 0
-        - 0
-        decoder_orders:
-        - xyz
-        - z-trans
-        decoder_d_state:
-        - 16
-        - 32
+        decoder_channels: [128, 64, 32, 32]
+        decoder_mamba_blocks: [1, 1, 0, 0]
+        decoder_orders: [xyz, z-trans]
+        decoder_d_state: [16, 32]
         decoder_d_conv: 3
       crop:
         type: cylinder
-        hidden_channels:
-        - 64
-        - 128
-        radius_factors:
-        - 0.5
-        - 1.0
+        hidden_channels: [64, 128]
+        radius_factors: [0.5, 1.0]
         pooling: attention
     optimizer:
       type: adamw
@@ -643,7 +473,6 @@ compose-pcm:
 compose-pointmamba:
   description: Configure native state-space tokens, Hilbert ordering and grasp seed interpolation
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -651,9 +480,7 @@ compose-pointmamba:
     camera: realsense
     split: train
     scene: 0
-    workspace: official_gt_workspace
     num_points: 4096
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
@@ -675,17 +502,12 @@ compose-pointmamba:
         gradient_checkpointing: true
       crop:
         type: cylinder
-        hidden_channels:
-        - 64
-        - 128
-        radius_factors:
-        - 0.5
-        - 1.0
+        hidden_channels: [64, 128]
+        radius_factors: [0.5, 1.0]
         pooling: attention
 compose-pointmeta:
   description: Configure feature updates, explicit position encoding and local aggregation
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -693,21 +515,14 @@ compose-pointmeta:
     camera: realsense
     split: train
     scene: 0
-    workspace: official_gt_workspace
     num_points: 4096
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: pointmeta
         width: 16
-        blocks:
-        - 1
-        - 2
-        - 2
-        - 2
-        - 2
+        blocks: [1, 2, 2, 2, 2]
         nsample: 16
         expansion: 3
         local_reduction: mean
@@ -723,14 +538,11 @@ compose-pointmeta:
         depth: 2
         nsample: 12
         local_neighbors: 6
-        radius_factors:
-        - 0.5
-        - 1.0
+        radius_factors: [0.5, 1.0]
         pooling: attention
 compose-pointvector:
   description: Compose native vector aggregation features with oriented cylindrical grouping
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -738,21 +550,14 @@ compose-pointvector:
     camera: realsense
     split: train
     scene: 0
-    workspace: official_gt_workspace
     num_points: 4096
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: pointvector
         width: 16
-        blocks:
-        - 1
-        - 2
-        - 2
-        - 2
-        - 2
+        blocks: [1, 2, 2, 2, 2]
         nsample: 16
         local_nsample: 12
         normalize_dp: false
@@ -761,9 +566,7 @@ compose-pointvector:
         decoder_layers: 3
       crop:
         type: cylinder
-        radius_factors:
-        - 0.5
-        - 1.0
+        radius_factors: [0.5, 1.0]
         pooling: attention
         nsample: 16
 compose-ptv3:
@@ -776,59 +579,20 @@ compose-ptv3:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     num_points: 4096
-    voxel_size: 0.005
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: sonata_ptv3
-        enc_depths:
-        - 1
-        - 1
-        - 1
-        - 1
-        - 1
-        enc_channels:
-        - 32
-        - 64
-        - 128
-        - 256
-        - 512
-        enc_num_head:
-        - 2
-        - 4
-        - 8
-        - 16
-        - 32
-        enc_patch_size:
-        - 64
-        - 64
-        - 64
-        - 64
-        - 64
-        dec_depths:
-        - 1
-        - 1
-        - 1
-        - 1
-        dec_channels:
-        - 32
-        - 64
-        - 128
-        - 256
-        dec_num_head:
-        - 2
-        - 4
-        - 8
-        - 16
-        dec_patch_size:
-        - 32
-        - 32
-        - 32
-        - 32
+        enc_depths: [1, 1, 1, 1, 1]
+        enc_channels: [32, 64, 128, 256, 512]
+        enc_num_head: [2, 4, 8, 16, 32]
+        enc_patch_size: [64, 64, 64, 64, 64]
+        dec_depths: [1, 1, 1, 1]
+        dec_channels: [32, 64, 128, 256]
+        dec_num_head: [2, 4, 8, 16]
+        dec_patch_size: [32, 32, 32, 32]
         shuffle_orders: false
         drop_path: 0
     optimizer:
@@ -841,7 +605,6 @@ compose-ptv3:
 compose-reslfe:
   description: Configure native ResLFE layers inside oriented cylinders
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -849,9 +612,7 @@ compose-reslfe:
     camera: realsense
     split: train
     scene: 0
-    workspace: official_gt_workspace
     num_points: 4096
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
@@ -861,9 +622,7 @@ compose-reslfe:
         depth: 3
         local_neighbors: 6
         nsample: 12
-        radius_factors:
-        - 0.5
-        - 1.0
+        radius_factors: [0.5, 1.0]
         mlp_ratio: 2.0
         drop_path: 0.2
         pooling: attention
@@ -872,7 +631,6 @@ compose-reslfe:
 compose-vmamba:
   description: Configure VMamba stages, state size and scan directions
   config:
-    dataset: graspnet1b
     method: hggd
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -880,25 +638,14 @@ compose-vmamba:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     workspace: native_demo
-    num_points: 15000
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
       backbone:
         type: vmamba
-        stage_channels:
-        - 32
-        - 64
-        - 128
-        - 256
-        stage_depths:
-        - 1
-        - 1
-        - 2
-        - 1
+        stage_channels: [32, 64, 128, 256]
+        stage_depths: [1, 1, 2, 1]
         state_dim: 4
         scan: cross2d
         gradient_checkpointing: true
@@ -912,7 +659,6 @@ compose-vmamba:
     augmentation:
       brightness: 0.1
       depth_noise_std: 0.0005
-
 compose-seed-interaction:
   description: Add distance-biased seed attention while retaining EconomicGrasp grouping and decoder
   config:
@@ -924,9 +670,7 @@ compose-seed-interaction:
     split: train
     scene: 0
     num_points: 4096
-    workspace: official_gt_workspace
     checkpoint_policy: reuse_unchanged
-    training_steps: 3
     learning_rate: 0.0001
     modules:
       crop:
@@ -936,7 +680,6 @@ compose-seed-interaction:
         interaction_sigma: 0.05
         interaction_layers: 1
         interaction_dropout: 0.1
-
 compose-economicgrasp:
   description: Configure EconomicGrasp sparse stages, cylinder attention and labelled training controls
   config:
@@ -948,40 +691,14 @@ compose-economicgrasp:
     split: train
     scene: 0
     num_points: 4096
-    workspace: official_gt_workspace
     checkpoint_policy: reuse_unchanged
-    training_steps: 3
     learning_rate: 0.0001
     modules:
       backbone:
         type: native_tdunet
-        channels:
-        - 16
-        - 32
-        - 64
-        - 128
-        - 64
-        - 64
-        - 64
-        - 64
-        blocks:
-        - 1
-        - 2
-        - 1
-        - 2
-        - 1
-        - 1
-        - 2
-        - 1
-        dilations:
-        - 1
-        - 2
-        - 1
-        - 2
-        - 1
-        - 2
-        - 1
-        - 2
+        channels: [16, 32, 64, 128, 64, 64, 64, 64]
+        blocks: [1, 2, 1, 2, 1, 1, 2, 1]
+        dilations: [1, 2, 1, 2, 1, 2, 1, 2]
         stem_channels: 16
         bn_momentum: 0.03
       crop:
@@ -1013,9 +730,7 @@ compose-economic-head:
     split: train
     scene: 0
     num_points: 4096
-    workspace: official_gt_workspace
     checkpoint_policy: reuse_unchanged
-    training_steps: 3
     learning_rate: 0.0001
     modules:
       head:
@@ -1026,12 +741,9 @@ compose-economic-head:
         attention_layers: 3
         attention_heads: [3, 6, 12]
         attention_dropout: [0.0, 0.1, 0.2]
-
 compose-ptv2:
-  description: Compose original PTv2 grouped attention and metric grid pooling with
-    GraspNet supervision
+  description: Compose original PTv2 grouped attention and metric grid pooling with GraspNet supervision
   config:
-    dataset: graspnet1b
     method: graspnet_baseline
     action: train_check
     dataset_root: /data/GraspNet-1B
@@ -1039,10 +751,7 @@ compose-ptv2:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
     num_points: 4096
-    batch_size: 2
-    training_steps: 3
     learning_rate: 0.0001
     checkpoint_policy: reuse_unchanged
     modules:
@@ -1050,56 +759,19 @@ compose-ptv2:
         type: point_transformer_v2
         patch_embed_channels: 12
         patch_embed_groups: 3
-        enc_depths:
-        - 1
-        - 1
-        - 1
-        - 1
-        enc_channels:
-        - 24
-        - 48
-        - 96
-        - 192
-        enc_groups:
-        - 3
-        - 6
-        - 12
-        - 24
-        enc_neighbours:
-        - 8
-        - 8
-        - 8
-        - 8
-        dec_depths:
-        - 1
-        - 1
-        - 1
-        - 1
-        dec_channels:
-        - 12
-        - 24
-        - 48
-        - 96
-        dec_groups:
-        - 3
-        - 3
-        - 6
-        - 12
-        dec_neighbours:
-        - 8
-        - 8
-        - 8
-        - 8
-        grid_sizes:
-        - 0.01
-        - 0.025
-        - 0.06
-        - 0.12
+        enc_depths: [1, 1, 1, 1]
+        enc_channels: [24, 48, 96, 192]
+        enc_groups: [3, 6, 12, 24]
+        enc_neighbours: [8, 8, 8, 8]
+        dec_depths: [1, 1, 1, 1]
+        dec_channels: [12, 24, 48, 96]
+        dec_groups: [3, 3, 6, 12]
+        dec_neighbours: [8, 8, 8, 8]
+        grid_sizes: [0.01, 0.025, 0.06, 0.12]
         pe_multiplier: true
         enable_checkpoint: true
         attn_drop_rate: 0.05
         drop_path_rate: 0.1
-
 compose-litept:
   description: Compose LitePT stage-wise convolution and rotary attention with a grasp detector
   config:
@@ -1111,11 +783,6 @@ compose-litept:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    voxel_size: 0.005
-    workspace: official_gt_workspace
-    batch_size: 2
     training_steps: 20
     learning_rate: 0.0001
     modules:
@@ -1130,7 +797,6 @@ compose-litept:
         enc_patch_size: [128, 128, 128, 256, 256]
         dec_patch_size: [64, 64, 128, 128]
         rope_backend: cuda
-
 compose-oacnns:
   description: Compose OA-CNNs adaptive sparse stages with a grasp detector
   config:
@@ -1142,11 +808,6 @@ compose-oacnns:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    voxel_size: 0.005
-    workspace: official_gt_workspace
-    batch_size: 2
     training_steps: 20
     learning_rate: 0.0001
     modules:
@@ -1158,7 +819,11 @@ compose-oacnns:
         enc_depth: [2, 3, 6, 4]
         dec_channels: [96, 96, 128, 256]
         decoder_layers: [2, 3, 2, 2]
-        point_grid_size: [[16, 32, 64], [8, 16, 24], [4, 8, 12], [2, 4, 6]]
+        point_grid_size:
+        - [16, 32, 64]
+        - [8, 16, 24]
+        - [4, 8, 12]
+        - [2, 4, 6]
         relation_normalization: cluster
         grid_origin: zero
         sparse_padding: stride
@@ -1173,10 +838,6 @@ compose-kpconvx:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    workspace: official_gt_workspace
-    batch_size: 2
     training_steps: 20
     learning_rate: 0.0001
     modules:
@@ -1199,10 +860,6 @@ compose-kernel-cylinders:
     camera: realsense
     split: train
     scene: 0
-    frame: 0
-    num_points: 15000
-    workspace: official_gt_workspace
-    batch_size: 2
     training_steps: 20
     learning_rate: 0.0001
     modules:

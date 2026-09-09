@@ -39,7 +39,7 @@ PDF links point to publisher or author copies. “PDF not located” means no ve
 
 ## References and unavailable implementations
 
-These entries are references only. They are not installed or offered as runnable presets; the status column identifies missing code, dependencies or incompatible protocols.
+These entries are references only and add no installation downloads or runnable presets. "Not integrated" means source exists but this release has no complete toolbox workflow; "No model code" means the linked project does not supply the model. Other blockers are stated individually.
 
 | Method | Year · venue | Observation | Available use / status | Paper | Implementation |
 |---|---|---|---|---|---|
@@ -48,12 +48,12 @@ These entries are references only. They are not installed or offered as runnable
 | MG-Grasp | 2026 · preprint | unreleased | No model code in the pinned repository. | [PDF](https://arxiv.org/pdf/2603.16270) | [Code](https://github.com/THU-VCLab/MG-Grasp) |
 | PointNetGPD (revised) | 2019 · ICRA | adaptations | classifier available; complete GraspNet workflow unavailable. | [PDF](https://arxiv.org/pdf/1809.06267) | [Code](https://github.com/graspnet/PointNetGPD_revised) |
 | GPD (revised) | 2017 · IJRR | adaptations | complete candidate pipeline unavailable. | [PDF](https://arxiv.org/pdf/1706.09911) | [Code](https://github.com/graspnet/gpd-revised) |
-| GL-MSDA | 2024 · ICRA | related · planar | planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2403.11511) | [Code](https://github.com/mahaoxiang822/GL-MSDA) |
-| DGCAN | 2023 · ICRA | related · planar | planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2302.14264) | [Code](https://github.com/mahaoxiang822/dgcan) |
-| GraspSAM | 2025 · ICRA | related · planar | planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2409.12521) | [Code](https://github.com/gist-ailab/GraspSAM) |
-| SPGrasp | 2025 · preprint | related · temporal | planar / prompted grasp protocol. | [PDF](https://arxiv.org/pdf/2508.20547) | [Code](https://github.com/sejmoonwei/SPGrasp) |
-| VL-Grasp | 2023 · IROS | related · language | language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2308.00640) | [Code](https://github.com/luyh20/VL-Grasp) |
-| Negative Prompt Grasp | 2024 · ECCV | related · language | language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2407.13842) | [Code](https://github.com/Fsoft-AIC/Language-Driven-6-DoF-Grasp-Detection-Using-Negative-Prompt-Guidance) |
+| GL-MSDA | 2024 · ICRA | related · planar | Not integrated: planar grasp protocol. | [PDF](https://arxiv.org/pdf/2403.11511) | [Code](https://github.com/mahaoxiang822/GL-MSDA) |
+| DGCAN | 2023 · ICRA | related · planar | Not integrated: planar grasp protocol. | [PDF](https://arxiv.org/pdf/2302.14264) | [Code](https://github.com/mahaoxiang822/dgcan) |
+| GraspSAM | 2025 · ICRA | related · planar | Not integrated: prompted planar grasp protocol. | [PDF](https://arxiv.org/pdf/2409.12521) | [Code](https://github.com/gist-ailab/GraspSAM) |
+| SPGrasp | 2026 · IEEE JSTSP | related · temporal | Not integrated: RGB sequences and sparse prompts produce planar grasps. | [PDF](https://arxiv.org/pdf/2508.20547) · [Publication](https://doi.org/10.1109/JSTSP.2026.3671182) | [Code](https://github.com/sejmoonwei/SPGrasp) |
+| VL-Grasp | 2023 · IROS | related · language | Not integrated: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2308.00640) | [Code](https://github.com/luyh20/VL-Grasp) |
+| Negative Prompt Grasp | 2024 · ECCV | related · language | Not integrated: language-conditioned protocol. | [PDF](https://arxiv.org/pdf/2407.13842) | [Code](https://github.com/Fsoft-AIC/Language-Driven-6-DoF-Grasp-Detection-Using-Negative-Prompt-Guidance) |
 | AnyGrasp SDK | 2023 · IEEE T-RO | sdk | Unavailable in this runtime: licensed binary SDK; no open training source. | [PDF](https://arxiv.org/pdf/2212.08333) | [Code](https://github.com/graspnet/anygrasp_sdk) |
 | Grasp Encyclopedia | — · Not verified | reference · toolbox | Reference collection; no adapter. | No separate paper | [Code](https://github.com/YangXuanyi/grasp-encyclopedia) |
 | FlexLoG | 2026 · Pattern Recognition (preprint 2024; online 2025) | unreleased | No model code in the pinned repository. | [PDF](https://arxiv.org/pdf/2403.15054) | [Code](https://github.com/THU-VCLab/FlexLoG) |
