@@ -64,5 +64,17 @@
     "repository": "https://github.com/SkyworkAI/PointCloudMamba",
     "path": "environments/sources/cv/pointcloudmamba",
     "commit": "57fdb29d3cf1a977b4ed971919b6d83b5134d1dd"
+  },
+  {
+    "id": "octformer",
+    "repository": "https://github.com/octree-nn/octformer",
+    "path": "environments/sources/cv/octformer",
+    "commit": "c2975ab5739bff50d8fe5cfdc2e3f802482e3c89"
+  },
+  {
+    "id": "octree-dwconv",
+    "repository": "https://github.com/octree-nn/dwconv",
+    "path": "environments/sources/cv/octree-dwconv",
+    "commit": "ae53057eaf36dab01aa2727fcc93a749fd995af5"
   }
 ]

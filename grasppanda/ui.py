@@ -59,6 +59,12 @@ def component_parameters(method, backbone, crop):
                 description = '4 pooling strides, each 1, 2, 4 or 8'
             elif rule[0] == 'int_list':
                 description = f'{rule[1]} integers, each {rule[2]} to {rule[3]}'
+            elif rule[0] == 'int_sequence':
+                description = f'{rule[1]}–{rule[2]} integers, each {rule[3]} to {rule[4]}'
+            elif rule[0] == 'per_stage':
+                scalar = rule[2]
+                values = 'true or false' if scalar[0] == 'bool' else f'number: {scalar[1]} to {scalar[2]}'
+                description = values + '; one value for all stages, or a list with one value per stage'
             elif rule[0] == 'float_list':
                 description = f'{rule[1]}–{rule[2]} numbers, each {rule[3]} to {rule[4]}'
             elif rule[0] == 'per_block':

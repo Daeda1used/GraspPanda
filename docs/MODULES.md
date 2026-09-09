@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [Point Transformer](#point-transformer-encoder) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [Point Transformer](#point-transformer-encoder) |
 | Local grouping | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,7 +17,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
@@ -73,6 +73,25 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## OctFormer hierarchy
+
+`octformer` adapts the [author implementation](https://github.com/octree-nn/octformer) of [OctFormer (SIGGRAPH / TOG 2023 PDF)](https://arxiv.org/pdf/2305.03045) to Baseline and its PointNet2 port. It retains the native octree convolution stem, alternating regular/dilated window attention, positional convolution, MLP blocks and multi-scale segmentation decoder. Camera XYZ replaces the ScanNet input features; the decoder produces 256-channel features sampled at the original grasp seed indices. Start with [the composition example](../GraspNet-1B/examples/components/compose-octformer.yaml).
+
+| Configure | Parameters and defaults |
+|---|---|
+| Octree geometry | `depth: 11`, `full_depth: 2`, `nempty: true` |
+| Encoder stages | `channels: [96,192,384,384]`, `num_blocks: [2,2,18,2]`, `num_heads: [6,12,24,24]` |
+| Window grouping | `patch_size: 32`, `dilation: 4`; regular and dilated attention alternate within each stage |
+| Stage behavior | `mlp_ratio: 4`, `qkv_bias: true`, `use_rpe: true`, `attn_drop: 0`, `proj_drop: 0`, `use_dwconv: true`, `use_checkpoint: true` |
+| Residual regularization | `drop_path: 0.5`, increasing across the encoder blocks |
+| Stem and decoder | `stem_down: 2`, `head_up: 2`, `fpn_channel: 168`, `head_drop: [0,0]` |
+
+The **stage behavior** fields accept a scalar for all stages or a list with one entry per stage. `use_dwconv: false` selects the author's eight-group positional convolution. `use_rpe: false` removes relative-position tables; the released author model enables them, although the original paper experiments did not. Native BatchNorm and GELU are retained. Activation checkpointing uses temporary BatchNorm buffers during recomputation so statistics update only once.
+
+Stage lists must have equal lengths (one to six stages); widths must be divisible by their head counts, and grouped positional convolution requires widths divisible by eight. Zero `num_blocks` retains the convolutional hierarchy at that stage. The coarsest stage depth, `depth - stem_down - stage_count + 1`, must be at least `full_depth`, which is at least two. `head_up` cannot exceed `stem_down`. Larger depth creates finer voxels; it does not add encoder stages. More input points, channels or larger attention windows increase memory use. Degenerate training inputs with fewer than two nodes at a used resolution require a larger batch or a non-degenerate point cloud.
+
+Each scene is normalized isotropically into the octree cube while its feature channels retain camera XYZ in meters. Querying the decoder preserves original input rows, including duplicate voxel assignments. Windows are padded independently per scene: changing a preceding scene's node count cannot shift another scene's window origin. Native batch normalization still shares training statistics across the batch. This is a grasp adaptation with no pretrained OctFormer grasp checkpoint; initialize compatible unchanged grasp layers, then train the new backbone. Use `train` for epoch training and `strict` checkpoint loading for resume/inference. No benchmark AP or convergence is implied by short training.
 
 ## PointVector encoder
 

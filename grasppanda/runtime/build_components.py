@@ -48,6 +48,14 @@ def build_pcm(uv, source, env):
         ('_grasppanda_pcm_causal', native/'causal-conv1d/csrc')), env)
 
 
+def build_octree(uv, source, env):
+    build = ROOT/'environments/build/octree-dwconv'
+    shutil.copytree(source, build, dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns('.git', 'test', 'build', 'dist', '*.egg-info', '__pycache__'))
+    subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                    '--no-build-isolation', str(build)], env=env, check=True)
+
+
 def build_vmamba(uv, source, env):
     build=ROOT/'environments/build/vmamba-scan'
     shutil.copytree(source/'kernels/selective_scan',build,dirs_exist_ok=True,
@@ -114,6 +122,7 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    build_octree(uv, ROOT/pins['octree-dwconv']['path'], env)
     build_pcm(uv, ROOT/pins['pointcloudmamba']['path'], env)
     build_pointmamba(uv, ROOT/pins['pointmamba']['path'], ROOT/pins['causal-conv1d']['path'], env)
     build_vmamba(uv, ROOT/pins['vmamba']['path'], env)

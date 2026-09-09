@@ -62,6 +62,9 @@ def schema(method, slot, choice):
             if choice != 'mobilenetv4':
                 fields.update(stage_channels=('int_list', 4, 16, 1024), stage_depths=('int_list', 4, 1, 32))
             return fields
+    if slot == 'backbone' and choice == 'octformer':
+        from .octformer_options import schema as octformer_schema
+        return octformer_schema()
     if slot == 'backbone' and choice == 'pointcloud_mamba':
         from .pcm_options import schema as pcm_schema
         return pcm_schema()
@@ -128,6 +131,12 @@ def validate_options(method, slot, choice, options):
         valid = False
         if rule[0] == 'choice':
             valid = isinstance(value, str) and value in rule[1]
+        elif rule[0] == 'per_stage':
+            values = value if isinstance(value, list) else [value]
+            scalar = rule[2]
+            valid = 1 <= len(values) <= rule[1] and all(
+                type(v) is bool if scalar[0] == 'bool' else
+                type(v) in (int, float) and math.isfinite(v) and scalar[1] <= v <= scalar[2] for v in values)
         elif rule[0] == 'per_block':
             values = value if isinstance(value, list) else [value]
             scalar = rule[2]
@@ -147,6 +156,8 @@ def validate_options(method, slot, choice, options):
             valid = isinstance(value, list) and 1 <= len(value) <= 8 and all(type(v) in (int, float) and math.isfinite(v) and .1 <= v <= 4 for v in value)
         elif rule[0] == 'blocks':
             valid = isinstance(value, list) and len(value) == 5 and all(type(v) == int and 1 <= v <= 12 for v in value)
+        elif rule[0] == 'int_sequence':
+            valid = isinstance(value, list) and rule[1] <= len(value) <= rule[2] and all(type(v) is int and rule[3] <= v <= rule[4] for v in value)
         elif rule[0] == 'float_list':
             valid = isinstance(value, list) and rule[1] <= len(value) <= rule[2] and all(type(v) in (int, float) and math.isfinite(v) and rule[3] <= v <= rule[4] for v in value)
         elif rule[0] == 'int_list':
@@ -164,6 +175,9 @@ def validate_options(method, slot, choice, options):
             raise ValueError('DeepLA cylinder width must be a multiple of 8')
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
+    if choice == 'octformer':
+        from .octformer_options import validate as validate_octformer
+        validate_octformer(options)
     if choice == 'pointcloud_mamba':
         from .pcm_options import validate as validate_pcm
         validate_pcm(options)
