@@ -167,7 +167,8 @@ class OctFormerBackbone(nn.Module):
         from pointnet2 import _ext
         if points.ndim!=3 or points.shape[-1]!=3 or points.shape[1]<1024:raise ValueError('Grasp seeds require at least 1024 input points')
         points=points.contiguous();dense=self.dense(points)
-        indices=_ext.furthest_point_sampling(points,1024)
+        from .sampling import sample_indices
+        indices=sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=_ext.furthest_point_sampling,training=self.training)
         seeds=points.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=dense.gather(2,indices.long()[:,None,:].expand(-1,256,-1)).contiguous()
         ends={} if end_points is None else end_points

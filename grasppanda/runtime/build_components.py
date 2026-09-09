@@ -9,6 +9,22 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
+def build_sampling(uv, env):
+    build = ROOT/'environments/build/masked-fps'
+    build.mkdir(parents=True, exist_ok=True)
+    for name in ('masked_fps.cpp', 'masked_fps_kernel.cu'):
+        shutil.copy2(ROOT/'grasppanda/resources'/name, build/name)
+    (build/'setup.py').write_text("""from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+setup(name='grasppanda-sampling-ops', version='0.1.0',
+      ext_modules=[CUDAExtension('_grasppanda_sampling_cuda', ['masked_fps.cpp', 'masked_fps_kernel.cu'],
+          extra_compile_args={'cxx':['-O3'], 'nvcc':['-O3', '--fmad=false']})],
+      cmdclass={'build_ext':BuildExtension})
+""")
+    subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
+                    '--no-build-isolation', '--reinstall', str(build)], env=env, check=True)
+
+
 def build_pointrope(uv, source, env):
     build = ROOT/'environments/build/litept-pointrope'
     build.mkdir(parents=True, exist_ok=True)
@@ -189,6 +205,7 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    build_sampling(uv, env)
     build_pointrope(uv, ROOT/pins['litept']['path'], env)
     build_pointcept(uv, ROOT/pins['pointcept']['path'], env)
     build_octree(uv, ROOT/pins['octree-dwconv']['path'], env)

@@ -51,7 +51,9 @@ def component_parameters(method, backbone, crop, head='upstream'):
         if slot not in available or choice not in available[slot].choices:
             continue
         for key, rule in schema(method, slot, choice).items():
-            if rule[0] == 'choice':
+            if rule[0] in ('sampler', 'samplers'):
+                description = ('One output-seed policy' if rule[0] == 'sampler' else 'Four policies, one per downsampling stage') + '; name or {type, ...}: upstream, uniform, fps, pointsp_wrs, pointsp_ffps. Density policies accept neighbors and density_quantile; FFPS adds keep_ratio; FPS/FFPS accept start: first or random. Use {train: POLICY, eval: POLICY} for mode-specific sampling.'
+            elif rule[0] == 'choice':
                 description = ', '.join(rule[1])
             elif rule[0] in ('int', 'float'):
                 description = f'{rule[0]}: {rule[1]} to {rule[2]}'

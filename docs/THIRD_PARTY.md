@@ -113,3 +113,5 @@ SOFTWARE.
 ```
 
 </details>
+
+Network sampling uses PointSP density/filtering rules with shared Pointcept KNN and a GraspPanda CUDA masked-FPS implementation. The operator checks its inputs and device, uses one eligible start per scene, preserves row indices and specifies deterministic tie handling. It does not redistribute or execute the original time-seeded PointSP FPS kernel.

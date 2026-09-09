@@ -75,7 +75,8 @@ class PointMLPBackbone(nn.Module):
             target = len(positions) - 2 - i
             feature = decoder(positions[target], positions[target + 1], features[target], feature)
         dense = self.projection(feature)
-        indices = _ext.furthest_point_sampling(points, 1024)
+        from .sampling import sample_indices
+        indices = sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=_ext.furthest_point_sampling,training=self.training)
         seeds = points.gather(1, indices.long()[..., None].expand(-1, -1, 3)).contiguous()
         sampled = dense.gather(2, indices.long()[:, None, :].expand(-1, 256, -1)).contiguous()
         end_points = {} if end_points is None else end_points

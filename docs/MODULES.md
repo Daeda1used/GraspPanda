@@ -32,6 +32,46 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 
 <details>
+<summary>Network sampling: output seeds and hierarchy stages</summary>
+
+## Network sampling policies
+
+Baseline and its PointNet2 port accept `seed_sampling` on every listed replacement point encoder. It selects original-input grasp seed rows and gathers or reconstructs their features. `pointnext`, `pointvector` and `pointmeta` additionally accept four `stage_sampling` policies, in fine-to-coarse order. These change native downsampling centers while retaining grouping, feature propagation and supervision. The original `upstream` backbone and sparse-method encoders do not expose these controls.
+
+```yaml
+modules:
+  backbone:
+    type: pointnext
+    seed_sampling:
+      train: {type: pointsp_wrs, neighbors: 20}
+      eval: {type: pointsp_ffps, neighbors: 20, keep_ratio: 0.95}
+    stage_sampling:
+      - {train: pointsp_wrs, eval: pointsp_ffps}
+      - {type: pointsp_ffps, neighbors: 16}
+      - uniform
+      - upstream
+```
+
+A policy is a name, a `{type, ...}` mapping, or a pair of `train` and `eval` policies. The pair follows the model's training/evaluation mode, including native validation. Both entries are required; nested pairs are rejected. A bare random policy remains random in evaluation; use an explicit eval policy when deterministic sampling is required. Omitting a policy preserves the original sampler. Generate `./panda init --example sample-network`; edit these settings under **Compose modules → Component parameters by slot**. The parameter guide lists accepted fields, and sweeps can vary paths such as `modules.backbone.seed_sampling.eval.keep_ratio`.
+
+| Policy / field | Behavior |
+|---|---|
+| `upstream` | Call the original sampling function unchanged. |
+| `uniform` | Uniform random selection without replacement. |
+| `fps` | Farthest-point selection over all input rows using the toolbox CUDA operator. |
+| `pointsp_wrs` | Density-weighted random selection without replacement, using the [PointSP (IJCAI 2025)](https://www.ijcai.org/proceedings/2025/48) rule. |
+| `pointsp_ffps` | Rank rows by PointSP density weight, retain an eligible subset, then apply masked FPS. [Paper](https://arxiv.org/pdf/2408.12062) · [author source](https://github.com/tangsankou/PointSP/tree/8206043f27e8b849fecde48841ff4b2513e88439). |
+| `neighbors`, `density_quantile` | Density policies only: default `20` and `0.5`; ranges 1–128 and 0–1. Neighbor count is capped at each stage's input size. Self/repeated points participate; neighborhoods and the threshold are computed independently for each scene. |
+| `keep_ratio` | FFPS only: default `0.95`, range 0.1–1. Keep `max(requested_count, floor(input_count * keep_ratio))` rows so the sampler can return the requested count without repeating row indices. |
+| `start` | FPS/FFPS only: `first` chooses the first eligible input row; `random` chooses uniformly among eligible rows using the experiment's Torch RNG. |
+
+The GPU density calculation uses the shared exact KNN operator and direct squared coordinate differences, without a dense pairwise matrix. Density ties at the filtering boundary favor lower input indices. Masked FPS uses one common eligible starting point for each scene, excludes already selected rows, accepts points near the origin and resolves equal distances by lower row index. It respects the active CUDA device and stream. The installer builds `_grasppanda_sampling_cuda` into the shared environment; rerun `./panda install` after upgrading. There is no separate environment or JIT fallback.
+
+These are explicit grasp adaptations of the sampling rules, not the complete PointSP classification protocol. The CUDA implementation uses deterministic selection and checked inputs; it does not reproduce the author's time-seeded kernel behavior. Different row indices can still contain identical XYZ after observation padding. Stage masks restrict center selection; they do not remove those points from native grouping or reconstruct new geometry. No tangent-plane interpolation is performed. Policies add no trainable parameters, but changing them changes predictions. Retain the policy configuration with checkpoints; **Prepare inference from checkpoint** preserves network sampling while clearing training-only observation augmentation.
+
+</details>
+
+<details>
 <summary>Parameter reference and configuration example</summary>
 
 | Component | Parameters |

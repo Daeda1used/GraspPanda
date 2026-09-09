@@ -177,7 +177,8 @@ class KPConvXBackbone(nn.Module):
         points=points.contiguous();size,count,_=points.shape
         batch=torch.arange(size,device=points.device).repeat_interleave(count);xyz=points.reshape(-1,3)
         dense=self.features(xyz,xyz,batch).reshape(size,count,256)
-        indices=_ext.furthest_point_sampling(points,1024)
+        from .sampling import sample_indices
+        indices=sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=_ext.furthest_point_sampling,training=self.training)
         seeds=points.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=dense.gather(1,indices.long()[...,None].expand(-1,-1,256)).transpose(1,2).contiguous()
         end_points={} if end_points is None else end_points

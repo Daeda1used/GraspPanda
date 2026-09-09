@@ -1,7 +1,7 @@
 """PointNet-style local/global encoder adapted to the baseline seed contract.
 
 This is a GraspPanda component, not a pretrained author PointNet++ checkpoint.
-FPS determines output seed indices; point features use shared MLPs and global max.
+The configured sampler determines output seed indices; point features use shared MLPs and global max.
 """
 import torch
 from torch import nn
@@ -34,7 +34,8 @@ class PointNetBackbone(nn.Module):
         features=self.local(xyz.transpose(1,2).contiguous())
         global_features=self.global_features(features).amax(2,keepdim=True).expand(-1,-1,xyz.shape[1])
         features=self.dropout(self.fusion(torch.cat([features,global_features],1)))
-        indices=_ext.furthest_point_sampling(xyz,self.num_seeds)
+        from .sampling import sample_indices
+        indices=sample_indices(xyz,self.num_seeds,getattr(self,"seed_sampling","upstream"),native=_ext.furthest_point_sampling,training=self.training)
         seeds=xyz.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=features.gather(2,indices.long()[:,None,:].expand(-1,features.shape[1],-1))
         end_points.update(input_xyz=xyz,input_features=None,fp2_xyz=seeds,fp2_features=sampled,fp2_inds=indices)

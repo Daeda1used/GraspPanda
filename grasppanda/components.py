@@ -91,6 +91,7 @@ def configure_model(model,method,selection,voxel_size=.005):
         from .module_options import unpack, SEED_INTERACTION_FIELDS
         choice,options=unpack(selection.get(slot.name,'upstream'))
         options = {key:value for key,value in options.items() if key not in SEED_INTERACTION_FIELDS}
+        sampling_options = {key: options.pop(key) for key in ('seed_sampling', 'stage_sampling') if key in options}
         if choice=='upstream':continue
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
@@ -205,6 +206,9 @@ def configure_model(model,method,selection,voxel_size=.005):
             from .modules.multiscale import MultiScaleCrop
             replacement=MultiScaleCrop(native,**options)
         else:raise ValueError(slot.name)
+        if sampling_options:
+            from .modules.sampling import configure_sampling
+            configure_sampling(replacement, sampling_options)
         setattr(parent,attribute,replacement)
         changes.append(slot.model_path+'.')
     for slot in slots(method):

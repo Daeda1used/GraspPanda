@@ -273,7 +273,8 @@ class PCMBackbone(nn.Module):
         points = points.contiguous()
         p, f = self.encoder.forward_seg_feat(points)
         dense = self.projection(self.decoder(p.copy(), f.copy()))
-        ids = load().furthest_point_sample(points, 1024)
+        from .sampling import sample_indices
+        ids = sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=load().furthest_point_sample,training=self.training)
         xyz = points.gather(1, ids.long()[..., None].expand(-1, -1, 3)).contiguous()
         features = dense.gather(2, ids.long()[:, None, :].expand(-1, 256, -1)).contiguous()
         ends = {} if end_points is None else end_points

@@ -23,7 +23,7 @@ jobs:
                    'docs', 'grasppanda', 'panda', 'pyproject.toml', 'uv.lock'}
           private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
                      'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version'}
-          extensions = {'.md', '.py', '.cpp', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}
+          extensions = {'.md', '.py', '.cpp', '.cu', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}
           for name in files:
               path = Path(name)
               assert path.parts[0] in roots, f'Unexpected distribution root: {name}'

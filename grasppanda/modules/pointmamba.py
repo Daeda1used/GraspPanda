@@ -189,7 +189,8 @@ class PointMambaBackbone(nn.Module):
         points = points.contiguous()
         centers, tokens = self.grouped_tokens(points)
         feature = self.center_features(centers, tokens).transpose(1, 2).contiguous()
-        indices = ops.furthest_point_sample(points, 1024)
+        from .sampling import sample_indices
+        indices = sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=ops.furthest_point_sample,training=self.training)
         seeds = points.gather(1, indices.long()[..., None].expand(-1, -1, 3)).contiguous()
         distance, neighbors = ops.three_nn(seeds, centers)
         weights = 1. / (distance + 1.e-8)

@@ -48,7 +48,8 @@ class PointNeXtBackbone(nn.Module):
         positions,features=self.encoder.forward_seg_feat(points)
         dense=self.projection(self.decoder(positions,features))
         if dense.shape[-1]!=points.shape[1]:raise ValueError(getattr(self,'family','PointNeXt')+' decoder lost original point correspondence')
-        indices=_ext.furthest_point_sampling(points,1024)
+        from .sampling import sample_indices
+        indices=sample_indices(points,1024,getattr(self,"seed_sampling","upstream"),native=_ext.furthest_point_sampling,training=self.training)
         seeds=points.gather(1,indices.long()[...,None].expand(-1,-1,3)).contiguous()
         sampled=dense.gather(2,indices.long()[:,None,:].expand(-1,256,-1)).contiguous()
         end_points={} if end_points is None else end_points

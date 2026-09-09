@@ -21,6 +21,10 @@ def unpack(value):
 
 def schema(method, slot, choice):
     fields = _schema(method, slot, choice)
+    if method in ('graspnet_baseline', 'pointnet2_upgrade') and slot == 'backbone':
+        from .modules.sampling_options import DENSE_BACKBONES, HIERARCHIES
+        if choice in DENSE_BACKBONES: fields = {**fields, 'seed_sampling': ('sampler',)}
+        if choice in HIERARCHIES: fields = {**fields, 'stage_sampling': ('samplers', 4)}
     if slot == 'crop' and method in SEED_INTERACTION_METHODS:
         fields = {**fields, **SEED_INTERACTION_FIELDS}
     return fields
@@ -178,7 +182,15 @@ def validate_options(method, slot, choice, options):
     for key, value in options.items():
         rule = fields[key]
         valid = False
-        if rule[0] == 'choice':
+        if rule[0] in ('sampler', 'samplers'):
+            from .modules.sampling_options import normalize
+            if rule[0] == 'sampler':
+                normalize(value)
+                valid = True
+            elif isinstance(value, list) and len(value) == rule[1]:
+                for item in value: normalize(item)
+                valid = True
+        elif rule[0] == 'choice':
             valid = isinstance(value, str) and value in rule[1]
         elif rule[0] == 'per_stage':
             values = value if isinstance(value, list) else [value]
@@ -217,6 +229,7 @@ def validate_options(method, slot, choice, options):
             valid = isinstance(value, list) and len(value) == rule[1] and all(type(v) == int and rule[2] <= v <= rule[3] for v in value)
         if not valid:
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
+    options = {k: v for k, v in options.items() if k not in ('seed_sampling', 'stage_sampling')}
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
     if method == 'economicgrasp' and slot == 'head' and choice == 'native_interactive':

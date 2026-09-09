@@ -1,4 +1,31 @@
 # Generate a local copy: ./panda init --example NAME -o experiment.local.yaml
+sample-network:
+  description: Compose mode-specific seed and hierarchy sampling
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    workspace: official_gt_workspace
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: pointnext
+        seed_sampling:
+          train: {type: pointsp_wrs, neighbors: 20}
+          eval: {type: pointsp_ffps, neighbors: 20, keep_ratio: 0.95}
+        stage_sampling:
+          - {train: pointsp_wrs, eval: pointsp_ffps}
+          - {type: pointsp_ffps, neighbors: 16}
+          - {train: uniform, eval: fps}
+          - upstream
 augment-pointsp:
   description: Train with density-weighted observation sampling
   config:
