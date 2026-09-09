@@ -78,5 +78,351 @@
     ],
     "license": "DINOv3 License",
     "license_url": "https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md"
+  },
+  {
+    "id": "utonia",
+    "family": "utonia",
+    "format": "torch",
+    "model_config": {
+      "in_channels": 9,
+      "order": [
+        "z",
+        "z-trans",
+        "hilbert",
+        "hilbert-trans"
+      ],
+      "stride": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "enc_depths": [
+        3,
+        3,
+        3,
+        12,
+        3
+      ],
+      "enc_channels": [
+        54,
+        108,
+        216,
+        432,
+        576
+      ],
+      "enc_num_head": [
+        3,
+        6,
+        12,
+        24,
+        32
+      ],
+      "enc_patch_size": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "mlp_ratio": 4,
+      "qkv_bias": true,
+      "qk_scale": null,
+      "attn_drop": 0.0,
+      "proj_drop": 0.0,
+      "drop_path": 0.3,
+      "shuffle_orders": true,
+      "pre_norm": true,
+      "enable_rpe": false,
+      "enable_flash": true,
+      "upcast_attention": false,
+      "upcast_softmax": false,
+      "traceable": true,
+      "enc_mode": true,
+      "mask_token": true,
+      "rope_base": 10
+    },
+    "source": "https://huggingface.co/Pointcept/Utonia/resolve/fb39b40d33d215d29d1d4717ffb86287f4700c4d/utonia.pth",
+    "path": "checkpoints/components/utonia.pth",
+    "bytes": 549168522,
+    "sha256": "a0a2e5e234ce943082ae9ba26bcff74e285f16ed8d04fed5c36ffe8dc30ea353",
+    "license": "CC-BY-NC-4.0",
+    "license_url": "https://huggingface.co/Pointcept/Utonia/blob/fb39b40d33d215d29d1d4717ffb86287f4700c4d/README.md"
+  },
+  {
+    "id": "concerto_base",
+    "family": "concerto",
+    "format": "torch",
+    "model_config": {
+      "in_channels": 9,
+      "order": [
+        "z",
+        "z-trans",
+        "hilbert",
+        "hilbert-trans"
+      ],
+      "stride": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "enc_depths": [
+        3,
+        3,
+        3,
+        12,
+        3
+      ],
+      "enc_channels": [
+        48,
+        96,
+        192,
+        384,
+        512
+      ],
+      "enc_num_head": [
+        3,
+        6,
+        12,
+        24,
+        32
+      ],
+      "enc_patch_size": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "mlp_ratio": 4,
+      "qkv_bias": true,
+      "qk_scale": null,
+      "attn_drop": 0.0,
+      "proj_drop": 0.0,
+      "drop_path": 0.3,
+      "shuffle_orders": true,
+      "pre_norm": true,
+      "enable_rpe": false,
+      "enable_flash": true,
+      "upcast_attention": false,
+      "upcast_softmax": false,
+      "traceable": true,
+      "enc_mode": true,
+      "mask_token": true
+    },
+    "source": "https://huggingface.co/Pointcept/Concerto/resolve/efc130718a564eba0ce4899318f3c20b19d9c752/concerto_base.pth",
+    "path": "checkpoints/components/concerto_base.pth",
+    "bytes": 433987358,
+    "sha256": "845ec7dec97a5fabff8fadb5d9858ac6734347b612d1a4b574213419c139de07",
+    "license": "CC-BY-NC-4.0",
+    "license_url": "https://huggingface.co/Pointcept/Concerto/blob/efc130718a564eba0ce4899318f3c20b19d9c752/README.md"
+  },
+  {
+    "id": "concerto_large",
+    "family": "concerto",
+    "format": "torch",
+    "model_config": {
+      "in_channels": 9,
+      "order": [
+        "z",
+        "z-trans",
+        "hilbert",
+        "hilbert-trans"
+      ],
+      "stride": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "enc_depths": [
+        3,
+        3,
+        3,
+        12,
+        3
+      ],
+      "enc_channels": [
+        64,
+        128,
+        256,
+        512,
+        768
+      ],
+      "enc_num_head": [
+        4,
+        8,
+        16,
+        32,
+        48
+      ],
+      "enc_patch_size": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "mlp_ratio": 4,
+      "qkv_bias": true,
+      "qk_scale": null,
+      "attn_drop": 0.0,
+      "proj_drop": 0.0,
+      "drop_path": 0.3,
+      "shuffle_orders": true,
+      "pre_norm": true,
+      "enable_rpe": false,
+      "enable_flash": true,
+      "upcast_attention": false,
+      "upcast_softmax": false,
+      "traceable": true,
+      "enc_mode": true,
+      "mask_token": true
+    },
+    "source": "https://huggingface.co/Pointcept/Concerto/resolve/efc130718a564eba0ce4899318f3c20b19d9c752/concerto_large.pth",
+    "path": "checkpoints/components/concerto_large.pth",
+    "bytes": 830812263,
+    "sha256": "04de4954d19b3563523f7a06254a02ed25bdf639e0ed2f12f9106e5fa9b178a7",
+    "license": "CC-BY-NC-4.0",
+    "license_url": "https://huggingface.co/Pointcept/Concerto/blob/efc130718a564eba0ce4899318f3c20b19d9c752/README.md"
+  },
+  {
+    "id": "concerto_small",
+    "family": "concerto",
+    "format": "torch",
+    "model_config": {
+      "in_channels": 9,
+      "order": [
+        "z",
+        "z-trans",
+        "hilbert",
+        "hilbert-trans"
+      ],
+      "stride": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "enc_depths": [
+        2,
+        2,
+        2,
+        6,
+        2
+      ],
+      "enc_channels": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ],
+      "enc_num_head": [
+        2,
+        4,
+        8,
+        16,
+        32
+      ],
+      "enc_patch_size": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "mlp_ratio": 4,
+      "qkv_bias": true,
+      "qk_scale": null,
+      "attn_drop": 0.0,
+      "proj_drop": 0.0,
+      "drop_path": 0.3,
+      "shuffle_orders": true,
+      "pre_norm": true,
+      "enable_rpe": false,
+      "enable_flash": true,
+      "upcast_attention": false,
+      "upcast_softmax": false,
+      "traceable": true,
+      "enc_mode": true,
+      "mask_token": true
+    },
+    "source": "https://huggingface.co/Pointcept/Concerto/resolve/efc130718a564eba0ce4899318f3c20b19d9c752/concerto_small.pth",
+    "path": "checkpoints/components/concerto_small.pth",
+    "bytes": 154681891,
+    "sha256": "251441d92ac7d9cff9e0c3ae22bdf2dc416d1c9dbb7a75f1922c08bfd1a18868",
+    "license": "CC-BY-NC-4.0",
+    "license_url": "https://huggingface.co/Pointcept/Concerto/blob/efc130718a564eba0ce4899318f3c20b19d9c752/README.md"
+  },
+  {
+    "id": "concerto_tiny",
+    "family": "concerto",
+    "format": "torch",
+    "model_config": {
+      "in_channels": 9,
+      "order": [
+        "z",
+        "z-trans",
+        "hilbert",
+        "hilbert-trans"
+      ],
+      "stride": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "enc_depths": [
+        1,
+        1,
+        1,
+        3,
+        1
+      ],
+      "enc_channels": [
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "enc_num_head": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "enc_patch_size": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "mlp_ratio": 4,
+      "qkv_bias": true,
+      "qk_scale": null,
+      "attn_drop": 0.0,
+      "proj_drop": 0.0,
+      "drop_path": 0.3,
+      "shuffle_orders": true,
+      "pre_norm": true,
+      "enable_rpe": false,
+      "enable_flash": true,
+      "upcast_attention": false,
+      "upcast_softmax": false,
+      "traceable": true,
+      "enc_mode": true,
+      "mask_token": true
+    },
+    "source": "https://huggingface.co/Pointcept/Concerto/resolve/efc130718a564eba0ce4899318f3c20b19d9c752/concerto_tiny.pth",
+    "path": "checkpoints/components/concerto_tiny.pth",
+    "bytes": 19488278,
+    "sha256": "2d5ac74f11cec87ce172c53d6cd05c5d43760c787b740bfa3cdc480175e26281",
+    "license": "CC-BY-NC-4.0",
+    "license_url": "https://huggingface.co/Pointcept/Concerto/blob/efc130718a564eba0ce4899318f3c20b19d9c752/README.md"
   }
 ]

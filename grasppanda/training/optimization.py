@@ -4,7 +4,7 @@ import math
 
 METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'scale_balanced_grasp', 'hggd', 'region_normalized_grasp', 'finegrasp', 'gtg2', 'economicgrasp')
 MUON_METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'hggd', 'region_normalized_grasp')
-SPARSE_BACKBONES = ('sonata_ptv3', 'litept', 'oacnns')
+SPARSE_BACKBONES = ('sonata_ptv3', 'litept', 'oacnns', 'utonia', 'concerto')
 
 
 def validate(config):

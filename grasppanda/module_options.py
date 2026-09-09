@@ -59,6 +59,13 @@ def _schema(method, slot, choice):
               'fusion_activation': ('choice', ('relu', 'gelu')), 'fusion_pre_norm': ('bool',)}
     common = {'activation': ('choice', ('relu', 'gelu', 'silu')),
               'normalization': ('choice', ('batch', 'group', 'none'))}
+    if slot == 'backbone' and choice in ('utonia', 'concerto'):
+        return {'variant': ('choice', ('base',) if choice == 'utonia' else ('tiny', 'small', 'base', 'large')),
+                'pretrained': ('bool',), 'train_embedding': ('bool',), 'projection_norm': ('choice', ('none', 'layer')),
+                'trainable_blocks': ('int_list', 5, 0, 12), 'feature_levels': ('int_sequence', 1, 5, 0, 4),
+                'input_scale': ('float', .1, 16), 'grid_size': ('float', .001, .1),
+                'enc_patch_size': ('int_list', 5, 16, 4096), 'drop_path': ('float', 0, .8),
+                'attn_drop': ('float', 0, .8), 'proj_drop': ('float', 0, .8), 'shuffle_orders': ('bool',)}
     if slot == 'backbone' and choice == 'kpconvx':
         from .modules.kpconvx_options import schema as kpconvx_schema
         return kpconvx_schema()
@@ -236,6 +243,17 @@ def validate_options(method, slot, choice, options):
         if not valid:
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
     options = {k: v for k, v in options.items() if k not in ('seed_sampling', 'stage_sampling')}
+    if choice in ('utonia', 'concerto'):
+        from .weights import component_records
+        weight_id = 'utonia' if choice == 'utonia' else 'concerto_' + options.get('variant', 'base')
+        depth = component_records()[weight_id]['model_config']['enc_depths']
+        if any(n > d for n, d in zip(options.get('trainable_blocks', [0]*5), depth)):
+            raise ValueError('trainable_blocks exceeds the selected pretrained encoder depths')
+        levels = options.get('feature_levels', list(range(5)))
+        if sorted(set(levels)) != levels:
+            raise ValueError('feature_levels must be distinct increasing stage indices')
+        if any(options.get('trainable_blocks', [0]*5)[max(levels)+1:]):
+            raise ValueError('Trainable blocks must contribute to a selected feature level')
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
     if method == 'economicgrasp' and slot == 'head' and choice == 'native_interactive':

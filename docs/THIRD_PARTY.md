@@ -115,3 +115,5 @@ SOFTWARE.
 </details>
 
 Network sampling uses PointSP density/filtering rules with shared Pointcept KNN and a GraspPanda CUDA masked-FPS implementation. The operator checks its inputs and device, uses one eligible start per scene, preserves row indices and specifies deterministic tie handling. It does not redistribute or execute the original time-seeded PointSP FPS kernel.
+
+Utonia and Concerto are loaded from pinned author repositories under Apache-2.0. Their separately downloaded pretrained weights are CC-BY-NC-4.0, as declared by [Utonia](https://github.com/Pointcept/Utonia#license) and [Concerto](https://github.com/Pointcept/Concerto#license). GraspPanda preserves the source notices and does not redistribute those sources or weights in its archive. The adapter supplies missing-modality inputs, independent scene transforms/encoding, hierarchical feature lifting and a trainable grasp projection; the root MIT license does not replace the pretrained-weight terms.

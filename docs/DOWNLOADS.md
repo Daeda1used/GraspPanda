@@ -196,3 +196,24 @@ The image encoders have separate initialization weights from the method's grasp 
 | `dinov3_base` | [timm DINOv3 Base](https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m) | 343 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
 
 These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](MODULES.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
+
+## Pretrained point components
+
+Point initialization weights are separate from grasp checkpoints and are downloaded locally under `checkpoints/components/`. Select the encoder in **Compose modules** and use its pretrained-encoder download button, or run:
+
+```bash
+./panda component-weights concerto_tiny
+./panda component-weights utonia
+```
+
+| ID | Author weights | Size |
+|---|---|---|
+| `concerto_tiny` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 19 MB |
+| `concerto_small` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 155 MB |
+| `concerto_base` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 434 MB |
+| `concerto_large` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 831 MB |
+| `utonia` | [Utonia](https://huggingface.co/Pointcept/Utonia) | 549 MB |
+
+The registry fixes each weight revision, SHA256, byte size and encoder configuration. Files are loaded with PyTorch's restricted weights-only loader. Initial training prepares a missing registered file; inference or resume from a complete grasp checkpoint does not require the initialization download. No weight files are included in the repository.
+
+Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](MODULES.md#pretrained-point-encoders) for input and fine-tuning settings.

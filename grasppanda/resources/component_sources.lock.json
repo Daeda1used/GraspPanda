@@ -100,5 +100,19 @@
     "repository": "https://github.com/apple/ml-kpconvx",
     "path": "environments/sources/cv/kpconvx",
     "commit": "54e644a9f3bddd4c344a58193897a44582b0fea4"
+  },
+  {
+    "id": "utonia",
+    "repository": "https://github.com/Pointcept/Utonia",
+    "commit": "da776a0bd3a48c6df83ac2ae0e27b26141cc7e31",
+    "path": "environments/sources/cv/utonia",
+    "license": "Apache-2.0"
+  },
+  {
+    "id": "concerto",
+    "repository": "https://github.com/Pointcept/Concerto",
+    "commit": "5b41117160cdd92c3538be1911277b17e7ef5871",
+    "path": "environments/sources/cv/concerto",
+    "license": "Apache-2.0"
   }
 ]

@@ -219,8 +219,8 @@ def create_app(manager=None):
         from .components import validate_selection
         from .weights import fetch_component
         try:
-            if backbone not in ('dinov2','dinov3'):
-                return 'Select a DINO image encoder to prepare its pretrained weights.'
+            if backbone not in ('dinov2','dinov3','utonia','concerto'):
+                return 'Select a registered pretrained encoder to prepare its weights.'
             parameters = json.loads(parameters or '{}')
             if not isinstance(parameters, dict):
                 raise ValueError('Component parameters must be a mapping keyed by slot')
@@ -229,9 +229,9 @@ def create_app(manager=None):
                 raise ValueError('Use the encoder selector for type and provide its parameters as a mapping')
             validate_selection(method, {'backbone': dict(type=backbone, **options)})
             if not options.get('pretrained', True): return 'This configuration uses random encoder initialization.'
-            name = backbone+'_'+options.get('variant','small')
+            name = ('utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', 'base' if backbone == 'concerto' else 'small'))
             fetch_component(name, lambda message: progress(.5, desc=message))
-            return 'Pretrained encoder weights verified. New projection and depth layers still require grasp training.'
+            return 'Pretrained encoder weights verified. New projection layers still require grasp training.'
         except Exception as error:
             raise gr.Error(str(error)) from error
 
@@ -403,7 +403,7 @@ def create_app(manager=None):
             data, config = json.loads(path.read_text()), job["config"]
             losses = data.get('losses', [])
             last_loss = losses[-1].get('total') if isinstance(losses, list) and losses and isinstance(losses[-1], dict) else None
-            settings = {key: config.get(key) for key in ('learning_rate', 'optimizer', 'scheduler', 'loss', 'augmentation', 'trainer')}
+            settings = {key: config.get(key) for key in ('learning_rate', 'optimizer', 'scheduler', 'loss', 'augmentation', 'trainer', 'proposal_warmup_steps')}
             rows.append([job["id"], config.get('dataset','graspnet1b'),config["method"],json.dumps(config.get('modules',{})), data.get("stage"), config["camera"], config["split"],
                          config["workspace"], config["seed"], json.dumps(settings), last_loss, (len(data["frames"]) if isinstance(data.get("frames"),list) else data.get("frames", "recipe")), json.dumps(data.get("ap"))])
         return rows
@@ -450,15 +450,15 @@ def create_app(manager=None):
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
                         gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.')
-                        with gr.Accordion('Pretrained image encoders', open=False, visible=False) as pretraining_panel:
-                            gr.Markdown('DINO encoders use verified RGB pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
+                        with gr.Accordion('Pretrained encoder weights', open=False, visible=False) as pretraining_panel:
+                            gr.Markdown('Registered image and point encoders use author pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning; see the parameter guide for the selected encoder. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
                             component_download = gr.Button('Prepare selected component weights')
                             component_download_message = gr.Markdown()
                         with gr.Accordion('Available component parameters', open=False):
                             parameter_help = gr.Markdown(component_parameters('graspnet_baseline', 'upstream', 'upstream'))
                     with gr.Accordion("Training settings", open=False, visible=False) as training_panel:
                         training_steps=gr.Number(3,precision=0,minimum=1,maximum=1000,visible=False,label='Optimizer steps (short training)')
-                        proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,visible=False,label='RNG anchor warmup updates',info='Optional real-label anchor training before preparing local proposals. Added to short-training updates; 0 preserves the native preset.')
+                        proposal_warmup_steps=gr.Number(0,precision=0,minimum=0,maximum=10000,interactive=False,visible=False,label='Proposal warmup updates',info='Optional real-label seed training (EconomicGrasp) or anchor training (RNG) before grasp training. Added to short-training updates; 0 preserves the native preset.')
                         with gr.Accordion('Choose loss formulations', open=False):
                             from grasppanda.training.losses import CLASSIFICATION, REGRESSION
                             with gr.Row():
@@ -605,7 +605,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
-                    gr.update(visible=method in ('hggd', 'region_normalized_grasp') and backbone in ('dinov2', 'dinov3')))
+                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto')))
         for selector in (method, action, backbone):
             selector.change(operation_layout, [method, action, backbone],
                 [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel], api_name=False, preprocess=False)
@@ -642,7 +642,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         method.change(lambda m:gr.update(label='Prepared graph root (required for training)' if m == 'gtg2' else 'Prepared targets / cache root (optional)'),method,label_root,api_name=False, preprocess=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
         for selector in (method,action):
-            selector.change(lambda m,a: gr.update(value=0,interactive=m=='region_normalized_grasp' and a=='train_check',visible=m=='region_normalized_grasp' and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False, preprocess=False)
+            selector.change(lambda m,a: gr.update(value=0,interactive=m in ('region_normalized_grasp','economicgrasp') and a=='train_check',visible=m in ('region_normalized_grasp','economicgrasp') and a=='train_check'),[method,action],proposal_warmup_steps,api_name=False, preprocess=False)
         preset_button.click(lambda: 0,outputs=proposal_warmup_steps,api_name=False)
         inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head]
         generate.click(compose, inputs, config_text, api_name="compose_config")

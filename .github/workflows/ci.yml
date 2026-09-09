@@ -82,10 +82,18 @@ jobs:
           assert len({p['path'] for p in weights}) == len(weights)
           for p in weights:
               assert re.fullmatch(r'[0-9a-f]{64}', p['sha256'])
-              assert re.fullmatch(r'https://huggingface.co/timm/[^/]+/resolve/[0-9a-f]{40}/model.safetensors', p['source'])
-              assert p['path'] == 'checkpoints/components/' + p['id'] + '.safetensors'
               assert p['bytes'] > 0 and p['license'] and p['license_url'].startswith('https://')
-              assert len(p['mean']) == len(p['std']) == 3 and all(v > 0 for v in p['std'])
+              if p.get('format') == 'torch':
+                  assert p['family'] in ('utonia', 'concerto')
+                  assert re.fullmatch(r'https://huggingface.co/Pointcept/(Utonia|Concerto)/resolve/[0-9a-f]{40}/[a-z_]+\.pth', p['source'])
+                  assert p['path'] == 'checkpoints/components/' + p['id'] + '.pth'
+                  config = p['model_config']
+                  assert config['in_channels'] == 9 and config['enc_mode'] and config['traceable']
+                  assert len(config['enc_channels']) == len(config['enc_depths']) == 5
+              else:
+                  assert re.fullmatch(r'https://huggingface.co/timm/[^/]+/resolve/[0-9a-f]{40}/model.safetensors', p['source'])
+                  assert p['path'] == 'checkpoints/components/' + p['id'] + '.safetensors'
+                  assert len(p['mean']) == len(p['std']) == 3 and all(v > 0 for v in p['std'])
           for mid in methods:
               assert capabilities(mid) or mid == 'graspnet_api', f'Reference-only method in installer: {mid}'
               for action in capabilities(mid):

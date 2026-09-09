@@ -1,4 +1,27 @@
 # Generate a local copy: ./panda init --example NAME -o experiment.local.yaml
+compose-pretrained-points:
+  description: Fine-tune pretrained Concerto point features with native Baseline grasp heads
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 4096
+    batch_size: 2
+    workspace: official_gt_workspace
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: concerto
+        variant: tiny
+        trainable_blocks: [0, 0, 0, 0, 1]
+        feature_levels: [0, 1, 2, 3, 4]
 compose-sbg:
   description: Compose Scale-Balanced-Grasp encoders and individual MSCQ branches
   config:

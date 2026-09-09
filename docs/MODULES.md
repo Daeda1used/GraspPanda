@@ -8,6 +8,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Point encoders | [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
+| Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
@@ -18,16 +19,16 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -194,6 +195,12 @@ The `cylinder` and `reslfe_cylinder` choices replace the native within-cylinder 
 Default `native_tdunet` and `native_cylinder` retain native state names and shapes, so author weights can load with `strict`. Geometry, dropout, dilation and head count are configuration values rather than learned tensors: matching weight shapes alone does not establish matching behavior. Architecture changes use `reuse_unchanged`, which initializes each selected replacement slot and retains the rest of the checkpoint. Train the replacement, then use `strict` with the saved composition for inference.
 
 EconomicGrasp training also supports [loss formulations and coefficients](#loss-formulations), [aligned point augmentation](#point-augmentation), Adam/AdamW/SGD/Lion and update-based schedules. Score remains a six-class objective; angle/depth retain their native invalid classes and validity masks. Width targets remain scaled by ten. Augmentation transforms object poses with observations, updates per-point labels through one sampling map and regenerates `coordinates_for_voxel`; native flips retain float32 observations. Use `action: train` for native epoch training and checkpoint resume; see [EconomicGrasp epoch training](#economicgrasp-epoch-training).
+
+### Initialize replacement seed features
+
+Replacing an encoder can leave the native graspable-point gate with no candidates. For short training, set `proposal_warmup_steps: 20` (or another explicit budget) to first fit native objectness and graspness targets, then run the requested `training_steps` with the complete model. The browser exposes this as **Proposal warmup updates**. Warmup uses the same optimizer, augmentation and seed-objective overrides; schedules count warmup plus grasp updates. Candidate-dependent heads start only after warmup, using their own predictions and the unchanged native threshold. An empty candidate set still stops the full training stage.
+
+Loss and update records identify **Seed warmup** and **Grasp training** separately. The warmup budget is additional to `training_steps`; `0` preserves the normal path. To continue with epoch training or inference, load the saved checkpoint with `strict` and reset `proposal_warmup_steps: 0`. Only short training exposes this initialization stage. Consider `projection_norm: layer` for a pretrained point encoder and choose a learning rate appropriate for its new projection and unfrozen blocks.
 
 ## EconomicGrasp interactive head
 
@@ -591,6 +598,49 @@ This is a trainable architecture adaptation with random initialization. It does 
 | `layer_scale` | Optional positive residual scale, omitted by default |
 
 Stage widths must be divisible by their head counts and by eight. Encoder and decoder windows can differ: the adapter refreshes native padding/relative-position caches when the window changes. Larger widths, depths, point counts and windows increase memory use. Adam, AdamW, SGD and Lion support this encoder; Muon is excluded because its current routing assumes dense convolution layouts. See the [`compose-ptv3`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example compose-ptv3`) for a smaller trainable configuration.
+
+</details>
+
+<details>
+<summary>Pretrained point encoders: Utonia and Concerto</summary>
+
+## Pretrained point encoders
+
+[Utonia](https://github.com/Pointcept/Utonia) ([paper PDF](https://arxiv.org/pdf/2603.03283), ICML 2026) and [Concerto](https://github.com/Pointcept/Concerto) ([paper PDF](https://arxiv.org/pdf/2510.23607), NeurIPS 2025) provide pretrained point features. Select `utonia` or `concerto` as the backbone for Baseline, its PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp or FineGrasp. Their grasp proposal, supervision and decoding remain method-specific.
+
+```yaml
+modules:
+  backbone:
+    type: concerto
+    variant: tiny
+    pretrained: true
+    trainable_blocks: [0, 0, 0, 0, 1]
+    feature_levels: [0, 1, 2, 3, 4]
+checkpoint_policy: reuse_unchanged
+```
+
+`concerto` supports `tiny`, `small`, `base` (default) and `large`; `utonia` uses its released base encoder. Architecture widths and depths match the selected weights. Use the separate configurable PTv3 encoder for experiments that change those dimensions. The pretrained encoders expose:
+
+| Parameter | Behavior |
+|---|---|
+| `pretrained` | Load the registered author initialization when replacing a backbone; defaults to `true`. |
+| `trainable_blocks` | Five counts, fine to coarse; unfreeze the last N blocks and the downsampling projection in each selected stage. Defaults to `[0,0,0,0,0]`, training only the new grasp projection. Counts must fit the variant's depths. |
+| `projection_norm` | `none` (default) or `layer` after the grasp feature projection; useful when connecting an encoder with a different feature distribution to an existing head. |
+| `train_embedding` | Unfreeze the input embedding; defaults to `false`. The unused pretraining mask token remains frozen. |
+| `feature_levels` | Increasing, distinct stage indices from 0 to 4. Lift and concatenate these features onto the input voxel rows, then project to the native grasp feature width. Defaults to all stages. |
+| `input_scale` | Scale only the encoder's point coordinates; default 4 for Utonia and 1 for Concerto. |
+| `grid_size` | Encoder voxel size after scaling; default 0.01 for Utonia and 0.02 for Concerto. Separate from the grasp method's `voxel_size`. |
+| `enc_patch_size` | Five attention window sizes; default 1,024 each. |
+| `drop_path`, `attn_drop`, `proj_drop` | Training regularization in unfrozen blocks; omitted values retain the registered architecture defaults. |
+| `shuffle_orders` | Shuffle serialization orders while fine-tuning; default `true`. Evaluation and a fully frozen encoder use fixed orders. |
+
+Dense adapters preserve original camera XYZ and seed row indices, and support [seed sampling](#network-sampling-policies). Sparse adapters encode voxel-coordinate XYZ and preserve the incoming sparse coordinate map and row order. These adapters encode XYZ only, supplying zero color and normal channels under the author's missing-input convention. Each scene is centered and voxelized independently using the native transform. Evaluation uses a fixed per-scene voxel representative seed without consuming the augmentation RNG. Training uses the run's seeded sampling state.
+
+Each scene also passes independently through the encoder so another scene's spatial extent cannot alter its serialization windows. This uses sequential encoder forwards within a batch; the loss and optimizer still operate on the complete grasp batch. Native FlashAttention requires a supported Ampere-or-newer GPU in the [shared runtime](INSTALL.md). Frozen weights and their dropout behavior stay fixed while gradients can pass through them to selected trainable layers. The feature projection is always trainable.
+
+Download initialization weights from the browser's pretrained-encoder panel or with `./panda component-weights concerto_tiny` / `./panda component-weights utonia`. `reuse_unchanged` strictly retains the unchanged grasp layers and initializes the replacement encoder from its registered source. Train the new projection before inference. `strict` loading restores a complete grasp checkpoint without downloading or reapplying pretraining. Code and pretrained weights have separate terms; see [downloads](DOWNLOADS.md#pretrained-point-components).
+
+Start with `./panda init --example compose-pretrained-points`. After updating an existing installation, run `./panda install` to prepare the new pinned sources in the shared runtime. These integrations provide trainable features, not pretrained grasp detectors. Short training can still produce empty grasp sets; use epoch training with sufficient data coverage before assessing detection performance.
 
 </details>
 

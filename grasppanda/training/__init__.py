@@ -200,7 +200,8 @@ def point_family(config, out, steps=3):
     root=Path(config.dataset_root);scene=f'scene_{config.scene:04d}'
     directory=root/'scenes'/scene/config.camera
     from grasppanda.components import requires_scene_batch
-    multi_frame=requires_scene_batch(config)
+    from grasppanda.module_options import unpack
+    multi_frame=requires_scene_batch(config) or unpack(config.modules.get('backbone', 'upstream'))[0] in ('utonia', 'concerto')
     frame_ids=list(range(config.frame, config.frame+config.batch_size)) if multi_frame else [config.frame]
     metadata=[scipy.io.loadmat(directory/'meta'/f'{frame:04d}.mat') for frame in frame_ids]
     evidence={};labels={}
@@ -293,9 +294,12 @@ def point_family(config, out, steps=3):
             state={k.removeprefix('module.'):v for k,v in state.items()}
             state.setdefault('rotation.template_views',model.rotation.template_views.detach().cpu())
         transfer=load_checkpoint(model,state,prefixes,config.checkpoint_policy)
+    warming_up = False
+    from grasppanda.methods.economic_warmup import SeedWarmup, objective as seed_objective
     if sparse or economic:
         threshold=model_module.cfgs.graspness_threshold if economic else model_module.GRASPNESS_THRESHOLD
         def guard(_module,_inputs,end):
+            if economic and warming_up: raise SeedWarmup(end)
             mask=(end['objectness_score'].argmax(1)==1)&(end['graspness_score'].squeeze(1)>threshold)
             if (mask.sum(1)==0).any():raise ValueError('Native graspable-point sampling would receive an empty set')
         model.graspable.register_forward_hook(guard)
@@ -315,7 +319,8 @@ def point_family(config, out, steps=3):
         for obj in labels:evidence['sdf_'+str(obj-1)]=digest(sdf_root/'models'/f'{obj-1:03d}'/'grid_sampled_sdf.npz')
     loss_module=importlib.import_module('models.loss_economicgrasp' if economic else ('TrainModel.loss' if balance else ('loss' if config.method=='dograspnet' or fusion else 'models.loss')))
     optimizer=build_optimizer(model.parameters(),config) if config.optimizer else torch.optim.Adam(model.parameters(),lr=config.learning_rate)
-    schedule=UpdateSchedule(optimizer,config.scheduler,steps) if config.scheduler else None
+    total_steps = steps + (config.proposal_warmup_steps if economic else 0)
+    schedule=UpdateSchedule(optimizer,config.scheduler,total_steps) if config.scheduler else None
     def cuda(value):
         if graph and type(value).__module__.startswith('dgl.'):return value.to('cuda')
         if isinstance(value,torch.Tensor):return value.cuda()
@@ -323,23 +328,33 @@ def point_family(config, out, steps=3):
         if isinstance(value,list):return [cuda(v) for v in value]
         return value
     losses=[];updates=[];start=time.monotonic()
-    for step in range(steps):
+    for step in range(total_steps):
+        warming_up = economic and step < config.proposal_warmup_steps
         batch=cuda(collate([augment_sample(copy.deepcopy(sample),dataset,config) for sample in samples]))
         optimizer.zero_grad(set_to_none=True)
-        output=model(batch)
-        if economic:output['epoch']=0
-        loss,output=loss_module.get_loss(output)
-        loss,output=weighted_loss(loss,output,config)
+        try:
+            output=model(batch)
+        except SeedWarmup as signal:
+            output=signal.end_points
+        if warming_up:
+            loss,output=seed_objective(output,config,loss_module)
+        else:
+            if economic:output['epoch']=0
+            loss,output=loss_module.get_loss(output)
+            loss,output=weighted_loss(loss,output,config)
         parts={k:float(v.detach()) for k,v in output.items() if 'loss' in k.lower() and isinstance(v,torch.Tensor) and v.numel()==1}
         if not torch.isfinite(loss) or not all(np.isfinite(x) for x in parts.values()):raise ValueError('Non-finite native loss')
         losses.append(dict(total=float(loss.detach()),components=parts))
+        if config.proposal_warmup_steps:
+            losses[-1]['stage'] = 'Seed warmup' if warming_up else 'Grasp training'
         loss.backward()
         params=[p for p in model.parameters() if p.grad is not None]
         if not params or not all(torch.isfinite(p.grad).all() for p in params):raise ValueError('Missing or non-finite gradients')
         nonzero=[p for p in params if torch.count_nonzero(p.grad)]
         if not nonzero:raise ValueError('All gradients are zero')
         from grasppanda.training.options import snapshot_components
-        component_snapshots, zero_gradients = snapshot_components(model, prefixes)
+        active_prefixes = [prefix for prefix in prefixes if prefix == 'backbone.'] if warming_up else prefixes
+        component_snapshots, zero_gradients = snapshot_components(model, active_prefixes)
         before=nonzero[0].detach().clone()
         norm=float(torch.sqrt(sum(p.grad.detach().square().sum() for p in params)))
         used_lr=optimizer.param_groups[0]['lr']
@@ -349,18 +364,20 @@ def point_family(config, out, steps=3):
         component_updates={name:float((p.detach()-old).norm()) for name,(p,old) in component_snapshots.items()}
         if not all(value>0 for name,value in component_updates.items() if name not in zero_gradients):raise ValueError('Replacement component did not update')
         updates.append(dict(gradient_tensors=len(params),gradient_norm=norm,parameter_update_norm=update,component_updates=component_updates,zero_gradient_components=zero_gradients,learning_rate=used_lr))
+        if config.proposal_warmup_steps:
+            updates[-1]['stage'] = 'Seed warmup' if warming_up else 'Grasp training'
         if schedule:schedule.step()
         print('TRAINING_STEP',step+1,losses[-1],updates[-1],flush=True)
     torch.cuda.synchronize()
     torch.save({'model_state_dict':model.state_dict(),'optimizer_state_dict':optimizer.state_dict(),
                 **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
-                'training_steps':steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
+                'training_steps':steps,'proposal_warmup_steps':config.proposal_warmup_steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method=config.method,stage='real_label_training',modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,checkpoint_transfer=transfer,optimizer_steps=len(updates),losses=losses,updates=updates,
-        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
+        optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,proposal_warmup_steps=config.proposal_warmup_steps,
         seconds=time.monotonic()-start,label_sha256=evidence,checkpoint_sha256=digest(config.checkpoint) if config.checkpoint else None,
         camera=config.camera,scene=config.scene,frame=config.frame,num_points=config.num_points,learning_rate=config.learning_rate,ap=None,
         training_frames=frame_ids,batch_size=len(samples),
-        protocol=(f'Repeated batch of {len(samples)} consecutive labelled frames with native batch-normalized point features. ' if multi_frame else ('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. ')))+('Configured augmentation. ' if config.augmentation else 'No augmentation. ')+'Loss and optimization settings are recorded in the result.',
+        protocol=(f'Repeated batch of {len(samples)} consecutive labelled frames with method-native grasp supervision. ' if multi_frame else ('Repeated native fused training scene in table coordinates, original MSCQ and SDF contact losses; batch size 2 preserves native contact-loss batch axes.' if fusion else 'Repeated fixed real-label frame, native model/loss.')+(' ' if fusion else (' Batch size 2 retains the native VPS class axis.' if graph else ' Batch size 1. ')))+('Configured augmentation. ' if config.augmentation else 'No augmentation. ')+'Loss and optimization settings are recorded in the result.',
         initialization='checkpoint' if config.checkpoint else 'random_constructor',
         limitation='The upstream GraspBalance driver references obsolete class names. This uses its actual GraspBalance detector and original loss with the native single-view loader; NcM augmentation and optional inference-time object balancing are not exercised.' if balance else None)
 
