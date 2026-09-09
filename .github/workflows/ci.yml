@@ -25,9 +25,12 @@ jobs:
           private = {'tests', 'reports', 'logs', 'outputs', 'checkpoints', 'upstream',
                      'environments', '.venv', '__pycache__', '.pytest_cache', '.python-version',
                      'benchmarks', 'probes', 'test-results', 'playwright-report', 'audit-results',
-                     '.cache', '.codex', '.claude', 'AGENTS.md', 'CLAUDE.md'}
+                     '.cache', '.codex', '.claude', 'AGENTS.md', 'CLAUDE.md',
+                     'data', 'datasets', 'downloads', 'screenshots', 'recordings', 'tmp', 'temp',
+                     '.ssh', '.aws', '.config', '.netrc', '.pypirc'}
           local_names = ('test_*.py', '*_test.py', 'test-*.yaml', '*.local.*', '.env', '.env.*',
-                         '*handoff*', '*progress*.json', '*report*.json', '*report*.md', '*report*.html')
+                         '*handoff*', '*progress*.json', '*report*.json', '*report*.md', '*report*.html',
+                         'credentials.*', 'secrets.*')
           extensions = {'.md', '.py', '.cpp', '.cu', '.sh', '.yaml', '.yml', '.json', '.toml', '.lock', '.patch'}
           for name in files:
               path = Path(name)

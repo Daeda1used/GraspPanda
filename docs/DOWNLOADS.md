@@ -11,7 +11,17 @@ Choose the inputs for your first experiment; you can add training archives later
 
 ## Start without GraspNet
 
-ASGrasp, ZeroGrasp and SpaHybGen have fixed recipes using author-supplied samples; their input modalities and limits are described in [Methods & papers](METHODS.md). Download external weights with `./panda weights METHOD` where registered.
+After [installation](INSTALL.md), run the ASGrasp stereo sample without downloading GraspNet:
+
+```bash
+./panda weights asgrasp
+./panda init --method asgrasp -o sample.local.yaml
+./panda run sample.local.yaml
+```
+
+The pinned implementation includes the sample inputs; the first command downloads the two required networks. Leave the generated input settings unchanged. In the browser, select **ASGrasp → Load preset → Download registered weights → Run current form**, then open **Runs & results** to inspect the prediction. A supported GPU and the shared runtime are still required.
+
+ZeroGrasp and SpaHybGen also provide author samples. These fixed recipes have their own observation protocols; see [Methods & papers](METHODS.md) before substituting your own inputs.
 
 ## GraspNet-1B
 
