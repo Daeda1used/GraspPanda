@@ -36,7 +36,14 @@ mkdir -p /data/GraspNet-1B
 unzip -l test_seen.zip | head
 ```
 
-Inspect the archive's top-level layout, extract it, then place the `scene_*` directories under `/data/GraspNet-1B/scenes/`. Do not add an extra nested `scenes/scenes/`. The toolkit never downloads the full dataset automatically.
+Use a writable dataset location of your choice; `/data/GraspNet-1B` is an example. Choose the extraction command that matches the archive listing:
+
+| First directory in the archive | Extract with |
+|---|---|
+| `scene_0100/` | `unzip -n test_seen.zip -d /data/GraspNet-1B/scenes` |
+| `scenes/scene_0100/` | `unzip -n test_seen.zip -d /data/GraspNet-1B` |
+
+If your mirror adds another enclosing folder, place its `scene_*` directories under the final `scenes/` directory. Avoid `scenes/scenes/`. The toolkit never downloads the full dataset automatically.
 
 ```text
 /data/GraspNet-1B/
@@ -78,6 +85,20 @@ Links were collected from the official page for this release. If a mirror change
 | models.zip | [Google](https://drive.google.com/file/d/1Gxwu2C5wRQ0QwjdA8CbMXx-bYf_wwPT5/view?usp=sharing) · [Baidu](https://pan.baidu.com/s/1SoaE_7AqfR5R6w8dO79rsg) · [Jbox](https://jbox.sjtu.edu.cn/l/jFF3no) |
 
 </details>
+
+### Run your first GraspNet frame
+
+After extracting the images, run these commands from the installed repository:
+
+```bash
+./panda weights graspness --camera realsense
+./panda init --method graspness \
+  --dataset-root /data/GraspNet-1B -o graspness.local.yaml
+./panda run graspness.local.yaml
+./panda ui
+```
+
+This preset predicts scene 0100, frame 0000 with the registered RealSense checkpoint. Open **Runs & results** to view the prediction. The dataset root must contain `scenes/scene_0100/realsense/`; a scene directory itself is not the dataset root. Configuration, downloaded weights and prediction files are created locally. To change the method or camera, load its preset and download its matching weights; training requires the additional targets below.
 
 ## Method-specific preprocessing
 

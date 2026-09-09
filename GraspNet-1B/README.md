@@ -1,15 +1,6 @@
 # GraspNet-1B
 
-Choose a method in the browser and **Load preset**, or generate an editable configuration:
-
-```bash
-./panda init --method graspness -o graspness.local.yaml
-./panda weights graspness --camera realsense
-# Set dataset_root in graspness.local.yaml to the directory containing scenes/.
-./panda run graspness.local.yaml
-```
-
-Run commands from the repository root after [installation](../docs/INSTALL.md). Configuration generation does not require data, weights or a GPU, and never overwrites an existing file. [Data & weights](../docs/DOWNLOADS.md) explains downloads and preprocessing. [Using GraspPanda](../docs/USAGE.md) covers training, checkpoint resume and evaluation.
+Method presets and component compositions for GraspNet-1B. Start with the [first-frame walkthrough](../docs/DOWNLOADS.md#run-your-first-graspnet-frame), or the [author sample](../docs/DOWNLOADS.md#start-without-graspnet) if you have not downloaded the dataset.
 
 ## Configuration examples
 
@@ -21,7 +12,7 @@ Use `--method` for an original method preset, or choose a composition, training 
 ./panda init --example train-hggd -o training.local.yaml
 ```
 
-Each template contains the relevant settings; omitted fields use the shared experiment defaults. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters. Files named `*.local.yaml` are ignored by Git.
+Run commands from the repository root after [installation](../docs/INSTALL.md). Each template contains the relevant settings; omitted fields use shared defaults. Generation does not require data, weights or a GPU and never overwrites an existing file. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters; [operating instructions](../docs/USAGE.md) cover training, resume and evaluation. Generated `*.local.yaml` files stay local.
 
 ## Observation protocols
 
