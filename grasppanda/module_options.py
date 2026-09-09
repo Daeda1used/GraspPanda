@@ -1,6 +1,15 @@
 """Serializable, method-specific component arguments; no arbitrary imports."""
 import math
 
+SEED_INTERACTION_METHODS = ('graspnet_baseline', 'pointnet2_upgrade', 'graspness', 'economicgrasp')
+SEED_INTERACTION_FIELDS = {
+    'seed_interaction': ('choice', ('none', 'gaussian')),
+    'interaction_heads': ('int', 1, 32),
+    'interaction_sigma': ('float', .001, 1),
+    'interaction_layers': ('int', 1, 4),
+    'interaction_dropout': ('float', 0, .8),
+}
+
 
 def unpack(value):
     if isinstance(value, str):
@@ -11,6 +20,13 @@ def unpack(value):
 
 
 def schema(method, slot, choice):
+    fields = _schema(method, slot, choice)
+    if slot == 'crop' and method in SEED_INTERACTION_METHODS:
+        fields = {**fields, **SEED_INTERACTION_FIELDS}
+    return fields
+
+
+def _schema(method, slot, choice):
     if method == 'gtg2':
         from .gtg2_options import schema as graph_schema
         return graph_schema(slot, choice)
@@ -166,6 +182,11 @@ def validate_options(method, slot, choice, options):
             raise ValueError(f'Invalid {method}/{slot}/{choice} parameter {key}: expected {rule}')
     if 'fusion_heads' in options and 256 % options['fusion_heads']:
         raise ValueError('FineGrasp fusion heads must divide the 256-channel features')
+    if any(key.startswith('interaction_') for key in options):
+        if options.get('seed_interaction', 'none') != 'gaussian':
+            raise ValueError('Interaction parameters require seed_interaction: gaussian')
+    if 'interaction_heads' in options and 256 % options['interaction_heads']:
+        raise ValueError('Seed interaction heads must divide the 256-channel features')
     if choice in ('dinov2','dinov3'):
         indices = options.get('out_indices', [2,5,8,11])
         if indices[-1] != 11 or any(a >= b for a,b in zip(indices, indices[1:])):

@@ -27,6 +27,7 @@ Examples are defined in one [template catalogue](examples.yaml). Generate only t
 | Training | `train-baseline`, `train-hggd`, `train-finegrasp`, `train-gtg2` |
 | Losses and augmentation | `train-controls`, `compose-hggd` |
 | Point encoders and grouping | `compose-baseline`, `compose-ptv3`, `compose-octformer`, `compose-pcm`, `compose-pointmamba`, `compose-pointmeta`, `compose-pointvector`, `compose-reslfe` |
+| Grouped seed interaction | `compose-seed-interaction`; [parameters and method compatibility](../docs/MODULES.md#grouped-seed-interaction) |
 | Image encoders | `compose-hggd`, `compose-dino`, `compose-vmamba` |
 | Parameter sweeps | `sweep-baseline`; use `./panda sweep FILE --preview` before execution |
 

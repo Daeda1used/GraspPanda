@@ -1,2 +1,2 @@
 """GraspPanda: modular visual grasping experiments."""
-__version__ = "0.25.1"
+__version__ = "0.26.0"

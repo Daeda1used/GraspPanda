@@ -228,11 +228,12 @@ def create_app(manager=None):
             config=replace(preset(method,(dataset or '').strip()),gpu=int(gpu),timeout_minutes=int(timeout_minutes))
             if method in CHECKPOINT_RECIPES:config=replace(config,checkpoint=(checkpoint or '').strip())
             return json.dumps(config.to_dict(),indent=2)
-        selection={s.name:{"backbone":backbone,"crop":crop}[s.name] for s in slots(method) if {"backbone":backbone,"crop":crop}[s.name]!="upstream"}
+        selected={s.name:{"backbone":backbone,"crop":crop}[s.name] for s in slots(method)}
+        selection={name:choice for name,choice in selected.items() if choice != 'upstream'}
         for name,values in parameters.items():
-            if name not in selection:raise gr.Error(f'Select a replacement for {name} before configuring its parameters')
+            if name not in selected:raise gr.Error(f'This method has no configurable {name} slot')
             if not isinstance(values,dict) or 'type' in values:raise gr.Error('Use the component selector for type; supply only its parameters here')
-            selection[name]={'type':selection[name],**values}
+            selection[name]={'type':selected[name],**values}
         config = Experiment(timeout_minutes=int(timeout_minutes),trainer=trainer,proposal_warmup_steps=int(proposal_warmup_steps),dataset=dataset_key,modules=selection,loss=loss,augmentation=augmentation,optimizer=optimizer,scheduler=scheduler,checkpoint_policy=checkpoint_policy,training_steps=int(training_steps),label_root=(label_root or '').strip(),method=method, action=action or "infer", dataset_root=(dataset or '').strip(), checkpoint=(checkpoint or '').strip(),
                             camera=camera, split=split, scene=int(scene), frame=int(frame), frames=int(count),
                             num_points=int(points), seed=int(seed), workspace=workspace, collision_thresh=collision,
@@ -401,7 +402,7 @@ def create_app(manager=None):
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
-                        gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. The selectors supply each component type.')
+                        gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.')
                         with gr.Accordion('Pretrained image encoders', open=False):
                             gr.Markdown('DINO encoders use verified RGB pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
                             component_download = gr.Button('Prepare selected component weights')

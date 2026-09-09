@@ -22,6 +22,10 @@ BASELINE_SLOTS = (
 
 
 def slots(method):
+    if method == 'economicgrasp': return (
+        ComponentSlot('crop', 'cy_group', ('upstream',),
+            'Camera-frame seed XYZ in metres, native cylinder grouping and approach rotations.',
+            '256-channel seed features for the native interactive grasp head.'),)
     if method == 'gtg2': return (
         ComponentSlot('backbone', 'block', ('upstream', 'gtg_sage', 'gtg_gatv2'),
             'Candidate-local XYZ and inside/outside flags with undirected k-nearest graph edges.',
@@ -71,8 +75,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         raise ValueError('GtG2 uses GraphRegressor with resolved graph options; its crop configures data construction, not a network submodule')
     changes=[]
     for slot in slots(method):
-        from .module_options import unpack
+        from .module_options import unpack, SEED_INTERACTION_FIELDS
         choice,options=unpack(selection.get(slot.name,'upstream'))
+        options = {key:value for key,value in options.items() if key not in SEED_INTERACTION_FIELDS}
         if choice=='upstream':continue
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
@@ -145,6 +150,16 @@ def configure_model(model,method,selection,voxel_size=.005):
         else:raise ValueError(slot.name)
         setattr(parent,attribute,replacement)
         changes.append(slot.model_path+'.')
+    for slot in slots(method):
+        if slot.name != 'crop': continue
+        _, options = unpack(selection.get(slot.name, 'upstream'))
+        if options.get('seed_interaction', 'none') == 'gaussian':
+            from .modules.seed_interaction import install
+            install(model.get_submodule(slot.model_path), **{
+                key.removeprefix('interaction_'):value for key,value in options.items()
+                if key.startswith('interaction_')})
+            if slot.model_path+'.' not in changes:
+                changes.append(slot.model_path+'.seed_interaction.')
     return changes
 
 

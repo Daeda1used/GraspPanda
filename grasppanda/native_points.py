@@ -21,9 +21,13 @@ def infer(config, out):
     economic = config.method == 'economicgrasp'
     mod = importlib.import_module('models.economicgrasp' if economic else 'graspnet')
     dataset_mod = importlib.import_module('dataset.graspnet_dataset')
-    model = (mod.economicgrasp if economic else mod.GraspNet)(is_training=False).cuda().eval()
+    model = (mod.economicgrasp if economic else mod.GraspNet)(is_training=False)
+    from .components import configure_model, load_checkpoint
+    changed = configure_model(model, config.method, config.modules, config.voxel_size)
     state = torch.load(config.checkpoint, map_location='cpu', weights_only=True)
-    model.load_state_dict(state['model_state_dict'], strict=True)
+    transfer = load_checkpoint(model, state['model_state_dict'], changed, config.checkpoint_policy)
+    (out/'component_transfer.json').write_text(json.dumps(transfer, indent=2)+'\n')
+    model.cuda().eval()
     threshold = mod.cfgs.graspness_threshold if economic else mod.GRASPNESS_THRESHOLD
 
     def guard(_module, _inputs, end):
@@ -72,8 +76,8 @@ def infer(config, out):
     (out/'predictions/manifest.json').write_text(json.dumps(dict(config=config.to_dict(),
         checkpoint_sha256=digest(config.checkpoint), files={str(Path(r['prediction']).relative_to('predictions')):
         r['prediction_sha256'] for r in records}), indent=2)+'\n')
-    return dict(stage='dataset_inference', method=config.method, camera=config.camera, split=config.split,
+    return dict(stage='dataset_inference', method=config.method, modules=config.modules, camera=config.camera, split=config.split,
         workspace=config.workspace, frames=records, checkpoint_sha256=digest(config.checkpoint), ap=None,
         torch=torch.__version__, gpu=torch.cuda.get_device_name(),
-        protocol_note='Original data loader, model, decoder and collision detector; GT workspace; collision voxel 1 cm.',
+        protocol_note='Native data loader, decoder and collision detector; configured model components; GT workspace; collision voxel 1 cm.',
         timing_note='First-call forward + decode, not warmed FPS.')

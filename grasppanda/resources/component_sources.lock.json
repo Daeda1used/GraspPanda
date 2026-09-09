@@ -76,5 +76,11 @@
     "repository": "https://github.com/octree-nn/dwconv",
     "path": "environments/sources/cv/octree-dwconv",
     "commit": "ae53057eaf36dab01aa2727fcc93a749fd995af5"
+  },
+  {
+    "id": "gcf-graphgrasp",
+    "repository": "https://github.com/qzsrh/GCF-GraphGrasp",
+    "path": "environments/sources/cv/gcf-graphgrasp",
+    "commit": "8ab374104f1559005f292f163bcf3b17e8211575"
   }
 ]

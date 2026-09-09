@@ -6,7 +6,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
 | Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [Point Transformer](#point-transformer-encoder) |
-| Local grouping | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [FineGrasp](#finegrasp-training-and-composition) |
+| Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](GTG2.md) |
@@ -21,6 +21,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
+| EconomicGrasp | `crop` | `upstream`, with optional seed interaction |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
@@ -73,6 +74,40 @@ checkpoint_policy: reuse_unchanged
 ```
 
 In the UI, select the component names under **Compose modules**, then enter parameters keyed by slot in **Component parameters by slot**. Do not repeat `type` in this parameter editor; the selector supplies it. Full YAML/JSON configurations use the mapping form above.
+
+## Grouped seed interaction
+
+Baseline, its PointNet2 port, Graspness and EconomicGrasp support `seed_interaction: gaussian` inside `modules.crop`. It adds distance-biased attention **after the selected grouping**. You can retain `type: upstream` or combine it with a registered grouping replacement. Native FineGrasp, HGGD/RNG and GtG2 have different feature contracts and do not expose this option.
+
+```yaml
+modules:
+  crop:
+    type: upstream
+    seed_interaction: gaussian
+    interaction_heads: 4
+    interaction_sigma: 0.05
+    interaction_layers: 1
+    interaction_dropout: 0.1
+checkpoint_policy: reuse_unchanged
+```
+
+Generate a complete EconomicGrasp example with `./panda init --example compose-seed-interaction`. In the browser, expand **Compose modules**, retain the desired grouping and enter these fields under `crop` in **Component parameters**. The parameter reference lists the accepted values. Sweep paths such as `modules.crop.interaction_sigma` and `modules.crop.interaction_heads` to compare settings.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `seed_interaction` | `none` | `gaussian` enables the interaction; omit interaction parameters when disabled |
+| `interaction_heads` | `4` | Attention heads; 1–32 and must divide 256 |
+| `interaction_sigma` | `0.05` | Gaussian distance scale in camera-frame metres; 0.001–1 |
+| `interaction_layers` | `1` | Independently parameterized interaction blocks; 1–4 |
+| `interaction_dropout` | `0.1` | Attention-probability dropout during training; 0–0.8 |
+
+The implementation loads the pinned `GraspGNN` attention classes from [GCF-GraphGrasp](https://github.com/qzsrh/GCF-GraphGrasp/blob/8ab374104f1559005f292f163bcf3b17e8211575/models/modules_economicgrasp.py). It retains the native Q/K/V/output projections, two residual LayerNorm operations and learned distance-bias scale. The bias is `-distance_squared / (2 * sigma_squared) * bias_scale`; each block initializes its scale to one and leaves its sign unconstrained, as in the source. This is dense attention over grasp seeds, not a k-nearest graph or a new cylinder query.
+
+The adapter preserves seed order and 256-channel output features. It processes scenes independently and, for Baseline's `[B,256,N,4]` output, processes each depth bin independently. Inputs and computation use float32. Attention memory grows quadratically with the number of seeds and linearly with batch, depth bins, heads and layers; changing the scene point count does not necessarily change the method's seed count.
+
+When retaining the original grouping, `reuse_unchanged` loads its existing weights and initializes only the added interaction layers. Train the composition before inference, then load its checkpoint with `strict` and the same module settings. If you also replace the grouping or encoder, those replacements follow their usual initialization policy. Baseline and Graspness support this composition in epoch training and resume; EconomicGrasp and the PointNet2 port use their registered short-training operations.
+
+This component uses each selected method's own data, supervision, seed selection and decoder. It does not reproduce the GCF fork's SAM/patch-feature preprocessing or its changed angle/depth decoding. GCF's README cites EconomicGrasp; a separate GCF publication and pretrained checkpoint have not been verified. The full-method entry remains in [Methods & papers](METHODS.md).
 
 ## OctFormer hierarchy
 
