@@ -178,6 +178,21 @@ def restore_stage(self, x):
     return x
 
 
+def prune_scan_projections(encoder, counts):
+    """Remove projections that cannot reach any active encoder scan."""
+    active = [i for i, count in enumerate(counts) if count]
+    first = min(active, default=4)
+    encoder._last_scan_stage = max(active, default=-1)
+    for i, count in enumerate(counts):
+        if i <= first or i > encoder._last_scan_stage:
+            encoder.residual_proj_blocks_list[i] = nn.Identity()
+        if not count:
+            if encoder.use_order_prompt:
+                encoder.order_prompt_proj[i] = nn.Identity()
+            if encoder.mamba_pos and encoder.pos_type == 'share' and not encoder.block_pos_share:
+                encoder.pos_proj[i] = nn.Identity()
+
+
 @lru_cache(maxsize=1)
 def corrected_classes():
     """Load native layers with deterministic prompts and stage correspondence fixes."""
@@ -190,7 +205,24 @@ def corrected_classes():
         for method in cls.body:
             if isinstance(method, ast.FunctionDef) and method.name == '__init__':
                 method.body = [n for n in method.body if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Name) and (n.value.func.id == 'print'))]
+        scans = 0
+        for node in ast.walk(cls):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'MambaBlock':
+                node.keywords.append(ast.keyword(arg='ssm_cfg', value=ast.parse(
+                    "kwargs.get('_grasppanda_ssm', [{}] * sum(mamba_blocks))[mamba_layer_idx]", mode='eval').body))
+                scans += 1
+        if scans != 1:
+            raise RuntimeError('PCM scan constructor differs from the pinned source')
         if cls.name == 'PointMambaEncoder':
+            initializer = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == '__init__')
+            initializer.body.extend(ast.parse('_grasppanda_prune(self, mamba_blocks)').body)
+            projections = 0
+            for node in ast.walk(cls):
+                if isinstance(node, ast.Assign) and ast.unparse(node.value) == 'self.residual_proj_blocks_list[i](x_res)':
+                    node.value = ast.parse('self.residual_proj_blocks_list[i](x_res) if x_res is not None and i <= self._last_scan_stage else None', mode='eval').body
+                    projections += 1
+            if projections != 2:
+                raise RuntimeError('PCM residual path differs from the pinned source')
             count = 0
             for node in ast.walk(cls):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and (node.func.id == 'set') and (len(node.args) == 1) and isinstance(node.args[0], ast.Name) and (node.args[0].id == 'mamba_layers_orders'):
@@ -205,6 +237,7 @@ def corrected_classes():
             forward.body[:0] = ast.parse('self.stage_indices = None').body
     namespace = dict(native.__dict__)
     namespace['serialization'] = corrected_serialization
+    namespace['_grasppanda_prune'] = prune_scan_projections
     exec(compile(ast.fix_missing_locations(tree), str(file), 'exec'), namespace)
     decoder = namespace['PointMambaDecoder']
     decoder.serialize_func = decoder_serialization

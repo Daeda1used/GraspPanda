@@ -128,6 +128,12 @@ def validate_options(method, slot, choice, options):
         valid = False
         if rule[0] == 'choice':
             valid = isinstance(value, str) and value in rule[1]
+        elif rule[0] == 'per_block':
+            values = value if isinstance(value, list) else [value]
+            scalar = rule[2]
+            valid = len(values) <= rule[1] and all(
+                type(v) is bool if scalar[0] == 'bool' else
+                type(v) is int and scalar[1] <= v <= scalar[2] for v in values)
         elif rule[0] == 'choice_list':
             valid = isinstance(value, list) and rule[1] <= len(value) <= rule[2] and all(isinstance(v, str) and v in rule[3] for v in value)
         elif rule[0] == 'bool':

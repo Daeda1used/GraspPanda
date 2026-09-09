@@ -61,6 +61,10 @@ def component_parameters(method, backbone, crop):
                 description = f'{rule[1]} integers, each {rule[2]} to {rule[3]}'
             elif rule[0] == 'float_list':
                 description = f'{rule[1]}–{rule[2]} numbers, each {rule[3]} to {rule[4]}'
+            elif rule[0] == 'per_block':
+                scalar = rule[2]
+                values = 'true or false' if scalar[0] == 'bool' else f'integer: {scalar[1]} to {scalar[2]}'
+                description = values + '; one value for all scan blocks, or a list with one value per active block'
             elif rule[0] == 'choice_list':
                 description = f'{rule[1]}–{rule[2]} orders: ' + ', '.join(rule[3])
             elif rule[0] == 'bool':

@@ -144,7 +144,7 @@ The grasp adapter supplies camera XYZ in metres, replaces the S3DIS input channe
 |---|---|
 | `embed_dim`, `dim_expansion` | `96`, `[1,2,2,2]`; stem width and four successive multipliers |
 | `pre_blocks`, `pos_blocks` | `[1,1,1,1]`, `[0,0,0,0]`; local extraction and post-extraction residual depths |
-| `mamba_blocks` | `[1,2,2,4]`; positive scan-block counts, one entry per encoder stage |
+| `mamba_blocks` | `[1,2,2,4]`; scan-block counts, one entry per encoder stage; `0` keeps that stage local |
 | `k_neighbors`, `k_strides`, `reducers` | `[12,12,12,12]`, `[1,1,1,1]`, `[4,4,2,2]`; KNN query, neighbor subsampling stride and point-count reduction |
 | `orders` | One order per encoder Mamba block. Omit to cycle `xyz`, `xzy`, `yxz`, `yzx`, `zxy`, `zyx`, `hilbert`, `z`, `z-trans`; `hilbert-trans` is also accepted |
 | `use_order_prompt`, `prompt_num_per_order` | `true`, `6`; prepend and append learned order prompts |
@@ -157,8 +157,16 @@ The grasp adapter supplies camera XYZ in metres, replaces the S3DIS input channe
 | `decoder_mamba_blocks`, `decoder_orders` | `[0,0,0,0]`, `[]`; optional decoder scans. Omitted orders cycle as above; a final-resolution scan must end with the string `"null"` |
 | `decoder_rms_norm`, `decoder_fused_add_norm`, `decoder_residual_in_fp32` | `true`, `false`, `false`; normalization controls for enabled decoder scans |
 | `gmp_dim` | `64`; native pooled global-context width, concatenated with dense features |
+| `d_state`, `d_conv`, `expand` | `16`, `4`, `2`; native state size (1–256), causal kernel width (2–4) and inner-width multiplier (1–4) |
+| `dt_rank` | Omit for native automatic rank; otherwise 1–128 |
+| `ssm_bias`, `ssm_conv_bias` | `false`, `true`; native input/output projection bias and depthwise convolution bias |
+| `decoder_d_state`, `decoder_d_conv`, `decoder_expand`, `decoder_dt_rank`, `decoder_ssm_bias`, `decoder_ssm_conv_bias` | Corresponding settings for enabled decoder scans; defaults match the encoder's native defaults independently |
 
-Stage widths must be multiples of eight and at most 2,048. Each neighbor count must divide evenly by its stride and fit the incoming stage. Every coarse level must retain at least three points for native interpolation. Windows preserve the author's sorted-FPS truncation to a complete number of windows and within-window coordinate normalization; dense decoding returns to the full original input. Configuration validation accounts for this truncation. Finite coordinates and a maximum 16-bit voxel extent are required.
+SSM settings accept a scalar for all active blocks or a list with one value per active block, ordered across stages just like `orders`. For `mamba_blocks: [0,1,0,2]`, `d_state: [16,32,64]` configures the single stage-2 block followed by both stage-4 blocks. Encoder and decoder settings are independent. The adapter forwards them to the native Mamba constructor and retains both scan directions and native initialization; it does not switch to a unidirectional fallback.
+
+A zero encoder scan count retains the stage's native grouping and local extraction, skips its scan windows and positional/prompt additions, and removes projections that cannot reach an active scan. Residuals pass through intermediate local stages only when a later scan consumes them. With `mamba_blocks: [0,0,0,0]`, omitted `use_order_prompt`, `mamba_pos` and `use_windows` resolve to `false`; explicit scan-only overrides are rejected. Local hierarchy, dense decoding and global context remain trainable. `0` in `pre_blocks` selects native pure max pooling, which requires `use_xyz: false` and `dim_expansion: 2` at that stage to match the concatenated neighbor/center width. `0` in `decoder_blocks` removes residual extraction while retaining native feature fusion and interpolation. These settings support local-only and mixed local/scan ablations without adding substitute layers.
+
+Stage widths must be multiples of eight and at most 2,048. Each neighbor count must divide evenly by its stride and fit the incoming stage. Every coarse level must retain at least three points for native interpolation. Windows preserve the author's sorted-FPS truncation to a complete number of windows and within-window coordinate normalization; dense decoding returns to the full original input. Configuration validation accounts for truncation only in stages with active scans. Finite coordinates and a maximum 16-bit voxel extent are required.
 
 GraspPanda applies three correspondence fixes to the pinned source: CTS uses per-point coordinates with a zero-based serpentine endpoint convention and separate batch ranges; prompt IDs follow first occurrence instead of unordered set iteration; each decoder scan stage restores feature rows before the next spatial interpolation. These fixes affect serialized ordering and optional decoder scans, so the adapter does not claim numerical equivalence to the unmodified upstream model. The scoped loader also removes an unsupported, redundant keyword from the native standalone RMSNorm wrapper, allowing non-fused RMSNorm blocks. Native grouping, normalization mathematics, Mamba layers, global context and propagation remain in use.
 

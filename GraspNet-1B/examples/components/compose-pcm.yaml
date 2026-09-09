@@ -20,8 +20,12 @@ modules:
     dim_expansion: [1, 2, 2, 2]
     pre_blocks: [1, 1, 1, 1]
     pos_blocks: [0, 0, 0, 0]
-    mamba_blocks: [1, 1, 2, 2]
-    orders: [xyz, xzy, yxz, yzx, zxy, zyx]
+    mamba_blocks: [0, 1, 0, 2]
+    orders: [xyz, hilbert, z-trans]
+    d_state: [16, 32, 64]
+    d_conv: [2, 3, 4]
+    expand: 2
+    dt_rank: [2, 4, 4]
     k_neighbors: [12, 12, 12, 12]
     k_strides: [1, 1, 1, 1]
     reducers: [4, 4, 2, 2]
@@ -36,6 +40,8 @@ modules:
     decoder_channels: [128, 64, 32, 32]
     decoder_mamba_blocks: [1, 1, 0, 0]
     decoder_orders: [xyz, z-trans]
+    decoder_d_state: [16, 32]
+    decoder_d_conv: 3
   crop:
     type: cylinder
     hidden_channels: [64, 128]
