@@ -1,0 +1,46 @@
+dataset: graspnet1b
+method: graspnet_baseline
+action: train_check
+dataset_root: /data/GraspNet-1B
+checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+camera: realsense
+split: train
+scene: 0
+frame: 0
+workspace: official_gt_workspace
+num_points: 4096
+batch_size: 2
+training_steps: 3
+learning_rate: 0.0001
+checkpoint_policy: reuse_unchanged
+modules:
+  backbone:
+    type: pointcloud_mamba
+    embed_dim: 32
+    dim_expansion: [1, 2, 2, 2]
+    pre_blocks: [1, 1, 1, 1]
+    pos_blocks: [0, 0, 0, 0]
+    mamba_blocks: [1, 1, 2, 2]
+    orders: [xyz, xzy, yxz, yzx, zxy, zyx]
+    k_neighbors: [12, 12, 12, 12]
+    k_strides: [1, 1, 1, 1]
+    reducers: [4, 4, 2, 2]
+    use_windows: true
+    window_sizes: [512, 256, 128, 64]
+    use_order_prompt: true
+    prompt_num_per_order: 4
+    mamba_pos: true
+    pos_type: per_layer
+    pos_proj_type: mlp
+    grid_size: 0.04
+    decoder_channels: [128, 64, 32, 32]
+    decoder_mamba_blocks: [1, 1, 0, 0]
+    decoder_orders: [xyz, z-trans]
+  crop:
+    type: cylinder
+    hidden_channels: [64, 128]
+    radius_factors: [0.5, 1.0]
+    pooling: attention
+optimizer:
+  type: adamw
+  weight_decay: 0.01

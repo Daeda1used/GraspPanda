@@ -185,6 +185,10 @@ def train(config, out):
 
 def train_smoke(config, out):
     """One real-label optimizer step, using upstream data/model/loss code."""
+    from .pcm_options import selected as pcm_selected
+    if pcm_selected(config):
+        from .training import point_family
+        return point_family(config, out, 1)
     if config.method=='finegrasp':
         from .training_finegrasp import run
         return run(config,out,1)

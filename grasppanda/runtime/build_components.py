@@ -9,20 +9,19 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 
 
-def build_pointmamba(uv, source, causal, env):
+def build_mamba_operators(uv, operators, env):
     flags = ['-O3', '-std=c++17', '--expt-relaxed-constexpr',
              '--expt-extended-lambda', '--use_fast_math',
              '-U__CUDA_NO_HALF_OPERATORS__', '-U__CUDA_NO_HALF_CONVERSIONS__',
              '-U__CUDA_NO_BFLOAT16_OPERATORS__', '-U__CUDA_NO_BFLOAT16_CONVERSIONS__',
              '-U__CUDA_NO_BFLOAT162_OPERATORS__', '-U__CUDA_NO_BFLOAT162_CONVERSIONS__']
-    for name, directory in (('_grasppanda_pointmamba_scan', source/'mamba/csrc/selective_scan'),
-                             ('_grasppanda_causal_conv1d', causal/'csrc')):
+    for name, directory in operators:
         build = ROOT/'environments/build'/name
         shutil.copytree(directory, build/'csrc', dirs_exist_ok=True)
         files = sorted(str(p.relative_to(build)) for p in (build/'csrc').iterdir()
                        if p.suffix in ('.cpp', '.cu'))
         if not files:
-            raise RuntimeError('PointMamba native operator sources are missing')
+            raise RuntimeError(f'{name}: native operator sources are missing')
         # Build every native precision kernel against this interpreter/torch,
         # without installing a global mamba_ssm or downloading a stock wheel.
         (build/'setup.py').write_text(
@@ -34,6 +33,19 @@ def build_pointmamba(uv, source, causal, env):
             'cmdclass={"build_ext":BuildExtension})\n')
         subprocess.run([uv, 'pip', 'install', '--python', sys.executable, '--no-deps',
                         '--no-build-isolation', str(build)], env=env, check=True)
+
+
+def build_pointmamba(uv, source, causal, env):
+    build_mamba_operators(uv, (
+        ('_grasppanda_pointmamba_scan', source/'mamba/csrc/selective_scan'),
+        ('_grasppanda_causal_conv1d', causal/'csrc')), env)
+
+
+def build_pcm(uv, source, env):
+    native = source/'openpoints/models/PCM'
+    build_mamba_operators(uv, (
+        ('_grasppanda_pcm_scan', native/'mamba/csrc/selective_scan'),
+        ('_grasppanda_pcm_causal', native/'causal-conv1d/csrc')), env)
 
 
 def build_vmamba(uv, source, env):
@@ -72,14 +84,14 @@ setup(name='grasppanda-deepla-ops', version='0.1.0',
                     '--no-build-isolation', str(build)], env=env, check=True)
 
 
-def verify_pointmeta_operators(source, openpoints):
+def verify_shared_operators(source, openpoints):
     native = source/'openpoints/cpp/pointnet2_batch/src'
     shared = openpoints/'cpp/pointnet2_batch/src'
     files = {p.name for p in native.iterdir() if p.is_file()}
     if not files or files != {p.name for p in shared.iterdir() if p.is_file()}:
-        raise RuntimeError('PointMetaBase and shared OpenPoints operator files differ')
+        raise RuntimeError('Component and shared OpenPoints operator files differ')
     if any((native/name).read_bytes() != (shared/name).read_bytes() for name in files):
-        raise RuntimeError('PointMetaBase requires a different native operator build')
+        raise RuntimeError('Component requires a different native point operator build')
 
 
 def main():
@@ -100,7 +112,9 @@ def main():
             subprocess.run(['git','-C',str(dest),'checkout','--detach',record['commit']],check=True)
         actual=subprocess.check_output(['git','-C',str(dest),'rev-parse','HEAD'],text=True).strip()
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
-    verify_pointmeta_operators(ROOT/pins['pointmetabase']['path'], ROOT/pins['openpoints']['path'])
+    for component in ('pointmetabase', 'pointcloudmamba'):
+        verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    build_pcm(uv, ROOT/pins['pointcloudmamba']['path'], env)
     build_pointmamba(uv, ROOT/pins['pointmamba']['path'], ROOT/pins['causal-conv1d']['path'], env)
     build_vmamba(uv, ROOT/pins['vmamba']['path'], env)
     build_deepla(uv, ROOT/pins['deepla']['path'], env)

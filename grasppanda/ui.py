@@ -61,6 +61,8 @@ def component_parameters(method, backbone, crop):
                 description = f'{rule[1]} integers, each {rule[2]} to {rule[3]}'
             elif rule[0] == 'float_list':
                 description = f'{rule[1]}–{rule[2]} numbers, each {rule[3]} to {rule[4]}'
+            elif rule[0] == 'choice_list':
+                description = f'{rule[1]}–{rule[2]} orders: ' + ', '.join(rule[3])
             elif rule[0] == 'bool':
                 description = 'true or false'
             else:
@@ -421,7 +423,7 @@ def create_app(manager=None):
                             gr.Markdown('The learning-rate field below sets the base rate. Scheduler warmup and milestones count **optimizer updates**, not epochs. Examples: optimizer `{"weight_decay": 0.01}`; cosine schedule `{"warmup_steps": 1, "min_lr_ratio": 0.01}`. Omit parameters to use the selected implementation defaults; see Guide → Modules for supported settings.')
                         label_root=gr.Textbox(label='Prepared targets / cache root (optional)',placeholder='HGGD/RNG: preprocessed labels. FineGrasp: writable derived-input cache.')
                         timeout = gr.Number(60, precision=0, minimum=1, maximum=43200, label='Run time limit (minutes)')
-                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; FineGrasp uses the configured batch size; other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. The controls below apply to native epoch training.')
+                        gr.Markdown('Short training uses fixed batches: HGGD, GraNet and fusion use batch 2; FineGrasp and PCM compositions use the configured batch size (PCM requires at least 2); other point methods use batch 1; RNG uses anchor batch 2 and up to 48 local patches. Epoch controls apply to native epoch training.')
                         with gr.Row():
                             epochs = gr.Number(1, precision=0, label="Final epoch (must exceed resume epoch)")
                             batch = gr.Number(2, precision=0, label="Batch size")
@@ -523,7 +525,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone!='sonata_ptv3' else [])
             return gr.update(choices=optimizers if enabled else ['upstream'],value='upstream',interactive=enabled),gr.update(choices=['upstream','constant','cosine','multistep'] if enabled else ['upstream'],value='upstream',interactive=enabled),'{}','{}'
         for selector in (method, action, backbone):
-            selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name=False)
+            selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name='optimization_choices' if selector is action else False)
         def action_defaults(a,m):
             training=a in ('train_check','train_smoke','train')
             workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')

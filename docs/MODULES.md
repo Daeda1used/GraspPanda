@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) |
-| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [Point Transformer](#point-transformer-encoder) |
+| Point encoders | [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [Point Transformer](#point-transformer-encoder) |
 | Local grouping | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [FineGrasp](#finegrasp-training-and-composition) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
@@ -17,7 +17,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `sonata_ptv3` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `sonata_ptv3` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
@@ -133,6 +133,38 @@ FPS centers and Euclidean nearest neighbors form centered local patches. Shared 
 The adapter keeps the native block constructor initialization, including the learned timestep bias initialization and depth-scaled output projections. It does not apply the classification trainer's outer scratch initializer, load classification weights or provide pretrained grasp weights. Start with [the composition example](../GraspNet-1B/examples/components/compose-pointmamba.yaml), use `reuse_unchanged` to retain the baseline's other modules, train the replacement, and use `strict` to reload the resulting grasp checkpoint. Width, depth, state size, grouping and fusion are saved with the experiment and can be swept through dotted configuration paths.
 
 Run `./panda install` to fetch the pinned sources and build both native CUDA extensions in the shared runtime. Fast Mamba convolution and selective scan use isolated extension names; no global `mamba_ssm` package is installed. Coordinates must be CUDA float32; extremely small grids that exceed the native 16-bit spatial encoding are rejected. Single-cell clouds retain a valid ordering. This encoder has one token resolution; it does not provide a hierarchical point decoder or make multi-view inputs interchangeable with single-view observations.
+
+## Point Cloud Mamba hierarchy
+
+`pointcloud_mamba` adapts [Point Cloud Mamba (2024 preprint, PDF)](https://arxiv.org/pdf/2403.00762) from [SkyworkAI's implementation](https://github.com/SkyworkAI/PointCloudMamba). It is a separate component from LMD's `pointmamba`. Baseline and its PointNet2 port can use its four-stage point hierarchy, bidirectional Mamba blocks, order prompts, positional projections, native feature propagation and global context.
+
+The grasp adapter supplies camera XYZ in metres, replaces the S3DIS input channels with XYZ, and projects dense decoder features to 256 channels at 1,024 original-input FPS seeds. It retains native `bimamba_type: v2`, local grouping and window processing. Classification/category tokens, RGB features and pretrained grasp weights are not supplied.
+
+| Setting | Default / meaning |
+|---|---|
+| `embed_dim`, `dim_expansion` | `96`, `[1,2,2,2]`; stem width and four successive multipliers |
+| `pre_blocks`, `pos_blocks` | `[1,1,1,1]`, `[0,0,0,0]`; local extraction and post-extraction residual depths |
+| `mamba_blocks` | `[1,2,2,4]`; positive scan-block counts, one entry per encoder stage |
+| `k_neighbors`, `k_strides`, `reducers` | `[12,12,12,12]`, `[1,1,1,1]`, `[4,4,2,2]`; KNN query, neighbor subsampling stride and point-count reduction |
+| `orders` | One order per encoder Mamba block. Omit to cycle `xyz`, `xzy`, `yxz`, `yzx`, `zxy`, `zyx`, `hilbert`, `z`, `z-trans`; `hilbert-trans` is also accepted |
+| `use_order_prompt`, `prompt_num_per_order` | `true`, `6`; prepend and append learned order prompts |
+| `mamba_pos`, `pos_type`, `pos_proj_type` | `true`, `share`, `linear`; alternatively `per_layer` projections or `mlp` |
+| `rms_norm`, `fused_add_norm`, `residual_in_fp32`, `block_residual` | All `true`; native encoder normalization and residual controls |
+| `drop_path` | `0.1`; native encoder stochastic-depth schedule |
+| `use_windows`, `window_sizes`, `grid_size` | `true`, `[1024,512,256,128]`, `0.04` metres; stage windows and spatial ordering resolution |
+| `use_xyz`, `normalize`, `res_expansion`, `activation` | `true`, `anchor`, `1.0`, `relu`; local extraction also accepts `center`, `gelu` or `silu` |
+| `decoder_channels`, `decoder_blocks` | Widths derived from the encoder, `[384,192,96,96]` by default; `[1,1,1,1]` propagation depths. Entries run from coarse to fine |
+| `decoder_mamba_blocks`, `decoder_orders` | `[0,0,0,0]`, `[]`; optional decoder scans. Omitted orders cycle as above; a final-resolution scan must end with the string `"null"` |
+| `decoder_rms_norm`, `decoder_fused_add_norm`, `decoder_residual_in_fp32` | `true`, `false`, `false`; normalization controls for enabled decoder scans |
+| `gmp_dim` | `64`; native pooled global-context width, concatenated with dense features |
+
+Stage widths must be multiples of eight and at most 2,048. Each neighbor count must divide evenly by its stride and fit the incoming stage. Every coarse level must retain at least three points for native interpolation. Windows preserve the author's sorted-FPS truncation to a complete number of windows and within-window coordinate normalization; dense decoding returns to the full original input. Configuration validation accounts for this truncation. Finite coordinates and a maximum 16-bit voxel extent are required.
+
+GraspPanda applies three correspondence fixes to the pinned source: CTS uses per-point coordinates with a zero-based serpentine endpoint convention and separate batch ranges; prompt IDs follow first occurrence instead of unordered set iteration; each decoder scan stage restores feature rows before the next spatial interpolation. These fixes affect serialized ordering and optional decoder scans, so the adapter does not claim numerical equivalence to the unmodified upstream model. The scoped loader also removes an unsupported, redundant keyword from the native standalone RMSNorm wrapper, allowing non-fused RMSNorm blocks. Native grouping, normalization mathematics, Mamba layers, global context and propagation remain in use.
+
+Use [the composition example](../GraspNet-1B/examples/components/compose-pcm.yaml), or select `pointcloud_mamba` and enter parameters in the UI. `./panda install` downloads the pinned source and builds its two CUDA extensions with isolated names in the shared runtime; its older causal-convolution ABI coexists with `pointmamba`. Source terms are described in [Third-party notices](THIRD_PARTY.md).
+
+Training requires **`batch_size >= 2`** because native global-context BatchNorm operates on one pooled feature per sample. Short training uses a fixed batch of consecutive labelled frames within the selected scene; epoch training drops an incomplete final batch. Inference accepts one frame. Keep the exact component configuration when reloading weights; use `reuse_unchanged` for initial component replacement, train it, then use `strict` with the resulting checkpoint. Epoch `resume` restores the saved composition and optimizer contract. Run full training and held-out evaluation before interpreting grasp quality.
 
 ## Residual local aggregation in cylinders
 
@@ -431,7 +463,7 @@ learning_rate: 0.0001
 ./panda run compose.local.yaml --runs-dir outputs/cli-runs
 ```
 
-By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp uses the configured `batch_size`; other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
+By default, the check repeats one labelled frame without augmentation and computes the native loss. Registered overrides apply the configured objective and augmentation. It requires finite losses/gradients and nonzero parameter updates. It also verifies updates in every replaced component. This is a bounded optimization diagnostic, not a multi-epoch training schedule or accuracy result. HGGD, GraNet and fusion use batch size 2; FineGrasp and PCM compositions use the configured `batch_size`; PCM requires at least 2 distinct consecutive frames. Other point methods use batch size 1. RNG uses anchor batch 2 and up to 48 local patches. CenterGrasp checks its SGDF and RGB objectives separately. Outside FineGrasp and PCM compositions, the general `batch_size` field applies to native epoch training. `epochs` always applies to the full `train` action.
 
 The output directory contains `checkpoint.pt`, `result.json`, the configuration, provenance and logs. Results include loss components, input-label hashes, transfer details and updates. The UI plots total loss and can export the run.
 

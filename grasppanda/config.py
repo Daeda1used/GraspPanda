@@ -165,6 +165,8 @@ class Experiment:
             raise ValueError('Training checks require a scene in the training split')
         if self.action=='train' and self.train_batch_limit and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
             raise ValueError('Bounded native training requires a scene in the training split')
+        from .pcm_options import validate_config as validate_pcm_config
+        validate_pcm_config(self)
         return self
 
     def preflight(self):

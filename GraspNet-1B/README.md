@@ -32,6 +32,7 @@ Run commands from the repository root. The dataset root is the directory contain
 | [Residual local aggregation](examples/components/compose-reslfe.yaml) | Configure native ResLFE layers inside oriented cylinders |
 | [PointMetaBase](examples/components/compose-pointmeta.yaml) | Configure feature updates, explicit position encoding and local aggregation |
 | [PointMamba](examples/components/compose-pointmamba.yaml) | Configure native state-space tokens, Hilbert ordering and grasp seed interpolation |
+| [Point Cloud Mamba](examples/components/compose-pcm.yaml) | Configure point hierarchy stages, local windows, scan orders and native dense decoding |
 | [PointVector](examples/components/compose-pointvector.yaml) | Compose native vector aggregation features with oriented cylindrical grouping |
 | [Pretrained image features](examples/components/compose-dino.yaml) | Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks |
 | [Visual state-space encoder](examples/components/compose-vmamba.yaml) | Configure VMamba stages, state size and scan directions |

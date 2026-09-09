@@ -62,6 +62,9 @@ def schema(method, slot, choice):
             if choice != 'mobilenetv4':
                 fields.update(stage_channels=('int_list', 4, 16, 1024), stage_depths=('int_list', 4, 1, 32))
             return fields
+    if slot == 'backbone' and choice == 'pointcloud_mamba':
+        from .pcm_options import schema as pcm_schema
+        return pcm_schema()
     if slot == 'backbone' and choice == 'pointmamba':
         return {'dim': ('int',8,768), 'depth': ('int',1,48),
                 'num_group': ('int',4,2048), 'group_size': ('int',4,256),
@@ -125,6 +128,8 @@ def validate_options(method, slot, choice, options):
         valid = False
         if rule[0] == 'choice':
             valid = isinstance(value, str) and value in rule[1]
+        elif rule[0] == 'choice_list':
+            valid = isinstance(value, list) and rule[1] <= len(value) <= rule[2] and all(isinstance(v, str) and v in rule[3] for v in value)
         elif rule[0] == 'bool':
             valid = type(value) is bool
         elif rule[0] in ('int', 'float'):
@@ -153,6 +158,9 @@ def validate_options(method, slot, choice, options):
             raise ValueError('DeepLA cylinder width must be a multiple of 8')
         if options.get('local_neighbors',8) > options.get('nsample',16):
             raise ValueError('DeepLA local neighbors must not exceed the cylinder sample count')
+    if choice == 'pointcloud_mamba':
+        from .pcm_options import validate as validate_pcm
+        validate_pcm(options)
     if choice == 'pointmamba' and options.get('dim',384) % 8:
         raise ValueError('PointMamba token width must be a multiple of 8')
     if choice == 'pointmeta' and options.get('blocks',[1,3,5,3,3])[0] != 1:

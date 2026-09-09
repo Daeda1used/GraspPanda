@@ -140,6 +140,13 @@ def run(config,out):
             if stop<=start:raise ValueError('Bounded training frame range is empty')
             dataset=torch.utils.data.Subset(dataset,range(start,stop))
         kwargs['num_workers']=config.data_workers
+        from .pcm_options import selected as pcm_selected
+        if train and pcm_selected(config):
+            if len(dataset) < config.batch_size:
+                raise ValueError('PCM training requires at least one full batch')
+            # The native global-context BatchNorm cannot train on a singleton
+            # remainder; keep batch composition stable across epoch resumes.
+            kwargs['drop_last']=True
         return native_loader(dataset,*args,**kwargs)
     namespace={'__name__':'grasppanda_native_trainer','__file__':str(repo/'train.py')}
     namespace.update(_grasppanda_optimizer=lambda parameters:build_optimizer(parameters,config),

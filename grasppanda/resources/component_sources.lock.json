@@ -58,5 +58,11 @@
     "repository": "https://github.com/Dao-AILab/causal-conv1d",
     "path": "environments/sources/cv/causal-conv1d",
     "commit": "f8c246707eff3431b5cf2ce6defa4b7f309ea9fb"
+  },
+  {
+    "id": "pointcloudmamba",
+    "repository": "https://github.com/SkyworkAI/PointCloudMamba",
+    "path": "environments/sources/cv/pointcloudmamba",
+    "commit": "57fdb29d3cf1a977b4ed971919b6d83b5134d1dd"
   }
 ]
