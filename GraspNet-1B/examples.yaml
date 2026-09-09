@@ -1058,3 +1058,29 @@ compose-oacnns:
         relation_normalization: cluster
         grid_origin: zero
         sparse_padding: stride
+compose-kpconvx:
+  description: Compose kernel point attention with a grasp detector
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    frame: 0
+    num_points: 15000
+    workspace: official_gt_workspace
+    batch_size: 2
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: kpconvx
+        layer_blocks: [3, 3, 9, 12, 3]
+        stage_channels: [64, 96, 128, 192, 256]
+        neighbor_limits: [12, 16, 20, 20, 20]
+        shell_sizes: [1, 14, 28]
+        kp_influence: linear
+        modulation_scope: point

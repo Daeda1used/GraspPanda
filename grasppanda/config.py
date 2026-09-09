@@ -175,6 +175,8 @@ class Experiment:
         validate_litept_config(self)
         from .modules.oacnns_options import validate_config as validate_oacnns_config
         validate_oacnns_config(self)
+        from .modules.kpconvx_options import validate_config as validate_kpconvx_config
+        validate_kpconvx_config(self)
         return self
 
     def preflight(self):

@@ -94,5 +94,11 @@
     "repository": "https://github.com/prs-eth/LitePT",
     "path": "environments/sources/cv/litept",
     "commit": "436d04801c8151faebe66a1b2d368a9711e7e6aa"
+  },
+  {
+    "id": "kpconvx",
+    "repository": "https://github.com/apple/ml-kpconvx",
+    "path": "environments/sources/cv/kpconvx",
+    "commit": "54e644a9f3bddd4c344a58193897a44582b0fea4"
   }
 ]

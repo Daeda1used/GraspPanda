@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.32.0"
+version = "0.33.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [

@@ -17,14 +17,14 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `oacnns`, `kpconvx` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -334,6 +334,47 @@ The default relation normalization avoids underflow and cross-scene numerical co
 `stem_depth`, `decoder_layers` and the numerical/geometry policies are toolbox controls. The source's `groups`, `enc_num_ref`, `down_ratio` and `dec_depth` do not control the advertised computations; they are not accepted as experimental parameters. Native default widths and block counts are preserved.
 
 Train a changed encoder with `checkpoint_policy: reuse_unchanged`, then infer with the saved checkpoint and `strict`. No GraspNet-pretrained OA-CNNs checkpoint is registered. Short training uses consecutive frames and requires `batch_size >= 2`; epoch training drops incomplete batches. Loss, point augmentation, Adam/AdamW/SGD/Lion and update schedules follow the selected method's training contract. Muon is excluded because sparse convolution kernels have no registered routing. Segmentation results from the paper do not establish grasp accuracy.
+
+</details>
+
+<details>
+<summary>KPConvX: kernel point attention</summary>
+
+## KPConvX kernel point hierarchy
+
+`kpconvx` loads the official [KPConvX Pointcept wrapper](https://github.com/apple/ml-kpconvx/tree/54e644a9f3bddd4c344a58193897a44582b0fea4/Pointcept-wrapper/models/kpconvx) from [KPConvX (CVPR 2024, PDF)](https://openaccess.thecvf.com/content/CVPR2024/papers/Thomas_KPConvX_Modernizing_Kernel_Point_Convolution_with_Kernel_Attention_CVPR_2024_paper.pdf). It retains the native kernel-point stem, depthwise/kernel-attention blocks, multilevel grid pooling, decoder skips and feature head. This is the author's KPConvX hierarchy; the separate KPNeXt/PTv2 hybrid is not substituted.
+
+Baseline, its PointNet2 port, Graspness, EconomicGrasp and FineGrasp accept this encoder. Dense adapters preserve original FPS seed indices and 256-channel features. Sparse adapters preserve the Minkowski coordinate manager, map and feature-row order, including FineGrasp's normal inputs. The final native projection supplies the grasp feature width. Grasp labels, sampling and downstream grouping remain method-specific.
+
+Generate `./panda init --example compose-kpconvx`, set your paths, and run the configuration or select **kpconvx** in the UI. Upgrade with `./panda install` to fetch the pinned source. It reuses the shared Pointcept pointops, PyG and torch-scatter installation. No separate environment or segmentation checkpoint is required.
+
+| Parameter | Default | Control |
+|---|---|---|
+| `layer_blocks` | `[3,3,9,12,3]` | Encoder block counts, fine to coarse; 1–6 stages with 1–24 blocks each |
+| `init_channels`, `channel_scaling` | `64`, `sqrt(2)` | Stage width is `ceil((init_channels * channel_scaling**i - 0.1) / 16) * 16` |
+| `stage_channels` | Derived above | Optional explicit widths, one per stage; multiples of 16, up to 1024; overrides the width formula |
+| `neighbor_limits` | `[12,16,20,20,20]` | Per-stage KNN limits, 1–128; missing neighbors use the native zero-feature shadow row |
+| `subsample_size`, `radius_scaling` | `0.02`, `2.2` | Metric base size and stage scale; the first pooling grid is their product |
+| `shell_sizes` | `[1,14,28]` | Kernel points per shell; 2–4 shells starting with one center point, at most 128 points total |
+| `kp_radius`, `kp_sigma` | `2.3`, `2.3` | Kernel support and influence scales, relative to the base size and stage scale |
+| `kp_influence` | `linear` | `constant`, `linear` or `gaussian` kernel influence |
+| `kp_aggregation` | `nearest` | Stem aggregation: `nearest` or `sum`; modern depthwise blocks always use nearest-kernel assignment |
+| `kp_mode`, `first_inv_layer` | `kpconvx`, `1` | Kernel attention or `kpconvd`; the first indicated encoder stages use depthwise convolution without attention |
+| `inv_groups`, `inv_act` | `8`, `sigmoid` | Attention groups; negative means channels per group, zero selects depthwise blocks; `sigmoid`, `tanh`, `softmax` or `none` activation |
+| `inv_grp_norm`, `modulation_scope` | `true`, `native` | Kernel-modulation GroupNorm; `native` includes all packed points, `point` normalizes each point separately |
+| `share_kp`, `kpx_upcut` | `false`, `false` | Share stage kernel geometry/influences; enable the expanded-feature shortcut between encoder blocks |
+| `decoder_layer` | `true` | Add a native residual block after each decoder skip fusion |
+| `drop_path_rate` | `0` | Maximum encoder stochastic-depth probability; native linear block schedule |
+| `norm`, `bn_momentum` | `batch`, `0.1` | `batch`, `group`, `layer` or `none`; native `none` retains learned biases |
+| `activation` | `leaky_relu` | Native LeakyReLU(0.1), or ReLU/GELU/SiLU in feature blocks |
+
+Defaults follow the native constructor. The author's ScanNet recipe instead selects constant influence and a 0.3 drop-path rate. Native packed GroupNorm includes points from other scenes even during inference; hold batching fixed when comparing it. `modulation_scope: point` is an explicit GraspPanda variation that removes this coupling from kernel attention. With `norm: group`, feature GroupNorm still uses packed-point statistics. BatchNorm uses the usual running statistics in evaluation.
+
+The published wrapper uses **KNN**, not a hard radius cutoff, and **grid pooling with exact inverse upsampling**. The adapter keeps every input feature row; `subsample_size` defines the hierarchy scale rather than an extra initial downsampling pass. `kp_radius` changes the kernel geometry; it does not limit KNN distance. The unused `upsample_n`, old `conv_groups`, classification loss options and incomplete non-grid pooling branch are not exposed. A single stage omits pooling while retaining its encoder and head.
+
+Kernel dispositions are cached locally by the complete shell tuple, avoiding collisions between layouts with the same point count. The default uses the author's supplied disposition. Other layouts use the author optimizer with an isolated fixed initialization seed; the first use can take longer. Native per-layer rotations/noise follow the experiment seed, and kernel buffers are stored in checkpoints. Downloaded source stays unchanged.
+
+There are no registered GraspNet-pretrained KPConvX weights. Start with `reuse_unchanged`, train the replacement, then use `strict`; epoch resume retains the complete configuration and optimizer state. Training uses at least two frame samples per batch, consecutive frames for short runs, and drops incomplete epoch batches. Existing loss, augmentation and optimizer settings follow the selected grasp method. Paper segmentation scores do not establish grasp accuracy.
 
 </details>
 
