@@ -90,6 +90,20 @@ def infer(config, out):
     metadata=checkpoint.parent/'model.config.json'
     model, architecture, payload, changed, transfer = load_model(config)
     model.cuda().eval()
+    class NoGraspablePoints(Exception):
+        pass
+
+    def check_graspable(module, inputs, end_points):
+        scores = end_points['objectness_score']
+        graspness = end_points['graspness_score'].squeeze(1)
+        if not torch.isfinite(scores).all() or not torch.isfinite(graspness).all():
+            raise ValueError('FineGrasp produced nonfinite proposal scores')
+        mask = (scores.argmax(1) == 1) & (graspness > model.graspness_threshold)
+        # This inference loop processes exactly one frame at a time.
+        if mask.shape[0] == 1 and not mask.any():
+            raise NoGraspablePoints()
+
+    model.graspable.register_forward_hook(check_graspable)
     from robo_orchard_lab.models.finegrasp.processor import GraspInput,FineGraspProcessor,FineGraspProcessorCfg
     processor=FineGraspProcessor(FineGraspProcessorCfg(voxel_size=config.voxel_size,
         grasp_max_width=model.cfg.grasp_max_width,num_seed_points=model.cfg.num_seed_points,
@@ -108,8 +122,15 @@ def infer(config, out):
                          grasp_workspace=bounds,num_sample_points=config.num_points)
         start=time.monotonic()
         data=processor.pre_process(inputs,device='cuda')
-        with torch.no_grad():prediction=model(data)
-        grasps=processor.post_process(prediction,data).grasp_poses
+        empty = False
+        try:
+            with torch.no_grad():prediction=model(data)
+        except NoGraspablePoints:
+            from graspnetAPI import GraspGroup
+            grasps = GraspGroup(np.empty((0,17),dtype=np.float64))
+            empty = True
+        else:
+            grasps=processor.post_process(prediction,data).grasp_poses
         array=grasps.grasp_group_array
         if array.ndim!=2 or array.shape[1]!=17 or not np.isfinite(array).all():raise ValueError('Invalid native FineGrasp output')
         target=out/'predictions'/f'scene_{scene:04d}'/config.camera/f'{frame:04d}.npy'
@@ -118,6 +139,8 @@ def infer(config, out):
         rows.append(dict(scene=scene,frame=frame,grasps_saved=len(grasps),sampled_points=config.num_points,
             pipeline_seconds=time.monotonic()-start,prediction=str(target.relative_to(out)),prediction_sha256=digest(target),
             rgb_sha256=digest(rgb),depth_sha256=digest(depth),meta_sha256=digest(meta)))
+        if empty:
+            rows[-1]['notice'] = 'The native proposal thresholds selected no graspable points. Check the input and checkpoint, and train newly initialized components before judging quality. This is an empty prediction, not benchmark AP.'
         if len(rows)==1:overlay(rgb,array,intr,out/'preview.png')
     manifest=dict(config=config.to_dict(),checkpoint_sha256=digest(checkpoint),model_config_sha256=digest(metadata),
         files={str(Path(r['prediction']).relative_to('predictions')):r['prediction_sha256'] for r in rows})

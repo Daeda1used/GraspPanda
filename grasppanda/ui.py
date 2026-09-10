@@ -82,13 +82,22 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 values = 'true or false' if scalar[0] == 'bool' else f'integer: {scalar[1]} to {scalar[2]}'
                 description = values + ('; one value for all attention layers, or one per layer' if slot == 'head' else '; one value for all scan blocks, or a list with one value per active block')
             elif rule[0] == 'choice_list':
-                description = f'{rule[1]}–{rule[2]} orders: ' + ', '.join(rule[3])
+                description = f'{rule[1]}–{rule[2]} values: ' + ', '.join(rule[3])
             elif rule[0] == 'bool':
                 description = 'true or false'
             else:
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'sp2t':
+                if key.startswith('block_'):
+                    description += '; encoder fine to coarse, then decoder coarse to fine; one entry per block; overrides shared settings'
+                elif key.startswith(('enc_', 'dec_')):
+                    description += '; stages listed fine to coarse; decoder has one fewer stage'
+                elif key == 'serialization_depth':
+                    description += '; fixed lattice bit depth keeps Hilbert order independent of other scenes in the batch'
+                elif key in ('proxy_start_stage', 'proxy_end_stage'):
+                    description += '; inclusive stage interval; applies to both encoder and decoder'
             if choice == 'swin3d':
                 if key.startswith('block_'):
                     description += '; full vector: encoder fine to coarse, then decoder coarse to fine; length sum(depths) + sum(decoder_depths); overrides the corresponding stage/shared setting'

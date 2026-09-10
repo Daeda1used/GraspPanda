@@ -215,13 +215,16 @@ def main():
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
     verify_pointhr_operators(ROOT/pins['pointhr']['path'], ROOT/pins['pointcept']['path'])
     if __package__:
+        from .build_sp2t import build as build_sp2t
         from .build_swin3d import build as build_swin3d
         from .build_pointcnnpp import build as build_pointcnnpp
         from .build_flash3d import build as build_flash3d
     else:
+        from build_sp2t import build as build_sp2t
         from build_swin3d import build as build_swin3d
         from build_pointcnnpp import build as build_pointcnnpp
         from build_flash3d import build as build_flash3d
+    build_sp2t(pins)
     build_swin3d(uv, pins, env)
     build_pointcnnpp(uv, pins, env)
     build_flash3d(uv, pins, env)

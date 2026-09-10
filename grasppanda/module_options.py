@@ -80,6 +80,9 @@ def _schema(method, slot, choice):
     if slot == 'backbone' and choice == 'oacnns':
         from .modules.oacnns_options import schema as oacnns_schema
         return oacnns_schema()
+    if slot == 'backbone' and choice == 'sp2t':
+        from .modules.sp2t_options import schema as sp2t_schema
+        return sp2t_schema()
     if slot == 'backbone' and choice == 'swin3d':
         from .modules.swin3d_options import schema as swin3d_schema
         fields = swin3d_schema()
@@ -334,6 +337,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'oacnns':
         from .modules.oacnns_options import validate as validate_oacnns
         validate_oacnns(options)
+    if choice == 'sp2t':
+        from .modules.sp2t_options import validate as validate_sp2t
+        validate_sp2t(options)
     if choice == 'swin3d':
         from .modules.swin3d_options import validate as validate_swin3d
         validate_swin3d(options)

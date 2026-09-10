@@ -168,5 +168,11 @@
     "repository": "https://github.com/microsoft/Swin3D",
     "commit": "57d513771d5777767518cfe0f42c3707f3880fb7",
     "path": "environments/sources/cv/swin3d"
+  },
+  {
+    "id": "sp2t",
+    "repository": "https://github.com/WallelWan/SP2T",
+    "path": "environments/sources/cv/sp2t",
+    "commit": "e355eead80df1fc75297f55d164d64151efeaab5"
   }
 ]

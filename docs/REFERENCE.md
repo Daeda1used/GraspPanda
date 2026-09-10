@@ -5,7 +5,7 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](MODULES.md#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [Swin3D](#swin3d-sparse-window-hierarchy) · [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [SP2T](#sp2t-sparse-proxy-hierarchy) · [Swin3D](#swin3d-sparse-window-hierarchy) · [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -1331,6 +1331,44 @@ KNN and interpolation neighborhoods accept 1–64 points, and each source scene 
 Dense inputs supply camera XYZ. Sparse inputs preserve the method's lattice and feature channels; fine-grained normals come from FineGrasp's actual normal features. `xyz_normals` retains unused RGB storage columns required by the author's layout, but neither reads those columns for relative encoding nor supplies invented RGB features. Native representative selection uses all supplied coordinate attributes, as in the original implementation.
 
 The installer builds the [pinned author source](https://github.com/microsoft/Swin3D) in the shared environment. Compatibility changes honor the active CUDA stream/device, validate native KNN inputs, bound relative-table indices, cover shared-memory indexing, unpack saved attention tensors once for gradient checkpointing, and resolve equal-distance representative ties by coordinate order. Voxel means accumulate at higher precision before returning float32 features. Sparse row ordering can change stochastic dropout assignments across independently constructed coordinate maps; a seed does not promise bitwise training replay.
+
+[Source terms](THIRD_PARTY.md) · [Installation](INSTALL.md)
+
+</details>
+
+
+<details>
+<summary>SP2T: local windows and spatial proxy attention</summary>
+
+## SP2T sparse proxy hierarchy
+
+`sp2t` uses the [SP²T author implementation](https://github.com/WallelWan/SP2T) ([ICCV 2025 paper](https://arxiv.org/pdf/2412.11540)) as a configurable point encoder for Baseline, the PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp and FineGrasp. Its native encoder/decoder combines sparse convolutions, serialized local attention and a spatial proxy stream with vertex associations. `./panda init --example compose-sp2t` generates a compact starting configuration.
+
+The replacement initializes randomly. Select `reuse_unchanged` to transfer unchanged grasp heads, train the composition, then use its saved configuration and checkpoint with `strict` loading. Author segmentation weights linked in the upstream model zoo are not registered grasp checkpoints. Runtime checks do not establish GraspNet benchmark accuracy.
+
+| Controls | Meaning and defaults |
+|---|---|
+| `enc_channels`, `enc_depths`, `enc_num_head`, `enc_patch_size` | One to five stages; defaults `[32,64,128,256,512]`, `[2,2,2,6,2]`, `[2,4,8,16,32]`, and windows of 1024 points. |
+| `dec_channels`, `dec_depths`, `dec_num_head`, `dec_patch_size` | One fewer stage, listed fine to coarse; defaults `[64,64,128,256]`, `[2,2,2,2]`, `[4,4,8,16]`, and windows of 1024. Every configured stage contains at least one block. |
+| `stride`, `pooling` | Per-transition strides of 2, 4 or 8; default all 2. Native hierarchy reduction: `max` (default), `mean`, `min` or `sum`. |
+| `grid_size`, `serialization_depth`, `order` | Voxel width in metres (`0.005`), fixed lattice bit depth (`16`), and distinct orders from `z`, `z-trans`, `hilbert`, `hilbert-trans` (default all four). |
+| `mlp_ratio`, `qkv_bias`, `pre_norm`, `shuffle_orders` | Defaults `4`, `true`, `true`, `true`. Disable order shuffling for deterministic evaluation comparisons. |
+| `drop_path`, `attn_drop`, `proj_drop`, `enable_checkpoint` | Native scheduled drop path defaults to `0.3`, dropout to zero and activation checkpointing to `true`. |
+| `block_mlp_ratios`, `block_patch_sizes`, `block_drop_path`, `block_attn_drop`, `block_proj_drop`, `block_checkpoint` | Optional vectors in encoder execution order followed by decoder execution order. Length is `sum(enc_depths) + sum(dec_depths)`. Checkpointing also accepts a scalar. |
+| `enable_flash`, `enable_rpe`, `upcast_attention`, `upcast_softmax` | Flash local attention defaults to `true`; the other flags default to `false`. Local table RPE and upcasting require Flash to be disabled. Flash head widths must be divisible by eight and at most 256. |
+| `proxy_start_stage`, `proxy_end_stage`, `proxy_local_attention` | Inclusive proxy stage interval, default stage 1 through the coarsest stage (stage 0 for a one-stage model). Local attention runs alongside proxies by default; `false` ablates it in active proxy stages. |
+| `proxy_operator` | Native `attention` (default), `pooling` or `trb_conv`. Plain pooling does not consume relative bias; its unused bias table is omitted. |
+| `proxy_initializer` | `square` searches a spatial grid with `proxy_target: 160`, `proxy_search_range: [0,1]` and `proxy_search_iterations: 10`. The target is approximate. `fixed_grid` uses `proxy_grid_shape: [4,4,4]`; `fixed_size` uses `proxy_cell_size: 0.1` metres. Supply only parameters for the selected initializer. |
+| `proxy_query_reduction`, `proxy_projection`, `proxy_same_kv`, `proxy_self_attention`, `proxy_projection_norm`, `proxy_similarity_scale` | Attention query aggregation (`none`, `mean`, `min`, `max`), projection and shared K/V controls. Defaults: `none`, `true`, `true`, `false`, `false`, `1`. Self attention and projection normalization require projections. |
+| `proxy_norm`, `proxy_pe_layers`, `proxy_pe_temperature` | Cross-attention norm placement (`pre` or `post`), positional embedding layers (`2`) and temperature (`10`). |
+| `proxy_bias`, `proxy_bias_scale`, `proxy_bias_table_size`, `proxy_bias_split` | Native table bias defaults: enabled, scale `2.5`, size `16`, separate map/reduce biases. |
+| `proxy_reuse_features`, `proxy_reuse_bias`, `proxy_decoder_reuse`, `proxy_mask_empty` | Feature/bias reuse defaults to `true`; decoder stage reuse and empty-proxy masking default to `false`. Decoder association reuse requires shared proxy geometry (`proxy_reuse_features: true`); bias reuse also requires matching encoder/decoder heads at the same stage. Empty-proxy masking requires the attention fuser. |
+| `proxy_fuser` | `attention` uses `proxy_fuser_ffn: true`, `proxy_fuser_rpe: true`, RPE scale `0.4` and table size `8`. `se` instead uses `proxy_se_pool: mean` (`min`/`max` available) and `proxy_se_layers: 2`. |
+| `seed_sampling` | Shared seed policy for dense adapters. Sparse methods retain their own learned seed selection. |
+
+Voxel means accumulate in float64 and return float32 features to native operators. Outputs map back to every input row. Dense adapters retain original-input seed indices; sparse adapters retain their exact coordinate manager/map and actual feature channels, including FineGrasp normals. Fixed-grid proxy layouts require nonzero spatial extent on every axis wherever proxy geometry is initialized; use `square` or `fixed_size` for degenerate geometry.
+
+The shared installer prepares an isolated, hash-verified namespace from pinned source. Runtime corrections cover scene slicing, single-scene proxy fusion/masking, self-attention logits, query residuals, checkpoint BatchNorm buffers, window-specific caches and unused decoder bias parameters. Forward-scoped caches prevent state leaking between models. A declared serialization depth and per-scene PyTorch attention windows keep evaluation geometry independent of neighboring scenes; training BatchNorm and stochastic layers still have their normal batch behavior. Native sparse convolutions supply weight gradients in training mode. Optional upstream MMCV FPS/KNN and Warp/Taichi paths are not selectable. Product query aggregation is omitted because large association groups can overflow.
 
 [Source terms](THIRD_PARTY.md) · [Installation](INSTALL.md)
 

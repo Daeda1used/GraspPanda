@@ -29,16 +29,16 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](REFERENCE.md#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](REFERENCE.md#candidate-graph-experiments) |

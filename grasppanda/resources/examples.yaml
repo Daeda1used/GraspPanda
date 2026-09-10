@@ -1095,3 +1095,33 @@ compose-swin3d:
         block_heads: [4, 2, 4, 8, 4, 8, 4, 2]
         block_mlp_ratios: [2, 3, 4, 2, 3, 4, 2, 3]
         gradient_checkpointing: true
+
+compose-sp2t:
+  description: SP2T spatial proxies with stage and block controls
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 15000
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    training_steps: 30
+    learning_rate: 0.001
+    modules:
+      backbone:
+        type: sp2t
+        enc_channels: [32, 64, 128]
+        enc_depths: [1, 2, 1]
+        enc_num_head: [2, 4, 8]
+        enc_patch_size: [32, 64, 128]
+        dec_channels: [32, 64]
+        dec_depths: [1, 1]
+        dec_num_head: [2, 4]
+        dec_patch_size: [64, 32]
+        proxy_target: 32
+        block_mlp_ratios: [2, 3, 4, 2, 3, 2]
+        block_patch_sizes: [32, 64, 48, 128, 32, 64]
+        block_checkpoint: [true, false, true, false, true, false]
