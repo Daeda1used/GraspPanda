@@ -122,6 +122,22 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description += '; coarse to fine propagation stages, ending at the original input points'
             if choice == 'pointhr' and key in ('dec_channels', 'dec_depths', 'dec_groups', 'dec_neighbours'):
                 description += '; finest original-point resolution to coarsest decoded resolution'
+            if choice == 'fastvit':
+                if rule[0] in ('per_stage','per_block'):
+                    scalar = rule[2]
+                    description = 'true or false' if scalar[0] == 'bool' else f'{scalar[0]}: {scalar[1]} to {scalar[2]}'
+                if key == 'block_mixers':
+                    description = 'repmixer or attention; one entry per block, in fine-to-coarse stage order'
+                elif key.startswith('block_'):
+                    description += '; scalar or one entry per block, in fine-to-coarse stage order'
+                elif key.startswith('attention_'):
+                    description += '; scalar or one entry per attention block, in stage order'
+                elif key == 'repmixer_kernels':
+                    description += '; scalar or one odd kernel per RepMixer block, in stage order'
+                elif key == 'parameterization':
+                    description += '; selects branch or fused convolution weights; FastViTHD pretraining requires fused'
+                elif key == 'trainable_stages':
+                    description += '; last N stages, including their downsamplers; 0 freezes the RGB encoder'
             if choice == 'efficientvit':
                 if key in ('attention_dims', 'attention_heads', 'attention_bias'):
                     description += '; scalar or one value per attention block, in fine-to-coarse stage order'
@@ -388,7 +404,7 @@ def create_app(manager=None):
         from .components import validate_selection
         from .weights import fetch_component
         try:
-            if backbone not in ('dinov2','dinov3','utonia','concerto','mambavision','efficientvit'):
+            if backbone not in ('dinov2','dinov3','utonia','concerto','mambavision','efficientvit','fastvit'):
                 return 'Select a registered pretrained encoder to prepare its weights.'
             parameters = json.loads(parameters or '{}')
             if not isinstance(parameters, dict):
@@ -397,12 +413,18 @@ def create_app(manager=None):
             if not isinstance(options, dict) or 'type' in options:
                 raise ValueError('Use the encoder selector for type and provide its parameters as a mapping')
             validate_selection(method, {'backbone': dict(type=backbone, **options)})
+            if backbone == 'fastvit':
+                from .modules.fastvit_options import resolve
+                options = resolve(options)
             if backbone == 'efficientvit':
                 from .modules.efficientvit_options import resolve
                 options = resolve(options)
             if not options.get('pretrained', True): return 'This configuration uses random encoder initialization.'
             defaults = {'concerto': 'base', 'mambavision': 'tiny', 'efficientvit': 'b0'}
             name = 'utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', defaults.get(backbone, 'small'))
+            if backbone == 'fastvit':
+                from .modules.fastvit_options import weight_id
+                name = weight_id(options)
             fetch_component(name, lambda message: progress(.5, desc=message))
             return 'Pretrained encoder weights verified. New projection layers still require grasp training.'
         except Exception as error:
@@ -850,7 +872,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
-                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision', 'efficientvit')),
+                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision', 'efficientvit', 'fastvit')),
                     gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
         gr.on([method.change, action.change, backbone.change], operation_layout, [method, action, backbone],
             [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel],

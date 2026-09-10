@@ -192,5 +192,19 @@
     "repository": "https://github.com/mit-han-lab/efficientvit",
     "path": "environments/sources/cv/efficientvit",
     "commit": "de7d7733cc0329f391b33f1f459271562ec27bd5"
+  },
+  {
+    "id": "fastvit",
+    "repository": "https://github.com/apple/ml-fastvit",
+    "path": "environments/sources/cv/fastvit",
+    "commit": "8af5928238cab99c45f64fc3e4e7b1516b8224ba",
+    "license": "Apple software license"
+  },
+  {
+    "id": "fastvlm",
+    "repository": "https://github.com/apple/ml-fastvlm",
+    "path": "environments/sources/cv/fastvlm",
+    "commit": "592b4add3c1c8a518e77d95dc6248e76c1dd591f",
+    "license": "Apple software license"
   }
 ]

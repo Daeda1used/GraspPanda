@@ -45,7 +45,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
-| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala`, `mambavision`, `efficientvit` |
+| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala`, `mambavision`, `efficientvit`, `fastvit` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](REFERENCE.md#candidate-graph-experiments) |
 | SPGrasp | `backbone` / `memory` | `upstream`, `hiera` / `upstream`, `temporal`; [planar sequence settings](REFERENCE.md#prompted-planar-sequences) |
 
@@ -69,4 +69,4 @@ Use `./panda init --list` to discover complete templates, then `./panda init --e
 
 Pose postprocessing is configured independently with `refinement`; see [contact-score refinement](REFERENCE.md#contact-score-refinement) for predicted-instance grouping, pose variables and auxiliary objectives.
 
-For RGB-D experiments, [EfficientViT stages and attention](REFERENCE.md#efficientvit-rgb-d-hierarchy) expose local blocks, multi-scale kernels, head dimensions and pretrained initialization.
+For RGB-D experiments, [FastViT / FastViTHD](REFERENCE.md#fastvit-and-fastvithd-rgb-d-hierarchy) expose per-block RepMixer/attention choices and branch/fused parameterizations. [EfficientViT stages and attention](REFERENCE.md#efficientvit-rgb-d-hierarchy) expose local blocks, multi-scale kernels, head dimensions and pretrained initialization.

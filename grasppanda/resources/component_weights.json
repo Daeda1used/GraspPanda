@@ -638,5 +638,110 @@
     "sha256": "c79f04129e2bc39acba664e6e11ec6743688bde585a6b7c382aa7dfe82433ca4",
     "license": "Apache-2.0",
     "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "fastvit_t8",
+    "path": "checkpoints/components/fastvit_t8.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_t8.pth.tar",
+    "sha256": "f066f746a40a0e9bf31c07e1d61a3e5ecb900c8464de9d48ccc8dc93c7032f70",
+    "bytes": 16378213
+  },
+  {
+    "id": "fastvit_t8_fused",
+    "path": "checkpoints/components/fastvit_t8_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_t8_reparam.pth.tar",
+    "sha256": "e4462fe565dfc2a5ef92836501b7b06a373778692cb309be08626cbf8d7a594f",
+    "bytes": 16054281
+  },
+  {
+    "id": "fastvit_t12",
+    "path": "checkpoints/components/fastvit_t12.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_t12.pth.tar",
+    "sha256": "96a029a66f94153037030c6bf7a893343cb2e682ffaaafcaa98f9d4c19920f2c",
+    "bytes": 30569693
+  },
+  {
+    "id": "fastvit_t12_fused",
+    "path": "checkpoints/components/fastvit_t12_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_t12_reparam.pth.tar",
+    "sha256": "ee4c1922afbccc89a3c5a06d7ea862f7a00633f9c95b140229bf9d14b63631b6",
+    "bytes": 30123861
+  },
+  {
+    "id": "fastvit_s12",
+    "path": "checkpoints/components/fastvit_s12.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_s12.pth.tar",
+    "sha256": "c37517abdd612950db81937a4e68492fa4cbce4b016c466e2173ea18eca7be45",
+    "bytes": 38249245
+  },
+  {
+    "id": "fastvit_s12_fused",
+    "path": "checkpoints/components/fastvit_s12_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_s12_reparam.pth.tar",
+    "sha256": "c272b1ad86850992836580ec2c5a2275671c81742957e4c2958ddc00c0ad97d1",
+    "bytes": 37803349
+  },
+  {
+    "id": "fastvit_sa12",
+    "path": "checkpoints/components/fastvit_sa12.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa12.pth.tar",
+    "sha256": "8c05495059b1e35c6598e18c24840705aeeaaf161695dd267c3da8576567f53c",
+    "bytes": 46644177
+  },
+  {
+    "id": "fastvit_sa12_fused",
+    "path": "checkpoints/components/fastvit_sa12_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa12_reparam.pth.tar",
+    "sha256": "c1db04eaa63d7229ae48cab95d32daa457f9bcf618fbf70d20caf3c50cefde77",
+    "bytes": 46283317
+  },
+  {
+    "id": "fastvit_sa24",
+    "path": "checkpoints/components/fastvit_sa24.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa24.pth.tar",
+    "sha256": "481f1ba542872fafceab16527c7bc8fafe6abfbcdbec03a70597c444159911fd",
+    "bytes": 86767065
+  },
+  {
+    "id": "fastvit_sa24_fused",
+    "path": "checkpoints/components/fastvit_sa24_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa24_reparam.pth.tar",
+    "sha256": "199dff665dc62c585c5b51be082f6a289a7a344a49aed9b25e3baf88d8ecbf3a",
+    "bytes": 86199073
+  },
+  {
+    "id": "fastvit_sa36",
+    "path": "checkpoints/components/fastvit_sa36.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa36.pth.tar",
+    "sha256": "3ef4919dc3076b1c1ce57e0b464910bafe365f2ca341378b8972dfd6766eab12",
+    "bytes": 126890793
+  },
+  {
+    "id": "fastvit_sa36_fused",
+    "path": "checkpoints/components/fastvit_sa36_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_sa36_reparam.pth.tar",
+    "sha256": "be6f08397d26bff07d54ec090f0c9e969e2280975541cf2f552927ebce9d3973",
+    "bytes": 126115149
+  },
+  {
+    "id": "fastvit_ma36",
+    "path": "checkpoints/components/fastvit_ma36.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_ma36.pth.tar",
+    "sha256": "b76b30bf1e719327af5aef1e1117e848d807794704ba438ebfad89c72cf30270",
+    "bytes": 177100265
+  },
+  {
+    "id": "fastvit_ma36_fused",
+    "path": "checkpoints/components/fastvit_ma36_reparam.pth.tar",
+    "source": "https://docs-assets.developer.apple.com/ml-research/models/fastvit/image_classification_models/fastvit_ma36_reparam.pth.tar",
+    "sha256": "c5c081ac2e58d72c49e5c86d595fc23b4b58945a2565e4ba138134c5eb754924",
+    "bytes": 176238029
+  },
+  {
+    "id": "fastvit_hd",
+    "path": "checkpoints/components/fastvlm-0.5b.safetensors",
+    "source": "https://huggingface.co/apple/FastVLM-0.5B/resolve/16375720c2d673fa583e57e9876afde27549c7d0/model.safetensors",
+    "sha256": "4c70bf1ae23f362b9a623706bffbd0830999ea55c821c0b3545c49bd988095a7",
+    "bytes": 1517793184
   }
 ]

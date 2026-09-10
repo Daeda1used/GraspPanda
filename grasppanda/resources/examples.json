@@ -2409,5 +2409,206 @@
         }
       }
     }
+  },
+  "compose-fastvit": {
+    "description": "Train a FastViT RGB-D grasp encoder with author ImageNet initialization",
+    "config": {
+      "method": "hggd",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "workspace": "native_demo",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "training_steps": 20,
+      "learning_rate": 0.0001,
+      "modules": {
+        "backbone": {
+          "type": "fastvit",
+          "variant": "t8"
+        }
+      }
+    }
+  },
+  "compose-fastvithd": {
+    "description": "Train the complete FastViTHD visual tower with calibrated coarse-feature fusion",
+    "config": {
+      "method": "hggd",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "workspace": "native_demo",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "training_steps": 20,
+      "learning_rate": 0.0001,
+      "modules": {
+        "backbone": {
+          "type": "fastvit",
+          "variant": "hd",
+          "gradient_checkpointing": true
+        }
+      }
+    }
+  },
+  "compose-fastvit-custom": {
+    "description": "Compose native RepMixer and attention blocks with custom kernels and expansion",
+    "config": {
+      "method": "hggd",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "workspace": "native_demo",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "training_steps": 20,
+      "learning_rate": 0.0001,
+      "modules": {
+        "backbone": {
+          "type": "fastvit",
+          "variant": "sa12",
+          "pretrained": false,
+          "stage_channels": [
+            24,
+            48,
+            96,
+            192
+          ],
+          "stage_depths": [
+            1,
+            1,
+            2,
+            2
+          ],
+          "block_mixers": [
+            "repmixer",
+            "repmixer",
+            "repmixer",
+            "attention",
+            "attention",
+            "repmixer"
+          ],
+          "block_mlp_ratios": [
+            2,
+            3,
+            2,
+            3,
+            2,
+            2
+          ],
+          "repmixer_kernels": [
+            3,
+            5,
+            7,
+            3
+          ],
+          "attention_head_dims": [
+            24,
+            48
+          ],
+          "attention_qkv_bias": [
+            true,
+            false
+          ],
+          "cpe_kernels": [
+            0,
+            3,
+            5,
+            7
+          ],
+          "downsample_kernel": 5,
+          "block_layer_scale_init": 0.01
+        }
+      }
+    }
+  },
+  "compose-fastvit-rng": {
+    "description": "Train custom FastViT blocks in RNG with native anchor proposal initialization",
+    "config": {
+      "method": "region_normalized_grasp",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "checkpoint": "checkpoints/region_normalized_grasp/checkpoint-realsense.tar",
+      "camera": "realsense",
+      "num_points": 25600,
+      "workspace": "native_demo",
+      "split": "train",
+      "scene": 0,
+      "training_steps": 3,
+      "learning_rate": 0.0001,
+      "checkpoint_policy": "reuse_unchanged",
+      "proposal_warmup_steps": 30,
+      "optimizer": {
+        "type": "adamw",
+        "weight_decay": 0.01
+      },
+      "augmentation": {
+        "mode": "custom",
+        "brightness": 0.05
+      },
+      "modules": {
+        "backbone": {
+          "type": "fastvit",
+          "variant": "sa12",
+          "pretrained": false,
+          "stage_channels": [
+            24,
+            48,
+            96,
+            192
+          ],
+          "stage_depths": [
+            1,
+            1,
+            2,
+            2
+          ],
+          "block_mixers": [
+            "repmixer",
+            "repmixer",
+            "repmixer",
+            "attention",
+            "attention",
+            "repmixer"
+          ],
+          "block_mlp_ratios": [
+            2,
+            3,
+            2,
+            3,
+            2,
+            2
+          ],
+          "repmixer_kernels": [
+            3,
+            5,
+            7,
+            3
+          ],
+          "attention_head_dims": [
+            24,
+            48
+          ],
+          "attention_qkv_bias": [
+            true,
+            false
+          ],
+          "cpe_kernels": [
+            0,
+            3,
+            5,
+            7
+          ],
+          "downsample_kernel": 5,
+          "block_layer_scale_init": 0.01
+        }
+      }
+    }
   }
 }

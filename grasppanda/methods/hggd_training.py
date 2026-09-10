@@ -137,15 +137,27 @@ def run(config, out):
     validation = DataLoader(val_data, batch_size=1, shuffle=False, num_workers=0)
     if not len(loader) or not len(validation): raise ValueError('HGGD training/validation range is empty')
     per_epoch = math.ceil(len(loader)/options['accumulation_steps'])
+    payload = torch.load(config.checkpoint, map_location='cpu', weights_only=True) if config.checkpoint else None
+    if payload is not None and (not isinstance(payload, dict) or not {'anchor','local','gamma','beta'} <= payload.keys()):
+        raise ValueError('HGGD checkpoints require anchor/local networks and gamma/beta anchors')
+    resumed = config.train_checkpoint_mode == 'resume'
+    if resumed:
+        if not payload or payload.get('format') != 'grasppanda_hggd_epoch_v1':
+            raise ValueError('HGGD resume requires a complete GraspPanda epoch checkpoint; use initialize for author weights')
+        required={'config','resolved_trainer','data_inventory','epoch','completed_updates','optimizer_state_dict','scheduler_state_dict','bn_scheduler_epoch'}
+        if not required <= payload.keys(): raise ValueError('HGGD resume checkpoint is missing training state: '+str(sorted(required-payload.keys())))
+        previous=payload['config']
+        for key in ('dataset','dataset_root','label_root','method','modules','camera','num_points','batch_size','train_batch_limit','eval_batch_limit',
+                    'scene','frame','seed','data_workers','loss','augmentation','optimizer','scheduler','learning_rate','trainer'):
+            if previous.get(key) != config.to_dict()[key]: raise ValueError('HGGD resume configuration differs at '+key)
+        if config.scheduler and previous['epochs'] != config.epochs: raise ValueError('Configured scheduling requires the original final-epoch horizon')
+        if payload['resolved_trainer'] != options or payload['data_inventory'] != manifest: raise ValueError('HGGD resume trainer defaults or frame inventory changed')
     anchor = native.AnchorGraspNet(in_dim=4, ratio=8, anchor_k=6)
     changed = configure_model(anchor, 'hggd', config.modules)
     local = native.PointMultiGraspNet(3, 49)
     anchor.cuda(); local.cuda()
     basic = torch.linspace(-1,1,8,device='cuda'); basic=(basic[1:]+basic[:-1])/2
     anchors = {'gamma':basic.clone(), 'beta':basic.clone()}
-    payload = torch.load(config.checkpoint, map_location='cpu', weights_only=True) if config.checkpoint else None
-    if payload is not None and (not isinstance(payload, dict) or not {'anchor','local','gamma','beta'} <= payload.keys()):
-        raise ValueError('HGGD checkpoints require anchor/local networks and gamma/beta anchors')
     if payload:
         transfer = load_checkpoint(anchor, payload['anchor'], changed, config.checkpoint_policy)
         local.load_state_dict({k:v for k,v in payload['local'].items() if k.rsplit('.',1)[-1] not in ('total_ops','total_params')}, strict=True)
@@ -154,10 +166,11 @@ def run(config, out):
         from grasppanda.modules.dino import DinoPyramid
         from grasppanda.modules.mambavision import MambaVisionPyramid
         from grasppanda.modules.efficientvit import EfficientViTPyramid
+        from grasppanda.modules.fastvit import FastViTPyramid
         pretrained = {}
         for prefix in changed:
             module = anchor.get_submodule(prefix.rstrip('.'))
-            if isinstance(module, (DinoPyramid, MambaVisionPyramid, EfficientViTPyramid)):
+            if isinstance(module, (DinoPyramid, MambaVisionPyramid, EfficientViTPyramid, FastViTPyramid)):
                 record=module.initialize_pretrained()
                 if record: pretrained[prefix.rstrip('.')]=record
         transfer = dict(policy='constructor', initialized=changed, pretrained=pretrained)
@@ -170,18 +183,8 @@ def run(config, out):
     objectives=ImageLosses(importlib.import_module('models.losses'),config)
     native.compute_anchor_loss=objectives.anchor; native.compute_multicls_loss=objectives.local
     state = Accumulation({'anchor':anchor,'local':local}, optimizer, scheduler if config.scheduler else None, options['accumulation_steps'])
-    resumed = config.train_checkpoint_mode == 'resume'; first_epoch=0
+    first_epoch=0
     if resumed:
-        if not payload or payload.get('format') != 'grasppanda_hggd_epoch_v1':
-            raise ValueError('HGGD resume requires a complete GraspPanda epoch checkpoint; use initialize for author weights')
-        required={'config','resolved_trainer','data_inventory','epoch','completed_updates','optimizer_state_dict','scheduler_state_dict','bn_scheduler_epoch'}
-        if not required <= payload.keys(): raise ValueError('HGGD resume checkpoint is missing training state: '+str(sorted(required-payload.keys())))
-        previous=payload['config']
-        for key in ('dataset','dataset_root','label_root','method','modules','camera','num_points','batch_size','train_batch_limit','eval_batch_limit',
-                    'scene','frame','seed','data_workers','loss','augmentation','optimizer','scheduler','learning_rate','trainer'):
-            if previous.get(key) != config.to_dict()[key]: raise ValueError('HGGD resume configuration differs at '+key)
-        if config.scheduler and previous['epochs'] != config.epochs: raise ValueError('Configured scheduling requires the original final-epoch horizon')
-        if payload['resolved_trainer'] != options or payload['data_inventory'] != manifest: raise ValueError('HGGD resume trainer defaults or frame inventory changed')
         first_epoch=payload['epoch']; state.completed=payload['completed_updates']
         if type(first_epoch) is not int or type(state.completed) is not int or not 1 <= first_epoch < config.epochs or state.completed != first_epoch*per_epoch:
             raise ValueError('HGGD resume epoch/update counters are inconsistent or training is already complete')

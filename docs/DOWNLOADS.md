@@ -100,6 +100,14 @@ After extracting the images, run these commands from the installed repository:
 
 This preset predicts scene 0100, frame 0000 with the registered RealSense checkpoint. Open **Runs & results** to view the prediction. The dataset root must contain `scenes/scene_0100/realsense/`; a scene directory itself is not the dataset root. Configuration, downloaded weights and prediction files are created locally. To change the method or camera, load its preset and download its matching weights; training requires the additional targets below.
 
+## FastViT and FastViTHD encoder initialization
+
+Select `fastvit` and use **Prepare selected component weights**. The CLI IDs are `fastvit_t8`, `fastvit_t12`, `fastvit_s12`, `fastvit_sa12`, `fastvit_sa24`, `fastvit_sa36` and `fastvit_ma36`; append `_fused` for the matching fused convolution checkpoint. These are non-distilled ImageNet weights from the [author model zoo](https://github.com/apple/ml-fastvit#fastvit-model-zoo), verified by size and SHA-256.
+
+`./panda component-weights fastvit_hd` downloads the pinned [Apple FastVLM-0.5B safetensors file](https://huggingface.co/apple/FastVLM-0.5B/tree/16375720c2d673fa583e57e9876afde27549c7d0), approximately **1.52 GB**. The loader reads only visual-encoder tensors; it does not instantiate the language model or execute remote model code. The original file is retained locally for reproducible verification. These model weights and derivatives are restricted to [non-commercial research](THIRD_PARTY.md#fastvit-and-fastvithd).
+
+Neither download is a GraspNet-trained detector. Train the new grasp projections using the [composition examples](REFERENCE.md#fastvit-and-fastvithd-rgb-d-hierarchy). Structural changes need `pretrained: false`; HD pretraining needs `parameterization: fused`. All variants use the existing shared environment and locally downloaded source.
+
 ## EfficientViT encoder initialization
 
 For the `efficientvit` backbone, **Prepare selected component weights** downloads the matching registered ImageNet checkpoint. The CLI equivalent is `./panda component-weights efficientvit_b0` (also B1/B2/B3 and L1/L2/L3, using lowercase IDs). Downloads come from the [author's model collection](https://huggingface.co/han-cai/efficientvit-cls/tree/df3d006c2567f9e322b03731f20fe4405a1ab090), with pinned revisions, sizes and checksums. L0 and structurally modified encoders use `pretrained: false`.

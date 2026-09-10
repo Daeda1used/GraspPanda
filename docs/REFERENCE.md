@@ -12,11 +12,52 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
-| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [EfficientViT](#efficientvit-rgb-d-hierarchy) · [MambaVision](#mambavision-hybrid-image-hierarchy) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
+| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [FastViT / HD](#fastvit-and-fastvithd-rgb-d-hierarchy) · [EfficientViT](#efficientvit-rgb-d-hierarchy) · [MambaVision](#mambavision-hybrid-image-hierarchy) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [LogitNorm / MbLS / LogitClip](#logit-normalization-margin-penalties-and-clipping) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](REFERENCE.md#candidate-graph-experiments) |
 | Add a method, component or dataset | [Extension guide](#extending-grasppanda) |
 | Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
+
+<details>
+<summary>FastViT / FastViTHD: RepMixer, attention and RGB-D stages</summary>
+
+## FastViT and FastViTHD RGB-D hierarchy
+
+HGGD and RegionNormalizedGrasp accept `modules.backbone.type: fastvit`. [FastViT (ICCV 2023)](https://arxiv.org/pdf/2303.14189) supplies reparameterizable local mixing and optional global attention; [FastVLM (CVPR 2025)](https://arxiv.org/pdf/2412.13303) supplies the larger FastViTHD visual encoder. The adapters use the [FastViT](https://github.com/apple/ml-fastvit) and [FastVLM](https://github.com/apple/ml-fastvlm) author blocks in isolated namespaces. FastViTHD initialization uses the author's **research-only model terms**; see [Third-party terms](THIRD_PARTY.md#fastvit-and-fastvithd).
+
+Generate `./panda init --example compose-fastvit`, `--example compose-fastvit-custom` or `--example compose-fastvithd`. `--example compose-fastvit-rng` starts a custom RNG encoder with native anchor proposal warmup. In the browser choose **Compose modules → Image encoder → fastvit**, edit **Component parameters by slot**, and select **Prepare selected component weights**. The editor takes `{"backbone": {"variant": "sa12"}}`; `type` comes from the selector.
+
+| Parameter | Meaning |
+|---|---|
+| `variant` | `t8` (default), `t12`, `s12`, `sa12`, `sa24`, `sa36`, `ma36`, `hd`; initializes native widths, depths and block choices |
+| `pretrained` | Defaults to `true`; native-structure author weights. Structural edits require `false` |
+| `parameterization` | `branches` (ordinary FastViT default) or `fused` (HD default). Selects the actual convolution parameter layout and matching weights; does not convert an existing grasp checkpoint |
+| `stage_channels`, `stage_depths` | Four entries for ordinary variants, five for HD; stride 4 upward. Every next width must be a multiple of the previous width for native grouped downsampling |
+| `stage_mixers`, `stage_mlp_ratios` | Stage defaults: `repmixer` or `attention`; MLP expansion ratio 1–8 |
+| `block_mixers`, `block_mlp_ratios` | Override stage defaults; one entry per block in stage order. Ratios also accept a scalar |
+| `repmixer_kernels` | Scalar or one odd kernel, 3–15, per **RepMixer block**; default 3 |
+| `attention_head_dims`, `attention_qkv_bias` | Scalar or one value per **attention block**; default 32 and `false`. Head dimension must divide stage width |
+| `attention_dropout`, `attention_projection_dropout` | Scalar or per-attention-block dropout; default 0 |
+| `cpe_kernels` | One positional depthwise kernel per stage: 0 disables CPE; otherwise an odd value 3–15. SA/MA use 7 in the final stage; HD uses 7 in both final stages |
+| `downsample_kernel` | Odd patch-merging kernel, 3–15; default 7 |
+| `block_dropout` | Scalar or per-block ConvFFN dropout; default 0 |
+| `drop_path`, `block_drop_path` | Default 0; shared maximum sets a linear schedule across all blocks; per-block values override it |
+| `block_layer_scale`, `block_layer_scale_init` | Scalar or per-block boolean and initial scale. Enabled by default; initial value `1e-6` for SA36/MA36, otherwise `1e-5` |
+| `activation` | ConvFFN activation: `gelu` (default), `relu` or `silu`; native stem/downsampling activations remain unchanged |
+| `trainable_stages` | Last N stages including their downsamplers, CPE and HD expansion. Defaults to all stages; 0 freezes the RGB encoder. Earlier stages and the stem stay in evaluation mode when frozen |
+| `freeze_norm_stats` | Freeze all BN statistics while retaining trainable affine parameters; default `false` |
+| `gradient_checkpointing` | Recompute encoder stages during backward with preserved BN buffers and random choices; default `false` |
+| `projection_norm` | Grasp projection normalization: `batch` (default), `group` or `none` |
+
+Block vectors follow fine-to-coarse stage order; RepMixer and attention vectors enumerate only that block type. Explicit attention options require an attention block. Fused RepMixer stores its identity and mixer scale inside a convolution; scale initialization affects only remaining explicit residual scales. Pretrained loading restores learned scale tensors instead of their constructor initial values. Early-stage global attention can require substantial GPU memory because its attention matrix grows quadratically with image tokens.
+
+RGB is restored to natural image axes. Ordinary FastViT uses ImageNet mean/std; FastViTHD uses the author's RGB `[0,1]` normalization. The adapter preserves the full camera image rather than applying a classification/VLM square crop. Native symmetric odd kernels retain pixel-zero feature centers. Mean-centered depth is sampled at those centers and fused through new trainable projections; an RGB-D stem supplies stride 2. The grasp interface retains channels 8/16/32/64/128 at strides 2/4/8/16/32.
+
+Ordinary FastViT exposes its four pre-classification stages. HD retains **all five stages and the final expansion** from the released visual tower. Its stride-64 embedding is projected and bilinearly sampled at stride-32 pixel centers, with border extension, then added to the final grasp feature. This RGB-D pyramid is a toolbox adaptation; it does not reproduce a VLM decoder or an unimplemented paper-only multiscale concatenation.
+
+Author image weights initialize only the RGB encoder. Use `checkpoint_policy: reuse_unchanged` for composition training, then `strict` with the saved grasp checkpoint for prediction. HGGD also initializes the encoder during epoch training from an empty checkpoint. Strict loading never reapplies or fetches pretraining. Released HD weights use fused convolutions; branch-mode HD requires random initialization. Fused convolutions can be fine-tuned, but cannot be loaded into branch-mode checkpoints. Changing either parameterization or block configuration is rejected during resume. Existing method losses, augmentation, optimizers and configuration sweeps apply. For a random RNG encoder, use [proposal warmup](#rng-proposal-initialization) if its predicted patches contain no local training labels; the same camera geometry and native supervision are retained.
+
+</details>
 
 <details>
 <summary>EfficientViT RGB-D stages and multi-scale attention</summary>

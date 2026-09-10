@@ -133,6 +133,9 @@ def _schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'fastvit':
+            from .modules.fastvit_options import schema as fastvit_schema
+            return fastvit_schema()
         if choice == 'efficientvit':
             from .modules.efficientvit_options import schema as efficientvit_schema
             return efficientvit_schema()
@@ -370,6 +373,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'pointcnnpp':
         from .modules.pointcnnpp_options import validate as validate_pointcnnpp
         validate_pointcnnpp(options)
+    if choice == 'fastvit':
+        from .modules.fastvit_options import resolve as resolve_fastvit
+        resolve_fastvit(options)
     if choice == 'efficientvit':
         from .modules.efficientvit_options import resolve as resolve_efficientvit
         resolve_efficientvit(options)
