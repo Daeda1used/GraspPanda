@@ -11,6 +11,17 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install PyYAML==6.0.3
+      - name: Check package and lock versions
+        run: |
+          python - <<'PYTHON'
+          from pathlib import Path
+          import tomllib
+          from grasppanda import __version__
+          project = tomllib.loads(Path('pyproject.toml').read_text())
+          lock = tomllib.loads(Path('uv.lock').read_text())
+          package = next(p for p in lock['package'] if p['name'] == 'grasppanda')
+          assert __version__ == project['project']['version'] == package['version']
+          PYTHON
       - run: python -m compileall -q grasppanda
       - run: python -m grasppanda --help
       - run: python -m grasppanda list
