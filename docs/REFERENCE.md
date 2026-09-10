@@ -11,7 +11,7 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
 | Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
-| Training | [Losses and augmentation](#training-controls) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
+| Training | [Losses and augmentation](#training-controls) · [LogitNorm / MbLS / LogitClip](#logit-normalization-margin-penalties-and-clipping) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](REFERENCE.md#candidate-graph-experiments) |
 | Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
 
@@ -753,7 +753,7 @@ Weights are absolute coefficients. Unspecified terms retain their native coeffic
 | FineGrasp | `objectness`, `angle`, `depth`, `score` | `graspness`, `view`, `width` | See the FineGrasp training section below |
 | EconomicGrasp | `objectness`, `angle`, `depth`, `score` | `graspness`, `view`, `width` | Objectness/angle/depth/score: 1; graspness/width: 10; view: 100 |
 
-Each `functions` value accepts a name or `{type: NAME, ...}`. The following parameters have bounded, finite values; omitted parameters use the defaults shown.
+Each `functions` value accepts a name or `{type: NAME, ...}`. Numeric parameters use bounded, finite values; symbolic choices are listed explicitly. Omitted parameters use the defaults shown.
 
 | Formulation | Parameters: default [range] | Behavior |
 |---|---|---|
@@ -761,6 +761,9 @@ Each `functions` value accepts a name or `{type: NAME, ...}`. The following para
 | `focal` | `gamma`: 2 [0, 8]; optional `alpha` [0, 1] | Softmax focal loss; alpha weights foreground versus background and is accepted only for binary objectness |
 | `poly1` | `epsilon`: 1 [-1, 10] | Cross entropy + epsilon × (1 − target-class probability); epsilon 0 recovers cross entropy |
 | `asl` | `gamma_pos`: 0 [0, 8]; `gamma_neg`: 4 [0, 8]; `label_smoothing`: 0.1 [0, 0.5] | Single-label softmax asymmetric loss, with the author's defaults |
+| `logit_norm` | `temperature`: 1 [0.001, 10] | Cross entropy after per-item L2 logit normalization and temperature scaling |
+| `mbls` | `margin`: 10 [0, 100]; `alpha`: 0.1 [0, 100] | Cross entropy plus a class-mean penalty on logit gaps above the margin |
+| `logit_clip` | `threshold`: 1 [0.01, 100]; `scale`: 1 / threshold [0.01, 100]; `norm_order`: 2 [1, 8] or `"inf"`; `base`: `cross_entropy` | Clip each item's logit vector before the selected classification objective; see below |
 | `l1` / `mse` | None | Absolute / squared normalized error |
 | `smooth_l1` | `beta`: 1 [0, 10] | Quadratic-to-linear transition at beta; beta 0 is L1 |
 | `huber` | `delta`: 1 [0.000001, 10] | Huber transition at delta; its scale differs from Smooth L1 when delta is not 1 |
@@ -773,6 +776,37 @@ The point adapters retain native positive masks, angle-label argmax/gather and t
 [PolyLoss (ICLR 2022)](https://arxiv.org/pdf/2204.12511) uses the [author's Poly-1 formulation](https://waymo.com/research/polyloss-a-polynomial-expansion-perspective-of-classification-loss-functions/). [ASL (ICCV 2021)](https://arxiv.org/pdf/2009.14119) follows the [author's single-label softmax variant](https://github.com/Alibaba-MIIL/ASL), checked against the locked timm implementation. Probability complements and fractional powers use numerically stable evaluation at saturated logits. These are classification-head adaptations; no grasp accuracy improvement is implied.
 
 [Varifocal Loss](https://github.com/hyz-xmaster/VarifocalNet) assumes quality logits decoded through sigmoid. The current grasp-quality heads emit raw regression scores, so it requires an explicit head/decoder adaptation before becoming a selectable loss.
+
+### Logit normalization, margin penalties and clipping
+
+These options work with the softmax classification terms of Baseline, its PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp and FineGrasp. They are rejected for HGGD/RNG's independent sigmoid labels and for regression terms. They change training objectives only: the native decoder, grasp-score ranking and inference thresholds remain unchanged. They are not post-hoc probability calibration, and their classification results do not establish better grasp AP or calibrated grasp confidence.
+
+| Formulation | Paper | Reviewed implementation |
+|---|---|---|
+| LogitNorm | [ICML 2022 PDF](https://proceedings.mlr.press/v162/wei22d/wei22d.pdf) | [Author source](https://github.com/hongxin001/logitnorm_ood/blob/0a60eeffb7dfc970fe68e07c5649ea1c9c8244c6/common/loss_function.py) |
+| MbLS | [CVPR 2022 PDF](https://arxiv.org/pdf/2111.15430) | [Author source](https://github.com/by-liu/MbLS/blob/dc86503691d1564dc29e2eed66cf7698fbbe4a2c/calibrate/losses/logit_margin_l1.py) |
+| LogitClip | [ICML 2023 PDF](https://proceedings.mlr.press/v202/wei23e/wei23e.pdf) | [Author source](https://github.com/hongxin001/LogitClip/blob/7e45730b0073b6ba9af2d2af574300d42d50fcee/algorithms/clip.py) |
+
+For a logit row `z`, LogitNorm evaluates CE on `z / (L2_norm(z) + 1e-7) / temperature`. The default temperature is the author's constructor default, 1; the author's CIFAR example uses 0.01. Choose this parameter with training/validation data rather than assuming it transfers to grasp heads.
+
+MbLS adds `alpha * mean_classes(relu(max(z) - z - margin))` to CE. The penalty uses the same selected items and outer reduction as the classification term. `alpha: 0` recovers CE. Alpha is constant; the optional scheduling extensions in the author repository are not enabled.
+
+LogitClip computes `n = p_norm(z) + 1e-7`, retains `z` when `n <= threshold`, and otherwise substitutes `scale * z / n`. Its default `scale = 1 / threshold` follows the released trainer and the paper's two-parameter form (Equation 4). For the single-bound norm clipping in Equation 3, explicitly set `scale` equal to `threshold`; the same small numerical epsilon is retained. Changing these parameters can introduce a discontinuity at the threshold when their values differ. `norm_order: "inf"` uses the maximum absolute logit; other orders are finite numbers from 1 to 8.
+
+The optional `base` is a name or `{type: NAME, ...}` for `cross_entropy`, `focal`, `poly1`, `asl` or `mbls`, with the corresponding parameters above. Nested clipping and LogitNorm bases are rejected. Focal `alpha` remains limited to binary objectness/graspability even inside a clipped objective. MbLS `alpha` is the margin coefficient and is available on every supported classification term.
+
+```yaml
+loss:
+  functions:
+    objectness: {type: logit_norm, temperature: 1.0}
+    angle:
+      type: logit_clip
+      threshold: 2.0
+      scale: 2.0
+      base: {type: mbls, margin: 1.0, alpha: 0.1}
+```
+
+Generate a complete local example with `./panda init --example train-calibration`. In the browser, choose a formulation under **Training settings → Choose loss formulations**, then edit individual terms in **Loss configuration**. Sweeps can vary paths such as `loss.functions.angle.threshold` or `loss.functions.angle.base.margin`; choose an explicit mapping in the base configuration first. These stateless objectives use the shared PyTorch runtime without additional source or weight downloads. Loss settings are saved with the experiment and checkpoint; epoch resume checks them against the saved training configuration.
 
 ### RGB-D training controls
 

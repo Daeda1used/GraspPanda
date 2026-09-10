@@ -136,3 +136,36 @@ Swin3D is fetched from [Microsoft's pinned author repository](https://github.com
 
 
 SP2T is fetched from the [pinned author repository](https://github.com/WallelWan/SP2T) under its MIT license, which remains in the prepared runtime. GraspPanda retains the native Point representation, sparse proxy map/reduce operations, local attention and hierarchy. The [component reference](REFERENCE.md#sp2t-sparse-proxy-hierarchy) describes runtime corrections and grasp input adaptations. Segmentation weights are linked upstream and are not bundled as grasp weights.
+
+<details>
+<summary>Classification objective sources and MbLS notice</summary>
+
+LogitNorm and LogitClip are implemented as local PyTorch formulations of their published equations. The original trainers are used for numerical comparison, not downloaded by the installer or redistributed. Their reviewed repositories have no project-level license declaration; GraspPanda's MIT license does not grant rights to those repositories. Source revisions, parameters and the LogitClip threshold/scale distinction are linked in the [loss reference](REFERENCE.md#logit-normalization-margin-penalties-and-clipping).
+
+MbLS follows the author's constant-alpha objective, adapted to native grasp masks and per-term reductions. Its MIT notice is retained below.
+
+```text
+MIT License
+
+Copyright (c) 2022 Bingyuan Liu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>

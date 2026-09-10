@@ -2,7 +2,8 @@
 import math
 
 
-CLASSIFICATION = ('cross_entropy', 'focal', 'poly1', 'asl')
+BINARY_CLASSIFICATION = ('cross_entropy', 'focal', 'poly1', 'asl')
+CLASSIFICATION = BINARY_CLASSIFICATION + ('logit_norm', 'mbls', 'logit_clip')
 REGRESSION = ('l1', 'mse', 'smooth_l1', 'huber', 'charbonnier')
 
 
@@ -10,6 +11,10 @@ PARAMETERS = {
     'upstream': {}, 'cross_entropy': {'label_smoothing': (0, .5)},
     'focal': {'gamma': (0, 8), 'alpha': (0, 1)}, 'poly1': {'epsilon': (-1, 10)},
     'asl': {'gamma_pos': (0, 8), 'gamma_neg': (0, 8), 'label_smoothing': (0, .5)},
+    'logit_norm': {'temperature': (.001, 10)},
+    'mbls': {'margin': (0, 100), 'alpha': (0, 100)},
+    'logit_clip': {'threshold': (.01, 100), 'scale': (.01, 100),
+                   'norm_order': (1, 8), 'base': ('formulation', *BINARY_CLASSIFICATION, 'mbls')},
     'l1': {}, 'mse': {}, 'smooth_l1': {'beta': (0, 10)},
     'huber': {'delta': (1e-6, 10)}, 'charbonnier': {'epsilon': (1e-6, 1)},
 }
@@ -27,7 +32,11 @@ def parameter_schema(method, kind):
 
 
 def choices(term, method=None):
-    return ('upstream',) + (CLASSIFICATION if is_classification(method, term) else REGRESSION)
+    return ('upstream',) + (classification_choices(method) if is_classification(method, term) else REGRESSION)
+
+
+def classification_choices(method):
+    return BINARY_CLASSIFICATION if method in ('hggd', 'region_normalized_grasp') else CLASSIFICATION
 
 
 def validate(method, functions):
@@ -35,22 +44,50 @@ def validate(method, functions):
     from grasppanda.module_options import unpack
     if not isinstance(functions, dict) or set(functions) - set(LOSS_TERMS.get(method, {})):
         raise ValueError('loss.functions must map registered loss terms to formulations')
-    for term, value in functions.items():
+    def formulation(term, value, allowed):
         kind, options = unpack(value)
-        if kind not in choices(term, method) or set(options) - set(parameter_schema(method, kind)):
+        if kind not in allowed or set(options) - set(parameter_schema(method, kind)):
             raise ValueError(f'{method}/{term}: unsupported loss formulation or parameters')
-        if 'alpha' in options and term not in ('objectness', 'graspable') and method not in ('hggd', 'region_normalized_grasp'):
+        if kind == 'focal' and 'alpha' in options and term not in ('objectness', 'graspable') and method not in ('hggd', 'region_normalized_grasp'):
             raise ValueError('Focal alpha is registered only for binary objectness or graspability')
         for key, value in options.items():
-            low, high = parameter_schema(method, kind)[key]
+            rule = parameter_schema(method, kind)[key]
+            if rule[0] == 'formulation':
+                formulation(term, value, rule[1:])
+                continue
+            if kind == 'logit_clip' and key == 'norm_order' and value == 'inf':
+                continue
+            low, high = rule
             if type(value) not in (float, int) or not math.isfinite(value) or not low <= value <= high:
                 raise ValueError(f'Invalid {term}/{kind} loss parameter: {key}')
+    for term, value in functions.items():
+        formulation(term, value, choices(term, method))
 
 
 def classification(logits, target, kind, options):
     """Return one value per item; input class dimension is last."""
     import torch
     import torch.nn.functional as F
+    if kind in ('logit_norm', 'logit_clip', 'mbls'):
+        # Accumulate norms and margin penalties in at least float32.
+        if logits.dtype in (torch.float16, torch.bfloat16):
+            logits = logits.float()
+        if kind == 'logit_norm':
+            denominator = torch.linalg.vector_norm(logits, dim=-1, keepdim=True) + 1e-7
+            return F.cross_entropy(logits / denominator / options.get('temperature', 1.), target, reduction='none')
+        if kind == 'logit_clip':
+            from grasppanda.module_options import unpack
+            threshold = options.get('threshold', 1.)
+            order = options.get('norm_order', 2)
+            denominator = torch.linalg.vector_norm(logits, ord=math.inf if order == 'inf' else order, dim=-1, keepdim=True) + 1e-7
+            # Equation 4: separate clipping threshold and output scale.
+            # Omitting scale reproduces the released trainer's reciprocal rule.
+            scaled = logits / denominator * options.get('scale', 1. / threshold)
+            clipped = torch.where(denominator > threshold, scaled, logits)
+            base, parameters = unpack(options.get('base', 'cross_entropy'))
+            return classification(clipped, target, base, parameters)
+        penalty = F.relu(logits.max(dim=-1, keepdim=True).values - logits - options.get('margin', 10.)).mean(-1)
+        return F.cross_entropy(logits, target, reduction='none') + options.get('alpha', .1) * penalty
     if kind == 'asl':
         # Single-label ASL: preserve the author's softmax/smoothing objective.
         # expm1 and a positive floor keep fractional powers differentiable when

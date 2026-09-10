@@ -157,7 +157,13 @@ def loss_parameters(method):
         return 'This method uses its native objective and augmentation. Custom controls are not registered.'
     from grasppanda.training.losses import choices
     available = {kind for term in terms for kind in choices(term, method)}
-    rows = [f'| `{name}` | ' + (', '.join(f'`{key}`: {low} to {high}' for key, (low, high) in options.items()) or 'No parameters') + ' |'
+    def parameter_description(key, rule):
+        if rule[0] == 'formulation':
+            return f'`{key}`: name or {{type, parameters}}; ' + ', '.join(rule[1:])
+        if key == 'norm_order':
+            return '`norm_order`: 1 to 8, or "inf" for maximum absolute logit'
+        return f'`{key}`: {rule[0]} to {rule[1]}'
+    rows = [f'| `{name}` | ' + (', '.join(parameter_description(key, rule) for key, rule in options.items()) or 'No parameters') + ' |'
             for name in PARAMETERS if name != 'upstream' and name in available for options in [parameter_schema(method, name)]]
     semantics = ('HGGD/RNG use independent sigmoid labels: cross_entropy means binary cross-entropy, and ASL uses the multi-label formulation. Native positive thresholds, class balancing and positive-count reductions remain in place. Focal alpha applies to each classification term. '
                  if method in ('hggd', 'region_normalized_grasp') else 'Focal alpha applies only to binary objectness. ')
@@ -166,6 +172,9 @@ def loss_parameters(method):
     if method == 'scale_balanced_grasp':
         semantics = 'graspable uses the native robust graspability target; focal alpha applies to this binary term. View and grasp losses retain the native scale prior and weighted denominators, including the score mask shared across depths. '
     if method in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'economicgrasp', 'finegrasp'):
+        semantics += ('LogitNorm, MbLS and LogitClip affect only softmax classification losses during training. '
+                      'LogitClip defaults to the released reciprocal scale (1 / threshold); set scale equal to threshold for norm clipping. '
+                      'Its optional base selects a classification formulation with its own parameters. ')
         semantics += ('Point augmentation accepts `resampling: {"type": "pointsp_wrs", "keep_ratio": [0.5, 1.0], "neighbors": 20}` '
                       'in custom mode. Alternatives are `uniform` and `pointsp_lgd`; the latter accepts `global_fraction` '
                       '(0: local removal, 1: global removal, "random": random range). Point labels follow the same selected rows. ')
@@ -710,8 +719,9 @@ For component experiments, expand **Compose modules**. Full configuration editin
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters', preprocess=False)
         def loss_controls(method, action):
             from grasppanda.training.options import METHODS
+            from grasppanda.training.losses import classification_choices
             enabled=method in METHODS and action in ('train','train_check')
-            return gr.update(value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
+            return gr.update(choices=['upstream', *classification_choices(method)],value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
         for selector in (method, action):
             selector.change(loss_controls,[method,action],[classification_loss,regression_loss,apply_loss],api_name=False, preprocess=False)
         for selector in (method, backbone, crop, head, memory):

@@ -1,5 +1,30 @@
 # Generate only the configuration you need: ./panda init --example NAME
 # Omitted experiment fields use the shared defaults; module settings remain explicit.
+train-calibration:
+  description: Configure classification calibration and clipped objectives per grasp head
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    camera: realsense
+    split: train
+    scene: 0
+    training_steps: 20
+    learning_rate: 0.0001
+    loss:
+      functions:
+        objectness:
+          type: logit_norm
+          temperature: 1.0
+        angle:
+          type: logit_clip
+          threshold: 2.0
+          scale: 2.0
+          base:
+            type: mbls
+            margin: 1.0
+            alpha: 0.1
 compose-pointtpa:
   description: Train PointTPA branches inside a frozen pretrained Concerto encoder
   config:

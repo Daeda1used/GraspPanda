@@ -52,7 +52,7 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | Configure | Guide |
 |---|---|
 | Encoder stages, attention, grouping and sampling | [Component reference](REFERENCE.md) |
-| Loss terms and observation augmentation | [Training controls](REFERENCE.md#training-controls) |
+| Loss terms, LogitNorm / MbLS / LogitClip and observation augmentation | [Training controls](REFERENCE.md#training-controls) |
 | Optimizers, schedules and checkpoint policy | [Optimization](REFERENCE.md#optimizers-and-schedules) |
 | Epoch training and method-specific preparation | [Training reference](REFERENCE.md#train-a-composed-model-across-epochs) · [Data & weights](DOWNLOADS.md) |
 | Compare configurations | [Sweeps](USAGE.md#configuration-sweeps) |
