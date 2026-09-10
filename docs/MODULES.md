@@ -27,12 +27,16 @@ checkpoint_policy: reuse_unchanged
 
 A component can be a name (`backbone: pointnet`) or a mapping containing `type` and its parameters. Both forms serialize into the experiment and checkpoint. Unknown parameters are rejected.
 
+<details>
+<summary>Compatible components by method</summary>
+
 | Method | Slot | Choices |
 |---|---|---|
 | Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](REFERENCE.md#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
+| Baseline / PointNet2 port / Scale-Balanced-Grasp / Graspness | `head` | `upstream`, `quality_residual`; [quality score mappings and objectives](REFERENCE.md#quality-score-heads) |
 | Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
 | EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
@@ -43,6 +47,8 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](REFERENCE.md#candidate-graph-experiments) |
 | SPGrasp | `backbone` / `memory` | `upstream`, `hiera` / `upstream`, `temporal`; [planar sequence settings](REFERENCE.md#prompted-planar-sequences) |
+
+</details>
 
 The baseline encoder returns original-input seed indices and 256-channel features. Graspness encoders retain sparse coordinate correspondence and 512-channel features. Crop adapters retain the native decoder's depth/view semantics.
 

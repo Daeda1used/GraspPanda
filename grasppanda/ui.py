@@ -1,4 +1,5 @@
 """Browser interface for reproducible visual grasping experiments."""
+from functools import partial
 import json
 import os
 from pathlib import Path
@@ -98,6 +99,8 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                     description += '; fixed lattice bit depth keeps Hilbert order independent of other scenes in the batch'
                 elif key in ('proxy_start_stage', 'proxy_end_stage'):
                     description += '; inclusive stage interval; applies to both encoder and decoder'
+            if choice == 'quality_residual' and key == 'initial_probability':
+                description += '; sets the residual logit bias, not the final probability; the native score also contributes'
             if choice == 'swin3d':
                 if key.startswith('block_'):
                     description += '; full vector: encoder fine to coarse, then decoder coarse to fine; length sum(depths) + sum(decoder_depths); overrides the corresponding stage/shared setting'
@@ -160,6 +163,8 @@ def loss_parameters(method):
     def parameter_description(key, rule):
         if rule[0] == 'formulation':
             return f'`{key}`: name or {{type, parameters}}; ' + ', '.join(rule[1:])
+        if rule[0] == 'choice':
+            return f'`{key}`: ' + ', '.join(rule[1:])
         if key == 'norm_order':
             return '`norm_order`: 1 to 8, or "inf" for maximum absolute logit'
         return f'`{key}`: {rule[0]} to {rule[1]}'
@@ -178,6 +183,10 @@ def loss_parameters(method):
         semantics += ('Point augmentation accepts `resampling: {"type": "pointsp_wrs", "keep_ratio": [0.5, 1.0], "neighbors": 20}` '
                       'in custom mode. Alternatives are `uniform` and `pointsp_lgd`; the latter accepts `global_fraction` '
                       '(0: local removal, 1: global removal, "random": random range). Point labels follow the same selected rows. ')
+    if method in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness'):
+        semantics += ('Quality BCE, Varifocal and MAL apply only to score and require the quality_residual head. '
+                      'Native supervision retains the original score mask; all_angles includes zero-quality bins on object seeds. '
+                      'See the quality-head guide for score mappings and normalization. ')
     classification = ', '.join(f'`{term}`' for term in terms if is_classification(method, term)) or 'none'
     return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Classification terms: ' + classification + '; remaining terms use regression losses.\n\n'
             '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
@@ -185,7 +194,7 @@ def loss_parameters(method):
             'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#training-controls) for defaults, target units and augmentation parameters.')
 
 
-def loss_preset(method, classification, regression, current):
+def loss_preset(method, classification, regression, current, head='upstream', quality='upstream'):
     from grasppanda.training.options import LOSS_TERMS
     from grasppanda.training.losses import is_classification
     if method not in LOSS_TERMS:
@@ -195,8 +204,14 @@ def loss_preset(method, classification, regression, current):
         if not isinstance(value, dict): raise ValueError('Loss configuration must be a mapping')
         value['functions'] = {term: classification if is_classification(method, term) else regression
                               for term in LOSS_TERMS[method]}
+        if quality != 'upstream':
+            from .training.quality import METHODS, LOSSES
+            if method not in METHODS or quality not in LOSSES:
+                raise ValueError('Choose a registered quality formulation for a compatible method')
+            value['functions']['score'] = quality
         from grasppanda.training.options import validate_training_options
-        validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_check', loss=value))
+        validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_check',
+            loss=value, modules={'head': head} if head != 'upstream' else {}))
     except (ValueError, TypeError) as error:
         raise gr.Error(str(error)) from error
     return json.dumps(value, indent=2)
@@ -568,7 +583,7 @@ def create_app(manager=None):
                         backbone=gr.Dropdown(initial_components['backbone'],value='upstream',label='Point encoder')
                         with gr.Column() as crop_panel:
                             crop=gr.Dropdown(initial_components['crop'],value='upstream',label='Local cylindrical grouping')
-                        head=gr.Dropdown(['upstream'],value='upstream',label='Grasp prediction head',visible=False)
+                        head=gr.Dropdown(initial_components.get('head', ['upstream']),value='upstream',label='Grasp prediction head',visible='head' in initial_components)
                         memory=gr.Dropdown(['upstream'],value='upstream',label='Temporal memory',visible=False)
                         checkpoint_policy=gr.Dropdown(['strict','reuse_unchanged'],value='strict',label='Checkpoint policy')
                         component_contract=gr.Markdown('Baseline: 256-channel seed features, original point indices, four depth bins.')
@@ -588,6 +603,9 @@ def create_app(manager=None):
                             with gr.Row():
                                 classification_loss=gr.Dropdown(['upstream', *CLASSIFICATION],value='upstream',label='Classification loss',interactive=False)
                                 regression_loss=gr.Dropdown(['upstream', *REGRESSION],value='upstream',label='Regression loss',interactive=False)
+                            from .training.quality import LOSSES as QUALITY_LOSSES
+                            quality_loss=gr.Dropdown(['upstream', *QUALITY_LOSSES],value='upstream',label='Quality score objective',visible=False,
+                                info='Overrides score only. Upstream uses the regression selection. Requires the quality_residual head.')
                             apply_loss=gr.Button('Apply loss choices',interactive=False)
                             gr.Markdown('Apply writes the selected formulation to each matching term below and keeps your coefficients. Edit individual terms and parameters in Loss configuration. Training operations only.')
                             with gr.Accordion('Loss parameters & augmentation guide', open=False):
@@ -677,20 +695,23 @@ def create_app(manager=None):
 
 For component experiments, expand **Compose modules**. Full configuration editing is under **Configuration editor**.
 """)
-            with gr.Accordion("Installation, data and operating instructions", open=False):
+            with gr.Accordion("Installation, data and operating instructions", open=False) as guides:
                 with gr.Tabs():
-                    with gr.Tab("Install"):
-                        gr.Markdown(documentation('INSTALL.md'))
-                    with gr.Tab("Downloads"):
-                        gr.Markdown(documentation('DOWNLOADS.md'))
-                    with gr.Tab("Usage"):
-                        gr.Markdown(documentation('USAGE.md'))
-                    with gr.Tab("Modules"):
-                        gr.Markdown(documentation('MODULES.md'))
-                        with gr.Accordion('Detailed component and training reference', open=False):
-                            gr.Markdown(documentation('REFERENCE.md'))
-                    with gr.Tab("Methods & papers"):
-                        gr.Markdown(documentation('METHODS.md'))
+                    for title, filename in (('Install', 'INSTALL.md'), ('Downloads', 'DOWNLOADS.md'),
+                                            ('Usage', 'USAGE.md'), ('Modules', 'MODULES.md'),
+                                            ('Methods & papers', 'METHODS.md')):
+                        with gr.Tab(title) as guide_tab:
+                            guide_text = gr.Markdown()
+                            guide_tab.select(partial(documentation, filename), outputs=guide_text,
+                                             api_name=False, queue=False)
+                            if title == 'Install':
+                                guides.expand(partial(documentation, filename), outputs=guide_text,
+                                              api_name=False, queue=False)
+                            if title == 'Modules':
+                                with gr.Accordion('Detailed component and training reference', open=False) as reference:
+                                    reference_text = gr.Markdown()
+                                reference.expand(partial(documentation, 'REFERENCE.md'), outputs=reference_text,
+                                                 api_name=False, queue=False)
             with gr.Accordion("Check data and GPU", open=False):
                 setup_root=gr.Textbox(default_dataset(),label='Dataset root')
                 setup_button=gr.Button('Check data & GPU')
@@ -711,7 +732,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
             method, composition_intro, api_name=False, preprocess=False)
         method.change(lambda m: 'Select **hiera** and **temporal** to edit their parameters. For example: `{"backbone": {"resolution": 256}, "memory": {"frames": 3, "layers": 2}}`.' if m=='spgrasp' else 'Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.',
             method, composition_hint, api_name=False, preprocess=False)
-        apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options],loss_options,api_name='apply_loss_choices')
+        apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options,head,quality_loss],loss_options,api_name='apply_loss_choices')
+        def quality_controls(method, action, head):
+            from .training.quality import METHODS
+            return gr.update(value='upstream',visible=method in METHODS and action in ('train','train_check') and head=='quality_residual')
+        gr.on([method.change,action.change,head.change],quality_controls,[method,action,head],quality_loss,api_name=False,preprocess=False,queue=False,trigger_mode='always_last')
         apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
         for selector in (method, action):
             selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','scale_balanced_grasp','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),

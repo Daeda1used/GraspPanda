@@ -18,6 +18,9 @@ BASELINE_SLOTS = (
     ComponentSlot('crop','grasp_generator.crop',('upstream','multiscale','cylinder','reslfe_cylinder','kpconvx_cylinder'),
                   'Camera-frame seed points, scene points and proper approach rotations.',
                   'Features [B,256,1024,4] retaining the native four depth bins.'),
+    ComponentSlot('head','grasp_generator.operation',('upstream','quality_residual'),
+                  'Native grouped features [B,256,1024,4], with unchanged angle and width channels.',
+                  'Residual quality logits and nonnegative native log scores; native angle/width outputs remain in place.'),
 )
 
 
@@ -33,7 +36,8 @@ def slots(method):
         BASELINE_SLOTS[0],
         ComponentSlot('crop', 'grasp_generator', ('upstream', 'native_mscq'),
             'Native MSCQ endpoints: scene XYZ, seed XYZ/features, approach rotations and training labels.',
-            'Native endpoint dictionary; four [B,256,1024,4] branch features feed unchanged scale fusion, seed gate and grasp heads.'))
+            'Native endpoint dictionary; four [B,256,1024,4] branch features feed unchanged scale fusion, seed gate and grasp heads.'),
+        BASELINE_SLOTS[2])
     if method == 'economicgrasp': return (
         ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3', 'point_transformer_v2','litept','pointcnnpp','pointhr','sp2t','swin3d','pointrwkv_released','flash3d','oacnns','kpconvx','utonia','concerto'),
             'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
@@ -68,7 +72,10 @@ def slots(method):
         '512-channel sparse features, mapped to original input points by quantize2original.'),
         ComponentSlot('crop','crop',('upstream','cylinder','finegrasp','reslfe_cylinder','kpconvx_cylinder'),
             'Graspable seed coordinates/features and approach rotations; native oriented cylinder queries.',
-            '256-channel seed features preserving the native approach and depth decoder semantics.'))
+            '256-channel seed features preserving the native approach and depth decoder semantics.'),
+        ComponentSlot('head','swad',('upstream','quality_residual'),
+            'Native cylinder features [B,256,1024] and angle/depth score layout.',
+            'Residual quality logits, sigmoid quality scores and unchanged native widths.'))
     return ()
 
 
@@ -114,6 +121,11 @@ def configure_model(model,method,selection,voxel_size=.005):
         parent_name,attribute=slot.model_path.rsplit('.',1) if '.' in slot.model_path else ('',slot.model_path)
         parent=model.get_submodule(parent_name) if parent_name else model
         native=getattr(parent,attribute)
+        if slot.name == 'head' and choice == 'quality_residual':
+            from .modules.quality import install
+            install(native, method, options)
+            changes.append(slot.model_path + '.quality_residual.')
+            continue
         if method == 'economicgrasp' and choice == 'native_tdunet':
             from .modules.economic import tdunet
             replacement = tdunet(native, **options)

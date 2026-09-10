@@ -33,6 +33,10 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if slot == 'head' and choice == 'quality_residual':
+        return {'hidden_channels': ('channels',), 'activation': ('choice', ('relu', 'gelu', 'silu')),
+                'normalization': ('choice', ('batch', 'group', 'none')),
+                'initial_probability': ('float', .001, .999)}
     if method == 'spgrasp':
         from .methods.spgrasp_options import BACKBONE, MEMORY
         return BACKBONE if (slot, choice) == ('backbone', 'hiera') else MEMORY if (slot, choice) == ('memory', 'temporal') else {}

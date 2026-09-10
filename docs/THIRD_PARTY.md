@@ -169,3 +169,5 @@ SOFTWARE.
 ```
 
 </details>
+
+Quality BCE, Varifocal and MAL use local PyTorch formulas with explicit grasp-label mappings and reductions. Their detached focusing weights and powered MAL targets are checked against the [Apache-2.0 DEIM source](https://github.com/Intellindust-AI-Lab/DEIM/blob/09d35d53d39ee3145a1e61e3a989b28b9468d1dd/LICENSE), copyright INTELLINDUST INFORMATION TECHNOLOGY (SHENZHEN) CO., LTD. and affiliates. The DEIM detector, matcher and source checkout are not redistributed or installed; [quality-head documentation](REFERENCE.md#quality-score-heads) identifies the adaptation and original papers. Native grasp modules retain their existing source terms.

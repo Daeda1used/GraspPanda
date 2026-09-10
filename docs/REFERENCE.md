@@ -7,6 +7,7 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Select compatible parts | [Slots and parameters](MODULES.md#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
 | Point encoders | [SP2T](#sp2t-sparse-proxy-hierarchy) · [Swin3D](#swin3d-sparse-window-hierarchy) · [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
+| Quality prediction | [Residual score heads, BCE, Varifocal and MAL](#quality-score-heads) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
@@ -775,7 +776,7 @@ The point adapters retain native positive masks, angle-label argmax/gather and t
 
 [PolyLoss (ICLR 2022)](https://arxiv.org/pdf/2204.12511) uses the [author's Poly-1 formulation](https://waymo.com/research/polyloss-a-polynomial-expansion-perspective-of-classification-loss-functions/). [ASL (ICCV 2021)](https://arxiv.org/pdf/2009.14119) follows the [author's single-label softmax variant](https://github.com/Alibaba-MIIL/ASL), checked against the locked timm implementation. Probability complements and fractional powers use numerically stable evaluation at saturated logits. These are classification-head adaptations; no grasp accuracy improvement is implied.
 
-[Varifocal Loss](https://github.com/hyz-xmaster/VarifocalNet) assumes quality logits decoded through sigmoid. The current grasp-quality heads emit raw regression scores, so it requires an explicit head/decoder adaptation before becoming a selectable loss.
+[Varifocal Loss](https://github.com/hyz-xmaster/VarifocalNet) requires sigmoid quality logits. It is available through the explicitly paired [quality score head](#quality-score-heads), not as a direct substitution on an unchanged raw-score head.
 
 ### Logit normalization, margin penalties and clipping
 
@@ -807,6 +808,62 @@ loss:
 ```
 
 Generate a complete local example with `./panda init --example train-calibration`. In the browser, choose a formulation under **Training settings → Choose loss formulations**, then edit individual terms in **Loss configuration**. Sweeps can vary paths such as `loss.functions.angle.threshold` or `loss.functions.angle.base.margin`; choose an explicit mapping in the base configuration first. These stateless objectives use the shared PyTorch runtime without additional source or weight downloads. Loss settings are saved with the experiment and checkpoint; epoch resume checks them against the saved training configuration.
+
+### Quality score heads
+
+`modules.head: quality_residual` adds a configurable scoring branch to Baseline, its PointNet2 port, Scale-Balanced-Grasp or Graspness. Native angle, width and tolerance predictions, seed indices and grasp geometry are retained. The branch adds a learned correction to the native score output and exposes separate `grasp_score_logits` for sigmoid objectives. This is a GraspPanda adaptation of quality-aware learning, not a DETR matcher or a reproduction of the full DEIM detector.
+
+| Head parameter | Default | Accepted values |
+|---|---|---|
+| `hidden_channels` | `[128, 128]` | 1–8 pointwise layer widths, each 8–2048 |
+| `activation` | `relu` | `relu`, `gelu`, `silu` |
+| `normalization` | `batch` | `batch`, `group`, `none` |
+| `initial_probability` | 0.1 | 0.001–0.999; initializes the residual bias to logit(p), with zero output weights |
+
+The initial probability sets only the residual bias; the native score also contributes to the final logit. With `reuse_unchanged`, all original head weights are retained and only the residual branch is initialized. Train the changed scoring model before using its predictions. A completed grasp checkpoint reloads with `strict` and the same head settings. Both the existing score path and the residual branch participate in learning; the hidden residual layers begin receiving gradients after the zero-initialized output weights update.
+
+#### Score mappings and supervision
+
+| Method | Native label `s` | Sigmoid target `q` | Score passed to the native decoder |
+|---|---|---|---|
+| Graspness | Batch-normalized grasp quality in [0, 1] | `q = s` | `sigmoid(z)` |
+| Baseline / PointNet2 port / Scale-Balanced-Grasp | Nonnegative log friction-ratio quality | `q = 1 - exp(-s)` | `softplus(z)`, the stable inverse mapping of `sigmoid(z)` |
+
+The dense-method mapping avoids assuming that log-quality labels lie below 1 or silently clipping them. It retains nonnegative log-score semantics; the native depth selection, tolerance multiplication and geometric decoder still consume the mapped score. These scores are grasp-ranking quantities, not calibrated physical success probabilities. FineGrasp/EconomicGrasp's categorical quality heads and HGGD/RNG's heatmap targets do not share this contract and reject these score objectives.
+
+Select one of the following under `loss.functions.score`; all require the paired `quality_residual` head. Other loss terms and coefficients remain independently configurable. Selecting the head with an upstream or regression objective instead is a separate ablation: that objective acts on the decoded score and retains its original supervision.
+
+| Objective | Parameters | Per-item definition |
+|---|---|---|
+| `quality_bce` | None beyond supervision/reduction | BCE-with-logits against `q` |
+| `varifocal` | `alpha`: 0.2 [0, 10]; `gamma`: 2 [0, 8] | BCE against `q`, weighted by `q` for positive quality and `alpha * p^gamma` for zero quality |
+| `mal` | `alpha`: 1 [0, 10]; `gamma`: 2 [0.000001, 8] | BCE against `q^gamma`, weighted by 1 for positive quality and `alpha * p^gamma` for zero quality |
+
+Here `p = sigmoid(z)` is detached when forming the focusing weights. Positive quality means `q > 0`; zero-quality bins form the negative set. These definitions and defaults follow the [reviewed DEIM implementation](https://github.com/Intellindust-AI-Lab/DEIM/blob/09d35d53d39ee3145a1e61e3a989b28b9468d1dd/engine/deim/deim_criterion.py). MAL is from [DEIM, CVPR 2025](https://openaccess.thecvf.com/content/CVPR2025/papers/Huang_DEIM_DETR_with_Improved_Matching_for_Fast_Convergence_CVPR_2025_paper.pdf); Varifocal originates in [VarifocalNet, CVPR 2021](https://openaccess.thecvf.com/content/CVPR2021/papers/Zhang_VarifocalNet_An_IoU-Aware_Dense_Object_Detector_CVPR_2021_paper.pdf). Grasp quality replaces detection IoU, with the following explicit grasp reductions. MAL's powered target changes the learned score emphasis; it is not equivalent to BCE or a claim of better grasp calibration.
+
+All three objectives also accept:
+
+- `supervision: native` (default): Graspness uses all native score bins. Dense Baseline methods retain GT best-angle selection for training and the native object/quality mask. SBG retains its depth-shared score mask and scale prior. Ordinary Baseline's native score mask contains positive quality only, so the negative focusing branch is inactive in this mode.
+- `supervision: all_angles`: Dense methods supervise every angle/depth bin on object seeds, including zero-quality bins; this changes the score-training protocol. SBG also retains its scale prior. Graspness already supervises all bins, so the two modes coincide there. Inference never selects angles using labels.
+- `normalization: native` (default): Divide by the selected-item count, or selected scale-weight sum for SBG, retaining the dense methods' 1e-6 denominator offset.
+- `normalization: positive`: Divide by the positive-quality count (scale-weighted for SBG), clamped to at least 1. This can increase the contribution of abundant zero-quality bins; set the score coefficient deliberately when comparing it with a native mean.
+
+Invalid targets are rejected. Empty selected sets return a gradient-connected zero. Regression, angle, width and tolerance supervision are unaffected by these score-only settings. No improved AP or calibration is implied by selecting an objective.
+
+```bash
+./panda init --example train-quality-head
+```
+
+```yaml
+modules:
+  head: {type: quality_residual, hidden_channels: [128, 128]}
+checkpoint_policy: reuse_unchanged
+loss:
+  functions:
+    score: {type: mal, gamma: 2.0, supervision: all_angles, normalization: native}
+```
+
+In the browser, choose the head under **Compose modules**, then select **Quality score objective** under **Training settings → Choose loss formulations** and click **Apply loss choices**. Edit score parameters in **Loss configuration**. The form, configuration editor, sweeps and epoch checkpoints retain both the head and objective settings. Sweep paths include `modules.head.hidden_channels`, `loss.functions.score.gamma` and `loss.functions.score.supervision`.
 
 ### RGB-D training controls
 

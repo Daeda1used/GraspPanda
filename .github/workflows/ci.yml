@@ -11,6 +11,31 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install PyYAML==6.0.3
+      - name: Check source distribution
+        run: |
+          python - <<'PYTHON'
+          from pathlib import PurePosixPath
+          import subprocess
+          import tarfile
+          import io
+          roots = {'.gitattributes', '.github', '.gitignore', 'LICENSE', 'README.md',
+                   'docs', 'grasppanda', 'panda', 'pyproject.toml', 'uv.lock'}
+          generated = {'tests', 'reports', 'benchmarks', 'probes', 'logs', 'outputs',
+                       'checkpoints', 'environments', 'upstream', 'data', 'datasets',
+                       'build', 'dist', '__pycache__', '.venv', '.python-version'}
+          names = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          for name in filter(None, names):
+              path = PurePosixPath(name)
+              assert path.parts[0] in roots, f'Unexpected public entry: {name}'
+              assert not generated.intersection(path.parts), f'Generated artifact: {name}'
+              assert '.local.' not in path.name, f'Local configuration: {name}'
+          ignored = subprocess.run(['git', 'check-ignore', '--no-index', '--stdin'],
+                                   input='\n'.join(filter(None, names)), text=True, capture_output=True)
+          assert ignored.returncode == 1, f'Ignored files in public source: {ignored.stdout}'
+          archive = subprocess.check_output(['git', 'archive', '--format=tar', 'HEAD'])
+          with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+              assert all(not m.issym() and not m.islnk() for m in source), 'Symlink in release'
+          PYTHON
       - name: Check package and lock versions
         run: |
           python - <<'PYTHON'

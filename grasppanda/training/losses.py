@@ -1,5 +1,6 @@
 """Loss substitutions with native target selection, units and reduction contracts."""
 import math
+from .quality import LOSSES as QUALITY_LOSSES, METHODS as QUALITY_METHODS, PARAMETERS as QUALITY_PARAMETERS
 
 
 BINARY_CLASSIFICATION = ('cross_entropy', 'focal', 'poly1', 'asl')
@@ -8,6 +9,7 @@ REGRESSION = ('l1', 'mse', 'smooth_l1', 'huber', 'charbonnier')
 
 
 PARAMETERS = {
+    **QUALITY_PARAMETERS,
     'upstream': {}, 'cross_entropy': {'label_smoothing': (0, .5)},
     'focal': {'gamma': (0, 8), 'alpha': (0, 1)}, 'poly1': {'epsilon': (-1, 10)},
     'asl': {'gamma_pos': (0, 8), 'gamma_neg': (0, 8), 'label_smoothing': (0, .5)},
@@ -32,6 +34,8 @@ def parameter_schema(method, kind):
 
 
 def choices(term, method=None):
+    if term == 'score' and method in QUALITY_METHODS:
+        return ('upstream', *REGRESSION, *QUALITY_LOSSES)
     return ('upstream',) + (classification_choices(method) if is_classification(method, term) else REGRESSION)
 
 
@@ -54,6 +58,10 @@ def validate(method, functions):
             rule = parameter_schema(method, kind)[key]
             if rule[0] == 'formulation':
                 formulation(term, value, rule[1:])
+                continue
+            if rule[0] == 'choice':
+                if not isinstance(value, str) or value not in rule[1:]:
+                    raise ValueError(f'Invalid {term}/{kind} loss parameter: {key}')
                 continue
             if kind == 'logit_clip' and key == 'norm_order' and value == 'inf':
                 continue
@@ -188,6 +196,10 @@ def replace_losses(end_points, config):
     for term, value in config.loss.get('functions', {}).items():
         kind, options = unpack(value)
         if kind == 'upstream': continue
+        if kind in QUALITY_LOSSES:
+            from .quality import replace
+            replace(end_points, config, kind, options)
+            continue
         prediction, target, mask, scale, offset = targets(end_points, config.method, term)
         if is_classification(config.method, term):
             channels = prediction.shape[1]

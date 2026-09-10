@@ -1,5 +1,32 @@
 # Generate only the configuration you need: ./panda init --example NAME
 # Omitted experiment fields use the shared defaults; module settings remain explicit.
+train-quality-head:
+  description: Train residual grasp-quality logits with the DEIM-style MAL objective
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    camera: realsense
+    split: train
+    scene: 0
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      head:
+        type: quality_residual
+        hidden_channels: [128, 128]
+        activation: relu
+        normalization: batch
+        initial_probability: 0.1
+    loss:
+      functions:
+        score:
+          type: mal
+          gamma: 2.0
+          supervision: all_angles
+          normalization: native
 train-calibration:
   description: Configure classification calibration and clipped objectives per grasp head
   config:

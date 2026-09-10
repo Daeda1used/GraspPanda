@@ -2,17 +2,25 @@
 import sys
 
 
-def replace(end, config):
-    from grasppanda.module_options import unpack
-    from grasppanda.training.options import LOSS_TERMS
-    from grasppanda.training.losses import targets, classification, regression, is_classification
+def scale_prior(end):
     native = next((sys.modules[name] for name in ('models.loss', 'loss')
                    if name in sys.modules and hasattr(sys.modules[name], 'generate_reweight_mask')), None)
     if native is None: raise ValueError('Scale-balanced loss requires the native loss module and scale prior')
-    prior = native.generate_reweight_mask(end)
+    return native.generate_reweight_mask(end)
+
+
+def replace(end, config):
+    from grasppanda.module_options import unpack
+    from grasppanda.training.options import LOSS_TERMS
+    from grasppanda.training.losses import targets, classification, regression, is_classification, QUALITY_LOSSES
+    prior = scale_prior(end)
     for term, value in config.loss.get('functions', {}).items():
         kind, options = unpack(value)
         if kind == 'upstream': continue
+        if kind in QUALITY_LOSSES:
+            from grasppanda.training.quality import replace as quality_loss
+            quality_loss(end, config, kind, options)
+            continue
         if term == 'graspable':
             prediction, target = end['objectness_score'], end['graspable_mask'].long()
             weights, scale, offset = None, 1., 0.

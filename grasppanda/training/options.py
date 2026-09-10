@@ -58,6 +58,11 @@ def validate_training_options(config):
         raise ValueError('loss accepts weights and functions mappings')
     from grasppanda.training.losses import validate
     validate(config.method, loss.get('functions', {}))
+    from .quality import LOSSES as QUALITY_LOSSES
+    from ..module_options import unpack
+    if any(unpack(value)[0] in QUALITY_LOSSES for value in loss.get('functions', {}).values()):
+        if unpack(config.modules.get('head', 'upstream'))[0] != 'quality_residual':
+            raise ValueError('Quality objectives require modules.head: quality_residual; native scores are not sigmoid logits')
     terms = LOSS_TERMS.get(config.method, {})
     weights = loss.get('weights', {})
     if set(weights) - set(terms) or not all(finite(v, 0, 1000) for v in weights.values()):
