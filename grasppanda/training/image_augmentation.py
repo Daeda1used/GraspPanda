@@ -9,7 +9,7 @@ LIMITS = {'brightness': 1., 'contrast': 1., 'saturation': 1., 'hue': .5,
 
 
 def validate(options):
-    if set(options) - {'mode', 'blur_kernel', *LIMITS}:
+    if set(options) - {'mode', 'blur_kernel', 'prime', *LIMITS}:
         raise ValueError('RGB-D augmentation accepts photometric and depth-observation controls; see the image augmentation guide')
     mode = options.get('mode', 'custom')
     if mode not in ('native', 'none', 'custom'):
@@ -24,6 +24,9 @@ def validate(options):
         raise ValueError('blur_kernel must be an odd integer from 3 to 31')
     if options.get('blur_sigma_min', .1) > options.get('blur_sigma_max', 2.):
         raise ValueError('blur_sigma_min must not exceed blur_sigma_max')
+    if 'prime' in options:
+        from .prime import validate as validate_prime
+        validate_prime(options['prime'])
 
 
 def configure_dataset(dataset, config):
@@ -38,6 +41,9 @@ def configure_dataset(dataset, config):
     if options.get('blur_probability', 0):
         photo.append(RandomApply([GaussianBlur(options.get('blur_kernel', 5),
             (options.get('blur_sigma_min', .1), options.get('blur_sigma_max', 2.)))], p=options['blur_probability']))
+    if 'prime' in options:
+        from .prime import PrimePhotometric
+        photo.append(PrimePhotometric(options['prime']))
     # Native get_rgb saves the same augmented full-resolution RGB for local
     # features before resizing it for the anchor network.
     dataset.aug = Compose(photo) if photo else None

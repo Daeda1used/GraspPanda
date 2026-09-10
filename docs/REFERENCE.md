@@ -907,6 +907,43 @@ RGB and depth perturbations are applied at full resolution before the native anc
 
 HGGD samples augmentation for each dataset item. RNG samples once before creating its fixed training frame, optional anchor warmup and local patches; it retains its bounded native-objective training protocol. Start with the loss and augmentation section of [`compose-hggd`](USAGE.md#configuration-examples) (`./panda init --example compose-hggd`). Sweeps can vary paths such as `loss.functions.local_orientation`, `loss.weights.local_offset` and `augmentation.depth_noise_std`.
 
+##### PRIME photometric augmentation
+
+For HGGD and RegionNormalizedGrasp training, add `prime` to the RGB-D augmentation mapping. This adapts the smooth-color and random-filter primitives from [PRIME (ECCV 2022)](https://www.ecva.net/papers/eccv_2022/papers_ECCV/papers/136850615.pdf), using its [pinned author code](https://github.com/amodas/PRIME-augmentations). It augments RGB appearance while retaining the image lattice, camera calibration, depth and grasp labels. Spatial diffeomorphisms and classification JSD consistency are excluded; this is the photometric adaptation, not a reproduction of PRIME classification training.
+
+```yaml
+augmentation:
+  mode: custom
+  prime:
+    primitives: [color, filter]
+    mixture_width: 3
+    mixture_depth: -1
+    max_depth: 3
+    probability: 1.0
+```
+
+Generate a complete experiment with `./panda init --example train-prime-rgbd`. In the UI, select HGGD/RNG training, expand **Choose RGB photometric policy**, select the primitives and **Apply photometric policy**. This preserves other augmentation entries; all parameters remain editable in **Augmentation configuration**. Removing the PRIME override retains the other entries and selected augmentation mode.
+
+| `prime` parameter | Default · accepted values | Meaning |
+|---|---|---|
+| `primitives` | `[color, filter]` | A nonempty unique list; each chain step selects one primitive uniformly |
+| `probability` | 1 · [0, 1] | Probability of applying the mixture to an RGB observation |
+| `mixture_width` | 3 · integers [1, 8] | Number of independently transformed chains mixed with Dirichlet(1) weights |
+| `mixture_depth` | -1 · -1 or integers [1, `max_depth`] | -1 samples each chain's depth uniformly; positive values give an exact fixed depth |
+| `max_depth` | 3 · integers [1, 8] | Maximum random depth and upper bound for fixed depth |
+| `stochastic` | true · boolean | Sample primitive strength for each application; false uses the configured strength and kernel |
+| `color_cut` | 500 · integers [1, 500] | Largest smooth-color sine frequency; stochastic mode first samples the cutoff uniformly |
+| `color_bandwidth` | 20 · integers [1, 500] | Maximum number of consecutive sine frequencies, with a random start in the current cutoff |
+| `color_temperature` | 0.05 · [0, 0.1] | Variance of Gaussian sine coefficients; stochastic mode samples temperature uniformly from zero |
+| `filter_kernel` | 3 · odd integers [3, 15] | Odd spatial-filter size, retained in stochastic mode; the released kernel candidate range contains only this size |
+| `filter_sigma` | 4 · [0, 4] | Standard deviation of the additive Gaussian filter coefficients; stochastic mode samples it uniformly from zero |
+
+The mixture blends the original RGB with its augmented chains using Beta(1,1). Existing color jitter, grayscale and blur run first. PRIME then runs once at full resolution before native resizing and local-feature extraction; the two grasp branches receive the same augmented observation. Depth settings, if provided separately, retain their existing behavior. Evaluation and inference do not apply PRIME.
+
+Two source corrections are explicit: the identity impulse uses the center of the odd filter, so zero noise preserves pixel locations; a fixed chain depth no longer receives the author's random early-stop mask. Smooth-color frequencies are evaluated in chunks with the same sampled coefficients to bound memory, and the final RGB is rounded to 8-bit for the native PIL loader. CPU dataset workers use the experiment's seeded PyTorch RNG; changing worker count changes the sampled augmentation stream. Larger widths, depths and frequency bandwidths increase preprocessing cost. No additional package environment or model weights are required; `./panda install` fetches the pinned sources.
+
+Use sweep paths such as `augmentation.prime.color_temperature`, `augmentation.prime.filter_sigma`, or `augmentation.prime.mixture_width`. Keep dataset and observation protocols fixed when comparing robustness; these transforms do not imply improved grasp AP.
+
 ### Point augmentation
 
 An empty mapping preserves the action's original behavior. `mode: none` disables augmentation; `mode: native` selects the author's transform. The following parameters require `mode: custom` (the default for a nonempty mapping).

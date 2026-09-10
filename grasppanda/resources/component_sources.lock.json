@@ -180,5 +180,11 @@
     "repository": "https://github.com/NVlabs/MambaVision",
     "path": "environments/sources/cv/mambavision",
     "commit": "7860a506b2eb844eaaae676f08461ce8c3c26f43"
+  },
+  {
+    "id": "prime",
+    "repository": "https://github.com/amodas/PRIME-augmentations",
+    "path": "environments/sources/cv/prime",
+    "commit": "0290f6be3771215bac78693b3a27d3e2da341a55"
   }
 ]

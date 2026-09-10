@@ -1247,3 +1247,34 @@ compose-mambavision-custom:
         - 4
         - 3
         gradient_checkpointing: true
+
+train-prime-rgbd:
+  description: Train HGGD with aligned PRIME smooth-color and random-filter augmentation
+  config:
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: native_demo
+    learning_rate: 3.0e-05
+    checkpoint_policy: strict
+    optimizer:
+      type: lion
+      weight_decay: 0.01
+    scheduler:
+      type: cosine
+      warmup_steps: 1
+      min_lr_ratio: 0.1
+    augmentation:
+      mode: custom
+      prime:
+        primitives:
+        - color
+        - filter
+        mixture_width: 3
+        mixture_depth: -1
+        max_depth: 3
+        probability: 1.0

@@ -170,6 +170,27 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
     return ('| Parameter | Accepted values |\n|---|---|\n'+'\n'.join(rows)+'\n\nOmitted parameters use component defaults. Cross-stage constraints are checked when generating or running the configuration.') if rows else 'The selected components use their native settings.'
 
 
+def prime_preset(method, action, policy, current):
+    try:
+        if method not in ('hggd', 'region_normalized_grasp') or action not in ('train', 'train_check'):
+            raise ValueError('PRIME photometric augmentation requires HGGD or RNG training')
+        options = json.loads(current or '{}')
+        if not isinstance(options, dict): raise ValueError('Augmentation configuration must be a mapping')
+        policies = {'color': ['color'], 'filter': ['filter'], 'color_filter': ['color', 'filter']}
+        if policy == 'none': options.pop('prime', None)
+        elif policy in policies:
+            previous = options.get('prime', {})
+            if not isinstance(previous, dict): raise ValueError('augmentation.prime must be a mapping')
+            options['mode'] = 'custom'
+            options['prime'] = {**previous, 'primitives': policies[policy]}
+        else: raise ValueError('Unknown PRIME photometric policy')
+        from .training.image_augmentation import validate
+        validate(options)
+        return json.dumps(options, indent=2)
+    except (ValueError, TypeError) as error:
+        raise gr.Error(str(error)) from error
+
+
 def loss_parameters(method):
     from grasppanda.training.options import LOSS_TERMS
     from grasppanda.training.losses import PARAMETERS, is_classification, parameter_schema
@@ -192,6 +213,10 @@ def loss_parameters(method):
             for name in PARAMETERS if name != 'upstream' and name in available for options in [parameter_schema(method, name)]]
     semantics = ('HGGD/RNG use independent sigmoid labels: cross_entropy means binary cross-entropy, and ASL uses the multi-label formulation. Native positive thresholds, class balancing and positive-count reductions remain in place. Focal alpha applies to each classification term. '
                  if method in ('hggd', 'region_normalized_grasp') else 'Focal alpha applies only to binary objectness. ')
+    if method in ('hggd', 'region_normalized_grasp'):
+        semantics += ('RGB-D augmentation accepts `prime: {"primitives": ["color", "filter"], "mixture_width": 3}` in custom mode. '
+                      'PRIME photometric transforms share the same full-resolution RGB between anchor and local branches. '
+                      'See the RGB-D augmentation reference for strength, chain depth and probability controls. ')
     if method == 'gtg2':
         semantics = 'Graph score regression uses one scalar per candidate. Graph augmentation supports native, none, or custom half_turn_probability and point_dropout. '
     if method == 'scale_balanced_grasp':
@@ -638,6 +663,10 @@ def create_app(manager=None):
                                 sampling_max=gr.Number(1.,minimum=.1,maximum=1,label='Maximum keep ratio')
                             apply_sampling=gr.Button('Apply sampling choices')
                             gr.Markdown('Equal limits give a fixed ratio; otherwise each sample draws a log-uniform ratio. At least 1,024 rows remain. Apply switches to custom point augmentation and writes the rule below, preserving other transforms. Advanced parameters stay editable in JSON. Removing the override keeps the selected augmentation mode.')
+                        with gr.Accordion('Choose RGB photometric policy', open=False, visible=False) as prime_panel:
+                            prime_policy=gr.Dropdown([('PRIME color + filter','color_filter'),('PRIME smooth color','color'),('PRIME random filter','filter'),('Remove PRIME override','none')],value='color_filter',label='Photometric policy')
+                            apply_prime=gr.Button('Apply photometric policy')
+                            gr.Markdown('Apply adds PRIME photometric augmentation to the JSON below and preserves other transforms. Edit mixture_width, mixture_depth, probability, color_temperature and filter_sigma in that mapping. The policy changes RGB appearance with fixed camera geometry and grasp labels; it requires no extra weights.')
                         augmentation_options=gr.Code('{}',language='json',label='Augmentation configuration',lines=3)
                         with gr.Accordion('Method training stages', open=False, visible=False) as trainer_panel:
                             trainer_options=gr.Code('{}',language='json',label='Trainer parameters',lines=4,interactive=False)
@@ -758,6 +787,10 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(value='upstream',visible=method in METHODS and action in ('train','train_check') and head=='quality_residual')
         gr.on([method.change,action.change,head.change],quality_controls,[method,action,head],quality_loss,api_name=False,preprocess=False,queue=False,trigger_mode='always_last')
         apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
+        apply_prime.click(prime_preset,[method,action,prime_policy,augmentation_options],augmentation_options,api_name='apply_photometric_policy')
+        gr.on([method.change,action.change],
+              lambda m,a: gr.update(visible=m in ('hggd','region_normalized_grasp') and a in ('train','train_check')),
+              [method,action],prime_panel,api_name=False,preprocess=False)
         for selector in (method, action):
             selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','scale_balanced_grasp','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),
                 [method,action],sampling_panel,api_name=False,preprocess=False)
