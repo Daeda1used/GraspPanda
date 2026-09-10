@@ -10,9 +10,11 @@ from .config import ROOT, Experiment, capabilities, catalogue, default_dataset
 
 def read_configuration(path):
     """Preserve JSON number types, including scientific notation."""
-    import yaml
     text = path.read_text()
-    return json.loads(text) if path.suffix.lower() == '.json' else yaml.safe_load(text)
+    if path.suffix.lower() == '.json':
+        return json.loads(text)
+    import yaml
+    return yaml.safe_load(text)
 
 
 def main():
@@ -23,13 +25,18 @@ def main():
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=7860)
     commands.add_parser("list", help="List runnable methods and operations")
+    guides = {'usage': 'USAGE.md', 'install': 'INSTALL.md', 'downloads': 'DOWNLOADS.md',
+              'methods': 'METHODS.md', 'modules': 'MODULES.md', 'reference': 'REFERENCE.md',
+              'licenses': 'THIRD_PARTY.md'}
+    docs = commands.add_parser('docs', help='Read a bundled guide without installing the runtime')
+    docs.add_argument('topic', choices=list(guides), nargs='?', default='usage')
     init = commands.add_parser('init', help='Create an editable local experiment without downloading or running')
     source = init.add_mutually_exclusive_group()
     source.add_argument('--method', choices=[mid for mid in catalogue() if capabilities(mid)], help='Method preset (default: graspnet_baseline)')
     source.add_argument('--example', help='Curated example name; see --list')
     source.add_argument('--list', action='store_true', help='List curated configuration examples')
     init.add_argument('--dataset-root', help='Set the dataset path in the generated configuration')
-    init.add_argument('-o', '--output', type=Path, default=Path('experiment.local.yaml'), help='New YAML file (default: experiment.local.yaml); existing files are preserved')
+    init.add_argument('-o', '--output', type=Path, default=Path('experiment.local.yaml'), help='New YAML or JSON file; use .json before installation (default: experiment.local.yaml)')
     commands.add_parser("fetch", help="Fetch the pinned method implementations")
     commands.add_parser("doctor", help="Check the shared runtime and source revisions")
     fetch_weights = commands.add_parser("weights", help="Download weights for a method and camera")
@@ -64,6 +71,8 @@ def main():
     elif args.command == "ui":
         from .ui import launch
         launch(args.host, args.port)
+    elif args.command == 'docs':
+        print((ROOT / 'docs' / guides[args.topic]).read_text(), end='')
     elif args.command == "list":
         for mid, m in catalogue().items():
             if not capabilities(mid): continue

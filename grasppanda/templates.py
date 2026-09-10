@@ -1,13 +1,13 @@
 """Create editable local configurations from method presets and curated examples."""
 from copy import deepcopy
+import json
 from pathlib import Path
 
 from .config import ROOT, Experiment, default_dataset
 
 
 def examples():
-    import yaml
-    return yaml.safe_load((ROOT / 'grasppanda/resources/examples.yaml').read_text())
+    return json.loads((ROOT / 'grasppanda/resources/examples.json').read_text())
 
 
 def configuration(*, method=None, example=None, dataset_root=None):
@@ -45,12 +45,18 @@ def configuration(*, method=None, example=None, dataset_root=None):
 
 
 def write_configuration(data, output):
-    import yaml
     destination = Path(output)
-    if destination.suffix not in ('.yaml', '.yml'):
-        raise ValueError('Use a .yaml or .yml output file')
-    payload = '# Local experiment. Set your data paths before running.\n'
-    payload += yaml.safe_dump(data, sort_keys=False, allow_unicode=False)
+    if destination.suffix == '.json':
+        payload = json.dumps(data, indent=2, allow_nan=False) + '\n'
+    elif destination.suffix in ('.yaml', '.yml'):
+        try:
+            import yaml
+        except ImportError:
+            raise ValueError('YAML output requires the installed runtime. Use -o experiment.local.json before installation.') from None
+        payload = '# Local experiment. Set your data paths before running.\n'
+        payload += yaml.safe_dump(data, sort_keys=False, allow_unicode=False)
+    else:
+        raise ValueError('Use a .json, .yaml or .yml output file')
     # Exclusive creation also protects existing files and symlinks.
     with destination.open('x', encoding='utf-8') as stream:
         stream.write(payload)

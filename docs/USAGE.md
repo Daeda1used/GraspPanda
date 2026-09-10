@@ -48,6 +48,19 @@ export GRASPPANDA_DATASET_ROOT=/data/GraspNet-1B
 ./panda ui
 ```
 
+## Explore before installation
+
+With system Python 3.10 or newer, these commands need no GPU, dataset or third-party packages:
+
+```bash
+./panda list
+./panda docs downloads
+./panda init --list
+./panda init --method hggd -o hggd.local.json
+```
+
+Use `.json` for configuration output before installation. YAML output is available after installing the shared runtime. Both formats support the same settings and run with `./panda run FILE`. `./panda docs` reads the bundled usage guide; topics include `install`, `downloads`, `methods`, `modules`, `reference` and `licenses`.
+
 ## Configuration examples
 
 Generate only the files you need, from the repository root:

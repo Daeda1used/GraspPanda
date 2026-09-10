@@ -8,6 +8,8 @@ The lock includes Linux-specific CUDA wheels. Windows, macOS, CPU-only execution
 
 ## Install once
 
+To browse first, use `./panda list`, `./panda docs downloads` or generate a JSON preset with `./panda init --method hggd -o hggd.local.json`. These commands only need system Python 3.10+. The installer prepares the locked Python 3.11 environment used for all model operations.
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then the system libraries:
 
 ```bash

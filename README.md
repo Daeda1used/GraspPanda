@@ -19,6 +19,8 @@ Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your
 
 A [release archive](https://github.com/Daeda1used/GraspPanda/releases/latest) uses the same installation steps.
 
+Before installing, use `./panda list` to browse methods or `./panda docs downloads` to read the data guide with system Python 3.10+. The clone contains the toolbox and guides; original implementations, weights and experiment files are created locally when needed.
+
 ## Guides
 
 | Start here | Details |
@@ -28,4 +30,4 @@ A [release archive](https://github.com/Daeda1used/GraspPanda/releases/latest) us
 | [Compose modules](docs/MODULES.md) | Compatible encoders, grouping, losses and optimization |
 | [Methods & papers](docs/METHODS.md) | Available operations, limitations, PDF and source links |
 
-[MIT license](LICENSE) · [Third-party terms](docs/THIRD_PARTY.md) · [Extend the toolbox](docs/EXTENDING.md)
+[MIT license](LICENSE) · [Third-party terms](docs/THIRD_PARTY.md) · [Extend the toolbox](docs/REFERENCE.md#extending-grasppanda)

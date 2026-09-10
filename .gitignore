@@ -16,7 +16,6 @@
 !/.github/workflows/ci.yml
 /docs/*
 !/docs/DOWNLOADS.md
-!/docs/EXTENDING.md
 !/docs/INSTALL.md
 !/docs/METHODS.md
 !/docs/MODULES.md
@@ -32,7 +31,7 @@
 !/grasppanda/resources/checkpoints.json
 !/grasppanda/resources/component_sources.lock.json
 !/grasppanda/resources/component_weights.json
-!/grasppanda/resources/examples.yaml
+!/grasppanda/resources/examples.json
 !/grasppanda/resources/flash3d/CMakeLists.txt
 !/grasppanda/resources/flash3d/attention-backward.patch
 !/grasppanda/resources/flash3d/native-runtime.patch
