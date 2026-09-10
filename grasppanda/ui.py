@@ -26,7 +26,7 @@ CSS = """.gradio-container {max-width: 1480px !important;}
 ACTION_LABELS = {
     'infer': 'Predict grasps', 'evaluate': 'Evaluate predictions',
     'pipeline_smoke': 'Run native recipe', 'train': 'Train across epochs',
-    'train_check': 'Short training run', 'train_smoke': 'Single training step',
+    'train_check': 'Short training run',
 }
 
 
@@ -164,7 +164,7 @@ def loss_parameters(method):
     return ('Loss terms: ' + ', '.join(f'`{term}`' for term in terms) + '. Classification terms: ' + classification + '; remaining terms use regression losses.\n\n'
             '| Formulation | Parameters |\n|---|---|\n' + '\n'.join(rows) +
             '\n\nUse `loss.functions.TERM: {"type": "NAME", ...}` in experiment JSON. ' + semantics +
-            'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#training-controls) for defaults, target units and augmentation parameters.')
+            'See [Training controls](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#training-controls) for defaults, target units and augmentation parameters.')
 
 
 def loss_preset(method, classification, regression, current):
@@ -585,7 +585,7 @@ def create_app(manager=None):
                         augmentation_options=gr.Code('{}',language='json',label='Augmentation configuration',lines=3)
                         with gr.Accordion('Method training stages', open=False, visible=False) as trainer_panel:
                             trainer_options=gr.Code('{}',language='json',label='Trainer parameters',lines=4,interactive=False)
-                            trainer_help = gr.Markdown('Configure HGGD stages, gradient accumulation and local sampling. See [HGGD epoch training](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#hggd-epoch-training) for parameters and defaults.')
+                            trainer_help = gr.Markdown('Configure HGGD stages, gradient accumulation and local sampling. See [HGGD epoch training](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#hggd-epoch-training) for parameters and defaults.')
                         with gr.Accordion('Optimizer & learning-rate schedule', open=False):
                             optimizer_kind=gr.Dropdown(['upstream'],value='upstream',label='Optimizer',interactive=False)
                             optimizer_options=gr.Code('{}',language='json',label='Optimizer parameters',lines=3)
@@ -669,6 +669,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
                         gr.Markdown(documentation('USAGE.md'))
                     with gr.Tab("Modules"):
                         gr.Markdown(documentation('MODULES.md'))
+                        with gr.Accordion('Detailed component and training reference', open=False):
+                            gr.Markdown(documentation('REFERENCE.md'))
                     with gr.Tab("Methods & papers"):
                         gr.Markdown(documentation('METHODS.md'))
             with gr.Accordion("Check data and GPU", open=False):
@@ -768,7 +770,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
         for selector in (action, method):
             selector.change(lambda a,m: [gr.update(interactive=a!='pipeline_smoke' and not (m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8))) for i in range(13)],
                 [action,method],[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],api_name=False, preprocess=False)
-        method.change(lambda m: ('Configure objects (1–8), box_probability (0–1), correction_clicks (0–7), conditioning_frames and correction_frames (1–4). Training simulates prompts from instance labels. conditioning_frames <= correction_frames <= frame count.' if m=='spgrasp' else 'Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#candidate-graph-experiments)' if m == 'gtg2' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/MODULES.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
+        method.change(lambda m: ('Configure objects (1–8), box_probability (0–1), correction_clicks (0–7), conditioning_frames and correction_frames (1–4). Training simulates prompts from instance labels. conditioning_frames <= correction_frames <= frame count.' if m=='spgrasp' else 'Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#candidate-graph-experiments)' if m == 'gtg2' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
         method.change(lambda m:gr.update(label='Prepared graph root (required for training)' if m == 'gtg2' else 'Prepared targets / cache root (optional)'),method,label_root,api_name=False, preprocess=False)
         action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
         def seed_warmup_control(method, action):

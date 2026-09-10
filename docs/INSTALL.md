@@ -2,7 +2,7 @@
 
 ## Supported runtime
 
-The tested configuration is Ubuntu 22.04 x86-64, Python 3.11.16, PyTorch 2.5.1+cu118, NumPy 1.23.5, CUDA toolkit 11.8 and an RTX A6000. A compatible NVIDIA driver and the **compiler toolkit** are required; the CUDA runtime bundled with PyTorch does not provide `nvcc`. See [NVIDIA's CUDA 11.8 installation guide](https://docs.nvidia.com/cuda/archive/11.8.0/cuda-installation-guide-linux/index.html).
+Use Ubuntu 22.04 x86-64 with an NVIDIA GPU. The shared environment locks Python 3.11.16, PyTorch 2.5.1+cu118 and NumPy 1.23.5; CUDA toolkit 11.8 is required. This runtime has been validated on an RTX A6000. A compatible NVIDIA driver and the **compiler toolkit** are required; the CUDA runtime bundled with PyTorch does not provide `nvcc`. See [NVIDIA's CUDA 11.8 installation guide](https://docs.nvidia.com/cuda/archive/11.8.0/cuda-installation-guide-linux/index.html).
 
 The lock includes Linux-specific CUDA wheels. Windows, macOS, CPU-only execution and newer GPU architectures are not supported by this tested runtime. Native build speed and memory requirements vary; reduce `MAX_JOBS` if compilation exhausts memory.
 
@@ -60,25 +60,20 @@ The clone contains source, guides, example configurations and dependency locks. 
 | `outputs/` | Experiment queue, predictions, trained checkpoints and exports |
 | `logs/` | Installation and source-download diagnostics |
 
-Keep GraspNet at a path of your choice and select that path in the UI. Use `./panda init --method graspness` or choose a [configuration example](../GraspNet-1B/README.md#configuration-examples) to generate a `*.local.yaml` file before editing. Local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
+Keep GraspNet at a path of your choice and select that path in the UI. Use `./panda init --method graspness` or choose a [configuration example](USAGE.md#configuration-examples) to generate a `*.local.yaml` file before editing. Local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
 
 <details>
-<summary>Native component build details</summary>
+<summary>Additional native component requirements</summary>
 
-Flash3D builds its native hierarchy and Transformer Engine in the same Python environment. The installer downloads a checksum-pinned CUDA 12.2 compiler and a private CUDA 12 runtime for the Flash3D extension; Transformer Engine builds against the shared CUDA 11.8 toolkit. No system toolkit or Python package is replaced. Native files live in versioned directories under `environments/native/flash3d/`. Before selecting a new build, the installer verifies forward/backward computation, an optimizer update and strict checkpoint reloading without a dataset. A failed check leaves the previous build selected. This additional compilation can take substantial time; its build tools and downloads are cached locally.
+All components use the same Python environment. The installer fetches pinned build inputs, verifies compatible artifacts and keeps caches under `environments/`; rerun `./panda install` after upgrading.
 
-VMamba builds its CUDA selective-scan extension during installation. The first invocation compiles its Triton cross-scan kernels into a local cache. When a container mounts only `libcuda.so.1`, GraspPanda creates a linker alias under `environments/triton-driver/`; system libraries are not modified. An explicit `TRITON_LIBCUDA_PATH` takes precedence.
-
-LitePT uses a checksum-locked FlashAttention wheel matching the shared Python/PyTorch/CUDA ABI. Its PointROPE CUDA extension is compiled locally for the selected GPU; `rope_backend: torch` selects the author’s PyTorch rotation implementation. Attention still requires a supported Ampere-or-newer GPU.
-
-Point Transformer V2 builds the pinned Pointcept pointops with a separate Python/CUDA namespace. It shares the same interpreter, PyTorch and CUDA toolkit with the other point encoders. No Pointcept training environment or pretrained model is downloaded.
-
-The ResLFE cylindrical component builds the pinned DeepLA CUDA operators under `environments/build/deepla-ops/`. Existing installations need another `./panda install` after upgrading; no separate environment is required. Original downloaded source remains unchanged.
-
-GtG2 candidate generation builds GPG against system PCL using the shared Python interpreter. Matching verified binaries are reused locally. The build copy receives a deterministic sampling seed and an array binding; the original source stays intact. [Candidate graph experiments](MODULES.md#candidate-graph-experiments) describes data preparation and training.
-
-PointCNN++ builds its pinned author CUDA/CUTLASS extension into a versioned local artifact using the same interpreter and CUDA 11.8 toolkit. No separate Python environment is created. The installer verifies the native encoder, gradients and tensor checkpoint loading before activating the artifact; a failed build leaves an existing installation in place. Allow additional compilation time on the first installation.
-
-Swin3D builds its pinned attention and KNN CUDA operators in a versioned artifact under `environments/native/swin3d/`, using the same Python, PyTorch and CUDA toolkit. Forward/backward computation, an optimizer update, scene isolation and strict tensor loading are checked before activation. Source, compatibility patch and artifact hashes are verified when loading; a failed build leaves the previous artifact selected.
+| Component | Installation detail |
+|---|---|
+| Flash3D | Downloads a private CUDA 12.2 compiler/runtime for its extension; Transformer Engine uses CUDA 11.8. System toolkits and shared Python packages are retained. Allow substantial first-build time. |
+| VMamba | Builds selective scan; Triton compiles cross-scan kernels on first use. A local driver linker alias is created when needed; `TRITON_LIBCUDA_PATH` takes precedence. |
+| LitePT | Uses the locked FlashAttention wheel and builds PointROPE. `rope_backend: torch` selects the author's rotation implementation; attention requires Ampere or newer. |
+| PTv2 / ResLFE | Compiles Pointcept / DeepLA operators with separate namespaces to coexist with legacy grasp operators. |
+| GtG2 | Builds the GPG candidate generator against system PCL. |
+| PointCNN++ / Swin3D | Builds the pinned CUDA operators using the shared CUDA 11.8 toolkit; versioned artifacts are activated only after verification. |
 
 </details>

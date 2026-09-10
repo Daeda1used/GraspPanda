@@ -7,7 +7,7 @@ Choose the inputs for your first experiment; you can add training archives later
 | An author sample, without GraspNet | Select ASGrasp in the UI, load its preset and download its registered weights. |
 | A GraspNet frame | Download `test_seen.zip`, set the dataset root and download weights for your method and camera. |
 | Training or evaluation | Add the models, labels and method-specific targets described below. |
-| GtG2 candidate graphs | Follow [Candidate graph experiments](MODULES.md#candidate-graph-experiments) to prepare graphs and train an ensemble. |
+| GtG2 candidate graphs | Follow [Candidate graph experiments](REFERENCE.md#candidate-graph-experiments) to prepare graphs and train an ensemble. |
 | SPGrasp planar sequences | Training needs RGB, instance labels and `rect_labels.zip`; prediction needs RGB, first-frame prompts and your trained checkpoint. |
 
 ## Start without GraspNet
@@ -187,7 +187,7 @@ MotionGrasp also requires the baseline checkpoint; the downloader includes it. T
 
 ## Additional inputs
 
-**SPGrasp:** `./panda weights spgrasp` downloads the [SAM2.1 Hiera Base+ initializer](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt) to `checkpoints/spgrasp/sam2.1_hiera_base_plus.pt`. This initializes training; it is not a trained grasp detector and inference rejects it. No author fine-tuned SPGrasp weights are registered. Use your training run's `checkpoint.pt` for prediction. Training requires consecutive RGB and instance-label frames, with rectangle labels in `rect_labels/scene_XXXX/CAMERA/FFFF.npy` or `scenes/scene_XXXX/CAMERA/rect/FFFF.npy`. Set `label_root` to select another rectangle root containing `scene_XXXX/CAMERA/`. The [SAM2 author instructions](https://github.com/facebookresearch/sam2#download-checkpoints) describe the initializer, and the [SPGrasp guide](MODULES.md#prompted-planar-sequences) explains prompts and width units.
+**SPGrasp:** `./panda weights spgrasp` downloads the [SAM2.1 Hiera Base+ initializer](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt) to `checkpoints/spgrasp/sam2.1_hiera_base_plus.pt`. This initializes training; it is not a trained grasp detector and inference rejects it. No author fine-tuned SPGrasp weights are registered. Use your training run's `checkpoint.pt` for prediction. Training requires consecutive RGB and instance-label frames, with rectangle labels in `rect_labels/scene_XXXX/CAMERA/FFFF.npy` or `scenes/scene_XXXX/CAMERA/rect/FFFF.npy`. Set `label_root` to select another rectangle root containing `scene_XXXX/CAMERA/`. The [SAM2 author instructions](https://github.com/facebookresearch/sam2#download-checkpoints) describe the initializer, and the [SPGrasp guide](REFERENCE.md#prompted-planar-sequences) explains prompts and width units.
 
 ZeroGrasp's inference recipe uses the author's RGB-D and instance-mask sample. Its separate reconstruction training dataset is available through the [author download script](https://github.com/sh8/ZeroGrasp/blob/main/download.sh). Standard GraspNet frames do not provide that supervision.
 
@@ -211,7 +211,7 @@ Existing `scenes/scene_XXXX/CAMERA/normal/FFFF.npy` and `instance_norm_graspness
 
 Generated graspness follows the paper's per-instance min-max normalization and subsequent scene normalization. Applying this to an already scene-normalized map gives the same values for nonconstant objects; constant instances and background receive zero. Normal generation uses the author's Open3D estimator (0.1-metre radius, 30 neighbors) on the full valid workspace cloud. Signed float32 maps are stored scaled by 255 to match the native dataset reader. The author offline normal-generation script is not released, so this is a documented preprocessing adaptation, not a claim of identical author training data. Full normal maps can occupy substantial disk space; choose a writable cache with adequate capacity.
 
-The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](MODULES.md#finegrasp-training-and-composition) for training, loss and resume settings.
+The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](REFERENCE.md#finegrasp-training-and-composition) for training, loss and resume settings.
 
 ## Pretrained image components
 
@@ -229,7 +229,7 @@ The image encoders have separate initialization weights from the method's grasp 
 | `dinov3_small` | [timm DINOv3 Small](https://huggingface.co/timm/vit_small_patch16_dinov3.lvd1689m) | 86 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
 | `dinov3_base` | [timm DINOv3 Base](https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m) | 343 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
 
-These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](MODULES.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
+These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](REFERENCE.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
 
 ## Pretrained point components
 
@@ -250,4 +250,4 @@ Point initialization weights are separate from grasp checkpoints and are downloa
 
 The registry fixes each weight revision, SHA256, byte size and encoder configuration. Files are loaded with PyTorch's restricted weights-only loader. Initial training prepares a missing registered file; inference or resume from a complete grasp checkpoint does not require the initialization download. No weight files are included in the repository.
 
-Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](MODULES.md#pretrained-point-encoders) for input and fine-tuning settings.
+Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.

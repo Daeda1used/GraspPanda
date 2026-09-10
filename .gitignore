@@ -3,7 +3,6 @@
 !/.github/
 !/.gitattributes
 !/.gitignore
-!/GraspNet-1B/
 !/LICENSE
 !/README.md
 !/docs/
@@ -21,10 +20,9 @@
 !/docs/INSTALL.md
 !/docs/METHODS.md
 !/docs/MODULES.md
+!/docs/REFERENCE.md
 !/docs/THIRD_PARTY.md
 !/docs/USAGE.md
-/GraspNet-1B/*
-!/GraspNet-1B/README.md
 
 # Runtime source plus explicitly registered templates, pins and build resources.
 /grasppanda/**

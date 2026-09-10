@@ -24,7 +24,7 @@ Prefer a source archive? Download and extract the [latest release](https://githu
 | Start here | Details |
 |---|---|
 | [Install](docs/INSTALL.md) · [Data & weights](docs/DOWNLOADS.md) | System requirements, dataset setup and author downloads |
-| [Use the toolbox](docs/USAGE.md) · [Examples](GraspNet-1B/README.md) | Inference, training, resume and experiment sweeps |
+| [Use the toolbox](docs/USAGE.md) | Inference, training, resume and experiment sweeps |
 | [Compose modules](docs/MODULES.md) | Compatible encoders, grouping, losses and optimization |
 | [Methods & papers](docs/METHODS.md) | Available operations, limitations, PDF and source links |
 

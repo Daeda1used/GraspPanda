@@ -25,21 +25,12 @@ The **Guide** tab includes installation, downloads, module instructions and a da
 
 The available choices depend on the method. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
 
-<details>
-<summary>Check a training setup before a longer run</summary>
-
-**Single training step** (`train_smoke`) executes one native labelled optimizer step for methods that expose this operation. **Short training run** (`train_check`) repeats a labelled sample to inspect a component configuration. These operations generate their own logs, loss curves and checkpoints locally; neither establishes training convergence or benchmark accuracy.
-
-</details>
-
 ## CLI
 
 ```bash
 ./panda list
 ./panda doctor
 ./panda weights hggd --camera realsense
-./panda verify hggd --dataset-root /data/GraspNet-1B
-./panda verify asgrasp
 ./panda weights graspness --camera realsense
 ./panda init --method graspness -o graspness.local.yaml
 # Set dataset_root and checkpoint in graspness.local.yaml.
@@ -48,7 +39,7 @@ The available choices depend on the method. Use `./panda doctor` for installatio
 
 `init` writes a local YAML configuration without downloading weights or running a model. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
 
-`verify` executes the method preset. `run` accepts YAML or JSON; edit the local copy before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
+`run` accepts YAML or JSON; edit the local copy before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
 
 Set a default dataset path for the UI and CLI presets:
 
@@ -57,13 +48,25 @@ export GRASPPANDA_DATASET_ROOT=/data/GraspNet-1B
 ./panda ui
 ```
 
+## Configuration examples
+
+Generate only the files you need, from the repository root:
+
+```bash
+./panda init --list
+./panda init --example compose-baseline -o composition.local.yaml
+./panda init --example train-hggd -o training.local.yaml
+```
+
+`--method METHOD` creates an original method preset; `--example NAME` selects a composition, training setup or sweep. Generation needs no dataset, weights or GPU and never overwrites an existing file. Edit your paths, prepare any required labels, then use `./panda run FILE` or `./panda sweep FILE`. Generated configurations and experiment artifacts stay on your machine.
+
 ## Train, resume and reuse
 
 Prepare the method's labels using [Data & weights](DOWNLOADS.md). For native epoch training, select **Train across epochs** and expand **Training settings**. Set the available batch limits to `0` for the complete native training/validation ranges. The selected method determines whether a validation loop is available. Expand **Run settings** to set the time limit for long runs.
 
-`initialize` loads model weights and starts a fresh optimizer. `resume` is available only for native epoch training; inference and short training use `initialize`. `resume` restores the model, optimizer and epoch with strict loading; keep the same component/data/optimization settings and set `epochs` above the saved epoch. SBG's native OneCycle schedule, FineGrasp's native schedule, EconomicGrasp's native cosine schedule and configured update schedules require the original final-epoch horizon. [Optimization settings](MODULES.md#optimizers-and-schedules) cover the available choices and update units.
+`initialize` loads model weights and starts a fresh optimizer. `resume` is available only for native epoch training; inference and short training use `initialize`. `resume` restores the model, optimizer and epoch with strict loading; keep the same component/data/optimization settings and set `epochs` above the saved epoch. SBG's native OneCycle schedule, FineGrasp's native schedule, EconomicGrasp's native cosine schedule and configured update schedules require the original final-epoch horizon. [Optimization settings](REFERENCE.md#optimizers-and-schedules) cover the available choices and update units.
 
-For RGB-D epoch training, start with [`train-hggd`](../GraspNet-1B/README.md#configuration-examples) (`./panda init --example train-hggd`). Its [training guide](MODULES.md#hggd-epoch-training) explains joint/frozen stages, prepared labels and accumulation.
+For RGB-D epoch training, start with [`train-hggd`](USAGE.md#configuration-examples) (`./panda init --example train-hggd`). Its [training guide](REFERENCE.md#hggd-epoch-training) explains joint/frozen stages, prepared labels and accumulation.
 
 To use a completed run's `checkpoint.pt`, click **Prepare inference from checkpoint** in **Runs & results**, open **Configuration editor**, review the generated configuration and **Run edited JSON**. Frame adapters retain the module choices. Native recipes retain their fixed input protocol. CenterGrasp's RGB checkpoint stays paired with the SGDF model that provided its embedding targets.
 
