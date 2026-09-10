@@ -44,7 +44,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
-| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
+| HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala`, `mambavision` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](REFERENCE.md#candidate-graph-experiments) |
 | SPGrasp | `backbone` / `memory` | `upstream`, `hiera` / `upstream`, `temporal`; [planar sequence settings](REFERENCE.md#prompted-planar-sequences) |
 

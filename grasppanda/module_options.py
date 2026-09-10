@@ -127,6 +127,9 @@ def _schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'mambavision':
+            from .modules.mambavision_options import schema as mambavision_schema
+            return mambavision_schema()
         if choice == 'rala':
             from .modules.rala_options import schema as rala_schema
             return rala_schema()
@@ -356,6 +359,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'pointcnnpp':
         from .modules.pointcnnpp_options import validate as validate_pointcnnpp
         validate_pointcnnpp(options)
+    if choice == 'mambavision':
+        from .modules.mambavision_options import validate as validate_mambavision
+        validate_mambavision(options)
     if choice == 'rala':
         from .modules.rala_options import validate as validate_rala
         validate_rala(options)

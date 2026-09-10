@@ -174,5 +174,11 @@
     "repository": "https://github.com/WallelWan/SP2T",
     "path": "environments/sources/cv/sp2t",
     "commit": "e355eead80df1fc75297f55d164d64151efeaab5"
+  },
+  {
+    "id": "mambavision",
+    "repository": "https://github.com/NVlabs/MambaVision",
+    "path": "environments/sources/cv/mambavision",
+    "commit": "7860a506b2eb844eaaae676f08461ce8c3c26f43"
   }
 ]

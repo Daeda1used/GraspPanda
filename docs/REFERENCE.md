@@ -11,7 +11,7 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
-| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
+| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [MambaVision](#mambavision-hybrid-image-hierarchy) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [LogitNorm / MbLS / LogitClip](#logit-normalization-margin-penalties-and-clipping) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](REFERENCE.md#candidate-graph-experiments) |
 | Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
@@ -1462,5 +1462,77 @@ Voxel means accumulate in float64 and return float32 features to native operator
 The shared installer prepares an isolated, hash-verified namespace from pinned source. Runtime corrections cover scene slicing, single-scene proxy fusion/masking, self-attention logits, query residuals, checkpoint BatchNorm buffers, window-specific caches and unused decoder bias parameters. Forward-scoped caches prevent state leaking between models. A declared serialization depth and per-scene PyTorch attention windows keep evaluation geometry independent of neighboring scenes; training BatchNorm and stochastic layers still have their normal batch behavior. Native sparse convolutions supply weight gradients in training mode. Optional upstream MMCV FPS/KNN and Warp/Taichi paths are not selectable. Product query aggregation is omitted because large association groups can overflow.
 
 [Source terms](THIRD_PARTY.md) · [Installation](INSTALL.md)
+
+</details>
+
+
+<details>
+<summary>MambaVision: convolution, selective scans and window attention</summary>
+
+## MambaVision hybrid image hierarchy
+
+[MambaVision (CVPR 2025)](https://openaccess.thecvf.com/content/CVPR2025/papers/Hatamizadeh_MambaVision_A_Hybrid_Mamba-Transformer_Vision_Backbone_CVPR_2025_paper.pdf) combines convolutional stages with Mamba and self-attention blocks. HGGD and RegionNormalizedGrasp accept `backbone: mambavision`. The [pinned author implementation](https://github.com/NVlabs/MambaVision/tree/7860a506b2eb844eaaae676f08461ce8c3c26f43) supplies the blocks; the toolbox adds the RGB-D grasp interface. Source and author weights use **NVIDIA non-commercial research terms**, described in [Third-party terms](THIRD_PARTY.md).
+
+```bash
+./panda init --example compose-mambavision -o mambavision.local.yaml
+# Set dataset_root and prepare the selected method's training labels.
+./panda component-weights mambavision_tiny
+./panda run mambavision.local.yaml
+```
+
+The template trains the replacement from ImageNet initialization while retaining unchanged native grasp modules. In the UI, choose **mambavision** in **Compose modules**, use **reuse_unchanged**, and select a training operation. The pretrained-encoder button uses the same verified downloader. After training, load the saved grasp checkpoint with **strict** and the same module configuration. Strict inference and resume do not fetch or reapply ImageNet initialization.
+
+### Inputs and features
+
+The native `[B,4,640,360]` input stores D,R,G,B with width before height. The adapter restores RGB to height/width order, applies author ImageNet normalization, and obtains pre-downsample features from all four stages. Features return to native axis order and fuse with learned depth projections. Symmetrically padded odd image convolutions keep the pixel-zero origin; the stride-2 stem and stride-4/8/16/32 projections yield the exact native lattice, including the 23- and 12-cell boundary dimensions. The grasp decoder, local point network, camera model and target construction retain their native contracts.
+
+This is an RGB encoder with learned depth fusion. ImageNet weights do not initialize the depth projections, stride-2 stem or grasp-specific projections. Output features are taken before pooled classification normalization; that normalization and the classifier are omitted. The original image is not resized to a square classification crop.
+
+### Variants and configuration
+
+`variant` selects `tiny` (T, default), `tiny2` (T2), `small` (S), `base` (B), `large` (L), or `large2` (L2). The author 1K Safetensors weights are pinned by revision, size and SHA256. Larger variants require more GPU memory and download space. The full parameter schema appears under **Available component parameters**.
+
+| Parameters | Meaning |
+|---|---|
+| `embed_dim`, `stem_dim`, `stage_depths` | First-stage width, stem width and four stage depths; later widths double at each stage. Native depths and widths follow the selected variant. |
+| `stage_heads`, `window_sizes` | Two values for stages 3 and 4; stages 1 and 2 contain convolutional blocks. Native window sizes are `[14,7]`. |
+| `block_mixers` | One `mamba` or `attention` per block, stage 3 then stage 4. Each native stage puts `ceil(depth/2)` Mamba blocks before its attention blocks. |
+| `block_heads`, `block_qkv_bias`, `block_qk_norm` | Attention configuration; heads must divide the block width. QKV bias defaults to true and QK normalization to false. |
+| `block_state_dims`, `block_conv_sizes`, `block_expansions`, `block_dt_ranks` | Mamba state size, sequence convolution size, expansion and time-step rank. Defaults: 8, 3, 1 and `ceil(block_width/16)`. |
+| `block_mlp_ratios` | Per-block MLP expansion, default 4. |
+| `layer_scale`, `conv_layer_scale` | Optional residual scales in hybrid and convolutional blocks. B/L/L2 use native hybrid layer scale `1e-5`; other variants omit it. Convolutional layer scale is omitted by default. |
+| `attention_dropout`, `mlp_dropout`, `drop_path` | Attention dropout, MLP/projection dropout and maximum linearly scheduled stochastic depth. Defaults: 0, 0 and 0.2 for T/T2/S or 0.3 for B/L/L2. |
+| `trainable_stages` | Train the last N RGB stages (0–4, default 4). Zero freezes the RGB encoder; four also trains its patch embedding. Depth and grasp projections remain trainable. |
+| `gradient_checkpointing`, `freeze_norm_stats` | Recompute hybrid blocks during backward; optionally hold all adapter BatchNorm statistics fixed. Both default to false. |
+| `projection_norm` | `batch` (default), `group` or `none` for RGB and depth projections; the native-format stride-2 stem retains BatchNorm. |
+
+Every `block_*` vector follows stages 3 and 4, with length equal to their combined depths. Numeric and boolean block controls also accept a scalar for all blocks. State parameters affect Mamba blocks; head/QKV parameters affect attention blocks. Block heads override stage heads. Unknown settings, invalid vector lengths and incompatible dimensions are rejected before launch.
+
+`pretrained: true` is the default. Structural edits to widths, depths, mixer types, MLPs or state parameters require **`pretrained: false`**. Window sizes, shape-compatible head counts, dropout, freezing and checkpointing can vary with pretrained weights. These are experimental settings, not guarantees of grasp accuracy.
+
+For a fully configurable architecture, start with `./panda init --example compose-mambavision-custom`. For example:
+
+```yaml
+modules:
+  backbone:
+    type: mambavision
+    pretrained: false
+    embed_dim: 24
+    stem_dim: 16
+    stage_depths: [2, 1, 3, 2]
+    stage_heads: [4, 8]
+    window_sizes: [5, 3]
+    block_mixers: [mamba, attention, mamba, attention, mamba]
+    block_state_dims: [4, 8, 16, 8, 12]
+    block_mlp_ratios: [2, 3, 2, 4, 3]
+    gradient_checkpointing: true
+checkpoint_policy: reuse_unchanged
+```
+
+### Runtime and author compatibility
+
+The adapter uses the existing shared Mamba CUDA scan operator through its pinned native autograd interface; it does not install a competing `mamba_ssm` package. Native block definitions are loaded without the image-classification model registry or remote model execution. Pretrained files use Safetensors; the author's larger pickle training archives are not needed.
+
+The HF export names layer-scale parameters `g_1`/`g_2`; these map explicitly to the GitHub implementation's `gamma_1`/`gamma_2` before strict loading. The native scan and convolution branches, including the released time-step bias behavior, are preserved. The adapter corrects one attention behavior: SDPA dropout is zero in evaluation and follows the configured probability in training. Feature geometry and all remaining block operations retain the pinned source behavior.
 
 </details>

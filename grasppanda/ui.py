@@ -120,6 +120,26 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description += '; coarse to fine propagation stages, ending at the original input points'
             if choice == 'pointhr' and key in ('dec_channels', 'dec_depths', 'dec_groups', 'dec_neighbours'):
                 description += '; finest original-point resolution to coarsest decoded resolution'
+            if choice == 'mambavision':
+                if key.startswith('block_'):
+                    if rule[0] == 'choice_list':
+                        description = ', '.join(rule[3]) + '; one entry per block'
+                    else:
+                        scalar = rule[2]
+                        description = ('true or false' if scalar[0] == 'bool' else f'{scalar[0]}: {scalar[1]} to {scalar[2]}') + '; scalar or one entry per block'
+                    description += '; stage 3 followed by stage 4'
+                    if key in ('block_state_dims', 'block_conv_sizes', 'block_expansions', 'block_dt_ranks'):
+                        description += '; Mamba blocks only'
+                    elif key in ('block_heads', 'block_qkv_bias', 'block_qk_norm'):
+                        description += '; attention blocks only'
+                elif key in ('stage_heads', 'window_sizes'):
+                    description += '; stages 3 and 4 only; stages 1 and 2 use convolution'
+                elif key == 'pretrained':
+                    description += '; author ImageNet initialization; structural edits require false; source and weights use NVIDIA non-commercial research terms'
+                elif key == 'trainable_stages':
+                    description += '; last N encoder stages; 0 freezes the RGB encoder, 4 also trains its patch embedding; depth and grasp projections remain trainable'
+                elif key == 'gradient_checkpointing':
+                    description += '; recompute hybrid blocks in stages 3 and 4 during backward'
             if choice == 'rala' and rule[0] == 'choice_list':
                 description = 'One rala or softmax attention choice per encoder block; list length equals sum(stage_depths), in fine-to-coarse stage order'
             if choice == 'pointcnnpp':
@@ -330,7 +350,7 @@ def create_app(manager=None):
         from .components import validate_selection
         from .weights import fetch_component
         try:
-            if backbone not in ('dinov2','dinov3','utonia','concerto'):
+            if backbone not in ('dinov2','dinov3','utonia','concerto','mambavision'):
                 return 'Select a registered pretrained encoder to prepare its weights.'
             parameters = json.loads(parameters or '{}')
             if not isinstance(parameters, dict):
@@ -340,7 +360,7 @@ def create_app(manager=None):
                 raise ValueError('Use the encoder selector for type and provide its parameters as a mapping')
             validate_selection(method, {'backbone': dict(type=backbone, **options)})
             if not options.get('pretrained', True): return 'This configuration uses random encoder initialization.'
-            name = ('utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', 'base' if backbone == 'concerto' else 'small'))
+            name = ('utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', 'base' if backbone == 'concerto' else 'tiny' if backbone == 'mambavision' else 'small'))
             fetch_component(name, lambda message: progress(.5, desc=message))
             return 'Pretrained encoder weights verified. New projection layers still require grasp training.'
         except Exception as error:
@@ -590,7 +610,7 @@ def create_app(manager=None):
                         component_options=gr.Code('{}',language='json',label='Component parameters by slot',lines=5)
                         composition_hint = gr.Markdown('Enter parameters keyed by slot, for example `{"backbone": {"embed_dim": 32}}` for PointMLP. For compatible methods, `{"crop": {"seed_interaction": "gaussian"}}` adds seed interaction to the selected grouping, including `upstream`. The selectors supply each component type.')
                         with gr.Accordion('Pretrained encoder weights', open=False, visible=False) as pretraining_panel:
-                            gr.Markdown('Registered image and point encoders use author pretraining by default; `pretrained: false` selects random weights. `trainable_blocks` controls fine-tuning; see the parameter guide for the selected encoder. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
+                            gr.Markdown('Registered image and point encoders use author pretraining by default; `pretrained: false` selects random weights. The selected encoder’s parameter guide explains freezing and fine-tuning controls. Initial training prepares missing weights locally; strict grasp-checkpoint loading does not fetch or reapply pretraining.')
                             component_download = gr.Button('Prepare selected component weights')
                             component_download_message = gr.Markdown()
                         with gr.Accordion('Available component parameters', open=False):
@@ -765,7 +785,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
-                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto')),
+                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision')),
                     gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
         gr.on([method.change, action.change, backbone.change], operation_layout, [method, action, backbone],
             [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel],

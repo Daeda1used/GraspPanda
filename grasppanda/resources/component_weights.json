@@ -424,5 +424,125 @@
     "sha256": "2d5ac74f11cec87ce172c53d6cd05c5d43760c787b740bfa3cdc480175e26281",
     "license": "CC-BY-NC-4.0",
     "license_url": "https://huggingface.co/Pointcept/Concerto/blob/efc130718a564eba0ce4899318f3c20b19d9c752/README.md"
+  },
+  {
+    "id": "mambavision_tiny",
+    "model": "MambaVision-T",
+    "source": "https://huggingface.co/nvidia/MambaVision-T-1K/resolve/b1de77e17599566d98efb701c0231b1095dc3a67/model.safetensors",
+    "path": "checkpoints/components/mambavision_tiny.safetensors",
+    "bytes": 127219000,
+    "sha256": "4f6987be0a2ca2222f386eb750d028a05203b047d3c8dfb664c27e2295d02fc0",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "mambavision_tiny2",
+    "model": "MambaVision-T2",
+    "source": "https://huggingface.co/nvidia/MambaVision-T2-1K/resolve/07f24ef79f4546003687f3aa6e6c842832d0326b/model.safetensors",
+    "path": "checkpoints/components/mambavision_tiny2.safetensors",
+    "bytes": 140463056,
+    "sha256": "3ece572ac7b368a8dcd859a90cd32a68aba61221ca21525cfd341d0f2112ffa6",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "mambavision_small",
+    "model": "MambaVision-S",
+    "source": "https://huggingface.co/nvidia/MambaVision-S-1K/resolve/e4f9ea93877fba6f1e2d231fd0f0a391368ad895/model.safetensors",
+    "path": "checkpoints/components/mambavision_small.safetensors",
+    "bytes": 200614224,
+    "sha256": "006af39903f2d88c5b455431d087d0fcbf5d5932114aef52542c0d2f0b1ec180",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "mambavision_base",
+    "model": "MambaVision-B",
+    "source": "https://huggingface.co/nvidia/MambaVision-B-1K/resolve/0245cefe77658b997f2061d7f7bed0895fb22101/model.safetensors",
+    "path": "checkpoints/components/mambavision_base.safetensors",
+    "bytes": 390807536,
+    "sha256": "ccb5ad877adfa27edfd3bc4d5d8f0b3fd9fdd9be1ec88fa25c1577471ce8201f",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "mambavision_large",
+    "model": "MambaVision-L",
+    "source": "https://huggingface.co/nvidia/MambaVision-L-1K/resolve/63df00c6368147afe70d0cd7936571cf2c5695a8/model.safetensors",
+    "path": "checkpoints/components/mambavision_large.safetensors",
+    "bytes": 911925488,
+    "sha256": "c701fec9cee37613733b5961d3d11ca898db22f155d1501f902832cf2da73b6f",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "mambavision_large2",
+    "model": "MambaVision-L2",
+    "source": "https://huggingface.co/nvidia/MambaVision-L2-1K/resolve/b6667624e1d7454247613993aff4c196faae258c/model.safetensors",
+    "path": "checkpoints/components/mambavision_large2.safetensors",
+    "bytes": 966304200,
+    "sha256": "56a23220d4f17a3977fe4032cd564b6d54e29f5fe263530cdb3c94af2ee3f220",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "license": "NVIDIA Source Code License-NC",
+    "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
   }
 ]

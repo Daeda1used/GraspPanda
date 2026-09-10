@@ -1177,3 +1177,73 @@ compose-sp2t:
         block_mlp_ratios: [2, 3, 4, 2, 3, 2]
         block_patch_sizes: [32, 64, 48, 128, 32, 64]
         block_checkpoint: [true, false, true, false, true, false]
+
+compose-mambavision:
+  description: Train HGGD with pretrained MambaVision RGB features and depth fusion
+  config:
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: native_demo
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    checkpoint_policy: reuse_unchanged
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: mambavision
+        variant: tiny
+        gradient_checkpointing: true
+compose-mambavision-custom:
+  description: Compose convolutional, Mamba and attention stages for HGGD
+  config:
+    method: hggd
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    workspace: native_demo
+    checkpoint: checkpoints/hggd/checkpoint-realsense.tar
+    checkpoint_policy: reuse_unchanged
+    training_steps: 20
+    learning_rate: 0.0001
+    modules:
+      backbone:
+        type: mambavision
+        pretrained: false
+        embed_dim: 24
+        stem_dim: 16
+        stage_depths:
+        - 2
+        - 1
+        - 3
+        - 2
+        stage_heads:
+        - 4
+        - 8
+        window_sizes:
+        - 5
+        - 3
+        block_mixers:
+        - mamba
+        - attention
+        - mamba
+        - attention
+        - mamba
+        block_state_dims:
+        - 4
+        - 8
+        - 16
+        - 8
+        - 12
+        block_mlp_ratios:
+        - 2
+        - 3
+        - 2
+        - 4
+        - 3
+        gradient_checkpointing: true

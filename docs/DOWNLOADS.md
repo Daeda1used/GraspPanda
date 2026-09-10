@@ -251,3 +251,16 @@ Point initialization weights are separate from grasp checkpoints and are downloa
 The registry fixes each weight revision, SHA256, byte size and encoder configuration. Files are loaded with PyTorch's restricted weights-only loader. Initial training prepares a missing registered file; inference or resume from a complete grasp checkpoint does not require the initialization download. No weight files are included in the repository.
 
 Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.
+
+
+## MambaVision initialization
+
+MambaVision uses author ImageNet-1K **Safetensors** weights, separate from the grasp checkpoint. Select `mambavision` under **Compose modules** and prepare its encoder weights, or use:
+
+```bash
+./panda component-weights mambavision_tiny
+```
+
+Available IDs are `mambavision_tiny`, `mambavision_tiny2`, `mambavision_small`, `mambavision_base`, `mambavision_large` and `mambavision_large2`. Sources, exact revisions, sizes and hashes are registered in `grasppanda/resources/component_weights.json`; files are generated locally under `checkpoints/components/`. The [author repository](https://github.com/NVlabs/MambaVision) links each weight release. Only the selected encoder weights are downloaded.
+
+Source and weights use NVIDIA non-commercial research terms. See [component configuration](REFERENCE.md#mambavision-hybrid-image-hierarchy) for RGB-D fusion, freezing and structural edits. The larger author pickle training archives are not required.
