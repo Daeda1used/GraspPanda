@@ -2323,5 +2323,91 @@
       },
       "checkpoint": "checkpoints/generalizing_grasp/model.tar"
     }
+  },
+  "compose-efficientvit": {
+    "description": "Train HGGD with MIT EfficientViT RGB stages and aligned depth features",
+    "config": {
+      "method": "hggd",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "workspace": "native_demo",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "training_steps": 20,
+      "learning_rate": 0.0001,
+      "modules": {
+        "backbone": {
+          "type": "efficientvit",
+          "variant": "b0",
+          "gradient_checkpointing": true
+        }
+      }
+    }
+  },
+  "compose-efficientvit-custom": {
+    "description": "Compose EfficientViT block dimensions, heads and multi-scale attention kernels",
+    "config": {
+      "method": "hggd",
+      "action": "train_short",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "workspace": "native_demo",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "training_steps": 20,
+      "learning_rate": 0.0001,
+      "modules": {
+        "backbone": {
+          "type": "efficientvit",
+          "pretrained": false,
+          "stage_depths": [
+            1,
+            1,
+            1,
+            2,
+            2
+          ],
+          "attention_dims": [
+            8,
+            16,
+            16,
+            32
+          ],
+          "attention_heads": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "attention_scales": [
+            [
+              3
+            ],
+            [
+              3,
+              5
+            ],
+            [],
+            [
+              7
+            ]
+          ],
+          "attention_bias": [
+            true,
+            false,
+            true,
+            false
+          ],
+          "norm": "ln2d",
+          "attention_kernel": "relu6",
+          "gradient_checkpointing": true
+        }
+      }
+    }
   }
 }

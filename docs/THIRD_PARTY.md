@@ -419,3 +419,5 @@ SOFTWARE.
 </details>
 
 Contact-score refinement imports the pinned Generalizing-Grasp networks and selected geometry definitions at runtime; its auxiliary weight downloads remain with the author source terms. That repository has no project-level license declaration. GraspPanda does not redistribute those networks or weights, and its MIT license grants no additional rights to them. The predicted-instance, coordinate and optimization adaptations are described in the [refinement reference](REFERENCE.md#contact-score-refinement).
+
+The [MIT EfficientViT implementation](https://github.com/mit-han-lab/efficientvit/tree/de7d7733cc0329f391b33f1f459271562ec27bd5) and registered ImageNet weights use the author’s [Apache-2.0 terms](https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE). GraspPanda downloads the original checkout locally, verifies the consumed files and loads its backbone and operators in an isolated namespace. The adapter adds RGB-D alignment, grasp projections, configurable native attention blocks and training controls. Dataset and model licenses remain separate.

@@ -12,11 +12,51 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
 | Dynamic point adapters | [PointTPA](#pointtpa-adaptation) |
-| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [MambaVision](#mambavision-hybrid-image-hierarchy) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
+| Image encoders | [RGB-D encoders](#rgb-d-image-encoders) · [EfficientViT](#efficientvit-rgb-d-hierarchy) · [MambaVision](#mambavision-hybrid-image-hierarchy) · [RALA](#rala-image-hierarchy) · [VMamba](#vmamba-state-space-image-features) · [DINO](#pretrained-dino-image-features) |
 | Training | [Losses and augmentation](#training-controls) · [LogitNorm / MbLS / LogitClip](#logit-normalization-margin-penalties-and-clipping) · [Optimization](#optimizers-and-schedules) · [Checkpoints](#checkpoint-policies) |
 | Run experiments | [Short training](#short-training) · [Epoch training](#train-a-composed-model-across-epochs) · [HGGD](#hggd-epoch-training) · [GtG2](REFERENCE.md#candidate-graph-experiments) |
 | Add a method, component or dataset | [Extension guide](#extending-grasppanda) |
 | Temporal RGB | [SPGrasp prompts, Hiera and memory](#prompted-planar-sequences) |
+
+<details>
+<summary>EfficientViT RGB-D stages and multi-scale attention</summary>
+
+## EfficientViT RGB-D hierarchy
+
+HGGD and RegionNormalizedGrasp accept `modules.backbone.type: efficientvit`, using the MIT EfficientViT B/L hierarchies and native LiteMLA operators. This is the [ICCV 2023 multi-scale attention method](https://openaccess.thecvf.com/content/ICCV2023/papers/Cai_EfficientViT_Lightweight_Multi-Scale_Attention_for_High-Resolution_Dense_Prediction_ICCV_2023_paper.pdf); [original implementation](https://github.com/mit-han-lab/efficientvit). The similarly named Microsoft cascaded-attention model is a separate architecture.
+
+Generate `./panda init --example compose-efficientvit` for pretrained initialization, or `--example compose-efficientvit-custom` for block experiments. In the browser, choose **efficientvit** under **Compose modules → Image encoder**, edit **Component parameters by slot**, and use **Prepare selected component weights**. Parameters in that editor belong under `backbone` and omit `type`.
+
+<details>
+<summary>Stage and attention parameters</summary>
+
+| Parameter | Meaning |
+|---|---|
+| `variant` | `b0` (default), `b1`, `b2`, `b3`, `l0`, `l1`, `l2`, `l3`; starts from the author's stage widths and depths |
+| `pretrained` | Author ImageNet initialization, enabled by default except for L0; structural edits require `false` |
+| `stage_channels`, `stage_depths` | Five widths and depths, ordered from stride 2 to 32; widths 8–1024, depths 1–24 |
+| `expand_ratio` | B-family local MBConv expansion, default 4 |
+| `stage_expansions` | L-family local expansion per stage; defaults `[1,4,4,4,6]`; native downsampling blocks use four times these values |
+| `stage_blocks` | L-family stage blocks: `res`, `fmb`, `mb`, `att`, `att@3`; defaults `[res,fmb,fmb,mb,att]`; the stem must use a local block |
+| `fewer_norm` | L-family normalization layout, boolean or five booleans; defaults `[false,false,false,true,true]` |
+| `attention_dims`, `attention_heads` | Scalar or one integer per attention block; defaults to native per-head dimensions and width/dimension head counts |
+| `attention_scales` | List of odd aggregation kernels per attention block, ordered by stage then block; one list broadcasts to all blocks. Example: `[[3,5]]`; `[[]]` retains only unaggregated Q/K/V |
+| `attention_bias` | Scalar or per-attention-block boolean; default `false` |
+| `attention_kernel`, `attention_epsilon` | Nonnegative attention kernel `relu` (default) or `relu6`; denominator epsilon defaults to `1e-15` |
+| `norm`, `norm_epsilon`, `activation` | Native `bn2d` or `ln2d`; encoder normalization epsilon; `relu`, `relu6`, `hswish`, `silu` or `gelu` |
+| `gradient_checkpointing` | Recompute stages during backward while preserving batch-normalization buffers; default `false` |
+| `trainable_stages`, `freeze_norm_stats` | Train the last N RGB stages (default 5); optional global BN-statistics freeze. Frozen stages stay in evaluation mode |
+| `projection_norm` | Grasp projection normalization: `batch` (default), `group` or `none` |
+
+B-family attention occurs in the final two stages. Its stages at strides 4 and 8 count the downsampling block in their depth; the stride-2 stem and later attention stages count additional blocks after downsampling. L-family depths count blocks after each stem/downsampler. Attention vectors refer only to actual attention blocks. Unsupported family-specific settings and incompatible vector lengths are rejected.
+
+</details>
+
+The adapter restores natural RGB image axes and ImageNet normalization, then maps all five native feature lattices back to the HGGD/RNG axes. Mean-centered native depth is sampled at the same pixel centers and fused through trainable projections. Native odd, symmetric kernels preserve the pixel-zero origin; images are neither resized nor padded to a different camera geometry. Outputs have native channels 8/16/32/64/128 at strides 2/4/8/16/32. RGB encoder freezing leaves depth projections and grasp heads trainable.
+
+Classification weights initialize the RGB encoder only; depth and grasp projections must be trained. Use `checkpoint_policy: reuse_unchanged` with the method checkpoint to initialize a composition, then `strict` with the saved composed checkpoint. Strict reload does not fetch or reapply ImageNet weights. HGGD also supports epoch training from an empty checkpoint, where the configured pretrained RGB encoder is initialized before optimization. The available losses, aligned RGB-D augmentation, optimizers, sweeps and HGGD resume controls apply to these compositions.
+
+</details>
 
 <details>
 <summary>Scale-Balanced-Grasp encoders, MSCQ branches and training</summary>

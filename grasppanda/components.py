@@ -62,7 +62,7 @@ def slots(method):
             'Inside/outside point sets, explicit sampling caps and graph features.'))
     if method in ('graspnet_baseline','pointnet2_upgrade'):return BASELINE_SLOTS
     if method in ('hggd','region_normalized_grasp'):
-        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3','vmamba','rala','mambavision'),
+        return (ComponentSlot('backbone','backbone',('upstream','native_resnet','convnextv2','repvit','mobilenetv4','dinov2','dinov3','vmamba','rala','mambavision','efficientvit'),
             'Native D,R,G,B image tensor [B,4,640,360], including the author axis convention and depth preprocessing.',
             'Five native feature lattices, strides 2/4/8/16/32 and channels 8/16/32/64/128; anchor heads and local refinement remain native.'),)
     if method=='finegrasp':return (
@@ -147,6 +147,9 @@ def configure_model(model,method,selection,voxel_size=.005):
         elif method in ('hggd','region_normalized_grasp') and choice in ('dinov2','dinov3'):
             from .modules.dino import DinoPyramid
             replacement=DinoPyramid(choice,**options)
+        elif method in ('hggd','region_normalized_grasp') and choice == 'efficientvit':
+            from .modules.efficientvit import EfficientViTPyramid
+            replacement = EfficientViTPyramid(**options)
         elif method in ('hggd','region_normalized_grasp') and choice == 'mambavision':
             from .modules.mambavision import MambaVisionPyramid
             replacement = MambaVisionPyramid(**options)
@@ -326,10 +329,11 @@ def load_checkpoint(model,state,changed_prefixes=(),policy='strict'):
     pretrained = {}
     from .modules.dino import DinoPyramid
     from .modules.mambavision import MambaVisionPyramid
+    from .modules.efficientvit import EfficientViTPyramid
     from .modules.foundation import FoundationBackbone, SparseFoundationBackbone
     for prefix in changed_prefixes:
         module = model.get_submodule(prefix.rstrip('.'))
-        if isinstance(module, (DinoPyramid, MambaVisionPyramid, FoundationBackbone, SparseFoundationBackbone)):
+        if isinstance(module, (DinoPyramid, MambaVisionPyramid, EfficientViTPyramid, FoundationBackbone, SparseFoundationBackbone)):
             record = module.initialize_pretrained()
             if record: pretrained[prefix.rstrip('.')] = record
     return dict(policy=policy, initialized=initialized, discarded=discarded, pretrained=pretrained,

@@ -568,5 +568,75 @@
     "archive_member": "log_scorenet/checkpoint.tar",
     "bytes": 18740867,
     "sha256": "0719e5d6307fd531c00f27d9d9b8d350fb859f0b3e1d0d7a268351c6a958e798"
+  },
+  {
+    "id": "efficientvit_b0",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_b0_r224.pt",
+    "path": "checkpoints/components/efficientvit_b0_r224.pt",
+    "bytes": 13741687,
+    "sha256": "feebc4d3ebf610673c8ed1d92b21fa2c2e57661868173a37126b734ca5dc3771",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_b1",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_b1_r224.pt",
+    "path": "checkpoints/components/efficientvit_b1_r224.pt",
+    "bytes": 36575137,
+    "sha256": "bf8798aa03ed2bba21fc8d58f43ca9a92096f3f03bd700e1df1dcde11559f499",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_b2",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_b2_r224.pt",
+    "path": "checkpoints/components/efficientvit_b2_r224.pt",
+    "bytes": 97581671,
+    "sha256": "6ccfecc65460856cb6415f2356deb8b90e0216960f661f5055aef173f8ca421d",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_b3",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_b3_r224.pt",
+    "path": "checkpoints/components/efficientvit_b3_r224.pt",
+    "bytes": 194992573,
+    "sha256": "3c5be1a11a8a41b3ac4e30e5bff8bf99065c98b4b2d586e1803fd7571f76fb0d",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_l1",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_l1_r224.pt",
+    "path": "checkpoints/components/efficientvit_l1_r224.pt",
+    "bytes": 210844323,
+    "sha256": "c8f5f9e1d9bbc8eed53dfc38bc9f8b7fe198c6ddd9d74e20a781113ddca999e1",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_l2",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_l2_r224.pt",
+    "path": "checkpoints/components/efficientvit_l2_r224.pt",
+    "bytes": 255119103,
+    "sha256": "4f87f42c8b477a96510b58a77593ea9352317e6933a984a26cb6ab86a9da9920",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
+  },
+  {
+    "id": "efficientvit_l3",
+    "family": "efficientvit",
+    "source": "https://huggingface.co/han-cai/efficientvit-cls/resolve/df3d006c2567f9e322b03731f20fe4405a1ab090/efficientvit_l3_r224.pt",
+    "path": "checkpoints/components/efficientvit_l3_r224.pt",
+    "bytes": 984582847,
+    "sha256": "c79f04129e2bc39acba664e6e11ec6743688bde585a6b7c382aa7dfe82433ca4",
+    "license": "Apache-2.0",
+    "license_url": "https://github.com/mit-han-lab/efficientvit/blob/de7d7733cc0329f391b33f1f459271562ec27bd5/LICENSE"
   }
 ]

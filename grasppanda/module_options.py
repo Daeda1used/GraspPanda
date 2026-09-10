@@ -133,6 +133,9 @@ def _schema(method, slot, choice):
     if method == 'finegrasp' and slot == 'crop' and choice == 'native_cylinder':
         return {**fusion, 'nsample': ('int', 4, 128), 'radius': ('float', .005, .5), 'radius_factors': ('radii',)}
     if method in ('hggd','region_normalized_grasp') and slot == 'backbone':
+        if choice == 'efficientvit':
+            from .modules.efficientvit_options import schema as efficientvit_schema
+            return efficientvit_schema()
         if choice == 'mambavision':
             from .modules.mambavision_options import schema as mambavision_schema
             return mambavision_schema()
@@ -367,6 +370,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'pointcnnpp':
         from .modules.pointcnnpp_options import validate as validate_pointcnnpp
         validate_pointcnnpp(options)
+    if choice == 'efficientvit':
+        from .modules.efficientvit_options import resolve as resolve_efficientvit
+        resolve_efficientvit(options)
     if choice == 'mambavision':
         from .modules.mambavision_options import validate as validate_mambavision
         validate_mambavision(options)

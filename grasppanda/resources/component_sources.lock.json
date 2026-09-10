@@ -186,5 +186,11 @@
     "repository": "https://github.com/amodas/PRIME-augmentations",
     "path": "environments/sources/cv/prime",
     "commit": "0290f6be3771215bac78693b3a27d3e2da341a55"
+  },
+  {
+    "id": "efficientvit",
+    "repository": "https://github.com/mit-han-lab/efficientvit",
+    "path": "environments/sources/cv/efficientvit",
+    "commit": "de7d7733cc0329f391b33f1f459271562ec27bd5"
   }
 ]

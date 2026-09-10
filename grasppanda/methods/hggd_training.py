@@ -152,10 +152,12 @@ def run(config, out):
         anchors = {k:payload[k].cuda() for k in ('gamma','beta')}
     else:
         from grasppanda.modules.dino import DinoPyramid
+        from grasppanda.modules.mambavision import MambaVisionPyramid
+        from grasppanda.modules.efficientvit import EfficientViTPyramid
         pretrained = {}
         for prefix in changed:
             module = anchor.get_submodule(prefix.rstrip('.'))
-            if isinstance(module, DinoPyramid):
+            if isinstance(module, (DinoPyramid, MambaVisionPyramid, EfficientViTPyramid)):
                 record=module.initialize_pretrained()
                 if record: pretrained[prefix.rstrip('.')]=record
         transfer = dict(policy='constructor', initialized=changed, pretrained=pretrained)

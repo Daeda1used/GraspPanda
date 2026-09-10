@@ -122,6 +122,17 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description += '; coarse to fine propagation stages, ending at the original input points'
             if choice == 'pointhr' and key in ('dec_channels', 'dec_depths', 'dec_groups', 'dec_neighbours'):
                 description += '; finest original-point resolution to coarsest decoded resolution'
+            if choice == 'efficientvit':
+                if key in ('attention_dims', 'attention_heads', 'attention_bias'):
+                    description += '; scalar or one value per attention block, in fine-to-coarse stage order'
+                elif key == 'attention_scales':
+                    description += '; one list of odd kernel sizes per attention block, or one list broadcast to all blocks; [[]] disables extra aggregation scales'
+                elif key == 'stage_depths':
+                    description += '; five native stage counts; B-family stages 1/2 include downsampling, other stages count blocks after the stem/downsampler'
+                elif key == 'trainable_stages':
+                    description += '; last N RGB stages; 0 freezes the encoder; depth and grasp projections remain trainable'
+                elif key == 'pretrained':
+                    description += '; ImageNet initialization; structural edits require false; L0 has no registered checkpoint'
             if choice == 'mambavision':
                 if key.startswith('block_'):
                     if rule[0] == 'choice_list':
@@ -377,7 +388,7 @@ def create_app(manager=None):
         from .components import validate_selection
         from .weights import fetch_component
         try:
-            if backbone not in ('dinov2','dinov3','utonia','concerto','mambavision'):
+            if backbone not in ('dinov2','dinov3','utonia','concerto','mambavision','efficientvit'):
                 return 'Select a registered pretrained encoder to prepare its weights.'
             parameters = json.loads(parameters or '{}')
             if not isinstance(parameters, dict):
@@ -386,8 +397,12 @@ def create_app(manager=None):
             if not isinstance(options, dict) or 'type' in options:
                 raise ValueError('Use the encoder selector for type and provide its parameters as a mapping')
             validate_selection(method, {'backbone': dict(type=backbone, **options)})
+            if backbone == 'efficientvit':
+                from .modules.efficientvit_options import resolve
+                options = resolve(options)
             if not options.get('pretrained', True): return 'This configuration uses random encoder initialization.'
-            name = ('utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', 'base' if backbone == 'concerto' else 'tiny' if backbone == 'mambavision' else 'small'))
+            defaults = {'concerto': 'base', 'mambavision': 'tiny', 'efficientvit': 'b0'}
+            name = 'utonia' if backbone == 'utonia' else backbone+'_'+options.get('variant', defaults.get(backbone, 'small'))
             fetch_component(name, lambda message: progress(.5, desc=message))
             return 'Pretrained encoder weights verified. New projection layers still require grasp training.'
         except Exception as error:
@@ -835,7 +850,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
-                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision')),
+                    gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision', 'efficientvit')),
                     gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
         gr.on([method.change, action.change, backbone.change], operation_layout, [method, action, backbone],
             [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel],

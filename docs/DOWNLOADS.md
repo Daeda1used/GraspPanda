@@ -100,6 +100,12 @@ After extracting the images, run these commands from the installed repository:
 
 This preset predicts scene 0100, frame 0000 with the registered RealSense checkpoint. Open **Runs & results** to view the prediction. The dataset root must contain `scenes/scene_0100/realsense/`; a scene directory itself is not the dataset root. Configuration, downloaded weights and prediction files are created locally. To change the method or camera, load its preset and download its matching weights; training requires the additional targets below.
 
+## EfficientViT encoder initialization
+
+For the `efficientvit` backbone, **Prepare selected component weights** downloads the matching registered ImageNet checkpoint. The CLI equivalent is `./panda component-weights efficientvit_b0` (also B1/B2/B3 and L1/L2/L3, using lowercase IDs). Downloads come from the [author's model collection](https://huggingface.co/han-cai/efficientvit-cls/tree/df3d006c2567f9e322b03731f20fe4405a1ab090), with pinned revisions, sizes and checksums. L0 and structurally modified encoders use `pretrained: false`.
+
+These are RGB classification weights, not GraspNet-trained detectors. See [EfficientViT composition](REFERENCE.md#efficientvit-rgb-d-hierarchy) for depth fusion and grasp training. The existing shared environment supplies its dependencies; `./panda install` fetches the pinned author source. Weights stay in the local `checkpoints/components/` directory.
+
 ## Method-specific preprocessing
 
 Basic frame inference does not require downloading all training targets. Additional processing is method-specific:
