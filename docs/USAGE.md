@@ -20,11 +20,17 @@ The **Guide** tab includes installation, downloads, module instructions and a da
 | Predict grasps | `infer` | Selected frames and a matching checkpoint; saves predictions and a preview. |
 | Run native recipe | `pipeline_smoke` | Method-specific fixed scene, sequence, author sample or component. Its input contract is shown on selection. |
 | Short training run | `train_check` | Repeats a labelled sample for `training_steps`; saves loss curves and a checkpoint. Fixed native batch sizes apply. |
-| Single training step | `train_smoke` | One native labelled optimizer step. |
 | Train across epochs | `train` | Native loader, augmentation, optimizer and schedule; supports initialization or checkpoint resume. |
 | Evaluate predictions | `evaluate` | Complete split predictions with a matching manifest; runs the official evaluator. |
 
 The available choices depend on the method. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
+
+<details>
+<summary>Check a training setup before a longer run</summary>
+
+**Single training step** (`train_smoke`) executes one native labelled optimizer step for methods that expose this operation. **Short training run** (`train_check`) repeats a labelled sample to inspect a component configuration. These operations generate their own logs, loss curves and checkpoints locally; neither establishes training convergence or benchmark accuracy.
+
+</details>
 
 ## CLI
 

@@ -631,7 +631,9 @@ def create_app(manager=None):
                 result = gr.JSON(label="Result")
                 artifacts = gr.File(label="Configuration, provenance & logs", file_count="multiple")
         with gr.Tab("Compare"):
-            gr.Markdown("Only completed runs are listed. Compare AP only under identical dataset, camera, split, workspace, training data and postprocessing. `null` AP means not evaluated; it is never zero AP. Compare losses only when objectives, coefficients and sampled data match.")
+            gr.Markdown("Compare completed experiments and their saved results.")
+            with gr.Accordion("Metric definitions & comparison settings", open=False):
+                gr.Markdown("Compare AP under identical dataset, camera, split, workspace, training data and postprocessing. `null` AP means not evaluated. Compare losses only when objectives, coefficients and sampled data match.")
             compare_button = gr.Button("Refresh comparison")
             comparisons = gr.Dataframe(headers=["ID", "Dataset", "Method", "Modules", "Stage", "Camera", "Split", "Workspace", "Seed", "Training settings", "Final loss", "Frames", "AP"], interactive=False)
         with gr.Tab("Guide"):
@@ -642,7 +644,7 @@ def create_app(manager=None):
 
 **No dataset yet?** Select ASGrasp, load its preset and download its weights to run the author's stereo sample.
 
-For component experiments, expand **Compose modules**. Full configuration editing is under **Configuration editor**. Short training repeats a bounded labelled sample; epoch training uses the native loader and schedule.
+For component experiments, expand **Compose modules**. Full configuration editing is under **Configuration editor**.
 """)
             with gr.Accordion("Installation, data and operating instructions", open=False):
                 with gr.Tabs():

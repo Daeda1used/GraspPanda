@@ -2,5 +2,30 @@
 /.github export-ignore
 /.gitattributes export-ignore
 
+# Generated or private files never belong in a source download, even if tracked.
+**/tests/** export-ignore
+**/reports/** export-ignore
+**/benchmarks/** export-ignore
+**/probes/** export-ignore
+**/logs/** export-ignore
+**/outputs/** export-ignore
+**/checkpoints/** export-ignore
+**/environments/** export-ignore
+**/upstream/** export-ignore
+**/data/** export-ignore
+**/datasets/** export-ignore
+**/build/** export-ignore
+**/dist/** export-ignore
+**/__pycache__/** export-ignore
+**/.venv/** export-ignore
+**/.env* export-ignore
+**/.python-version export-ignore
+**/*.local.* export-ignore
+**/*.pyc export-ignore
+**/test_*.py export-ignore
+**/*_test.py export-ignore
+**/probe_*.py export-ignore
+**/benchmark_*.py export-ignore
+
 # Preserve required unified-diff context markers in native source patches.
 *.patch -whitespace
