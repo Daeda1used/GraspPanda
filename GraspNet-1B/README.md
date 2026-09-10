@@ -4,7 +4,7 @@ Method presets and component compositions for GraspNet-1B. Start with the [first
 
 ## Configuration examples
 
-Use `--method` for an original method preset, or choose a composition, training or sweep from the [template catalogue](examples.yaml). Generate only the files you need:
+Use `--method` for an original method preset, or choose a composition, training or sweep with `./panda init --list`. Generate only the files you need:
 
 ```bash
 ./panda init --list

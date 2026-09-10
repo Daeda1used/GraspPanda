@@ -7,7 +7,7 @@ Choose the inputs for your first experiment; you can add training archives later
 | An author sample, without GraspNet | Select ASGrasp in the UI, load its preset and download its registered weights. |
 | A GraspNet frame | Download `test_seen.zip`, set the dataset root and download weights for your method and camera. |
 | Training or evaluation | Add the models, labels and method-specific targets described below. |
-| GtG2 candidate graphs | Follow [Candidate graph experiments](GTG2.md) to prepare graphs and train an ensemble. |
+| GtG2 candidate graphs | Follow [Candidate graph experiments](MODULES.md#candidate-graph-experiments) to prepare graphs and train an ensemble. |
 | SPGrasp planar sequences | Training needs RGB, instance labels and `rect_labels.zip`; prediction needs RGB, first-frame prompts and your trained checkpoint. |
 
 ## Start without GraspNet

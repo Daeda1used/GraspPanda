@@ -75,7 +75,7 @@ Point Transformer V2 builds the pinned Pointcept pointops with a separate Python
 
 The ResLFE cylindrical component builds the pinned DeepLA CUDA operators under `environments/build/deepla-ops/`. Existing installations need another `./panda install` after upgrading; no separate environment is required. Original downloaded source remains unchanged.
 
-GtG2 candidate generation builds GPG against system PCL using the shared Python interpreter. Matching verified binaries are reused locally. The build copy receives a deterministic sampling seed and an array binding; the original source stays intact. [Candidate graph experiments](GTG2.md) describes data preparation and training.
+GtG2 candidate generation builds GPG against system PCL using the shared Python interpreter. Matching verified binaries are reused locally. The build copy receives a deterministic sampling seed and an array binding; the original source stays intact. [Candidate graph experiments](MODULES.md#candidate-graph-experiments) describes data preparation and training.
 
 PointCNN++ builds its pinned author CUDA/CUTLASS extension into a versioned local artifact using the same interpreter and CUDA 11.8 toolkit. No separate Python environment is created. The installer verifies the native encoder, gradients and tensor checkpoint loading before activating the artifact; a failed build leaves an existing installation in place. Allow additional compilation time on the first installation.
 

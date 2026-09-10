@@ -7,7 +7,7 @@ from .config import ROOT, Experiment, default_dataset
 
 def examples():
     import yaml
-    return yaml.safe_load((ROOT / 'GraspNet-1B/examples.yaml').read_text())
+    return yaml.safe_load((ROOT / 'grasppanda/resources/examples.yaml').read_text())
 
 
 def configuration(*, method=None, example=None, dataset_root=None):

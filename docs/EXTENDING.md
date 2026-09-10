@@ -3,13 +3,13 @@
 ## Structure
 
 ```text
-GraspNet-1B/              Dataset entry and example experiments
+GraspNet-1B/              Dataset guide and configuration entry point
 grasppanda/              Configuration, UI and experiment queue
   methods/               Method-specific inference, data and training adapters
   integrations/          Dataset contracts, readiness and evaluation
   modules/               Interchangeable components and architecture options
   training/              Shared trainers, objectives, augmentation and optimization
-  resources/             Source pins, weight records and compatibility patches
+  resources/             Built-in templates, source pins, weight records and patches
   runtime/               Installation and isolated worker entry points
 docs/                    User and extension guides
 ```
@@ -24,7 +24,7 @@ GraspPanda resolves one Python/PyTorch/CUDA environment. Each job runs in its ow
 4. Define input readiness in the dataset provider. Write outputs using the official grasp representation and save the experiment manifest.
 5. Exercise the relevant inference, loss, gradient, checkpoint reload and cancellation paths locally. Describe the supported operation in [Methods & papers](METHODS.md), with the paper PDF and original implementation.
 
-Keep local data, weights, credentials, logs, development reports and generated configurations out of commits. Include relevant validation in the pull request description. Source availability alone is insufficient to enable an operation.
+Keep local data, weights, credentials, logs, development reports and generated configurations out of commits. Add reusable configuration templates to `grasppanda/resources/examples.yaml`; `./panda init` writes the selected experiment locally. The `.gitignore` resource allowlist must include any new non-Python installation input. Include relevant validation in the pull request description. Source availability alone is insufficient to enable an operation.
 
 ## Add a component
 
