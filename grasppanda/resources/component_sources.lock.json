@@ -150,5 +150,11 @@
     "repository": "https://github.com/qhfan/RALA",
     "commit": "a86314f62103c21a1c7e6d826fe4cb0f5586e7b0",
     "path": "environments/sources/cv/rala"
+  },
+  {
+    "id": "pointhr",
+    "repository": "https://github.com/haibo-qiu/PointHR",
+    "commit": "2d88b36506cd02f4663eb673358bf156722d5c6c",
+    "path": "environments/sources/cv/pointhr"
   }
 ]

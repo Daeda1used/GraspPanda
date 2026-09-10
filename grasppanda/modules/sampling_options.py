@@ -3,7 +3,7 @@ import math
 
 DENSE_BACKBONES = ('pointnet', 'pointnext', 'pointvector', 'pointmeta', 'pointmlp',
     'pointmamba', 'pointcloud_mamba', 'octformer', 'sonata_ptv3',
-    'point_transformer_v2', 'litept', 'pointcnnpp', 'flash3d', 'oacnns', 'kpconvx', 'utonia', 'concerto')
+    'point_transformer_v2', 'litept', 'pointcnnpp','pointhr', 'flash3d', 'oacnns', 'kpconvx', 'utonia', 'concerto')
 HIERARCHIES = ('pointnext', 'pointvector', 'pointmeta')
 CHOICES = ('upstream', 'uniform', 'fps', 'pointsp_wrs', 'pointsp_ffps')
 

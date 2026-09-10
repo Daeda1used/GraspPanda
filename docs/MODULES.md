@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -21,16 +21,16 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](GTG2.md) |
@@ -1295,5 +1295,46 @@ Use `./panda init --example compose-rala` for a smaller hybrid configuration. Th
 The installer fetches pinned source in the shared environment. The wrapper loads the segmentation backbone directly, omitting only framework registration and the framework-specific weight loader; a separate MMSegmentation environment is unnecessary.
 
 [Paper PDF](https://openaccess.thecvf.com/content/CVPR2025/papers/Fan_Breaking_the_Low-Rank_Dilemma_of_Linear_Attention_CVPR_2025_paper.pdf) · [Author implementation](https://github.com/qhfan/RALA)
+
+</details>
+
+## PointHR multi-resolution point features
+
+<details>
+<summary>Configure parallel resolutions, grouped attention and the decoder</summary>
+
+`pointhr` adapts the author's 2023 PointHR semantic-segmentation hierarchy for Baseline, the PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp and FineGrasp. Four encoder stages retain one, two, three and four parallel resolutions. Every multi-resolution module processes each stream with native grouped-vector attention, then fuses features through learned pooling and unpooling paths. The network restores all input rows before the selected method performs its own seed selection and grasp decoding. Sparse adapters preserve coordinate maps, row correspondence and input feature channels.
+
+```yaml
+modules:
+  backbone:
+    type: pointhr
+    patch_embed_channels: 32
+    patch_embed_depth: 1
+    patch_embed_groups: 4
+    patch_embed_neighbours: 8
+    enc_channels: [64, 32, 32, 32]
+    enc_depths: [1, 1, 5, 4]
+    enc_blocks: [2, 2, 2, 2]
+    enc_groups: [8, 4, 4, 4]
+    enc_neighbours: [16, 16, 16, 16]
+    dec_depths: [1, 1, 1, 1]
+    dec_groups: [4, 4, 8, 16]
+    dec_neighbours: [16, 16, 16, 16]
+    grid_sizes: [0.005, 0.01, 0.02, 0.04]
+    unpool_backend: map
+    fusion: sum
+    gradient_checkpointing: false
+```
+
+`enc_channels` and `enc_groups` specify each stage's finest stream; coarser streams multiply both by powers of two. `enc_depths` counts multi-resolution modules per stage, and `enc_blocks` counts attention blocks per stream within each module. The native stream counts `[1,2,3,4]` remain fixed. `grid_sizes` specifies four strictly increasing pooling sizes in metres; these grasp-scale defaults differ from the author's room-scale segmentation configuration. The method's input voxel size remains separate.
+
+Decoder lists run from the finest original-point resolution to the coarsest decoded resolution. Optional `dec_channels` has four widths; omitted values derive from the stem and final encoder stage, giving `[32,32,64,128]` above. Unlike the pinned constructor, which overwrites this argument, GraspPanda rebuilds explicitly resized native decoder blocks with the actual encoder skip widths. For example, `[32,48,96,192]` changes the decoder without changing encoder streams. Every width must be divisible by its attention group count. `unpool_backend` selects native cluster maps or inverse-distance 3-neighbor interpolation. Missing interpolation neighbors are masked rather than indexing another scene's final point.
+
+`fusion: sum` retains native fusion; `mean` divides each fused stream by the number of incoming streams. `attn_qkv_bias`, `pe_multiplier` and `pe_bias` control native attention projections and relative-position encoding. `attn_drop_rate` and `drop_path_rate` range from 0 to 0.8. Native BatchNorm uses configurable `bn_momentum` (default 0.1) and `bn_eps` (default 1e-5). `gradient_checkpointing` recomputes attention during backward while preserving running statistics. Dense methods also support [seed sampling policies](#network-sampling-policies).
+
+Start with `./panda init --example compose-pointhr`. The encoder initializes randomly; transfer unchanged grasp heads with `checkpoint_policy: reuse_unchanged`, train, then use the saved checkpoint with strict loading. The installer verifies that the author's native pointops sources match the shared Pointcept operators before reuse; no additional environment is created.
+
+[Paper PDF](https://arxiv.org/pdf/2310.07743) · [Author source](https://github.com/haibo-qiu/PointHR) · [Source terms](THIRD_PARTY.md)
 
 </details>

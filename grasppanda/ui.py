@@ -89,6 +89,8 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'pointhr' and key in ('dec_channels', 'dec_depths', 'dec_groups', 'dec_neighbours'):
+                description += '; finest original-point resolution to coarsest decoded resolution'
             if choice == 'rala' and rule[0] == 'choice_list':
                 description = 'One rala or softmax attention choice per encoder block; list length equals sum(stage_depths), in fine-to-coarse stage order'
             if choice == 'pointcnnpp':

@@ -185,6 +185,14 @@ def verify_shared_operators(source, openpoints):
         raise RuntimeError('Component requires a different native point operator build')
 
 
+def verify_pointhr_operators(source, shared_source):
+    native = source/'libs/pointops/src'
+    shared = shared_source/'libs/pointops/src'
+    paths = {str(p.relative_to(native)) for p in native.rglob('*') if p.suffix in ('.cpp', '.cu', '.h')}
+    if not paths or any(not (shared/name).is_file() or (native/name).read_bytes() != (shared/name).read_bytes() for name in paths):
+        raise RuntimeError('PointHR requires a different pointops build from the pinned shared operators')
+
+
 def main():
     uv=ROOT/'environments/bootstrap/uv'
     uv=str(uv) if uv.exists() else shutil.which('uv')
@@ -205,6 +213,7 @@ def main():
         if actual!=record['commit']:raise SystemExit(f'Component source revision mismatch: {record["id"]}')
     for component in ('pointmetabase', 'pointcloudmamba'):
         verify_shared_operators(ROOT/pins[component]['path'], ROOT/pins['openpoints']['path'])
+    verify_pointhr_operators(ROOT/pins['pointhr']['path'], ROOT/pins['pointcept']['path'])
     if __package__:
         from .build_pointcnnpp import build as build_pointcnnpp
         from .build_flash3d import build as build_flash3d
