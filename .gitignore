@@ -22,6 +22,9 @@
 !/docs/REFERENCE.md
 !/docs/THIRD_PARTY.md
 !/docs/USAGE.md
+!/docs/assets/
+/docs/assets/*
+!/docs/assets/overview.svg
 
 # Runtime source plus explicitly registered templates, pins and build resources.
 /grasppanda/**

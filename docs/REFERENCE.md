@@ -1818,3 +1818,10 @@ The Generalizing-Grasp preset uses `action: infer`, `workspace: fused_scene`, `f
 Outputs are **table-frame** grasps under `predictions/scene_XXXX/CAMERA/result.npy`; previews transform them to camera 0. Refinement also returns table-frame grasps. Camera-space single-view AP must not be applied to these fused observations, so the toolbox does not expose its single-frame evaluator for this method. The previous fixed Generalizing-Grasp recipe is replaced by this configurable fused-scene adapter.
 
 </details>
+
+<details>
+<summary>Older configuration files</summary>
+
+Saved `pipeline_smoke` and `train_check` actions are read as `recipe` and `train_short`. The former `train_smoke` action now uses one update of the short trainer, including its native batching, required initialization checkpoint and checkpoint output. Newly generated configurations use the current names.
+
+</details>

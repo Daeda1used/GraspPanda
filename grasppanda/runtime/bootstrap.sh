@@ -32,6 +32,14 @@ if [[ -z "$UV_BIN" ]]; then
   exit 1
 fi
 "$UV_BIN" sync --python 3.11 --locked --inexact --no-dev
+.venv/bin/python - <<'PYTHON'
+import torch
+if not torch.cuda.is_available():
+    raise SystemExit('No CUDA GPU is visible. Check the NVIDIA driver and CUDA_VISIBLE_DEVICES, then rerun ./panda install.')
+capability = torch.cuda.get_device_capability()
+if capability not in ((8, 0), (8, 6), (8, 9), (9, 0)):
+    raise SystemExit('The shared native runtime requires an Ampere, Ada or Hopper GPU (compute capability 8.0, 8.6, 8.9 or 9.0). See docs/INSTALL.md.')
+PYTHON
 "$UV_BIN" pip install --python .venv/bin/python --no-build-isolation grasp-nms==1.0.2
 python3 grasppanda/runtime/clone_upstreams.py
 .venv/bin/python grasppanda/runtime/build_native.py

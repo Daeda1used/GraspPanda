@@ -14,7 +14,7 @@ jobs:
       - name: Check source distribution
         run: |
           python - <<'PYTHON'
-          from pathlib import PurePosixPath
+          from pathlib import Path, PurePosixPath
           import subprocess
           import tarfile
           import io
@@ -29,6 +29,16 @@ jobs:
               assert path.parts[0] in roots, f'Unexpected public entry: {name}'
               assert not generated.intersection(path.parts), f'Generated artifact: {name}'
               assert '.local.' not in path.name, f'Local configuration: {name}'
+              assert not path.name.startswith(('test_', 'probe_', 'benchmark_', '.env')), name
+              file = Path(name)
+              assert not file.is_symlink(), f'Local symlink: {name}'
+              assert file.stat().st_size < 5_000_000, f'Oversized source file: {name}'
+              file.read_text(encoding='utf-8')  # Compiled objects and weights are not source.
+              allowed = {'.py', '.md', '.json', '.toml', '.lock', '.patch', '.cpp', '.cu'}
+              special = {'.gitignore', '.gitattributes', 'LICENSE', 'panda',
+                         '.github/workflows/ci.yml', 'grasppanda/runtime/bootstrap.sh',
+                         'grasppanda/resources/flash3d/CMakeLists.txt', 'docs/assets/overview.svg'}
+              assert name in special or path.suffix in allowed, f'Unexpected source type: {name}'
           ignored = subprocess.run(['git', 'check-ignore', '--no-index', '--stdin'],
                                    input='\n'.join(filter(None, names)), text=True, capture_output=True)
           assert ignored.returncode == 1, f'Ignored files in public source: {ignored.stdout}'

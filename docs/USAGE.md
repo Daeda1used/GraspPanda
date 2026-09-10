@@ -25,19 +25,13 @@ The **Guide** tab includes installation, downloads, module instructions and a da
 
 The available choices depend on the method. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
 
-<details>
-<summary>Older configuration files</summary>
-
-Saved `pipeline_smoke` and `train_check` actions are read as `recipe` and `train_short`. The former `train_smoke` action now uses one update of the short trainer, including its native batching, required initialization checkpoint and checkpoint output. Newly generated configurations use the current names.
-
-</details>
+GraNet and GraspBalance presets start with short training from scratch because compatible author weights are unavailable. Reuse the saved checkpoint for prediction. RNGNet SDK uses its bundled weights; the download button explains this without fetching another model.
 
 ## CLI
 
 ```bash
 ./panda list
 ./panda doctor
-./panda weights hggd --camera realsense
 ./panda weights graspness --camera realsense
 ./panda init --method graspness -o graspness.local.yaml
 # Set dataset_root and checkpoint in graspness.local.yaml.

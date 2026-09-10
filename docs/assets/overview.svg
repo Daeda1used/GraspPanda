@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="570" viewBox="0 0 1280 570" role="img" aria-labelledby="title desc">
+<title id="title">The GraspPanda research workflow</title>
+<desc id="desc">Visual observations feed compatible encoder, grouping and grasp head components. Training, prediction and comparison share one runtime with saved configurations. This architecture schematic contains no benchmark results.</desc>
+<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e5ecef" stroke-width=".6"/></pattern><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1 1L7 4L1 7" fill="none" stroke="#879baa" stroke-width="1.4"/></marker></defs>
+<rect width="1280" height="570" rx="18" fill="#f8fafb"/>
+<rect x="1" y="1" width="1278" height="568" rx="17" fill="url(#grid)" stroke="#dce5ea"/>
+<g font-family="Arial,Helvetica,sans-serif">
+<text x="42" y="46" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">GRASPNET-1B / VISUAL GRASPING RESEARCH</text>
+<text x="42" y="88" font-size="32" fill="#162b40" font-weight="700">From observations to reproducible experiments.</text>
+<path d="M42 111H1238" fill="none" stroke="#dbe5ea" stroke-width="1"/>
+<rect x="42" y="140" width="292" height="307" rx="10" fill="#fff" stroke="#d9e4e9"/>
+<text x="64" y="171" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">01 / OBSERVE</text>
+<text x="64" y="205" font-size="21" fill="#162b40" font-weight="700">Visual inputs</text>
+<rect x="382" y="140" width="468" height="307" rx="10" fill="#fff" stroke="#d9e4e9"/>
+<text x="404" y="171" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">02 / COMPOSE</text>
+<text x="404" y="205" font-size="21" fill="#162b40" font-weight="700">Your model, your configuration</text>
+<rect x="898" y="140" width="340" height="307" rx="10" fill="#fff" stroke="#d9e4e9"/>
+<text x="920" y="171" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">03 / EXPERIMENT</text>
+<text x="920" y="205" font-size="21" fill="#162b40" font-weight="700">One connected workflow</text>
+<path d="M344 290H372" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M860 290H888" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M78 324L180 354L309 308L206 278Z" fill="#f1f6f9" stroke="#d3e0e7" stroke-width="1"/>
+<path d="M131 267L171 246L213 263L173 284Z M131 267V311L173 329L213 306V263 M173 284V329" fill="none" stroke="#6e91b7" stroke-width="1.3"/>
+<circle cx="139" cy="275" r="2.5" fill="#4b82b2"/>
+<circle cx="151" cy="280" r="2.5" fill="#4b82b2"/>
+<circle cx="163" cy="285" r="2.5" fill="#4b82b2"/>
+<circle cx="139" cy="289" r="2.5" fill="#4b82b2"/>
+<circle cx="151" cy="295" r="2.5" fill="#4b82b2"/>
+<circle cx="162" cy="302" r="2.5" fill="#4b82b2"/>
+<circle cx="139" cy="304" r="2.5" fill="#4b82b2"/>
+<circle cx="152" cy="313" r="2.5" fill="#4b82b2"/>
+<circle cx="164" cy="320" r="2.5" fill="#4b82b2"/>
+<circle cx="180" cy="287" r="2.5" fill="#4b82b2"/>
+<circle cx="192" cy="279" r="2.5" fill="#4b82b2"/>
+<circle cx="204" cy="271" r="2.5" fill="#4b82b2"/>
+<circle cx="180" cy="302" r="2.5" fill="#4b82b2"/>
+<circle cx="192" cy="294" r="2.5" fill="#4b82b2"/>
+<circle cx="205" cy="286" r="2.5" fill="#4b82b2"/>
+<circle cx="180" cy="317" r="2.5" fill="#4b82b2"/>
+<circle cx="193" cy="308" r="2.5" fill="#4b82b2"/>
+<circle cx="205" cy="300" r="2.5" fill="#4b82b2"/>
+<circle cx="149" cy="264" r="2.5" fill="#4b82b2"/>
+<circle cx="163" cy="256" r="2.5" fill="#4b82b2"/>
+<circle cx="176" cy="268" r="2.5" fill="#4b82b2"/>
+<circle cx="188" cy="263" r="2.5" fill="#4b82b2"/>
+<circle cx="163" cy="274" r="2.5" fill="#4b82b2"/>
+<circle cx="240" cy="289" r="2.5" fill="#399689"/>
+<circle cx="252" cy="281" r="2.5" fill="#399689"/>
+<circle cx="265" cy="287" r="2.5" fill="#399689"/>
+<circle cx="237" cy="302" r="2.5" fill="#399689"/>
+<circle cx="252" cy="296" r="2.5" fill="#399689"/>
+<circle cx="267" cy="301" r="2.5" fill="#399689"/>
+<circle cx="253" cy="314" r="2.5" fill="#399689"/>
+<circle cx="239" cy="317" r="2.5" fill="#399689"/>
+<text x="64" y="377" font-size="14" fill="#4e6679" font-weight="400">RGB-D · point clouds · sequences</text>
+<text x="64" y="403" font-size="13" fill="#4e6679" font-weight="400">Single-view and fused-view protocols</text>
+<text x="64" y="425" font-size="13" fill="#4e6679" font-weight="400">Calibrated geometry and data readers</text>
+<rect x="404" y="242" width="126" height="83" rx="8" fill="#edf3fb" stroke="#bfd1e6"/>
+<text x="418" y="274" font-size="17" fill="#162b40" font-weight="700">Encoder</text>
+<text x="418" y="300" font-size="13" fill="#365c92" font-weight="400">features</text>
+<rect x="556" y="242" width="126" height="83" rx="8" fill="#eaf5f1" stroke="#b4d9d0"/>
+<text x="570" y="274" font-size="17" fill="#162b40" font-weight="700">Grouping</text>
+<text x="570" y="300" font-size="13" fill="#365c92" font-weight="400">local context</text>
+<rect x="708" y="242" width="120" height="83" rx="8" fill="#f2f0fa" stroke="#d1c9e3"/>
+<text x="722" y="274" font-size="17" fill="#162b40" font-weight="700">Head</text>
+<text x="722" y="300" font-size="13" fill="#365c92" font-weight="400">grasps</text>
+<path d="M534 283H550" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M686 283H702" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M415 344H818" fill="none" stroke="#dce5ea" stroke-width="1"/>
+<text x="404" y="377" font-size="15" fill="#4e6679" font-weight="400">Backbones · sampling · losses · refinement</text>
+<text x="404" y="403" font-size="13" fill="#4e6679" font-weight="400">Stage, layer and optimization controls</text>
+<text x="404" y="425" font-size="13" fill="#4e6679" font-weight="400">Explicit interfaces and compatibility checks</text>
+<rect x="920" y="242" width="294" height="40" rx="7" fill="#edf3f8" stroke="#edf3f8"/>
+<text x="934" y="267" font-size="16" fill="#162b40" font-weight="700">Configure</text>
+<path d="M1020 261H1040" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1055" y="267" font-size="16" fill="#162b40" font-weight="700">Train / predict</text>
+<rect x="920" y="295" width="244" height="40" rx="7" fill="#edf6f1" stroke="#edf6f1"/>
+<text x="934" y="321" font-size="16" fill="#162b40" font-weight="700">Inspect</text>
+<path d="M1001 315H1020" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1035" y="321" font-size="16" fill="#162b40" font-weight="700">Compare</text>
+<path d="M1196 286V315H1173" fill="none" stroke="#91a5b4" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="920" y="377" font-size="15" fill="#4e6679" font-weight="400">Browser UI + CLI</text>
+<text x="920" y="403" font-size="13" fill="#4e6679" font-weight="400">Sweeps, previews and checkpoint reuse</text>
+<text x="920" y="425" font-size="13" fill="#4e6679" font-weight="400">Saved configurations and result exports</text>
+<rect x="42" y="470" width="1196" height="62" rx="10" fill="#172f43" stroke="#172f43"/>
+<text x="63" y="508" font-size="18" fill="#fff" font-weight="700">ONE SHARED RUNTIME</text>
+<path d="M312 485V517" fill="none" stroke="#536879" stroke-width="1"/>
+<text x="338" y="508" font-size="16" fill="#dae6ed" font-weight="400">Pinned sources</text>
+<text x="507" y="508" font-size="16" fill="#dae6ed" font-weight="400">Native operators</text>
+<text x="696" y="508" font-size="16" fill="#dae6ed" font-weight="400">Local data and weights</text>
+<text x="939" y="508" font-size="16" fill="#dae6ed" font-weight="400">Reproducible configurations</text>
+<circle cx="490" cy="503" r="2" fill="#8cabb9"/>
+<circle cx="678" cy="503" r="2" fill="#8cabb9"/>
+<circle cx="919" cy="503" r="2" fill="#8cabb9"/>
+<text x="851" y="554" font-size="11" fill="#8496a3" font-weight="400">Architecture schematic · method-specific input contracts apply</text>
+</g></svg>

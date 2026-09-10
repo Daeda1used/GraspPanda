@@ -390,6 +390,13 @@ def create_app(manager=None):
         return method_card(method), gr.Dropdown(choices=action_choices(method), value=selected.action if selected else None), gr.Button(interactive=bool(actions)), selected.checkpoint if selected else '', selected.camera if selected else camera, selected.workspace if selected else 'official_gt_workspace', selected.num_points if selected else 15000
 
     def download_checkpoint(method,camera,progress=gr.Progress()):
+        if method in ('granet', 'graspbalance'):
+            return gr.update(), 'No compatible author checkpoint is registered. The preset trains from scratch; use its saved checkpoint for prediction. A custom checkpoint already entered is retained.'
+        if method == 'rngnet_sdk':
+            bundled = ROOT/catalogue()[method]['path']/'realsense.pth'
+            if not bundled.is_file():
+                raise gr.Error('Bundled SDK weights are missing. Run ./panda fetch to prepare the pinned implementation.')
+            return '', 'The RealSense recipe uses weights included with the pinned SDK. Load its preset, set your dataset root and run.'
         if method == 'gtg2':
             return '', 'Train an ensemble after preparing graph inputs. This reconstruction has no registered pretrained weights; see Guide → Methods & papers.'
         try:
@@ -623,7 +630,7 @@ def create_app(manager=None):
         return rows
 
     with gr.Blocks(title="GraspPanda · Modular visual grasping") as app:
-        gr.HTML('<div id="panda-hero"><h1>🐼 GraspPanda</h1><p>Visual grasping experiments, from method presets to custom components.</p></div>')
+        gr.HTML('<div id="panda-hero"><h1>GraspPanda</h1><p>An all-in-one research toolbox for visual grasping.</p></div>')
         with gr.Tab("Experiments"):
             with gr.Row():
                 with gr.Column(scale=4):

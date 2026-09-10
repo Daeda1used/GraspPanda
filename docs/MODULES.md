@@ -68,5 +68,3 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 Use `./panda init --list` to discover complete templates, then `./panda init --example NAME` to generate one locally. Omitted parameters use component defaults. The reference describes cross-stage constraints, physical units and changes to author implementations; no component choice implies improved accuracy or compatible pretrained grasp weights.
 
 Pose postprocessing is configured independently with `refinement`; see [contact-score refinement](REFERENCE.md#contact-score-refinement) for predicted-instance grouping, pose variables and auxiliary objectives.
-
-For RGB-D experiments, [FastViT / FastViTHD](REFERENCE.md#fastvit-and-fastvithd-rgb-d-hierarchy) expose per-block RepMixer/attention choices and branch/fused parameterizations. [EfficientViT stages and attention](REFERENCE.md#efficientvit-rgb-d-hierarchy) expose local blocks, multi-scale kernels, head dimensions and pretrained initialization.

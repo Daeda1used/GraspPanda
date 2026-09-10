@@ -2,7 +2,7 @@
 
 ## Supported runtime
 
-Use Ubuntu 22.04 x86-64 with an NVIDIA GPU. The shared environment locks Python 3.11.16, PyTorch 2.5.1+cu118 and NumPy 1.23.5; CUDA toolkit 11.8 is required. This runtime has been validated on an RTX A6000. A compatible NVIDIA driver and the **compiler toolkit** are required; the CUDA runtime bundled with PyTorch does not provide `nvcc`. See [NVIDIA's CUDA 11.8 installation guide](https://docs.nvidia.com/cuda/archive/11.8.0/cuda-installation-guide-linux/index.html).
+Use Ubuntu 22.04 x86-64 with an NVIDIA Ampere, Ada or Hopper GPU (compute capability 8.0, 8.6, 8.9 or 9.0). The shared environment locks Python 3.11.16, PyTorch 2.5.1+cu118 and NumPy 1.23.5; CUDA toolkit 11.8 is required. This runtime has been validated on an RTX A6000. A compatible NVIDIA driver and the **compiler toolkit** are required; the CUDA runtime bundled with PyTorch does not provide `nvcc`. See [NVIDIA's CUDA 11.8 installation guide](https://docs.nvidia.com/cuda/archive/11.8.0/cuda-installation-guide-linux/index.html).
 
 The lock includes Linux-specific CUDA wheels. Windows, macOS, CPU-only execution and newer GPU architectures are not supported by this tested runtime. Native build speed and memory requirements vary; reduce `MAX_JOBS` if compilation exhausts memory.
 
@@ -43,6 +43,7 @@ An exact `uv sync` removes packages outside the lock. Rerun the installer after 
 | Symptom | Action |
 |---|---|
 | Missing `nvcc` or wrong CUDA release | Set `GRASPPANDA_CUDA_HOME` to the CUDA 11.8 toolkit directory. |
+| No CUDA GPU visible / unsupported architecture | Check the NVIDIA driver and `CUDA_VISIBLE_DEVICES`; use one of the GPU architectures listed above. The installer checks this before native compilation. |
 | Undefined symbol / incompatible CUDA extension | Rebuild with `./panda install` using the locked environment; do not reuse wheels from a different ABI. |
 | Out of memory during compilation | Set `MAX_JOBS=2` before running the installer. |
 | Google Drive quota or academic mirror unavailable | Retry later or manually download the exact registered file; paths and checksums are in `grasppanda/resources/checkpoints.json`. |

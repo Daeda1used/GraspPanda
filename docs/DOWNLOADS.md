@@ -1,14 +1,14 @@
 # Data and checkpoint downloads
 
-Choose the inputs for your first experiment; you can add training archives later.
+Prepare only the inputs needed for your experiment.
 
-| Start with | What to prepare |
+| Start with | Follow |
 |---|---|
-| An author sample, without GraspNet | Select ASGrasp in the UI, load its preset and download its registered weights. |
-| A GraspNet frame | Download `test_seen.zip`, set the dataset root and download weights for your method and camera. |
-| Training or evaluation | Add the models, labels and method-specific targets described below. |
-| GtG2 candidate graphs | Follow [Candidate graph experiments](REFERENCE.md#candidate-graph-experiments) to prepare graphs and train an ensemble. |
-| SPGrasp planar sequences | Training needs RGB, instance labels and `rect_labels.zip`; prediction needs RGB, first-frame prompts and your trained checkpoint. |
+| No dataset yet | [Run the included author sample](#start-without-graspnet) |
+| Your first GraspNet prediction | [Download and extract a test archive](#graspnet-1b), then [run one frame](#run-your-first-graspnet-frame) |
+| A different method or camera | [Download its registered checkpoints](#registered-checkpoints) |
+| Training | Add the labels in [method-specific preprocessing](#method-specific-preprocessing) |
+| Replace a pretrained encoder | Choose [optional encoder initialization](#optional-encoder-initialization) |
 
 ## Start without GraspNet
 
@@ -67,7 +67,7 @@ The supplied frame presets use scene 0100/frame 0000. Training-step examples use
 <details>
 <summary>All official archive links and mirrors</summary>
 
-Links were collected from the official page for this release. If a mirror changes or reports a quota, return to that page and select another mirror.
+If a mirror changes or reports a quota, select another mirror on the [official download page](https://graspnet.net/datasets.html).
 
 | Archive | Mirrors |
 |---|---|
@@ -100,60 +100,7 @@ After extracting the images, run these commands from the installed repository:
 
 This preset predicts scene 0100, frame 0000 with the registered RealSense checkpoint. Open **Runs & results** to view the prediction. The dataset root must contain `scenes/scene_0100/realsense/`; a scene directory itself is not the dataset root. Configuration, downloaded weights and prediction files are created locally. To change the method or camera, load its preset and download its matching weights; training requires the additional targets below.
 
-## FastViT and FastViTHD encoder initialization
-
-Select `fastvit` and use **Prepare selected component weights**. The CLI IDs are `fastvit_t8`, `fastvit_t12`, `fastvit_s12`, `fastvit_sa12`, `fastvit_sa24`, `fastvit_sa36` and `fastvit_ma36`; append `_fused` for the matching fused convolution checkpoint. These are non-distilled ImageNet weights from the [author model zoo](https://github.com/apple/ml-fastvit#fastvit-model-zoo), verified by size and SHA-256.
-
-`./panda component-weights fastvit_hd` downloads the pinned [Apple FastVLM-0.5B safetensors file](https://huggingface.co/apple/FastVLM-0.5B/tree/16375720c2d673fa583e57e9876afde27549c7d0), approximately **1.52 GB**. The loader reads only visual-encoder tensors; it does not instantiate the language model or execute remote model code. The original file is retained locally for reproducible verification. These model weights and derivatives are restricted to [non-commercial research](THIRD_PARTY.md#fastvit-and-fastvithd).
-
-Neither download is a GraspNet-trained detector. Train the new grasp projections using the [composition examples](REFERENCE.md#fastvit-and-fastvithd-rgb-d-hierarchy). Structural changes need `pretrained: false`; HD pretraining needs `parameterization: fused`. All variants use the existing shared environment and locally downloaded source.
-
-## EfficientViT encoder initialization
-
-For the `efficientvit` backbone, **Prepare selected component weights** downloads the matching registered ImageNet checkpoint. The CLI equivalent is `./panda component-weights efficientvit_b0` (also B1/B2/B3 and L1/L2/L3, using lowercase IDs). Downloads come from the [author's model collection](https://huggingface.co/han-cai/efficientvit-cls/tree/df3d006c2567f9e322b03731f20fe4405a1ab090), with pinned revisions, sizes and checksums. L0 and structurally modified encoders use `pretrained: false`.
-
-These are RGB classification weights, not GraspNet-trained detectors. See [EfficientViT composition](REFERENCE.md#efficientvit-rgb-d-hierarchy) for depth fusion and grasp training. The existing shared environment supplies its dependencies; `./panda install` fetches the pinned author source. Weights stay in the local `checkpoints/components/` directory.
-
-## Method-specific preprocessing
-
-Basic frame inference does not require downloading all training targets. Additional processing is method-specific:
-
-| Workflow | Additional requirements | Instructions |
-|---|---|---|
-| Baseline / SBG training | `tolerance/` plus original grasp and collision labels | [Baseline](https://github.com/graspnet/graspnet-baseline), [SBG](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) |
-| Graspness training | `graspness/` and `grasp_label_simplified/`, plus original labels | [Graspness implementation](https://github.com/rhett-chen/graspness_implementation) |
-| HGGD training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
-| RNG short training | HGGD preprocessed labels; native proposals and local targets are prepared in the experiment directory. The unreleased training schedule is not reproduced | [RNG](https://github.com/THU-VCLab/RegionNormalizedGrasp) |
-| FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
-| EconomicGrasp training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
-| DOGraspNet short training | Simplified grasp/collision labels and `graspness_label/`; the pinned equivalent `graspness/` targets are accepted | [DOGraspNet](https://github.com/huamo555/DOGraspNet) |
-| Generalizing-Grasp inference / short training | Fused XYZ/normals for inference; training additionally needs matched segmentation, full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
-| ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |
-
-Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the geometry dependencies installed by `./panda install`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
-
-GraspBalance requires original grasp/collision labels and tolerance. Graspness modern requires the same simplified labels and graspness maps as its ResUNet implementation. All preprocessing remains method-specific; an identical folder name does not guarantee compatible supervision.
-
-### Generalizing-Grasp SDF grids
-
-Download the official `models.zip` and the author's [fused data](https://drive.google.com/file/d/12YODD0ZUu6XTudU1fZBhVtAmIpMZk8xQ/view?usp=sharing). Follow the [native fusion preparation](https://github.com/mahaoxiang822/Generalizing-Grasp) for matched point/segmentation arrays. The toolbox rejects mismatched row counts instead of guessing correspondence.
-
-Generate the 88 SDF grids in a writable cache, keeping the source dataset read-only:
-
-```bash
-./panda prepare-sdf \
-  --dataset-root /data/GraspNet-1B \
-  --output-root /data/GraspPanda-cache/generalizing-sdf
-```
-
-Set `sdf_root: /data/GraspPanda-cache/generalizing-sdf` in experiment JSON/YAML. The generated layout is `models/000/grid_sampled_sdf.npz` through `models/087/grid_sampled_sdf.npz`; omit `sdf_root` if those files already exist under the dataset root. `--objects 0` checks one object's preprocessing; the native training loss initializes all 88 objects and therefore requires the complete set. Existing files are not overwritten. Preparation records include source/output hashes and sampler settings.
-
-Check each original README for the full training-data preparation. Keep large derived files in a dataset/cache location or ignored experiment directory.
-
 ## Registered checkpoints
-
-<details>
-<summary>Download links and local paths for each method</summary>
 
 ```bash
 ./panda weights hggd --camera realsense
@@ -202,9 +149,51 @@ Google Drive downloads support resume. Other HTTP downloads restart cleanly beca
 
 MotionGrasp also requires the baseline checkpoint; the downloader includes it. The PointNet2 compatibility port reuses the baseline weights. RNGNet SDK and SpaHybGen sample weights are included by their upstream repositories. GraNet's organized source and separately distributed legacy checkpoints are not interchangeable. Methods without registered, compatible weights are explicitly identified in [Methods & papers](METHODS.md).
 
+## Method-specific preprocessing
+
+Basic frame inference does not require downloading all training targets. Additional processing is method-specific:
+
+| Workflow | Additional requirements | Instructions |
+|---|---|---|
+| Baseline / SBG training | `tolerance/` plus original grasp and collision labels | [Baseline](https://github.com/graspnet/graspnet-baseline), [SBG](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) |
+| Graspness training | `graspness/` and `grasp_label_simplified/`, plus original labels | [Graspness implementation](https://github.com/rhett-chen/graspness_implementation) |
+| HGGD training | Author-preprocessed 2D/local targets under `HGGD_Preprocessed/6dto2drefine_CAMERA/6d_dataset/scene_0/grasp_labels/0_view.npz`; override `label_root` in JSON when using a different location | [HGGD preparation and downloads](https://github.com/THU-VCLab/HGGD#data-preparation) |
+| RNG short training | HGGD preprocessed labels; native proposals and local targets are prepared in the experiment directory. The unreleased training schedule is not reproduced | [RNG](https://github.com/THU-VCLab/RegionNormalizedGrasp) |
+| FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
+| EconomicGrasp training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
+| DOGraspNet short training | Simplified grasp/collision labels and `graspness_label/`; the pinned equivalent `graspness/` targets are accepted | [DOGraspNet](https://github.com/huamo555/DOGraspNet) |
+| Generalizing-Grasp inference / short training | Fused XYZ/normals for inference; training additionally needs matched segmentation, full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
+| ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |
+
+Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the geometry dependencies installed by `./panda install`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
+
+GraspBalance requires original grasp/collision labels and tolerance. Graspness modern requires the same simplified labels and graspness maps as its ResUNet implementation. All preprocessing remains method-specific; an identical folder name does not guarantee compatible supervision.
+
+<details>
+<summary>Prepare Generalizing-Grasp SDF grids</summary>
+
+### Generalizing-Grasp SDF grids
+
+Download the official `models.zip` and the author's [fused data](https://drive.google.com/file/d/12YODD0ZUu6XTudU1fZBhVtAmIpMZk8xQ/view?usp=sharing). Follow the [native fusion preparation](https://github.com/mahaoxiang822/Generalizing-Grasp) for matched point/segmentation arrays. The toolbox rejects mismatched row counts instead of guessing correspondence.
+
+Generate the 88 SDF grids in a writable cache, keeping the source dataset read-only:
+
+```bash
+./panda prepare-sdf \
+  --dataset-root /data/GraspNet-1B \
+  --output-root /data/GraspPanda-cache/generalizing-sdf
+```
+
+Set `sdf_root: /data/GraspPanda-cache/generalizing-sdf` in experiment JSON/YAML. The generated layout is `models/000/grid_sampled_sdf.npz` through `models/087/grid_sampled_sdf.npz`; omit `sdf_root` if those files already exist under the dataset root. `--objects 0` checks one object's preprocessing; the native training loss initializes all 88 objects and therefore requires the complete set. Existing files are not overwritten. Preparation records include source/output hashes and sampler settings.
+
+Check each original README for the full training-data preparation. Keep large derived files in a dataset/cache location or ignored experiment directory.
+
 </details>
 
 ## Additional inputs
+
+<details>
+<summary>Sequence, author-sample and derived training inputs</summary>
 
 **SPGrasp:** `./panda weights spgrasp` downloads the [SAM2.1 Hiera Base+ initializer](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt) to `checkpoints/spgrasp/sam2.1_hiera_base_plus.pt`. This initializes training; it is not a trained grasp detector and inference rejects it. No author fine-tuned SPGrasp weights are registered. Use your training run's `checkpoint.pt` for prediction. Training requires consecutive RGB and instance-label frames, with rectangle labels in `rect_labels/scene_XXXX/CAMERA/FFFF.npy` or `scenes/scene_XXXX/CAMERA/rect/FFFF.npy`. Set `label_root` to select another rectangle root containing `scene_XXXX/CAMERA/`. The [SAM2 author instructions](https://github.com/facebookresearch/sam2#download-checkpoints) describe the initializer, and the [SPGrasp guide](REFERENCE.md#prompted-planar-sequences) explains prompts and width units.
 
@@ -215,6 +204,9 @@ ActiveNGF performs online field optimization from multiple views through its nat
 GFLA short training prepares native contact labels and surface/visibility targets inside the run directory. First-time preparation may take several minutes. Set `data_workers: 1` to limit preparation concurrency; `label_root` can reuse a previous run's `prepared/ctt_grasp_label` cache. Its contact/SDF objective uses `learning_rate: 0.000002`.
 
 GraspFast short training generates native graspability targets in the run directory. It requires `grasp_label/`, `grasp_label_simplified/` and `collision_label/` and uses the released unweighted five-part objective.
+
+
+</details>
 
 ## FineGrasp
 
@@ -234,72 +226,6 @@ Existing `scenes/scene_XXXX/CAMERA/normal/FFFF.npy` and `instance_norm_graspness
 Generated graspness follows the paper's per-instance min-max normalization and subsequent scene normalization. Applying this to an already scene-normalized map gives the same values for nonconstant objects; constant instances and background receive zero. Normal generation uses the author's Open3D estimator (0.1-metre radius, 30 neighbors) on the full valid workspace cloud. Signed float32 maps are stored scaled by 255 to match the native dataset reader. The author offline normal-generation script is not released, so this is a documented preprocessing adaptation, not a claim of identical author training data. Full normal maps can occupy substantial disk space; choose a writable cache with adequate capacity.
 
 The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](REFERENCE.md#finegrasp-training-and-composition) for training, loss and resume settings.
-
-</details>
-
-## Pretrained image components
-
-<details>
-<summary>DINO image encoder weights</summary>
-
-The image encoders have separate initialization weights from the method's grasp checkpoint. Downloads stay under `checkpoints/components/`; the source repository and its archives do not contain these files. The registry pins each source revision, byte size, SHA256 and RGB normalization in `grasppanda/resources/component_weights.json`.
-
-```bash
-./panda component-weights dinov3_small
-./panda weights hggd --camera realsense
-```
-
-| ID | Weight conversion and source | Size | Terms |
-|---|---|---|---|
-| `dinov2_small` | [timm DINOv2 Small](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m) | 88 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
-| `dinov2_base` | [timm DINOv2 Base](https://huggingface.co/timm/vit_base_patch14_dinov2.lvd142m) | 346 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
-| `dinov3_small` | [timm DINOv3 Small](https://huggingface.co/timm/vit_small_patch16_dinov3.lvd1689m) | 86 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
-| `dinov3_base` | [timm DINOv3 Base](https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m) | 343 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
-
-These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](REFERENCE.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
-
-</details>
-
-## Pretrained point components
-
-<details>
-<summary>Concerto and Utonia weights</summary>
-
-Point initialization weights are separate from grasp checkpoints and are downloaded locally under `checkpoints/components/`. Select the encoder in **Compose modules** and use its pretrained-encoder download button, or run:
-
-```bash
-./panda component-weights concerto_tiny
-./panda component-weights utonia
-```
-
-| ID | Author weights | Size |
-|---|---|---|
-| `concerto_tiny` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 19 MB |
-| `concerto_small` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 155 MB |
-| `concerto_base` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 434 MB |
-| `concerto_large` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 831 MB |
-| `utonia` | [Utonia](https://huggingface.co/Pointcept/Utonia) | 549 MB |
-
-The registry fixes each weight revision, SHA256, byte size and encoder configuration. Files are loaded with PyTorch's restricted weights-only loader. Initial training prepares a missing registered file; inference or resume from a complete grasp checkpoint does not require the initialization download. No weight files are included in the repository.
-
-Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.
-
-</details>
-
-## MambaVision initialization
-
-<details>
-<summary>MambaVision encoder weights</summary>
-
-MambaVision uses author ImageNet-1K **Safetensors** weights, separate from the grasp checkpoint. Select `mambavision` under **Compose modules** and prepare its encoder weights, or use:
-
-```bash
-./panda component-weights mambavision_tiny
-```
-
-Available IDs are `mambavision_tiny`, `mambavision_tiny2`, `mambavision_small`, `mambavision_base`, `mambavision_large` and `mambavision_large2`. Sources, exact revisions, sizes and hashes are registered in `grasppanda/resources/component_weights.json`; files are generated locally under `checkpoints/components/`. The [author repository](https://github.com/NVlabs/MambaVision) links each weight release. Only the selected encoder weights are downloaded.
-
-Source and weights use NVIDIA non-commercial research terms. See [component configuration](REFERENCE.md#mambavision-hybrid-image-hierarchy) for RGB-D fusion, freezing and structural edits. The larger author pickle training archives are not required.
 
 </details>
 
@@ -334,6 +260,9 @@ OBS inference has a separate segmentation checkpoint and needs no clean-scene ca
 
 ## Contact-score refinement
 
+<details>
+<summary>Auxiliary networks, calibration and fused-scene inputs</summary>
+
 Download the auxiliary networks once in the shared environment:
 
 ```bash
@@ -361,3 +290,103 @@ For Generalizing-Grasp, place the [author fused data](https://drive.google.com/f
 ```
 
 Set your dataset root and checkpoint, then run the generated configuration. [Refinement parameters and observation protocols](REFERENCE.md#contact-score-refinement) explain single-view transfer and fused-scene output coordinates.
+
+</details>
+
+## Optional encoder initialization
+
+These weights initialize replacement components; choose the encoder you plan to train. The selected method's grasp checkpoint is configured separately.
+
+[DINO](#pretrained-image-components) · [FastViT / FastViTHD](#fastvit-and-fastvithd-encoder-initialization) · [EfficientViT](#efficientvit-encoder-initialization) · [MambaVision](#mambavision-initialization) · [Concerto / Utonia](#pretrained-point-components)
+
+## Pretrained image components
+
+<details>
+<summary>DINO image encoder weights</summary>
+
+The image encoders have separate initialization weights from the method's grasp checkpoint. Downloads stay under `checkpoints/components/`; the source repository and its archives do not contain these files. The registry pins each source revision, byte size, SHA256 and RGB normalization in `grasppanda/resources/component_weights.json`.
+
+```bash
+./panda component-weights dinov3_small
+./panda weights hggd --camera realsense
+```
+
+| ID | Weight conversion and source | Size | Terms |
+|---|---|---|---|
+| `dinov2_small` | [timm DINOv2 Small](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m) | 88 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
+| `dinov2_base` | [timm DINOv2 Base](https://huggingface.co/timm/vit_base_patch14_dinov2.lvd142m) | 346 MB | [Apache-2.0](https://github.com/facebookresearch/dinov2/blob/main/LICENSE) |
+| `dinov3_small` | [timm DINOv3 Small](https://huggingface.co/timm/vit_small_patch16_dinov3.lvd1689m) | 86 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
+| `dinov3_base` | [timm DINOv3 Base](https://huggingface.co/timm/vit_base_patch16_dinov3.lvd1689m) | 343 MB | [DINOv3 License](https://github.com/facebookresearch/dinov3/blob/main/LICENSE.md) |
+
+These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](REFERENCE.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
+
+</details>
+
+## FastViT and FastViTHD encoder initialization
+
+<details>
+<summary>FastViT checkpoints, variants and initialization requirements</summary>
+
+Select `fastvit` and use **Prepare selected component weights**. The CLI IDs are `fastvit_t8`, `fastvit_t12`, `fastvit_s12`, `fastvit_sa12`, `fastvit_sa24`, `fastvit_sa36` and `fastvit_ma36`; append `_fused` for the matching fused convolution checkpoint. These are non-distilled ImageNet weights from the [author model zoo](https://github.com/apple/ml-fastvit#fastvit-model-zoo), verified by size and SHA-256.
+
+`./panda component-weights fastvit_hd` downloads the pinned [Apple FastVLM-0.5B safetensors file](https://huggingface.co/apple/FastVLM-0.5B/tree/16375720c2d673fa583e57e9876afde27549c7d0), approximately **1.52 GB**. The loader reads only visual-encoder tensors; it does not instantiate the language model or execute remote model code. The original file is retained locally for reproducible verification. These model weights and derivatives are restricted to [non-commercial research](THIRD_PARTY.md#fastvit-and-fastvithd).
+
+Neither download is a GraspNet-trained detector. Train the new grasp projections using the [composition examples](REFERENCE.md#fastvit-and-fastvithd-rgb-d-hierarchy). Structural changes need `pretrained: false`; HD pretraining needs `parameterization: fused`. All variants use the existing shared environment and locally downloaded source.
+
+
+</details>
+
+## EfficientViT encoder initialization
+
+<details>
+<summary>EfficientViT checkpoints and initialization requirements</summary>
+
+For the `efficientvit` backbone, **Prepare selected component weights** downloads the matching registered ImageNet checkpoint. The CLI equivalent is `./panda component-weights efficientvit_b0` (also B1/B2/B3 and L1/L2/L3, using lowercase IDs). Downloads come from the [author's model collection](https://huggingface.co/han-cai/efficientvit-cls/tree/df3d006c2567f9e322b03731f20fe4405a1ab090), with pinned revisions, sizes and checksums. L0 and structurally modified encoders use `pretrained: false`.
+
+These are RGB classification weights, not GraspNet-trained detectors. See [EfficientViT composition](REFERENCE.md#efficientvit-rgb-d-hierarchy) for depth fusion and grasp training. The existing shared environment supplies its dependencies; `./panda install` fetches the pinned author source. Weights stay in the local `checkpoints/components/` directory.
+
+
+</details>
+
+## MambaVision initialization
+
+<details>
+<summary>MambaVision encoder weights</summary>
+
+MambaVision uses author ImageNet-1K **Safetensors** weights, separate from the grasp checkpoint. Select `mambavision` under **Compose modules** and prepare its encoder weights, or use:
+
+```bash
+./panda component-weights mambavision_tiny
+```
+
+Available IDs are `mambavision_tiny`, `mambavision_tiny2`, `mambavision_small`, `mambavision_base`, `mambavision_large` and `mambavision_large2`. Sources, exact revisions, sizes and hashes are registered in `grasppanda/resources/component_weights.json`; files are generated locally under `checkpoints/components/`. The [author repository](https://github.com/NVlabs/MambaVision) links each weight release. Only the selected encoder weights are downloaded.
+
+Source and weights use NVIDIA non-commercial research terms. See [component configuration](REFERENCE.md#mambavision-hybrid-image-hierarchy) for RGB-D fusion, freezing and structural edits. The larger author pickle training archives are not required.
+
+</details>
+
+## Pretrained point components
+
+<details>
+<summary>Concerto and Utonia weights</summary>
+
+Point initialization weights are separate from grasp checkpoints and are downloaded locally under `checkpoints/components/`. Select the encoder in **Compose modules** and use its pretrained-encoder download button, or run:
+
+```bash
+./panda component-weights concerto_tiny
+./panda component-weights utonia
+```
+
+| ID | Author weights | Size |
+|---|---|---|
+| `concerto_tiny` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 19 MB |
+| `concerto_small` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 155 MB |
+| `concerto_base` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 434 MB |
+| `concerto_large` | [Concerto](https://huggingface.co/Pointcept/Concerto) | 831 MB |
+| `utonia` | [Utonia](https://huggingface.co/Pointcept/Utonia) | 549 MB |
+
+The registry fixes each weight revision, SHA256, byte size and encoder configuration. Files are loaded with PyTorch's restricted weights-only loader. Initial training prepares a missing registered file; inference or resume from a complete grasp checkpoint does not require the initialization download. No weight files are included in the repository.
+
+Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.
+
+</details>

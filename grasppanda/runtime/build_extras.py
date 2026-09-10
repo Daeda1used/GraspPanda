@@ -29,6 +29,10 @@ def build_center_dependencies():
     source=ROOT/'environments/sources/manifold_python'
     run('manifold-fetch',['git','submodule','update','--init','--recursive'],cwd=source)
     build=ROOT/'environments/build/manifold_python'
+    # CMake records absolute source, build and interpreter paths. Recreate this
+    # generated tree so moving the checkout or replacing its runtime is safe.
+    if build.exists():
+        shutil.rmtree(build)
     shutil.copytree(source,build,dirs_exist_ok=True,ignore=shutil.ignore_patterns('.git','build','*.egg-info'))
     # Keep the native watertight-mesh algorithm; use the shared Python 3.11
     # compatible pybind11 headers instead of the old bundled bindings.

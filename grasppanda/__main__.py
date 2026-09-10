@@ -14,7 +14,10 @@ def read_configuration(path):
     if path.suffix.lower() == '.json':
         return json.loads(text)
     import yaml
-    return yaml.safe_load(text)
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as error:
+        raise ValueError(f'Invalid YAML configuration: {error}') from None
 
 
 def main():
@@ -145,4 +148,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, OSError) as error:
+        print(f'panda: {error}', file=sys.stderr)
+        raise SystemExit(2) from None
