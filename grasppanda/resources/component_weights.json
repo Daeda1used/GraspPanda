@@ -544,5 +544,13 @@
     ],
     "license": "NVIDIA Source Code License-NC",
     "license_url": "https://github.com/NVlabs/MambaVision/blob/7860a506b2eb844eaaae676f08461ce8c3c26f43/LICENSE"
+  },
+  {
+    "id": "scale_balanced_dsn",
+    "model": "Scale-Balanced-Grasp DSN RealSense",
+    "source": "https://drive.google.com/uc?id=1Fe6RPN9cwEk6SsvGix9huspZf9Qz2yju",
+    "path": "checkpoints/components/scale_balanced_dsn.tar",
+    "bytes": 14142155,
+    "sha256": "c31051da36c7de32a9656c83d4116b87496796e96651f5a6c004b0b6f75d62e7"
   }
 ]

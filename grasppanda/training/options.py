@@ -207,7 +207,7 @@ def sample_points(sample, config):
     missing[retained] = False
     indices = np.arange(count)
     indices[missing] = np.random.choice(retained, missing.sum(), replace=True)
-    for key in ('point_clouds', 'cloud_colors', 'cloud_normal', 'feats', 'objectness_label', 'graspness_label', 'segmentation_label'):
+    for key in ('point_clouds', 'cloud_colors', 'cloud_normal', 'feats', 'objectness_label', 'graspness_label', 'segmentation_label', 'instance_mask'):
         if key in sample:
             if len(sample[key]) != count: raise ValueError(f'Per-point field {key} has mismatched rows')
             sample[key] = sample[key][indices].copy()
@@ -217,6 +217,8 @@ def sample_points(sample, config):
 
 
 def augment_sample(sample, dataset, config):
+    from ..methods.scale_balanced_data import enabled as ncm_enabled, augment as augment_ncm
+    if ncm_enabled(config): return augment_ncm(sample, dataset, config)
     if not config.augmentation or config.augmentation.get('mode') == 'none':
         return sample
     fn = dataset.augment_data if config.augmentation.get('mode') == 'native' else None

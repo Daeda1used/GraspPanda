@@ -112,6 +112,9 @@ def preflight(config):
         if not manifest_path.exists():
             raise ValueError('Prediction provenance missing: manifest.json is required for toolbox evaluation')
         manifest = json.loads(manifest_path.read_text())
+        from ..methods.scale_balanced_sampling import enabled as obs_enabled, checkpoint as obs_checkpoint
+        if obs_enabled(config) and manifest.get('segmentation_checkpoint_sha256') != obs_checkpoint(config)[1]:
+            raise ValueError('OBS prediction segmentation weights differ from the selected checkpoint')
         for key in ('dataset','modules','method','camera','split','workspace','collision_thresh','voxel_size','num_points'):
             if manifest['config'].get(key) != getattr(config,key):
                 raise ValueError(f'Prediction protocol mismatch: {key}')

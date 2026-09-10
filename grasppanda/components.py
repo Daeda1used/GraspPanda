@@ -36,8 +36,13 @@ def slots(method):
         BASELINE_SLOTS[0],
         ComponentSlot('crop', 'grasp_generator', ('upstream', 'native_mscq'),
             'Native MSCQ endpoints: scene XYZ, seed XYZ/features, approach rotations and training labels.',
-            'Native endpoint dictionary; four [B,256,1024,4] branch features feed unchanged scale fusion, seed gate and grasp heads.'),
-        BASELINE_SLOTS[2])
+            'Native endpoint dictionary; four [B,256,M,4] branch features feed unchanged scale fusion, seed gate and grasp heads; M is the selected seed count.'),
+        ComponentSlot('head', 'grasp_generator.operation', BASELINE_SLOTS[2].choices,
+            'Native grouped features [B,256,M,4] at the selected grasp seeds.',
+            'Residual quality logits and native log scores, with unchanged angle and width outputs.'),
+        ComponentSlot('sampling', 'view_estimator', ('upstream', 'object_balanced'),
+            'Independent DSN predictions and interpolated 256-channel features at original point rows; inference only.',
+            'Object-balanced seeds, camera XYZ and original-input indices; default 1024 seeds.'))
     if method == 'economicgrasp': return (
         ComponentSlot('backbone', 'backbone', ('upstream', 'native_tdunet', 'pointnet', 'sonata_ptv3', 'point_transformer_v2','litept','pointcnnpp','pointhr','sp2t','swin3d','pointrwkv_released','flash3d','oacnns','kpconvx','utonia','concerto'),
             'Three constant features and quantized camera XYZ; retain the sparse coordinate map.',
@@ -114,6 +119,10 @@ def configure_model(model,method,selection,voxel_size=.005):
         options = {key:value for key,value in options.items() if key not in SEED_INTERACTION_FIELDS}
         sampling_options = {key: options.pop(key) for key in ('seed_sampling', 'stage_sampling') if key in options}
         if choice=='upstream':continue
+        if method == 'scale_balanced_grasp' and slot.name == 'sampling':
+            from .methods.scale_balanced_sampling import install
+            install(model.view_estimator, options)
+            continue
         if method == 'scale_balanced_grasp' and slot.name == 'crop':
             from .modules.mscq import configure
             changes.extend(configure(model.grasp_generator, options))

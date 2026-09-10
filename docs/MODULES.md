@@ -34,6 +34,7 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 |---|---|---|
 | Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
+| Scale-Balanced-Grasp | `sampling` | `upstream`, `object_balanced`; independent DSN-based inference sampling |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](REFERENCE.md#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
 | Baseline / PointNet2 port / Scale-Balanced-Grasp / Graspness | `head` | `upstream`, `quality_residual`; [quality score mappings and objectives](REFERENCE.md#quality-score-heads) |

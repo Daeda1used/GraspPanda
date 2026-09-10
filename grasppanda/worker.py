@@ -103,6 +103,8 @@ def infer(config, out):
     transfer=load_checkpoint(model,state.get("model_state_dict",state),prefixes,config.checkpoint_policy)
     (out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
     model.cuda().eval()
+    from .methods.scale_balanced_sampling import enabled as obs_enabled, Segmenter
+    segmenter = Segmenter(config) if obs_enabled(config) else None
     if config.method == 'graspfast':
         from grasppanda.methods.graspfast import guard as guard_graspfast
         guard_graspfast(model, module)
@@ -135,6 +137,7 @@ def infer(config, out):
         torch.cuda.synchronize()
         start = time.monotonic()
         with torch.inference_mode():
+            if segmenter is not None: segmenter(inputs)
             predictions = pred_decode(model(inputs))[0].detach().cpu().numpy()
         torch.cuda.synchronize()
         elapsed = time.monotonic() - start
@@ -159,10 +162,14 @@ def infer(config, out):
             record['notice']='The native decoder returned no candidates. Newly initialized components may need substantially more training; inspect input units and checkpoint/composition before judging quality. This is not zero benchmark AP.'
         elif not len(gg):
             record['notice']='Collision filtering removed all candidates. Inspect the preview, input geometry and collision settings; this is not zero benchmark AP.'
+        if segmenter is not None:
+            record['object_sampling'] = inputs['object_sampling'][0]
+            record['segmentation_checkpoint_sha256'] = segmenter.sha256
         records.append(record)
         print(json.dumps(record), flush=True)
     manifest = {'config': config.to_dict(), 'checkpoint_sha256':digest(config.checkpoint),
                 'files':{str(Path(r['prediction']).relative_to('predictions')):r['prediction_sha256'] for r in records}}
+    if segmenter is not None: manifest['segmentation_checkpoint_sha256'] = segmenter.sha256
     (out/'predictions/manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return {"stage": "dataset_inference", "method": config.method, "camera": config.camera,
             "split": config.split, "workspace": config.workspace, "frames": records,
@@ -288,6 +295,9 @@ def main():
     provenance_path = out/'provenance.json'
     if provenance_path.exists():
         provenance = json.loads(provenance_path.read_text())
+        if 'ncm_cache_sha256' in provenance:
+            from .methods.scale_balanced_data import inventory as ncm_inventory
+            if ncm_inventory(config) != provenance['ncm_cache_sha256']: raise ValueError('Clean-scene cache changed while queued')
         if provenance['config_sha256'] != digest(config_path):
             raise ValueError('Queued configuration changed before execution')
         if provenance['runtime_lock_sha256'] != digest(ROOT/'uv.lock'):
@@ -312,6 +322,8 @@ def main():
             raise ValueError('Queued checkpoint changed before execution')
         if provenance.get('model_config_sha256') and digest(Path(config.checkpoint).parent/'model.config.json')!=provenance['model_config_sha256']:
             raise ValueError('Queued model configuration changed before execution')
+        for path, expected in provenance.get('auxiliary_weights', {}).items():
+            if digest(path) != expected: raise ValueError('Auxiliary checkpoint changed while queued')
         for path,expected in provenance.get('recipe_weights',{}).items():
             if digest(ROOT/path)!=expected: raise ValueError('Recipe weight changed while queued; resubmit')
         for path,expected in provenance.get('toolbox_sources', provenance.get('workbench_sources', {})).items():

@@ -231,7 +231,12 @@ def point_family(config, out, steps=3):
     if sparse or economic or fusion:kwargs['voxel_size']=config.voxel_size
     if not sparse and not economic:kwargs['valid_obj_idxs']=list(labels)
     dataset_cls=getattr(dataset_module,'GraspNetDataset_fusion' if fusion else ('GraspPoseDataset' if balance else 'GraspNetDataset'))
+    from grasppanda.methods.scale_balanced_data import enabled as ncm_enabled, inventory as ncm_inventory, NoisyCleanDataset
+    if ncm_enabled(config):
+        evidence['clean_scene_cache'] = ncm_inventory(config)
+        dataset_cls = importlib.import_module('graspnet_wonoise_dataset').GraspNetDataset_mix
     dataset=dataset_cls(**kwargs)
+    if ncm_enabled(config): dataset = NoisyCleanDataset(dataset, config)
     if economic:
         path=root/'economic_grasp_label_300views'/(scene+'_labels.npz')
         dataset.grasp_labels[scene]=str(path);evidence['economic_labels']=digest(path)
@@ -371,6 +376,7 @@ def point_family(config, out, steps=3):
     torch.cuda.synchronize()
     torch.save({'model_state_dict':model.state_dict(),'optimizer_state_dict':optimizer.state_dict(),
                 **({'scheduler_state_dict':schedule.state_dict()} if schedule else {}),
+                **({'ncm_cache_sha256':evidence['clean_scene_cache']} if ncm_enabled(config) else {}),
                 'training_steps':steps,'proposal_warmup_steps':config.proposal_warmup_steps,'epoch':0,'config':config.to_dict()},out/'checkpoint.pt')
     return dict(method=config.method,stage='real_label_training',modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,checkpoint_transfer=transfer,optimizer_steps=len(updates),losses=losses,updates=updates,
         optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,proposal_warmup_steps=config.proposal_warmup_steps,

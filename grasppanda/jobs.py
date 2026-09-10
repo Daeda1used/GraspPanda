@@ -159,6 +159,13 @@ class JobManager:
                       "checkpoint_sha256": digest(config.checkpoint) if config.checkpoint and Path(config.checkpoint).is_file() else None}
         provenance['compatibility_patches'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda/resources/patches').rglob('*.patch')}
         provenance['component_weight_registry_sha256'] = digest(ROOT/'grasppanda/resources/component_weights.json')
+        from .methods.scale_balanced_data import inventory as ncm_inventory
+        ncm_hash = ncm_inventory(config)
+        if ncm_hash is not None: provenance['ncm_cache_sha256'] = ncm_hash
+        from .methods.scale_balanced_sampling import enabled as obs_enabled, checkpoint as obs_checkpoint
+        if obs_enabled(config):
+            path, sha = obs_checkpoint(config)
+            provenance['auxiliary_weights'] = {str(path): sha}
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
         if config.method=='finegrasp' and config.checkpoint:
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')

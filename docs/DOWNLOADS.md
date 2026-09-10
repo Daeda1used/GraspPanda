@@ -264,3 +264,27 @@ MambaVision uses author ImageNet-1K **Safetensors** weights, separate from the g
 Available IDs are `mambavision_tiny`, `mambavision_tiny2`, `mambavision_small`, `mambavision_base`, `mambavision_large` and `mambavision_large2`. Sources, exact revisions, sizes and hashes are registered in `grasppanda/resources/component_weights.json`; files are generated locally under `checkpoints/components/`. The [author repository](https://github.com/NVlabs/MambaVision) links each weight release. Only the selected encoder weights are downloaded.
 
 Source and weights use NVIDIA non-commercial research terms. See [component configuration](REFERENCE.md#mambavision-hybrid-image-hierarchy) for RGB-D fusion, freezing and structural edits. The larger author pickle training archives are not required.
+
+## Scale-Balanced-Grasp clean scenes
+
+NcM training needs CAD-aligned observations in addition to the original grasp, collision and tolerance labels. Download the official `models.zip` and training scenes, then prepare a reusable local cache:
+
+```bash
+./panda prepare-clean-scenes --dataset-root /data/GraspNet-1B \
+  --output-root outputs/prepared/sbg-clean --camera realsense
+./panda weights scale_balanced_grasp --camera realsense
+./panda init --example train-sbg-ncm -o ncm.local.yaml
+```
+
+The command defaults to all training scenes and frames. Add `--workers 4` to prepare frames in parallel in the same environment; the default is one process. Reduce the worker count if CPU memory or storage bandwidth is limited. For a small initial experiment, append `--scenes 0 --frames 0 1` and set `train_batch_limit: 1`, `batch_size: 2` in the training configuration. Set `dataset_root`, `label_root` and checkpoint paths before running. Validation uses ordinary observed frames and needs no clean validation cache.
+
+The generator uses the selected camera's XML poses, a 5 mm CAD voxel grid and an 8 mm agreement threshold against observed workspace depth. `--voxel-size` and `--distance` change these geometric choices in metres. Points and instance IDs are saved with source hashes under the output directory. Camera-specific manifests prevent cross-camera reuse. Existing matching frames are reused; changed or incomplete caches require a new output directory. Cache generation is locked per frame. The dataset is read only. This corrects the fixed Kinect XML selection in the author's generation script.
+
+OBS inference has a separate segmentation checkpoint and needs no clean-scene cache:
+
+```bash
+./panda component-weights scale_balanced_dsn
+./panda init --example infer-sbg-obs -o obs.local.yaml
+```
+
+[Author segmentation checkpoint](https://drive.google.com/file/d/1Fe6RPN9cwEk6SsvGix9huspZf9Qz2yju/view) · [Original implementation](https://github.com/mahaoxiang822/Scale-Balanced-Grasp). The registered checkpoint is for RealSense; it is verified by the component-weight registry. See [sampling and training parameters](REFERENCE.md#scale-balanced-grasp-components).

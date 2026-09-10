@@ -66,6 +66,8 @@ def run(config,out):
     from grasppanda.training.optimization import build_optimizer,UpdateSchedule,NativeScheduleDisabled,native_driver
     implementation_hash=digest(__file__)
     repo=prepare(config.method)
+    from grasppanda.methods.scale_balanced_data import enabled as ncm_enabled, inventory as ncm_inventory, NoisyCleanDataset
+    clean_inventory = ncm_inventory(config)
     economic=config.method=='economicgrasp'
     sparse=config.method=='graspness'
     args=[str(repo/'train.py'),'--dataset_root',config.dataset_root,'--camera',config.camera,
@@ -73,6 +75,7 @@ def run(config,out):
           '--batch_size',str(config.batch_size),'--max_epoch',str(config.epochs),'--learning_rate',str(config.learning_rate)]
     if sparse:args+=['--voxel_size',str(config.voxel_size),'--model_name','grasppanda']
     if economic:args+=['--voxel_size',str(config.voxel_size),'--model','economicgrasp']
+    if ncm_enabled(config): args+=['--NcM']
     if config.checkpoint and config.train_checkpoint_mode=='resume':
         args+=['--checkpoint_path',config.checkpoint]
         if sparse or economic:args+=['--resume']
@@ -86,6 +89,15 @@ def run(config,out):
     for name in dataset_names:
         module=importlib.import_module(name)
         if not economic:module.load_grasp_labels=load_labels
+        if name == 'graspnet_wonoise_dataset' and ncm_enabled(config):
+            ncm_class = module.GraspNetDataset_mix
+            def ncm_dataset(*args, **kwargs):
+                enabled = kwargs.pop('load_label', True)
+                dataset = ncm_class(*args, load_label=False, **kwargs)
+                dataset.load_label = enabled
+                if enabled: dataset.collision_labels = LabelCache(config.dataset_root, 'collision', dataset.sceneIds)
+                return NoisyCleanDataset(dataset, config)
+            module.GraspNetDataset_mix = ncm_dataset
         native=getattr(module,'GraspNetDataset',None)
         if native is None:continue
         def lazy_dataset(*args,_native=native,**kwargs):
@@ -121,7 +133,11 @@ def run(config,out):
             if key not in resume:raise ValueError(f'Resume checkpoint missing {key}; use initialize to load model weights only')
         if int(resume['epoch'])>=config.epochs:raise ValueError('Final epoch must exceed the resume checkpoint epoch')
         previous=resume.get('config')
+        if clean_inventory != resume.get('ncm_cache_sha256'):
+            raise ValueError('Resume clean-scene cache differs; use initialize for a new experiment')
         if previous:
+            if config.method == 'scale_balanced_grasp' and any(previous.get(key, {} if key == 'trainer' else '') != config.to_dict()[key] for key in ('trainer', 'label_root')):
+                raise ValueError('Resume configuration differs at NcM trainer or clean cache root')
             for key in ('dataset','method','modules','camera','num_points','voxel_size','batch_size','train_batch_limit','scene','frame','seed','data_workers','loss','augmentation','optimizer','scheduler','learning_rate'):
                 if previous.get(key,{} if key in ('loss','augmentation','optimizer','scheduler') else None)!=config.to_dict()[key]:raise ValueError(f'Resume configuration differs at {key}; use initialize for a new experiment')
             if config.method=='scale_balanced_grasp' and previous.get('epochs')!=config.epochs:
@@ -228,6 +244,7 @@ def run(config,out):
     def save(value,path,*args,**kwargs):
         if isinstance(value,dict) and 'model_state_dict' in value:
             value=dict(value,config=config.to_dict())
+            if clean_inventory is not None: value['ncm_cache_sha256'] = clean_inventory
             if scheduler is not None:value['scheduler_state_dict']=scheduler.state_dict()
             archive=out/'training/checkpoints'/f"epoch_{int(value['epoch']):04d}.tar"
             archive.parent.mkdir(parents=True,exist_ok=True)
@@ -247,6 +264,7 @@ def run(config,out):
     shutil.copyfile(max(paths,key=lambda path:int(path.stem.removeprefix('epoch_'))),out/'checkpoint.pt')
     if transfer:(out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
     return dict(stage='native_epoch_training',method=config.method,modules=config.modules,augmentation=config.augmentation,loss_config=config.loss,
+        trainer_config=config.trainer,ncm_cache_sha256=clean_inventory,
         optimizer_config=config.optimizer,scheduler_config=config.scheduler,optimizer_class=type(optimizer).__name__,
         implementation_sha256=implementation_hash,
         checkpoint_mode=config.train_checkpoint_mode,resume_state_verified=resume is not None,

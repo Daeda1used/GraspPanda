@@ -33,6 +33,9 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if method == 'scale_balanced_grasp' and slot == 'sampling':
+        from .methods.scale_balanced_sampling import SCHEMA
+        return SCHEMA if choice == 'object_balanced' else {}
     if slot == 'head' and choice == 'quality_residual':
         return {'hidden_channels': ('channels',), 'activation': ('choice', ('relu', 'gelu', 'silu')),
                 'normalization': ('choice', ('batch', 'group', 'none')),
@@ -230,7 +233,9 @@ def validate_options(method, slot, choice, options):
                 raise ValueError('adaptation must be a mapping with type: pointtpa')
             continue
         valid = False
-        if rule[0] == 'flash3d_pooling':
+        if rule[0] == 'checkpoint_path':
+            valid = isinstance(value, str) and bool(value.strip()) and '\x00' not in value
+        elif rule[0] == 'flash3d_pooling':
             values = value if isinstance(value, list) else [value]
             valid = 1 <= len(values) <= 4 and all(isinstance(v, str) and v in ('mean', 'sum', 'min', 'max') for v in values)
         elif rule[0] == 'mscq_branches':

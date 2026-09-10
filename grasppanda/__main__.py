@@ -44,6 +44,8 @@ def main():
     fetch_weights.add_argument("--camera", choices=["realsense","kinect"], default="realsense")
     sdf = commands.add_parser("prepare-sdf", help="Prepare object SDF grids for fusion training")
     sdf.add_argument("arguments", nargs=argparse.REMAINDER)
+    clean = commands.add_parser('prepare-clean-scenes', help='Prepare camera-aligned CAD observations for noisy-clean training')
+    clean.add_argument('arguments', nargs=argparse.REMAINDER)
     graph = commands.add_parser('prepare-gtg2', help='Prepare reusable labelled candidate graphs for ensemble training')
     graph.add_argument('arguments', nargs=argparse.REMAINDER)
     component_weights = commands.add_parser('component-weights', help='Download verified pretrained backbone weights')
@@ -59,8 +61,8 @@ def main():
     sweep.add_argument('config', type=Path)
     sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
     sweep.add_argument('--runs-dir', type=Path)
-    if len(sys.argv) > 1 and sys.argv[1] in ('prepare-sdf', 'prepare-gtg2'):
-        script = {'prepare-sdf': 'prepare_sdf.py', 'prepare-gtg2': 'prepare_gtg2.py'}[sys.argv[1]]
+    if len(sys.argv) > 1 and sys.argv[1] in ('prepare-sdf', 'prepare-gtg2', 'prepare-clean-scenes'):
+        script = {'prepare-sdf': 'prepare_sdf.py', 'prepare-gtg2': 'prepare_gtg2.py', 'prepare-clean-scenes': 'prepare_clean_scenes.py'}[sys.argv[1]]
         raise SystemExit(subprocess.call([sys.executable, str(ROOT / 'grasppanda/runtime' / script), *sys.argv[2:]], cwd=ROOT))
     args = parser.parse_args()
     if args.command == "install":

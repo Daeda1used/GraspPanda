@@ -34,7 +34,50 @@ Each branch retains the four depth bins and 256 output channels. Scale fusion, t
 
 Training accepts loss coefficients and formulations for `graspable`, `view`, `score`, `angle`, `width` and `tolerance`. `graspable` is the author's robust binary target, rather than raw foreground objectness. View and grasp terms retain the scale-distribution prior and weighted denominators. The score term retains its native mask shared across depths; width and tolerance retain their physical normalization. Equivalent CE/MSE/Huber settings preserve the native objective. [Loss parameters](#training-controls), point augmentation, Adam/AdamW/SGD/Lion and update-based schedules are available. Epoch training retains the native optimizer and schedule by default; resume retains the original final-epoch horizon.
 
-The current frame and epoch adapters use the native ordinary point loader and `obs=False`. These component settings do not enable the separate inference segmentation/OBS pipeline or the optional noisy-clean mixing (NcM) dataset. `augmentation.mode: native` retains the ordinary loader's flips and rotations. Custom rigid transforms update object poses; observation perturbations and sampling retain their label correspondence. The loader's `aug_trans` field records inverse rotation; translations are represented in the transformed object poses.
+The default preset retains the ordinary point loader and native seed sampling. The following policies are independent of encoder and MSCQ choices.
+
+### Object-balanced inference sampling
+
+```yaml
+modules:
+  sampling:
+    type: object_balanced
+    seed_count: 1024
+    empty_policy: scene_fps
+```
+
+Prepare the independent segmentation network with `./panda component-weights scale_balanced_dsn`, or expand **Object-balanced sampling inputs** in the browser. Generate `./panda init --example infer-sbg-obs` for the complete experiment. The released DSN checkpoint uses RealSense; Kinect requires a matching checkpoint in `modules.sampling.segmentation_checkpoint`. Custom checkpoints must match the native DSN architecture and load strictly.
+
+The DSN predicts foreground and object centers from the same observed XYZ. Gaussian mean shift forms instances, then native FPS allocates seeds equally across predicted objects; the final object receives the integer remainder. No dataset instance labels enter this selection. Interpolation supplies 256-channel features at the selected original-input indices. All learnable grasp-model keys remain unchanged, so the matching original grasp checkpoint loads strictly. OBS is available for inference/evaluation; training rejects this inference-only policy.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `seed_count` | `1024` | Total grasp seeds, 32–4096; must cover every predicted object |
+| `iterations` | `10` | Mean-shift updates, 1–100 |
+| `epsilon` / `sigma` | `0.05` / `0.02` | Cluster merge radius / Gaussian bandwidth, in metres |
+| `cluster_seeds` | `50` | Mean-shift initialization seeds, 1–200 |
+| `subsample_factor` | `5` | Every Nth foreground center used for mean-shift fitting |
+| `min_cluster_points` | `10` | Minimum retained object size in input points |
+| `foreground_threshold` | `0.5` | Foreground softmax probability threshold |
+| `empty_policy` | `scene_fps` | Use scene-wide FPS if no object survives; `error` stops instead |
+| `segmentation_checkpoint` | registered weights | Optional path to a camera-matched DSN checkpoint |
+
+The adapter handles all-foreground inputs without assuming a background label exists. Tiny or coincident foreground sets cap initialization seeds at the available distinct centers, avoiding uninitialized seeds in the original routine. Empty-scene fallback and per-object allocations are recorded with predictions. Evaluation verifies the segmentation checkpoint hash as well as the grasp configuration.
+
+### Noisy-clean mixed training
+
+```yaml
+trainer:
+  noisy_clean: true
+  clean_probability: 0.25
+label_root: outputs/prepared/sbg-clean
+```
+
+Generate `./panda init --example train-sbg-ncm`, prepare the cache using [Data & weights](DOWNLOADS.md#scale-balanced-grasp-clean-scenes), then select short or epoch training. `clean_probability` ranges from 0 to 1 and selects the CAD-derived source independently for each observed instance, including background, following the author's NcM routine. Each source is sampled first; selected object segments are concatenated and resampled to `num_points`. Missing clean instances contribute no rows, matching the native mixing rule; an entirely empty mixture stops with an input error. Probability 0 uses observed segments, while 1 uses the clean segments for observed instances.
+
+The native NcM loader retains collision masks, visible-grasp filtering and grasp targets for the mixed observations. The extra noisy/clean arrays are diagnostic loader outputs; the author grasp objective does not add a consistency term between them. This remains a single-view inference protocol: CAD geometry and object annotations are used only to prepare training inputs.
+
+Epoch training uses the native NcM flips and rotations by default. `augmentation.mode: native` applies the same transform to mixed, noisy and clean clouds in short training; `mode: none` disables augmentation. Custom rigid transforms update all three clouds and object poses together, and observation sampling preserves mixed-point objectness/instance correspondence. `aug_trans` records inverse rotation; translations remain in transformed poses. Resume verifies the clean-cache inventory, mixing settings and original final-epoch horizon. Prepared caches are checked against their source frame and CAD files and are never downloaded with the toolbox.
 
 </details>
 

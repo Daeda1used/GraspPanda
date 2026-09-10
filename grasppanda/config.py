@@ -110,6 +110,8 @@ class Experiment:
         if self.method != 'spgrasp':
             if self.method == 'gtg2':
                 from grasppanda.methods.gtg2_options import validate_config as validate_trainer
+            elif self.method == 'scale_balanced_grasp':
+                from grasppanda.methods.scale_balanced_data import validate as validate_trainer
             else:
                 from grasppanda.methods.hggd_options import validate as validate_trainer
             validate_trainer(self)
@@ -189,6 +191,8 @@ class Experiment:
         validate_kpconvx_config(self)
         from .methods.spgrasp_options import validate as validate_planar
         validate_planar(self)
+        from .methods.scale_balanced_sampling import validate as validate_obs
+        validate_obs(self)
         return self
 
     def preflight(self):
@@ -201,6 +205,11 @@ class Experiment:
             if value:
                 paths[name] = os.path.abspath(ROOT / Path(value).expanduser())
         config = replace(self, **paths)
+        from .methods.scale_balanced_sampling import enabled as obs_enabled, checkpoint as obs_checkpoint
+        if obs_enabled(config): obs_checkpoint(config)
+        if config.method == 'scale_balanced_grasp':
+            from .methods.scale_balanced_data import inventory
+            inventory(config)
         repo = ROOT / catalogue()[self.method]["path"]
         if not (repo / ".git").exists():
             raise ValueError("Source missing: run ./panda fetch")

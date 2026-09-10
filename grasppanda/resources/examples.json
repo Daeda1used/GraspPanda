@@ -2251,5 +2251,44 @@
         }
       }
     }
+  },
+  "infer-sbg-obs": {
+    "description": "Predict with independent DSN segmentation and object-balanced grasp seeds",
+    "config": {
+      "method": "scale_balanced_grasp",
+      "dataset_root": "/data/GraspNet-1B",
+      "checkpoint": "checkpoints/scale_balanced_grasp/checkpoint-rs.tar",
+      "camera": "realsense",
+      "num_points": 20000,
+      "action": "infer",
+      "modules": {
+        "sampling": {
+          "type": "object_balanced",
+          "seed_count": 1024,
+          "empty_policy": "scene_fps"
+        }
+      }
+    }
+  },
+  "train-sbg-ncm": {
+    "description": "Train Scale-Balanced-Grasp using camera-aligned noisy-clean mixed observations",
+    "config": {
+      "method": "scale_balanced_grasp",
+      "dataset_root": "/data/GraspNet-1B",
+      "checkpoint": "checkpoints/scale_balanced_grasp/checkpoint-rs.tar",
+      "camera": "realsense",
+      "num_points": 20000,
+      "action": "train",
+      "split": "train",
+      "scene": 0,
+      "epochs": 2,
+      "batch_size": 2,
+      "label_root": "outputs/prepared/sbg-clean",
+      "trainer": {
+        "noisy_clean": true,
+        "clean_probability": 0.25
+      },
+      "timeout_minutes": 43200
+    }
   }
 }
