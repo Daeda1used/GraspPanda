@@ -12,6 +12,23 @@
 !/pyproject.toml
 !/uv.lock
 
+# Keep drafts and local notes out of the published guides and automation.
+/docs/*
+!/docs/DOWNLOADS.md
+!/docs/EXTENDING.md
+!/docs/GTG2.md
+!/docs/INSTALL.md
+!/docs/METHODS.md
+!/docs/MODULES.md
+!/docs/THIRD_PARTY.md
+!/docs/USAGE.md
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/ci.yml
+/grasppanda/**/*.md
+/grasppanda/**/.*
+
 # The dataset entry contains guides and templates, never local dataset contents.
 /GraspNet-1B/*
 !/GraspNet-1B/README.md
@@ -38,10 +55,6 @@
 **/recordings/
 **/tmp/
 **/temp/
-**/AGENTS.md
-**/CLAUDE.md
-**/.codex/
-**/.claude/
 **/*handoff*
 **/*progress*.json
 **/*report*.json

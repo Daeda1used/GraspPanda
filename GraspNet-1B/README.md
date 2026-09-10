@@ -12,7 +12,7 @@ Use `--method` for an original method preset, or choose a composition, training 
 ./panda init --example train-hggd -o training.local.yaml
 ```
 
-Run commands from the repository root after [installation](../docs/INSTALL.md). Each template contains the relevant settings; omitted fields use shared defaults. Generation does not require data, weights or a GPU and never overwrites an existing file. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters; [operating instructions](../docs/USAGE.md) cover training, resume and evaluation. Generated `*.local.yaml` files stay local.
+Run commands from the repository root after [installation](../docs/INSTALL.md). Each template contains the relevant settings; omitted fields use shared defaults. Generation does not access data, weights or the GPU and never overwrites an existing file. Set your local paths, prepare the method's labels for training, and use `./panda run FILE` (or `./panda sweep FILE` for a sweep). The [module guide](../docs/MODULES.md) explains compatible replacements and parameters; [operating instructions](../docs/USAGE.md) cover training, resume and evaluation. Generated `*.local.yaml` files stay local.
 
 ## Observation protocols
 
