@@ -138,9 +138,9 @@ def validate_config(config):
     from grasppanda.module_options import unpack
     _, options = unpack(config.modules['backbone'])
     validate_points(resolve(options), config.num_points)
-    if config.action in ('train', 'train_check', 'train_smoke') and config.batch_size < 2:
+    if config.action in ('train', 'train_short') and config.batch_size < 2:
         raise ValueError('PCM training requires batch_size >= 2 for its native global-context BatchNorm; inference supports batch 1')
-    if config.action in ('train_check', 'train_smoke') and config.frame + config.batch_size > 256:
+    if config.action == 'train_short' and config.frame + config.batch_size > 256:
         raise ValueError('PCM short training uses consecutive frames within one scene; choose an earlier first frame')
     if config.action == 'train' and config.train_batch_limit and config.scene * 256 + config.frame + config.batch_size > 25600:
         raise ValueError('PCM bounded training must include at least one full batch within the training split')

@@ -781,7 +781,7 @@ Image pretraining does not train the new grasp feature projections. Run grasp tr
 
 ## Training controls
 
-Baseline, its PointNet2 port, Graspness, FineGrasp and EconomicGrasp accept `loss` and `augmentation` overrides in supported `train_check` or `train` actions. HGGD exposes these controls in `train_check` and `train`; RNG supports `train_check`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](USAGE.md#configuration-examples) (`./panda init --example train-controls`).
+Baseline, its PointNet2 port, Graspness, FineGrasp and EconomicGrasp accept `loss` and `augmentation` overrides in supported `train_short` or `train` actions. HGGD exposes these controls in `train_short` and `train`; RNG supports `train_short`; see [RGB-D training controls](#rgb-d-training-controls). Other methods retain their own supervision contracts. Start with [`train-controls`](USAGE.md#configuration-examples) (`./panda init --example train-controls`).
 
 In the browser, expand **Training settings → Choose loss formulations**, select classification and regression families, then **Apply loss choices**. This writes the per-term formulations into **Loss configuration**, preserving your coefficients. Edit each term there to use different parameters. The configuration editor and sweeps use the same schema.
 
@@ -1096,13 +1096,13 @@ Selecting a different encoder and silently accepting all missing keys would conc
 
 ## Seed-prediction warmup
 
-These methods choose graspable seeds from predicted foreground and graspness. A newly initialized backbone can produce an empty candidate set. For `action: train_check`, set `proposal_warmup_steps` to first optimize the native foreground and graspness objectives, then perform `training_steps` complete grasp updates. The UI exposes **Proposal warmup updates** under training settings; `0` retains the normal path.
+These methods choose graspable seeds from predicted foreground and graspness. A newly initialized backbone can produce an empty candidate set. For `action: train_short`, set `proposal_warmup_steps` to first optimize the native foreground and graspness objectives, then perform `training_steps` complete grasp updates. The UI exposes **Proposal warmup updates** under training settings; `0` retains the normal path.
 
 Warmup uses the same optimizer, augmentation, seed-loss formulations and coefficients. Candidate-dependent heads are inactive during warmup. Full training uses predicted seeds and the unchanged native threshold; an empty set still stops the run. Schedules count both phases. The transition to all grasp objectives can require a lower learning rate, for example:
 
 ```yaml
 method: economicgrasp
-action: train_check
+action: train_short
 proposal_warmup_steps: 300
 training_steps: 20
 learning_rate: 0.001

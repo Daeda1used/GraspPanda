@@ -3,7 +3,7 @@
     "description": "Train residual grasp-quality logits with the DEIM-style MAL objective",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -40,7 +40,7 @@
     "description": "Configure classification calibration and clipped objectives per grasp head",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -72,7 +72,7 @@
     "description": "Train PointTPA branches inside a frozen pretrained Concerto encoder",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -110,7 +110,7 @@
     "description": "Fine-tune pretrained Concerto point features with native Baseline grasp heads",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -146,7 +146,7 @@
     "description": "Compose Scale-Balanced-Grasp encoders and individual MSCQ branches",
     "config": {
       "method": "scale_balanced_grasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/scale_balanced_grasp/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -218,7 +218,7 @@
     "description": "Compose mode-specific seed and hierarchy sampling",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -264,7 +264,7 @@
     "description": "Train with density-weighted observation sampling",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -488,7 +488,7 @@
     "description": "Train a different encoder and cylindrical grouping",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -507,7 +507,7 @@
     "description": "Configure an HGGD encoder, optimizer, individual losses and aligned RGB-D augmentation",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
       "camera": "realsense",
@@ -576,7 +576,7 @@
     "config": {
       "base": {
         "method": "graspnet_baseline",
-        "action": "train_check",
+        "action": "train_short",
         "dataset_root": "/data/GraspNet-1B",
         "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
         "camera": "realsense",
@@ -637,7 +637,7 @@
     "description": "Adapt DINOv2/DINOv3 and choose frozen or trainable encoder blocks",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
       "camera": "realsense",
@@ -673,7 +673,7 @@
     "description": "Configure an octree hierarchy, attention windows and stage ablations",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/path/to/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -739,7 +739,7 @@
     "description": "Configure point hierarchy stages, local windows, scan orders and native dense decoding",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -873,7 +873,7 @@
     "description": "Configure native state-space tokens, Hilbert ordering and grasp seed interpolation",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -919,7 +919,7 @@
     "description": "Configure feature updates, explicit position encoding and local aggregation",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -968,7 +968,7 @@
     "description": "Compose native vector aggregation features with oriented cylindrical grouping",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -1011,7 +1011,7 @@
     "description": "Configure native PTv3 stages, attention windows and optimization",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -1094,7 +1094,7 @@
     "description": "Configure native ResLFE layers inside oriented cylinders",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -1127,7 +1127,7 @@
     "description": "Configure VMamba stages, state size and scan directions",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
       "camera": "realsense",
@@ -1176,7 +1176,7 @@
     "description": "Add distance-biased seed attention while retaining EconomicGrasp grouping and decoder",
     "config": {
       "method": "economicgrasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/economicgrasp/checkpoint-kinect.tar",
       "camera": "kinect",
@@ -1201,7 +1201,7 @@
     "description": "Configure EconomicGrasp sparse stages, cylinder attention and labelled training controls",
     "config": {
       "method": "economicgrasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/economicgrasp/checkpoint-kinect.tar",
       "camera": "kinect",
@@ -1276,7 +1276,7 @@
     "description": "Compose per-task feature branches and per-layer attention in the EconomicGrasp head",
     "config": {
       "method": "economicgrasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/economicgrasp/checkpoint-kinect.tar",
       "camera": "kinect",
@@ -1315,7 +1315,7 @@
     "description": "Compose original PTv2 grouped attention and metric grid pooling with GraspNet supervision",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "camera": "realsense",
@@ -1395,7 +1395,7 @@
     "description": "Compose LitePT stage-wise convolution and rotary attention with a grasp detector",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1468,7 +1468,7 @@
     "description": "Compose OA-CNNs adaptive sparse stages with a grasp detector",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1539,7 +1539,7 @@
     "description": "Compose kernel point attention with a grasp detector",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1587,7 +1587,7 @@
     "description": "Compare kernel point aggregation inside native grasp cylinders",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1638,7 +1638,7 @@
     "description": "Train a prompted RGB sequence with configurable Hiera and temporal memory",
     "config": {
       "method": "spgrasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/spgrasp/sam2.1_hiera_base_plus.pt",
       "camera": "realsense",
@@ -1669,7 +1669,7 @@
     "description": "Initialize native Flash3D features and train the Graspness detector",
     "config": {
       "method": "graspness",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspness/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1688,7 +1688,7 @@
     "description": "Train EconomicGrasp with Flash3D and a scheduled seed-to-grasp transition",
     "config": {
       "method": "economicgrasp",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/economicgrasp/checkpoint-kinect.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1714,7 +1714,7 @@
     "description": "Train native PointCNN++ with configurable encoder and decoder stages",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/graspnet_baseline/checkpoint-rs.tar",
       "checkpoint_policy": "reuse_unchanged",
@@ -1759,7 +1759,7 @@
     "description": "RALA image hierarchy with per-block attention in HGGD",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -1806,7 +1806,7 @@
     "description": "PointHR multi-resolution point features with a configurable decoder",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -1853,7 +1853,7 @@
     "description": "Released-code PointRWKV recurrence and local graph with configurable stages",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "camera": "realsense",
       "split": "train",
       "scene": 0,
@@ -1967,7 +1967,7 @@
     "description": "Swin3D sparse windows with configurable encoder and decoder stages",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -2054,7 +2054,7 @@
     "description": "SP2T spatial proxies with stage and block controls",
     "config": {
       "method": "graspnet_baseline",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -2136,7 +2136,7 @@
     "description": "Train HGGD with pretrained MambaVision RGB features and depth fusion",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -2159,7 +2159,7 @@
     "description": "Compose convolutional, Mamba and attention stages for HGGD",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "camera": "realsense",
       "split": "train",
@@ -2219,7 +2219,7 @@
     "description": "Train HGGD with aligned PRIME smooth-color and random-filter augmentation",
     "config": {
       "method": "hggd",
-      "action": "train_check",
+      "action": "train_short",
       "dataset_root": "/data/GraspNet-1B",
       "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
       "camera": "realsense",

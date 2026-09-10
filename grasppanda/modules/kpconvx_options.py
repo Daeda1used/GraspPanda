@@ -63,9 +63,9 @@ def validate_config(config):
     from ..module_options import unpack
     choice,options=unpack(config.modules.get('backbone','upstream'))
     if choice!='kpconvx': return
-    if config.action in ('train','train_check','train_smoke') and config.batch_size<2:
+    if config.action in ('train','train_short') and config.batch_size<2:
         raise ValueError('KPConvX training requires batch_size >= 2 for coarse native batch normalization')
-    if config.action in ('train_check','train_smoke') and config.frame+config.batch_size>256:
+    if config.action == 'train_short' and config.frame+config.batch_size>256:
         raise ValueError('KPConvX short training requires consecutive frames within one scene')
     if config.action=='train' and config.train_batch_limit and config.scene*256+config.frame+config.batch_size>25600:
         raise ValueError('KPConvX bounded training requires a full batch within the training split')

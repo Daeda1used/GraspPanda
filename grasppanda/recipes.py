@@ -4,15 +4,15 @@ from .config import ROOT
 
 # Fixed recipes are intentionally distinct from configurable frame adapters.
 RECIPES = {
- 'generalizing_grasp': ('realsense','First test fused scene → MSCQ checkpoint → decoder. Requires fusion_scenes and upstream segmentation; excludes C-SJO.'),
+ 'generalizing_grasp': ('realsense','Fused scene 0100 → MSCQ checkpoint → decoder. Requires fusion_scenes and upstream segmentation; excludes C-SJO.'),
  'contact_graspnet_g1b': ('realsense','Scene 0100/0000 → native GT bounding box → checkpoint → decoder → collision.'),
  'rngnet_sdk': ('realsense','Scene 0100/0000 RGB-D → bundled author weights → native SDK inference.'),
  'zerograsp': ('realsense','Author supplied RGB-D + instance masks → synthetic-trained checkpoint → reconstruction → grasps. Not a GraspNet frame.'),
  'gfla': ('realsense','Scene 0100/0000 → FastSAM + learned SDF → analytic force closure → collision/NMS. Requires dataset table pose.'),
  'active_ngf': ('realsense','Scene 0100 → two mapped views, 150/50 optimization iterations, next-view selection and mesh. Not the complete active-view benchmark.'),
  'centergrasp': ('kinect','Scene 0100/0000 → native crop → RGB/SGDF checkpoints → ICP → FCL collision → grasp conversion.'),
- 'motiongrasp': ('realsense','First three test frames → baseline checkpoint → MotionTracker checkpoint → trajectories. All detector candidates; no GT-ranked query or tracking metric.'),
- 'graspness_modern': ('realsense','Scene 0100/0000 → pretrained ResUNet14 with spconv → decoder. Other backbones are not validated by this recipe.'),
+ 'motiongrasp': ('realsense','Scene 0100, frames 0000–0002 → baseline checkpoint → MotionTracker checkpoint → trajectories. All detector candidates; no GT-ranked query or tracking metric.'),
+ 'graspness_modern': ('realsense','Scene 0100/0000 → pretrained ResUNet14 with spconv → decoder. This recipe uses the fixed ResUNet14 architecture.'),
  'rgb_matters': ('realsense','Scene 0100/0000 RGB + locally generated normals → checkpoint → native decoding/collision/NMS.'),
  'asgrasp': ('realsense','Author RGB + left/right IR sample → RAFT stereo + GSNet checkpoints → top grasp. Standard GraspNet RGB-D alone does not supply these inputs.'),
  'dreds': ('realsense','Scene 0100/0000 → pretrained SwinDRNet depth restoration. Auxiliary network, not a grasp detector.'),
@@ -27,7 +27,7 @@ def preset(method, dataset_root=''):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
     if method == 'spgrasp':
-        return Experiment(method=method, action='train_check', dataset_root=dataset_root, split='train', scene=0,
+        return Experiment(method=method, action='train_short', dataset_root=dataset_root, split='train', scene=0,
             frames=8, batch_size=1, learning_rate=5e-6, workspace='native_demo', collision_thresh=0,
             checkpoint=primary(method, 'realsense') or 'checkpoints/spgrasp/sam2.1_hiera_base_plus.pt')
     if method == 'gtg2':
@@ -35,7 +35,7 @@ def preset(method, dataset_root=''):
             label_root='outputs/prepared/gtg2', epochs=500, batch_size=128, learning_rate=.01, timeout_minutes=43200)
     if method in RECIPES and 'infer' not in capabilities(method):
         camera=RECIPES[method][0]
-        return Experiment(method=method,action='pipeline_smoke',dataset_root=dataset_root,camera=camera,timeout_minutes=15)
+        return Experiment(method=method,action='recipe',dataset_root=dataset_root,camera=camera,timeout_minutes=15)
     cameras=[r['camera'] for r in records(method,'realsense')]
     camera='realsense' if cameras else ('kinect' if records(method,'kinect') else 'realsense')
     if 'infer' not in capabilities(method):
@@ -57,9 +57,9 @@ def preflight(config):
         if config.checkpoint_policy!='strict':raise ValueError('Fixed recipes require strict checkpoint loading')
     for name in ('scene','frame','frames','num_points','seed','split','workspace','collision_thresh','voxel_size','batch_size','epochs','learning_rate','prediction_dir'):
         if getattr(config,name)!=getattr(defaults,name):
-            raise ValueError(f'Fixed recipe does not accept {name}; apply the tested preset. Use infer for configurable frames.')
+            raise ValueError(f'Fixed recipe does not accept {name}; load the method preset. Use infer for configurable frames.')
     if config.camera != RECIPES[config.method][0]:
-        raise ValueError('This fixed recipe uses '+RECIPES[config.method][0]+'; apply the tested preset.')
+        raise ValueError('This fixed recipe uses '+RECIPES[config.method][0]+'; load the method preset.')
     if config.method not in NO_DATA and not (Path(config.dataset_root)/'scenes/scene_0100'/config.camera/'depth/0000.png').is_file():
         raise ValueError('Recipe needs GraspNet scene_0100. Select a dataset root containing scenes/.')
     if config.method not in NO_WEIGHTS:

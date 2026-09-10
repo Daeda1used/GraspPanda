@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ("graspness", "graspnet_baseline", "scale_balanced_grasp", "fgc_graspnet")
 TRAIN = (*CORE[:3], 'finegrasp')
-TRAIN_CHECK = (*CORE, 'finegrasp', 'hggd', 'economicgrasp', 'dograspnet', 'pointnet2_upgrade', 'region_normalized_grasp','graspness_modern','generalizing_grasp','graspbalance','contact_graspnet_g1b','granet','rgb_matters','centergrasp','gfla','motiongrasp','spahybgen','graspfast')
+TRAIN_SHORT = (*CORE, 'finegrasp', 'hggd', 'economicgrasp', 'dograspnet', 'pointnet2_upgrade', 'region_normalized_grasp','graspness_modern','generalizing_grasp','graspbalance','contact_graspnet_g1b','granet','rgb_matters','centergrasp','gfla','motiongrasp','spahybgen','graspfast')
 HEATMAP = ('hggd', 'region_normalized_grasp')
 NATIVE_POINTS = ('economicgrasp', 'dograspnet')
 SPLITS = {"train": (0, 100), "test_seen": (100, 130), "test_similar": (130, 160), "test_novel": (160, 190)}
@@ -23,20 +23,20 @@ def capabilities(method):
         return []
     actions = []
     if method == 'gtg2': return ['infer', 'evaluate', 'train']
-    if method == 'spgrasp': return ['infer', 'train_check']
+    if method == 'spgrasp': return ['infer', 'train_short']
     if method in CORE:
         actions += ["infer", "evaluate"]
     if method in (*HEATMAP,'finegrasp'):
         actions += ['infer', 'evaluate']
     if method in NATIVE_POINTS or method in ('pointnet2_upgrade','graspfast','graspbalance','granet','graspness_modern'):
         actions += ['infer', 'evaluate']
-    if method in TRAIN_CHECK:
-        actions += ["train_check"]
+    if method in TRAIN_SHORT:
+        actions += ["train_short"]
     if method in TRAIN:
-        actions += ["train_smoke", "train"]
+        actions += ["train"]
     if method in ('hggd','economicgrasp'): actions += ['train']
     from .recipes import RECIPES
-    if method in RECIPES: actions += ["pipeline_smoke"]
+    if method in RECIPES: actions += ["recipe"]
     return actions
 
 
@@ -81,6 +81,15 @@ class Experiment:
     gpu: int = 0
     timeout_minutes: int = 60
 
+    def __post_init__(self):
+        # Accept older saved configurations while emitting only the current API.
+        aliases = {'pipeline_smoke': 'recipe', 'train_check': 'train_short',
+                   'train_smoke': 'train_short'}
+        if self.action == 'train_smoke':
+            object.__setattr__(self, 'training_steps', 1)
+        if self.action in aliases:
+            object.__setattr__(self, 'action', aliases[self.action])
+
     @classmethod
     def from_dict(cls, data):
         if not isinstance(data, dict):
@@ -96,7 +105,7 @@ class Experiment:
         if type(self.proposal_warmup_steps) is not int or not 0 <= self.proposal_warmup_steps <= 10000:
             raise ValueError('proposal_warmup_steps must be an integer in [0, 10000]')
         from .methods.seed_warmup import SEED_METHODS
-        if self.proposal_warmup_steps and (self.method not in ('region_normalized_grasp', *SEED_METHODS) or self.action != 'train_check'):
+        if self.proposal_warmup_steps and (self.method not in ('region_normalized_grasp', *SEED_METHODS) or self.action != 'train_short'):
             raise ValueError('Proposal warmup requires RNG, EconomicGrasp, Graspness or FineGrasp short training')
         from grasppanda.training.optimization import validate as validate_optimization
         validate_optimization(self)
@@ -121,7 +130,7 @@ class Experiment:
         validate_selection(self.method,self.modules,self.checkpoint_policy)
         if self.dataset not in catalogue().get(self.method,{}).get('datasets',['graspnet1b']):
             raise ValueError('This method has no adapter for the selected dataset')
-        if self.modules and self.action not in ('infer','evaluate','train_smoke','train_check','train'):
+        if self.modules and self.action not in ('infer','evaluate','train_short','train'):
             raise ValueError('Component overrides require an inference or training action')
         if self.train_checkpoint_mode not in ('initialize','resume'):
             raise ValueError('train_checkpoint_mode must be initialize or resume')
@@ -164,19 +173,19 @@ class Experiment:
             low, high = spec.splits[self.split]
             if not low <= self.scene < high or self.scene * spec.frames_per_scene + self.frame + self.frames > high * spec.frames_per_scene:
                 raise ValueError("Requested frame range crosses the selected split")
-        if self.action in ("train", "train_smoke", "train_check") and self.split != "train":
+        if self.action in ("train", "train_short") and self.split != "train":
             raise ValueError("Training requires split: train")
-        if self.action in ('train','train_smoke'):
+        if self.action == 'train':
             expected = 'native_demo' if self.method == 'hggd' else 'official_gt_workspace'
             if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
-        if self.action=='train_check':
-            if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp checks support 1–6 temporal updates per native seven-frame sequence')
+        if self.action=='train_short':
+            if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp short training supports 1–6 temporal updates per native seven-frame sequence')
             if self.method=='centergrasp' and self.camera!='kinect':raise ValueError('The native CenterGrasp training adapter requires camera: kinect')
             expected='native_demo' if self.method in (*HEATMAP,'spgrasp') else ('fused_gt_workspace' if self.method=='generalizing_grasp' else 'official_gt_workspace')
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
-            if self.workspace!=expected:raise ValueError(f'This training check requires workspace: {expected}')
-        if self.action in ('train_smoke','train_check') and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
-            raise ValueError('Training checks require a scene in the training split')
+            if self.workspace!=expected:raise ValueError(f'This training operation requires workspace: {expected}')
+        if self.action == 'train_short' and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
+            raise ValueError('Short training requires a scene in the training split')
         if self.action=='train' and self.train_batch_limit and not spec.splits['train'][0] <= self.scene < spec.splits['train'][1]:
             raise ValueError('Bounded native training requires a scene in the training split')
         from grasppanda.modules.pcm_options import validate_config as validate_pcm_config

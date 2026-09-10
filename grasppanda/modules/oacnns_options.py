@@ -36,9 +36,9 @@ def selected(config):
 
 def validate_config(config):
     if not selected(config): return
-    if config.action in ('train', 'train_check', 'train_smoke') and config.batch_size < 2:
+    if config.action in ('train', 'train_short') and config.batch_size < 2:
         raise ValueError('OA-CNNs training requires batch_size >= 2 for native batch normalization after coarse pooling')
-    if config.action in ('train_check', 'train_smoke') and config.frame+config.batch_size > 256:
+    if config.action == 'train_short' and config.frame+config.batch_size > 256:
         raise ValueError('OA-CNNs short training uses consecutive frames within one scene; choose an earlier first frame')
     if config.action == 'train' and config.train_batch_limit and config.scene*256+config.frame+config.batch_size > 25600:
         raise ValueError('OA-CNNs bounded training requires at least one full batch within the training split')

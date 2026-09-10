@@ -26,8 +26,8 @@ CSS = """.gradio-container {max-width: 1480px !important;}
 
 ACTION_LABELS = {
     'infer': 'Predict grasps', 'evaluate': 'Evaluate predictions',
-    'pipeline_smoke': 'Run native recipe', 'train': 'Train across epochs',
-    'train_check': 'Short training run',
+    'recipe': 'Run native recipe', 'train': 'Train across epochs',
+    'train_short': 'Short training run',
 }
 
 
@@ -174,7 +174,7 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
 
 def prime_preset(method, action, policy, current):
     try:
-        if method not in ('hggd', 'region_normalized_grasp') or action not in ('train', 'train_check'):
+        if method not in ('hggd', 'region_normalized_grasp') or action not in ('train', 'train_short'):
             raise ValueError('PRIME photometric augmentation requires HGGD or RNG training')
         options = json.loads(current or '{}')
         if not isinstance(options, dict): raise ValueError('Augmentation configuration must be a mapping')
@@ -257,7 +257,7 @@ def loss_preset(method, classification, regression, current, head='upstream', qu
                 raise ValueError('Choose a registered quality formulation for a compatible method')
             value['functions']['score'] = quality
         from grasppanda.training.options import validate_training_options
-        validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_check',
+        validate_training_options(Experiment(method=method, action='train' if method == 'gtg2' else 'train_short',
             loss=value, modules={'head': head} if head != 'upstream' else {}))
     except (ValueError, TypeError) as error:
         raise gr.Error(str(error)) from error
@@ -265,7 +265,7 @@ def loss_preset(method, classification, regression, current, head='upstream', qu
 
 
 def sampling_preset(method, action, kind, minimum, maximum, current):
-    if method not in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'economicgrasp', 'finegrasp') or action not in ('train', 'train_check'):
+    if method not in ('graspnet_baseline', 'pointnet2_upgrade', 'scale_balanced_grasp', 'graspness', 'economicgrasp', 'finegrasp') or action not in ('train', 'train_short'):
         raise gr.Error('Observation sampling requires a registered point training operation.')
     try:
         value = json.loads(current or '{}')
@@ -437,7 +437,7 @@ def create_app(manager=None):
             if kind=='upstream' and options:raise gr.Error(f'Select a custom {name} before setting its parameters')
         optimizer={'type':optimizer_kind,**optimizer} if optimizer_kind!='upstream' else {}
         scheduler={'type':scheduler_kind,**scheduler} if scheduler_kind!='upstream' else {}
-        if action == 'pipeline_smoke':
+        if action == 'recipe':
             if parameters or loss or augmentation or optimizer or scheduler or trainer or proposal_warmup_steps or backbone!='upstream' or crop!='upstream' or head!='upstream' or memory!='upstream' or sampling!='upstream' or prompts or planar:
                 raise gr.Error('The native recipe uses fixed components and settings. Load its preset to reset overrides.')
             from dataclasses import replace
@@ -544,7 +544,7 @@ def create_app(manager=None):
         if 'infer' not in capabilities(method):
             config=replace(preset(method,row['config']['dataset_root']),checkpoint=str(path),gpu=row['config']['gpu'])
         config.validate()
-        note='The fixed native input recipe is retained.' if config.action=='pipeline_smoke' else 'Review the selected test frame.'
+        note='The fixed native input recipe is retained.' if config.action=='recipe' else 'Review the selected test frame.'
         if method=='spgrasp': note='Set first-frame prompts in the generated JSON before running; use the Planar sequence panel to inspect your selected frame and create prompts.'
         return json.dumps(config.to_dict(),indent=2), 'Inference JSON prepared in Experiments. '+note+' Click Run edited JSON.'
 
@@ -581,7 +581,7 @@ def create_app(manager=None):
         return rows
 
     with gr.Blocks(title="GraspPanda · Modular visual grasping") as app:
-        gr.HTML('<div id="panda-hero"><h1>🐼 GraspPanda</h1><p>Compose. Experiment. Grasp. · One runtime. Reproducible research.</p></div>')
+        gr.HTML('<div id="panda-hero"><h1>🐼 GraspPanda</h1><p>Visual grasping experiments, from method presets to custom components.</p></div>')
         with gr.Tab("Experiments"):
             with gr.Row():
                 with gr.Column(scale=4):
@@ -751,23 +751,22 @@ def create_app(manager=None):
 
 For component experiments, expand **Compose modules**. Full configuration editing is under **Configuration editor**.
 """)
-            with gr.Accordion("Installation, data and operating instructions", open=False) as guides:
-                with gr.Tabs():
-                    for title, filename in (('Install', 'INSTALL.md'), ('Downloads', 'DOWNLOADS.md'),
-                                            ('Usage', 'USAGE.md'), ('Modules', 'MODULES.md'),
-                                            ('Methods & papers', 'METHODS.md')):
-                        with gr.Tab(title) as guide_tab:
-                            guide_text = gr.Markdown()
-                            guide_tab.select(partial(documentation, filename), outputs=guide_text,
+            with gr.Tabs():
+                for title, filename in (('Install', 'INSTALL.md'), ('Downloads', 'DOWNLOADS.md'),
+                                        ('Usage', 'USAGE.md'), ('Modules', 'MODULES.md'),
+                                        ('Methods & papers', 'METHODS.md')):
+                    with gr.Tab(title) as guide_tab:
+                        guide_text = gr.Markdown()
+                        guide_tab.select(partial(documentation, filename), outputs=guide_text,
+                                         api_name=False, queue=False)
+                        if title == 'Install':
+                            app.load(partial(documentation, filename), outputs=guide_text,
+                                          api_name=False, queue=False)
+                        if title == 'Modules':
+                            with gr.Accordion('Detailed component and training reference', open=False) as reference:
+                                reference_text = gr.Markdown()
+                            reference.expand(partial(documentation, 'REFERENCE.md'), outputs=reference_text,
                                              api_name=False, queue=False)
-                            if title == 'Install':
-                                guides.expand(partial(documentation, filename), outputs=guide_text,
-                                              api_name=False, queue=False)
-                            if title == 'Modules':
-                                with gr.Accordion('Detailed component and training reference', open=False) as reference:
-                                    reference_text = gr.Markdown()
-                                reference.expand(partial(documentation, 'REFERENCE.md'), outputs=reference_text,
-                                                 api_name=False, queue=False)
             with gr.Accordion("Check data and GPU", open=False):
                 setup_root=gr.Textbox(default_dataset(),label='Dataset root')
                 setup_button=gr.Button('Check data & GPU')
@@ -791,21 +790,21 @@ For component experiments, expand **Compose modules**. Full configuration editin
         apply_loss.click(loss_preset,[method,classification_loss,regression_loss,loss_options,head,quality_loss],loss_options,api_name='apply_loss_choices')
         def quality_controls(method, action, head):
             from .training.quality import METHODS
-            return gr.update(value='upstream',visible=method in METHODS and action in ('train','train_check') and head=='quality_residual')
+            return gr.update(value='upstream',visible=method in METHODS and action in ('train','train_short') and head=='quality_residual')
         gr.on([method.change,action.change,head.change],quality_controls,[method,action,head],quality_loss,api_name=False,preprocess=False,queue=False,trigger_mode='always_last')
         apply_sampling.click(sampling_preset,[method,action,sampling_rule,sampling_min,sampling_max,augmentation_options],augmentation_options,api_name='apply_sampling_choices')
         apply_prime.click(prime_preset,[method,action,prime_policy,augmentation_options],augmentation_options,api_name='apply_photometric_policy')
         gr.on([method.change,action.change],
-              lambda m,a: gr.update(visible=m in ('hggd','region_normalized_grasp') and a in ('train','train_check')),
+              lambda m,a: gr.update(visible=m in ('hggd','region_normalized_grasp') and a in ('train','train_short')),
               [method,action],prime_panel,api_name=False,preprocess=False)
         for selector in (method, action):
-            selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','scale_balanced_grasp','graspness','economicgrasp','finegrasp') and a in ('train','train_check')),
+            selector.change(lambda m,a: gr.update(visible=m in ('graspnet_baseline','pointnet2_upgrade','scale_balanced_grasp','graspness','economicgrasp','finegrasp') and a in ('train','train_short')),
                 [method,action],sampling_panel,api_name=False,preprocess=False)
         method.change(loss_parameters,method,loss_help,api_name='loss_parameters', preprocess=False)
         def loss_controls(method, action):
             from grasppanda.training.options import METHODS
             from grasppanda.training.losses import classification_choices
-            enabled=method in METHODS and action in ('train','train_check')
+            enabled=method in METHODS and action in ('train','train_short')
             return gr.update(choices=['upstream', *classification_choices(method)],value='upstream',interactive=enabled and method != 'gtg2'),gr.update(value='upstream',interactive=enabled),gr.update(interactive=enabled)
         for selector in (method, action):
             selector.change(loss_controls,[method,action],[classification_loss,regression_loss,apply_loss],api_name=False, preprocess=False)
@@ -813,15 +812,15 @@ For component experiments, expand **Compose modules**. Full configuration editin
             selector.change(component_parameters,[method,backbone,crop,head,memory,sampling],parameter_help,api_name=False, preprocess=False)
         def optimization_choices(method, action, backbone):
             from grasppanda.training.optimization import METHODS,MUON_METHODS,SPARSE_BACKBONES
-            enabled=method in METHODS and action in ('train','train_check')
+            enabled=method in METHODS and action in ('train','train_short')
             optimizers=['upstream','adam','adamw','sgd','lion']+(['muon'] if method in MUON_METHODS and backbone not in SPARSE_BACKBONES else [])
             return gr.update(choices=optimizers if enabled else ['upstream'],value='upstream',interactive=enabled),gr.update(choices=['upstream','constant','cosine','multistep'] if enabled else ['upstream'],value='upstream',interactive=enabled),'{}','{}'
         for selector in (method, action, backbone):
             selector.change(optimization_choices,[method,action,backbone],[optimizer_kind,scheduler_kind,optimizer_options,scheduler_options],api_name='optimization_choices' if selector is action else False, preprocess=False)
         def operation_layout(method, action, backbone):
-            training = action in ('train', 'train_check', 'train_smoke')
+            training = action in ('train', 'train_short')
             epoch = action == 'train'
-            return (gr.update(visible=bool(slots(method)) and action != 'pipeline_smoke'),
+            return (gr.update(visible=bool(slots(method)) and action != 'recipe'),
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
                     gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp')),
@@ -831,25 +830,25 @@ For component experiments, expand **Compose modules**. Full configuration editin
             [composition_panel, training_panel, predictions, epochs, epoch_panel, epoch_help, eval_batch_limit, pretraining_panel, crop_panel],
             api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
         def reset_inactive_training(action):
-            training = action in ('train', 'train_check', 'train_smoke')
+            training = action in ('train', 'train_short')
             return ([gr.update() if training else gr.update(value='{}') for _ in range(2)] +
                     [gr.update() if action == 'train' else gr.update(value=0) for _ in range(3)])
         action.change(reset_inactive_training, action,
             [loss_options, augmentation_options, train_batch_limit, eval_batch_limit, data_workers], api_name=False, preprocess=False)
         def action_defaults(a,m):
-            training=a in ('train_check','train_smoke','train')
-            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','spgrasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_check' else 'official_gt_workspace')
+            training=a in ('train_short','train')
+            workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','spgrasp') or (m=='finegrasp' and not training) else ('fused_gt_workspace' if m=='generalizing_grasp' and a=='train_short' else 'official_gt_workspace')
             return ('train',0,5e-6 if m=='spgrasp' else 2e-6 if m=='gfla' else .01 if m == 'gtg2' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
         for selector in (method, action):
-            selector.change(lambda m,a:gr.update(value='{}',interactive=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_check' or m=='scale_balanced_grasp' and a in ('train','train_check'))),[method,action],trainer_options,api_name=False, preprocess=False)
-            selector.change(lambda m,a:gr.update(visible=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_check' or m=='scale_balanced_grasp' and a in ('train','train_check'))),[method,action],trainer_panel,api_name=False, preprocess=False)
+            selector.change(lambda m,a:gr.update(value='{}',interactive=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_short' or m=='scale_balanced_grasp' and a in ('train','train_short'))),[method,action],trainer_options,api_name=False, preprocess=False)
+            selector.change(lambda m,a:gr.update(visible=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_short' or m=='scale_balanced_grasp' and a in ('train','train_short'))),[method,action],trainer_panel,api_name=False, preprocess=False)
             selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('graspness','finegrasp','economicgrasp') and a=='train'),[method,action],eval_batch_limit,api_name=False, preprocess=False)
-        action.change(lambda a:gr.update(visible=a=='train_check'),action,training_steps,api_name=False, preprocess=False)
+        action.change(lambda a:gr.update(visible=a=='train_short'),action,training_steps,api_name=False, preprocess=False)
         action.input(action_defaults,[action,method],[split,scene,lr,workspace],api_name='action_defaults', preprocess=False, queue=False)
         action.change(lambda a: gr.update(value='initialize',interactive=a=='train',visible=a=='train'),action,train_checkpoint_mode,api_name=False, preprocess=False)
         def training_checkpoint(a,m,c,path):
             from .weights import primary
-            return primary(m,c) if a in ('train_check','train_smoke','train') and not path else path
+            return primary(m,c) if a in ('train_short','train') and not path else path
         action.change(training_checkpoint,[action,method,camera,checkpoint],checkpoint,api_name=False, preprocess=False)
         group.input(filter_methods, group, method, api_name="filter_methods", preprocess=False, queue=False).then(
             select_method, [method,camera], [card,action,run,checkpoint,camera,workspace,points], api_name=False, preprocess=False, queue=False).then(
@@ -872,13 +871,13 @@ For component experiments, expand **Compose modules**. Full configuration editin
         component_download.click(download_component_weights,[method,backbone,component_options],component_download_message,api_name='download_component_weights',concurrency_limit=1)
         download.click(download_checkpoint,[method,camera],[checkpoint,download_message],api_name='download_checkpoint',concurrency_limit=1)
         for selector in (action, method):
-            selector.change(lambda a,m: [gr.update(interactive=a!='pipeline_smoke' and not (m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8))) for i in range(13)],
+            selector.change(lambda a,m: [gr.update(interactive=a!='recipe' and not (m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8))) for i in range(13)],
                 [action,method],[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],api_name=False, preprocess=False)
         method.change(lambda m: ('Configure objects (1–8), box_probability (0–1), correction_clicks (0–7), conditioning_frames and correction_frames (1–4). Training simulates prompts from instance labels. conditioning_frames <= correction_frames <= frame count.' if m=='spgrasp' else 'Prepare graphs with `./panda prepare-gtg2 --config YOUR.local.yaml`. Set scene IDs and held-out folds in Trainer parameters. [GtG2 guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#candidate-graph-experiments)' if m == 'gtg2' else 'Enter `{"noisy_clean": true, "clean_probability": 0.25}` in Trainer parameters. Prepare the CAD cache with `./panda prepare-clean-scenes` and set Prepared targets / cache root to its output. [Scale-Balanced-Grasp guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#scale-balanced-grasp-components)' if m == 'scale_balanced_grasp' else 'Configure HGGD stages, accumulation and sampling. [HGGD guide](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#hggd-epoch-training)'),method,trainer_help,api_name=False, preprocess=False)
         method.change(lambda m:gr.update(label='Prepared graph root (required for training)' if m == 'gtg2' else 'Prepared targets / cache root (optional)'),method,label_root,api_name=False, preprocess=False)
-        action.change(lambda a,m:gr.update(interactive=a!='pipeline_smoke' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
+        action.change(lambda a,m:gr.update(interactive=a!='recipe' or m in CHECKPOINT_RECIPES),[action,method],checkpoint,api_name=False, preprocess=False)
         def seed_warmup_control(method, action):
-            enabled = method in ('region_normalized_grasp','economicgrasp','graspness','finegrasp') and action == 'train_check'
+            enabled = method in ('region_normalized_grasp','economicgrasp','graspness','finegrasp') and action == 'train_short'
             return gr.update(interactive=enabled, visible=enabled, **({} if enabled else {'value': 0}))
         gr.on([method.change, action.change], seed_warmup_control, [method, action], proposal_warmup_steps,
             api_name=False, preprocess=False, queue=False, trigger_mode='always_last')
@@ -912,7 +911,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
              trainer_options,head,memory,prompt_options,planar_options,proposal_warmup_steps,training_steps,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,prompt_image,preset_status,sampling],
             api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1)
         gr.on([method.input,group.input], lambda: '', outputs=preset_status, api_name=False, queue=False)
-        action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='pipeline_smoke' else '',action,download_message,api_name=False, preprocess=False)
+        action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='recipe' else '',action,download_message,api_name=False, preprocess=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
         inspect_button.click(inspect, job_id, [logs, result, preview, artifacts], api_name="inspect_run")
         inspect_button.click(training_curve,job_id,loss_plot,api_name='training_curve')

@@ -51,7 +51,7 @@ def validate_training_options(config):
         value = getattr(config, name)
         if not isinstance(value, dict):
             raise ValueError(f'{name} must be a mapping')
-        if value and (config.method not in METHODS or config.action not in ('train', 'train_check')):
+        if value and (config.method not in METHODS or config.action not in ('train', 'train_short')):
             raise ValueError(f'{name} overrides require a registered training adapter: {METHODS}')
     loss = config.loss
     if set(loss) - {'weights', 'functions'} or not isinstance(loss.get('weights', {}), dict):

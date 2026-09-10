@@ -66,7 +66,7 @@ def validate(config):
             raise ValueError('Invalid planar setting: ' + key)
     if not isinstance(config.trainer, dict) or set(config.trainer) - set(TRAINER):
         raise ValueError('Unknown SPGrasp trainer setting')
-    if config.action != 'train_check':
+    if config.action != 'train_short':
         if config.trainer:
             raise ValueError('SPGrasp trainer settings apply to short training only')
         return
@@ -87,7 +87,7 @@ def validate(config):
 def validate_training(config):
     for name in ('loss', 'augmentation'):
         value = getattr(config, name)
-        if not isinstance(value, dict) or value and config.action != 'train_check':
+        if not isinstance(value, dict) or value and config.action != 'train_short':
             raise ValueError(f'SPGrasp {name} settings apply to short training only')
     terms = {'position', 'angle', 'width', 'semantic'}
     loss = config.loss

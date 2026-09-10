@@ -10,7 +10,7 @@ from .spgrasp_options import PLANAR, TRAINER, architecture
 def preflight(config):
     from PIL import Image
     from .spgrasp_data import frame_paths, rectangle_directory, Letterbox, prepare_prompts
-    count = config.frames * (config.batch_size if config.action == 'train_check' else 1)
+    count = config.frames * (config.batch_size if config.action == 'train_short' else 1)
     paths = frame_paths(config.dataset_root, config.scene, config.camera, config.frame, count)
     if not config.checkpoint or not Path(config.checkpoint).is_file():
         raise ValueError('Select a trained SPGrasp checkpoint for inference, or download SAM2 initialization for training')

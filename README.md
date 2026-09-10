@@ -2,9 +2,9 @@
 
 **A modular toolbox for visual grasping on GraspNet-1B.** Run methods, compose compatible components, and manage experiments in a browser or CLI with one shared environment.
 
-## Get started
+## Quick start
 
-Requires Linux x86-64, an NVIDIA GPU and the CUDA 11.8 compiler toolkit. Install [uv and system prerequisites](docs/INSTALL.md), then:
+Requires Linux x86-64, an NVIDIA GPU and the CUDA 11.8 compiler toolkit. First install [uv and system prerequisites](docs/INSTALL.md).
 
 ```bash
 git clone --depth 1 https://github.com/Daeda1used/GraspPanda.git
@@ -13,21 +13,18 @@ cd GraspPanda
 ./panda ui
 ```
 
-Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your dataset root → **Download registered weights** → **Run current form**. View predictions and checkpoints in **Runs & results**.
+Open **http://127.0.0.1:7860**. Choose a method → **Load preset** → set your dataset root → **Download registered weights** → **Run current form**. Find your predictions and checkpoints in **Runs & results**.
 
-**No dataset yet?** Follow the [sample walkthrough](docs/DOWNLOADS.md#start-without-graspnet), or [download GraspNet](docs/DOWNLOADS.md#graspnet-1b). To use the CLI, generate a configuration with `./panda init --method graspness`.
+**No dataset yet?** Try the [included author sample](docs/DOWNLOADS.md#start-without-graspnet), or follow the [GraspNet download guide](docs/DOWNLOADS.md#graspnet-1b).
 
-A [release archive](https://github.com/Daeda1used/GraspPanda/releases/latest) uses the same installation steps.
+## Documentation
 
-Before installing, use `./panda list` to browse methods or `./panda docs downloads` to read the data guide with system Python 3.10+. The clone contains the toolbox and guides; original implementations, weights and experiment files are created locally when needed.
-
-## Guides
-
-| Start here | Details |
+| Guide | Contents |
 |---|---|
-| [Install](docs/INSTALL.md) · [Data & weights](docs/DOWNLOADS.md) | System requirements, dataset setup and author downloads |
-| [Use the toolbox](docs/USAGE.md) | Inference, training, resume and experiment sweeps |
-| [Compose modules](docs/MODULES.md) | Compatible encoders, grouping, losses and optimization |
-| [Methods & papers](docs/METHODS.md) | Available operations, limitations, PDF and source links |
+| [Install](docs/INSTALL.md) | Requirements, shared environment and troubleshooting |
+| [Data & weights](docs/DOWNLOADS.md) | Dataset archives, pretrained weights and preparation |
+| [Usage](docs/USAGE.md) | Browser, CLI, training, resume and experiment sweeps |
+| [Modules](docs/MODULES.md) | Compatible components and configuration |
+| [Methods & papers](docs/METHODS.md) | Available operations, limitations, paper PDFs and original code |
 
-[MIT license](LICENSE) · [Third-party terms](docs/THIRD_PARTY.md) · [Extend the toolbox](docs/REFERENCE.md#extending-grasppanda)
+[MIT license](LICENSE) · [Third-party terms](docs/THIRD_PARTY.md) · [Contributing](docs/REFERENCE.md#extending-grasppanda)

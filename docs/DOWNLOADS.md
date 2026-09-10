@@ -138,6 +138,9 @@ Check each original README for the full training-data preparation. Keep large de
 
 ## Registered checkpoints
 
+<details>
+<summary>Download links and local paths for each method</summary>
+
 ```bash
 ./panda weights hggd --camera realsense
 ./panda weights region_normalized_grasp --camera kinect
@@ -185,6 +188,8 @@ Google Drive downloads support resume. Other HTTP downloads restart cleanly beca
 
 MotionGrasp also requires the baseline checkpoint; the downloader includes it. The PointNet2 compatibility port reuses the baseline weights. RNGNet SDK and SpaHybGen sample weights are included by their upstream repositories. GraNet's organized source and separately distributed legacy checkpoints are not interchangeable. Methods without registered, compatible weights are explicitly identified in [Methods & papers](METHODS.md).
 
+</details>
+
 ## Additional inputs
 
 **SPGrasp:** `./panda weights spgrasp` downloads the [SAM2.1 Hiera Base+ initializer](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt) to `checkpoints/spgrasp/sam2.1_hiera_base_plus.pt`. This initializes training; it is not a trained grasp detector and inference rejects it. No author fine-tuned SPGrasp weights are registered. Use your training run's `checkpoint.pt` for prediction. Training requires consecutive RGB and instance-label frames, with rectangle labels in `rect_labels/scene_XXXX/CAMERA/FFFF.npy` or `scenes/scene_XXXX/CAMERA/rect/FFFF.npy`. Set `label_root` to select another rectangle root containing `scene_XXXX/CAMERA/`. The [SAM2 author instructions](https://github.com/facebookresearch/sam2#download-checkpoints) describe the initializer, and the [SPGrasp guide](REFERENCE.md#prompted-planar-sequences) explains prompts and width units.
@@ -198,6 +203,9 @@ GFLA short training prepares native contact labels and surface/visibility target
 GraspFast short training generates native graspability targets in the run directory. It requires `grasp_label/`, `grasp_label_simplified/` and `collision_label/` and uses the released unweighted five-part objective.
 
 ## FineGrasp
+
+<details>
+<summary>FineGrasp data and initialization</summary>
 
 `./panda weights finegrasp --camera realsense` downloads the author's pinned `model.safetensors` and companion `model.config.json`. Keep both files together; inference loads the exact selected checkpoint with its architecture configuration.
 
@@ -213,7 +221,12 @@ Generated graspness follows the paper's per-instance min-max normalization and s
 
 The toolbox also corrects native flip augmentation to transform normals together with points and poses. See [FineGrasp composition](REFERENCE.md#finegrasp-training-and-composition) for training, loss and resume settings.
 
+</details>
+
 ## Pretrained image components
+
+<details>
+<summary>DINO image encoder weights</summary>
 
 The image encoders have separate initialization weights from the method's grasp checkpoint. Downloads stay under `checkpoints/components/`; the source repository and its archives do not contain these files. The registry pins each source revision, byte size, SHA256 and RGB normalization in `grasppanda/resources/component_weights.json`.
 
@@ -231,7 +244,12 @@ The image encoders have separate initialization weights from the method's grasp 
 
 These registered conversions can be fetched without account credentials. An unavailable or changed download is reported explicitly; incompatible or corrupted files are not installed. Configure `pretrained: false` only when you intend random initialization. See [DINO composition](REFERENCE.md#pretrained-dino-image-features) for freezing and fine-tuning settings.
 
+</details>
+
 ## Pretrained point components
+
+<details>
+<summary>Concerto and Utonia weights</summary>
 
 Point initialization weights are separate from grasp checkpoints and are downloaded locally under `checkpoints/components/`. Select the encoder in **Compose modules** and use its pretrained-encoder download button, or run:
 
@@ -252,8 +270,12 @@ The registry fixes each weight revision, SHA256, byte size and encoder configura
 
 Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.
 
+</details>
 
 ## MambaVision initialization
+
+<details>
+<summary>MambaVision encoder weights</summary>
 
 MambaVision uses author ImageNet-1K **Safetensors** weights, separate from the grasp checkpoint. Select `mambavision` under **Compose modules** and prepare its encoder weights, or use:
 
@@ -265,7 +287,12 @@ Available IDs are `mambavision_tiny`, `mambavision_tiny2`, `mambavision_small`, 
 
 Source and weights use NVIDIA non-commercial research terms. See [component configuration](REFERENCE.md#mambavision-hybrid-image-hierarchy) for RGB-D fusion, freezing and structural edits. The larger author pickle training archives are not required.
 
+</details>
+
 ## Scale-Balanced-Grasp clean scenes
+
+<details>
+<summary>Prepare noisy-clean training and object-balanced sampling</summary>
 
 NcM training needs CAD-aligned observations in addition to the original grasp, collision and tolerance labels. Download the official `models.zip` and training scenes, then prepare a reusable local cache:
 
@@ -288,3 +315,5 @@ OBS inference has a separate segmentation checkpoint and needs no clean-scene ca
 ```
 
 [Author segmentation checkpoint](https://drive.google.com/file/d/1Fe6RPN9cwEk6SsvGix9huspZf9Qz2yju/view) · [Original implementation](https://github.com/mahaoxiang822/Scale-Balanced-Grasp). The registered checkpoint is for RealSense; it is verified by the component-weight registry. See [sampling and training parameters](REFERENCE.md#scale-balanced-grasp-components).
+
+</details>

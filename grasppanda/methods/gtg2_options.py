@@ -77,7 +77,7 @@ def validate_training(config):
         value = options.get(name, TRAINER[name])
         if type(value) is not int or not 1 <= value <= maximum: raise ValueError('Invalid GtG2 ' + name)
     if options and config.action != 'train': raise ValueError('GtG2 trainer settings apply to epoch training')
-    if config.action in ('train', 'train_check') and config.batch_size < 2:
+    if config.action in ('train', 'train_short') and config.batch_size < 2:
         raise ValueError('GtG2 graph-level batch normalization needs batch_size >= 2')
 
 

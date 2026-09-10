@@ -7,13 +7,13 @@ from ..jobs import digest
 
 
 def preflight(config):
-    if config.action in ("infer", "train", "train_smoke", "train_check", "evaluate"):
+    if config.action in ("infer", "train", "train_short", "evaluate"):
         if not config.dataset_root or not (Path(config.dataset_root) / "scenes").is_dir():
             raise ValueError("Select a dataset root containing scenes/")
     if config.method == 'spgrasp':
         from ..methods.spgrasp import preflight
         return preflight(config)
-    if config.action == 'train_check':
+    if config.action == 'train_short':
         root=Path(config.dataset_root)
         if config.method=='generalizing_grasp':
             sdf_root=Path(config.sdf_root or config.dataset_root)
@@ -28,7 +28,7 @@ def preflight(config):
             missing=[r['role'] for r in records(config.method,config.camera) if r.get('role')!='primary' and not (ROOT/r['path']).is_file()]
             if missing:raise ValueError('CenterGrasp requires its paired SGDF checkpoint: run ./panda weights centergrasp --camera kinect')
         if config.method not in ('graspbalance','granet','finegrasp') and (not config.checkpoint or not Path(config.checkpoint).is_file()):
-            raise ValueError('Training checks require the registered checkpoint; replaced components may be initialized explicitly.')
+            raise ValueError('Short training requires the registered checkpoint; replaced components may be initialized explicitly.')
         labels={'finegrasp':['economic_grasp_label_300views'], 'hggd':[], 'region_normalized_grasp':[], 'economicgrasp':['economic_grasp_label_300views','graspness'],
                 'dograspnet':['grasp_label_simplified','collision_label'],
                 'fgc_graspnet':['grasp_label','FGC_label','collision_label'],
@@ -49,7 +49,7 @@ def preflight(config):
             labelroot=Path(config.label_root) if config.label_root else root/'HGGD_Preprocessed'/f'6dto2drefine_{config.camera}'
             target=labelroot/'6d_dataset'/f'scene_{config.scene}'/'grasp_labels'/f'{config.frame}_view.npz'
             if not target.is_file():raise ValueError('HGGD training labels missing: '+str(target))
-    if config.action == "pipeline_smoke":
+    if config.action == "recipe":
         from ..recipes import preflight
         preflight(config)
     if config.action == "infer":
@@ -74,7 +74,7 @@ def preflight(config):
             raise ValueError('GtG2 graph inputs are missing: run ./panda prepare-gtg2 --config with your training configuration')
         if config.checkpoint and not Path(config.checkpoint).is_file():
             raise ValueError('GtG2 initialization or resume checkpoint is missing')
-    if config.action in ("train", "train_smoke") and config.method != 'gtg2':
+    if config.action == "train" and config.method != 'gtg2':
         labels = [] if config.method == 'hggd' else (["economic_grasp_label_300views"] if config.method == "finegrasp" else ["grasp_label", "collision_label"])
         if config.method == 'economicgrasp':labels=['economic_grasp_label_300views','graspness']
         if config.method not in ("finegrasp", 'hggd', 'economicgrasp'):
@@ -91,7 +91,7 @@ def preflight(config):
                 if not (labelroot/'6d_dataset'/f'scene_{scene}'/'grasp_labels'/f'{frame}_view.npz').is_file():
                     raise ValueError('HGGD epoch training needs preprocessed training and scene-100 validation labels')
             if config.checkpoint and not Path(config.checkpoint).is_file(): raise ValueError('HGGD initialization checkpoint is missing')
-    if config.method == 'finegrasp' and config.action in ('train', 'train_check', 'train_smoke'):
+    if config.method == 'finegrasp' and config.action in ('train', 'train_short'):
         root = Path(config.dataset_root)
         if not (root/'instance_norm_graspness').is_dir() and not (root/'graspness').is_dir():
             raise ValueError('FineGrasp training needs instance_norm_graspness or Graspness maps for local preparation')

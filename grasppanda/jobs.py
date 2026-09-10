@@ -177,7 +177,7 @@ class JobManager:
         provenance['native_sources']={row['path']:subprocess.check_output(['git','-C',str(ROOT/row['path']),'rev-parse','HEAD'],text=True).strip()
             for row in json.loads((ROOT/'grasppanda/resources/native_sources.lock.json').read_text()) if (ROOT/row['path']/'.git').exists()}
         provenance['toolbox_sources'] = {str(p.relative_to(ROOT)):digest(p) for p in (ROOT/'grasppanda').rglob('*.py')}
-        if config.action in ('pipeline_smoke','train_check'):
+        if config.action in ('recipe','train_short'):
             from .weights import records
             provenance['recipe_weights']={r['path']:digest(ROOT/r['path']) for r in records(config.method,config.camera) if (ROOT/r['path']).is_file()}
         (directory / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")

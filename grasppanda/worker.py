@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import random
-import runpy
 import subprocess
 import sys
 import time
@@ -193,97 +192,6 @@ def train(config, out):
     return run(config,out)
 
 
-def train_smoke(config, out):
-    """One real-label optimizer step, using upstream data/model/loss code."""
-    from .components import requires_scene_batch
-    from .module_options import unpack
-    foundation = unpack(config.modules.get('backbone', 'upstream'))[0] in ('utonia', 'concerto')
-    if (requires_scene_batch(config) or foundation) and config.method != 'finegrasp':
-        from .training import point_family
-        return point_family(config, out, 1)
-    if config.method=='finegrasp':
-        from grasppanda.methods.finegrasp_training import run
-        return run(config,out,1)
-    import numpy as np
-    import torch
-    import scipy.io
-    prepare(config.method)
-    dataset_module = importlib.import_module('graspnet_dataset')
-    model_module = importlib.import_module('models.graspnet')
-    scene = f'scene_{config.scene:04d}'
-    root = Path(config.dataset_root)
-    directory = root/'scenes'/scene/config.camera
-    meta = scipy.io.loadmat(directory/'meta'/f'{config.frame:04d}.mat')
-    ids = meta['cls_indexes'].flatten().astype(int).tolist()
-    labels = {}
-    evidence = {}
-    for obj in ids:
-        if obj == 19 and config.method != 'graspness':
-            continue  # Same invalid-object exclusion as the baseline loader.
-        name = f'{obj-1:03d}'
-        labelpath = root/('grasp_label_simplified' if config.method == 'graspness' else 'grasp_label')/(name+'_labels.npz')
-        with np.load(labelpath) as label:
-            if config.method == 'graspness':
-                labels[obj] = tuple(label[k].astype(np.float32) for k in ('points','width','scores'))
-            else:
-                tolerance_path = root/'tolerance'/(name+'_tolerance.npy')
-                labels[obj] = tuple(label[k].astype(np.float32) for k in ('points','offsets','scores')) + (np.load(tolerance_path),)
-                evidence['tolerance_'+name] = digest(tolerance_path)
-        evidence['labels_'+name] = digest(labelpath)
-    kwargs = dict(root=config.dataset_root, grasp_labels=labels, camera=config.camera, split='train',
-                  num_points=config.num_points, remove_outlier=True, augment=False, load_label=False)
-    if config.method == 'graspness':
-        kwargs['voxel_size'] = config.voxel_size
-    else:
-        kwargs['valid_obj_idxs'] = list(labels)
-    dataset = dataset_module.GraspNetDataset(**kwargs)
-    collision_path = root/'collision_label'/scene/'collision_labels.npz'
-    with np.load(collision_path) as collision:
-        dataset.collision_labels[scene] = {i: collision[f'arr_{i}'] for i in range(len(collision))}
-    evidence['collision'] = digest(collision_path)
-    dataset.load_label = True
-    data = dataset[config.scene*256+config.frame]
-    if not data['object_poses_list']:
-        raise ValueError('No labelled object survived sampling; increase num_points')
-    collate = dataset_module.minkowski_collate_fn if config.method == 'graspness' else dataset_module.collate_fn
-    batch = collate([data])
-    def cuda(value):
-        if isinstance(value, torch.Tensor): return value.cuda()
-        if isinstance(value, dict): return {k:cuda(v) for k,v in value.items()}
-        if isinstance(value, list): return [cuda(v) for v in value]
-        return value
-    batch = cuda(batch)
-    cls = model_module.GraspNet_MSCQ if config.method == 'scale_balanced_grasp' else model_module.GraspNet
-    model = cls(is_training=True).cuda().train()
-    from .components import configure_model,load_checkpoint
-    prefixes=configure_model(model,config.method,config.modules,config.voxel_size)
-    model.cuda()
-    if config.checkpoint:
-        state = torch.load(config.checkpoint, map_location='cpu', weights_only=True)
-        transfer=load_checkpoint(model,state.get('model_state_dict',state),prefixes,config.checkpoint_policy)
-        (out/'component_transfer.json').write_text(json.dumps(transfer,indent=2)+'\n')
-    if config.method == 'graspness':
-        def guard(_module,_inputs,end):
-            counts=((end['objectness_score'].argmax(1)==1)&(end['graspness_score'].squeeze(1)>model_module.GRASPNESS_THRESHOLD)).sum(1)
-            if (counts==0).any(): raise ValueError('No graspable points; refusing empty upstream FPS')
-        model.graspable.register_forward_hook(guard)
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
-    optimizer.zero_grad(set_to_none=True)
-    print('Running upstream forward, loss and backward on one labelled frame', flush=True)
-    output = model(batch)
-    loss, _ = importlib.import_module('models.loss').get_loss(output)
-    if not torch.isfinite(loss): raise ValueError('Non-finite training loss')
-    loss.backward()
-    gradients = [p.grad for p in model.parameters() if p.grad is not None]
-    if not gradients or not all(torch.isfinite(g).all() for g in gradients):
-        raise ValueError('Missing or non-finite gradients')
-    optimizer.step()
-    torch.cuda.synchronize()
-    return {'stage':'dataset_training_step', 'method':config.method, 'scene':config.scene, 'frame':config.frame,
-            'loss':loss.item(), 'parameters_with_gradient':len(gradients), 'optimizer_steps':1,
-            'label_sha256':evidence, 'note':'Single frame/batch=1; no augmentation. Not convergence or full trainer validation.'}
-
-
 def evaluate(config, out):
     from .datasets import get_provider
     return get_provider(config.dataset).evaluate(config,out)
@@ -337,10 +245,10 @@ def main():
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.set_num_threads(4)
-    if config.action == 'train_check' and config.method == 'spgrasp':
+    if config.action == 'train_short' and config.method == 'spgrasp':
         from .methods.spgrasp import train as train_planar
         result = train_planar(config, out, config.training_steps)
-    elif config.action == 'train_check':
+    elif config.action == 'train_short':
         from .training import hggd,point_family,rng,contact,rgb_matters
         from grasppanda.methods.center_training import run as center
         from grasppanda.methods.gfla_training import run as gfla
@@ -350,13 +258,13 @@ def main():
         from grasppanda.methods.finegrasp_training import run as finegrasp
         runner={'finegrasp':finegrasp,'hggd':hggd,'region_normalized_grasp':rng,'contact_graspnet_g1b':contact,'rgb_matters':rgb_matters,'centergrasp':center,'gfla':gfla,'motiongrasp':motion,'spahybgen':spahybgen,'graspfast':graspfast}.get(config.method,point_family)
         result=runner(config,out,config.training_steps)
-    elif config.action == 'pipeline_smoke':
+    elif config.action == 'recipe':
         command=[sys.executable,str(ROOT/'grasppanda/runtime/run_recipe.py'),config.method,'--dataset-root',config.dataset_root,'--out',str(out)]
         if config.checkpoint:command+=['--checkpoint',config.checkpoint]
         subprocess.run(command,cwd=ROOT,check=True)
         result=json.loads((out/'result.json').read_text())
     else:
-        result = {"infer": infer, "train": train, "train_smoke": train_smoke, "evaluate": evaluate}[config.action](config, out)
+        result = {"infer": infer, "train": train, "evaluate": evaluate}[config.action](config, out)
     (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print("GRASPPANDA_RESULT=" + json.dumps(result), flush=True)
 

@@ -40,7 +40,7 @@ def main():
     commands.add_parser("fetch", help="Fetch the pinned method implementations")
     commands.add_parser("doctor", help="Check the shared runtime and source revisions")
     fetch_weights = commands.add_parser("weights", help="Download weights for a method and camera")
-    fetch_weights.add_argument("method", choices=list(catalogue()))
+    fetch_weights.add_argument("method", choices=[mid for mid in catalogue() if capabilities(mid)])
     fetch_weights.add_argument("--camera", choices=["realsense","kinect"], default="realsense")
     sdf = commands.add_parser("prepare-sdf", help="Prepare object SDF grids for fusion training")
     sdf.add_argument("arguments", nargs=argparse.REMAINDER)
@@ -51,9 +51,6 @@ def main():
     component_weights = commands.add_parser('component-weights', help='Download verified pretrained backbone weights')
     from .weights import component_records
     component_weights.add_argument('name', choices=list(component_records()))
-    verify=commands.add_parser("verify", help="Run the documented fixed recipe or single-frame preset")
-    verify.add_argument("method", choices=list(catalogue()))
-    verify.add_argument("--dataset-root", default=default_dataset())
     run = commands.add_parser("run", help="Run an experiment from YAML or JSON")
     run.add_argument("config", type=Path)
     run.add_argument("--runs-dir", type=Path)
@@ -126,14 +123,9 @@ def main():
             raise
         finally:
             manager.close()
-    elif args.command in ("run","verify"):
+    elif args.command == "run":
         from .jobs import JobManager
-        if args.command=='verify':
-            from .recipes import preset,RECIPES
-            config=preset(args.method,args.dataset_root)
-            print(RECIPES.get(args.method,('', 'Configurable single-frame adapter'))[1],flush=True)
-            print(json.dumps(config.to_dict(),indent=2),flush=True)
-        else: config = Experiment.from_dict(read_configuration(args.config))
+        config = Experiment.from_dict(read_configuration(args.config))
         manager = JobManager(getattr(args,'runs_dir',None), allow_attach=True)
         try:
             job = manager.submit(config)

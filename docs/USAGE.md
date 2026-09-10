@@ -11,19 +11,26 @@ Run `./panda ui` and open **http://127.0.0.1:7860**.
 
 Expand **Method details & input requirements** for the selected method's input protocol and original implementation. **Compose modules** appears for methods with registered replacements. **Training settings** appears for training operations; **Evaluate predictions** reveals the prediction-directory input. **Run settings** controls the time limit for every operation. **Configuration editor** lets you generate, edit, validate and run exact JSON. For a native recipe, the preset defines fixed inputs; disabled frame fields do not override them. Supported recipes accept a primary checkpoint override.
 
-The **Guide** tab includes installation, downloads, module instructions and a data/GPU readiness check. Expand the guide's instructions and select **Methods & papers** for availability, paper PDFs and original implementations.
+The **Guide** tab includes installation, downloads, module instructions and a data/GPU readiness check. Select **Methods & papers** in the guide for availability, paper PDFs and original implementations.
 
 ## Operations
 
 | UI operation | Configuration `action` | Inputs and behavior |
 |---|---|---|
 | Predict grasps | `infer` | Selected frames and a matching checkpoint; saves predictions and a preview. |
-| Run native recipe | `pipeline_smoke` | Method-specific fixed scene, sequence, author sample or component. Its input contract is shown on selection. |
-| Short training run | `train_check` | Repeats a labelled sample for `training_steps`; saves loss curves and a checkpoint. Fixed native batch sizes apply. |
+| Run native recipe | `recipe` | Method-specific fixed scene, sequence, author sample or component. Its input contract is shown on selection. |
+| Short training run | `train_short` | Repeats a labelled sample for `training_steps`; saves loss curves and a checkpoint. Fixed native batch sizes apply. |
 | Train across epochs | `train` | Native loader, augmentation, optimizer and schedule; supports initialization or checkpoint resume. |
 | Evaluate predictions | `evaluate` | Complete split predictions with a matching manifest; runs the official evaluator. |
 
 The available choices depend on the method. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
+
+<details>
+<summary>Older configuration files</summary>
+
+Saved `pipeline_smoke` and `train_check` actions are read as `recipe` and `train_short`. The former `train_smoke` action now uses one update of the short trainer, including its native batching, required initialization checkpoint and checkpoint output. Newly generated configurations use the current names.
+
+</details>
 
 ## CLI
 

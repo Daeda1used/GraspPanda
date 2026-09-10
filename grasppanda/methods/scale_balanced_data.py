@@ -17,7 +17,7 @@ def validate(config):
     from ..training.options import finite
     options = config.trainer
     if not isinstance(options, dict): raise ValueError('trainer must be a mapping')
-    if options and config.action not in ('train', 'train_check'):
+    if options and config.action not in ('train', 'train_short'):
         raise ValueError('Scale-Balanced-Grasp trainer controls require training')
     if set(options) - {'noisy_clean', 'clean_probability'}: raise ValueError('Unknown Scale-Balanced-Grasp trainer controls')
     if type(options.get('noisy_clean', False)) is not bool: raise ValueError('trainer.noisy_clean must be boolean')

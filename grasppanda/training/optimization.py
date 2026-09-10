@@ -11,7 +11,7 @@ def validate(config):
     for name in ('optimizer', 'scheduler'):
         value = getattr(config, name)
         if not isinstance(value, dict): raise ValueError(f'{name} must be a mapping')
-        if value and (config.method not in METHODS or config.action not in ('train', 'train_check')):
+        if value and (config.method not in METHODS or config.action not in ('train', 'train_short')):
             raise ValueError(f'{name} overrides require a registered training adapter: {METHODS}')
     options = config.optimizer
     kind = options.get('type')
@@ -59,7 +59,7 @@ def validate(config):
             if not valid: raise ValueError(f'Invalid scheduler parameter: {key}')
         if kind == 'multistep' and 'milestones' not in schedule:
             raise ValueError('Multistep scheduling requires update milestones')
-        if config.action == 'train_check': validate_horizon(schedule, config.training_steps + config.proposal_warmup_steps)
+        if config.action == 'train_short': validate_horizon(schedule, config.training_steps + config.proposal_warmup_steps)
 
 
 def validate_horizon(options, total_steps):
