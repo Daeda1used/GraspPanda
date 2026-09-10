@@ -89,6 +89,19 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'swin3d':
+                if key.startswith('block_'):
+                    description += '; full vector: encoder fine to coarse, then decoder coarse to fine; length sum(depths) + sum(decoder_depths); overrides the corresponding stage/shared setting'
+                elif key in ('strides', 'downsample', 'knn_neighbors', 'decoder_depths', 'up_neighbors'):
+                    description += '; one per transition/decoder target level, listed fine to coarse; length len(channels) - 1'
+                elif key in ('depths', 'heads', 'window_sizes', 'quant_sizes'):
+                    description += '; one per stage, matching len(channels)'
+                if key in ('heads', 'block_heads'):
+                    description += '; even heads, with 8, 16 or 32 channels per head'
+                elif key == 'decoder_depths':
+                    description += '; zero retains interpolation and removes attention'
+                elif key == 'rpe_features':
+                    description += '; xyz_normals requires FineGrasp with native normals enabled'
             if choice == 'pointrwkv_released' and key.startswith('block_'):
                 description += '; one value per encoder block, in stage order; length equals sum(depths); overrides the corresponding stage or shared setting'
             if choice == 'pointrwkv_released' and key in ('decoder_channels', 'decoder_depths'):

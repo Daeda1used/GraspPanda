@@ -1064,3 +1064,34 @@ compose-pointrwkv:
         block_drop_path: [0.0, 0.05, 0.1, 0.15, 0.2]
     dataset_root: /data/GraspNet-1B
     checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+
+compose-swin3d:
+  description: Swin3D sparse windows with configurable encoder and decoder stages
+  config:
+    method: graspnet_baseline
+    action: train_check
+    dataset_root: /data/GraspNet-1B
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 15000
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
+    checkpoint_policy: reuse_unchanged
+    training_steps: 30
+    learning_rate: 0.001
+    modules:
+      backbone:
+        type: swin3d
+        channels: [32, 64, 64]
+        depths: [2, 2, 2]
+        heads: [2, 4, 4]
+        window_sizes: [3, 5, 7]
+        quant_sizes: [2, 4, 6]
+        strides: [2, 3]
+        downsample: [grid, knn]
+        knn_neighbors: [16, 8]
+        decoder_depths: [2, 0]
+        up_neighbors: [5, 2]
+        block_heads: [4, 2, 4, 8, 4, 8, 4, 2]
+        block_mlp_ratios: [2, 3, 4, 2, 3, 4, 2, 3]
+        gradient_checkpointing: true

@@ -79,4 +79,6 @@ GtG2 candidate generation builds GPG against system PCL using the shared Python 
 
 PointCNN++ builds its pinned author CUDA/CUTLASS extension into a versioned local artifact using the same interpreter and CUDA 11.8 toolkit. No separate Python environment is created. The installer verifies the native encoder, gradients and tensor checkpoint loading before activating the artifact; a failed build leaves an existing installation in place. Allow additional compilation time on the first installation.
 
+Swin3D builds its pinned attention and KNN CUDA operators in a versioned artifact under `environments/native/swin3d/`, using the same Python, PyTorch and CUDA toolkit. Forward/backward computation, an optimizer update, scene isolation and strict tensor loading are checked before activation. Source, compatibility patch and artifact hashes are verified when loading; a failed build leaves the previous artifact selected.
+
 </details>

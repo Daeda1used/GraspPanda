@@ -80,6 +80,11 @@ def _schema(method, slot, choice):
     if slot == 'backbone' and choice == 'oacnns':
         from .modules.oacnns_options import schema as oacnns_schema
         return oacnns_schema()
+    if slot == 'backbone' and choice == 'swin3d':
+        from .modules.swin3d_options import schema as swin3d_schema
+        fields = swin3d_schema()
+        if method != 'finegrasp': fields['rpe_features'] = ('choice', ('xyz',))
+        return fields
     if slot == 'backbone' and choice == 'pointrwkv_released':
         from .modules.pointrwkv_options import schema as pointrwkv_schema
         return pointrwkv_schema()
@@ -329,6 +334,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'oacnns':
         from .modules.oacnns_options import validate as validate_oacnns
         validate_oacnns(options)
+    if choice == 'swin3d':
+        from .modules.swin3d_options import validate as validate_swin3d
+        validate_swin3d(options)
     if choice == 'pointrwkv_released':
         from .modules.pointrwkv_options import validate as validate_pointrwkv
         validate_pointrwkv(options)

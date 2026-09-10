@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [Swin3D](#swin3d-sparse-window-hierarchy) · [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -21,16 +21,16 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](MODULES.md#candidate-graph-experiments) |
@@ -1450,5 +1450,43 @@ The `parallel` recurrence evaluates the same state updates and gradients with di
 **Released-code semantics:** source stages independently sample the original cloud. BQE shifts tokens; attention uses sigmoid gates and GroupNorm; channel mixing uses SiLU; the local graph uses KNN. These differ from parts of the paper's radius-graph, hierarchical and gating descriptions. The selector deliberately identifies the code variant. FPS begins at a random point and token order affects recurrence, so changing the input ordering is not guaranteed to preserve predictions.
 
 No compatible pretrained grasp checkpoint is registered for this replacement. Use `checkpoint_policy: reuse_unchanged` to initialize the replacement while retaining compatible grasp-head weights, then train it. Use `strict` when loading the resulting checkpoint. The installer fetches pinned source into the shared runtime; this adapter does not redistribute the author repository or grant it an additional license.
+
+</details>
+
+<details>
+<summary>Swin3D: sparse shifted windows, stage controls and decoder</summary>
+
+## Swin3D sparse window hierarchy
+
+`swin3d` adapts the native [2023 Swin3D hierarchy](https://arxiv.org/pdf/2304.06906) for Baseline, the PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp and FineGrasp. It combines sparse convolutions, alternating regular/shifted window attention with contextual relative position tables, and an interpolating decoder. The final pointwise projection supplies grasp features to the selected method's seed selection and grasp heads.
+
+Generate an editable composition with `./panda init --example compose-swin3d`. The backbone initializes randomly. Use `checkpoint_policy: reuse_unchanged` to transfer unchanged grasp heads, train the composition, then reload its saved configuration and checkpoint with strict loading. The author's Structured3D RGB segmentation weights are not registered for these XYZ/normal grasp inputs.
+
+| Controls | Meaning and defaults |
+|---|---|
+| `channels`, `depths`, `heads` | One to five stages. Defaults: `[48,96,192,384,384]`, `[2,4,9,4,4]`, `[6,6,12,24,24]`. Each active stage has at least one block. |
+| `window_sizes`, `quant_sizes` | Per-stage lattice window widths and relative-position quantization. Defaults: `[5,7,7,7,7]` and `[4,4,4,4,4]`. |
+| `grid_size` | Input voxel width in metres; default `0.005`. Multiple input rows in one voxel are mean-aggregated, and outputs return to every original row. |
+| `stem_transformer` | Default `true`. A residual stem needs at least two stages and `depths[0]: 0`. |
+| `strides`, `downsample`, `knn_neighbors` | One entry per fine-to-coarse transition. Default strides `[3,2,2,2]`, native `knn` pooling with 16 neighbors. `grid` selects native grid max pooling; keep the unused neighbor entry at 16. |
+| `decoder_depths`, `up_neighbors` | One entry per decoder target level, listed **fine to coarse**. Defaults: one attention block and three interpolation neighbors. Depth zero retains interpolation and removes attention at that target level. |
+| `mlp_ratios`, `qkv_bias` | Scalar or one value per stage; defaults `4.0` and `true`. Applies to encoder and decoder blocks at that resolution. |
+| `projection_dropout`, `mlp_dropout`, `activation` | Scalar/stage dropout defaults to zero; MLP activation is `gelu`, `relu` or `silu`. |
+| `drop_path_rate`, `decoder_drop_path` | Default encoder schedule increases from zero to `0.3`; default decoder rate is `0.1`. |
+| `block_heads`, `block_mlp_ratios`, `block_drop_path`, `block_projection_dropout`, `block_mlp_dropout` | Optional full vectors overriding the corresponding stage/shared controls. Order: encoder fine to coarse, then decoder coarse to fine; blocks within each stage follow execution order. |
+| `gradient_checkpointing` | Recompute attention/MLP blocks during backward to reduce activation memory; default `false`. |
+| `bn_eps`, `bn_momentum`, `norm_eps` | BatchNorm epsilon/momentum and LayerNorm epsilon; defaults `1e-5`, `0.1`, `1e-5`. |
+| `rpe_features` | Default `xyz`. FineGrasp with native normals enabled additionally supports `xyz_normals`. |
+| `seed_sampling` | Shared seed policy for the three dense adapters; sparse methods retain their own learned seed selection. |
+
+Stage lists must match the selected number of stages; omitted stage defaults are truncated to that length. Transition lists have one fewer entry. Full block vectors contain `sum(depths) + sum(decoder_depths)` entries. Stage and block heads must be even and divide their stage width into 8, 16 or 32 channels per head. MLP ratios must yield integral hidden widths. Unknown parameters and incompatible dimensions are rejected; the author's unused attention-dropout field is not exposed.
+
+KNN and interpolation neighborhoods accept 1–64 points, and each source scene at that resolution must contain at least that many voxels. A smaller cloud requires a suitable hierarchy or neighborhood configuration. Missing neighbors are not synthesized. The native feature network runs in float32; whole-network mixed precision is not enabled by this adapter.
+
+Dense inputs supply camera XYZ. Sparse inputs preserve the method's lattice and feature channels; fine-grained normals come from FineGrasp's actual normal features. `xyz_normals` retains unused RGB storage columns required by the author's layout, but neither reads those columns for relative encoding nor supplies invented RGB features. Native representative selection uses all supplied coordinate attributes, as in the original implementation.
+
+The installer builds the [pinned author source](https://github.com/microsoft/Swin3D) in the shared environment. Compatibility changes honor the active CUDA stream/device, validate native KNN inputs, bound relative-table indices, cover shared-memory indexing, unpack saved attention tensors once for gradient checkpointing, and resolve equal-distance representative ties by coordinate order. Voxel means accumulate at higher precision before returning float32 features. Sparse row ordering can change stochastic dropout assignments across independently constructed coordinate maps; a seed does not promise bitwise training replay.
+
+[Source terms](THIRD_PARTY.md) · [Installation](INSTALL.md)
 
 </details>
