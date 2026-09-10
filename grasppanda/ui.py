@@ -89,6 +89,8 @@ def component_parameters(method, backbone, crop, head='upstream', memory='upstre
                 description = {'channels': '1–8 layer widths, each 8–2048',
                                'radii': '1–8 radius factors, each 0.1–4',
                                'blocks': '5 stage depths, each 1–12'}[rule[0]]
+            if choice == 'pointrwkv_released' and key.startswith('block_'):
+                description += '; one value per encoder block, in stage order; length equals sum(depths); overrides the corresponding stage or shared setting'
             if choice == 'pointrwkv_released' and key in ('decoder_channels', 'decoder_depths'):
                 description += '; coarse to fine propagation stages, ending at the original input points'
             if choice == 'pointhr' and key in ('dec_channels', 'dec_depths', 'dec_groups', 'dec_neighbours'):

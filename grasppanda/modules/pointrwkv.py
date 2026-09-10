@@ -6,7 +6,7 @@ import sys
 import types
 import torch
 from torch import nn
-from .pointrwkv_options import resolve
+from .pointrwkv_options import resolve, block_options
 from .pointrwkv_recurrence import parallel_recurrence
 
 SOURCE_HASHES = {
@@ -66,12 +66,13 @@ class PointRWKVFeatures(nn.Module):
                 encoder.forward=types.MethodType(patch_features,encoder)
             net.embed_modules.append(encoder)
         net.pos_embed=nn.ModuleList([nn.Sequential(nn.Linear(3,128),nn.GELU(),nn.Linear(128,c)) for c in p['stage_channels']])
-        rates=iter(torch.linspace(0,p['drop_path_rate'],sum(p['depths'])).tolist());net.blocks=nn.ModuleList()
+        rates=iter(p['block_drop_path'] if 'block_drop_path' in p else torch.linspace(0,p['drop_path_rate'],sum(p['depths'])).tolist())
+        net.blocks=nn.ModuleList();index=0
         for i,width in enumerate(p['stage_channels']):
             blocks=nn.ModuleList()
             for _ in range(p['depths'][i]):
-                block=native.PRWKVBlock(width,num_heads=p['stage_heads'][i],k=p['k_neighbors'][i],
-                    graph_iter=p['graph_iterations'][i],ffn_ratio=p['ffn_ratios'][i],drop=p['drop'],drop_path=next(rates))
+                block=native.PRWKVBlock(width,**block_options(p,i,index),drop_path=next(rates))
+                index+=1
                 if p['recurrence_backend']=='parallel':
                     block.spatial_mixing.grasppanda_chunk_size=p['chunk_size']
                     block.spatial_mixing._wkv_forward=types.MethodType(chunk_recurrence,block.spatial_mixing)

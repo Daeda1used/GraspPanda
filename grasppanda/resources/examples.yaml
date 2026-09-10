@@ -1045,46 +1045,22 @@ compose-pointrwkv:
     modules:
       backbone:
         type: pointrwkv_released
-        stage_channels:
-        - 48
-        - 64
-        - 96
-        depths:
-        - 1
-        - 1
-        - 1
-        stage_heads:
-        - 4
-        - 4
-        - 4
-        num_points:
-        - 256
-        - 128
-        - 64
-        group_sizes:
-        - 16
-        - 16
-        - 16
-        k_neighbors:
-        - 16
-        - 8
-        - 8
-        graph_iterations:
-        - 1
-        - 2
-        - 2
-        patch_channels:
-        - 32
-        - 64
-        - 96
-        decoder_channels:
-        - 96
-        - 64
-        - 48
-        decoder_depths:
-        - 2
-        - 2
-        - 2
+        stage_channels: [48, 64, 96]
+        depths: [2, 1, 2]
+        stage_heads: [4, 4, 4]
+        num_points: [256, 128, 64]
+        group_sizes: [16, 16, 16]
+        k_neighbors: [16, 8, 8]
+        graph_iterations: [1, 2, 2]
+        patch_channels: [32, 64, 96]
+        decoder_channels: [96, 64, 48]
+        decoder_depths: [2, 2, 2]
         gradient_checkpointing: true
+        block_heads: [4, 6, 8, 4, 8]
+        block_neighbors: [8, 16, 8, 4, 8]
+        block_graph_iterations: [1, 2, 2, 2, 1]
+        block_ffn_ratios: [2, 4, 2, 4, 2]
+        block_drop: [0.0, 0.1, 0.0, 0.1, 0.0]
+        block_drop_path: [0.0, 0.05, 0.1, 0.15, 0.2]
     dataset_root: /data/GraspNet-1B
     checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar
