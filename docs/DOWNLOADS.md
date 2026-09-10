@@ -113,7 +113,7 @@ Basic frame inference does not require downloading all training targets. Additio
 | FGC short training | Original grasp/collision labels and author `FGC_label/` scores | [FGC](https://github.com/luyh20/FGC-GraspNet) |
 | EconomicGrasp training | `economic_grasp_label_300views/` and `graspness/` | [EconomicGrasp](https://github.com/iSEE-Laboratory/EconomicGrasp) |
 | DOGraspNet short training | Simplified grasp/collision labels and `graspness_label/`; the pinned equivalent `graspness/` targets are accepted | [DOGraspNet](https://github.com/huamo555/DOGraspNet) |
-| Generalizing-Grasp inference / short training | Matched `fusion_scenes/` points and segmentation; training also needs full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
+| Generalizing-Grasp inference / short training | Fused XYZ/normals for inference; training additionally needs matched segmentation, full grasp/collision labels, `tolerance/` and object SDF grids | [Original method repository](https://github.com/mahaoxiang822/Generalizing-Grasp) |
 | ASGrasp fixed recipe | Bundled RGB and left/right IR sample; these IR inputs are not supplied by standard RGB-D alone | [Original method repository](https://github.com/jun7-shi/ASGrasp) |
 
 Short training for ContactGraspNet, GraNet and RGB Matters generate the selected frame's native targets inside its experiment directory. CenterGrasp generates object 000 SGDF targets from the official mesh/grasp labels and Kinect RGB targets from segmentation/poses; download both its RGB and SGDF weights first. Its native mesh sampler requires the geometry dependencies installed by `./panda install`. A scene-wise folder named `SGDF` is not the CenterGrasp object-level format.
@@ -317,3 +317,33 @@ OBS inference has a separate segmentation checkpoint and needs no clean-scene ca
 [Author segmentation checkpoint](https://drive.google.com/file/d/1Fe6RPN9cwEk6SsvGix9huspZf9Qz2yju/view) · [Original implementation](https://github.com/mahaoxiang822/Scale-Balanced-Grasp). The registered checkpoint is for RealSense; it is verified by the component-weight registry. See [sampling and training parameters](REFERENCE.md#scale-balanced-grasp-components).
 
 </details>
+
+## Contact-score refinement
+
+Download the auxiliary networks once in the shared environment:
+
+```bash
+./panda component-weights generalizing_contactnet
+./panda component-weights generalizing_scorenet
+./panda component-weights scale_balanced_dsn
+./panda init --example refine-hggd -o refinement.local.yaml
+```
+
+In the browser, expand **Refine grasps** and use **Prepare refinement networks**. These weights are separate from the selected method's checkpoint.
+
+| Network | Author download |
+|---|---|
+| ContactNet | [ZIP](https://drive.google.com/file/d/1yMZ5rgloo0xbYvuR46t3sSKMvaVpOavx/view) |
+| ScoreNet | [ZIP](https://drive.google.com/file/d/1didqsuweIbWb6UhL15IMhs2HrDhvC3EQ/view) |
+| RealSense DSN | [Checkpoint](https://drive.google.com/file/d/1Fe6RPN9cwEk6SsvGix9huspZf9Qz2yju/view) |
+
+The registry verifies the extracted files by size and SHA256. Kinect requires your own matching DSN checkpoint. Default table-frame refinement needs `cam0_wrt_table.npy` and, for single-view frames, `camera_poses.npy`. It uses observed depth/fused XYZ and camera calibration; object models and GT instance masks are not refinement inputs.
+
+For Generalizing-Grasp, place the [author fused data](https://drive.google.com/file/d/12YODD0ZUu6XTudU1fZBhVtAmIpMZk8xQ/view?usp=sharing) under `fusion_scenes/scene_XXXX/CAMERA/points.npy`. A numeric `points.npz` with aligned floating-point `xyz`, `normal` and `color` arrays of shape `[N,3]` is also supported and takes precedence when present. XYZ is in table coordinates and metres. The legacy NumPy dictionary is parsed as data without executing pickle callables; unsupported object layouts are rejected. Native training still requires aligned `seg.npy` supervision.
+
+```bash
+./panda weights generalizing_grasp --camera realsense
+./panda init --example refine-fused -o fused.local.yaml
+```
+
+Set your dataset root and checkpoint, then run the generated configuration. [Refinement parameters and observation protocols](REFERENCE.md#contact-score-refinement) explain single-view transfer and fused-scene output coordinates.

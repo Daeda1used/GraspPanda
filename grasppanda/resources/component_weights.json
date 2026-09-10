@@ -552,5 +552,21 @@
     "path": "checkpoints/components/scale_balanced_dsn.tar",
     "bytes": 14142155,
     "sha256": "c31051da36c7de32a9656c83d4116b87496796e96651f5a6c004b0b6f75d62e7"
+  },
+  {
+    "id": "generalizing_contactnet",
+    "path": "checkpoints/components/generalizing_contactnet.tar",
+    "source": "https://drive.google.com/file/d/1yMZ5rgloo0xbYvuR46t3sSKMvaVpOavx/view",
+    "archive_member": "log_contactnet/checkpoint.tar",
+    "bytes": 14112467,
+    "sha256": "608660731b6f9159d5a9a1e848ecfb917821763927673cae79271138e2844fcb"
+  },
+  {
+    "id": "generalizing_scorenet",
+    "path": "checkpoints/components/generalizing_scorenet.tar",
+    "source": "https://drive.google.com/file/d/1didqsuweIbWb6UhL15IMhs2HrDhvC3EQ/view",
+    "archive_member": "log_scorenet/checkpoint.tar",
+    "bytes": 18740867,
+    "sha256": "0719e5d6307fd531c00f27d9d9b8d350fb859f0b3e1d0d7a268351c6a958e798"
   }
 ]

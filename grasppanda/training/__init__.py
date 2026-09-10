@@ -236,6 +236,9 @@ def point_family(config, out, steps=3):
         evidence['clean_scene_cache'] = ncm_inventory(config)
         dataset_cls = importlib.import_module('graspnet_wonoise_dataset').GraspNetDataset_mix
     dataset=dataset_cls(**kwargs)
+    if fusion:
+        from grasppanda.methods.fusion_data import install_dataset_reader,read_fusion
+        install_dataset_reader(dataset)
     if ncm_enabled(config): dataset = NoisyCleanDataset(dataset, config)
     if economic:
         path=root/'economic_grasp_label_300views'/(scene+'_labels.npz')
@@ -276,7 +279,7 @@ def point_family(config, out, steps=3):
             path=staging/'objectness_score'/scene/config.camera/(prefix+f'{config.frame:04d}.npy')
             getattr(dataset,name)[index]=str(path);evidence[name]=digest(path)
     if fusion:
-        cloud=np.load(dataset.pcdpath[config.scene],allow_pickle=True).item()
+        cloud=read_fusion(dataset.pcdpath[config.scene])
         segmentation=np.load(dataset.labelpath[config.scene])
         if len(cloud['xyz'])!=len(segmentation):
             raise ValueError('Fused points and segmentation have different row counts. Rebuild matched fusion/segmentation files or select another intact training scene; the toolbox will not guess a correspondence.')
@@ -284,7 +287,7 @@ def point_family(config, out, steps=3):
     samples=([data]+[dataset[config.scene*256+frame] for frame in frame_ids[1:]] if multi_frame
              else [data]*(2 if fusion or graph else 1))
     if fusion:
-        evidence['fusion_points']=digest(root/'fusion_scenes'/scene/config.camera/'points.npy')
+        evidence['fusion_points']=digest(dataset.pcdpath[config.scene])
         evidence['fusion_segmentation']=digest(root/'fusion_scenes'/scene/config.camera/'seg.npy')
     collate=dataset_module.spconv_collate_fn if modern else (dataset_module.minkowski_collate_fn if sparse or fusion else dataset_module.collate_fn)
     cls=getattr(model_module,{'economicgrasp':'economicgrasp','fgc_graspnet':'FGC_graspnet','scale_balanced_grasp':'GraspNet_MSCQ','generalizing_grasp':'GraspNet_MSCQ','graspbalance':'GraspBalance','granet':'GraNet'}.get(config.method,'GraspNet'))

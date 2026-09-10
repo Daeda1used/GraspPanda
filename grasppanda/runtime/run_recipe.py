@@ -71,17 +71,7 @@ def main():
         assert array.ndim == 2 and array.shape[1] == 17 and np.isfinite(array).all()
         np.save(out/'grasps.npy', array); result.update(grasps=len(array),prediction_sha256=digest(out/'grasps.npy'))
 
-    if mid == 'generalizing_grasp':
-        from mink_dataset import GraspNetDataset_fusion, minkowski_collate_fn
-        from graspnet_sparseconv import GraspNet_MSCQ, pred_decode
-        dataset = GraspNetDataset_fusion(args.dataset_root, valid_obj_idxs=None, grasp_labels=None,
-            split='test', camera=camera, num_points=20000, remove_outlier=True, augment=False, load_label=False,use_fine=False)
-        model = GraspNet_MSCQ(is_training=False).cuda().eval()
-        model.load_state_dict(checkpoint('model.tar')['model_state_dict'],strict=True)
-        sample = dataset[0]; batch = {k:v.cuda() if isinstance(v,torch.Tensor) else v for k,v in minkowski_collate_fn([sample]).items()}
-        with torch.no_grad(): pred, saved = pred_decode(model(batch))
-        save_grasps(pred[0]); result.update(stage='fused_scene_forward_decode',protocol='upstream fused scene, GT segment labels, no C-SJO or AP')
-    elif mid == 'contact_graspnet_g1b':
+    if mid == 'contact_graspnet_g1b':
         sys.path.remove(str(repo/'utils'))
         from models.cgnet import ContactGraspNet
         from graspnetAPI import GraspNet, GraspGroup

@@ -2290,5 +2290,38 @@
       },
       "timeout_minutes": 43200
     }
+  },
+  "refine-hggd": {
+    "description": "Refine HGGD poses with predicted objects and frozen contact/score networks",
+    "config": {
+      "method": "hggd",
+      "action": "infer",
+      "dataset_root": "/data/GraspNet-1B",
+      "checkpoint": "checkpoints/hggd/checkpoint-realsense.tar",
+      "camera": "realsense",
+      "workspace": "native_demo",
+      "refinement": {
+        "type": "contact_score",
+        "iterations": 300,
+        "top_per_instance": 5
+      }
+    }
+  },
+  "refine-fused": {
+    "description": "Refine a visual fused scene with MSCQ and contact-score objectives",
+    "config": {
+      "method": "generalizing_grasp",
+      "action": "infer",
+      "dataset_root": "/data/GraspNet-1B",
+      "camera": "realsense",
+      "workspace": "fused_scene",
+      "num_points": 20000,
+      "refinement": {
+        "type": "contact_score",
+        "iterations": 300,
+        "top_per_instance": 5
+      },
+      "checkpoint": "checkpoints/generalizing_grasp/model.tar"
+    }
   }
 }

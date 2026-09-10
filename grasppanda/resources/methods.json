@@ -69,7 +69,7 @@
     "paper_title": "Generalizing 6-DoF Grasp Detection via Domain Prior Knowledge",
     "path": "upstream/multi_view/fusion/generalizing_grasp",
     "name": "Generalizing-Grasp",
-    "input_note": "Fused scene inference and short training; MSCQ only, without C-SJO."
+    "input_note": "One fused scene of table-frame XYZ and normals. Inference needs no instance labels; contact-score refinement uses predicted instances and camera calibration. Short training retains matched instance supervision and native SDF objectives."
   },
   {
     "id": "active_ngf",

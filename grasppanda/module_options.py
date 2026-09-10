@@ -33,6 +33,9 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if slot == 'refinement' and choice == 'contact_score':
+        from .refinement import SCHEMA
+        return SCHEMA
     if method == 'scale_balanced_grasp' and slot == 'sampling':
         from .methods.scale_balanced_sampling import SCHEMA
         return SCHEMA if choice == 'object_balanced' else {}

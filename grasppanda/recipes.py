@@ -4,7 +4,6 @@ from .config import ROOT
 
 # Fixed recipes are intentionally distinct from configurable frame adapters.
 RECIPES = {
- 'generalizing_grasp': ('realsense','Fused scene 0100 → MSCQ checkpoint → decoder. Requires fusion_scenes and upstream segmentation; excludes C-SJO.'),
  'contact_graspnet_g1b': ('realsense','Scene 0100/0000 → native GT bounding box → checkpoint → decoder → collision.'),
  'rngnet_sdk': ('realsense','Scene 0100/0000 RGB-D → bundled author weights → native SDK inference.'),
  'zerograsp': ('realsense','Author supplied RGB-D + instance masks → synthetic-trained checkpoint → reconstruction → grasps. Not a GraspNet frame.'),
@@ -20,12 +19,15 @@ RECIPES = {
 }
 NO_DATA = {'zerograsp','asgrasp','spahybgen'}
 NO_WEIGHTS = {'rngnet_sdk','spahybgen'}
-CHECKPOINT_RECIPES = {'generalizing_grasp','contact_graspnet_g1b','gfla','centergrasp','motiongrasp','rgb_matters','spahybgen'}
+CHECKPOINT_RECIPES = {'contact_graspnet_g1b','gfla','centergrasp','motiongrasp','rgb_matters','spahybgen'}
 
 
 def preset(method, dataset_root=''):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if method == 'generalizing_grasp':
+        return Experiment(method=method, action='infer', dataset_root=dataset_root, workspace='fused_scene',
+            num_points=20000, checkpoint=primary(method,'realsense') or 'checkpoints/generalizing_grasp/model.tar')
     if method == 'spgrasp':
         return Experiment(method=method, action='train_short', dataset_root=dataset_root, split='train', scene=0,
             frames=8, batch_size=1, learning_rate=5e-6, workspace='native_demo', collision_thresh=0,
@@ -66,8 +68,6 @@ def preflight(config):
         for r in records(config.method,config.camera):
             if config.checkpoint and r.get('role')=='primary':continue
             if not (ROOT/r['path']).is_file():raise ValueError('Missing recipe weight: '+r['path']+'. Click Download registered weights.')
-    if config.method=='generalizing_grasp' and not (Path(config.dataset_root)/'fusion_scenes').is_dir():
-        raise ValueError('Generalizing-Grasp needs fusion_scenes; raw single-view scenes are insufficient. See upstream preprocessing instructions.')
     if config.method=='asgrasp' and not (ROOT/'upstream/auxiliary/stereo/asgrasp/gsnet/models').is_dir():
         # Actual repository location comes from the catalogue (not a fixed layout).
         from .config import catalogue

@@ -417,3 +417,5 @@ SOFTWARE.
 ```
 
 </details>
+
+Contact-score refinement imports the pinned Generalizing-Grasp networks and selected geometry definitions at runtime; its auxiliary weight downloads remain with the author source terms. That repository has no project-level license declaration. GraspPanda does not redistribute those networks or weights, and its MIT license grants no additional rights to them. The predicted-instance, coordinate and optimization adaptations are described in the [refinement reference](REFERENCE.md#contact-score-refinement).

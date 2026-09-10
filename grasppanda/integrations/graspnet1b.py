@@ -7,6 +7,9 @@ from ..jobs import digest
 
 
 def preflight(config):
+    if config.method == 'generalizing_grasp' and config.action == 'infer':
+        from ..methods.generalizing import preflight as fused_preflight
+        return fused_preflight(config)
     if config.action in ("infer", "train", "train_short", "evaluate"):
         if not config.dataset_root or not (Path(config.dataset_root) / "scenes").is_dir():
             raise ValueError("Select a dataset root containing scenes/")
@@ -16,6 +19,13 @@ def preflight(config):
     if config.action == 'train_short':
         root=Path(config.dataset_root)
         if config.method=='generalizing_grasp':
+            import numpy as np
+            from ..methods.generalizing import source_path
+            from ..methods.fusion_data import read_fusion
+            points=read_fusion(source_path(config))['xyz']
+            labels=np.load(source_path(config).parent/'seg.npy',allow_pickle=False)
+            if labels.ndim!=1 or len(labels)!=len(points):
+                raise ValueError('Fusion training needs point-aligned seg.npy; rebuild matched data or select an intact scene')
             sdf_root=Path(config.sdf_root or config.dataset_root)
             missing=[i for i in range(88) if not (sdf_root/'models'/f'{i:03d}'/'grid_sampled_sdf.npz').is_file()]
             if missing:raise ValueError('Native fusion contact loss requires all 88 object SDF grids. Run ./panda prepare-sdf and set sdf_root; missing IDs: '+str(missing))
@@ -121,6 +131,11 @@ def preflight(config):
         from ..jobs import digest
         if config.method=='finegrasp' and manifest.get('model_config_sha256')!=digest(Path(config.checkpoint).parent/'model.config.json'):
             raise ValueError('FineGrasp prediction architecture configuration differs from the selected checkpoint')
+        from ..refinement import manifest_artifacts as refinement_artifacts, settings as refinement_settings
+        if refinement_settings(manifest['config'].get('refinement', {})) != refinement_settings(config.refinement):
+            raise ValueError('Prediction refinement configuration mismatch')
+        if config.refinement and manifest.get('refinement_artifacts') != refinement_artifacts(config):
+            raise ValueError('Prediction refinement weights or sources changed')
         hashes = manifest.get('files',{})
         for scene in range(low,high):
             for frame in range(256):

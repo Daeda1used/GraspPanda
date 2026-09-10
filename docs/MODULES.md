@@ -66,3 +66,5 @@ The baseline encoder returns original-input seed indices and 256-channel feature
 | Compare configurations | [Sweeps](USAGE.md#configuration-sweeps) |
 
 Use `./panda init --list` to discover complete templates, then `./panda init --example NAME` to generate one locally. Omitted parameters use component defaults. The reference describes cross-stage constraints, physical units and changes to author implementations; no component choice implies improved accuracy or compatible pretrained grasp weights.
+
+Pose postprocessing is configured independently with `refinement`; see [contact-score refinement](REFERENCE.md#contact-score-refinement) for predicted-instance grouping, pose variables and auxiliary objectives.

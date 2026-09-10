@@ -7,6 +7,7 @@ Detailed parameters, input contracts and method-specific training behavior. Star
 | Select compatible parts | [Slots and parameters](MODULES.md#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
 | Point encoders | [SP2T](#sp2t-sparse-proxy-hierarchy) · [Swin3D](#swin3d-sparse-window-hierarchy) · [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
+| Pose refinement | [Contact-score objectives, sampling and optimization](#contact-score-refinement) |
 | Quality prediction | [Residual score heads, BCE, Varifocal and MAL](#quality-score-heads) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -1678,5 +1679,61 @@ Build native operators against the locked runtime. Version source patches under 
 | ASGrasp | Fetch the pinned GSNet submodule and retain the author's RGB/stereo input path. |
 
 Source pins and the Python lock make dependencies traceable. System compilers and hardware still affect native builds; a port does not by itself establish numerical equivalence to the historical author environment.
+
+</details>
+
+
+<details>
+<summary>Contact-score refinement and fused-scene inference</summary>
+
+## Contact-score refinement
+
+Set `refinement.type: contact_score`, or select **Refine grasps → Pose refinement → contact_score** in the browser. This postprocessing stage composes with registered 6-DoF inference adapters, including point methods, HGGD/RNG, FineGrasp, GtG2 and Generalizing-Grasp. It preserves the selected grasp network and its learned parameters. Point, image, temporal and grasp head replacements retain their own compatibility contracts; planar SPGrasp and fixed author demos do not use this refinement adapter.
+
+The component uses the frozen ContactNet and ScoreNet from [Generalizing-Grasp (CVPR 2024)](https://github.com/mahaoxiang822/Generalizing-Grasp). The public author optimizer groups candidates using GT CAD geometry and instance masks. GraspPanda instead predicts DSN instances from observed XYZ, assigns candidates to nearby observed points, and optimizes each selected pose against its predicted object crop. Single-view use is a transfer of the fused-scene objective, not a reproduction of the paper's complete protocol or reported AP.
+
+```yaml
+refinement:
+  type: contact_score
+  iterations: 300
+  top_per_instance: 5
+  coordinate_frame: table
+  acceptance: joint
+  translation_lr: 0.0002
+  approach_lr: 0.002
+  angle_lr: 0.002
+  width_lr: 0.0001
+  depth_lr: 0
+```
+
+| Parameter | Default and behavior |
+|---|---|
+| `iterations` | `300` Adam updates per selected grasp; 1–2000 |
+| `top_per_instance` | `5` highest-scoring candidates per sufficiently large predicted object |
+| `scene_points`, `min_object_points` | `20000` sampled observed points; skip optimization for predicted objects with fewer than `64` points |
+| `nms_translation`, `nms_angle` | `0.03` metres and `30` degrees; native NMS selects optimization candidates |
+| `max_assignment_distance` | `0.03` metres from the candidate center to its nearest observed point; background and more distant assignments are unassigned |
+| `output` | `all` retains all native candidates; `selected` retains optimization candidates plus unassigned candidates when `unassigned: keep` |
+| `unassigned` | `keep` retains these poses; `drop` removes them; `error` stops the job |
+| `coordinate_frame` | `table` transforms points and grasps using camera calibration; `camera` performs the optimization in the reference camera frame |
+| `gripper_points` | `64` native mesh surface samples for each auxiliary network |
+| Pose learning rates | Listed above; zero freezes that variable. Depth is fixed by default. At least one rate must be positive. |
+| `min_width`, `max_width` | `0.001`, `0.1` metres, applied to width updates; a trained model's existing pose remains the fallback. Optimized depth is bounded to 0.001–0.1 m. |
+| Objective weights | `contact_map_weight: 1`, `projection_map_weight: 0.2`, `center_weight: 5`, `contact_distance_weight: 1`, `score_weight: 0.1` |
+| `acceptance` | `joint` requires both contact-map loss and score loss to improve; `total` requires the weighted objective to improve. The lowest-total eligible pose is returned. |
+| Checkpoint overrides | `contact_checkpoint`, `score_checkpoint`, `segmentation_checkpoint` accept matching weights; otherwise use the registered files. |
+| `segmentation` | DSN clustering options: `iterations`, `epsilon`, `sigma`, `cluster_seeds`, `subsample_factor`, `min_cluster_points`, `foreground_threshold`; defaults follow the [object-balanced sampling component](#scale-balanced-grasp-components). |
+
+The objective retains the native weighted contact-map errors, contact-distance penalties, center regularizer and `log(12) - predicted_score`. An equivalent perpendicular-distance expression avoids the undefined `acos` gradient at collinear contacts. Pose optimization uses a scalar in-plane angle, preserving the initial rotation instead of re-encoding it through the author's tanh angle embedding. Fixed mesh sampling seeds make objective comparisons repeatable. The returned pose is evaluated after its update; invalid objectives or gradients stop optimization and preserve the best valid accepted pose. The original detector score is retained; it is not replaced with an uncalibrated auxiliary score.
+
+Collision filtering runs again on observed geometry after refinement, using `collision_thresh` (`0` disables it). Native method filtering remains part of its input predictions. Original predictions, predicted instance IDs, per-candidate objectives, auxiliary file hashes and coordinate conventions are stored in the run directory. These are local experiment artifacts. Prediction manifests identify auxiliary inputs by content rather than machine-specific paths, so matching weights can be relocated for evaluation. Independent native import namespaces run in separate processes in the same Python environment, and are covered by job cancellation.
+
+Use `refine-hggd` or `refine-fused` with `./panda init --example NAME`. Sweeps accept dotted keys such as `refinement.iterations`, `refinement.score_weight` and `refinement.segmentation.sigma`. Training actions require an empty `refinement` mapping; this component optimizes poses at inference, not the grasp network's parameters.
+
+### Generalizing-Grasp fused observations
+
+The Generalizing-Grasp preset uses `action: infer`, `workspace: fused_scene`, `frame: 0`, `frames: 1` and `num_points: 20000`. Select any scene in the declared split; use a scene sweep to process multiple fused scenes. The native MinkUNet/MSCQ network consumes table-frame XYZ and normals and requires no instance mask during inference. Kinect retains the author's fixed table workspace. Short training uses the separate `fused_gt_workspace` supervision protocol.
+
+Outputs are **table-frame** grasps under `predictions/scene_XXXX/CAMERA/result.npy`; previews transform them to camera 0. Refinement also returns table-frame grasps. Camera-space single-view AP must not be applied to these fused observations, so the toolbox does not expose its single-frame evaluator for this method. The previous fixed Generalizing-Grasp recipe is replaced by this configurable fused-scene adapter.
 
 </details>

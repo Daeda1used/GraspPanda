@@ -23,6 +23,7 @@ def capabilities(method):
         return []
     actions = []
     if method == 'gtg2': return ['infer', 'evaluate', 'train']
+    if method == 'generalizing_grasp':actions += ['infer']
     if method == 'spgrasp': return ['infer', 'train_short']
     if method in CORE:
         actions += ["infer", "evaluate"]
@@ -44,6 +45,7 @@ def capabilities(method):
 class Experiment:
     dataset: str = "graspnet1b"
     modules: dict = field(default_factory=dict)
+    refinement: dict = field(default_factory=dict)
     loss: dict = field(default_factory=dict)
     augmentation: dict = field(default_factory=dict)
     optimizer: dict = field(default_factory=dict)
@@ -102,6 +104,8 @@ class Experiment:
         return obj
 
     def validate(self):
+        from .refinement import validate as validate_refinement
+        validate_refinement(self)
         if type(self.proposal_warmup_steps) is not int or not 0 <= self.proposal_warmup_steps <= 10000:
             raise ValueError('proposal_warmup_steps must be an integer in [0, 10000]')
         from .methods.seed_warmup import SEED_METHODS
@@ -149,9 +153,14 @@ class Experiment:
             raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
-        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace"):
+        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace", "fused_scene"):
             raise ValueError("Unknown workspace policy")
         if self.action in ('infer', 'evaluate'):
+            if self.method == 'generalizing_grasp':
+                if self.workspace != 'fused_scene' or self.frame != 0 or self.frames != 1:
+                    raise ValueError('Fused inference requires workspace: fused_scene, frame: 0, frames: 1; use scene sweeps for multiple fused scenes')
+            elif self.workspace in ('fused_scene', 'fused_gt_workspace'):
+                raise ValueError('Fused workspace policies require the Generalizing-Grasp adapter')
             if (self.method in (*HEATMAP,'finegrasp','spgrasp')) != (self.workspace == 'native_demo'):
                 raise ValueError('HGGD / RegionNormalizedGrasp / FineGrasp / SPGrasp require workspace: native_demo; point methods require a point-cloud workspace policy')
             if self.method in NATIVE_POINTS and self.workspace != 'official_gt_workspace':
@@ -214,6 +223,8 @@ class Experiment:
             if value:
                 paths[name] = os.path.abspath(ROOT / Path(value).expanduser())
         config = replace(self, **paths)
+        from .refinement import artifacts as refinement_artifacts
+        refinement_artifacts(config)
         from .methods.scale_balanced_sampling import enabled as obs_enabled, checkpoint as obs_checkpoint
         if obs_enabled(config): obs_checkpoint(config)
         if config.method == 'scale_balanced_grasp':
@@ -224,6 +235,8 @@ class Experiment:
             raise ValueError("Source missing: run ./panda fetch")
         from .datasets import get_provider
         get_provider(config.dataset).preflight(config)
+        from .refinement import preflight as refinement_preflight
+        refinement_preflight(config)
         return config
 
     def to_dict(self):

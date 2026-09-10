@@ -166,6 +166,8 @@ class JobManager:
         if obs_enabled(config):
             path, sha = obs_checkpoint(config)
             provenance['auxiliary_weights'] = {str(path): sha}
+        from .refinement import enabled as refinement_enabled, artifacts as refinement_artifacts
+        if refinement_enabled(config):provenance['refinement_artifacts'] = refinement_artifacts(config)
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
         if config.method=='finegrasp' and config.checkpoint:
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')

@@ -49,6 +49,9 @@ def overlay(rgb_path, grasps, intr, destination):
 
 
 def infer(config, out):
+    if config.method == 'generalizing_grasp':
+        from .methods.generalizing import infer as fused_infer
+        return fused_infer(config,out)
     if config.method == 'spgrasp':
         from .methods.spgrasp import infer as planar_infer
         return planar_infer(config, out)
@@ -230,6 +233,9 @@ def main():
             raise ValueError('Queued checkpoint changed before execution')
         if provenance.get('model_config_sha256') and digest(Path(config.checkpoint).parent/'model.config.json')!=provenance['model_config_sha256']:
             raise ValueError('Queued model configuration changed before execution')
+        for files in provenance.get('refinement_artifacts', {}).values():
+            for path, expected in files.items():
+                if digest(path) != expected:raise ValueError('Refinement input changed while queued; resubmit')
         for path, expected in provenance.get('auxiliary_weights', {}).items():
             if digest(path) != expected: raise ValueError('Auxiliary checkpoint changed while queued')
         for path,expected in provenance.get('recipe_weights',{}).items():
@@ -265,6 +271,9 @@ def main():
         result=json.loads((out/'result.json').read_text())
     else:
         result = {"infer": infer, "train": train, "evaluate": evaluate}[config.action](config, out)
+    if config.action == 'infer':
+        from .refinement import run as refine
+        result = refine(config, out, result)
     (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print("GRASPPANDA_RESULT=" + json.dumps(result), flush=True)
 
