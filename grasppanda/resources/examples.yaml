@@ -1028,3 +1028,63 @@ compose-pointhr:
         dec_channels: [32, 48, 96, 192]
         dec_groups: [4, 4, 8, 16]
         gradient_checkpointing: true
+
+compose-pointrwkv:
+  description: Released-code PointRWKV recurrence and local graph with configurable
+    stages
+  config:
+    method: graspnet_baseline
+    action: train_check
+    camera: realsense
+    split: train
+    scene: 0
+    num_points: 15000
+    checkpoint_policy: reuse_unchanged
+    training_steps: 30
+    learning_rate: 0.001
+    modules:
+      backbone:
+        type: pointrwkv_released
+        stage_channels:
+        - 48
+        - 64
+        - 96
+        depths:
+        - 1
+        - 1
+        - 1
+        stage_heads:
+        - 4
+        - 4
+        - 4
+        num_points:
+        - 256
+        - 128
+        - 64
+        group_sizes:
+        - 16
+        - 16
+        - 16
+        k_neighbors:
+        - 16
+        - 8
+        - 8
+        graph_iterations:
+        - 1
+        - 2
+        - 2
+        patch_channels:
+        - 32
+        - 64
+        - 96
+        decoder_channels:
+        - 96
+        - 64
+        - 48
+        decoder_depths:
+        - 2
+        - 2
+        - 2
+        gradient_checkpointing: true
+    dataset_root: /data/GraspNet-1B
+    checkpoint: checkpoints/graspnet_baseline/checkpoint-rs.tar

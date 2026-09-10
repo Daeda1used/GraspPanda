@@ -80,6 +80,9 @@ def _schema(method, slot, choice):
     if slot == 'backbone' and choice == 'oacnns':
         from .modules.oacnns_options import schema as oacnns_schema
         return oacnns_schema()
+    if slot == 'backbone' and choice == 'pointrwkv_released':
+        from .modules.pointrwkv_options import schema as pointrwkv_schema
+        return pointrwkv_schema()
     if slot == 'backbone' and choice == 'pointhr':
         from .modules.pointhr_options import schema as pointhr_schema
         return pointhr_schema()
@@ -326,6 +329,9 @@ def validate_options(method, slot, choice, options):
     if choice == 'oacnns':
         from .modules.oacnns_options import validate as validate_oacnns
         validate_oacnns(options)
+    if choice == 'pointrwkv_released':
+        from .modules.pointrwkv_options import validate as validate_pointrwkv
+        validate_pointrwkv(options)
     if choice == 'pointhr':
         from .modules.pointhr_options import validate as validate_pointhr
         validate_pointhr(options)

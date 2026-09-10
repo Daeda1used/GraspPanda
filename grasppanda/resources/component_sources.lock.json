@@ -156,5 +156,11 @@
     "repository": "https://github.com/haibo-qiu/PointHR",
     "commit": "2d88b36506cd02f4663eb673358bf156722d5c6c",
     "path": "environments/sources/cv/pointhr"
+  },
+  {
+    "id": "pointrwkv",
+    "repository": "https://github.com/hithqd/PointRWKV",
+    "commit": "3b34d346f6131dd0ec81e1831db0b6742b52bfd9",
+    "path": "environments/sources/cv/pointrwkv"
   }
 ]

@@ -5,7 +5,7 @@ Module replacement is an explicit contract, not a shape-only switch. Supported c
 | Configure | Reference |
 |---|---|
 | Select compatible parts | [Slots and parameters](#component-selection-and-parameters) · [Scale-Balanced-Grasp](#scale-balanced-grasp-components) · [EconomicGrasp](#economicgrasp-components) |
-| Point encoders | [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
+| Point encoders | [PointRWKV](#pointrwkv-released-code-hierarchy) · [PointHR](#pointhr-multi-resolution-point-features) · [PointCNN++](#pointcnn-native-point-convolution) · [Flash3D](#flash3d-native-hierarchy) · [OA-CNNs](#oa-cnns-adaptive-sparse-hierarchy) · [KPConvX](#kpconvx-kernel-point-hierarchy) · [PointVector](#pointvector-encoder) · [PointMetaBase](#pointmetabase-encoder) · [PointMamba](#pointmamba-encoder) · [PCM](#point-cloud-mamba-hierarchy) · [OctFormer](#octformer-hierarchy) · [PTv2](#point-transformer-v2) · [LitePT](#litept-encoder) · [PTv3](#point-transformer-encoder) |
 | Local grouping and interaction | [Cylindrical ResLFE](#residual-local-aggregation-in-cylinders) · [Kernel point cylinders](#kernel-point-cylinder-aggregation) · [Seed interaction](#grouped-seed-interaction) · [FineGrasp](#finegrasp-training-and-composition) |
 | Sampling | [Network seeds and hierarchy stages](#network-sampling-policies) · [Observation sampling](#training-controls) |
 | Pretrained point encoders | [Utonia and Concerto](#pretrained-point-encoders) |
@@ -21,16 +21,16 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 
 | Method | Slot | Choices |
 |---|---|---|
-| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Baseline / PointNet2 port | `backbone` | `upstream`, `pointnet`, `pointnext`, `pointvector`, `pointmeta`, `pointmlp`, `pointmamba`, `pointcloud_mamba`, `octformer`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Scale-Balanced-Grasp | `backbone` | Same replacement point encoders as Baseline, with network sampling controls |
 | Scale-Balanced-Grasp | `crop` | `upstream`, `native_mscq`; [independent branch configuration](#scale-balanced-grasp-components) |
 | Baseline / PointNet2 port | `crop` | `upstream`, `multiscale`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| Graspness | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | Graspness | `crop` | `upstream`, `cylinder`, `finegrasp`, `reslfe_cylinder`, `kpconvx_cylinder` |
-| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| EconomicGrasp | `backbone` | `upstream`, `native_tdunet`, `pointnet`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | EconomicGrasp | `crop` | `upstream`, `native_cylinder`, `cylinder`, `reslfe_cylinder`, `kpconvx_cylinder`; optional seed interaction |
 | EconomicGrasp | `head` | `upstream`, `native_interactive` |
-| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
+| FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](MODULES.md#candidate-graph-experiments) |
@@ -1415,5 +1415,36 @@ Epoch checkpoints include every member's model, best validation state, optimizer
 The adapter retains the released GNN's position encoder and transformation block. It resolves inconsistent graph/model feature dimensions with explicit four-feature binary encoding, includes the surrounding points, corrects edge conversion and aligns each regression prediction with one scalar target. Missing preparation/inference helpers are reconstructed around the available geometry code and official evaluator primitives.
 
 The five-member, 500-epoch preset and refreshed negative sampling follow the paper's described protocol; they are not implemented by the released short training script. Raw and inpainted proposals use one declared geometry configuration, frame-specific camera poses and widths capped at 0.1 m. Deterministic score ties replace the source's zero-threshold quadratic NMS. These choices and configurable alternatives constitute a toolbox reconstruction; they do not establish the paper's reported accuracy.
+
+</details>
+
+<details>
+<summary>PointRWKV: released-code recurrence, local graph and point decoder</summary>
+
+## PointRWKV released-code hierarchy
+
+`pointrwkv_released` uses the [PointRWKV author implementation](https://github.com/hithqd/PointRWKV), associated with [AAAI 2025](https://ojs.aaai.org/index.php/AAAI/article/view/32353). It combines bidirectional matrix-state recurrence with a local graph branch. Three native feature-propagation stages restore the original input points. The category-conditioned segmentation head is replaced by a grasp-feature projection; grasp inference does not require shape-category labels.
+
+Select it for Baseline, the PointNet2 port, Scale-Balanced-Grasp, Graspness, EconomicGrasp or FineGrasp. Dense adapters return original-input seed indices and 256-channel features. Sparse adapters preserve the coordinate map and all input rows, and return the method's native feature width. Camera XYZ remains separate from input attributes; Graspness/EconomicGrasp attributes and FineGrasp normals enter both patch encoding and the original-point decoder skip.
+
+| Control | Default and meaning |
+|---|---|
+| `stage_channels`, `depths`, `stage_heads` | `[384,384,384]`, `[4,4,4]`, `[8,8,8]`; encoder widths, block counts and heads, fine to coarse |
+| `num_points`, `group_sizes` | `[2048,1024,512]`, `[32,32,32]`; independently sampled centers and KNN patch sizes at each stage |
+| `k_neighbors`, `graph_iterations` | `[16,8,8]`, `[3,3,3]`; local graph size and learned stabilization iterations |
+| `ffn_ratios` | `[4,4,4]`; channel-mixing expansion at each stage |
+| `patch_channels` | `[128,256,512]`; widths of the native patch-encoding CNN |
+| `decoder_channels`, `decoder_depths` | `[384,384,384]`, `[2,2,2]`; coarse-to-fine propagation output widths and CNN depths, ending at original points |
+| `drop`, `drop_path_rate` | `0`, `0.1`; channel-mixing dropout and maximum stochastic-depth probability |
+| `recurrence_backend`, `chunk_size` | `parallel`, `32`; exact chunk evaluation of the released recurrence, or the original token loop with `native` |
+| `gradient_checkpointing` | `false`; recompute encoder blocks during backward to reduce retained activations |
+
+Stage widths must divide into four BQE channel quarters and complete attention heads. Center counts must be nonincreasing, local graph neighbors must fit their stage, and patch neighborhoods must fit every input scene. Decoder controls are ordered coarse to original-point resolution. The default architecture can require substantial GPU memory; configure widths, center counts and checkpointing for your experiments.
+
+The `parallel` recurrence evaluates the same state updates and gradients with direct products inside each chunk, including exact zero decay. Smaller chunks reduce intermediate memory; larger chunks expose more parallel work. This acceleration does not replace the original FPS or change KNN neighborhoods. The complete released implementation uses dense neighbor search; no linear-complexity claim is made for the whole network.
+
+**Released-code semantics:** source stages independently sample the original cloud. BQE shifts tokens; attention uses sigmoid gates and GroupNorm; channel mixing uses SiLU; the local graph uses KNN. These differ from parts of the paper's radius-graph, hierarchical and gating descriptions. The selector deliberately identifies the code variant. FPS begins at a random point and token order affects recurrence, so changing the input ordering is not guaranteed to preserve predictions.
+
+No compatible pretrained grasp checkpoint is registered for this replacement. Use `checkpoint_policy: reuse_unchanged` to initialize the replacement while retaining compatible grasp-head weights, then train it. Use `strict` when loading the resulting checkpoint. The installer fetches pinned source into the shared runtime; this adapter does not redistribute the author repository or grant it an additional license.
 
 </details>
