@@ -17,6 +17,7 @@ After [installation](INSTALL.md), run the ASGrasp stereo sample without download
 ```bash
 ./panda weights asgrasp
 ./panda init --method asgrasp -o sample.local.yaml
+./panda check sample.local.yaml
 ./panda run sample.local.yaml
 ```
 
@@ -94,6 +95,7 @@ After extracting the images, run these commands from the installed repository:
 ./panda weights graspness --camera realsense
 ./panda init --method graspness \
   --dataset-root /data/GraspNet-1B -o graspness.local.yaml
+./panda check graspness.local.yaml
 ./panda run graspness.local.yaml
 ./panda ui
 ```

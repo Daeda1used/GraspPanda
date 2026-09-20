@@ -48,7 +48,7 @@ Open **http://127.0.0.1:7860**:
 
 **Choose a method → Load preset → Set data path → Download weights → Run.**
 
-View predictions and checkpoints in **Runs & results**. Expand **Compose modules** to build your own model.
+Use **Check current form** to verify required inputs before starting. View predictions and checkpoints in **Runs & results**; expand **Compose modules** to build your own model.
 
 **No dataset yet?** [Run the included author sample](docs/DOWNLOADS.md#start-without-graspnet), or [download your first GraspNet split](docs/DOWNLOADS.md#graspnet-1b). You can browse methods and generate JSON presets before installing the GPU runtime.
 

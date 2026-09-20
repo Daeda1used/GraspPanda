@@ -57,6 +57,8 @@ def main():
     run = commands.add_parser("run", help="Run an experiment from YAML or JSON")
     run.add_argument("config", type=Path)
     run.add_argument("--runs-dir", type=Path)
+    check = commands.add_parser('check', help='Check an experiment and required inputs without starting a run')
+    check.add_argument('config', type=Path)
     sweep = commands.add_parser('sweep', help='Preview or run a validated configuration grid')
     sweep.add_argument('config', type=Path)
     sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
@@ -102,6 +104,16 @@ def main():
         if args.command == "weights":
             command += [args.method,"--camera",args.camera]
         raise SystemExit(subprocess.call(command, cwd=ROOT))
+    elif args.command == 'check':
+        try:
+            config = Experiment.from_dict(read_configuration(args.config)).preflight()
+        except ImportError as error:
+            raise ValueError(f'Runtime dependency unavailable: {error}. Run ./panda install.') from None
+        print(json.dumps({'status': 'inputs_checked', 'method': config.method,
+                          'action': config.action, 'dataset': config.dataset,
+                          'camera': config.camera}, indent=2))
+        print('Configuration and required inputs checked. No experiment was started. '
+              'Model execution and GPU memory are checked when the experiment runs.')
     elif args.command == 'sweep':
         from .sweeps import Sweep
         from .jobs import JobManager

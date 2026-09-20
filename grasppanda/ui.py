@@ -511,9 +511,14 @@ def create_app(manager=None):
     def preflight(text):
         try:
             config = Experiment.from_dict(json.loads(text)).preflight()
-            return f"Configuration accepted: **{config.method} / {config.action}**. Ready to queue."
+            return (f"Inputs checked: **{config.method} / {config.action}**. "
+                    "No experiment was started. Model execution and GPU memory are checked when you run.")
         except Exception as error:
-            return f"Configuration blocked: {error}"
+            return f"**Check inputs:** {error}"
+
+    def check_form(*values):
+        text = compose(*values)
+        return preflight(text), text
 
     def submit(text):
         try:
@@ -754,7 +759,10 @@ def create_app(manager=None):
                     predictions = gr.Textbox(label="Complete predictions directory for evaluation", visible=False)
                     with gr.Accordion('Run settings', open=False):
                         timeout = gr.Number(60, precision=0, minimum=1, maximum=43200, label='Run time limit (minutes)')
-            run_form=gr.Button('Run current form',variant='primary')
+            with gr.Row():
+                check_current_form = gr.Button('Check current form')
+                run_form=gr.Button('Run current form',variant='primary')
+            form_readiness = gr.Markdown()
             with gr.Accordion("Configuration editor", open=False):
                 gr.Markdown("Generate JSON from the form, edit it, then use **Run edited JSON** to submit that exact configuration.")
                 generate = gr.Button("Generate configuration")
@@ -977,6 +985,11 @@ For component experiments, expand **Compose modules**. Full configuration editin
         refinement_download.click(prepare_refinement,[camera,refinement_options],outputs=refinement_message,api_name='prepare_refinement')
         inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head,memory,prompt_options,planar_options,sampling,refinement_kind,refinement_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
+        check_current_form.click(check_form, inputs, [form_readiness, config_text], api_name='validate_form')
+        # Clear immediately in the browser: a delayed server response from an
+        # earlier edit must not erase the result of a newer check.
+        gr.on([field.change for field in inputs], fn=None, outputs=form_readiness,
+              js="() => ''", api_name=False, queue=False, show_progress='hidden')
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')

@@ -6,7 +6,7 @@ Run `./panda ui` and open **http://127.0.0.1:7860**.
 
 1. In **Experiments**, select a protocol and method, then **Load preset**.
 2. Set the dataset root containing `scenes/`. **Download registered weights** prepares each required network for the selected camera and verifies its checksum.
-3. Select an operation, adjust its inputs and click **Run current form**.
+3. Select an operation and adjust its inputs. **Check current form** verifies the configuration and required input files; **Run current form** starts the experiment.
 4. In **Runs & results**, select the job to view logs, predictions, loss curves and checkpoints. Predictions and loss curves appear first; expand **Run details & logs** for diagnostics, raw results and individual files. Cancel a run or export it as a ZIP.
 
 Expand **Method details & input requirements** for the selected method's input protocol and original implementation. **Compose modules** appears for methods with registered replacements. **Training settings** appears for training operations; **Evaluate predictions** reveals the prediction-directory input. **Run settings** controls the time limit for every operation. **Configuration editor** lets you generate, edit, validate and run exact JSON. For a native recipe, the preset defines fixed inputs; disabled frame fields do not override them. Supported recipes accept a primary checkpoint override.
@@ -35,12 +35,15 @@ GraNet and GraspBalance presets start with short training from scratch because c
 ./panda weights graspness --camera realsense
 ./panda init --method graspness -o graspness.local.yaml
 # Set dataset_root and checkpoint in graspness.local.yaml.
+./panda check graspness.local.yaml
 ./panda run graspness.local.yaml
 ```
 
 `init` writes a local YAML configuration without downloading weights or running a model. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
 
-`run` accepts YAML or JSON; edit the local copy before running. Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
+`check` and `run` accept YAML or JSON. The check performs the same configuration and input preflight used before queueing, without creating an experiment. It does not execute the model or estimate GPU memory. The browser's **Check current form** also refreshes the JSON editor with the checked settings; its result clears when the form changes. **Validate JSON** checks the editor instead.
+
+Relative dataset, checkpoint, label, SDF and prediction paths resolve from the repository root before validation and execution. Each queued configuration records the resolved paths. `./panda fetch` restores missing pinned source checkouts without changing existing checkouts or the version lock.
 
 Set a default dataset path for the UI and CLI presets:
 
