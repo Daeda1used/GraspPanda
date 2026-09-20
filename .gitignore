@@ -26,6 +26,10 @@
 !/docs/assets/
 /docs/assets/*
 !/docs/assets/overview.svg
+!/docs/assets/workbench.png
+!/docs/assets/composition.png
+!/docs/assets/parallel-grasps.png
+!/docs/assets/dexterous-scene.png
 
 # Runtime source plus explicitly registered templates, pins and build resources.
 /grasppanda/**

@@ -24,6 +24,8 @@ jobs:
                        'checkpoints', 'environments', 'upstream', 'data', 'datasets',
                        'build', 'dist', '__pycache__', '.venv', '.python-version'}
           names = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          screenshots = {'docs/assets/workbench.png', 'docs/assets/composition.png',
+                         'docs/assets/parallel-grasps.png', 'docs/assets/dexterous-scene.png'}
           for name in filter(None, names):
               path = PurePosixPath(name)
               assert path.parts[0] in roots, f'Unexpected public entry: {name}'
@@ -33,6 +35,10 @@ jobs:
               file = Path(name)
               assert not file.is_symlink(), f'Local symlink: {name}'
               assert file.stat().st_size < 5_000_000, f'Oversized source file: {name}'
+              if name in screenshots:
+                  assert file.stat().st_size < 1_000_000, f'Oversized screenshot: {name}'
+                  assert file.read_bytes().startswith(b'\x89PNG\r\n\x1a\n'), f'Invalid PNG: {name}'
+                  continue
               file.read_text(encoding='utf-8')  # Compiled objects and weights are not source.
               allowed = {'.py', '.md', '.json', '.toml', '.lock', '.patch', '.cpp', '.cu'}
               special = {'.gitignore', '.gitattributes', 'LICENSE', 'panda',
