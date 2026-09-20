@@ -26,12 +26,14 @@ def align_lattice(feature, shape, stride, offset=0.):
 
 class ImagePyramid(nn.Module):
     def __init__(self, family, variant=None, stage_channels=None, stage_depths=None,
-                 drop_path=0., projection_norm='batch'):
+                 drop_path=0., projection_norm='batch', input_channels=4, input_size=(640,360)):
         super().__init__()
+        self.input_channels = input_channels
+        self.input_size = tuple(input_size)
         import timm
         variants = VARIANTS[family]
         name = variants[variant or next(iter(variants))]
-        kwargs = dict(pretrained=False, in_chans=4, features_only=True)
+        kwargs = dict(pretrained=False, in_chans=input_channels, features_only=True)
         if family == 'convnextv2':
             kwargs['drop_path_rate'] = drop_path
             if stage_channels is not None: kwargs['dims'] = tuple(stage_channels)
@@ -61,12 +63,13 @@ class ImagePyramid(nn.Module):
             self.projections.append(nn.Sequential(*layers))
         self.stem = None
         if self.strides[0] != 2:
-            self.stem = nn.Sequential(nn.Conv2d(4, 8, 7, stride=2, padding=3, bias=False),
+            self.stem = nn.Sequential(nn.Conv2d(getattr(self, 'input_channels', 4), 8, 7, stride=2, padding=3, bias=False),
                                       nn.BatchNorm2d(8), nn.LeakyReLU(inplace=True))
 
     def forward(self, x):
-        if x.ndim != 4 or x.shape[1:] != (4, 640, 360):
-            raise ValueError('HGGD/RNG image backbones require native D,R,G,B [B,4,640,360] inputs')
+        expected_input = (getattr(self, 'input_channels', 4), *getattr(self, 'input_size', (640,360)))
+        if x.ndim != 4 or tuple(x.shape[1:]) != expected_input:
+            raise ValueError(f'Image backbone requires [B,{expected_input}] inputs in its registered channel and axis order')
         size = x.shape[-2:]
         # Padding keeps the input coordinate origin. It supplies the boundary
         # cells needed by the native ceil-stride feature maps.

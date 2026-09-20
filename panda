@@ -11,7 +11,7 @@ if [[ "${1:-}" == install ]]; then
 fi
 if [[ ! -x .venv/bin/python ]]; then
   case "${1:-}" in
-    --help|-h|list|init|docs)
+    --help|-h|list|init|docs|data)
       if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))'; then
         exec python3 -B -m grasppanda "$@"
       fi

@@ -21,36 +21,48 @@ def read_configuration(path):
 
 
 def main():
+    from .datasets import datasets
     parser = argparse.ArgumentParser(prog="panda", description="GraspPanda · Modular visual grasping toolbox")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("install", help="Install or repair the shared runtime")
     ui = commands.add_parser("ui", help="Open the experiment browser")
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=7860)
-    commands.add_parser("list", help="List runnable methods and operations")
+    listing = commands.add_parser("list", help="List runnable methods and operations")
+    listing.add_argument('--dataset', choices=list(datasets()), default='graspnet1b')
     guides = {'usage': 'USAGE.md', 'install': 'INSTALL.md', 'downloads': 'DOWNLOADS.md',
               'methods': 'METHODS.md', 'modules': 'MODULES.md', 'reference': 'REFERENCE.md',
-              'licenses': 'THIRD_PARTY.md'}
+              'licenses': 'THIRD_PARTY.md', 'datasets': 'DATASETS.md'}
     docs = commands.add_parser('docs', help='Read a bundled guide without installing the runtime')
     docs.add_argument('topic', choices=list(guides), nargs='?', default='usage')
     init = commands.add_parser('init', help='Create an editable local experiment without downloading or running')
     source = init.add_mutually_exclusive_group()
-    source.add_argument('--method', choices=[mid for mid in catalogue() if capabilities(mid)], help='Method preset (default: graspnet_baseline)')
+    all_methods = [mid for mid in catalogue() if any(capabilities(mid, dataset) for dataset in datasets())]
+    source.add_argument('--method', choices=all_methods, help='Method preset (default: the selected dataset baseline)')
     source.add_argument('--example', help='Curated example name; see --list')
     source.add_argument('--list', action='store_true', help='List curated configuration examples')
     init.add_argument('--dataset-root', help='Set the dataset path in the generated configuration')
+    init.add_argument('--dataset', choices=list(datasets()), help='Dataset for a method preset (default: graspnet1b)')
     init.add_argument('-o', '--output', type=Path, default=Path('experiment.local.yaml'), help='New YAML or JSON file; use .json before installation (default: experiment.local.yaml)')
+    data = commands.add_parser('data', help='Preview or fetch verified dataset inputs')
+    data.add_argument('dataset', choices=list(datasets()))
+    data.add_argument('--root', default='', help='Dataset destination on local or mounted storage')
+    data.add_argument('--profile', choices=['starter','archives'], default='starter')
+    data.add_argument('--include', nargs='+', help='Archive filename patterns, e.g. scenes_*.tar.gz')
+    data.add_argument('--fetch', action='store_true', help='Download the selected inputs; without this flag, only show the plan')
     commands.add_parser("fetch", help="Fetch the pinned method implementations")
     commands.add_parser("doctor", help="Check the shared runtime and source revisions")
     fetch_weights = commands.add_parser("weights", help="Download weights for a method and camera")
-    fetch_weights.add_argument("method", choices=[mid for mid in catalogue() if capabilities(mid)])
-    fetch_weights.add_argument("--camera", choices=["realsense","kinect"], default="realsense")
+    fetch_weights.add_argument("method", choices=all_methods)
+    fetch_weights.add_argument("--camera", choices=sorted({c for spec in datasets().values() for c in spec.cameras}), default="realsense")
     sdf = commands.add_parser("prepare-sdf", help="Prepare object SDF grids for fusion training")
     sdf.add_argument("arguments", nargs=argparse.REMAINDER)
     clean = commands.add_parser('prepare-clean-scenes', help='Prepare camera-aligned CAD observations for noisy-clean training')
     clean.add_argument('arguments', nargs=argparse.REMAINDER)
     graph = commands.add_parser('prepare-gtg2', help='Prepare reusable labelled candidate graphs for ensemble training')
     graph.add_argument('arguments', nargs=argparse.REMAINDER)
+    contacts = commands.add_parser('prepare-contacts', help='Prepare native GraspClutter6D contact targets')
+    contacts.add_argument('arguments', nargs=argparse.REMAINDER)
     component_weights = commands.add_parser('component-weights', help='Download verified pretrained backbone weights')
     from .weights import component_records
     component_weights.add_argument('name', choices=list(component_records()))
@@ -63,8 +75,8 @@ def main():
     sweep.add_argument('config', type=Path)
     sweep.add_argument('--preview', action='store_true', help='Print exact configurations without downloading or running')
     sweep.add_argument('--runs-dir', type=Path)
-    if len(sys.argv) > 1 and sys.argv[1] in ('prepare-sdf', 'prepare-gtg2', 'prepare-clean-scenes'):
-        script = {'prepare-sdf': 'prepare_sdf.py', 'prepare-gtg2': 'prepare_gtg2.py', 'prepare-clean-scenes': 'prepare_clean_scenes.py'}[sys.argv[1]]
+    if len(sys.argv) > 1 and sys.argv[1] in ('prepare-sdf', 'prepare-gtg2', 'prepare-clean-scenes', 'prepare-contacts'):
+        script = {'prepare-sdf': 'prepare_sdf.py', 'prepare-gtg2': 'prepare_gtg2.py', 'prepare-clean-scenes': 'prepare_clean_scenes.py', 'prepare-contacts': 'prepare_contacts.py'}[sys.argv[1]]
         raise SystemExit(subprocess.call([sys.executable, str(ROOT / 'grasppanda/runtime' / script), *sys.argv[2:]], cwd=ROOT))
     args = parser.parse_args()
     if args.command == "install":
@@ -72,6 +84,14 @@ def main():
     elif args.command == 'component-weights':
         from .weights import fetch_component
         print(fetch_component(args.name))
+    elif args.command == 'data':
+        from .data import fetch, plan
+        selection = plan(args.dataset,args.root,args.profile,args.include)
+        print(json.dumps(selection,indent=2),flush=True)
+        if args.fetch:
+            try: fetch(args.dataset,args.root,args.profile,args.include)
+            except ImportError as error:
+                raise ValueError(f'Download dependency unavailable: {error}. Run ./panda install first.') from None
     elif args.command == "ui":
         from .ui import launch
         launch(args.host, args.port)
@@ -79,8 +99,8 @@ def main():
         print((ROOT / 'docs' / guides[args.topic]).read_text(), end='')
     elif args.command == "list":
         for mid, m in catalogue().items():
-            if not capabilities(mid): continue
-            print(f"{mid:28} {m['group']:28} {','.join(capabilities(mid))}")
+            if not capabilities(mid, args.dataset): continue
+            print(f"{mid:28} {m['group']:28} {','.join(capabilities(mid, args.dataset))}")
     elif args.command == 'init':
         from .templates import configuration, examples, write_configuration
         if args.list:
@@ -88,7 +108,7 @@ def main():
                 print(f'{name:24} {entry["description"]}')
             return
         try:
-            data = configuration(method=args.method, example=args.example, dataset_root=args.dataset_root)
+            data = configuration(method=args.method, example=args.example, dataset_root=args.dataset_root, dataset=args.dataset)
             path = write_configuration(data, args.output)
         except FileExistsError:
             parser.error('Output already exists. Choose a different --output to preserve your configuration.')

@@ -172,5 +172,35 @@
     "repository": "https://github.com/sejmoonwei/SPGrasp",
     "path": "upstream/temporal/planar/spgrasp",
     "pinned_commit": "0f8462cdc9bf7fee5a5f402d37a47fedafea2301"
+  },
+  {
+    "id": "graspclutter6d_api",
+    "repository": "https://github.com/SeungBack/graspclutter6dAPI",
+    "path": "upstream/infrastructure/graspclutter6d_api",
+    "pinned_commit": "a7798be8eeee77bf6f328ddeab9f7d6c31e6c977"
+  },
+  {
+    "id": "contact_graspnet_gc6d",
+    "repository": "https://github.com/SeungBack/gc6d-contact-graspnet",
+    "path": "upstream/single_view/pointcloud/contact_graspnet_gc6d",
+    "pinned_commit": "2caa95b9d0d88d086209cc9c4b20ba478e5c7010"
+  },
+  {
+    "id": "dexgraspnet2",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "pinned_commit": "26ecd76121e3c8218ad53db9840cf34f6b81b076"
+  },
+  {
+    "id": "dexgraspnet2_isa",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "pinned_commit": "26ecd76121e3c8218ad53db9840cf34f6b81b076"
+  },
+  {
+    "id": "dexgraspnet2_cvae",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "pinned_commit": "26ecd76121e3c8218ad53db9840cf34f6b81b076"
   }
 ]

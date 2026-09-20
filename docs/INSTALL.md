@@ -15,7 +15,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then the 
 ```bash
 sudo apt-get update
 sudo apt-get install -y build-essential cmake pkg-config python3 python3-dev \
-  git ca-certificates curl unzip \
+  git ca-certificates curl unzip p7zip-full \
   libopenblas-dev libeigen3-dev libcgal-dev libboost-all-dev \
   libgmp-dev libmpfr-dev libgl1 libglib2.0-0 libgomp1 libpcl-dev
 export GRASPPANDA_CUDA_HOME=/usr/local/cuda-11.8
@@ -23,7 +23,7 @@ export GRASPPANDA_CUDA_HOME=/usr/local/cuda-11.8
 ./panda doctor
 ```
 
-`./panda install` checks system prerequisites before downloading packages, fetches pinned sources for integrated methods and builds native extensions into the same `.venv`. Reference-only papers do not add downloads. It does not download GraspNet or the external checkpoint collection. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
+`./panda install` checks system prerequisites before downloading packages, fetches pinned sources for integrated methods and builds native extensions into the same `.venv`. Reference-only papers do not add downloads. It does not download datasets or the external checkpoint collection. Dataset starters and checkpoints are separate, explicit actions in the UI or CLI. Compilation can take substantial time on a new machine. Existing verified wheels are reused when their recorded build conditions match.
 
 ```bash
 ./panda weights hggd --camera realsense
@@ -63,7 +63,7 @@ The clone contains source, guides, example configurations and dependency locks. 
 | `outputs/` | Experiment queue, predictions, trained checkpoints and exports |
 | `logs/` | Installation and source-download diagnostics |
 
-Keep GraspNet at a path of your choice and select that path in the UI. Use `./panda init --method graspness` or choose a [configuration example](USAGE.md#configuration-examples) to generate a `*.local.yaml` file before editing. Local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
+Keep each dataset at a path of your choice and select that path in the UI. Use `./panda init --method graspness` or choose a [configuration example](USAGE.md#configuration-examples) to generate a `*.local.yaml` file before editing. Local paths and generated experiments stay out of commits. `pyproject.toml`, `uv.lock`, source pins and compatibility patches are required installation inputs.
 
 <details>
 <summary>Additional native component requirements</summary>
@@ -77,6 +77,7 @@ All components use the same Python environment. The installer fetches pinned bui
 | LitePT | Uses the locked FlashAttention wheel and builds PointROPE. `rope_backend: torch` selects the author's rotation implementation; attention requires Ampere or newer. |
 | PTv2 / ResLFE | Compiles Pointcept / DeepLA operators with separate namespaces to coexist with legacy grasp operators. |
 | GtG2 | Builds the GPG candidate generator against system PCL. |
+| DexGraspNet 2.0 | Builds the native primitive-distance CUDA loss in the shared environment. Prediction and training do not require Isaac Gym; the author simulation evaluation has separate legacy requirements. |
 | PointCNN++ / Swin3D | Builds the pinned CUDA operators using the shared CUDA 11.8 toolkit; versioned artifacts are activated only after verification. |
 
 </details>

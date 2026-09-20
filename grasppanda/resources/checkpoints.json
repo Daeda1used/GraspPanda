@@ -264,5 +264,59 @@
     "sha256": "a2345aede8715ab1d5d31b4a509fb160c5a4af1970f199d9054ccfb746c004c5",
     "bytes": 323606802,
     "description": "SAM2.1 initialization only; not a trained grasp detector."
+  },
+  {
+    "method": "contact_graspnet_gc6d",
+    "path": "checkpoints/contact_graspnet_gc6d/train_gc6d_rs.pth",
+    "source": "https://drive.google.com/file/d/1-RTDg_1GlvOAMRIkd9aSXmLubaloFvsa/view",
+    "sha256": "8ed013efd976123c0dee0141edb87cae33a48673e3338188b39f70e50c4d1f56",
+    "bytes": 26538097,
+    "camera": "realsense-d435",
+    "role": "primary"
+  },
+  {
+    "method": "dexgraspnet2",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/dexgraspnet2/checkpoint.pth",
+    "source": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/DexGraspNet2.0-ckpts.tar",
+    "archive_member": "DexGraspNet2.0-ckpts/OURS/ckpt/ckpt_50000.pth",
+    "archive_type": "tar",
+    "archive_bytes": 6193233920,
+    "archive_sha256": "47b38cfde4b5c0883aaee759c442541f4a65dcace9f89541080120e50729bd2a",
+    "sha256": "a081f8ed57bbf855d63fe29b2f06ae71995c1eea57d78884a501a4c69cab6a4b",
+    "bytes": 181450945,
+    "note": "SHA-256-verified byte-range download from the pinned author tar archive; the full archive is not required.",
+    "source_offset": 1528830464
+  },
+  {
+    "method": "dexgraspnet2_isa",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/dexgraspnet2_isa/checkpoint.pth",
+    "source": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/DexGraspNet2.0-ckpts.tar",
+    "archive_member": "DexGraspNet2.0-ckpts/BASELINE_ISAGrasp/ckpt/ckpt_50000.pth",
+    "archive_type": "tar",
+    "archive_bytes": 6193233920,
+    "archive_sha256": "47b38cfde4b5c0883aaee759c442541f4a65dcace9f89541080120e50729bd2a",
+    "sha256": "a329ba221464cde45499a0250dd8683096d967f0788c641c25e2a7f04368d139",
+    "bytes": 176600233,
+    "note": "SHA-256-verified byte-range download from the pinned author tar archive; the full archive is not required.",
+    "source_offset": 1352224768
+  },
+  {
+    "method": "dexgraspnet2_cvae",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/dexgraspnet2_cvae/checkpoint.pth",
+    "source": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/DexGraspNet2.0-ckpts.tar",
+    "archive_member": "DexGraspNet2.0-ckpts/BASELINE_GraspTTA/ckpt/ckpt_50000.pth",
+    "archive_type": "tar",
+    "archive_bytes": 6193233920,
+    "archive_sha256": "47b38cfde4b5c0883aaee759c442541f4a65dcace9f89541080120e50729bd2a",
+    "sha256": "f9c12d0e76189dc03798e3b5eee3809360305da470323887dd31c40a4c2a5785",
+    "bytes": 192328665,
+    "note": "SHA-256-verified byte-range download from the pinned author tar archive; the full archive is not required.",
+    "source_offset": 1159890944
   }
 ]

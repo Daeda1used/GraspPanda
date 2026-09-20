@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 ROOT=Path(__file__).resolve().parents[2]
 (ROOT/'logs').mkdir(exist_ok=True)
 (ROOT/'environments/state').mkdir(parents=True,exist_ok=True)
@@ -29,6 +30,7 @@ specs=[
  ('KNN','upstream/single_view/pointcloud/graspbalance/KNN',[]),
  ('MinkowskiEngine','environments/sources/MinkowskiEngine',['--blas=openblas','--force_cuda']),
  ('pytorch3d','environments/sources/pytorch3d',[]),
+ ('torchprimitivesdf','environments/sources/torchprimitivesdf',[]),
 ]
 lockpath=ROOT/'grasppanda/resources/native_sources.lock.json'
 sources=json.loads(lockpath.read_text()) if lockpath.exists() else []
@@ -46,6 +48,7 @@ for name,path,flags in specs:
     repo=ROOT/path;log=ROOT/'logs'/f'wheel_{name}.log'
     commit=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
     key={'python_abi':sys.implementation.cache_tag,'torch':__import__('torch').__version__,'source_commit':commit,'arch':env['TORCH_CUDA_ARCH_LIST'],'cuda_home':env['CUDA_HOME']}
+    if name == 'torchprimitivesdf': key['package_python_sources'] = True
     old=previous.get(name,{})
     cached=ROOT/old.get('wheel','__missing__')
     if all(old.get(k)==v for k,v in key.items()) and cached.is_file() and hashlib.sha256(cached.read_bytes()).hexdigest()==old.get('sha256'):
@@ -53,6 +56,14 @@ for name,path,flags in specs:
         subprocess.run([str(uv),'pip','install','--python',str(python),'--no-deps',str(cached)],check=True)
         results.append(old)
         continue
+    if name == 'torchprimitivesdf':
+        # The author setup omits its Python modules from wheels. Package them
+        # in a generated build tree while retaining the exact native kernels.
+        build = ROOT/'environments/build/torchprimitivesdf'
+        shutil.copytree(repo,build,dirs_exist_ok=True,ignore=shutil.ignore_patterns('.git','build','*.egg-info','*.so','__pycache__'))
+        setup = build/'setup.py'
+        setup.write_text(setup.read_text().replace("# packages=find_packages(exclude=('tests')),", "packages=find_packages(exclude=('tests',)),"))
+        repo = build
     cmd=[str(python),'setup.py','bdist_wheel','--dist-dir',str(wheelhouse),*flags]
     print('Building',name,flush=True)
     with log.open('w') as f:

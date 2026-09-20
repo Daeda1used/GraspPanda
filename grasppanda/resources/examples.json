@@ -2610,5 +2610,81 @@
         }
       }
     }
+  },
+  "gc6d-pointmlp": {
+    "description": "Train a shared PointMLP encoder with native GC6D Contact-GraspNet heads on prepared contacts",
+    "config": {
+      "dataset": "graspclutter6d",
+      "method": "contact_graspnet_gc6d",
+      "action": "train_short",
+      "dataset_root": "/data/GraspClutter6D",
+      "camera": "realsense-d435",
+      "split": "train",
+      "scene": 5,
+      "frame": 0,
+      "num_points": 20000,
+      "batch_size": 1,
+      "training_steps": 3,
+      "checkpoint": "checkpoints/contact_graspnet_gc6d/train_gc6d_rs.pth",
+      "checkpoint_policy": "reuse_unchanged",
+      "modules": {
+        "backbone": {
+          "type": "pointmlp",
+          "embed_dim": 32
+        }
+      }
+    }
+  },
+  "zero-mobilenet": {
+    "description": "Train a shared MobileNetV4 encoder with native ZeroGrasp reconstruction and grasp heads on local shards",
+    "config": {
+      "dataset": "zerograsp11b",
+      "method": "zerograsp",
+      "action": "train",
+      "dataset_root": "/data/ZeroGrasp-11B",
+      "camera": "synthetic-rgbd",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "batch_size": 1,
+      "epochs": 1,
+      "learning_rate": 0.0001,
+      "workspace": "provided_instance_masks",
+      "checkpoint": "checkpoints/zerograsp/checkpoint-realsense.tar",
+      "checkpoint_policy": "reuse_unchanged",
+      "modules": {
+        "backbone": {
+          "type": "mobilenetv4",
+          "variant": "small",
+          "projection_norm": "group"
+        }
+      }
+    }
+  },
+  "dex-pointnet": {
+    "description": "Train a shared PointNet encoder with the native DexGraspNet diffusion and LEAP-hand heads",
+    "config": {
+      "dataset": "dexgraspnet2",
+      "method": "dexgraspnet2",
+      "action": "train",
+      "dataset_root": "/data/DexGraspNet2.0",
+      "checkpoint": "checkpoints/dexgraspnet2/checkpoint.pth",
+      "checkpoint_policy": "reuse_unchanged",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 2,
+      "num_points": 40000,
+      "batch_size": 2,
+      "epochs": 1,
+      "learning_rate": 0.001,
+      "workspace": "official_gt_workspace",
+      "collision_thresh": 0,
+      "modules": {
+        "backbone": "pointnet"
+      }
+    }
   }
 }

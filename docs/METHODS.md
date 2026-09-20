@@ -1,10 +1,22 @@
 # Methods and papers
 
-Choose a method by its observation protocol and available operation. Status describes the pinned source used by this release (September 2026). **Inference** uses a configurable GraspNet frame adapter; **recipe** uses fixed native inputs; **short training** optimizes a bounded labelled sample; **epoch training** uses the native dataset loop. Demo and component rows state their narrower scope. Full-split AP and training convergence have not been established.
+Choose a method by its observation protocol and available operation. Status describes the pinned source used by this release (September 2026). **Inference** uses the selected dataset observation adapter; **recipe** uses fixed native inputs; **short training** optimizes a bounded labelled sample; **epoch training** uses the documented dataset-specific finite loader and native objective. Demo and component rows state their narrower scope. Full-split AP and training convergence have not been established.
 
 PDF links point to publisher or author copies. “PDF not located” means no verified public PDF was found; the paper page is retained where available. Ports are identified separately from the underlying paper.
 
-## Integrated methods
+## Native dataset workflows
+
+| Dataset / method IDs | Publication | Available operations | Paper | Author implementation |
+|---|---|---|---|---|
+| GraspClutter6D · `contact_graspnet_gc6d` | RA-L 2025; ICRA 2026 presentation | Native Contact-GraspNet inference, short/epoch training, resume and full-protocol evaluation adapter | [PDF](https://arxiv.org/pdf/2504.06866) | [Code](https://github.com/SeungBack/gc6d-contact-graspnet) |
+| ZeroGrasp-11B · `zerograsp` | CVPR 2025 | Native reconstruction/grasp inference, short/epoch training, resume and RGB encoder replacement | [PDF](https://arxiv.org/pdf/2504.10857) | [Code](https://github.com/sh8/ZeroGrasp) |
+| DexGraspNet 2.0 · `dexgraspnet2`, `dexgraspnet2_isa`, `dexgraspnet2_cvae` | CoRL 2024 | Native diffusion and author ISAGrasp/GraspTTA baselines; inference, short/epoch training, resume, encoder replacement and 3D hand export | [PDF](https://arxiv.org/pdf/2410.23004) | [Code](https://github.com/PKU-EPIC/DexGraspNet2) |
+
+These adapters have been exercised on released observations, including real-label optimizer updates, trained-checkpoint inference and browser workflows. This establishes bounded operational validation, not paper-level accuracy reproduction or training convergence. GraspClutter6D requires complete camera/split predictions for AP; ZeroGrasp starter observations are training data; DexGraspNet simulation success remains an upstream Isaac Gym workflow. See [dataset protocols and preparation](DATASETS.md).
+
+GraspNet Baseline and Graspness additionally support GraspClutter6D inference as **cross-dataset transfer** with GraspNet-trained weights. Such results must be reported separately from methods trained on GraspClutter6D.
+
+## GraspNet-1B methods
 
 | Method / CLI ID | Year · venue | Observation | Available use / status | Paper | Implementation |
 |---|---|---|---|---|---|

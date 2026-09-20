@@ -2,6 +2,8 @@
 
 Prepare only the inputs needed for your experiment.
 
+For GraspClutter6D, ZeroGrasp-11B and DexGraspNet 2.0, follow [Datasets and observation protocols](DATASETS.md), including verified starter downloads, archive layouts, native weights and training preparation. DexGraspNet checkpoints are fetched as verified byte ranges; selecting one method does not download the entire checkpoint archive.
+
 | Start with | Follow |
 |---|---|
 | No dataset yet | [Run the included author sample](#start-without-graspnet) |

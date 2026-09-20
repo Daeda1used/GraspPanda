@@ -6,10 +6,10 @@ Run `./panda ui` and open **http://127.0.0.1:7860**.
 
 The **Start here** shortcuts load a complete preset: **Try the author sample** uses ASGrasp without a GraspNet download; **Start a GraspNet experiment** selects HGGD and retains your dataset path. Download the selected weights before running. For any other method:
 
-1. In **Experiments**, select a protocol and method, then **Load preset**.
-2. Set the dataset root containing `scenes/`. **Download registered weights** prepares each required network for the selected camera and verifies its checksum.
+1. In **Experiments**, choose a dataset, then a protocol and method. Select **Load preset**.
+2. Set the dataset root using [its documented layout](DATASETS.md). Expand **Get dataset inputs** for starter downloads and full-data links. **Download registered weights** prepares each required network for the selected camera and verifies its checksum.
 3. Select an operation and adjust its inputs. **Check current form** verifies the configuration and required input files; **Run current form** starts the experiment.
-4. In **Runs & results**, select the job to view logs, predictions, loss curves and checkpoints. Predictions and loss curves appear first; expand **Run details & logs** for diagnostics, raw results and individual files. Cancel a run or export its saved artifacts as a ZIP after it stops. Live results refresh automatically while training writes new snapshots.
+4. In **Runs & results**, select the job to view logs, predictions, loss curves and checkpoints. Predictions, native hand geometry and loss curves appear first; expand **Run details & logs** for diagnostics, raw results and individual files. Cancel a run or export its saved artifacts as a ZIP after it stops. Logs, previews and losses refresh automatically while training writes new snapshots. Select a completed hand run or click **Load experiment** to open its 3D geometry.
 
 Expand **Method details & input requirements** for the selected method's input protocol and original implementation. **Compose modules** appears for methods with registered replacements. **Training settings** appears for training operations; **Evaluate predictions** reveals the prediction-directory input. **Run settings** controls the time limit for every operation. **Configuration editor** lets you generate, edit, validate and run exact JSON. For a native recipe, the preset defines fixed inputs; disabled frame fields do not override them. Supported recipes accept a primary checkpoint override.
 
@@ -21,11 +21,11 @@ The **Guide** tab includes installation, downloads, module instructions and a da
 |---|---|---|
 | Predict grasps | `infer` | Selected frames and a matching checkpoint; saves predictions and a preview. |
 | Run native recipe | `recipe` | Method-specific fixed scene, sequence, author sample or component. Its input contract is shown on selection. |
-| Short training run | `train_short` | Repeats a labelled sample for `training_steps`; saves loss curves and a checkpoint. Fixed native batch sizes apply. |
-| Train across epochs | `train` | Native loader, augmentation, optimizer and schedule; supports initialization or checkpoint resume. |
+| Short training run | `train_short` | Bounded updates on the selected labelled data; saves loss curves and a checkpoint. Method-specific batch rules apply. |
+| Train across epochs | `train` | Dataset-specific finite epochs with native objectives and optimization; supports initialization or checkpoint resume. |
 | Evaluate predictions | `evaluate` | Complete split predictions with a matching manifest; runs the official evaluator. |
 
-The available choices depend on the method. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
+The available choices depend on both dataset and method. [Dataset protocols](DATASETS.md) explain training ranges, hand outputs and evaluator requirements. Use `./panda doctor` for installation readiness. See [Methods & papers](METHODS.md) for scope and [Compose modules](MODULES.md) for training settings.
 
 GraNet and GraspBalance presets start with short training from scratch because compatible author weights are unavailable. Reuse the saved checkpoint for prediction. RNGNet SDK uses its bundled weights; the download button explains this without fetching another model.
 
@@ -33,6 +33,7 @@ GraNet and GraspBalance presets start with short training from scratch because c
 
 ```bash
 ./panda list
+./panda list --dataset dexgraspnet2
 ./panda doctor
 ./panda weights graspness --camera realsense
 ./panda init --method graspness -o graspness.local.yaml
@@ -41,7 +42,7 @@ GraNet and GraspBalance presets start with short training from scratch because c
 ./panda run graspness.local.yaml
 ```
 
-`init` writes a local YAML configuration without downloading weights or running a model. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
+`init` writes a local YAML configuration without downloading weights or running a model. Use `--dataset graspclutter6d`, `--dataset zerograsp11b` or `--dataset dexgraspnet2` for the native dataset preset. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
 
 `check` and `run` accept YAML or JSON. The check performs the same configuration and input preflight used before queueing, without creating an experiment. It does not execute the model or estimate GPU memory. The browser's **Check current form** also refreshes the JSON editor with the checked settings; its result clears when the form changes. **Validate JSON** checks the editor instead.
 
@@ -60,6 +61,7 @@ With system Python 3.10 or newer, these commands need no GPU, dataset or third-p
 
 ```bash
 ./panda list
+./panda list --dataset dexgraspnet2
 ./panda docs downloads
 ./panda init --list
 ./panda init --method hggd -o hggd.local.json

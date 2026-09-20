@@ -8,7 +8,8 @@ from grasppanda.weights import fetch
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('method')
-    parser.add_argument('--camera', choices=['realsense','kinect'], default='realsense')
+    from grasppanda.datasets import datasets
+    parser.add_argument('--camera', choices=sorted({c for spec in datasets().values() for c in spec.cameras}), default='realsense')
     args=parser.parse_args()
     print(fetch(args.method,args.camera))
 

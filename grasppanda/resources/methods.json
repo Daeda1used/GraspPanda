@@ -1,12 +1,28 @@
 [
   {
+    "id": "contact_graspnet_gc6d",
+    "repository": "https://github.com/SeungBack/gc6d-contact-graspnet",
+    "group": "single_view/pointcloud",
+    "paper_title": "GraspClutter6D: A Large-scale Real-world Dataset for Robust Perception and Grasping in Cluttered Scenes",
+    "path": "upstream/single_view/pointcloud/contact_graspnet_gc6d",
+    "name": "Contact-GraspNet (GC6D)",
+    "datasets": [
+      "graspclutter6d"
+    ],
+    "input_note": "Official GC6D baseline. The registered checkpoint is trained on realsense-d435; other cameras are cross-camera transfer. Native PointNet++ contact heads; compatible shared encoders can be trained through explicit component replacement."
+  },
+  {
     "id": "graspnet_baseline",
     "repository": "https://github.com/graspnet/graspnet-baseline",
     "group": "single_view/pointcloud",
     "paper_title": "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping",
     "path": "upstream/single_view/pointcloud/graspnet_baseline",
     "name": "GraspNet Baseline",
-    "input_note": ""
+    "input_note": "",
+    "datasets": [
+      "graspnet1b",
+      "graspclutter6d"
+    ]
   },
   {
     "id": "graspness",
@@ -15,7 +31,11 @@
     "paper_title": "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection",
     "path": "upstream/single_view/pointcloud/graspness",
     "name": "Graspness",
-    "input_note": "Third-party implementation; original weights."
+    "input_note": "Third-party implementation; original weights.",
+    "datasets": [
+      "graspnet1b",
+      "graspclutter6d"
+    ]
   },
   {
     "id": "scale_balanced_grasp",
@@ -222,7 +242,14 @@
     "paper_title": "ZeroGrasp: Zero-Shot Shape Reconstruction Enabled Robotic Grasping",
     "path": "upstream/single_view/rgbd/zerograsp",
     "name": "ZeroGrasp",
-    "input_note": "Author RGB-D + masks sample; pretrained on ZeroGrasp-11B."
+    "input_note": "Author RGB-D + masks sample; pretrained on ZeroGrasp-11B.",
+    "dataset_notes": {
+      "zerograsp11b": "Read selected local ZeroGrasp-11B training shards directly. Native reconstruction/grasp inference, supervised training and epoch resume; no S3 re-upload. Supplied visible-instance masks and 2D mask metadata are explicit inputs. Native CUDA OFE uses scene-aware instance ranges; train-set predictions are not held-out AP."
+    },
+    "datasets": [
+      "graspnet1b",
+      "zerograsp11b"
+    ]
   },
   {
     "id": "centergrasp",
@@ -259,5 +286,53 @@
     "path": "upstream/temporal/planar/spgrasp",
     "paper_title": "SPGrasp: Spatiotemporal Prompt-Driven Grasp Synthesis in Dynamic Scenes",
     "input_note": "RGB sequences and explicit first-frame boxes or points; planar grasp outputs. SAM2 weights initialize training only. Inference requires a trained SPGrasp checkpoint."
+  },
+  {
+    "id": "graspclutter6d_api",
+    "repository": "https://github.com/SeungBack/graspclutter6dAPI",
+    "path": "upstream/infrastructure/graspclutter6d_api",
+    "group": "infrastructure",
+    "name": "GraspClutter6D API",
+    "paper_title": "GraspClutter6D: A Large-scale Real-world Dataset for Robust Perception and Grasping in Cluttered Scenes",
+    "datasets": [
+      "graspclutter6d"
+    ],
+    "input_note": "Official dataset reader and grasp evaluator."
+  },
+  {
+    "id": "dexgraspnet2",
+    "name": "DexGraspNet 2.0 · Diffusion",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "group": "single_view/dexterous",
+    "datasets": [
+      "dexgraspnet2"
+    ],
+    "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
+  },
+  {
+    "id": "dexgraspnet2_isa",
+    "name": "DexGraspNet 2.0 · ISAGrasp baseline",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "group": "single_view/dexterous",
+    "datasets": [
+      "dexgraspnet2"
+    ],
+    "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
+  },
+  {
+    "id": "dexgraspnet2_cvae",
+    "name": "DexGraspNet 2.0 · GraspTTA baseline",
+    "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
+    "path": "upstream/single_view/dexterous/dexgraspnet2",
+    "group": "single_view/dexterous",
+    "datasets": [
+      "dexgraspnet2"
+    ],
+    "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
   }
 ]

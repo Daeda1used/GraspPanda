@@ -10,7 +10,7 @@ def examples():
     return json.loads((ROOT / 'grasppanda/resources/examples.json').read_text())
 
 
-def configuration(*, method=None, example=None, dataset_root=None):
+def configuration(*, method=None, example=None, dataset_root=None, dataset=None):
     if method and example:
         raise ValueError('Choose a method preset or an example')
     if example:
@@ -19,22 +19,26 @@ def configuration(*, method=None, example=None, dataset_root=None):
             raise ValueError('Unknown example; use ./panda init --list')
         data = deepcopy(entries[example]['config'])
         target = data.get('base', data)
+        if dataset is not None and dataset != target.get('dataset', 'graspnet1b'):
+            raise ValueError('The selected example belongs to a different dataset; choose a matching method preset')
         if dataset_root is not None:
             target['dataset_root'] = dataset_root
     else:
-        from .recipes import NO_DATA, preset
+        from .recipes import NO_DATA, preset, checkpoint_camera
+        from .datasets import get_dataset
         from .weights import records
-        method = method or 'graspnet_baseline'
-        root = dataset_root if dataset_root is not None else default_dataset()
-        root = root or ('' if method in NO_DATA else '/data/GraspNet-1B')
-        config = preset(method, root)
+        dataset = dataset or 'graspnet1b'
+        method = method or get_dataset(dataset).default_method
+        root = dataset_root if dataset_root is not None else default_dataset(dataset)
+        root = root or ('' if method in NO_DATA and dataset == 'graspnet1b' else '/data/'+get_dataset(dataset).title)
+        config = preset(method, root, dataset)
         defaults = Experiment().to_dict()
         required = {'method', 'action', 'dataset_root', 'camera', 'checkpoint'}
         data = {key: value for key, value in config.to_dict().items()
                 if key in required or value != defaults[key]}
         # Write the registered destination even before the weights are downloaded.
         if config.action == 'infer':
-            data['checkpoint'] = next((r['path'] for r in records(method, config.camera)
+            data['checkpoint'] = next((r['path'] for r in records(method, checkpoint_camera(method, config.camera, dataset))
                                        if r.get('role', 'primary') == 'primary'), '')
     if 'base' in data:
         from .sweeps import Sweep

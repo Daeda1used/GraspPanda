@@ -3,6 +3,7 @@ import fcntl
 import json
 import shutil
 import zipfile
+import tarfile
 from .config import ROOT
 from .jobs import digest
 
@@ -31,6 +32,11 @@ def fetch(method, camera='realsense', progress=print):
 def fetch_rows(rows, progress=print):
     for record in rows:
         path = ROOT/record['path']; path.parent.mkdir(parents=True, exist_ok=True)
+        if 'source_offset' in record:
+            from .downloads import download_file
+            download_file(record['source'],path,record['bytes'],record['sha256'],progress,
+                          byte_offset=record['source_offset'])
+            continue
         with path.with_suffix(path.suffix+'.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             if path.exists():
@@ -38,7 +44,17 @@ def fetch_rows(rows, progress=print):
                 progress(f'Verified {path.name}'); continue
             temporary = path.with_suffix(path.suffix+'.download')
             source = record['source']; progress(f'Downloading {path.name} ({record["bytes"] / 1e6:.1f} MB extracted)')
-            if 'drive.google.com/file/d/' in source:
+            if record.get('archive_type') == 'tar':
+                from .downloads import download_file
+                archive_path = download_file(source, ROOT/'checkpoints/archives'/(record['archive_sha256']+'.tar'),
+                    record['archive_bytes'],record['archive_sha256'],progress)
+                with tarfile.open(archive_path,'r:') as archive:
+                    member = archive.getmember(record['archive_member'])
+                    if not member.isfile() or member.size != record['bytes']:
+                        raise ValueError('Registered checkpoint member is missing or has a different size.')
+                    with archive.extractfile(member) as src,temporary.open('wb') as dst:
+                        shutil.copyfileobj(src,dst,1024*1024)
+            elif 'drive.google.com/file/d/' in source:
                 import gdown
                 if not gdown.download(id=source.split('/d/')[1].split('/')[0], output=str(temporary), resume=True):
                     raise ValueError(f'Author download unavailable: {source}. Retry or place the file at {path}.')
@@ -49,7 +65,7 @@ def fetch_rows(rows, progress=print):
                     with temporary.open('wb') as stream:
                         for chunk in response.iter_content(1024*1024): stream.write(chunk)
             payload = temporary
-            if record.get('archive_member'):
+            if record.get('archive_member') and record.get('archive_type') != 'tar':
                 payload = temporary.with_suffix('.extracted')
                 with zipfile.ZipFile(temporary) as archive, archive.open(record['archive_member']) as src, payload.open('wb') as dst:
                     shutil.copyfileobj(src, dst)

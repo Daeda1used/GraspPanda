@@ -50,10 +50,16 @@ def clone(m):
 if __name__ == '__main__':
     (ROOT/'logs').mkdir(exist_ok=True)
     methods = json.loads((ROOT/'grasppanda/resources/methods.json').read_text())
+    # Several native methods can share one pinned author implementation.
+    sources = {}
+    for method in methods:
+        previous = sources.setdefault(method['path'], method)
+        if previous['repository'] != method['repository'] or PINS.get(previous['id']) != PINS.get(method['id']):
+            raise SystemExit('Conflicting source pins for '+method['path'])
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-        for r in pool.map(clone, methods):
-            results.append(r)
+        for r in pool.map(clone, sources.values()):
+            results.extend({**r, 'id': method['id']} for method in methods if method['path'] == r['path'])
             print(r['id'], r['status'], r.get('commit', '')[:12], flush=True)
     # Installation state belongs to the local cache; source pins are immutable.
     (ROOT/'environments').mkdir(exist_ok=True)

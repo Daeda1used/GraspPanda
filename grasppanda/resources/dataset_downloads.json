@@ -1,0 +1,312 @@
+{
+  "graspclutter6d": {
+    "repository": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D",
+    "revision": "973a567efa2f8047e5a40c9113a672e8215bcc1b",
+    "terms": "CC BY-SA 4.0",
+    "archives": [
+      {
+        "path": "archives/collision_label.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/collision_label.7z",
+        "bytes": 963151254,
+        "sha256": "909780908bbb16f7a00baa70759e0d7fb107e81498917fd0e31232b01a7ea642"
+      },
+      {
+        "path": "archives/dex_models.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/dex_models.7z",
+        "bytes": 2651154234,
+        "sha256": "16806c207158224de44ceae4543b639fa24541057896dd03574a9fa9db1c8fa6"
+      },
+      {
+        "path": "archives/grasp_label.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/grasp_label.7z",
+        "bytes": 4281506533,
+        "sha256": "4d181dc83abb4251ddf063ae484ff8e8a2e6a96c7d870d7010caa9ed8085cb97"
+      },
+      {
+        "path": "archives/models.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models.7z",
+        "bytes": 1227073338,
+        "sha256": "aac45f13a79bb4a38362d2f91d2339cd93e7210847ead6a636f650ce2685fa72"
+      },
+      {
+        "path": "archives/models_eval.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models_eval.7z",
+        "bytes": 86747378,
+        "sha256": "5a225a01ac5a7c4a87085d45ef96b495c7b105dd4906b7c45a2a09b204154a88"
+      },
+      {
+        "path": "archives/models_m.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models_m.7z",
+        "bytes": 1331586734,
+        "sha256": "f2eb63b2d444a1c619874b0fb117d5d9e67d04d1a6dc686fa3a7d8b8927d5da2"
+      },
+      {
+        "path": "archives/models_obj.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models_obj.7z",
+        "bytes": 2760361431,
+        "sha256": "8b513d3ee28f7dfe2c79e8469733feb8fba8aa43587cebd7e87b882c3d231637"
+      },
+      {
+        "path": "archives/models_obj_eval.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models_obj_eval.7z",
+        "bytes": 163290970,
+        "sha256": "2a846111fb302237696d7446cc87c82ba35c3985fbede76a83dfafb0eeecaacd"
+      },
+      {
+        "path": "archives/models_obj_m.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/models_obj_m.7z",
+        "bytes": 2755575887,
+        "sha256": "4c4ebfb181f14ea3ef54b98c69d552b6018ec5e6a56dd6154ec2772f4eb96f92"
+      },
+      {
+        "path": "archives/scenes.7z.001",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/scenes.7z.001",
+        "bytes": 48318382080,
+        "sha256": "09431d4d2206901806948974c7fc6ebc6973d79d5ff20b41bb99e6f599253a83"
+      },
+      {
+        "path": "archives/scenes.7z.002",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/scenes.7z.002",
+        "bytes": 48318382080,
+        "sha256": "59e704faacf77f7a1a8330cdca17c6896c88f9c2112d562e18793719c3670e2a"
+      },
+      {
+        "path": "archives/scenes.7z.003",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/scenes.7z.003",
+        "bytes": 48318382080,
+        "sha256": "659f6d79c6705efdf3ea43d8f2b2a83b89f4e27072e4c22ac782563a6fdeff48"
+      },
+      {
+        "path": "archives/scenes.7z.004",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/scenes.7z.004",
+        "bytes": 48318382080,
+        "sha256": "fb013342e4f1b7726eae3e5cca9cbd5c6997de0be87349e98b5a255544b03cb7"
+      },
+      {
+        "path": "archives/scenes.7z.005",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/scenes.7z.005",
+        "bytes": 10097323420,
+        "sha256": "5f13d844981467a7569ef8abe873e3cd46dcca6c3c715615654c6a82aa79cd7f"
+      },
+      {
+        "path": "archives/split_info.7z",
+        "url": "https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D/resolve/973a567efa2f8047e5a40c9113a672e8215bcc1b/split_info.7z",
+        "bytes": 11878,
+        "sha256": "014e2f63d5a4b698cf92731d5900457cd1a6607cd4449d40eeffbabf8e34c23d"
+      }
+    ]
+  },
+  "dexgraspnet2": {
+    "repository": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0",
+    "revision": "b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4",
+    "terms": "CC BY-NC 4.0",
+    "archives": [
+      {
+        "path": "archives/DexGraspNet2.0-ckpts.tar",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/DexGraspNet2.0-ckpts.tar",
+        "bytes": 6193233920,
+        "sha256": "47b38cfde4b5c0883aaee759c442541f4a65dcace9f89541080120e50729bd2a"
+      },
+      {
+        "path": "archives/acronym.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/acronym.tar.gz",
+        "bytes": 642645887,
+        "sha256": "5242d5e372cc008fec140a4bd05bf6e0abdbc16af532f59e51d8934e8fa969ec"
+      },
+      {
+        "path": "archives/acronym_test_scenes.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/acronym_test_scenes.tar.gz",
+        "bytes": 532596421,
+        "sha256": "e24feda731f430fa21edc63e74f43e9fa8d2106e831633f68974848f102aee00"
+      },
+      {
+        "path": "archives/dex_graspness_new.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/dex_graspness_new.tar.gz",
+        "bytes": 6752575130,
+        "sha256": "38e54590d54b4d4aef848bd956c206cd96d5e22e51138634ba4c6cb5132c148b"
+      },
+      {
+        "path": "archives/dex_grasps_new.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/dex_grasps_new.tar.gz",
+        "bytes": 41095155348,
+        "sha256": "5311dd86dca9ed2befa1de16e5934a8c53bc3d71116f7366973f510494cb9e01"
+      },
+      {
+        "path": "archives/gripper_graspness.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/gripper_graspness.tar.gz",
+        "bytes": 24582622715,
+        "sha256": "4266dd0d97f7989362e57828ad9a6897e288916393bd85cc9f9194457ea1de24"
+      },
+      {
+        "path": "archives/gripper_grasps.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/gripper_grasps.tar.gz",
+        "bytes": 717396025,
+        "sha256": "04f4c2bc5e6dda8eed9314fac24ac4c807b3eae8b202056960baeb2cec372dd9"
+      },
+      {
+        "path": "archives/meshdata.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/meshdata.tar.gz",
+        "bytes": 4617887647,
+        "sha256": "55a13b63f3838881b25ec72187d922454ff5d69ce019816f7f29510b14c13f0f"
+      },
+      {
+        "path": "archives/scenes_0.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_0.tar.gz",
+        "bytes": 6715047936,
+        "sha256": "557ebc64b0b5beb52a94db0135ff4f824daa673dad96881a30d76148b7d02a18"
+      },
+      {
+        "path": "archives/scenes_1.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_1.tar.gz",
+        "bytes": 15577788702,
+        "sha256": "2f3c16ad1ea30a942c2a5439e172e839ae1d3d4d043759577e89bf6bcb3e704d"
+      },
+      {
+        "path": "archives/scenes_2.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_2.tar.gz",
+        "bytes": 15612651176,
+        "sha256": "3244547486ff33c03d3b6ac7b94bdb498a66118f2b647d837868fc560fe40bd0"
+      },
+      {
+        "path": "archives/scenes_3.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_3.tar.gz",
+        "bytes": 16170722874,
+        "sha256": "c9662632f8285d628192d90240022e62d07aa9bf250e17b0a51ab696831467c3"
+      },
+      {
+        "path": "archives/scenes_4.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_4.tar.gz",
+        "bytes": 16639204712,
+        "sha256": "6f76a7d3e297fdb765cb750690946c041617936572cace9cd6221e7a4d7dfcbf"
+      },
+      {
+        "path": "archives/scenes_5.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_5.tar.gz",
+        "bytes": 15142850091,
+        "sha256": "9339d86374aa877fcb2497cde837d50cac7a72a140ef9948227dddee7f5e6a74"
+      },
+      {
+        "path": "archives/scenes_6.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_6.tar.gz",
+        "bytes": 15383641439,
+        "sha256": "ad666582c30092f5972398915a6b35a05b8cbabdc3b40954b8b7745cb5d76ba7"
+      },
+      {
+        "path": "archives/scenes_7.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_7.tar.gz",
+        "bytes": 15946793524,
+        "sha256": "e61e0572e7b865ef562eb703a7093b3db6e5841631dda69249a6d017b9090b80"
+      },
+      {
+        "path": "archives/scenes_8.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_8.tar.gz",
+        "bytes": 7424005359,
+        "sha256": "ecfb24757959a6e812dd26550afd26e5753d7c0600e0784b00097cf81ac46b4b"
+      },
+      {
+        "path": "archives/scenes_9.tar.gz",
+        "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_9.tar.gz",
+        "bytes": 12095173173,
+        "sha256": "11ef00adfcc52f3e7c17d989ad131b09c9d392e0faf8f819032df086ab2432a6"
+      }
+    ],
+    "starter": {
+      "description": "Training scene 0, views 0\u20131, including native hand supervision. Start with scene 0 / frame 0.",
+      "bundles": [
+        {
+          "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/scenes_0.tar.gz",
+          "max_download_bytes": 67108864,
+          "members": [
+            {
+              "path": "scenes/scene_0000/realsense/cam0_wrt_table.npy",
+              "bytes": 256,
+              "sha256": "8bcb627d060ffccc58198e4430d192d95ba4912dd67c9742b347c9ad863f8f98"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/camera_poses.npy",
+              "bytes": 32896,
+              "sha256": "4d7bf66b0cddb559c40623faa98fcc4190829063ab7577d2a929ad30faef0562"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/depth_gt/0000.png",
+              "bytes": 84577,
+              "sha256": "c6ae13203ba9c1b6479e4eed94d2bad549e7aec34f98a2c812ce369b7d07a5cf"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/label_gt/0000.png",
+              "bytes": 11586,
+              "sha256": "085b68dfd1f35ec98e7a4e70aa58eee3b5fe75fa88dfea4ea18ee2f4fb7f30bf"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/meta/0000.mat",
+              "bytes": 872,
+              "sha256": "5983a1276e87307cb72eec71e9bb68a8d33e99f1d72e629b88f56f974b0083f1"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/depth_gt/0001.png",
+              "bytes": 54493,
+              "sha256": "9a04c5632db881c118f47468472d9a11614c22a01b6bb55a45f1104d97d1288c"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/label_gt/0001.png",
+              "bytes": 9099,
+              "sha256": "50cf2ec40f019fce9552e2e5cccf46c67d532f510bb07b3337fbb5217bd3772a"
+            },
+            {
+              "path": "scenes/scene_0000/realsense/meta/0001.mat",
+              "bytes": 872,
+              "sha256": "e4d59eb345ad0f42b9cb848e4e212c2e2afde543efd41b7efbcfe864b1fffb18"
+            }
+          ]
+        },
+        {
+          "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/dex_graspness_new.tar.gz",
+          "max_download_bytes": 67108864,
+          "members": [
+            {
+              "path": "dex_graspness_new/scene_0000/realsense/0000.npy",
+              "bytes": 2977808,
+              "sha256": "b46c4c61faa6c135f25046554ddca87c66b587227263ddce7768d189d8b76e1c"
+            },
+            {
+              "path": "dex_graspness_new/scene_0000/realsense/0001.npy",
+              "bytes": 2275756,
+              "sha256": "a1dba2720e89436aaa630307092a8af05a35b14497318a10524d63963eead964"
+            }
+          ]
+        },
+        {
+          "url": "https://huggingface.co/datasets/lhrlhr/DexGraspNet2.0/resolve/b7dbc0ce452d5ab2eda66016ba22d6a1e25e71a4/dex_grasps_new.tar.gz",
+          "max_download_bytes": 67108864,
+          "members": [
+            {
+              "path": "dex_grasps_new/scene_0000/leap_hand/046.npz",
+              "bytes": 6538,
+              "sha256": "d617a6c6263b89fe826acc8c90453a1c538505302bfb72e8a18ab202caee7d86"
+            },
+            {
+              "path": "dex_grasps_new/scene_0000/leap_hand/066.npz",
+              "bytes": 61966,
+              "sha256": "44fd3c869468c148ef7cf4a6398016222749c8bfc244375f1198c722ab07933d"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "zerograsp11b": {
+    "repository": "https://github.com/sh8/ZeroGrasp",
+    "terms": "See the author repository and linked dataset terms.",
+    "starter": {
+      "description": "Released training shard 0, containing 100 observations and their native supervision. No extraction is needed.",
+      "files": [
+        {
+          "path": "train/shard-000000.tar.gz",
+          "url": "https://s3.us-east-1.amazonaws.com/tri-ml-public.s3.amazonaws.com/github/zerograsp/train/shard-000000.tar.gz",
+          "bytes": 248723806,
+          "sha256": "9f393214dca7b49132723d3fd0c170ff899fff5effc43b529dc89854780cd78c"
+        }
+      ]
+    }
+  }
+}

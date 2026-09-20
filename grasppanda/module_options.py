@@ -33,6 +33,10 @@ def schema(method, slot, choice):
 
 
 def _schema(method, slot, choice):
+    if method in ('dexgraspnet2','dexgraspnet2_isa','dexgraspnet2_cvae') and slot == 'backbone':
+        return _schema('graspness', slot, choice)
+    if method == 'zerograsp' and slot == 'backbone' and choice in ('convnextv2', 'repvit', 'mobilenetv4'):
+        return _schema('hggd', slot, choice)
     if slot == 'refinement' and choice == 'contact_score':
         from .refinement import SCHEMA
         return SCHEMA

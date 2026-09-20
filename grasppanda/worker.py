@@ -49,6 +49,15 @@ def overlay(rgb_path, grasps, intr, destination):
 
 
 def infer(config, out):
+    if config.dataset == 'dexgraspnet2':
+        from .methods.dexgraspnet2 import infer as hand_infer
+        return hand_infer(config, out)
+    if config.dataset == 'zerograsp11b':
+        from .methods.zerograsp import infer as zero_infer
+        return zero_infer(config, out)
+    if config.method == 'contact_graspnet_gc6d':
+        from .methods.contact_gc6d import infer as contact_infer
+        return contact_infer(config, out)
     if config.method == 'generalizing_grasp':
         from .methods.generalizing import infer as fused_infer
         return fused_infer(config,out)
@@ -117,11 +126,11 @@ def infer(config, out):
                 raise ValueError("No graspable points: refusing unsafe upstream FPS on an empty set")
         model.graspable.register_forward_hook(guard)
     from collision_detector import ModelFreeCollisionDetector
-    from .datasets import get_dataset
-    frame_count=get_dataset(config.dataset).frames_per_scene
+    from .datasets import get_dataset, get_provider
+    spec = get_dataset(config.dataset)
+    provider = get_provider(config.dataset)
     records = []
-    for index in range(config.scene * frame_count + config.frame, config.scene * frame_count + config.frame + config.frames):
-        scene, frame = divmod(index, frame_count)
+    for index, (scene, frame) in enumerate(spec.frame_keys(config.split, config.scene, config.frame, config.frames)):
         raw, xyz, intr, rgb, evidence = frame_cloud(config, scene, frame)
         inputs = {"point_clouds": torch.from_numpy(xyz)[None].cuda()}
         if config.method in ('graspness', 'graspfast'):
@@ -150,11 +159,13 @@ def infer(config, out):
         if config.collision_thresh > 0 and len(gg):
             detector = ModelFreeCollisionDetector(raw, voxel_size=0.01)
             gg = gg[~detector.detect(gg, approach_dist=0.05, collision_thresh=config.collision_thresh)]
-        destination = out / "predictions" / f"scene_{scene:04d}" / config.camera
-        destination.mkdir(parents=True, exist_ok=True)
-        path = destination / f"{frame:04d}.npy"
+        relative = (provider.prediction_path(scene, config.camera, frame)
+                    if hasattr(provider, 'prediction_path') else
+                    Path(f'scene_{scene:04d}') / config.camera / f'{frame:04d}.npy')
+        path = out / 'predictions' / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
         gg.save_npy(str(path))
-        if index == config.scene * frame_count + config.frame:
+        if index == 0:
             overlay(rgb, gg.grasp_group_array, intr, out / "preview.png")
         record = dict(scene=scene, frame=frame, raw_points=len(raw), sampled_points=len(xyz),
                       grasps_before_collision=raw_count, grasps_after_collision=len(gg),
@@ -173,15 +184,24 @@ def infer(config, out):
                 'files':{str(Path(r['prediction']).relative_to('predictions')):r['prediction_sha256'] for r in records}}
     if segmenter is not None: manifest['segmentation_checkpoint_sha256'] = segmenter.sha256
     (out/'predictions/manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    return {"stage": "dataset_inference", "method": config.method, "camera": config.camera,
+    return {"stage": "dataset_inference", "dataset": config.dataset, "method": config.method, "camera": config.camera,
             "split": config.split, "workspace": config.workspace, "frames": records,
             "checkpoint_sha256": digest(config.checkpoint), "torch": torch.__version__,
             "gpu": torch.cuda.get_device_name(), "ap": None,
             "timing_note": "Forward + decode including first-call overhead; not a warmed throughput benchmark",
-            "protocol_note": "official_gt_workspace uses dataset segmentation and poses for workspace cropping; depth_only is a separate protocol"}
+            "protocol_note": spec.protocol_note or "official_gt_workspace uses dataset segmentation and poses for workspace cropping; depth_only is a separate protocol"}
 
 
 def train(config, out):
+    if config.dataset == 'dexgraspnet2':
+        from .methods.dexgraspnet2_training import run
+        return run(config, out)
+    if config.dataset == 'zerograsp11b':
+        from .methods.zerograsp_training import run
+        return run(config, out)
+    if config.method == 'contact_graspnet_gc6d':
+        from .methods.contact_gc6d_training import run
+        return run(config, out)
     if config.method == 'gtg2':
         from grasppanda.methods.gtg2_training import run
         return run(config, out)
@@ -213,6 +233,9 @@ def main():
             raise ValueError('Queued configuration changed before execution')
         if provenance['runtime_lock_sha256'] != digest(ROOT/'uv.lock'):
             raise ValueError('Runtime lock changed while job was queued; resubmit against the new runtime')
+        for path, expected in provenance.get('dataset_definitions', {}).items():
+            if digest(ROOT/path) != expected:
+                raise ValueError('Dataset definition changed while queued; resubmit')
         if provenance.get('native_source_lock_sha256') and provenance['native_source_lock_sha256']!=digest(ROOT/'grasppanda/resources/native_sources.lock.json'):
             raise ValueError('Native source lock changed while queued; resubmit')
         for path,expected in provenance.get('native_sources',{}).items():
@@ -251,7 +274,16 @@ def main():
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.set_num_threads(4)
-    if config.action == 'train_short' and config.method == 'spgrasp':
+    if config.action == 'train_short' and config.dataset == 'dexgraspnet2':
+        from .methods.dexgraspnet2_training import run
+        result = run(config, out, config.training_steps)
+    elif config.action == 'train_short' and config.dataset == 'zerograsp11b':
+        from .methods.zerograsp_training import run
+        result = run(config, out, config.training_steps)
+    elif config.action == 'train_short' and config.method == 'contact_graspnet_gc6d':
+        from .methods.contact_gc6d_training import run
+        result = run(config, out, config.training_steps)
+    elif config.action == 'train_short' and config.method == 'spgrasp':
         from .methods.spgrasp import train as train_planar
         result = train_planar(config, out, config.training_steps)
     elif config.action == 'train_short':

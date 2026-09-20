@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.55.3"
+version = "0.56.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -60,6 +60,7 @@ dependencies = [
   "pycocotools>=2.0.11",
   "spatialmath-python>=1.1.17",
   "gradio>=6,<7",
+  "plotly==7.0.0",
   "pybind11>=3.1.0",
   "rotary-embedding-torch==0.3.5",
   "siren-pytorch>=0.1.7",
@@ -90,6 +91,10 @@ dependencies = [
   "robo-orchard-core",
   "fpsample==0.3.3",
   "tensordict==0.6.2",
+  "diffusers==0.30.3",
+  "ikpy==3.4.2",
+  "urdf-parser-py==0.0.4",
+  "nflows",
 ]
 
 [tool.uv]
@@ -105,6 +110,7 @@ torch = { index = "pytorch-cu118" }
 torchvision = { index = "pytorch-cu118" }
 datasettemplate = { git = "https://github.com/Nx1021/DatasetTemplate", rev = "9543930258cf4ba98e543ad6b654d2088049a329" }
 launchertemplate = { git = "https://github.com/Nx1021/LauncherTemplate", rev = "eb8d0df9a0fa1d0b66934e013df6fe64030d8e33" }
+nflows = { git = "https://github.com/nkolot/nflows", rev = "26388ed7780e7548ab1a7803ec50b0f0b779f254" }
 
 xformers = { index = "pytorch-cu118" }
 clip = { git = "https://github.com/openai/CLIP", rev = "d05afc436d78f1c48dc0dbf8e5980a9d471f35f6" }

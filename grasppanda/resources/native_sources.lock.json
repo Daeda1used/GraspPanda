@@ -39,5 +39,11 @@
     "repository": "https://github.com/lianghongzhuo/gpg",
     "path": "environments/sources/gpg",
     "commit": "1ee07c83808ce4091a2395df2400c59802009bc9"
+  },
+  {
+    "id": "torchprimitivesdf",
+    "repository": "https://github.com/mzhmxzh/torchprimitivesdf",
+    "path": "environments/sources/torchprimitivesdf",
+    "commit": "c65aae4281fd617a8c071a43234c30f6b4eada1a"
   }
 ]

@@ -2,6 +2,8 @@
 
 Start from a method preset, replace a compatible part, then train and compare the resulting model. GraspPanda checks coordinates, units, sample indices and supervision as well as tensor shapes. Single-view, fused-view and sequence methods retain their own input protocols.
 
+Shared point and image encoders also support registered [cross-dataset contracts](DATASETS.md#components-across-datasets). The selector exposes only the slots supported by the chosen method; native supervision and output geometry stay dataset-specific.
+
 ## First composition
 
 ```bash
@@ -46,6 +48,9 @@ A component can be a name (`backbone: pointnet`) or a mapping containing `type` 
 | FineGrasp | `backbone` | `upstream`, `sonata_ptv3`, `point_transformer_v2`, `litept`, `pointcnnpp`, `pointhr`, `sp2t`, `swin3d`, `pointrwkv_released`, `flash3d`, `oacnns`, `kpconvx`, `utonia`, `concerto` |
 | FineGrasp | `crop` | `upstream`, `native_cylinder`, `kpconvx_cylinder` |
 | HGGD / RegionNormalizedGrasp | `backbone` | `upstream`, `native_resnet`, `convnextv2`, `repvit`, `mobilenetv4`, `dinov2`, `dinov3`, `vmamba`, `rala`, `mambavision`, `efficientvit`, `fastvit` |
+| Contact-GraspNet / GraspClutter6D | `backbone` | `upstream`, `pointnet`, `pointmlp`, `sonata_ptv3` |
+| ZeroGrasp / ZeroGrasp-11B | `backbone` | `upstream`, `convnextv2`, `repvit`, `mobilenetv4` |
+| DexGraspNet 2.0 / author hand baselines | `backbone` | `upstream`, `pointnet`, `sparse_unet18`, `sonata_ptv3` |
 | GtG2 | `backbone` / `crop` | `upstream`, `gtg_sage`, `gtg_gatv2` / `upstream`, `grasp_graph`; [graph settings and training](REFERENCE.md#candidate-graph-experiments) |
 | SPGrasp | `backbone` / `memory` | `upstream`, `hiera` / `upstream`, `temporal`; [planar sequence settings](REFERENCE.md#prompted-planar-sequences) |
 

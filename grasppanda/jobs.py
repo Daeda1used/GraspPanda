@@ -169,6 +169,8 @@ class JobManager:
         from .refinement import enabled as refinement_enabled, artifacts as refinement_artifacts
         if refinement_enabled(config):provenance['refinement_artifacts'] = refinement_artifacts(config)
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')
+        provenance['dataset_definitions'] = {str(path.relative_to(ROOT)): digest(path)
+            for path in (ROOT/'grasppanda/resources/graspclutter6d.json',) if path.is_file()}
         if config.method=='finegrasp' and config.checkpoint:
             provenance['model_config_sha256']=digest(Path(config.checkpoint).parent/'model.config.json')
         provenance['native_source_lock_sha256']=digest(ROOT/'grasppanda/resources/native_sources.lock.json')

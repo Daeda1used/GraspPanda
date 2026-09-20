@@ -103,6 +103,8 @@ def main():
         from ofe import OctreeFeatureExtractor
         ofe_forward=OctreeFeatureExtractor.forward
         def single_scene_ofe(self, pts, masks, depth, intr, batch_id, grid_size):
+            if masks.ndim == 4:
+                masks=masks[...,0].contiguous()
             count=masks.shape[0]
             starts=torch.zeros(count,dtype=torch.int32,device=pts.device)
             ends=torch.full((count,),count,dtype=torch.int32,device=pts.device)

@@ -22,9 +22,37 @@ NO_WEIGHTS = {'rngnet_sdk','spahybgen'}
 CHECKPOINT_RECIPES = {'contact_graspnet_g1b','gfla','centergrasp','motiongrasp','rgb_matters','spahybgen'}
 
 
-def preset(method, dataset_root=''):
+def checkpoint_camera(method, camera, dataset='graspnet1b'):
+    """Training-camera identity for registered cross-dataset detector weights."""
+    if dataset == 'graspclutter6d' and method in ('graspnet_baseline', 'graspness'):
+        return 'realsense'
+    if dataset == 'graspclutter6d' and method == 'contact_graspnet_gc6d':
+        return 'realsense-d435'
+    if dataset == 'zerograsp11b' and method == 'zerograsp':
+        return 'any'
+    return camera
+
+
+def preset(method, dataset_root='', dataset='graspnet1b'):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if dataset != 'graspnet1b':
+        from .datasets import get_dataset
+        spec = get_dataset(dataset)
+        if not capabilities(method, dataset):
+            raise ValueError(f'{method} has no adapter for {spec.title}')
+        camera = 'realsense-d435' if dataset == 'graspclutter6d' else spec.cameras[0]
+        split = 'test' if 'test' in spec.splits else next(iter(spec.splits))
+        source_camera = checkpoint_camera(method, camera, dataset)
+        checkpoint = primary(method, source_camera) or next((r['path'] for r in records(method, source_camera)
+            if r.get('role', 'primary') == 'primary'), '')
+        return Experiment(dataset=dataset, method=method, action='infer', dataset_root=dataset_root,
+                          camera=camera, split=split, scene=spec.scene_ids(split)[0], checkpoint=checkpoint,
+                          workspace='provided_instance_masks' if dataset == 'zerograsp11b' else 'official_gt_workspace',
+                          learning_rate=.0001 if dataset == 'zerograsp11b' else .001,
+                          batch_size=1 if dataset in ('zerograsp11b','dexgraspnet2') else 2,
+                          collision_thresh=0 if dataset=='dexgraspnet2' else .01,
+                          num_points=40000 if dataset=='dexgraspnet2' else 20000 if method == 'contact_graspnet_gc6d' else 15000)
     if method == 'generalizing_grasp':
         return Experiment(method=method, action='infer', dataset_root=dataset_root, workspace='fused_scene',
             num_points=20000, checkpoint=primary(method,'realsense') or 'checkpoints/generalizing_grasp/model.tar')

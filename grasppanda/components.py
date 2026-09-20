@@ -25,6 +25,18 @@ BASELINE_SLOTS = (
 
 
 def slots(method):
+    if method in ('dexgraspnet2','dexgraspnet2_isa','dexgraspnet2_cvae'): return (
+        ComponentSlot('backbone','backbone',('upstream','pointnet','sparse_unet18','sonata_ptv3'),
+            'Quantized camera XYZ in metres, three constant features and an unchanged sparse coordinate map.',
+            '512-channel features in native sparse row order before quantize2original. Native hand pose, joint and density heads are retained.'),)
+    if method == 'zerograsp': return (
+        ComponentSlot('backbone', 'model.backbone', ('upstream', 'convnextv2', 'repvit', 'mobilenetv4'),
+            'Three-channel RGB [B,3,480,640] with native normalization and unchanged calibrated pixel coordinates.',
+            '32-channel dense image features aligned to original pixel centers; native octree, CVAE and grasp heads remain unchanged.'),)
+    if method == 'contact_graspnet_gc6d': return (
+        ComponentSlot('backbone', 'backbone', ('upstream', 'pointnet', 'pointmlp', 'sonata_ptv3'),
+            'Mean-centered camera XYZ [B,N,3] in metres; N >= 2048. Native PointNet++ or a registered shared encoder.',
+            '256-channel features at native contact seeds (2048) or shared encoder seeds (1024). The author contact-frame heads and width bins are retained.'),)
     if method == 'spgrasp': return (
         ComponentSlot('backbone', 'image_encoder', ('upstream', 'hiera'),
             'Letterboxed, ImageNet-normalized RGB sequence [T,3,R,R].',
