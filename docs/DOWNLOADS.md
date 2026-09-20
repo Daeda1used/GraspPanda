@@ -21,7 +21,7 @@ After [installation](INSTALL.md), run the ASGrasp stereo sample without download
 ./panda run sample.local.yaml
 ```
 
-The pinned implementation includes the sample inputs; the first command downloads the two required networks. Leave the generated input settings unchanged. In the browser, select **ASGrasp → Load preset → Download registered weights → Run current form**, then open **Runs & results** to inspect the prediction. A supported GPU and the shared runtime are still required.
+The pinned implementation includes the sample inputs; the first command downloads the two required networks. Leave the generated input settings unchanged. In the browser, select **Try the author sample → Download registered weights → Run current form**, then open **Runs & results** to inspect the prediction. The shortcut loads the complete ASGrasp preset. A supported GPU and the shared runtime are still required.
 
 ZeroGrasp and SpaHybGen also provide author samples. These fixed recipes have their own observation protocols; see [Methods & papers](METHODS.md) before substituting your own inputs.
 

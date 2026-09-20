@@ -4,7 +4,7 @@
 
 ### An All-in-One Research Toolbox for Visual Grasping
 
-**Reproduce methods. Compose models. Run experiments.**
+**From published methods to your next grasping model.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-167568)](LICENSE)
 [![GraspNet-1B](https://img.shields.io/badge/dataset-GraspNet--1B-365c92)](docs/DOWNLOADS.md)
@@ -17,11 +17,11 @@
 
 ![Visual observations, configurable grasp models and reproducible experiments in one shared runtime.](docs/assets/overview.svg)
 
-GraspPanda brings visual grasping research on **GraspNet-1B** into one configurable workspace. Start with a published method, replace compatible components, and train, inspect or compare experiments through the **browser UI or CLI**.
+GraspPanda brings visual grasping research on **GraspNet-1B** into one configurable workspace. Reproduce a method, replace compatible components, and follow an experiment from **configuration to training, prediction and comparison**—in the browser or from the CLI.
 
 **28 method workflows · 7 epoch-training adapters · one shared Python environment.** Available operations and observation protocols are documented in the [method catalogue](docs/METHODS.md).
 
-## A research stack you can compose
+## One toolbox. Every stage of the experiment.
 
 | Layer | Explore |
 |---|---|
@@ -46,11 +46,15 @@ cd GraspPanda
 
 Open **http://127.0.0.1:7860**:
 
-**Choose a method → Load preset → Set data path → Download weights → Run.**
+| Your starting point | In the browser |
+|---|---|
+| **No dataset yet** | **Try the author sample** → download weights → run ASGrasp's included stereo sample |
+| **GraspNet ready** | **Start a GraspNet experiment** → set your data path → download weights → check inputs → run |
+| **A new model idea** | Choose a method → **Compose modules** → train the replacement → reuse its checkpoint |
 
 Use **Check current form** to verify required inputs before starting. View predictions and checkpoints in **Runs & results**; expand **Compose modules** to build your own model.
 
-**No dataset yet?** [Run the included author sample](docs/DOWNLOADS.md#start-without-graspnet), or [download your first GraspNet split](docs/DOWNLOADS.md#graspnet-1b). You can browse methods and generate JSON presets before installing the GPU runtime.
+See the [sample and dataset guide](docs/DOWNLOADS.md) for exact commands and download links. You can browse methods and generate JSON presets before installing the GPU runtime.
 
 ## Documentation
 

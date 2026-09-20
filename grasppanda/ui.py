@@ -44,6 +44,22 @@ def method_card(method):
             f"[Implementation]({item['repository']})\n\n{recipe or note}")
 
 
+def result_snapshot(directory, state):
+    """Read a worker snapshot without interrupting live browser updates."""
+    path = directory / 'result.json'
+    try:
+        value = json.loads(path.read_text())
+        if not isinstance(value, dict):
+            raise ValueError('Expected a result mapping')
+        return value
+    except FileNotFoundError:
+        return {}
+    except (ValueError, UnicodeError):
+        if state in ('queued', 'running'):
+            return {'state': state, 'detail': 'Results are being updated. Refreshing automatically.'}
+        return {'state': state, 'result_error': 'The saved result is incomplete or invalid. Inspect the experiment log.'}
+
+
 def component_parameters(method, backbone, crop, head='upstream', memory='upstream', sampling='upstream'):
     from .module_options import schema
     rows = []
@@ -448,6 +464,11 @@ def create_app(manager=None):
                 '{}', 'upstream', 'upstream', '[]', '{}', 0, config.training_steps,
                 'initialize', 0, 0, 0, None, 'Preset ready. Configure your experiment and run.', 'upstream', 'none', '{}')
 
+    def start_here(method, dataset):
+        return (gr.update(value='All'),
+                gr.update(choices=[(v.get('name', m), m) for m, v in items.items()], value=method),
+                method_card(method), *apply_preset(method, dataset))
+
     def setup_check(dataset):
         import torch
         root=Path((dataset or '').strip()) if (dataset or '').strip() else None
@@ -560,11 +581,13 @@ def create_app(manager=None):
             return "Select or submit an experiment.", {}, None, []
         directory = manager.root / row["id"]
         log = directory / "experiment.log"
-        with log.open("rb") as stream:
-            stream.seek(max(0, log.stat().st_size - 32000))
-            text = stream.read().decode(errors="replace")
-        result_path = directory / "result.json"
-        result = json.loads(result_path.read_text()) if result_path.exists() else {"state": row["state"], "detail": row["detail"]}
+        try:
+            with log.open("rb") as stream:
+                stream.seek(max(0, log.stat().st_size - 32000))
+                text = stream.read().decode(errors="replace")
+        except FileNotFoundError:
+            text = 'Waiting for the worker to create the experiment log.'
+        result = result_snapshot(directory, row['state']) or {"state": row["state"], "detail": row["detail"]}
         preview = directory / "preview.png"
         files = [str(p) for p in directory.iterdir() if p.suffix in (".json", ".png", ".log")]
         return text, result, str(preview) if preview.exists() else None, files
@@ -573,7 +596,7 @@ def create_app(manager=None):
         import pandas as pd
         row=manager.get(job_id)
         path=manager.root/row['id']/'result.json' if row else None
-        result=json.loads(path.read_text()) if path and path.exists() else {}
+        result=result_snapshot(path.parent, row['state']) if path else {}
         values=result.get('losses',[])
         stages=[v.get('stage','Training') for v in values]
         counts={};batches=[]
@@ -612,6 +635,8 @@ def create_app(manager=None):
         row = manager.get(job_id)
         if not row:
             raise gr.Error("Choose an existing experiment")
+        if row['state'] in ('queued', 'running'):
+            raise gr.Error('Wait for the experiment to finish, or cancel it before exporting its saved artifacts.')
         directory = manager.root / row["id"]
         destination = manager.root / (row["id"] + ".zip")
         with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -626,7 +651,9 @@ def create_app(manager=None):
             path = manager.root / job["id"] / "result.json"
             if job["state"] != "succeeded" or not path.exists():
                 continue
-            data, config = json.loads(path.read_text()), job["config"]
+            data, config = result_snapshot(path.parent, job['state']), job["config"]
+            if 'result_error' in data:
+                continue
             losses = data.get('losses', [])
             last_loss = losses[-1].get('total') if isinstance(losses, list) and losses and isinstance(losses[-1], dict) else None
             settings = {key: config.get(key) for key in ('learning_rate', 'optimizer', 'scheduler', 'loss', 'augmentation', 'trainer', 'proposal_warmup_steps')}
@@ -637,6 +664,15 @@ def create_app(manager=None):
     with gr.Blocks(title="GraspPanda · Modular visual grasping") as app:
         gr.HTML('<div id="panda-hero"><h1>GraspPanda</h1><p>An all-in-one research toolbox for visual grasping.</p></div>')
         with gr.Tab("Experiments"):
+            with gr.Accordion('Start here', open=True):
+                with gr.Row():
+                    with gr.Column():
+                        gr.Markdown('**Explore without GraspNet**\n\nUse ASGrasp’s included stereo sample. Load the preset, download its weights, then run.')
+                        start_sample = gr.Button('Try the author sample')
+                    with gr.Column():
+                        gr.Markdown('**Predict on GraspNet-1B**\n\nStart with HGGD. Set your dataset root, download its weights, then check your inputs.')
+                        start_graspnet = gr.Button('Start a GraspNet experiment')
+                gr.Markdown('To build a new model, choose a method below and expand **Compose modules**. Training, sweeps and checkpoint reuse are explained in **Guide → Usage**.')
             with gr.Row():
                 with gr.Column(scale=4):
                     dataset_key=gr.Dropdown(choices=[(s.title,key) for key,s in datasets().items()],value="graspnet1b",label="Dataset")
@@ -985,21 +1021,36 @@ For component experiments, expand **Compose modules**. Full configuration editin
         refinement_download.click(prepare_refinement,[camera,refinement_options],outputs=refinement_message,api_name='prepare_refinement')
         inputs = [method, action, dataset, checkpoint, camera, split, scene, frame, count, points, seed, workspace, collision, epochs, batch, lr, predictions, gpu,dataset_key,backbone,crop,checkpoint_policy,training_steps,label_root,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,proposal_warmup_steps,trainer_options,timeout,head,memory,prompt_options,planar_options,sampling,refinement_kind,refinement_options]
         generate.click(compose, inputs, config_text, api_name="compose_config")
-        check_current_form.click(check_form, inputs, [form_readiness, config_text], api_name='validate_form')
-        # Clear immediately in the browser: a delayed server response from an
-        # earlier edit must not erase the result of a newer check.
-        gr.on([field.change for field in inputs], fn=None, outputs=form_readiness,
-              js="() => ''", api_name=False, queue=False, show_progress='hidden')
+        checked_form = "(...values) => { window.graspPandaCheckedForm = JSON.stringify(values); return values; }"
+        retain_current_check = """(...values) => {
+            const message = values.pop();
+            return JSON.stringify(values) === window.graspPandaCheckedForm ? message : '';
+        }"""
+        check_current_form.click(check_form, inputs, [form_readiness, config_text],
+            api_name='validate_form', js=checked_form).then(
+                fn=None, inputs=[*inputs, form_readiness], outputs=form_readiness,
+                js=retain_current_check, api_name=False, queue=False)
+        # Identical server updates must not erase a new check. Actual input
+        # changes clear it immediately, including edits while a check is pending.
+        gr.on([field.change for field in inputs], fn=None, inputs=[*inputs, form_readiness],
+              outputs=form_readiness, js=retain_current_check, api_name=False,
+              queue=False, show_progress='hidden')
         check.click(preflight, config_text, message, api_name="validate_config")
         run.click(submit, config_text, [job_id, message], api_name="submit_experiment")
         run_form.click(submit_form,inputs,[job_id,message,config_text],api_name='submit_form')
         sweep_preview_button.click(preview_sweep,[config_text,sweep_grid],sweep_preview,api_name='preview_sweep')
         sweep_run_button.click(run_sweep,[config_text,sweep_grid],[job_id,message],api_name='run_sweep')
-        preset_button.click(apply_preset,[method,dataset],
-            [action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text,collision,
+        preset_outputs = [action,camera,checkpoint,workspace,points,split,scene,frame,count,seed,epochs,batch,lr,label_root,timeout,config_text,collision,
              backbone,crop,checkpoint_policy,component_options,loss_options,augmentation_options,optimizer_kind,optimizer_options,scheduler_kind,scheduler_options,
-             trainer_options,head,memory,prompt_options,planar_options,proposal_warmup_steps,training_steps,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,prompt_image,preset_status,sampling,refinement_kind,refinement_options],
+             trainer_options,head,memory,prompt_options,planar_options,proposal_warmup_steps,training_steps,train_checkpoint_mode,train_batch_limit,eval_batch_limit,data_workers,prompt_image,preset_status,sampling,refinement_kind,refinement_options]
+        preset_button.click(apply_preset,[method,dataset],preset_outputs,
             api_name='apply_preset', concurrency_id='method-preset', concurrency_limit=1)
+        for button, selected_method, endpoint in ((start_sample, 'asgrasp', 'start_sample'),
+                                                   (start_graspnet, 'hggd', 'start_graspnet')):
+            button.click(partial(start_here, selected_method), dataset, [group, method, card, *preset_outputs],
+                         api_name=endpoint, concurrency_id='method-preset', concurrency_limit=1).then(
+                select_components, method, [backbone,crop,component_contract,head,memory,sampling],
+                api_name=False, preprocess=False, queue=False)
         gr.on([method.input,group.input], lambda: '', outputs=preset_status, api_name=False, queue=False)
         action.change(lambda a: ('**Fixed recipe:** '+ 'The method card specifies its actual input and settings. Single-frame/training fields below are ignored; click Load preset before running.') if a=='recipe' else '',action,download_message,api_name=False, preprocess=False)
         refresh.click(job_rows, outputs=table, api_name="list_runs")
