@@ -34,6 +34,7 @@ GraNet and GraspBalance presets start with short training from scratch because c
 ```bash
 ./panda list
 ./panda list --dataset dexgraspnet2
+./panda storage
 ./panda doctor
 ./panda weights graspness --camera realsense
 ./panda init --method graspness -o graspness.local.yaml

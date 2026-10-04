@@ -25,6 +25,8 @@ def main():
     parser = argparse.ArgumentParser(prog="panda", description="GraspPanda · Modular visual grasping toolbox")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("install", help="Install or repair the shared runtime")
+    storage = commands.add_parser('storage', help='Show generated-file locations or configure a storage volume before installation')
+    storage.add_argument('--root', type=Path, help='Place a fresh checkout\'s runtime, weights, caches and outputs on this mounted volume')
     ui = commands.add_parser("ui", help="Open the experiment browser")
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=7860)
@@ -85,6 +87,9 @@ def main():
     args = parser.parse_args()
     if args.command == "install":
         raise SystemExit(subprocess.call(["bash", str(ROOT / "grasppanda/runtime/bootstrap.sh")], cwd=ROOT))
+    elif args.command == 'storage':
+        from .storage import configure, status
+        print(json.dumps(configure(args.root) if args.root is not None else status(),indent=2))
     elif args.command == 'component-weights':
         from .weights import fetch_component
         print(fetch_component(args.name))

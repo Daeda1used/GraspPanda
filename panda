@@ -2,6 +2,22 @@
 set -euo pipefail
 PANDA_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PANDA_ROOT"
+# Generated assets follow environments/ onto the configured storage volume.
+# Explicit user cache settings remain authoritative.
+PANDA_CACHE_ROOT="$PANDA_ROOT/environments/artifact-cache"
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$PANDA_CACHE_ROOT/uv}"
+export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-$PANDA_CACHE_ROOT/python}"
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$(realpath -m -- "$PANDA_ROOT/.venv")}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$PANDA_CACHE_ROOT/pip}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$PANDA_CACHE_ROOT/xdg}"
+export HF_HOME="${HF_HOME:-$PANDA_CACHE_ROOT/huggingface}"
+export TORCH_HOME="${TORCH_HOME:-$PANDA_CACHE_ROOT/torch}"
+export TORCH_EXTENSIONS_DIR="${TORCH_EXTENSIONS_DIR:-$PANDA_CACHE_ROOT/torch-extensions}"
+export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$PANDA_CACHE_ROOT/torchinductor}"
+export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$PANDA_CACHE_ROOT/triton}"
+export CUDA_CACHE_PATH="${CUDA_CACHE_PATH:-$PANDA_CACHE_ROOT/cuda}"
+export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-$PANDA_CACHE_ROOT/numba}"
+export GRADIO_TEMP_DIR="${GRADIO_TEMP_DIR:-$PANDA_CACHE_ROOT/gradio}"
 if [[ "${1:-}" == install ]]; then
   if [[ $# -ne 1 ]]; then
     echo 'Usage: ./panda install' >&2
@@ -11,7 +27,7 @@ if [[ "${1:-}" == install ]]; then
 fi
 if [[ ! -x .venv/bin/python ]]; then
   case "${1:-}" in
-    --help|-h|list|describe|init|docs|data)
+    --help|-h|list|describe|init|docs|data|storage)
       if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))'; then
         exec python3 -B -m grasppanda "$@"
       fi

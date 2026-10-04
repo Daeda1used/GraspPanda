@@ -151,6 +151,8 @@ cd GraspPanda
 ./panda ui
 ```
 
+Using a NAS or a dedicated data disk? Run `./panda storage --root /mnt/nas/GraspPanda` before installation to place the runtime, weights, caches and experiments there. [Storage setup](docs/INSTALL.md#choose-the-storage-volume-first).
+
 Open **http://127.0.0.1:7860**:
 
 | Your starting point | In the browser |
