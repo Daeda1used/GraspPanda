@@ -446,3 +446,12 @@ The registry selects one pinned checkpoint per modality and verifies its size an
 | Implementation and paper | [Author code](https://github.com/kuldeepbrd1/graspLDM) · [IEEE Access 2024 PDF](https://arxiv.org/pdf/2312.11243) |
 
 `./panda data acronym --root /data/ACRONYM --fetch` installs the 0.6 MB two-object starter. `./panda weights graspldm --camera synthetic-depth` installs both original partial-cloud checkpoints. URLs, sizes and SHA-256 hashes are registered; [full data layout and protocol](DATASETS.md#acronym) explain the separate mesh download and locally generated observations.
+
+## VGN simulation assets and weights
+
+- [Author source and data-generation instructions](https://github.com/ethz-asl/vgn) · [Paper PDF](https://arxiv.org/pdf/2101.01132).
+- [Original asset/model archive](https://drive.google.com/file/d/1MysYHve3ooWiLq12b58Nm8FWiFBMH-bJ/view): 6.5 MB; the model is `data/models/vgn_conv.pth` inside the archive.
+- `./panda data vgn --root /data/VGN --fetch` prepares the archive; `./panda weights vgn --camera synthetic-depth` extracts and verifies the registered weight file. No ROS installation is needed for the supported headless workflow.
+- Sensor observations and physics labels are generated on your storage volume using **Generate simulation data**. The [dataset guide](DATASETS.md#vgn-simulation) explains generation, split rules and resuming a partial collection.
+
+VGN source is BSD-3-Clause. The separately downloaded archive contains third-party object/gripper assets; retain the original asset terms and attribution. The toolbox does not relicense or redistribute those assets as its own source.

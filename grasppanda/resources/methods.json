@@ -726,5 +726,70 @@
         "ui": "Training settings \u2192 Method training stages \u2192 Trainer parameters"
       }
     }
+  },
+  {
+    "id": "vgn",
+    "name": "VGN",
+    "repository": "https://github.com/ethz-asl/vgn",
+    "path": "upstream/volumetric/vgn",
+    "group": "multi_view/tsdf",
+    "datasets": [
+      "vgn"
+    ],
+    "paper_title": "Volumetric Grasping Network: Real-time 6 DOF Grasp Detection in Clutter",
+    "input_note": "One or more depth images fused into the native 40-cubed TSDF. Locally generated, physically labelled scenes.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "CoRL 2020",
+      "paper_url": "https://arxiv.org/pdf/2101.01132",
+      "adapter_note": "Native simulation, candidate evaluation, TSDF integration, network, objectives and clutter removal. Toolbox adds resumable generation, scene-disjoint splits, finite training/resume and UI outputs. ROS/MPI imports are lazy; single-item batch selection preserves shape. No arbitrary encoder replacements."
+    },
+    "configuration_reference": "docs/REFERENCE.md#vgn-simulation",
+    "configuration_parameters": {
+      "dataset_options.scene_type": {
+        "default": "pile",
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.scene_count": {
+        "default": 3,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.grasps_per_scene": {
+        "default": 120,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.max_views": {
+        "default": 6,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.train_fraction": {
+        "default": 0.9,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.split_seed": {
+        "default": 0,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.augment": {
+        "default": false,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.quality_threshold": {
+        "default": 0.9,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.simulation_rounds": {
+        "default": 5,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.simulation_objects": {
+        "default": 5,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.simulation_views": {
+        "default": 6,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      }
+    }
   }
 ]

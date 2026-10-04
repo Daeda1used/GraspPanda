@@ -412,5 +412,14 @@
     "source": "https://huggingface.co/kuldeepbarad/GraspLDM/resolve/3da18c20aac385fcb1ae4843a83f2ffa43001a99/checkpoints/generation/ppc_1a_partial_63cat8k_filtered_latentc3_z16_pc256_180k/vae/checkpoints/last.ckpt",
     "bytes": 20985977,
     "sha256": "6f0e017b0790fcb742797dbd6c3a31cb9c48ba62020ebffd08408c3f395d44e7"
+  },
+  {
+    "method": "vgn",
+    "camera": "synthetic-depth",
+    "path": "checkpoints/vgn/vgn_conv.pth",
+    "source": "https://drive.usercontent.google.com/download?id=1MysYHve3ooWiLq12b58Nm8FWiFBMH-bJ&export=download&confirm=t",
+    "archive_member": "data/models/vgn_conv.pth",
+    "bytes": 1255822,
+    "sha256": "ba3391d0805e9c9b178cd18106866313cee808ff2b654f689663e92a814cec4b"
   }
 ]

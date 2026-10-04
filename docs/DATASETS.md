@@ -436,3 +436,38 @@ Every object listed in the selected split must be installed. Alternatively, crea
 Both native objectives are available through **Train across epochs → Method training stages → GraspLDM training stage**. The toolbox renders observations lazily and samples original **successful** grasps as supervision. It does **not** reproduce the paper's visibility-filtered targets: the public author renderer imports `GripperCollision`, which is absent from the pinned source. Its rendered training release is also not supplied by the registered weight repository. The selectable toolbox protocol is explicitly named **`all_success`**; it may supervise grasps on surfaces hidden from the selected view.
 
 An unbounded epoch visits all 20 views of every training object once, sampling `grasps_per_view` labels per view. It is not an exhaustive pass over every grasp trial. Objects are not silently skipped; missing meshes, unusable depth or objects without successful labels stop the job. See [stage selection, initialization, resume and checkpoint reuse](REFERENCE.md#acronym-and-graspldm). The starter validates operation only; no full-dataset convergence or simulator benchmark is claimed.
+
+## VGN simulation
+
+[VGN (CoRL 2020)](https://github.com/ethz-asl/vgn) adds a **self-supervised simulation workflow**: generate labelled scenes, train on depth-derived TSDF volumes, then test closed-loop clutter removal. This provider generates data locally; it is not an additional downloaded large-scale benchmark. Increase `scene_count` and `grasps_per_scene` to collect a larger training set on your selected storage volume.
+
+```bash
+./panda data vgn --root /data/VGN --fetch
+./panda weights vgn --camera synthetic-depth
+./panda init --example vgn-generate --dataset-root /data/VGN -o generate.local.yaml
+./panda run generate.local.yaml
+./panda init --example vgn-train --dataset-root /data/VGN -o train.local.yaml
+./panda run train.local.yaml
+```
+
+The **6.5 MB author asset archive** contains the original object and gripper models; it contains no labelled sensor observations. In the browser, select **VGN simulation**, download these assets, then choose **Generate simulation data**. Generation runs in the experiment queue and can be cancelled. Repeating the same generation configuration with the recorded PyBullet, Open3D and NumPy versions verifies and reuses completed scenes; incomplete scenes are regenerated. Use a new dataset root to change the generation plan. The default collects three scenes with 120 candidate locations each, evaluating six wrist rotations per candidate using the native simulator.
+
+Generation uses the author's `pile/train` or `packed/train` objects, object-count distribution, view sampling, contact rules and success labels. The toolbox seeds each scene, sorts object discovery, records hashes, and assigns complete scenes to training or validation. The default validation fraction is 10%, with at least one scene in each split. Depth views are chosen independently of grasp success labels. The native 0.02–0.28 m workspace cleaning is applied before converting positions and widths into voxel coordinates. Training and validation balance successful/unsuccessful labels independently within their own scenes; all selected balanced labels are visited once per unbounded epoch, including the final partial batch.
+
+```text
+VGN/
+  assets/vgn-data.zip
+  generation.json
+  splits.json
+  raw/setup.json
+  raw/grasps.csv
+  raw/scenes/<scene>.npz
+  raw/labels/<scene>.csv
+  processed/grasps.csv
+  processed/scenes/<scene>.npz
+  processed/records/<scene>.json
+```
+
+The network receives a **40×40×40 TSDF** integrated from one to six rendered depth images, following the native VGN convention. Meshes are used by the simulator, not supplied to the network. Predictions store native grasp transforms, widths and confidence in the **VGN workspace frame, in metres**; the gripper convention remains the author's TCP convention. Zero predictions above the configured threshold is a valid result, displayed with the observed scene.
+
+**Simulate clutter removal** uses the corresponding author `pile/test` or `packed/test` object set in newly generated scenes. It follows the native stopping rules and candidate order, and records per-round object counts and executed grasp outcomes. Report both the number of rounds/attempts and the simulated success and object-clearing fractions. These are physics-engine results, not real-robot success rates or a reproduction of the paper's full evaluation. A small generated training set is intended for setup and iteration, not accuracy claims. See [controls, resume and simulation](REFERENCE.md#vgn-simulation).

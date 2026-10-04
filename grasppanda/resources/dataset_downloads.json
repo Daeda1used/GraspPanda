@@ -4241,5 +4241,20 @@
         }
       ]
     }
+  },
+  "vgn": {
+    "repository": "https://github.com/ethz-asl/vgn",
+    "terms": "Author VGN asset archive; retain its upstream source and object-model terms. Code: BSD-3-Clause. See Guide \u2192 Data & weights.",
+    "starter": {
+      "description": "Original VGN object/gripper assets. This download contains no labelled observations; select Generate simulation data to create them locally.",
+      "files": [
+        {
+          "path": "assets/vgn-data.zip",
+          "url": "https://drive.usercontent.google.com/download?id=1MysYHve3ooWiLq12b58Nm8FWiFBMH-bJ&export=download&confirm=t",
+          "bytes": 6522850,
+          "sha256": "00645654bebeddd82d6309c52e4808a09577c0e56bf64cc72a76a9fc24578029"
+        }
+      ]
+    }
   }
 }

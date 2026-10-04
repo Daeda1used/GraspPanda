@@ -36,6 +36,12 @@ def checkpoint_camera(method, camera, dataset='graspnet1b'):
 def preset(method, dataset_root='', dataset='graspnet1b'):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if dataset == 'vgn':
+        if not capabilities(method,dataset):raise ValueError('Select the registered VGN method')
+        return Experiment(dataset=dataset,method=method,action='infer',dataset_root=dataset_root,
+                          camera='synthetic-depth',split='val',scene=0,workspace='vgn_tsdf',
+                          num_points=2048,collision_thresh=0,checkpoint=primary(method,'synthetic-depth') or 'checkpoints/vgn/vgn_conv.pth',
+                          batch_size=8,learning_rate=3e-4)
     if dataset == 'acronym':
         if not capabilities(method,dataset):raise ValueError('Select the registered GraspLDM method')
         return Experiment(dataset=dataset,method=method,action='infer',dataset_root=dataset_root,

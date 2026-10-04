@@ -1,0 +1,81 @@
+--- a/scripts/generate_data.py
++++ b/scripts/generate_data.py
+@@ -1,7 +1,6 @@
+ import argparse
+ from pathlib import Path
+ 
+-from mpi4py import MPI
+ import numpy as np
+ import open3d as o3d
+ import scipy.signal as signal
+@@ -75,6 +74,7 @@
+ 
+ 
+ def setup_mpi():
++    from mpi4py import MPI
+     workers = MPI.COMM_WORLD.Get_size()
+     rank = MPI.COMM_WORLD.Get_rank()
+     return workers, rank
+--- a/scripts/train_vgn.py
++++ b/scripts/train_vgn.py
+@@ -116,9 +116,9 @@
+ def select(out, index):
+     qual_out, rot_out, width_out = out
+     batch_index = torch.arange(qual_out.shape[0])
+-    label = qual_out[batch_index, :, index[:, 0], index[:, 1], index[:, 2]].squeeze()
++    label = qual_out[batch_index, :, index[:, 0], index[:, 1], index[:, 2]].squeeze(-1)
+     rot = rot_out[batch_index, :, index[:, 0], index[:, 1], index[:, 2]]
+-    width = width_out[batch_index, :, index[:, 0], index[:, 1], index[:, 2]].squeeze()
++    width = width_out[batch_index, :, index[:, 0], index[:, 1], index[:, 2]].squeeze(-1)
+     return label, rot, width
+ 
+ 
+--- a/src/vgn/detection.py
++++ b/src/vgn/detection.py
+@@ -4,7 +4,6 @@
+ from scipy import ndimage
+ import torch
+ 
+-from vgn import vis
+ from vgn.grasp import *
+ from vgn.utils.transform import Transform, Rotation
+ from vgn.networks import load_network
+@@ -34,6 +33,7 @@
+             scores = scores[p]
+ 
+         if self.rviz:
++            from vgn import vis
+             vis.draw_quality(qual_vol, state.tsdf.voxel_size, threshold=0.01)
+ 
+         return grasps, scores, toc
+--- a/src/vgn/experiments/clutter_removal.py
++++ b/src/vgn/experiments/clutter_removal.py
+@@ -6,7 +6,7 @@
+ import pandas as pd
+ import tqdm
+ 
+-from vgn import io, vis
++from vgn import io
+ from vgn.grasp import *
+ from vgn.simulation import ClutterRemovalSim
+ from vgn.utils.transform import Rotation, Transform
+@@ -37,6 +37,8 @@
+     run until (a) no objects remain, (b) the planner failed to find a grasp hypothesis,
+     or (c) maximum number of consecutive failed grasp attempts.
+     """
++    if rviz:
++        from vgn import vis
+     sim = ClutterRemovalSim(scene, object_set, gui=sim_gui, seed=seed)
+     logger = Logger(logdir, description)
+ 
+--- a/src/vgn/simulation.py
++++ b/src/vgn/simulation.py
+@@ -35,7 +35,7 @@
+ 
+     def discover_objects(self):
+         root = self.urdf_root / self.object_set
+-        self.object_urdfs = [f for f in root.iterdir() if f.suffix == ".urdf"]
++        self.object_urdfs = sorted(f for f in root.iterdir() if f.suffix == ".urdf")
+ 
+     def save_state(self):
+         self._snapshot_id = self.world.save_state()

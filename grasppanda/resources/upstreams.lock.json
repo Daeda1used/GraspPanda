@@ -238,5 +238,11 @@
     "repository": "https://github.com/kuldeepbrd1/graspLDM",
     "path": "upstream/object_centric/graspldm",
     "pinned_commit": "747687402eaebd8fb3ca8d954ed0cf8b772d070e"
+  },
+  {
+    "id": "vgn",
+    "repository": "https://github.com/ethz-asl/vgn",
+    "path": "upstream/volumetric/vgn",
+    "pinned_commit": "d7af0622433f52ae88ebe81533f12b46b33e951a"
   }
 ]

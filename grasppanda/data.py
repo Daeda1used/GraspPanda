@@ -192,7 +192,7 @@ def fetch(dataset, root, profile='starter', include=None, progress=print):
                 if not _verified(temporary,row): raise ValueError('Missing assembled dataset file')
                 temporary.replace(target)
             progress('Verified '+row['path'])
-        progress('Data verified. '+('Extract the archives using Guide → Datasets.' if profile=='archives' else 'Load the dataset preset, download its weights, then Check current form.'))
+        progress('Data verified. '+('Select Generate simulation data to collect labelled observations, or download weights and select Simulate clutter removal.' if dataset=='vgn' else 'Extract the archives using Guide → Datasets.' if profile=='archives' else 'Load the dataset preset, download its weights, then Check current form.'))
     return selection
 
 

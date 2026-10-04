@@ -1927,3 +1927,33 @@ The VAE stage optimizes the native reconstruction, classification and annealed K
 A registered author checkpoint initializes both networks. An empty checkpoint starts a fresh VAE in the VAE stage; in the diffusion stage it starts a fresh denoiser with the separately registered author VAE. Switching stages uses `train_checkpoint_mode: initialize`. Resume uses `resume`, the same stage/data/settings and a larger final `epochs`; paired networks, optimizer, scheduler, update count and random states are restored. Native CUDA operations do not promise bitwise-identical training.
 
 **Runs & results → Prepare inference from checkpoint** selects VAE sampling for VAE-stage checkpoints and diffusion sampling for diffusion-stage checkpoints. Direct CLI inference with a VAE-stage checkpoint must set `dataset_options.mode: vae`; it cannot claim a matching trained diffusion prior until that stage is trained. Evaluation batch limits and background loader workers remain zero. Training loss is not a success-rate metric; there is no simulator-evaluation action.
+
+## VGN simulation
+
+The author ConvNet, 3D convolutional encoder/decoder, geometric preprocessing and objectives remain native; interchangeable model slots are not registered. The compatibility patch makes ROS/MPI imports optional for the headless toolbox path and retains the batch dimension for single-item training. [Dataset generation and coordinate conventions](DATASETS.md#vgn-simulation) are recorded separately from implementation identity.
+
+| Control | Location | Default / meaning |
+|---|---|---|
+| Operation | Main form | Generate simulation data, Predict grasps, Train across epochs, Short training run, or Simulate clutter removal |
+| `dataset_options.scene_type` | Input & preprocessing → Dataset parameters | `pile` or `packed`; generation uses author train objects, simulation uses author test objects |
+| `scene_count`, `grasps_per_scene` | Dataset parameters, under `dataset_options` | 3 scenes × 120 native candidate locations; six yaw trials per location |
+| `max_views` | Dataset parameters | Uniformly sample 1–6 depth views per generated scene; default maximum 6 |
+| `train_fraction`, `split_seed` | Dataset parameters | 0.9 and 0; partition complete scenes, then balance classes within each split |
+| `augment` | Dataset parameters | `false`; `true` enables native 90° rotations and vertical translation during training |
+| `quality_threshold` | Dataset parameters | 0.9; native smoothing, width rejection and nonmaximum suppression precede candidate selection |
+| `simulation_rounds`, `simulation_objects`, `simulation_views` | Dataset parameters | 5 rounds, up to 5 settled objects per round, 6 depth views |
+| `scene`, `frames` | Input & preprocessing | First generated scene index and count within the selected split |
+| `batch_size`, `learning_rate` | Training settings | 8 labelled trials, native Adam at 0.0003; no learning-rate scheduler |
+| `train_batch_limit`, `eval_batch_limit` | Training settings | 0 means the entire selected balanced split; positive values bound batches |
+
+An unbounded training epoch uses every training scene. Bounded/short runs use `scene` and `frames`; the chosen scenes must contain both successful and unsuccessful labels. Missing classes produce an actionable error instead of invented labels. Keep background loader workers at zero. Custom loss, optimizer, scheduler, augmentation mappings and encoder/head replacements are rejected; the native augmentation switch above is supported.
+
+Generation requires an empty `checkpoint`; the browser clears it from the submitted generation configuration. Prediction and simulation require a registered or trained checkpoint. Training accepts author weights, a previous trained checkpoint, or an empty path for random initialization. Resume requires the same data/settings, `train_checkpoint_mode: resume` and a larger final `epochs`; it restores model, optimizer and random states. Changing the generation plan requires a separate data root.
+
+```bash
+./panda init --example vgn-simulate --dataset-root /data/VGN -o simulate.local.yaml
+# Optionally set checkpoint to a trained run's checkpoint.pt.
+./panda run simulate.local.yaml
+```
+
+Simulation uses the native randomized candidate order, two-consecutive-failure stopping rule and no-detection termination. Empty-attempt success is `null`, not zero or 100%. The **Compare** table reports named simulation metrics separately from dataset AP. Training validation accuracy measures binary label classification, not simulated execution success.

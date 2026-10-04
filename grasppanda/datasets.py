@@ -195,3 +195,14 @@ register_dataset(DatasetSpec('acronym','ACRONYM',('synthetic-depth',),
     default_method='graspldm',scene_label='First object in split',frame_label='First rendered view (0–19)',
     runner='grasppanda.methods.graspldm',hidden_controls=('num_points','collision_thresh')),
     'grasppanda.integrations.acronym')
+
+
+register_dataset(DatasetSpec('vgn','VGN simulation',('synthetic-depth',),
+    {'train':(0,1000000),'val':(0,1000000)},1,
+    ('rendered_depth','intrinsics','camera_poses','tsdf','simulated_grasp_labels'),'https://github.com/ethz-asl/vgn',
+    method_actions={'vgn':('generate','infer','simulate','train_short','train')},
+    protocol_note='Native physics-labelled scene generation and depth TSDFs. Toolbox scene-disjoint training/validation splits; '
+                  'closed-loop simulation uses author test object assets. This is a generated dataset workflow, not a downloaded fixed benchmark.',
+    default_method='vgn',scene_label='First scene in split',frame_label='Frame (always 0)',
+    runner='grasppanda.methods.vgn',hidden_controls=('num_points','frame','collision_thresh')),
+    'grasppanda.integrations.vgn')

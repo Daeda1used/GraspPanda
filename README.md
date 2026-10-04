@@ -12,10 +12,10 @@
 
 <table>
 <tr>
-<td align="center" width="25%"><h2>9</h2><a href="#dataset-coverage">Datasets</a></td>
-<td align="center" width="25%"><h2>38</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
+<td align="center" width="25%"><h2>10</h2><a href="#dataset-coverage">Data workflows</a></td>
+<td align="center" width="25%"><h2>39</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
 <td align="center" width="25%"><h2>37</h2><a href="#compose-your-next-model">Encoder options</a></td>
-<td align="center" width="25%"><h2>74</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
+<td align="center" width="25%"><h2>78</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
 </tr>
 </table>
 
@@ -28,7 +28,7 @@ GraspPanda connects **planar, 6-DoF parallel-jaw, suction and dexterous grasping
 <details>
 <summary><b>Coverage definitions & validation scope</b></summary>
 
-Counts reflect the executable registries in this release: **9** dataset providers; **38** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **74** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
+Counts reflect the executable registries in this release: **9** released-dataset providers and **1** simulation-data provider; **39** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **78** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
 
 A checkmark below means an implemented operation for the indicated adapter, not support for every method or arbitrary component combinations. Operational checks cover bounded inference, labelled optimization and browser workflows; full-split accuracy reproduction and training convergence have not been established. Exact protocols, adaptations and unavailable implementations are documented in [Methods & papers](docs/METHODS.md).
 
@@ -48,6 +48,7 @@ A checkmark below means an implemented operation for the indicated adapter, not 
 | ✅ | **Connected experiments** | Queue runs, inspect loss curves, resume supported trainers and reuse checkpoints |
 | ✅ | **Visual inspection** | View grasp overlays, rotate hand geometry and export experiment artifacts |
 | ✅ | **Traceable implementations** | Inspect author sources, ports, pinned revisions, checkpoint origins and parameter contracts |
+| ✅ | **Simulation data** | Generate native physics-labelled scenes, resume collection and evaluate clutter removal |
 | ✅ | **Guided setup** | Prepare registered weights and starter inputs; check required files before running |
 
 <table>
@@ -80,6 +81,7 @@ A checkmark below means an implemented operation for the indicated adapter, not 
 | [**GraspGen**](docs/DATASETS.md#graspgen) | Object-centric partial depth · diffusion | ✅ | ✅ | Native architecture | Simulation via upstream |
 | [**TARGO**](docs/DATASETS.md#targo) | Target-conditioned depth · occluded objects | ✅ | ✅ | Native architecture | Held-out label loss; simulation upstream |
 | [**ACRONYM**](docs/DATASETS.md#acronym) | Isolated-object partial depth · latent diffusion | ✅ | ✅ [Adapted protocol](docs/REFERENCE.md#acronym-and-graspldm) | Native architecture | Simulation via upstream |
+| [**VGN simulation**](docs/DATASETS.md#vgn-simulation) | Generate depth TSDF scenes · parallel-jaw | ✅ | ✅ | Native architecture | Closed-loop physics simulation |
 
 **Single-view, fused-view, temporal, object-centric and target-conditioned protocols** retain their own geometry and supervision contracts. GraspNet-trained Baseline and Graspness also support [transfer to GraspClutter6D](docs/DATASETS.md#graspclutter6d).
 
@@ -163,6 +165,7 @@ Open **http://127.0.0.1:7860**:
 | Your starting point | In the browser |
 |---|---|
 | **No dataset yet** | **Try the author sample** → download weights → run ASGrasp's included stereo sample |
+| **Generate your own data** | Select **VGN simulation** → get assets → **Generate simulation data** → train or simulate |
 | **Try another dataset** | Select **Dataset** → **Get dataset inputs** → prepare data and weights → check inputs → run |
 | **GraspNet ready** | **Start a GraspNet experiment** → set your data path → download weights → check inputs → run |
 | **A new model idea** | Choose a method → **Compose modules** → train the replacement → reuse its checkpoint |

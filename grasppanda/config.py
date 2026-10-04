@@ -151,6 +151,9 @@ class Experiment:
         elif self.dataset == 'acronym':
             from .integrations.acronym import validate_options
             validate_options(self)
+        elif self.dataset == 'vgn':
+            from .integrations.vgn import validate_options
+            validate_options(self)
         elif self.dataset == 'targo':
             from .integrations.targo import validate_options
             validate_options(self)
@@ -183,8 +186,10 @@ class Experiment:
             raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
-        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "acronym_partial", "target_depth", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
+        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "acronym_partial", "vgn_tsdf", "target_depth", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
             raise ValueError("Unknown workspace policy")
+        if (self.dataset == 'vgn') != (self.workspace == 'vgn_tsdf'):
+            raise ValueError('vgn_tsdf is specific to the VGN simulation adapter')
         if (self.dataset == 'acronym') != (self.workspace == 'acronym_partial'):
             raise ValueError('acronym_partial is specific to the ACRONYM dataset adapter')
         if (self.dataset == 'targo') != (self.workspace == 'target_depth'):
@@ -230,6 +235,7 @@ class Experiment:
             if self.dataset == 'graspgen': expected = 'object_partial'
             if self.dataset == 'targo': expected = 'target_depth'
             if self.dataset == 'acronym': expected = 'acronym_partial'
+            if self.dataset == 'vgn': expected = 'vgn_tsdf'
             if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
         if self.action=='train_short':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp short training supports 1–6 temporal updates per native seven-frame sequence')
@@ -240,6 +246,7 @@ class Experiment:
             if self.dataset == 'graspgen': expected = 'object_partial'
             if self.dataset == 'targo': expected = 'target_depth'
             if self.dataset == 'acronym': expected = 'acronym_partial'
+            if self.dataset == 'vgn': expected = 'vgn_tsdf'
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
             if self.workspace!=expected:raise ValueError(f'This training operation requires workspace: {expected}')
         if self.action == 'train_short' and self.scene not in spec.scene_ids('train'):

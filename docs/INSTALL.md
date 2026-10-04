@@ -55,6 +55,7 @@ All integrated methods use one environment. Rerun `./panda install` after updati
 | GraspGen / GraspLDM cannot initialize EGL | Install `libegl1` and `libglu1-mesa`; ensure the NVIDIA graphics/EGL driver is visible. CUDA compute alone does not provide headless rendering. |
 | TARGO native operator build fails | Check the CUDA 11.8 compiler and system C++ prerequisites. Build logs are in `environments/artifact-cache/targo/`; the author checkout stays unchanged. |
 | GraspLDM PVCNN build fails | Check CUDA 11.8 and `MAX_JOBS`; versioned operators and build inputs stay in `environments/artifact-cache/graspldm/`. Rerun `./panda install` after changing the runtime. |
+| VGN requests ROS or MPI | Use the registered VGN operations; the headless compatibility overlay needs neither ROS nor MPI. PyBullet is included in the shared lock. |
 | Undefined symbol / incompatible CUDA extension | Rebuild with `./panda install` using the locked environment; do not reuse wheels from a different ABI. |
 | Out of memory during compilation | Set `MAX_JOBS=2` before running the installer. |
 | Google Drive quota or academic mirror unavailable | Retry later or manually download the exact registered file; paths and checksums are in `grasppanda/resources/checkpoints.json`. |
