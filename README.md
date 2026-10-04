@@ -12,23 +12,23 @@
 
 <table>
 <tr>
-<td align="center" width="25%"><h2>5</h2><a href="#dataset-coverage">Datasets</a></td>
-<td align="center" width="25%"><h2>34</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
+<td align="center" width="25%"><h2>6</h2><a href="#dataset-coverage">Datasets</a></td>
+<td align="center" width="25%"><h2>35</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
 <td align="center" width="25%"><h2>37</h2><a href="#compose-your-next-model">Encoder options</a></td>
-<td align="center" width="25%"><h2>63</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
+<td align="center" width="25%"><h2>66</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
 </tr>
 </table>
 
 </div>
 
-GraspPanda connects **planar, 6-DoF parallel-jaw and dexterous grasping** in one configurable toolbox. Start from a published method, replace compatible components, then **train, predict, inspect and compare** through the same browser UI or CLI.
+GraspPanda connects **planar, 6-DoF parallel-jaw, suction and dexterous grasping** in one configurable toolbox. Start from a published method, replace compatible components, then **train, predict, inspect and compare** through the same browser UI or CLI.
 
 ![GraspPanda architecture: visual observations, compatible model components and an experiment workflow backed by one shared runtime.](docs/assets/overview.svg)
 
 <details>
 <summary><b>Coverage definitions & validation scope</b></summary>
 
-Counts reflect the executable registries in this release: **5** dataset providers; **34** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **63** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
+Counts reflect the executable registries in this release: **6** dataset providers; **35** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **66** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
 
 A checkmark below means an implemented operation for the indicated adapter, not support for every method or arbitrary component combinations. Operational checks cover bounded inference, labelled optimization and browser workflows; full-split accuracy reproduction and training convergence have not been established. Exact protocols, adaptations and unavailable implementations are documented in [Methods & papers](docs/METHODS.md).
 
@@ -76,6 +76,7 @@ A checkmark below means an implemented operation for the indicated adapter, not 
 | [**ZeroGrasp-11B**](docs/DATASETS.md#zerograsp-11b) | Synthetic RGB-D · reconstruction + grasps | ✅ | ✅ | ✅ | No held-out adapter |
 | [**DexGraspNet 2.0**](docs/DATASETS.md#dexgraspnet-20) | Synthetic clutter · dexterous hands | ✅ | ✅ | ✅ | Simulation via upstream |
 | [**Jacquard**](docs/DATASETS.md#jacquard) | Synthetic RGB-D · planar rectangles | ✅ | ✅ | Native architecture | Rectangle IoU |
+| [**SuctionNet-1B**](docs/DATASETS.md#suctionnet-1b) | Real clutter · suction | ✅ | ✅ | Native architecture | Author evaluator |
 
 **Single-view, fused-view and temporal protocols** retain their own geometry and supervision contracts. GraspNet-trained Baseline and Graspness also support [transfer to GraspClutter6D](docs/DATASETS.md#graspclutter6d).
 
@@ -131,6 +132,7 @@ Selected integrations span **CVPR, ICCV, ECCV, CoRL, NeurIPS and RA-L**. The ful
 | **Graspness** | ICCV 2021 | Single-view points | Predict · evaluate · epoch training · compose | [Paper](https://openaccess.thecvf.com/content/ICCV2021/papers/Wang_Graspness_Discovery_in_Clutters_for_Fast_and_Accurate_Grasp_Detection_ICCV_2021_paper.pdf) / [Code](https://github.com/graspnet/graspness_unofficial) |
 | **Scale-Balanced-Grasp** | CoRL 2022 | Single-view points | Predict · evaluate · epoch training · compose | [Paper](https://arxiv.org/pdf/2212.05275) / [Code](https://github.com/mahaoxiang822/Scale-Balanced-Grasp) |
 | **GR-ConvNet** | IROS 2020 | RGB-D or depth images | Planar prediction · epoch training · resume · IoU | [Paper](https://arxiv.org/pdf/1909.04810) / [Code](https://github.com/skumra/robotic-grasping) |
+| **SuctionNet** | RA-L 2021 | Single-view RGB-D | Suction prediction · automatic labels · training · resume | [Paper](https://arxiv.org/pdf/2103.12311) / [Code](https://github.com/graspnet/suctionnet-baseline) |
 | **HGGD** | RA-L 2023 | Single-view RGB-D | Predict · evaluate · epoch training · compose | [Paper](https://arxiv.org/pdf/2403.18546) / [Code](https://github.com/THU-VCLab/HGGD) |
 | **EconomicGrasp** | ECCV 2024 | Single-view points | Predict · evaluate · epoch training · compose | [Paper](https://arxiv.org/pdf/2407.08366) / [Code](https://github.com/iSEE-Laboratory/EconomicGrasp) |
 | **Generalizing-Grasp** | CVPR 2024 | Fused views | Fused prediction · short training · refinement | [Paper](https://openaccess.thecvf.com/content/CVPR2024/papers/Ma_Generalizing_6-DoF_Grasp_Detection_via_Domain_Prior_Knowledge_CVPR_2024_paper.pdf) / [Code](https://github.com/mahaoxiang822/Generalizing-Grasp) |

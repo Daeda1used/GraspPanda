@@ -21,6 +21,7 @@ class DatasetSpec:
     scene_label: str = 'First scene'
     frame_label: str = 'First frame'
     runner: str | None = None
+    hidden_controls: tuple[str,...] = ()
 
     @property
     def inference_split(self):
@@ -125,7 +126,8 @@ register_dataset(DatasetSpec('zerograsp11b', 'ZeroGrasp-11B', ('synthetic-rgbd',
                   'Scene and frame configuration fields select shard and sample indices, not physical scenes. '
                   'Inference uses supplied visible instance masks and synthetic depth; no target shapes or grasps. '
                   'Training-set predictions are not held-out grasp AP.',
-    default_method='zerograsp', scene_label='First shard', frame_label='First sample'),
+    default_method='zerograsp', scene_label='First shard', frame_label='First sample',
+    hidden_controls=('num_points',)),
     'grasppanda.integrations.zerograsp11b')
 
 
@@ -139,4 +141,18 @@ register_dataset(DatasetSpec('jacquard', 'Jacquard', ('synthetic-rgbd',),
                   'The toolbox defaults to a deterministic object-disjoint train/validation split. '
                   'Published weights may have seen these observations; starter results are not held-out paper reproduction.',
     default_method='grconvnet_rgbd', scene_label='First sample in split', frame_label='Frame (always 0)',
-    runner='grasppanda.methods.grconvnet'), 'grasppanda.integrations.jacquard')
+    runner='grasppanda.methods.grconvnet', hidden_controls=('num_points','frame','collision_thresh')),
+    'grasppanda.integrations.jacquard')
+
+
+register_dataset(DatasetSpec('suctionnet1b', 'SuctionNet-1B', ('realsense',),
+    {'train': (0, 100), 'test_seen': (100, 130), 'test_similar': (130, 160), 'test_novel': (160, 190)},
+    256, ('rgb', 'depth', 'intrinsics', 'seal_labels', 'suction_collision_labels'),
+    'https://graspnet.net/suction', scene_splits={'train':tuple(i for i in range(100) if i != 51)},
+    method_actions={'suctionnet_rgbd':('infer', 'train_short', 'train')},
+    protocol_note='Native suction scores, normals and positions from RGB-D. Shares GraspNet images, '
+                  'but uses separate suction labels and output semantics. Training excludes scene 51 as in the author loader. '
+                  'The registered weight and camera are RealSense; suction benchmark AP remains an upstream workflow.',
+    default_method='suctionnet_rgbd', runner='grasppanda.methods.suctionnet',
+    hidden_controls=('num_points','collision_thresh')),
+    'grasppanda.integrations.suctionnet1b')

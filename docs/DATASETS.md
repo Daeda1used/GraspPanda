@@ -9,6 +9,7 @@ Select a dataset first. The browser then offers its methods, cameras, splits and
 | [ZeroGrasp-11B](https://github.com/sh8/ZeroGrasp) | One million synthetic observations, 12,000 objects, 11.3 billion grasps | Native ZeroGrasp with interchangeable image encoders | Released training shards; no held-out grasp AP is implied |
 | [DexGraspNet 2.0](https://pku-epic.github.io/DexGraspNet2.0/) | 1,319 objects, 8,270 synthetic scenes, approximately 427 million dexterous grasps | Native diffusion; author ISAGrasp and GraspTTA baselines | Rendered depth and 16-joint LEAP-hand prediction; simulation evaluation remains an upstream workflow |
 | [Jacquard](https://jacquard.liris.cnrs.fr/database.php) | Synthetic RGB-D; 54,485 scenes and 4.97 million rectangle annotations | GR-ConvNet RGB-D and depth | Explicit train/validation split; planar IoU evaluation |
+| [SuctionNet-1B](https://graspnet.net/suction) | Shared GraspNet RGB-D scenes; separate suction supervision | Native SuctionNet RGB-D | RealSense prediction, training and resume; native suction outputs |
 
 GraspClutter6D is a 2025 RA-L dataset, also presented at ICRA 2026 ([paper](https://arxiv.org/pdf/2504.06866)). ZeroGrasp is CVPR 2025 ([paper](https://arxiv.org/pdf/2504.10857)). Scale describes the publishers' datasets, not the number of observations evaluated by this toolbox.
 
@@ -24,6 +25,43 @@ DexGraspNet 2.0 is CoRL 2024 ([paper](https://arxiv.org/pdf/2410.23004)); the pi
 | ConvNeXt V2, RepViT, MobileNetV4 | HGGD / RNG image pyramids | — | Calibrated dense RGB features | — |
 
 Shared implementations retain dataset-specific adapters. A dense contact seed, a sparse voxel row and an image pixel are different contracts. Replacement encoders require training; `reuse_unchanged` retains only compatible unchanged checkpoint modules. A trained toolbox checkpoint then loads with `strict` and its saved module configuration.
+
+## SuctionNet-1B
+
+SuctionNet shares GraspNet's `scenes/` and `models/`. Its seal, wrench and suction-collision labels are separate. The integrated RGB-D model uses the **RealSense** release. [Official dataset, download links and terms](https://graspnet.net/suction).
+
+Start with the [GraspNet RGB-D scene and object-model downloads](DOWNLOADS.md#graspnet-1b). If those files are already present, link them into a dedicated suction root to avoid duplicating the dataset:
+
+```bash
+mkdir -p /data/SuctionNet-1B
+ln -s /data/GraspNet-1B/scenes /data/SuctionNet-1B/scenes
+ln -s /data/GraspNet-1B/models /data/SuctionNet-1B/models
+./panda data suctionnet1b --root /data/SuctionNet-1B --fetch
+./panda weights suctionnet_rgbd --camera realsense
+./panda init --dataset suctionnet1b --dataset-root /data/SuctionNet-1B -o suction.local.yaml
+./panda check suction.local.yaml
+./panda run suction.local.yaml
+```
+
+Replace `/data` with your data disk or NAS mount. The label command verifies the original archive and every extracted file. In the browser, **Download suction labels** performs the same operation; shared images and models are still required. Inference needs only the selected RGB, depth, calibration and checkpoint files.
+
+For a bounded training run, use `./panda init --example suctionnet-train-selected -o suction-train.local.yaml`. Set `dataset_root`, then check and run it. The preset fine-tunes on scene 0, frames 0–1. For the complete training split, use `--example suctionnet-train`: it trains from scratch over scenes 0–99 excluding scene 51, matching the author's loader. Released weights can instead initialize training by setting `checkpoint`.
+
+| Control | Meaning |
+|---|---|
+| `scene`, `frame`, `frames` | Contiguous selection for inference, short training and bounded epoch training |
+| `train_batch_limit: 0` | Full native training split; selection fields do not limit an epoch |
+| `train_batch_limit: 1` | At most one batch per epoch from the selected frames |
+| `batch_size` | At least 2 and no larger than the selected set; native incomplete batches are dropped |
+| `label_root` | Optional writable cache directory; default: `DATASET_ROOT/.grasppanda/suction-v1/` |
+| `epochs`, `learning_rate`, `data_workers` | Epoch count, initial Adam learning rate and data-loading workers |
+| `train_checkpoint_mode: resume` | Restore a toolbox epoch checkpoint; increase total `epochs` and keep data/settings unchanged |
+
+Training automatically invokes the pinned author target generators **only for requested views**, then verifies and reuses compressed label caches. Initial access needs object PLY models, per-view annotations, seal labels and scene collision labels. Place the cache and experiment outputs on a large data volume. Pre-existing author `score_maps/` caches use a different layout and are not consumed by this adapter.
+
+Prediction files retain the author layout `predictions/SPLIT/scene_XXXX/realsense/suction/FFFF.npz`. Array `arr_0` contains **1,024 × 7** values: `[score, nx, ny, nz, x, y, z]`, in camera coordinates with positions in metres. The native preprocessing clips depth to one metre, including during back-projection. Predictions do not use object masks, CAD geometry or target labels. The preview shows the combined heatmap and leading candidate pixels.
+
+Training reports seal-map and center-map MSE. Suction AP and robot success are separate measurements: use the [author evaluator](https://github.com/graspnet/suctionnetAPI) and its dense evaluation clouds. This adapter does not expose a benchmark evaluation button or interchangeable network components.
 
 ## Get data from the UI or CLI
 

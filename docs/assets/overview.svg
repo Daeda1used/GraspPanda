@@ -5,7 +5,7 @@
 <rect width="1280" height="570" rx="18" fill="#f8fafb"/>
 <rect x="1" y="1" width="1278" height="568" rx="17" fill="url(#grid)" stroke="#dce5ea"/>
 <g font-family="Arial,Helvetica,sans-serif">
-<text x="42" y="46" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">PARALLEL-JAW + DEXTEROUS / VISUAL GRASPING RESEARCH</text>
+<text x="42" y="46" font-size="12" fill="#648091" font-weight="700" letter-spacing="2">PLANAR · PARALLEL-JAW · SUCTION · DEXTEROUS</text>
 <text x="42" y="88" font-size="32" fill="#162b40" font-weight="700">From observations to reproducible experiments.</text>
 <path d="M42 111H1238" fill="none" stroke="#dbe5ea" stroke-width="1"/>
 <rect x="42" y="140" width="292" height="307" rx="10" fill="#fff" stroke="#d9e4e9"/>
@@ -87,7 +87,7 @@
 <path d="M312 485V517" fill="none" stroke="#536879" stroke-width="1"/>
 <text x="338" y="508" font-size="16" fill="#dae6ed" font-weight="400">Pinned sources</text>
 <text x="507" y="508" font-size="16" fill="#dae6ed" font-weight="400">Native operators</text>
-<text x="696" y="508" font-size="16" fill="#dae6ed" font-weight="400">Local data and weights</text>
+<text x="696" y="508" font-size="16" fill="#dae6ed" font-weight="400">Data on your storage</text>
 <text x="939" y="508" font-size="16" fill="#dae6ed" font-weight="400">Reproducible configurations</text>
 <circle cx="490" cy="503" r="2" fill="#8cabb9"/>
 <circle cx="678" cy="503" r="2" fill="#8cabb9"/>

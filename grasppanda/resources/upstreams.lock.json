@@ -214,5 +214,11 @@
     "repository": "https://github.com/skumra/robotic-grasping",
     "path": "upstream/planar/grconvnet",
     "pinned_commit": "183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d"
+  },
+  {
+    "id": "suctionnet_rgbd",
+    "repository": "https://github.com/graspnet/suctionnet-baseline",
+    "path": "upstream/single_view/suction/suctionnet",
+    "pinned_commit": "93d604dd752d2ef865c80c8ecba96218560b516f"
   }
 ]

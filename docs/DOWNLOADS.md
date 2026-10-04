@@ -405,3 +405,9 @@ Download the verified official sample with `./panda data jacquard --root /data/J
 | GR-ConvNet depth | [Jacquard depth release](https://github.com/skumra/robotic-grasping/tree/183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d/trained-models/jacquard-d-grconvnet3-drop0-ch32) | `./panda weights grconvnet_depth --camera synthetic-rgbd` |
 
 The registry selects one pinned checkpoint per modality and verifies its size and SHA-256. Original full-model checkpoints are loaded through an allowlist of the author network and PyTorch layer classes; arbitrary checkpoint globals are rejected.
+
+## SuctionNet-1B
+
+[Dataset and terms](https://graspnet.net/suction) · [Shared RGB-D downloads](https://graspnet.net/datasets.html) · [Official labels](https://drive.google.com/file/d/1BaZ60u5ZkudDlYHvH2mcu2EVfUc9wGK_/view) · [RGB-D RealSense weights](https://drive.google.com/file/d/18TbctdhpNXEKLYDWFzI9cT1Wnhe-tn9h/view) · [Dense evaluation clouds](https://drive.google.com/file/d/1VuyNiJKwwt_lUlTk7BPT_uZsEI8o_Y2W/view) · [Author evaluator](https://github.com/graspnet/suctionnetAPI).
+
+`./panda data suctionnet1b --root /data/SuctionNet-1B --fetch` downloads and verifies the 11 MB label archive. It does not download the shared RGB-D scenes or CAD models. `./panda weights suctionnet_rgbd --camera realsense` installs the 706 MB extracted author checkpoint from its 192 MB archive. [Setup and training instructions](DATASETS.md#suctionnet-1b).

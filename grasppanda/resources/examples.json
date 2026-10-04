@@ -2785,5 +2785,67 @@
       },
       "prediction_dir": "outputs/runs/YOUR-RUN/predictions"
     }
+  },
+  "suctionnet-rgbd": {
+    "description": "Predict native suction scores, normals and contact points from RealSense RGB-D",
+    "config": {
+      "dataset": "suctionnet1b",
+      "method": "suctionnet_rgbd",
+      "action": "infer",
+      "dataset_root": "/data/SuctionNet-1B",
+      "checkpoint": "checkpoints/suctionnet/rgbd-realsense.pt",
+      "camera": "realsense",
+      "split": "test_seen",
+      "scene": 100,
+      "frame": 0,
+      "frames": 1,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "batch_size": 2
+    }
+  },
+  "suctionnet-train-selected": {
+    "description": "Fine-tune SuctionNet on two selected views with automatic native-label caching",
+    "config": {
+      "dataset": "suctionnet1b",
+      "method": "suctionnet_rgbd",
+      "action": "train",
+      "dataset_root": "/data/SuctionNet-1B",
+      "checkpoint": "checkpoints/suctionnet/rgbd-realsense.pt",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 2,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "batch_size": 2,
+      "epochs": 1,
+      "train_batch_limit": 1,
+      "learning_rate": 0.0001,
+      "timeout_minutes": 60
+    }
+  },
+  "suctionnet-train": {
+    "description": "Train SuctionNet over the complete native training split with epoch checkpoints",
+    "config": {
+      "dataset": "suctionnet1b",
+      "method": "suctionnet_rgbd",
+      "action": "train",
+      "dataset_root": "/data/SuctionNet-1B",
+      "checkpoint": "",
+      "camera": "realsense",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 2,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "batch_size": 8,
+      "epochs": 80,
+      "train_batch_limit": 0,
+      "learning_rate": 0.001,
+      "timeout_minutes": 43200
+    }
   }
 }

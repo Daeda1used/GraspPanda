@@ -568,5 +568,23 @@
       "paper_url": "https://arxiv.org/pdf/1909.04810",
       "adapter_note": "Author GR-ConvNet v3 architecture and Jacquard weights. Toolbox supplies finite epochs, resumable training and explicit split protocols; Pillow reads the original TIFF pixels. No interchangeable encoder is registered for this architecture."
     }
+  },
+  {
+    "id": "suctionnet_rgbd",
+    "name": "SuctionNet (RGB-D)",
+    "repository": "https://github.com/graspnet/suctionnet-baseline",
+    "path": "upstream/single_view/suction/suctionnet",
+    "group": "single_view/suction",
+    "datasets": [
+      "suctionnet1b"
+    ],
+    "paper_title": "SuctionNet-1Billion: A Large-Scale Benchmark for Suction Grasping",
+    "input_note": "Native DeepLabV3+ ResNet-101 predicts seal and center maps; author geometry yields suction normals and positions. RealSense RGB-D only in this adapter.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "RA-L 2021",
+      "paper_url": "https://arxiv.org/pdf/2103.12311",
+      "adapter_note": "Author model, loss, augmentations and decoder. Label scripts run one view at a time in a verified cache. Toolbox supplies finite epochs and optimizer/RNG resume; no interchangeable encoder or suction AP is registered."
+    }
   }
 ]

@@ -406,7 +406,7 @@ def create_app(manager=None):
     def select_method(method,camera,dataset_key='graspnet1b'):
         actions = capabilities(method,dataset_key)
         selected=preset(method,default_dataset(dataset_key),dataset_key) if actions else None
-        return method_card(method,dataset_key), gr.Dropdown(choices=action_choices(method,dataset_key), value=selected.action if selected else None), gr.Button(interactive=bool(actions)), selected.checkpoint if selected else '', gr.update(choices=get_dataset(dataset_key).cameras,value=selected.camera if selected else camera), selected.workspace if selected else 'official_gt_workspace', gr.update(value=selected.num_points if selected else 15000, visible=dataset_key not in ('zerograsp11b','jacquard'))
+        return method_card(method,dataset_key), gr.Dropdown(choices=action_choices(method,dataset_key), value=selected.action if selected else None), gr.Button(interactive=bool(actions)), selected.checkpoint if selected else '', gr.update(choices=get_dataset(dataset_key).cameras,value=selected.camera if selected else camera), selected.workspace if selected else 'official_gt_workspace', gr.update(value=selected.num_points if selected else 15000, visible='num_points' not in get_dataset(dataset_key).hidden_controls)
 
     def select_dataset(dataset_key, current_root, state):
         state = {'current': state['current'], 'roots': dict(state['roots'])}
@@ -451,7 +451,7 @@ def create_app(manager=None):
 
     def data_options(dataset_key):
         from .data import description, plan
-        return description(dataset_key), gr.update(interactive=plan(dataset_key)['available'])
+        return description(dataset_key), gr.update(interactive=plan(dataset_key)['available'], value='Download suction labels' if dataset_key=='suctionnet1b' else 'Download starter data')
 
     def download_data(dataset_key, root, progress=gr.Progress()):
         from .data import fetch
@@ -459,6 +459,8 @@ def create_app(manager=None):
             progress(0,desc='Preparing verified starter data…')
             value = fetch(dataset_key,root,progress=lambda message:progress(.5,desc=message))
             progress(1,desc='Data verified')
+            if dataset_key == 'suctionnet1b':
+                return 'Suction labels verified at '+value['root']+'. Link or download the shared GraspNet scenes and models before training. See Guide → Datasets.'
             return 'Starter data verified at '+value['root']+'. Load the preset, download its weights, then Check current form.'
         except Exception as error:
             raise gr.Error(str(error)) from error
@@ -499,7 +501,7 @@ def create_app(manager=None):
         # Apply the complete preset in one response, so delayed reset callbacks
         # cannot overwrite a composition edited after the preset has loaded.
         spec = get_dataset(dataset_key)
-        return (gr.update(choices=action_choices(method,dataset_key), value=config.action), gr.update(choices=spec.cameras,value=config.camera), config.checkpoint, config.workspace, gr.update(value=config.num_points,visible=dataset_key not in ('zerograsp11b','jacquard')), gr.update(choices=list(spec.splits),value=config.split), config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2), config.collision_thresh,
+        return (gr.update(choices=action_choices(method,dataset_key), value=config.action), gr.update(choices=spec.cameras,value=config.camera), config.checkpoint, config.workspace, gr.update(value=config.num_points,visible='num_points' not in get_dataset(dataset_key).hidden_controls), gr.update(choices=list(spec.splits),value=config.split), config.scene, config.frame, config.frames, config.seed, config.epochs, config.batch_size, config.learning_rate, config.label_root, config.timeout_minutes, json.dumps(config.to_dict(),indent=2), config.collision_thresh,
                 'upstream', gr.update(value='upstream', visible=any(s.name=='crop' for s in slots(method))),
                 'strict', '{}', '{}', '{}', 'upstream', '{}', 'upstream', '{}',
                 '{}', 'upstream', 'upstream', '[]', '{}', 0, config.training_steps,
@@ -532,7 +534,7 @@ def create_app(manager=None):
             from .integrations.dexgraspnet2 import frame_paths
             cameras={'realsense': bool(root and frame_paths(root,0,'realsense',0)['depth'].is_file())}
         else:
-            cameras={c:bool(root and (root/'scenes/scene_0100'/c/'depth/0000.png').exists()) for c in ('realsense','kinect')}
+            cameras={c:bool(root and (root/'scenes/scene_0100'/c/'depth/0000.png').exists()) for c in get_dataset(dataset_key).cameras}
         return {'python':sys.version.split()[0], 'torch':torch.__version__, 'cuda_available':torch.cuda.is_available(),
                 'gpu':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
                 'dataset':dataset_key,'first_test_view_depth':cameras, 'next_step':'Select method → Load preset → Download weights → Run current form.'}
@@ -750,7 +752,8 @@ def create_app(manager=None):
         geometry_state=gr.State('')
         dataset_state=gr.State({'current':'graspnet1b','roots':{}})
         gr.HTML('<div id="panda-hero"><h1>GraspPanda</h1><p>An all-in-one research toolbox for visual grasping.</p></div>')
-        with gr.Tab("Experiments"):
+        # Preserve form components while users inspect results in another tab.
+        with gr.Tab("Experiments", render_children=True):
             with gr.Accordion('Start here', open=True):
                 with gr.Row():
                     with gr.Column():
@@ -975,7 +978,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return gr.update(choices=choices.get('backbone',['upstream']),value='upstream',interactive='backbone' in choices,label='Image encoder' if method in ('hggd','region_normalized_grasp','spgrasp','zerograsp') else 'Graph encoder' if method == 'gtg2' else 'Point encoder'),gr.update(choices=choices.get('crop',['upstream']),value='upstream',interactive='crop' in choices,visible='crop' in choices),contract,gr.update(choices=choices.get('head',['upstream']),value='upstream',visible='head' in choices,interactive='head' in choices),gr.update(choices=choices.get('memory',['upstream']),value='upstream',visible='memory' in choices,interactive='memory' in choices),gr.update(value='upstream')
         method.input(select_components,method,[backbone,crop,component_contract,head,memory,sampling],api_name='select_components', preprocess=False, queue=False).then(
             lambda: ('{}','{}','{}','strict'),outputs=[component_options,loss_options,augmentation_options,checkpoint_policy],api_name=False, queue=False)
-        method.change(lambda m: gr.update(choices=['strict'] if m in ('spgrasp','grconvnet_rgbd','grconvnet_depth') else ['strict','reuse_unchanged'], value='strict'),
+        method.change(lambda m: gr.update(choices=['strict'] if m in ('spgrasp','grconvnet_rgbd','grconvnet_depth','suctionnet_rgbd') else ['strict','reuse_unchanged'], value='strict'),
             method, checkpoint_policy, api_name=False, preprocess=False)
         method.change(lambda m: 'Configure the Hiera encoder and temporal memory, then train from the SAM2 initializer. A trained SPGrasp checkpoint loads strictly and carries its architecture and width units.' if m=='spgrasp' else 'Select compatible building blocks. **reuse_unchanged** initializes replaced components and retains only unchanged checkpoint modules. Train the replaced components before using their predictions.',
             method, composition_intro, api_name=False, preprocess=False)
@@ -1017,7 +1020,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             return (gr.update(visible=bool(slots(method)) and action != 'recipe'),
                     gr.update(visible=training), gr.update(visible=action == 'evaluate'),
                     gr.update(visible=epoch), gr.update(visible=epoch), gr.update(visible=epoch),
-                    gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp', 'contact_graspnet_gc6d', 'zerograsp', 'dexgraspnet2', 'dexgraspnet2_isa', 'dexgraspnet2_cvae')),
+                    gr.update(visible=epoch and method not in ('graspness', 'finegrasp', 'economicgrasp', 'contact_graspnet_gc6d', 'zerograsp', 'dexgraspnet2', 'dexgraspnet2_isa', 'dexgraspnet2_cvae', 'suctionnet_rgbd')),
                     gr.update(visible=backbone in ('dinov2', 'dinov3', 'utonia', 'concerto', 'mambavision', 'efficientvit', 'fastvit')),
                     gr.update(visible=any(slot.name=='crop' for slot in slots(method))))
         gr.on([method.change, action.change, backbone.change], operation_layout, [method, action, backbone],
@@ -1029,20 +1032,21 @@ For component experiments, expand **Compose modules**. Full configuration editin
                     [gr.update() if action == 'train' else gr.update(value=0) for _ in range(3)])
         action.change(reset_inactive_training, action,
             [loss_options, augmentation_options, train_batch_limit, eval_batch_limit, data_workers], api_name=False, preprocess=False)
-        def action_defaults(a,m,dataset_key='graspnet1b'):
+        def action_defaults(a,m,dataset_key='graspnet1b',current_count=1):
             training=a in ('train_short','train')
+            count_update=gr.update(value=max(2,int(current_count or 1))) if dataset_key=='suctionnet1b' and training else gr.update()
             workspace_policy='native_demo' if m in ('hggd','region_normalized_grasp','spgrasp') or (m=='finegrasp' and not training) else (('fused_gt_workspace' if a=='train_short' else 'fused_scene') if m=='generalizing_grasp' else 'official_gt_workspace')
             if dataset_key != 'graspnet1b':
                 spec=get_dataset(dataset_key)
                 selected_split='train' if training else spec.inference_split
-                return selected_split,spec.scene_ids(selected_split)[0],(.0001 if dataset_key=='zerograsp11b' else .001),('provided_instance_masks' if dataset_key=='zerograsp11b' else 'native_image' if dataset_key=='jacquard' else workspace_policy)
-            return ('train',0,5e-6 if m=='spgrasp' else 2e-6 if m=='gfla' else .01 if m == 'gtg2' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)
+                return selected_split,spec.scene_ids(selected_split)[0],(.0001 if dataset_key=='zerograsp11b' else .001),('provided_instance_masks' if dataset_key=='zerograsp11b' else 'native_image' if dataset_key in ('jacquard','suctionnet1b') else workspace_policy),count_update
+            return (*(('train',0,5e-6 if m=='spgrasp' else 2e-6 if m=='gfla' else .01 if m == 'gtg2' else 1e-4,workspace_policy) if training else ('test_seen',100,.001,workspace_policy)),count_update)
         for selector in (method, action):
             selector.change(lambda m,a:gr.update(value='{}',interactive=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_short' or m=='scale_balanced_grasp' and a in ('train','train_short'))),[method,action],trainer_options,api_name=False, preprocess=False)
             selector.change(lambda m,a:gr.update(visible=(m in ('hggd','gtg2') and a=='train' or m=='spgrasp' and a=='train_short' or m=='scale_balanced_grasp' and a in ('train','train_short'))),[method,action],trainer_panel,api_name=False, preprocess=False)
-            selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('graspness','finegrasp','economicgrasp','contact_graspnet_gc6d','zerograsp','dexgraspnet2','dexgraspnet2_isa','dexgraspnet2_cvae') and a=='train'),[method,action],eval_batch_limit,api_name=False, preprocess=False)
+            selector.change(lambda m,a: gr.update(value=0,interactive=m not in ('graspness','finegrasp','economicgrasp','contact_graspnet_gc6d','zerograsp','dexgraspnet2','dexgraspnet2_isa','dexgraspnet2_cvae','suctionnet_rgbd') and a=='train'),[method,action],eval_batch_limit,api_name=False, preprocess=False)
         action.change(lambda a:gr.update(visible=a=='train_short'),action,training_steps,api_name=False, preprocess=False)
-        action.input(action_defaults,[action,method,dataset_key],[split,scene,lr,workspace],api_name='action_defaults', preprocess=False, queue=False)
+        action.input(action_defaults,[action,method,dataset_key,count],[split,scene,lr,workspace,count],api_name='action_defaults', preprocess=False, queue=False)
         action.change(lambda a: gr.update(value='initialize',interactive=a=='train',visible=a=='train'),action,train_checkpoint_mode,api_name=False, preprocess=False)
         def training_checkpoint(a,m,c,path):
             from .weights import primary
@@ -1069,7 +1073,7 @@ For component experiments, expand **Compose modules**. Full configuration editin
             lambda: (None,'[]'), outputs=[prompt_image,prompt_options], api_name=False,
             queue=False, trigger_mode='always_last')
         method.change(lambda: '{}', outputs=planar_options, api_name=False)
-        gr.on([method.change,dataset_key.change],lambda m,d: gr.update(value=0 if m=='spgrasp' or d in ('dexgraspnet2','jacquard') else .01),
+        gr.on([method.change,dataset_key.change],lambda m,d: gr.update(value=0 if m=='spgrasp' or d in ('dexgraspnet2','jacquard','suctionnet1b') else .01),
             [method,dataset_key],collision,api_name=False,preprocess=False,queue=False,trigger_mode='always_last')
         gr.on([method.change, action.change],
             lambda m,a: (gr.update(visible=m=='spgrasp'),gr.update(visible=m=='spgrasp' and a=='infer')),
@@ -1087,8 +1091,8 @@ For component experiments, expand **Compose modules**. Full configuration editin
         dataset_key.change(lambda:'',outputs=data_message,api_name=False,queue=False)
         def input_controls(a,m,d):
             return [gr.update(
-                interactive=a!='recipe' and not (d=='jacquard' and i in (3,5,7,8) or d=='dexgraspnet2' and i==8 or m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8) or m=='generalizing_grasp' and a=='infer' and i in (3,4,7)),
-                **({'visible':d not in ('zerograsp11b','jacquard')} if i==5 else {'visible':d!='jacquard'} if i in (3,8) else {})) for i in range(13)]
+                interactive=a!='recipe' and not (d=='jacquard' and i in (3,5,7,8) or d=='suctionnet1b' and i in (5,7,8) or d=='dexgraspnet2' and i==8 or m=='gtg2' and (i in (5,7) or a=='train' and i in (2,4)) or m=='spgrasp' and i in (5,7,8) or m=='generalizing_grasp' and a=='infer' and i in (3,4,7)),
+                **({'visible':{3:'frame',5:'num_points',8:'collision_thresh'}[i] not in get_dataset(d).hidden_controls} if i in (3,5,8) else {})) for i in range(13)]
         gr.on([action.change,method.change,dataset_key.change,preprocessing_panel.expand],input_controls,
             [action,method,dataset_key],[camera,split,scene,frame,count,points,seed,workspace,collision,epochs,batch,lr,predictions],
             api_name=False,preprocess=False,queue=False,trigger_mode='always_last')

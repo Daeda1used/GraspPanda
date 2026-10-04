@@ -338,5 +338,16 @@
     "camera": "any",
     "role": "primary",
     "note": "Author Jacquard checkpoint; native architecture only. Published training may overlap local validation."
+  },
+  {
+    "method": "suctionnet_rgbd",
+    "camera": "realsense",
+    "role": "primary",
+    "path": "checkpoints/suctionnet/rgbd-realsense.pt",
+    "source": "https://drive.google.com/file/d/18TbctdhpNXEKLYDWFzI9cT1Wnhe-tn9h/view",
+    "archive_member": "realsense-deeplabplus-RGBD",
+    "bytes": 705707080,
+    "sha256": "e97b531e9e69773d3aa2366defb244c2041cd4dd883c347b80b665cc784211e6",
+    "note": "Author RGB-D RealSense DeepLabV3+ ResNet-101 checkpoint, strict native loading."
   }
 ]

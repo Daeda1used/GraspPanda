@@ -27,6 +27,16 @@ def download_file(url, destination, size, sha256, progress=print, *, byte_offset
             progress('Verified '+path.name)
             return path
         partial = path.with_suffix(path.suffix+'.download')
+        if 'drive.google.com/file/d/' in url:
+            import gdown
+            if not gdown.download(id=url.split('/d/')[1].split('/')[0],output=str(partial),
+                                  resume=True,quiet=True,use_cookies=False):
+                raise ValueError('Author download unavailable: '+url+'. Retry or install the registered archive manually.')
+            if partial.stat().st_size != size or digest(partial) != sha256:
+                raise ValueError('Author archive checksum differs; it was not installed: '+str(partial))
+            partial.replace(path); stamp.write_text(json.dumps(identity()))
+            progress('Installed and verified '+path.name)
+            return path
         for attempt in range(4):
             offset = partial.stat().st_size if partial.exists() else 0
             if offset > size: raise ValueError('Oversized partial download: '+str(partial))

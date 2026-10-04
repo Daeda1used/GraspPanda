@@ -100,3 +100,11 @@ These entries are references only and add no installation downloads or runnable 
 | FESS-Grasp | 2026 · Complex & Intelligent Systems | single view · pointcloud | Gaussian feature augmentation and instance-aware sampling on GraspNet-1B. No verified public author implementation located. | [PDF](https://link.springer.com/content/pdf/10.1007/s40747-026-02366-5.pdf) | [Publisher / availability statement](https://link.springer.com/article/10.1007/s40747-026-02366-5) |
 | UniGraspAll | 2026 · SSRN preprint | single view · RGB / planar | The linked repository supplies contour-label preprocessing only; the grasp model and checkpoint are absent. | [Paper](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6562071) · PDF not verified | [Preprocessing code](https://github.com/SuperLuu7/GraspNet-1-Billion-dataset-enrichment) |
 | RAGNet / AffordanceNet | 2025 · ICCV | related · RGB + language | Released AffordanceVLM predicts instruction-conditioned masks and reports GraspNet affordance IoU. The inspected source does not provide the downstream 6-DoF grasp decoder; not integrated into the visual-only grasp protocol. | [PDF](https://arxiv.org/pdf/2507.23734) | [Code](https://github.com/wudongming97/AffordanceNet) · [Weights](https://huggingface.co/Dongming97/AffordanceVLM) |
+
+## Suction grasping
+
+| Method | Publication | Dataset | Operations | Sources |
+|---|---|---|---|---|
+| SuctionNet RGB-D | RA-L 2021 | SuctionNet-1B · RealSense | Native inference, labelled short training, finite epoch training and resume | [PDF](https://arxiv.org/pdf/2103.12311) · [Author code](https://github.com/graspnet/suctionnet-baseline) |
+
+The adapter executes the author DeepLabV3+ ResNet-101 model, target construction, crop/augmentation, two-map MSE and geometric decoder. Only the label scripts’ outer view loop and loader disk reads are adapted for per-view caching. Training uses Adam with weight decay 0.0005 and the native 0.7 learning-rate decay at epochs 20, 40 and 60. Augmentation RNG is seeded per epoch for reproducible resume. Native source and weights remain separate downloads. No interchangeable encoder or suction AP adapter is registered. See [data, training and output conventions](DATASETS.md#suctionnet-1b).
