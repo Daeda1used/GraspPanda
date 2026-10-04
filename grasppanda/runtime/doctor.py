@@ -7,10 +7,12 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", "pointnet2_ops._ext", "knn_pytorch", "graspnetAPI", "_grasppanda_openpoints_cuda", "robo_orchard_core", "transformers", "spconv.pytorch", "torch_scatter", "timm", "selective_scan_cuda_oflex", "_grasppanda_deepla_cuda"]
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
 modules += ['opt_einsum', 'flash_attn', '_grasppanda_sampling_cuda', '_grasppanda_pointrope_cuda', '_grasppanda_pointops', '_grasppanda_pointcept_cuda', 'ocnn', 'dwconv.core', '_grasppanda_gpg', 'fpsample', 'torch_cluster', '_grasppanda_pointmamba_scan', '_grasppanda_causal_conv1d', '_grasppanda_pcm_scan', '_grasppanda_pcm_causal']
 modules += ['diffusers', 'nflows', 'urdf_parser_py', 'ikpy', 'torchprimitivesdf._C']
+modules += ['pysdf', 'torchtyping', 'linear_attention_transformer']
 for name in modules:
     try:
         mod = importlib.import_module(name)
@@ -21,6 +23,15 @@ import torch
 result["torch"] = torch.__version__
 result["cuda_runtime"] = torch.version.cuda
 result["gpu"] = torch.cuda.get_device_name() if torch.cuda.is_available() else None
+try:
+    from grasppanda.runtime.build_targo import build
+    prepared = build(allow_build=False)
+    sys.path[:0] = [str(prepared/'src'),str(prepared/'src/shape_completion/chamfer_dist')]
+    importlib.import_module('chamfer')
+    importlib.import_module('vgn.ConvONets.utils.libmesh.triangle_hash')
+    result['modules']['targo_native'] = {'status':'ok','file':str(prepared)}
+except Exception as error:
+    result['modules']['targo_native'] = {'status':'failed','error':str(error)}
 result["sources"] = []
 pins=json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text())
 pins+=json.loads((ROOT / "grasppanda/resources/component_sources.lock.json").read_text())

@@ -1869,3 +1869,29 @@ Use **Prepare inference from checkpoint** on a completed run to inspect its pair
 A method may serve multiple datasets without duplicating its original source. Conversely, a shared dataset does not imply shared modules: image-space rectangles, suction vectors, object-centric gripper poses and dexterous hand states keep separate contracts. Only compatible, implemented slots appear in **Compose modules**. Use **Method details & input requirements** for source identity and adaptation notes; **Training settings** for stage and optimization controls; **Configuration editor** for the complete saved experiment.
 
 `./panda describe METHOD --dataset DATASET --json` exposes the same source revisions, component rules and weight records used by the interface. Every queued run saves its resolved configuration, toolbox/source revisions and artifact provenance. Keep data and experiment roots on mounted storage; the current queue executes on one host and is not a distributed cluster scheduler.
+
+## TARGO training
+
+Select **TARGO → Train across epochs** or initialize `targo-train`. The native grasp network receives the author's target TSDF points and surrounding scene points; inference uses frozen AdaPoinTr completion of the observed target. No compatible encoder/head replacement is registered for this architecture.
+
+| Configuration | UI location | Default and meaning |
+|---|---|---|
+| `learning_rate` | Training settings | `2e-4`; native Adam optimizer |
+| `batch_size`, `epochs` | Training settings | Labelled grasps per update and total completed epochs |
+| `train_batch_limit` | Training settings | `0` consumes the full training split; a positive value bounds updates per epoch |
+| `eval_batch_limit` | Training settings | `0` consumes the full held-out label split; a positive value bounds validation batches |
+| `scene`, `frames` | Input & preprocessing | First scene and scene count for inference, short runs and bounded epochs |
+| `dataset_options.train_fraction`, `dataset_options.split_seed` | Dataset parameters | `0.9` and `0`; split by base scene, keeping all its target IDs and scene variants together |
+| `dataset_options.quality_threshold` | Dataset parameters | `0.9`; native grasp confidence threshold |
+| `dataset_options.outside_threshold` | Dataset parameters | `0.2`; completed-target TSDF filtering threshold |
+| `dataset_options.force_detection` | Dataset parameters | `true`; allow the native best-candidate fallback below the confidence threshold |
+| `checkpoint`, `train_checkpoint_mode` | Training settings | Author or toolbox weights; `initialize` starts a fresh optimizer, `resume` continues a saved epoch |
+
+```bash
+./panda init --example targo-train --dataset-root /data/TARGO -o train.local.yaml
+./panda run train.local.yaml
+```
+
+Training retains the author quality BCE, symmetric quaternion loss and width loss. Adam uses the configured learning rate; the native exponential schedule multiplies it by `0.95` every ten epochs. Custom optimizer, augmentation, loss and scheduler overrides are rejected. To resume, select a completed epoch checkpoint, keep its training/data settings and increase `epochs`. Saved state includes the grasp network, Adam moments, scheduler, completed epochs/updates and Python/NumPy/Torch/CUDA random states. The frozen completion network remains the registered auxiliary checkpoint. Native sparse CUDA operators do not promise bitwise reproducibility across runs or machines.
+
+The loader fails with the original scene ID on invalid input instead of silently replacing it with a different label. Validation is independent of model selection by simulator success: saved checkpoints describe completed epochs, and `validation` records contain explicit labelled losses and accuracy. Binary accuracy can be dominated by negative trials; it is not a grasp-success metric. Use a resumed checkpoint for prediction with `train_checkpoint_mode: initialize` (or **Reuse checkpoint** in the browser).

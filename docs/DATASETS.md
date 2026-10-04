@@ -10,6 +10,7 @@ Select a dataset first. The browser then offers its methods, cameras, splits and
 | [DexGraspNet 2.0](https://pku-epic.github.io/DexGraspNet2.0/) | 1,319 objects, 8,270 synthetic scenes, approximately 427 million dexterous grasps | Native diffusion; author ISAGrasp and GraspTTA baselines | Rendered depth and 16-joint LEAP-hand prediction; simulation evaluation remains an upstream workflow |
 | [Jacquard](https://jacquard.liris.cnrs.fr/database.php) | Synthetic RGB-D; 54,485 scenes and 4.97 million rectangle annotations | GR-ConvNet RGB-D and depth | Explicit train/validation split; planar IoU evaluation |
 | [SuctionNet-1B](https://graspnet.net/suction) | Shared GraspNet RGB-D scenes; separate suction supervision | Native SuctionNet RGB-D | RealSense prediction, training and resume; native suction outputs |
+| [TARGO](https://huggingface.co/datasets/randing2000/TARGO) | Synthetic target grasping; 2.47 million released training trials | TARGO-Net + frozen AdaPoinTr | Native prediction and training; scene-disjoint labelled validation |
 
 GraspClutter6D is a 2025 RA-L dataset, also presented at ICRA 2026 ([paper](https://arxiv.org/pdf/2504.06866)). ZeroGrasp is CVPR 2025 ([paper](https://arxiv.org/pdf/2504.10857)). Scale describes the publishers' datasets, not the number of observations evaluated by this toolbox.
 
@@ -335,3 +336,52 @@ GraspGen/
 The starter uses `labels/<uuid>.json` plus `labels/map_uuid_to_path.json` in place of TARs. TAR readers cache file offsets under `.grasppanda/graspgen-index-v1/`, avoiding a full shard scan per object. Set `label_root` to a writable cache volume when data is read-only. Both formats retain original labels; the toolbox does not follow the historical absolute mesh paths embedded in the annotation JSON. Preflight requires every object named in the selected split to be installed, and rejects train/validation overlap. Full-release data loading is supported; operational validation uses the four-object starter, not full-dataset convergence.
 
 For **Train across epochs**, choose **Method training stages → GraspGen training stage**. See [training controls and checkpoint reuse](REFERENCE.md#graspgen-training). Inference rendering never selects views using grasp success labels; training retains native visible-grasp supervision and retries invalid views, recording the retries instead of silently omitting objects. Simulator success, on-policy label generation, other grippers and arbitrary backbone replacement remain upstream workflows.
+
+## TARGO
+
+[TARGO (IJCV 2026)](https://arxiv.org/pdf/2407.06168) studies target-driven grasping under occlusion. The pinned [training CSV](https://huggingface.co/datasets/randing2000/TARGO/blob/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv) contains 2,474,952 grasp trials. GraspPanda loads the official TARGO-Net and frozen AdaPoinTr checkpoints in the shared runtime. Inputs are **single-view depth-derived points and supplied target segmentation**; the adapter does not predict the target mask.
+
+### Download and predict
+
+```bash
+./panda data targo --root /data/TARGO --fetch
+./panda weights targonet --camera synthetic-depth
+./panda init --example targo-target --dataset-root /data/TARGO -o targo.local.yaml
+./panda check targo.local.yaml
+./panda run targo.local.yaml
+```
+
+The **5.2 MB starter** contains four original training scenes, their 58 original grasp trials, and the author's released test scene. Label downloads retrieve exact CSV byte ranges and assemble them locally without changing values. The two registered checkpoints total **393 MB**. Choose **TARGO → Download starter data → Download registered weights** in the browser, then check and run the form. Select a [NAS storage root](INSTALL.md#choose-the-storage-volume-first) before installing and downloading.
+
+Predictions consume the released `pc_depth_targ` and `pc_scene_no_targ` visual arrays in each scene NPZ. These were generated from depth, camera calibration and supplied masks. The target is normalized and filtered using the author workspace, then completed by frozen AdaPoinTr. Native TARGO-Net, completed-target TSDF filtering and nonmaximum suppression produce poses and opening widths. The scene includes the author's sampled support plane. No grasp labels, CAD geometry or object poses are passed to the predictor. A failed completion stops the job.
+
+Each prediction NPZ stores `poses` (N×4×4), `widths`, `scores`, `scene_points`, `target_points` and `completed_target`. Geometry uses the author's **0.3 m workspace frame**, with translations and widths in metres and the VGN gripper-pose convention. It is not the camera frame or a GraspNet grasp array. The preview and rotatable GLB show native grippers and observed points; the PNG also shows completed target points. `force_detection: true` preserves the author fallback to the best lower-confidence candidate; the manifest records when it was used. Disabling it can legitimately produce an empty prediction.
+
+### Full release and training
+
+Download [the pinned dataset](https://huggingface.co/datasets/randing2000/TARGO/tree/45ae479029f1a533b2f60bd7d2fbca6bb58d087c) to a separate dataset root. Keep the numbered scene folders intact; both flat and numbered layouts are supported. For example, with the Hugging Face CLI:
+
+```bash
+hf download randing2000/TARGO --repo-type dataset \
+  --revision 45ae479029f1a533b2f60bd7d2fbca6bb58d087c \
+  --include "syn_train/**" "test_set_gaussian_0.005/**" --local-dir /data/TARGO-full
+```
+
+Use the author's [setup.json](https://raw.githubusercontent.com/TARGO-benchmark/TARGO/e71d00e6c081aa39a164a6a402375aa75173ff80/setup/setup.json) in `syn_train/` if the download does not include it. The full dataset is much larger than the starter; download it to your data volume.
+
+```text
+TARGO/
+  syn_train/
+    setup.json
+    grasps.csv
+    scenes/000/<scene_id>.npz
+  test_set_gaussian_0.005/
+    setup.json
+    scenes/<scene_id>.npz
+```
+
+Training uses the author's released target TSDF points and surrounding scene points, target sampling, quaternion symmetry and grasp objective. The grasp trainer does not optimize AdaPoinTr. The toolbox removes the upstream script's default tiny random subsample, uses finite epochs, and groups **all targets and single/double/clutter variants of a base scene together** when splitting `syn_train`. The default is 90% training groups and 10% validation groups with seed 0; the starter has three training scenes and one validation scene. This is a toolbox validation protocol, not the author's random row split or simulator benchmark. The three invalid scene IDs excluded by the native loader remain excluded.
+
+`scene` and `frames` select scene indices and counts in the chosen split. Unbounded epoch training consumes all labels in its training split, including the final partial batch; short training and bounded epochs use the selected scenes. `data_workers` remains zero. Dataset inventories are reused in the UI and invalidated when source metadata changes. See [training, resume and decoding controls](REFERENCE.md#targo-training).
+
+Epoch validation reports held-out grasp losses and binary label accuracy. **These are not physical grasp success rates.** PyBullet evaluation requires separate object URDFs/meshes and the upstream simulation workflow; it is not exposed as a toolbox evaluator. The author-linked GIGA object asset archive was unavailable when this adapter was validated. No training-accuracy proxy is substituted for simulation results.

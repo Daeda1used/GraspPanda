@@ -376,5 +376,23 @@
     "source": "https://huggingface.co/adithyamurali/GraspGenModels/resolve/ec1ccbb5eec0680db669246ac312a3636f16ee43/checkpoints/graspgen_franka_panda_gen.pth",
     "bytes": 907408223,
     "sha256": "0597583b89b322d42ceb4e596967d6ed68d1b56cba4039895909ccd5bdc66eff"
+  },
+  {
+    "method": "targonet",
+    "camera": "synthetic-depth",
+    "path": "checkpoints/targo/targonet.pt",
+    "source": "https://huggingface.co/randing2000/TARGO-Net/resolve/7367e757ed518b096b901f184885287f3bd8243e/checkpoints/targonet.pt",
+    "bytes": 3639761,
+    "sha256": "37568233668f09f4944d5626c4a255e42fd6d3ba60a3d2bf0b7aa419ebf53bf6",
+    "role": "primary"
+  },
+  {
+    "method": "targonet",
+    "camera": "synthetic-depth",
+    "path": "checkpoints/targo/adapointr.pth",
+    "source": "https://huggingface.co/randing2000/TARGO-Net/resolve/7367e757ed518b096b901f184885287f3bd8243e/checkpoints/adapointr.pth",
+    "bytes": 389299512,
+    "sha256": "97677a6204a3cf468569db67a48b1ea45c038ccf5d124b0d01eff2a05338c6b9",
+    "role": "auxiliary"
   }
 ]

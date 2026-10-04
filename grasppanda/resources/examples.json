@@ -2914,5 +2914,44 @@
         "grasps_per_object": 40
       }
     }
+  },
+  "targo-target": {
+    "description": "TARGO-Net: official AdaPoinTr completion and target-conditioned grasp prediction.",
+    "config": {
+      "dataset": "targo",
+      "method": "targonet",
+      "action": "infer",
+      "camera": "synthetic-depth",
+      "split": "test",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 2048,
+      "workspace": "target_depth",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/targo/targonet.pt",
+      "batch_size": 2,
+      "learning_rate": 0.0002
+    }
+  },
+  "targo-train": {
+    "description": "TARGO-Net: native grasp training and base-scene-disjoint labelled validation.",
+    "config": {
+      "dataset": "targo",
+      "method": "targonet",
+      "action": "train",
+      "camera": "synthetic-depth",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 2048,
+      "workspace": "target_depth",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/targo/targonet.pt",
+      "batch_size": 2,
+      "learning_rate": 0.0002,
+      "epochs": 2
+    }
   }
 }

@@ -60,6 +60,7 @@
 !/grasppanda/resources/patches/spgrasp/continuous-targets.patch
 !/grasppanda/resources/patches/swin3d/native-runtime.patch
 !/grasppanda/resources/patches/sp2t/native-runtime.patch
+!/grasppanda/resources/patches/targo/shared-runtime.patch
 !/grasppanda/resources/upstreams.lock.json
 
 # Private diagnostics and generated Python files are never product source.

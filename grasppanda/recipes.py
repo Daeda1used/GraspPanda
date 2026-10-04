@@ -36,6 +36,12 @@ def checkpoint_camera(method, camera, dataset='graspnet1b'):
 def preset(method, dataset_root='', dataset='graspnet1b'):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if dataset == 'targo':
+        if not capabilities(method,dataset):raise ValueError('Select the registered TARGO-Net method')
+        return Experiment(dataset=dataset,method=method,action='infer',dataset_root=dataset_root,
+                          camera='synthetic-depth',split='test',scene=0,workspace='target_depth',
+                          num_points=2048,collision_thresh=0,checkpoint=primary(method,'synthetic-depth') or 'checkpoints/targo/targonet.pt',
+                          batch_size=2,learning_rate=2e-4)
     if dataset == 'graspgen':
         if not capabilities(method,dataset):raise ValueError('Select the registered GraspGen method')
         checkpoint = primary(method,'synthetic-depth') or 'checkpoints/graspgen/graspgen_franka_panda_gen.pth'

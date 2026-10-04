@@ -1,0 +1,80 @@
+--- a/src/vgn/utils/implicit.py
++++ b/src/vgn/utils/implicit.py
+@@ -1,7 +1,6 @@
+ import os
+ import trimesh
+ import numpy as np
+-from urdfpy import URDF
+ try:
+     from vgn.ConvONets.utils.libmesh.inside_mesh import check_mesh_contains
+ except:
+@@ -131,6 +130,7 @@
+     mesh_list = []
+     for idx, (mesh_path, scale, pose) in enumerate(mesh_pose_list.items()):
+         if os.path.splitext(mesh_path)[1] == '.urdf':
++            from urdfpy import URDF
+             obj = URDF.load(mesh_path)
+             assert len(obj.links) == 1, "Assumption that URDF has exactly one link might not hold true."
+             assert len(obj.links[0].visuals) == 1, "Assumption that each link has exactly one visual might not hold true."
+@@ -167,6 +167,7 @@
+     for idx, (mesh_path, scale, pose) in enumerate(mesh_pose_list):
+         
+         if os.path.splitext(mesh_path)[1] == '.urdf':
++            from urdfpy import URDF
+             obj = URDF.load(mesh_path)
+             assert len(obj.links) == 1, "Assumption that URDF has exactly one link might not hold true."
+             assert len(obj.links[0].visuals) == 1, "Assumption that each link has exactly one visual might not hold true."
+@@ -206,6 +207,7 @@
+     
+     for idx, (mesh_path, scale, pose) in enumerate(mesh_pose_list):
+         if os.path.splitext(mesh_path)[1] == '.urdf':
++            from urdfpy import URDF
+             obj = URDF.load(mesh_path)
+             assert len(obj.links) == 1, "Assumption that URDF has exactly one link might not hold true."
+             assert len(obj.links[0].visuals) == 1, "Assumption that each link has exactly one visual might not hold true."
+--- a/src/utils_giga.py
++++ b/src/utils_giga.py
+@@ -10,7 +10,6 @@
+ from vgn.utils import visual
+ from collections import OrderedDict
+ # Load and parse URDF files
+-from urdfpy import URDF
+ from torch import nn
+ # from vgn.simulation import ClutterRemovalSim
+ 
+@@ -1860,6 +1859,7 @@
+     for mesh_path, scale, pose in mesh_pose_list:
+         if os.path.splitext(mesh_path)[1] == '.urdf':
+ # Load and parse URDF files
++            from urdfpy import URDF
+             obj = URDF.load(mesh_path)
+             assert len(obj.links) == 1
+             assert len(obj.links[0].visuals) == 1
+--- a/src/utils_targo.py
++++ b/src/utils_targo.py
+@@ -10,7 +10,6 @@
+ from vgn.ConvONets.eval import MeshEvaluator
+ from collections import OrderedDict
+ # Load and parse URDF files
+-from urdfpy import URDF
+ from torch import nn
+ # from src.vgn.simulation import ClutterRemovalSim
+ from vgn.utils.implicit import *
+@@ -1902,6 +1901,7 @@
+     for mesh_path, scale, pose in mesh_pose_list:
+         if os.path.splitext(mesh_path)[1] == '.urdf':
+ # Load and parse URDF files
++            from urdfpy import URDF
+             obj = URDF.load(mesh_path)
+             assert len(obj.links) == 1
+             assert len(obj.links[0].visuals) == 1
+--- a/train_targo.py
++++ b/train_targo.py
+@@ -25,7 +25,6 @@
+     ROOT,
+     ROOT / "src",
+     ROOT / "src" / "shape_completion" / "chamfer_dist",
+-    ROOT / "src" / "shape_completion" / "pointnet2_ops",
+ ):
+     sys.path.insert(0, str(_path))
+ 

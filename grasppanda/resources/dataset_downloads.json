@@ -4102,5 +4102,105 @@
         }
       ]
     }
+  },
+  "targo": {
+    "repository": "https://huggingface.co/datasets/randing2000/TARGO",
+    "terms": "Author dataset terms apply; TARGO source is MIT. No broader dataset license is declared in the pinned data card.",
+    "starter": {
+      "description": "Four original training scenes (58 original grasp trials) and the author test scene. Downloads exact CSV byte ranges and reconstructs its selected rows without changing labels. A base-scene-disjoint split is applied locally.",
+      "files": [
+        {
+          "path": ".grasppanda/targo-labels/part_000.csv",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv",
+          "source_offset": 0,
+          "bytes": 39,
+          "sha256": "243ed19dddf6e025c0028d0cfbd17f1c1d3b84100c5e1371f292728159c4c409"
+        },
+        {
+          "path": ".grasppanda/targo-labels/part_001.csv",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv",
+          "source_offset": 16505,
+          "bytes": 1828,
+          "sha256": "567e88a5797a535539280daed2b70e2efcad7968730d074e0f1cbe37e7699dc1"
+        },
+        {
+          "path": ".grasppanda/targo-labels/part_002.csv",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv",
+          "source_offset": 60406,
+          "bytes": 2154,
+          "sha256": "4e1519c39b97cfaf011df6329016aeb815b0cb8431ff9648e56fcd62f4b891bd"
+        },
+        {
+          "path": ".grasppanda/targo-labels/part_003.csv",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv",
+          "source_offset": 80927,
+          "bytes": 2788,
+          "sha256": "315cd347c3321bde577649bb3bf3ed2658747efb3f260f2e11563e701c6c29ea"
+        },
+        {
+          "path": ".grasppanda/targo-labels/part_004.csv",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/grasps.csv",
+          "source_offset": 185133,
+          "bytes": 3816,
+          "sha256": "b85fb4afc82ca577435cb946c4a5cd447fb5a5f0c48c9eb4ce6a039b211550b3"
+        },
+        {
+          "path": "syn_train/scenes/000/0802f4f9aeb54408a8a6ef66416cfe25_c_1.npz",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/scenes/000/0802f4f9aeb54408a8a6ef66416cfe25_c_1.npz",
+          "bytes": 1019385,
+          "sha256": "0891d8da4b5527ef20a29fd7c23e073d0f0a2a790e6302c4199ff5dbc83666e5"
+        },
+        {
+          "path": "syn_train/scenes/000/04baffa7316f4edf9991732d012c8ab7_c_1.npz",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/scenes/000/04baffa7316f4edf9991732d012c8ab7_c_1.npz",
+          "bytes": 1070242,
+          "sha256": "e4c867923bd850942ee424980514baa82b3f120489483ee30aff5fad9110903a"
+        },
+        {
+          "path": "syn_train/scenes/000/04ac128dc8ca4f3093609657ad070d0e_c_1.npz",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/scenes/000/04ac128dc8ca4f3093609657ad070d0e_c_1.npz",
+          "bytes": 1015537,
+          "sha256": "90d15e93470fde5bb03b583ae2429a7619ebd58b185224fa298657d48791d5ec"
+        },
+        {
+          "path": "syn_train/scenes/000/01af50ea031d4a3b9bbc6181a9651c26_c_1.npz",
+          "url": "https://huggingface.co/datasets/randing2000/TARGO/resolve/45ae479029f1a533b2f60bd7d2fbca6bb58d087c/syn_train/scenes/000/01af50ea031d4a3b9bbc6181a9651c26_c_1.npz",
+          "bytes": 975452,
+          "sha256": "f97bb1542583be5928abb6c7e4716b0bc1926d5fd620808b99f5c9b899960ccd"
+        },
+        {
+          "path": "syn_train/setup.json",
+          "url": "https://raw.githubusercontent.com/TARGO-benchmark/TARGO/e71d00e6c081aa39a164a6a402375aa75173ff80/setup/setup.json",
+          "bytes": 348,
+          "sha256": "fb9c5baa3f22714bf64374814add1ceb8a0777e7bd4e33822ec9529e8a3b0d95"
+        },
+        {
+          "path": "test_set_gaussian_0.005/setup.json",
+          "url": "https://raw.githubusercontent.com/TARGO-benchmark/TARGO/e71d00e6c081aa39a164a6a402375aa75173ff80/generated_min_test_set/setup.json",
+          "bytes": 348,
+          "sha256": "fb9c5baa3f22714bf64374814add1ceb8a0777e7bd4e33822ec9529e8a3b0d95"
+        },
+        {
+          "path": "test_set_gaussian_0.005/scenes/8c69410f534c42e5a503bc52845e806e_c_1.npz",
+          "url": "https://raw.githubusercontent.com/TARGO-benchmark/TARGO/e71d00e6c081aa39a164a6a402375aa75173ff80/generated_min_test_set/scenes/8c69410f534c42e5a503bc52845e806e_c_1.npz",
+          "bytes": 1105292,
+          "sha256": "61c5cf56bf5064ed65e684d3935c43c226ab16cf3da9ac6987d00a24ae10c522"
+        }
+      ],
+      "assemblies": [
+        {
+          "path": "syn_train/grasps.csv",
+          "parts": [
+            ".grasppanda/targo-labels/part_000.csv",
+            ".grasppanda/targo-labels/part_001.csv",
+            ".grasppanda/targo-labels/part_002.csv",
+            ".grasppanda/targo-labels/part_003.csv",
+            ".grasppanda/targo-labels/part_004.csv"
+          ],
+          "bytes": 10625,
+          "sha256": "b89b870ff8a451dbef49497dfb1ce7533c71c27c3cf1603c83356fe91f66f26c"
+        }
+      ]
+    }
   }
 }

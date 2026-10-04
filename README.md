@@ -12,10 +12,10 @@
 
 <table>
 <tr>
-<td align="center" width="25%"><h2>7</h2><a href="#dataset-coverage">Datasets</a></td>
-<td align="center" width="25%"><h2>36</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
+<td align="center" width="25%"><h2>8</h2><a href="#dataset-coverage">Datasets</a></td>
+<td align="center" width="25%"><h2>37</h2><a href="docs/METHODS.md">Method & recipe entries</a></td>
 <td align="center" width="25%"><h2>37</h2><a href="#compose-your-next-model">Encoder options</a></td>
-<td align="center" width="25%"><h2>69</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
+<td align="center" width="25%"><h2>71</h2><a href="grasppanda/resources/examples.json">Experiment presets</a></td>
 </tr>
 </table>
 
@@ -28,7 +28,7 @@ GraspPanda connects **planar, 6-DoF parallel-jaw, suction and dexterous grasping
 <details>
 <summary><b>Coverage definitions & validation scope</b></summary>
 
-Counts reflect the executable registries in this release: **7** dataset providers; **36** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **69** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
+Counts reflect the executable registries in this release: **8** dataset providers; **37** distinct method IDs with at least one operation across those datasets, including ports, fixed-input recipes and auxiliary workflows; **37** distinct non-`upstream` backbone selections, including configurable native encoders; **71** editable configuration examples. Method IDs are counted once across datasets. References without an adapter are excluded. See the [method registry](grasppanda/resources/methods.json), [capabilities](grasppanda/config.py), [dataset contracts](grasppanda/datasets.py), [component slots](grasppanda/components.py) and [presets](grasppanda/resources/examples.json).
 
 A checkmark below means an implemented operation for the indicated adapter, not support for every method or arbitrary component combinations. Operational checks cover bounded inference, labelled optimization and browser workflows; full-split accuracy reproduction and training convergence have not been established. Exact protocols, adaptations and unavailable implementations are documented in [Methods & papers](docs/METHODS.md).
 
@@ -78,8 +78,9 @@ A checkmark below means an implemented operation for the indicated adapter, not 
 | [**Jacquard**](docs/DATASETS.md#jacquard) | Synthetic RGB-D · planar rectangles | ✅ | ✅ | Native architecture | Rectangle IoU |
 | [**SuctionNet-1B**](docs/DATASETS.md#suctionnet-1b) | Real clutter · suction | ✅ | ✅ | Native architecture | Author evaluator |
 | [**GraspGen**](docs/DATASETS.md#graspgen) | Object-centric partial depth · diffusion | ✅ | ✅ | Native architecture | Simulation via upstream |
+| [**TARGO**](docs/DATASETS.md#targo) | Target-conditioned depth · occluded objects | ✅ | ✅ | Native architecture | Held-out label loss; simulation upstream |
 
-**Single-view, fused-view, temporal and object-centric protocols** retain their own geometry and supervision contracts. GraspNet-trained Baseline and Graspness also support [transfer to GraspClutter6D](docs/DATASETS.md#graspclutter6d).
+**Single-view, fused-view, temporal, object-centric and target-conditioned protocols** retain their own geometry and supervision contracts. GraspNet-trained Baseline and Graspness also support [transfer to GraspClutter6D](docs/DATASETS.md#graspclutter6d).
 
 ## Compose your next model
 

@@ -169,3 +169,16 @@ register_dataset(DatasetSpec('graspgen', 'GraspGen', ('synthetic-depth',),
     default_method='graspgen', scene_label='First object in split', frame_label='Frame (always 0)',
     runner='grasppanda.methods.graspgen', hidden_controls=('num_points','frame','collision_thresh')),
     'grasppanda.integrations.graspgen')
+
+
+register_dataset(DatasetSpec('targo', 'TARGO', ('synthetic-depth',),
+    {'train':(0,1000000),'val':(0,1000000),'test':(0,1000000)}, 1,
+    ('depth','target_mask','scene_mask','intrinsics','extrinsics','visual_points','grasp_labels'),
+    'https://huggingface.co/datasets/randing2000/TARGO',
+    method_actions={'targonet':('infer','train_short','train')},
+    protocol_note='Target-conditioned depth with supplied segmentation. Author shape completion and grasp networks retain '
+                  'VGN workspace-frame pose conventions. Training/validation split groups every target and scene variant '
+                  'by base scene ID; simulator success remains an upstream workflow.',
+    default_method='targonet',scene_label='First scene in split',frame_label='Frame (always 0)',
+    runner='grasppanda.methods.targo',hidden_controls=('num_points','frame','collision_thresh')),
+    'grasppanda.integrations.targo')

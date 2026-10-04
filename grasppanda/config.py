@@ -146,6 +146,9 @@ class Experiment:
         elif self.dataset == 'graspgen':
             from .integrations.graspgen import validate_options
             validate_options(self)
+        elif self.dataset == 'targo':
+            from .integrations.targo import validate_options
+            validate_options(self)
         elif self.dataset == 'suctionnet1b':
             from .integrations.suctionnet1b import validate_options
             validate_options(self)
@@ -175,8 +178,10 @@ class Experiment:
             raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
-        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
+        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "target_depth", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
             raise ValueError("Unknown workspace policy")
+        if (self.dataset == 'targo') != (self.workspace == 'target_depth'):
+            raise ValueError('target_depth is specific to the TARGO dataset adapter')
         if (self.dataset == 'graspgen') != (self.workspace == 'object_partial'):
             raise ValueError('object_partial is specific to the GraspGen dataset adapter')
         if (self.dataset in ('jacquard','suctionnet1b')) != (self.workspace == 'native_image'):
@@ -216,6 +221,7 @@ class Experiment:
             expected = 'provided_instance_masks' if self.dataset == 'zerograsp11b' else 'native_demo' if self.method == 'hggd' else 'official_gt_workspace'
             if self.dataset in ('jacquard','suctionnet1b'): expected = 'native_image'
             if self.dataset == 'graspgen': expected = 'object_partial'
+            if self.dataset == 'targo': expected = 'target_depth'
             if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
         if self.action=='train_short':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp short training supports 1–6 temporal updates per native seven-frame sequence')
@@ -224,6 +230,7 @@ class Experiment:
             if self.dataset == 'zerograsp11b': expected = 'provided_instance_masks'
             if self.dataset in ('jacquard','suctionnet1b'): expected = 'native_image'
             if self.dataset == 'graspgen': expected = 'object_partial'
+            if self.dataset == 'targo': expected = 'target_depth'
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
             if self.workspace!=expected:raise ValueError(f'This training operation requires workspace: {expected}')
         if self.action == 'train_short' and self.scene not in spec.scene_ids('train'):

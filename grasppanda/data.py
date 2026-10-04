@@ -32,17 +32,20 @@ def plan(dataset, root='', profile='starter', include=None):
     if profile == 'starter':
         selection = record.get('starter', {})
         files, bundles = selection.get('files', []), selection.get('bundles', [])
+        assemblies = selection.get('assemblies', [])
         description = selection.get('description',
             'Use the official download links in Guide → Datasets. No small starter set is registered for this dataset.')
     else:
-        files, bundles = record.get('archives', []), []
+        files, bundles, assemblies = record.get('archives', []), [], []
         if include:
             files = [r for r in files if any(fnmatch.fnmatchcase(PurePosixPath(r['path']).name,p) for p in include)]
             if not files: raise ValueError('No registered archives match --include')
         description = 'Pinned author archives. Extraction is a separate step; see Guide → Datasets.'
         if not files: description = 'Use the author full-download instructions in Guide → Datasets.'
     members = [m for b in bundles for m in b['members']]
-    for row in [*files, *members]: _relative(row['path'])
+    for row in [*files, *members, *assemblies]: _relative(row['path'])
+    for row in assemblies:
+        for name in row['parts']: _relative(name)
     return dict(dataset=dataset,title=spec.title,profile=profile,
         root=str(Path(root).expanduser().resolve()) if root else '',
         available=bool(files or bundles),description=description,
@@ -50,8 +53,8 @@ def plan(dataset, root='', profile='starter', include=None):
         terms=record.get('terms','See the official dataset download terms.'),
         download_bytes=sum(r['bytes'] for r in files)+sum(b['bytes'] for b in bundles if b.get('format')=='zip'),
         stream_limit_bytes=sum(b['max_download_bytes'] for b in bundles if b.get('format')!='zip'),
-        installed_bytes=sum(r['bytes'] for r in [*files,*members]),
-        files=files,bundles=bundles)
+        installed_bytes=sum(r['bytes'] for r in [*files,*members,*assemblies]),
+        files=files,bundles=bundles,assemblies=assemblies)
 
 
 def _verified(path, row):
@@ -176,6 +179,19 @@ def fetch(dataset, root, profile='starter', include=None, progress=print):
         for bundle in selection['bundles']:
             if bundle.get('format') == 'zip': _extract_zip(root,bundle,progress)
             else: _extract_starter(root,bundle,progress)
+        for row in selection['assemblies']:
+            target = _target(root,row['path'])
+            if not _verified(target,row):
+                target.parent.mkdir(parents=True,exist_ok=True)
+                temporary = target.with_name(target.name+'.download')
+                if temporary.is_symlink(): raise ValueError('Refusing a symbolic partial file')
+                with temporary.open('wb') as output:
+                    for name in row['parts']:
+                        with _target(root,name).open('rb') as source:
+                            while value := source.read(1024*1024): output.write(value)
+                if not _verified(temporary,row): raise ValueError('Missing assembled dataset file')
+                temporary.replace(target)
+            progress('Verified '+row['path'])
         progress('Data verified. '+('Extract the archives using Guide → Datasets.' if profile=='archives' else 'Load the dataset preset, download its weights, then Check current form.'))
     return selection
 

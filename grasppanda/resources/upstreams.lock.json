@@ -226,5 +226,11 @@
     "repository": "https://github.com/NVlabs/GraspGen",
     "path": "upstream/object_centric/graspgen",
     "pinned_commit": "2dd8852e1be60f5f9d277fafcc621835cdf59110"
+  },
+  {
+    "id": "targonet",
+    "repository": "https://github.com/TARGO-benchmark/TARGO",
+    "path": "upstream/target_driven/targo",
+    "pinned_commit": "e71d00e6c081aa39a164a6a402375aa75173ff80"
   }
 ]

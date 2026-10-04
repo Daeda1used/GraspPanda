@@ -251,6 +251,19 @@ wheels = [
 ]
 
 [[package]]
+name = "axial-positional-embedding"
+version = "0.3.12"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/12/e6/294c09aa82ccfb8ea18276cbce61964f35758f5de28f2677acf4fd71fcce/axial_positional_embedding-0.3.12.tar.gz", hash = "sha256:10d98f342f8fa0d4d3d20b36ed27fb0fc63f1d398202b9165e07bc9d6130bc17", size = 6312, upload-time = "2025-02-25T17:06:32.783Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/f9/25753b9de3029d3eb2487755520b98eb72b0cb562d8974329c6e19831063/axial_positional_embedding-0.3.12-py3-none-any.whl", hash = "sha256:f5708106b18903c3b99aced0bfa79d1ae6f708dae34f56e641e8c24dbc06b02f", size = 6726, upload-time = "2025-02-25T17:06:31.811Z" },
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -485,6 +498,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a0/d4/5911a7618acddc3f594ddf144ecd8a03c29074a540f4494670ad8f153efe/colour-0.1.5.tar.gz", hash = "sha256:af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee", size = 24776, upload-time = "2017-11-19T23:20:08.015Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/74/46/e81907704ab203206769dee1385dc77e1407576ff8f50a0681d0a6b541be/colour-0.1.5-py2.py3-none-any.whl", hash = "sha256:33f6db9d564fadc16e59921a56999b79571160ce09916303d35346dddc17978c", size = 23772, upload-time = "2017-11-19T23:20:04.56Z" },
+]
+
+[[package]]
+name = "colt5-attention"
+version = "0.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "local-attention" },
+    { name = "packaging" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5a/20/ec563faeed84cca4bab13be2e6a6e73af6489e9700003c6fe4636ec2c755/colt5_attention-0.11.2.tar.gz", hash = "sha256:839d746a4f725fd6554328c5a683c6227a938118c475a7e0b68e9382db4e1437", size = 20895, upload-time = "2026-08-14T14:32:48.622Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/48/be3872aedd6dcd99475be98a5e55088f10b32cfb3dfb3e8c57cd83e1b70e/colt5_attention-0.11.2-py3-none-any.whl", hash = "sha256:fd03b28ba55a6a3a03e63cbd5c2c414b3d886a6ee399766f659c77038280a489", size = 23624, upload-time = "2026-08-14T14:32:47.413Z" },
 ]
 
 [[package]]
@@ -1044,7 +1072,7 @@ wheels = [
 
 [[package]]
 name = "grasppanda"
-version = "0.59.0"
+version = "0.60.0"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1080,6 +1108,7 @@ dependencies = [
     { name = "kornia" },
     { name = "launchertemplate" },
     { name = "lightning" },
+    { name = "linear-attention-transformer" },
     { name = "matplotlib" },
     { name = "mesh-to-sdf" },
     { name = "meshcat" },
@@ -1099,6 +1128,7 @@ dependencies = [
     { name = "pybind11" },
     { name = "pycocotools" },
     { name = "pymcubes" },
+    { name = "pysdf" },
     { name = "python-fcl" },
     { name = "pytorch-ignite" },
     { name = "pytorch-kinematics" },
@@ -1127,6 +1157,7 @@ dependencies = [
     { name = "torch" },
     { name = "torch-geometric" },
     { name = "torchsummary" },
+    { name = "torchtyping" },
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "transformers" },
@@ -1178,6 +1209,7 @@ requires-dist = [
     { name = "kornia", specifier = ">=0.8.2" },
     { name = "launchertemplate", git = "https://github.com/Nx1021/LauncherTemplate?rev=eb8d0df9a0fa1d0b66934e013df6fe64030d8e33" },
     { name = "lightning", specifier = ">=2.6.5" },
+    { name = "linear-attention-transformer", specifier = "==0.19.1" },
     { name = "matplotlib", specifier = "<3.9" },
     { name = "mesh-to-sdf", specifier = "==0.0.15" },
     { name = "meshcat", specifier = "==0.3.2" },
@@ -1197,6 +1229,7 @@ requires-dist = [
     { name = "pybind11", specifier = ">=3.1.0" },
     { name = "pycocotools", specifier = ">=2.0.11" },
     { name = "pymcubes", specifier = ">=0.1.6" },
+    { name = "pysdf", specifier = "==0.1.9" },
     { name = "python-fcl", specifier = "==0.7.0.8" },
     { name = "pytorch-ignite", specifier = ">=0.5.5" },
     { name = "pytorch-kinematics", specifier = ">=0.10.0" },
@@ -1225,6 +1258,7 @@ requires-dist = [
     { name = "torch", specifier = "==2.5.1", index = "https://download.pytorch.org/whl/cu118" },
     { name = "torch-geometric", specifier = "==2.6.1" },
     { name = "torchsummary" },
+    { name = "torchtyping", specifier = "==0.1.5" },
     { name = "torchvision", specifier = "==0.20.1", index = "https://download.pytorch.org/whl/cu118" },
     { name = "tqdm" },
     { name = "transformers", specifier = "==5.0.0" },
@@ -1388,6 +1422,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/78/03/adfa2bf3a9eef568a85f2e7cf18ce1938e7aa0b5257c432e5eb48f89960a/hydra_core-1.3.6.tar.gz", hash = "sha256:8c4c215b6cfba68e9a4e76f565bd7399fc2a86b93cfe8cb7328b046834dfbee5", size = 3272413, upload-time = "2026-08-29T14:36:08.092Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d5/fd/612cc7905787100dc9225ae6ad71b42b60cbc23cd56ca55afcdd1e000f81/hydra_core-1.3.6-py3-none-any.whl", hash = "sha256:55951f49c7e19c29f4281cce2eeaa6e73ef6c5620093a4efb402a7e4b839fc38", size = 163055, upload-time = "2026-08-29T14:36:06.385Z" },
+]
+
+[[package]]
+name = "hyper-connections"
+version = "0.4.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "torch" },
+    { name = "torch-einops-utils" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/2e/47f00583d958527f006459e0e769aa3b20dc61b7b1916df1fa0b9820a192/hyper_connections-0.4.11.tar.gz", hash = "sha256:d4f852733cf8595b2b15e81597ec0ce931907f284a812272c03edea0a4ef12e3", size = 17864, upload-time = "2026-05-13T18:28:47.553Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/2d/23143d9e5af1b6a2e7ed4e5f88a6c0cbf7587563acb8f15a740b726ce07f/hyper_connections-0.4.11-py3-none-any.whl", hash = "sha256:92a8d24340ef6dbf2a356b1f2e74ebb877d680aa96afc6f9f1cff636ab2e55f0", size = 29558, upload-time = "2026-05-13T18:28:46.304Z" },
 ]
 
 [[package]]
@@ -1732,6 +1780,35 @@ wheels = [
 ]
 
 [[package]]
+name = "linear-attention-transformer"
+version = "0.19.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "axial-positional-embedding" },
+    { name = "einops" },
+    { name = "linformer" },
+    { name = "local-attention" },
+    { name = "product-key-memory" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1a/f4/e7aedb94bc94583983d2371eb987943e000c82907a32a4353ba64881ebb0/linear_attention_transformer-0.19.1.tar.gz", hash = "sha256:8ef53a62ce43d56d3cd58cbd372645079e19fc601145440bb6530ee27ae0a9ca", size = 13154, upload-time = "2021-09-07T20:16:58.69Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/42/25383874182050502e2c5b1ed0895b326f87e77243f0c26b05700f330d51/linear_attention_transformer-0.19.1-py3-none-any.whl", hash = "sha256:4d0ea2d7953210c7d5516c52028c2a07efc76cd799944476e1d5171f65c5efe8", size = 12940, upload-time = "2021-09-07T20:16:57.445Z" },
+]
+
+[[package]]
+name = "linformer"
+version = "0.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/a1/a3834aec6591c141e54ec0cd7311432708ec19f6ee1d5dd9bf4a79a72c67/linformer-0.2.3.tar.gz", hash = "sha256:747a4dc025a557d164b61170f140ec4aa37cfca3ce088318f3d5f39194cfcaba", size = 6518, upload-time = "2024-01-05T20:40:37.23Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/d0/72ebb12edbfd28ae8e9838db10dd6e5a1ecfa1958bcf769e8f2e1df4698e/linformer-0.2.3-py3-none-any.whl", hash = "sha256:6e44ab72443014582c967d4323e8034e8e0f51e9a0ab360c22c4e4c47366f13e", size = 6172, upload-time = "2024-01-05T20:40:35.252Z" },
+]
+
+[[package]]
 name = "llvmlite"
 version = "0.43.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1742,6 +1819,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/b2/4429433eb2dc8379e2cb582502dca074c23837f8fd009907f78a24de4c25/llvmlite-0.43.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c1da416ab53e4f7f3bc8d4eeba36d801cc1894b9fbfbf2022b29b6bad34a7df2", size = 42857277, upload-time = "2024-06-13T18:08:40.822Z" },
     { url = "https://files.pythonhosted.org/packages/6b/99/5d00a7d671b1ba1751fc9f19d3b36f3300774c6eebe2bcdb5f6191763eb4/llvmlite-0.43.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:977525a1e5f4059316b183fb4fd34fa858c9eade31f165427a3977c95e3ee749", size = 43871781, upload-time = "2024-06-13T18:08:46.41Z" },
     { url = "https://files.pythonhosted.org/packages/20/ab/ed5ed3688c6ba4f0b8d789da19fd8e30a9cf7fc5852effe311bc5aefe73e/llvmlite-0.43.0-cp311-cp311-win_amd64.whl", hash = "sha256:d5bd550001d26450bd90777736c69d68c487d17bf371438f975229b2b8241a91", size = 28107433, upload-time = "2024-06-13T18:08:50.834Z" },
+]
+
+[[package]]
+name = "local-attention"
+version = "1.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "hyper-connections" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/b4/7cc5b3122ff63d58c7dd58cb122edfc8f5c74c88b14fcd22b444f0527952/local_attention-1.11.2.tar.gz", hash = "sha256:94e48fec748e96fa81ac6c3e27a357950eaab22cd8f69a10c50b23d6eec8f09c", size = 10918, upload-time = "2025-07-16T14:30:37.094Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/f6/074ef5c98f2d062177af24a9e20db20b009d141e4ca827c1e419461595b0/local_attention-1.11.2-py3-none-any.whl", hash = "sha256:8bbb03cef6a6f0b694de64f9ecd81886fd1e73ef367b57f02995b469ac52fd16", size = 9504, upload-time = "2025-07-16T14:30:35.9Z" },
 ]
 
 [[package]]
@@ -2505,6 +2596,20 @@ wheels = [
 ]
 
 [[package]]
+name = "product-key-memory"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colt5-attention" },
+    { name = "einops" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d2/15/88ff08fc280ee8fe702379699e57220aebaf4a676dc740ef6b0a97b3a26d/product_key_memory-0.3.0.tar.gz", hash = "sha256:e4961ee71da62a25e6740bfca693feef20f4503e1049233c8684c27def065a2a", size = 36610161, upload-time = "2025-11-01T16:09:58.921Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/16/83bd0a7213e5f38713a565ce3b62d53d7ddec7ac0dfa1aa18b0144b48e9f/product_key_memory-0.3.0-py3-none-any.whl", hash = "sha256:bea0b37808906f173aa05f54bcda508d9e22c63055513124022c503dfa2e5c70", size = 8254, upload-time = "2025-11-01T16:09:56.869Z" },
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.53"
 source = { registry = "https://pypi.org/simple" }
@@ -2822,6 +2927,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/4d/5a/2a3e5bfd83071a81e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/28/88/174c28b9d3d03cf6d8edb6f637458f30f1cf1a2bd7a617cbd9dadb1740f6/pyrender-0.1.45-py3-none-any.whl", hash = "sha256:5cf751d1f21fba4640e830cef3a0b5a95ed0f05677bf92c6b8330056b4023aeb", size = 1214061, upload-time = "2021-02-18T18:56:27.275Z" },
 ]
+
+[[package]]
+name = "pysdf"
+version = "0.1.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/72/7fa831288ed26b7116ef04c413a51298e68e3b6fab0888f62a85da5b239a/pysdf-0.1.9.tar.gz", hash = "sha256:d0639838ec3adcee3499d37290cda217fc1f0834e30a4167da04ae062087fa7b", size = 47427, upload-time = "2023-07-13T03:51:08.936Z" }
 
 [[package]]
 name = "pyserial"
@@ -3790,6 +3901,19 @@ wheels = [
 ]
 
 [[package]]
+name = "torch-einops-utils"
+version = "0.1.34"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/ea/982c66b9e23a2f39d0ee56cf5cbc77962a733f63425acb4aabae264f7851/torch_einops_utils-0.1.34.tar.gz", hash = "sha256:062b6340b074d47af4457189ed155c5fb8d03b026ab39054d9ed6f9a0e7ca5a5", size = 27242, upload-time = "2026-09-30T15:18:57.071Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/5a/c6f36ac2bad5f5881a5449656405e10836798236e9b87ad728282ed4a601/torch_einops_utils-0.1.34-py3-none-any.whl", hash = "sha256:1ac5b113cd1d1fb04498c3857441f52a03c07b3da874bd9f3ee59e43ec25a54c", size = 17600, upload-time = "2026-09-30T15:18:56.082Z" },
+]
+
+[[package]]
 name = "torch-geometric"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3830,6 +3954,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5b/64/aa68ef646bcccab489cac2a85d366559df7d9d24406dbbf3344703cbe33f/torchsummary-1.5.1.tar.gz", hash = "sha256:981bf689e22e0cf7f95c746002f20a24ad26aa6b9d861134a14bc6ce92230590", size = 3749, upload-time = "2018-09-26T05:07:30.226Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7d/18/1474d06f721b86e6a9b9d7392ad68bed711a02f3b61ac43f13c719db50a6/torchsummary-1.5.1-py3-none-any.whl", hash = "sha256:10f41d1743fb918f83293f13183f532ab1bb8f6639a1b89e5f8592ec1919a976", size = 2826, upload-time = "2018-09-26T05:07:28.635Z" },
+]
+
+[[package]]
+name = "torchtyping"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+    { name = "typeguard" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0c/b2/9099ac2d76ebe538d527ef73844bcfa1296a5c75bd9f2d489e862d47bb42/torchtyping-0.1.5.tar.gz", hash = "sha256:fb51e1792536223e2497b1e106ed0cbe681f7324044599cb718d03be3f2b3851", size = 23067, upload-time = "2024-08-01T02:44:53.579Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/33/3915d3a985bf3914aadfc4e24438a8499c0cd91af0c6d251ad5b773bc310/torchtyping-0.1.5-py3-none-any.whl", hash = "sha256:429d76e16b08a2409226320565d557d4ba3d0d6f544db3e5dc4cf690ffa2a3bd", size = 17992, upload-time = "2024-08-01T02:44:51.857Z" },
 ]
 
 [[package]]
@@ -3959,6 +4096,15 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/86/17/d9a5cf4fcf46291856d1e90762e36cbabd2a56c7265da0d1d9508c8e3943/triton-3.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f34f6e7885d1bf0eaaf7ba875a5f0ce6f3c13ba98f9503651c1e6dc6757ed5c", size = 209506424, upload-time = "2024-10-14T16:05:42.337Z" },
+]
+
+[[package]]
+name = "typeguard"
+version = "2.13.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/38/c61bfcf62a7b572b5e9363a802ff92559cb427ee963048e1442e3aef7490/typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4", size = 40604, upload-time = "2021-12-10T21:09:39.158Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/bb/d43e5c75054e53efce310e79d63df0ac3f25e34c926be5dffb7d283fb2a8/typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1", size = 17605, upload-time = "2021-12-10T21:09:37.844Z" },
 ]
 
 [[package]]

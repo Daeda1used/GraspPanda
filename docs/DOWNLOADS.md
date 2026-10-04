@@ -424,3 +424,14 @@ The registry selects one pinned checkpoint per modality and verifies its size an
 | Paper | [ICRA 2026 PDF](https://arxiv.org/pdf/2507.13097) |
 
 `./panda data graspgen --root /data/GraspGen --fetch` installs the four-object starter. `./panda weights graspgen --camera synthetic-depth` downloads the paired Franka Panda weights and configuration. Downloads retain verified files and resume interrupted direct transfers. Source revisions, URLs, byte counts and SHA-256 hashes are in the executable registries and `./panda describe graspgen --json`. [Setup and full-release layout](DATASETS.md#graspgen).
+
+## TARGO
+
+| Artifact | Original release |
+|---|---|
+| Synthetic scenes and grasp labels | [TARGO dataset](https://huggingface.co/datasets/randing2000/TARGO) |
+| Implementation and minimal test scene | [TARGO-benchmark/TARGO](https://github.com/TARGO-benchmark/TARGO) |
+| TARGO-Net and AdaPoinTr checkpoints | [TARGO-Net weights](https://huggingface.co/randing2000/TARGO-Net) |
+| Paper | [IJCV 2026 PDF](https://arxiv.org/pdf/2407.06168) |
+
+`./panda data targo --root /data/TARGO --fetch` installs a 5.2 MB original-label starter. `./panda weights targonet --camera synthetic-depth` installs both official models. [Full dataset layout, inputs and training](DATASETS.md#targo). URLs, source revisions, byte ranges and hashes are registered; no dataset or weight binary is bundled in the Git repository.

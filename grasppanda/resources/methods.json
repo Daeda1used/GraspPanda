@@ -626,5 +626,56 @@
       }
     },
     "configuration_reference": "docs/REFERENCE.md#graspgen-training"
+  },
+  {
+    "id": "targonet",
+    "name": "TARGO-Net",
+    "repository": "https://github.com/TARGO-benchmark/TARGO",
+    "path": "upstream/target_driven/targo",
+    "group": "target_driven/pointcloud",
+    "datasets": [
+      "targo"
+    ],
+    "paper_title": "TARGO: Benchmarking Target-driven Object Grasping under Occlusions",
+    "input_note": "Single-view depth-derived scene and target points with supplied target masks. Frozen AdaPoinTr completes the target before native TARGO-Net prediction.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "IJCV 2026",
+      "paper_url": "https://arxiv.org/pdf/2407.06168",
+      "adapter_note": "Pinned author networks, weights, data inputs, decoder and grasp objective. Toolbox adds finite epochs, base-scene-disjoint validation, strict failures and optimizer/RNG resume. Native geometry and completion operators compile in a separate cache. Simulator evaluation and mesh-only URDF utilities remain upstream; no component replacements are registered."
+    },
+    "configuration_reference": "docs/REFERENCE.md#targo-training",
+    "configuration_parameters": {
+      "dataset_options.train_fraction": {
+        "default": 0.9,
+        "minimum": 0.05,
+        "maximum": 0.95,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.split_seed": {
+        "default": 0,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.quality_threshold": {
+        "default": 0.9,
+        "minimum": 0,
+        "maximum": 1,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.outside_threshold": {
+        "default": 0.2,
+        "minimum": 0.01,
+        "maximum": 0.99,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.force_detection": {
+        "default": true,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "learning_rate": {
+        "default": 0.0002,
+        "ui": "Training settings \u2192 Learning rate"
+      }
+    }
   }
 ]

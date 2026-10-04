@@ -169,6 +169,9 @@ class JobManager:
         if config.method == 'graspgen':
             from .integrations.graspgen import assets
             provenance.setdefault('auxiliary_weights',{}).update({str(path):digest(path) for path in assets(config).values()})
+        if config.method == 'targonet':
+            from .integrations.targo import assets
+            provenance.setdefault('auxiliary_weights',{}).update({str(path):digest(path) for path in assets(config).values()})
         from .refinement import enabled as refinement_enabled, artifacts as refinement_artifacts
         if refinement_enabled(config):provenance['refinement_artifacts'] = refinement_artifacts(config)
         provenance['runtime_lock_sha256'] = digest(ROOT/'uv.lock')

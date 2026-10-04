@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.59.0"
+version = "0.60.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -98,6 +98,9 @@ dependencies = [
   "yourdfpy==0.0.56",
   "meshcat==0.3.2",
   "python-fcl==0.7.0.8",
+  "linear-attention-transformer==0.19.1",
+  "torchtyping==0.1.5",
+  "pysdf==0.1.9",
 ]
 
 [tool.uv]
