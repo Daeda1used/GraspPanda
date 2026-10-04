@@ -53,7 +53,7 @@
 <circle cx="253" cy="314" r="2.5" fill="#399689"/>
 <circle cx="239" cy="317" r="2.5" fill="#399689"/>
 <text x="64" y="377" font-size="14" fill="#4e6679" font-weight="400">RGB-D · point clouds · sequences</text>
-<text x="64" y="403" font-size="13" fill="#4e6679" font-weight="400">Real and synthetic cluttered scenes</text>
+<text x="64" y="403" font-size="13" fill="#4e6679" font-weight="400">Real scenes · synthetic object views</text>
 <text x="64" y="425" font-size="13" fill="#4e6679" font-weight="400">Dataset-specific observation protocols</text>
 <rect x="404" y="242" width="126" height="83" rx="8" fill="#edf3fb" stroke="#bfd1e6"/>
 <text x="418" y="274" font-size="17" fill="#162b40" font-weight="700">Encoder</text>

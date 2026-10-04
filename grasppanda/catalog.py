@@ -65,7 +65,8 @@ def method_description(method, dataset=None):
             'modules': 'Compose modules → selectors and Component parameters by slot',
             'training': 'Training settings → Trainer parameters; JSON/YAML trainer mapping',
             'full_config': 'Configuration editor → Generate from form → edit JSON',
-            'reference': 'docs/REFERENCE.md',
+            'reference': item.get('configuration_reference','docs/REFERENCE.md'),
+            'parameters': item.get('configuration_parameters',{}),
         },
     }
 
@@ -94,6 +95,12 @@ def format_method(description):
         lines.append(f"- `{slot['configuration_path']}`: "+', '.join(f'`{c}`' for c in slot['choices']))
     if not description['components']:
         lines.append('This adapter retains its native architecture; no interchangeable slots are registered.')
+    parameters = description['configuration']['parameters']
+    if parameters:
+        lines += ['', '| Parameter | Default | Where to configure |', '|---|---|---|']
+        for name,rule in parameters.items():
+            lines.append(f"| `{name}` | `{rule['default']}` | {rule['ui']} |")
+        lines += ['', '[Parameter guide](https://github.com/Daeda1used/GraspPanda/blob/main/'+description['configuration']['reference']+')']
     lines += ['', 'Use **Compose modules** for compatible choices and accepted parameter names. '
               '**Configuration editor** stores the full experiment as JSON. '
               '**Guide → Modules / Usage** explains checkpoint transfer and training.',

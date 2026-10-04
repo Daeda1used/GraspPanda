@@ -31,7 +31,7 @@ sudo apt-get update
 sudo apt-get install -y build-essential cmake pkg-config python3 python3-dev \
   git ca-certificates curl unzip p7zip-full \
   libopenblas-dev libeigen3-dev libcgal-dev libboost-all-dev \
-  libgmp-dev libmpfr-dev libgl1 libglib2.0-0 libgomp1 libpcl-dev
+  libgmp-dev libmpfr-dev libgl1 libegl1 libglu1-mesa libglib2.0-0 libgomp1 libpcl-dev
 export GRASPPANDA_CUDA_HOME=/usr/local/cuda-11.8
 ./panda install
 ./panda doctor
@@ -52,6 +52,7 @@ All integrated methods use one environment. Rerun `./panda install` after updati
 |---|---|
 | Missing `nvcc` or wrong CUDA release | Set `GRASPPANDA_CUDA_HOME` to the CUDA 11.8 toolkit directory. |
 | No CUDA GPU visible / unsupported architecture | Check the NVIDIA driver and `CUDA_VISIBLE_DEVICES`; use one of the GPU architectures listed above. The installer checks this before native compilation. |
+| GraspGen cannot initialize EGL | Install `libegl1` and `libglu1-mesa`; ensure the NVIDIA graphics/EGL driver is visible. CUDA compute alone does not provide headless rendering. |
 | Undefined symbol / incompatible CUDA extension | Rebuild with `./panda install` using the locked environment; do not reuse wheels from a different ABI. |
 | Out of memory during compilation | Set `MAX_JOBS=2` before running the installer. |
 | Google Drive quota or academic mirror unavailable | Retry later or manually download the exact registered file; paths and checksums are in `grasppanda/resources/checkpoints.json`. |

@@ -1825,3 +1825,47 @@ Outputs are **table-frame** grasps under `predictions/scene_XXXX/CAMERA/result.n
 Saved `pipeline_smoke` and `train_check` actions are read as `recipe` and `train_short`. The former `train_smoke` action now uses one update of the short trainer, including its native batching, required initialization checkpoint and checkpoint output. Newly generated configurations use the current names.
 
 </details>
+
+## GraspGen training
+
+Select **GraspGen** and **Train across epochs**, then expand **Method training stages**. The stage selector writes the same `trainer` mapping used by the CLI. Official networks, optimizer parameter groups and checkpoints remain distinct from the toolbox's finite training loop. Both stages retain native targets and objectives.
+
+| Configuration | Control | Meaning |
+|---|---|---|
+| `trainer.stage` | GraspGen training stage | `generator`: diffusion translation/rotation loss; `discriminator`: native top-k BCE |
+| `trainer.grasps_per_object` | Trainer parameters | Default `40`; multiples of 20 from 20–1,000 preserve native sampling ratios |
+| `learning_rate` | Learning rate | Default `1e-5` for fine-tuning; Native AdamW groups: weight decay `0.05`, except normalization/embedding and positional-bias parameters |
+| `batch_size`, `epochs` | Training settings | Objects per update and total completed epochs; final partial batches are retained |
+| `train_batch_limit` | Epoch settings | `0`: whole installed training split; positive: bounded updates over selected objects |
+| `scene`, `frames` | First object / Object count | Selection for inference, short training and bounded epochs |
+| `seed` | Input & preprocessing | View sampling, native target sampling and model random state |
+| `checkpoint` | Checkpoint on server | Official generator with registered companion discriminator, or a paired toolbox checkpoint |
+| `train_checkpoint_mode` | Checkpoint mode | `initialize` starts a new stage optimizer; `resume` restores a saved epoch |
+
+```bash
+./panda init --example graspgen-train-generator --dataset-root /data/GraspGen -o generator.local.yaml
+./panda run generator.local.yaml
+./panda init --example graspgen-train-discriminator --dataset-root /data/GraspGen -o discriminator.local.yaml
+```
+
+Each saved `checkpoint.pt` includes **both networks**, the active stage's optimizer, completed epochs/updates, RNG states and data/configuration identity. To train the discriminator after the generator, use its paired checkpoint with `trainer.stage: discriminator` and `train_checkpoint_mode: initialize`. To continue the same stage, select `resume`, keep its data/configuration and increase `epochs`. Resume rejects changed stages or training settings. Training enables PyTorch deterministic algorithms and seeds rendering independently of model noise. Third-party CUDA kernels and driver differences may still prevent bitwise-identical retraining across processes or devices.
+
+The discriminator retains the native positive, released-negative, hard-negative and free-space sampling mix. The two on-policy categories added in the pinned source have zero weight because no on-policy dataset is supplied. GLB scenes are concatenated with their scene transforms before native collision sampling. Native losses and finite gradients are checked before each update. Invalid render/visibility samples are retried up to eight times; a persistent failure stops the job with its object UUID. No objects are silently excluded through a persistent denylist.
+
+Use **Prepare inference from checkpoint** on a completed run to inspect its paired model on the validation split. `checkpoint: ''` initializes both networks randomly; a model with an untrained companion network is not suitable for confidence-ranked inference. Stage loss is an optimization diagnostic, not grasp success or benchmark AP. The adapter does not currently register encoder, loss, optimizer or scheduler replacements, multi-worker rendering, or simulation evaluation.
+
+## Project layers and ownership
+
+| Layer | Location | Ownership and purpose |
+|---|---|---|
+| Experiment contract | `grasppanda/config.py` | Validated JSON/YAML shared by the browser, CLI and queue |
+| Dataset protocol | `grasppanda/datasets.py`, `grasppanda/integrations/` | Observation, split, target and evaluation semantics; each dataset declares compatible operations |
+| Method adapter | `grasppanda/methods/` | Toolbox integration around original model code; adaptation details appear in the method card |
+| Interchangeable components | `grasppanda/components.py`, `grasppanda/module_options.py`, `grasppanda/modules/` | Registered slots, accepted parameters and executable replacements |
+| Original implementations | `upstream/` after `./panda fetch` | Separately downloaded source grouped by observation/model family; pinned by `resources/upstreams.lock.json` |
+| Artifact sources | `grasppanda/resources/checkpoints.json`, `dataset_downloads.json` | Original URLs, revisions, hashes and bounded starter definitions |
+| Generated workspace | Configured storage volume | Checkpoints, source clones, caches, logs, data and experiment outputs stay outside the source distribution |
+
+A method may serve multiple datasets without duplicating its original source. Conversely, a shared dataset does not imply shared modules: image-space rectangles, suction vectors, object-centric gripper poses and dexterous hand states keep separate contracts. Only compatible, implemented slots appear in **Compose modules**. Use **Method details & input requirements** for source identity and adaptation notes; **Training settings** for stage and optimization controls; **Configuration editor** for the complete saved experiment.
+
+`./panda describe METHOD --dataset DATASET --json` exposes the same source revisions, component rules and weight records used by the interface. Every queued run saves its resolved configuration, toolbox/source revisions and artifact provenance. Keep data and experiment roots on mounted storage; the current queue executes on one host and is not a distributed cluster scheduler.

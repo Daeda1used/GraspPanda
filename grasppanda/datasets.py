@@ -25,7 +25,7 @@ class DatasetSpec:
 
     @property
     def inference_split(self):
-        return next((name for name in ('test_seen', 'test', 'val') if name in self.splits), next(iter(self.splits)))
+        return next((name for name in ('test_seen', 'test', 'val', 'valid') if name in self.splits), next(iter(self.splits)))
 
     def scene_ids(self, split):
         if split not in self.splits:
@@ -156,3 +156,16 @@ register_dataset(DatasetSpec('suctionnet1b', 'SuctionNet-1B', ('realsense',),
     default_method='suctionnet_rgbd', runner='grasppanda.methods.suctionnet',
     hidden_controls=('num_points','collision_thresh')),
     'grasppanda.integrations.suctionnet1b')
+
+
+register_dataset(DatasetSpec('graspgen', 'GraspGen', ('synthetic-depth',),
+    {'train':(0,8515),'valid':(0,8515)}, 1,
+    ('object_mesh','rendered_depth','grasp_poses','simulation_labels'),
+    'https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen',
+    method_actions={'graspgen':('infer','train_short','train')},
+    protocol_note='Object-centric partial-depth protocol with Franka Panda poses. Author train/valid UUID membership is preserved. '
+                  'Generator and discriminator have separate training stages. The starter contains four objects; '
+                  'training losses and prediction confidences are not simulated grasp success.',
+    default_method='graspgen', scene_label='First object in split', frame_label='Frame (always 0)',
+    runner='grasppanda.methods.graspgen', hidden_controls=('num_points','frame','collision_thresh')),
+    'grasppanda.integrations.graspgen')

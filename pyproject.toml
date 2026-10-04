@@ -1,6 +1,6 @@
 [project]
 name = "grasppanda"
-version = "0.58.0"
+version = "0.59.0"
 description = "Modular visual grasping toolbox with a shared runtime and experiment UI"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -95,6 +95,9 @@ dependencies = [
   "ikpy==3.4.2",
   "urdf-parser-py==0.0.4",
   "nflows",
+  "yourdfpy==0.0.56",
+  "meshcat==0.3.2",
+  "python-fcl==0.7.0.8",
 ]
 
 [tool.uv]

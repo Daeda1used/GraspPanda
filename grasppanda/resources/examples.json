@@ -2847,5 +2847,72 @@
       "learning_rate": 0.001,
       "timeout_minutes": 43200
     }
+  },
+  "graspgen-panda": {
+    "description": "GraspGen: native paired checkpoint on a rendered partial object observation.",
+    "config": {
+      "dataset": "graspgen",
+      "method": "graspgen",
+      "action": "infer",
+      "camera": "synthetic-depth",
+      "split": "valid",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 2048,
+      "workspace": "object_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspgen/graspgen_franka_panda_gen.pth",
+      "batch_size": 2,
+      "learning_rate": 1e-05
+    }
+  },
+  "graspgen-train-generator": {
+    "description": "GraspGen: finite generator fine-tuning epochs on released labels and rendered partial views.",
+    "config": {
+      "dataset": "graspgen",
+      "method": "graspgen",
+      "action": "train",
+      "camera": "synthetic-depth",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 2,
+      "num_points": 2048,
+      "workspace": "object_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspgen/graspgen_franka_panda_gen.pth",
+      "batch_size": 2,
+      "learning_rate": 1e-05,
+      "epochs": 2,
+      "trainer": {
+        "stage": "generator",
+        "grasps_per_object": 40
+      }
+    }
+  },
+  "graspgen-train-discriminator": {
+    "description": "GraspGen: finite discriminator fine-tuning epochs on released labels and rendered partial views.",
+    "config": {
+      "dataset": "graspgen",
+      "method": "graspgen",
+      "action": "train",
+      "camera": "synthetic-depth",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 2,
+      "num_points": 2048,
+      "workspace": "object_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspgen/graspgen_franka_panda_gen.pth",
+      "batch_size": 2,
+      "learning_rate": 1e-05,
+      "epochs": 2,
+      "trainer": {
+        "stage": "discriminator",
+        "grasps_per_object": 40
+      }
+    }
   }
 }

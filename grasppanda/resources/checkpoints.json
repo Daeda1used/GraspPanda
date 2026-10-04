@@ -349,5 +349,32 @@
     "bytes": 705707080,
     "sha256": "e97b531e9e69773d3aa2366defb244c2041cd4dd883c347b80b665cc784211e6",
     "note": "Author RGB-D RealSense DeepLabV3+ ResNet-101 checkpoint, strict native loading."
+  },
+  {
+    "method": "graspgen",
+    "camera": "synthetic-depth",
+    "role": "auxiliary",
+    "path": "checkpoints/graspgen/graspgen_franka_panda.yml",
+    "source": "https://huggingface.co/adithyamurali/GraspGenModels/resolve/ec1ccbb5eec0680db669246ac312a3636f16ee43/checkpoints/graspgen_franka_panda.yml",
+    "bytes": 4868,
+    "sha256": "3b666d28ffb91001ddb6ba24a2e0c11458478a986b808b493cf6fa9a987c2abd"
+  },
+  {
+    "method": "graspgen",
+    "camera": "synthetic-depth",
+    "role": "auxiliary",
+    "path": "checkpoints/graspgen/graspgen_franka_panda_dis.pth",
+    "source": "https://huggingface.co/adithyamurali/GraspGenModels/resolve/ec1ccbb5eec0680db669246ac312a3636f16ee43/checkpoints/graspgen_franka_panda_dis.pth",
+    "bytes": 165853892,
+    "sha256": "e47d703c63b54c2d11fbc1effd43898f251b4147250888541e3b16e9c0d19e1c"
+  },
+  {
+    "method": "graspgen",
+    "camera": "synthetic-depth",
+    "role": "primary",
+    "path": "checkpoints/graspgen/graspgen_franka_panda_gen.pth",
+    "source": "https://huggingface.co/adithyamurali/GraspGenModels/resolve/ec1ccbb5eec0680db669246ac312a3636f16ee43/checkpoints/graspgen_franka_panda_gen.pth",
+    "bytes": 907408223,
+    "sha256": "0597583b89b322d42ceb4e596967d6ed68d1b56cba4039895909ccd5bdc66eff"
   }
 ]

@@ -411,3 +411,16 @@ The registry selects one pinned checkpoint per modality and verifies its size an
 [Dataset and terms](https://graspnet.net/suction) · [Shared RGB-D downloads](https://graspnet.net/datasets.html) · [Official labels](https://drive.google.com/file/d/1BaZ60u5ZkudDlYHvH2mcu2EVfUc9wGK_/view) · [RGB-D RealSense weights](https://drive.google.com/file/d/18TbctdhpNXEKLYDWFzI9cT1Wnhe-tn9h/view) · [Dense evaluation clouds](https://drive.google.com/file/d/1VuyNiJKwwt_lUlTk7BPT_uZsEI8o_Y2W/view) · [Author evaluator](https://github.com/graspnet/suctionnetAPI).
 
 `./panda data suctionnet1b --root /data/SuctionNet-1B --fetch` downloads and verifies the 11 MB label archive. It does not download the shared RGB-D scenes or CAD models. `./panda weights suctionnet_rgbd --camera realsense` installs the 706 MB extracted author checkpoint from its 192 MB archive. [Setup and training instructions](DATASETS.md#suctionnet-1b).
+
+## GraspGen
+
+| Artifact | Original release |
+|---|---|
+| Dataset and author splits | [PhysicalAI-Robotics-GraspGen](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen) |
+| Official implementation | [NVlabs/GraspGen](https://github.com/NVlabs/GraspGen) |
+| Generator, discriminator and configuration | [GraspGenModels](https://huggingface.co/adithyamurali/GraspGenModels/tree/main/checkpoints) |
+| Object meshes | [Objaverse](https://huggingface.co/datasets/allenai/objaverse) |
+| Mesh attribution and individual licenses | [Author asset list](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/blob/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/grasp_data/graspgen_assets_objaverse_lvis.txt) |
+| Paper | [ICRA 2026 PDF](https://arxiv.org/pdf/2507.13097) |
+
+`./panda data graspgen --root /data/GraspGen --fetch` installs the four-object starter. `./panda weights graspgen --camera synthetic-depth` downloads the paired Franka Panda weights and configuration. Downloads retain verified files and resume interrupted direct transfers. Source revisions, URLs, byte counts and SHA-256 hashes are in the executable registries and `./panda describe graspgen --json`. [Setup and full-release layout](DATASETS.md#graspgen).

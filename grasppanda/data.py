@@ -159,7 +159,20 @@ def fetch(dataset, root, profile='starter', include=None, progress=print):
         except BlockingIOError:
             raise ValueError('A dataset download is already active for this root. Wait for it or resume after it stops.') from None
         for row in selection['files']:
-            download_file(row['url'],_target(root,row['path']),row['bytes'],row['sha256'],progress)
+            target = _target(root,row['path'])
+            if 'text' in row:
+                value = row['text'].encode('utf-8')
+                if len(value) != row['bytes'] or hashlib.sha256(value).hexdigest() != row['sha256']:
+                    raise ValueError('Invalid registered dataset metadata: '+row['path'])
+                if not _verified(target,row):
+                    target.parent.mkdir(parents=True,exist_ok=True)
+                    temporary = target.with_name(target.name+'.download')
+                    if temporary.is_symlink(): raise ValueError('Refusing a symbolic partial file')
+                    temporary.write_bytes(value); temporary.replace(target)
+                progress('Verified '+row['path'])
+            else:
+                download_file(row['url'],target,row['bytes'],row['sha256'],progress,
+                              byte_offset=row.get('source_offset'))
         for bundle in selection['bundles']:
             if bundle.get('format') == 'zip': _extract_zip(root,bundle,progress)
             else: _extract_starter(root,bundle,progress)

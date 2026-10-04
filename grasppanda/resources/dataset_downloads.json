@@ -4016,5 +4016,91 @@
         }
       ]
     }
+  },
+  "graspgen": {
+    "repository": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen",
+    "revision": "de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5",
+    "terms": "Grasp annotations: CC BY 4.0. Objaverse assets retain their individual licenses; see the author attribution list linked in Guide \u2192 Datasets.",
+    "starter": {
+      "description": "Four original Franka Panda objects: two train and two validation, preserving author split membership. Released grasp labels and original Objaverse meshes; partial depth views are rendered locally. This starter is not the full benchmark.",
+      "files": [
+        {
+          "path": "labels/96f87b33e0884fd599ef1a1c83ec5f8c.json",
+          "url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/resolve/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/grasp_data/franka_panda/shard_000.tar",
+          "source_offset": 1536,
+          "bytes": 860445,
+          "sha256": "1c07add73bde11d8e8bb6d21ab2c879dde2332e56b77108399e9bf19e3d2c2f9"
+        },
+        {
+          "path": "labels/459ce5b99da947438d3ea11d7c0d4225.json",
+          "url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/resolve/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/grasp_data/franka_panda/shard_000.tar",
+          "source_offset": 865792,
+          "bytes": 848393,
+          "sha256": "45d6b6266cb3d0fdc273e40ad24e518ceb51444bf93f5b5c66249f7ea28a7b9d"
+        },
+        {
+          "path": "labels/d15b3e6d7ca548c3b3705d29db16a412.json",
+          "url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/resolve/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/grasp_data/franka_panda/shard_000.tar",
+          "source_offset": 1718272,
+          "bytes": 861057,
+          "sha256": "44789bc93730082c4a5d50ff63b4441eca42a9ed7b5cb4308ab4223f56c84328"
+        },
+        {
+          "path": "labels/455a5ed487e7450b8a52f39897193ddf.json",
+          "url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/resolve/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/grasp_data/franka_panda/shard_000.tar",
+          "source_offset": 2583040,
+          "bytes": 847810,
+          "sha256": "c3a1ffb35ed7d25d5e31449e5569194831f8b253d910d01e1cf3a395c5b16434"
+        },
+        {
+          "path": "meshes/96f87b33e0884fd599ef1a1c83ec5f8c.glb",
+          "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/21e4e142159e2153706c23a3a02e55cec5591cea/glbs/000-008/96f87b33e0884fd599ef1a1c83ec5f8c.glb",
+          "bytes": 14715088,
+          "sha256": "1a1f4dc3880cf902ca90273840226fdc8c70f13ecc75d75d4afd4181d9f7a628"
+        },
+        {
+          "path": "meshes/459ce5b99da947438d3ea11d7c0d4225.glb",
+          "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/21e4e142159e2153706c23a3a02e55cec5591cea/glbs/000-028/459ce5b99da947438d3ea11d7c0d4225.glb",
+          "bytes": 8660568,
+          "sha256": "b712f9dae4e8edb08b675de6f8a1312723451043a0719d252cff04b821f8600c"
+        },
+        {
+          "path": "meshes/d15b3e6d7ca548c3b3705d29db16a412.glb",
+          "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/21e4e142159e2153706c23a3a02e55cec5591cea/glbs/000-072/d15b3e6d7ca548c3b3705d29db16a412.glb",
+          "bytes": 11272964,
+          "sha256": "ff12e0c06778db50bed4687248e28dba30c0a5cb10f1892a3d9615200b70424f"
+        },
+        {
+          "path": "meshes/455a5ed487e7450b8a52f39897193ddf.glb",
+          "url": "https://huggingface.co/datasets/allenai/objaverse/resolve/21e4e142159e2153706c23a3a02e55cec5591cea/glbs/000-120/455a5ed487e7450b8a52f39897193ddf.glb",
+          "bytes": 1259872,
+          "sha256": "98cc9a5ddf8ecc22ba90ef8605496449678c79c2dd21873d3d272ca0fb14cd68"
+        },
+        {
+          "path": "train.txt",
+          "text": "96f87b33e0884fd599ef1a1c83ec5f8c\n459ce5b99da947438d3ea11d7c0d4225\n",
+          "bytes": 66,
+          "sha256": "7e136933cf4b11e5e50d303393a808072d8916ceeb7d13780906ab4671f7e585"
+        },
+        {
+          "path": "valid.txt",
+          "text": "d15b3e6d7ca548c3b3705d29db16a412\n455a5ed487e7450b8a52f39897193ddf\n",
+          "bytes": 66,
+          "sha256": "6678c2e118018c862af53c90d4f540eb602f10db093b64c0543a01205b381d1c"
+        },
+        {
+          "path": "labels/map_uuid_to_path.json",
+          "text": "{\n  \"96f87b33e0884fd599ef1a1c83ec5f8c\": \"96f87b33e0884fd599ef1a1c83ec5f8c.json\",\n  \"459ce5b99da947438d3ea11d7c0d4225\": \"459ce5b99da947438d3ea11d7c0d4225.json\",\n  \"d15b3e6d7ca548c3b3705d29db16a412\": \"d15b3e6d7ca548c3b3705d29db16a412.json\",\n  \"455a5ed487e7450b8a52f39897193ddf\": \"455a5ed487e7450b8a52f39897193ddf.json\"\n}\n",
+          "bytes": 319,
+          "sha256": "0438714063de7539125f9eb461e133018f81a916c6fca5538f4e639af967fc0b"
+        },
+        {
+          "path": "meshes/map_uuid_to_path.json",
+          "text": "{\n  \"96f87b33e0884fd599ef1a1c83ec5f8c\": \"96f87b33e0884fd599ef1a1c83ec5f8c.glb\",\n  \"459ce5b99da947438d3ea11d7c0d4225\": \"459ce5b99da947438d3ea11d7c0d4225.glb\",\n  \"d15b3e6d7ca548c3b3705d29db16a412\": \"d15b3e6d7ca548c3b3705d29db16a412.glb\",\n  \"455a5ed487e7450b8a52f39897193ddf\": \"455a5ed487e7450b8a52f39897193ddf.glb\"\n}\n",
+          "bytes": 315,
+          "sha256": "9251bcd9e094e7b09960bfda857dee707e12217d6365cafa19bd1613baae6217"
+        }
+      ]
+    }
   }
 }

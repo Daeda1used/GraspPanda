@@ -32,10 +32,10 @@ def fetch(method, camera='realsense', progress=print):
 def fetch_rows(rows, progress=print):
     for record in rows:
         path = ROOT/record['path']; path.parent.mkdir(parents=True, exist_ok=True)
-        if 'source_offset' in record:
+        if 'source_offset' in record or not record.get('archive_member'):
             from .downloads import download_file
             download_file(record['source'],path,record['bytes'],record['sha256'],progress,
-                          byte_offset=record['source_offset'])
+                          byte_offset=record.get('source_offset'))
             continue
         with path.with_suffix(path.suffix+'.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)

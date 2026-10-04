@@ -220,5 +220,11 @@
     "repository": "https://github.com/graspnet/suctionnet-baseline",
     "path": "upstream/single_view/suction/suctionnet",
     "pinned_commit": "93d604dd752d2ef865c80c8ecba96218560b516f"
+  },
+  {
+    "id": "graspgen",
+    "repository": "https://github.com/NVlabs/GraspGen",
+    "path": "upstream/object_centric/graspgen",
+    "pinned_commit": "2dd8852e1be60f5f9d277fafcc621835cdf59110"
   }
 ]

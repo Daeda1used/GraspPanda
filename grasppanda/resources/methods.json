@@ -586,5 +586,45 @@
       "paper_url": "https://arxiv.org/pdf/2103.12311",
       "adapter_note": "Author model, loss, augmentations and decoder. Label scripts run one view at a time in a verified cache. Toolbox supplies finite epochs and optimizer/RNG resume; no interchangeable encoder or suction AP is registered."
     }
+  },
+  {
+    "id": "graspgen",
+    "repository": "https://github.com/NVlabs/GraspGen",
+    "path": "upstream/object_centric/graspgen",
+    "name": "GraspGen (Franka Panda)",
+    "group": "object_centric/diffusion",
+    "datasets": [
+      "graspgen"
+    ],
+    "paper_title": "GraspGen: A Diffusion-based Framework for 6-DOF Grasping",
+    "input_note": "Partial depth point clouds; native PTv3 diffusion generator and discriminator. Franka Panda output poses retain the author gripper convention.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "ICRA 2026",
+      "paper_url": "https://arxiv.org/pdf/2507.13097",
+      "adapter_note": "Author networks, rendering, supervision and losses. Toolbox supplies isolated-object partial views, finite stage-specific training and optimizer/RNG resume. GLB scene geometry is concatenated before native collision sampling. On-policy data generation and simulation evaluation remain upstream; no interchangeable encoder is registered."
+    },
+    "configuration_parameters": {
+      "trainer.stage": {
+        "default": "generator",
+        "choices": [
+          "generator",
+          "discriminator"
+        ],
+        "ui": "Training settings \u2192 Method training stages \u2192 GraspGen training stage"
+      },
+      "trainer.grasps_per_object": {
+        "default": 40,
+        "minimum": 20,
+        "maximum": 1000,
+        "multiple_of": 20,
+        "ui": "Training settings \u2192 Method training stages \u2192 Trainer parameters"
+      },
+      "learning_rate": {
+        "default": 1e-05,
+        "ui": "Training settings \u2192 Learning rate"
+      }
+    },
+    "configuration_reference": "docs/REFERENCE.md#graspgen-training"
   }
 ]

@@ -293,3 +293,45 @@ Epoch checkpoints support `initialize` and `resume`. For resume, retain the data
 For rectangle evaluation, predict **every** observation of `split: val` in one inference run (`scene: 0`, `frames` equal to its sample count, reported by **Check current form**). Then select **Evaluate predictions**, keep the same checkpoint and dataset parameters, and point **Prediction directory** to that run's `predictions/`. The verifier requires complete split coverage, matching input hashes, checkpoint and maps. `metrics.planar_iou_success` is the fraction of samples with a matching top-1 rectangle under the chosen IoU threshold and the native 30-degree angle criterion. Width maps are in pixels of the 300-pixel model input. This metric is neither physical grasp success nor GraspNet AP. Author pretrained models may have seen the selected observations; use a declared held-out training protocol for research claims.
 
 The original TIFF reader is adapted to Pillow to preserve floating-point pixels without the legacy optional TIFF codec. Encoder replacement is not registered for GR-ConvNet; its architecture and published checkpoints load strictly.
+
+## GraspGen
+
+[NVIDIA's GraspGen release](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen) contains over 57 million simulated grasps across 8,515 objects and three grippers. The current adapter supports **Franka Panda** with the official **PTv3 diffusion generator and discriminator**. Inputs are single partial depth point clouds rendered from the released object geometry. Network inputs contain no grasp labels. This is an object-centric protocol, separate from GraspNet scene detection.
+
+### Download and predict
+
+The approximately 39.3 MB starter installs four original objects: two from the author training split and two from validation. It retrieves only the required byte ranges from a pinned grasp archive, downloads the original Objaverse GLBs, and verifies every file. Rendered observations are created locally; no full mesh is passed to the predictor.
+
+```bash
+./panda data graspgen --root /data/GraspGen --fetch
+./panda weights graspgen --camera synthetic-depth
+./panda init --dataset graspgen --dataset-root /data/GraspGen -o graspgen.local.yaml
+./panda check graspgen.local.yaml
+./panda run graspgen.local.yaml
+```
+
+In the browser, select **GraspGen → Download starter data → Download registered weights → Check current form → Run current form**. The paired author weights and architecture configuration total approximately 1.07 GB. Configure [NAS storage](INSTALL.md#choose-the-storage-volume-first) before installation and downloading; datasets use the explicit root above. Both networks run in the existing shared environment.
+
+`scene` selects an object index within `train` or `valid`; `frames` is the object count and `frame` remains zero. The registered protocol uses 2,048 points from a noisy 256-pixel depth rendering, a 60-degree field of view, and an isolated object. The author renderer is retained with `prob_object_only=1` and seeded depth noise. Rendering requires a working NVIDIA EGL driver on the experiment host. Keep `workspace: object_partial`, `collision_thresh: 0` and `data_workers: 0`.
+
+Each prediction NPZ contains `points`, `poses` (N×4×4), `scores` and `object_to_observation`. Poses and points share the centered observation frame, with translations in metres and the author's Franka Panda gripper-base convention. The saved transform maps the scaled object geometry into that frame. Apply its inverse to poses when returning to the object frame. The preview shows the observation and native gripper outlines. The interactive result view and `grasp_scene.glb` export contain the top three predicted grippers. Visualization uses the author's fixed gripper opening; it is not a predicted width. These are native poses, with no invented opening width or GraspNet conversion.
+
+### Full dataset layout
+
+Use the [pinned release](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/tree/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5) for the eight `grasp_data/franka_panda/shard_*.tar` files and `uuid_index.json`. Keep the TARs intact. Copy the author `splits/franka_panda/train.txt` and `valid.txt` into the root. Download the corresponding Objaverse meshes following the [author mesh preparation instructions](https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GraspGen/blob/de99bde9c3cd9c12ff5dc448f8ed8ab09c43d2e5/scripts/download_objaverse.py), retaining UUID-to-file mapping. Mesh paths must resolve inside `meshes/`; relative paths are portable. Use a separate root for the full release and starter to preserve split identity.
+
+```text
+GraspGen/
+  train.txt
+  valid.txt
+  grasp_data/franka_panda/
+    uuid_index.json
+    shard_000.tar ... shard_007.tar
+  meshes/
+    map_uuid_to_path.json
+    <uuid>.glb
+```
+
+The starter uses `labels/<uuid>.json` plus `labels/map_uuid_to_path.json` in place of TARs. TAR readers cache file offsets under `.grasppanda/graspgen-index-v1/`, avoiding a full shard scan per object. Set `label_root` to a writable cache volume when data is read-only. Both formats retain original labels; the toolbox does not follow the historical absolute mesh paths embedded in the annotation JSON. Preflight requires every object named in the selected split to be installed, and rejects train/validation overlap. Full-release data loading is supported; operational validation uses the four-object starter, not full-dataset convergence.
+
+For **Train across epochs**, choose **Method training stages → GraspGen training stage**. See [training controls and checkpoint reuse](REFERENCE.md#graspgen-training). Inference rendering never selects views using grasp success labels; training retains native visible-grasp supervision and retries invalid views, recording the retries instead of silently omitting objects. Simulator success, on-policy label generation, other grippers and arbitrary backbone replacement remain upstream workflows.
