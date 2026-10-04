@@ -394,3 +394,14 @@ The registry fixes each weight revision, SHA256, byte size and encoder configura
 Author code is Apache-2.0; pretrained weights are CC-BY-NC-4.0. Those weight terms also matter when using or sharing a trained model initialized from them. See the [Utonia terms](https://github.com/Pointcept/Utonia#license) and [Concerto terms](https://github.com/Pointcept/Concerto#license), and [component controls](REFERENCE.md#pretrained-point-encoders) for input and fine-tuning settings.
 
 </details>
+
+## Jacquard and GR-ConvNet
+
+Download the verified official sample with `./panda data jacquard --root /data/Jacquard --fetch`. Full archives require the [dataset author’s access process](https://jacquard.liris.cnrs.fr/). The [native dataset guide](DATASETS.md#jacquard) covers the layout, splits, training and planar evaluation.
+
+| Model | Author weights | Toolbox download |
+|---|---|---|
+| GR-ConvNet RGB-D | [Jacquard RGB-D release](https://github.com/skumra/robotic-grasping/tree/183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d/trained-models/jacquard-rgbd-grconvnet3-drop0-ch32) | `./panda weights grconvnet_rgbd --camera synthetic-rgbd` |
+| GR-ConvNet depth | [Jacquard depth release](https://github.com/skumra/robotic-grasping/tree/183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d/trained-models/jacquard-d-grconvnet3-drop0-ch32) | `./panda weights grconvnet_depth --camera synthetic-rgbd` |
+
+The registry selects one pinned checkpoint per modality and verifies its size and SHA-256. Original full-model checkpoints are loaded through an allowlist of the author network and PyTorch layer classes; arbitrary checkpoint globals are rejected.

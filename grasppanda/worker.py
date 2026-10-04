@@ -274,7 +274,11 @@ def main():
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.set_num_threads(4)
-    if config.action == 'train_short' and config.dataset == 'dexgraspnet2':
+    from .datasets import get_dataset
+    runner = get_dataset(config.dataset).runner
+    if runner:
+        result = importlib.import_module(runner).run(config, out)
+    elif config.action == 'train_short' and config.dataset == 'dexgraspnet2':
         from .methods.dexgraspnet2_training import run
         result = run(config, out, config.training_steps)
     elif config.action == 'train_short' and config.dataset == 'zerograsp11b':

@@ -318,5 +318,25 @@
     "bytes": 192328665,
     "note": "SHA-256-verified byte-range download from the pinned author tar archive; the full archive is not required.",
     "source_offset": 1159890944
+  },
+  {
+    "method": "grconvnet_rgbd",
+    "path": "checkpoints/grconvnet/grconvnet_rgbd.pt",
+    "source": "https://raw.githubusercontent.com/skumra/robotic-grasping/183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d/trained-models/jacquard-rgbd-grconvnet3-drop0-ch32/epoch_48_iou_0.93",
+    "sha256": "adfb2cbbb8df2708a732e12ddc4db114f3ec399ffb5d403ca75c5b5b9e769171",
+    "bytes": 7661004,
+    "camera": "any",
+    "role": "primary",
+    "note": "Author Jacquard checkpoint; native architecture only. Published training may overlap local validation."
+  },
+  {
+    "method": "grconvnet_depth",
+    "path": "checkpoints/grconvnet/grconvnet_depth.pt",
+    "source": "https://raw.githubusercontent.com/skumra/robotic-grasping/183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d/trained-models/jacquard-d-grconvnet3-drop0-ch32/epoch_50_iou_0.94",
+    "sha256": "67d8d2a948bd24f68547bbfd851f6ae2b229f07cf7ed1b75ed8c6730c6626bc6",
+    "bytes": 7629902,
+    "camera": "any",
+    "role": "primary",
+    "note": "Author Jacquard checkpoint; native architecture only. Published training may overlap local validation."
   }
 ]

@@ -36,6 +36,14 @@ def checkpoint_camera(method, camera, dataset='graspnet1b'):
 def preset(method, dataset_root='', dataset='graspnet1b'):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if dataset == 'jacquard':
+        if not capabilities(method, dataset):
+            raise ValueError('Select a registered Jacquard method')
+        checkpoint = primary(method, 'synthetic-rgbd') or next((r['path'] for r in records(method, 'synthetic-rgbd')), '')
+        return Experiment(dataset=dataset, method=method, action='infer', dataset_root=dataset_root,
+                          camera='synthetic-rgbd', split='val', scene=0, frame=0,
+                          workspace='native_image', collision_thresh=0, checkpoint=checkpoint,
+                          batch_size=4, learning_rate=.001)
     if dataset != 'graspnet1b':
         from .datasets import get_dataset
         spec = get_dataset(dataset)

@@ -48,6 +48,7 @@ def capabilities(method, dataset='graspnet1b'):
 @dataclass(frozen=True)
 class Experiment:
     dataset: str = "graspnet1b"
+    dataset_options: dict = field(default_factory=dict)
     modules: dict = field(default_factory=dict)
     refinement: dict = field(default_factory=dict)
     loss: dict = field(default_factory=dict)
@@ -135,6 +136,13 @@ class Experiment:
         from .datasets import get_dataset
         from .components import validate_selection
         spec=get_dataset(self.dataset)
+        if not isinstance(self.dataset_options, dict):
+            raise ValueError('dataset_options must be a mapping')
+        if self.dataset == 'jacquard':
+            from .integrations.jacquard import validate_options
+            validate_options(self)
+        elif self.dataset_options:
+            raise ValueError('Dataset parameters are not registered for this dataset')
         validate_selection(self.method,self.modules,self.checkpoint_policy)
         if not capabilities(self.method, self.dataset):
             raise ValueError('This method has no adapter for the selected dataset')
@@ -159,8 +167,10 @@ class Experiment:
             raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
-        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
+        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
             raise ValueError("Unknown workspace policy")
+        if (self.dataset == 'jacquard') != (self.workspace == 'native_image'):
+            raise ValueError('Jacquard requires native_image; this policy is specific to planar image datasets')
         if (self.dataset == 'zerograsp11b') != (self.workspace == 'provided_instance_masks'):
             raise ValueError('ZeroGrasp-11B requires workspace: provided_instance_masks; this policy is specific to its instance-conditioned adapter')
         if self.action in ('infer', 'evaluate'):
@@ -194,12 +204,14 @@ class Experiment:
             raise ValueError("Training requires split: train")
         if self.action == 'train':
             expected = 'provided_instance_masks' if self.dataset == 'zerograsp11b' else 'native_demo' if self.method == 'hggd' else 'official_gt_workspace'
+            if self.dataset == 'jacquard': expected = 'native_image'
             if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
         if self.action=='train_short':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp short training supports 1–6 temporal updates per native seven-frame sequence')
             if self.method=='centergrasp' and self.camera!='kinect':raise ValueError('The native CenterGrasp training adapter requires camera: kinect')
             expected='native_demo' if self.method in (*HEATMAP,'spgrasp') else ('fused_gt_workspace' if self.method=='generalizing_grasp' else 'official_gt_workspace')
             if self.dataset == 'zerograsp11b': expected = 'provided_instance_masks'
+            if self.dataset == 'jacquard': expected = 'native_image'
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
             if self.workspace!=expected:raise ValueError(f'This training operation requires workspace: {expected}')
         if self.action == 'train_short' and self.scene not in spec.scene_ids('train'):

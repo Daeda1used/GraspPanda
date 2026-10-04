@@ -5,6 +5,7 @@ import json
 from pathlib import Path, PurePosixPath
 import tarfile
 import time
+import zipfile
 
 from .config import ROOT
 from .datasets import get_dataset
@@ -47,8 +48,8 @@ def plan(dataset, root='', profile='starter', include=None):
         available=bool(files or bundles),description=description,
         source=record.get('repository','https://graspnet.net/datasets.html'),
         terms=record.get('terms','See the official dataset download terms.'),
-        download_bytes=sum(r['bytes'] for r in files),
-        stream_limit_bytes=sum(b['max_download_bytes'] for b in bundles),
+        download_bytes=sum(r['bytes'] for r in files)+sum(b['bytes'] for b in bundles if b.get('format')=='zip'),
+        stream_limit_bytes=sum(b['max_download_bytes'] for b in bundles if b.get('format')!='zip'),
         installed_bytes=sum(r['bytes'] for r in [*files,*members]),
         files=files,bundles=bundles)
 
@@ -118,6 +119,33 @@ def _extract_starter(root, bundle, progress):
             time.sleep(2**attempt)
 
 
+def _extract_zip(root, bundle, progress):
+    """Install only registered, verified regular members of a pinned ZIP."""
+    from .downloads import download_file
+    pending = [r for r in bundle['members'] if not _verified(_target(root,r['path']),r)]
+    if not pending:
+        progress('Verified starter members: '+bundle['path']); return
+    archive_path = _target(root,bundle['path'])
+    for suffix in ('', '.download', '.lock', '.verified.json'):
+        if archive_path.with_suffix(archive_path.suffix+suffix).is_symlink():
+            raise ValueError('Refusing a symbolic archive or download sidecar')
+    download_file(bundle['url'],archive_path,bundle['bytes'],bundle['sha256'],progress)
+    with zipfile.ZipFile(archive_path) as archive:
+        for row in pending:
+            member = archive.getinfo(row['archive_member'])
+            mode = (member.external_attr >> 16) & 0o170000
+            if member.is_dir() or mode not in (0,0o100000) or member.file_size != row['bytes']:
+                raise ValueError('Unexpected registered ZIP member: '+member.filename)
+            value = archive.read(member)
+            if hashlib.sha256(value).hexdigest() != row['sha256']:
+                raise ValueError('Starter member checksum mismatch: '+member.filename)
+            target = _target(root,row['path']); target.parent.mkdir(parents=True,exist_ok=True)
+            temporary = target.with_name(target.name+'.download')
+            if temporary.is_symlink(): raise ValueError('Refusing a symbolic partial file')
+            temporary.write_bytes(value); temporary.replace(target)
+    progress(f'Installed and verified {len(pending)} starter files')
+
+
 def fetch(dataset, root, profile='starter', include=None, progress=print):
     import fcntl
     from .downloads import download_file
@@ -133,7 +161,8 @@ def fetch(dataset, root, profile='starter', include=None, progress=print):
         for row in selection['files']:
             download_file(row['url'],_target(root,row['path']),row['bytes'],row['sha256'],progress)
         for bundle in selection['bundles']:
-            _extract_starter(root,bundle,progress)
+            if bundle.get('format') == 'zip': _extract_zip(root,bundle,progress)
+            else: _extract_starter(root,bundle,progress)
         progress('Data verified. '+('Extract the archives using Guide → Datasets.' if profile=='archives' else 'Load the dataset preset, download its weights, then Check current form.'))
     return selection
 

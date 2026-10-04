@@ -538,5 +538,35 @@
       "paper_url": "https://arxiv.org/pdf/2410.23004",
       "adapter_note": "Uses the DexGraspNet 2.0 authors' implementation, including their ISAGrasp and GraspTTA baselines. Native simulation success evaluation remains upstream."
     }
+  },
+  {
+    "id": "grconvnet_rgbd",
+    "repository": "https://github.com/skumra/robotic-grasping",
+    "group": "planar/rgbd",
+    "path": "upstream/planar/grconvnet",
+    "name": "GR-ConvNet (RGB-D)",
+    "paper_title": "Antipodal Robotic Grasping using Generative Residual Convolutional Neural Network",
+    "input_note": "Jacquard planar grasps from RGB-D images; native 300-pixel model, preprocessing, losses and decoding.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2020 \u00b7 IROS",
+      "paper_url": "https://arxiv.org/pdf/1909.04810",
+      "adapter_note": "Author GR-ConvNet v3 architecture and Jacquard weights. Toolbox supplies finite epochs, resumable training and explicit split protocols; Pillow reads the original TIFF pixels. No interchangeable encoder is registered for this architecture."
+    }
+  },
+  {
+    "id": "grconvnet_depth",
+    "repository": "https://github.com/skumra/robotic-grasping",
+    "group": "planar/rgbd",
+    "path": "upstream/planar/grconvnet",
+    "name": "GR-ConvNet (Depth)",
+    "paper_title": "Antipodal Robotic Grasping using Generative Residual Convolutional Neural Network",
+    "input_note": "Jacquard planar grasps from Depth images; native 300-pixel model, preprocessing, losses and decoding.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2020 \u00b7 IROS",
+      "paper_url": "https://arxiv.org/pdf/1909.04810",
+      "adapter_note": "Author GR-ConvNet v3 architecture and Jacquard weights. Toolbox supplies finite epochs, resumable training and explicit split protocols; Pillow reads the original TIFF pixels. No interchangeable encoder is registered for this architecture."
+    }
   }
 ]

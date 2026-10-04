@@ -2686,5 +2686,104 @@
         "backbone": "pointnet"
       }
     }
+  },
+  "jacquard-rgbd": {
+    "description": "Predict planar grasps with the author Jacquard RGB-D checkpoint",
+    "config": {
+      "dataset": "jacquard",
+      "method": "grconvnet_rgbd",
+      "action": "infer",
+      "dataset_root": "/data/Jacquard",
+      "checkpoint": "checkpoints/grconvnet/grconvnet_rgbd.pt",
+      "camera": "synthetic-rgbd",
+      "split": "val",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "dataset_options": {
+        "train_fraction": 0.9,
+        "split_policy": "object",
+        "split_seed": 0,
+        "iou_threshold": 0.25
+      }
+    }
+  },
+  "jacquard-depth": {
+    "description": "Predict planar grasps with the author Jacquard depth-only checkpoint",
+    "config": {
+      "dataset": "jacquard",
+      "method": "grconvnet_depth",
+      "action": "infer",
+      "dataset_root": "/data/Jacquard",
+      "checkpoint": "checkpoints/grconvnet/grconvnet_depth.pt",
+      "camera": "synthetic-rgbd",
+      "split": "val",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "dataset_options": {
+        "train_fraction": 0.9,
+        "split_policy": "object",
+        "split_seed": 0,
+        "iou_threshold": 0.25
+      }
+    }
+  },
+  "jacquard-train": {
+    "description": "Train native GR-ConvNet across finite epochs with object-disjoint validation",
+    "config": {
+      "dataset": "jacquard",
+      "method": "grconvnet_rgbd",
+      "action": "train",
+      "dataset_root": "/data/Jacquard",
+      "checkpoint": "",
+      "camera": "synthetic-rgbd",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "dataset_options": {
+        "train_fraction": 0.9,
+        "split_policy": "object",
+        "split_seed": 0,
+        "iou_threshold": 0.25
+      },
+      "epochs": 50,
+      "batch_size": 8,
+      "learning_rate": 0.001,
+      "train_batch_limit": 0,
+      "eval_batch_limit": 0,
+      "timeout_minutes": 43200
+    }
+  },
+  "jacquard-evaluate": {
+    "description": "Evaluate complete validation predictions using native planar rectangle IoU",
+    "config": {
+      "dataset": "jacquard",
+      "method": "grconvnet_rgbd",
+      "action": "evaluate",
+      "dataset_root": "/data/Jacquard",
+      "checkpoint": "checkpoints/grconvnet/grconvnet_rgbd.pt",
+      "camera": "synthetic-rgbd",
+      "split": "val",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "workspace": "native_image",
+      "collision_thresh": 0,
+      "dataset_options": {
+        "train_fraction": 0.9,
+        "split_policy": "object",
+        "split_seed": 0,
+        "iou_threshold": 0.25
+      },
+      "prediction_dir": "outputs/runs/YOUR-RUN/predictions"
+    }
   }
 }

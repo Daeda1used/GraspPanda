@@ -1740,7 +1740,7 @@ Graspness, SBG and HGGD have different proposal, grouping and refinement structu
 
 ### Add a dataset
 
-Register metadata in `grasppanda/datasets.py` and an executable provider under `grasppanda/integrations/`. Supply readers, camera conventions, target readiness, evaluation and compatible method adapters. Separate single-view, fused-view, active and temporal observation protocols. A metadata-only registration cannot run experiments.
+Register metadata in `grasppanda/datasets.py` and an executable provider under `grasppanda/integrations/`. Supply readers, camera conventions, target readiness, evaluation and compatible method adapters. Separate single-view, fused-view, active and temporal observation protocols. A metadata-only registration cannot run experiments. Set `DatasetSpec.runner` to a module exposing `run(config, out)` when a dataset requires its own operation dispatch (for example, Jacquard planar maps). Register only operations that the provider and runner implement. Dataset-specific parameters use `dataset_options`; validate their schema before queueing and retain them in prediction manifests and training checkpoints.
 
 ### Compatibility
 

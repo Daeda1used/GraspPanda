@@ -42,7 +42,7 @@ GraNet and GraspBalance presets start with short training from scratch because c
 ./panda run graspness.local.yaml
 ```
 
-`init` writes a local YAML configuration without downloading weights or running a model. Use `--dataset graspclutter6d`, `--dataset zerograsp11b` or `--dataset dexgraspnet2` for the native dataset preset. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
+`init` writes a local YAML configuration without downloading weights or running a model. Use `--dataset graspclutter6d`, `--dataset zerograsp11b` , `--dataset dexgraspnet2` or `--dataset jacquard` for the native dataset preset. Use `--method METHOD` for a preset, `--list` to browse examples, or `--example NAME` for a composition or training template. The default output is `experiment.local.yaml`; existing files are never overwritten. Pass `--dataset-root /data/GraspNet-1B` to fill in your path directly. Generate sweep files in the same way and run them with `sweep`.
 
 `check` and `run` accept YAML or JSON. The check performs the same configuration and input preflight used before queueing, without creating an experiment. It does not execute the model or estimate GPU memory. The browser's **Check current form** also refreshes the JSON editor with the checked settings; its result clears when the form changes. **Validate JSON** checks the editor instead.
 

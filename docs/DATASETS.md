@@ -8,6 +8,7 @@ Select a dataset first. The browser then offers its methods, cameras, splits and
 | [GraspClutter6D](https://sites.google.com/view/graspclutter6d) | 1,000 real scenes, 52,000 RGB-D images, four cameras, 9.3 billion grasps | Native Contact-GraspNet; GraspNet Baseline and Graspness transfer | Published 413-scene training / 235-scene grasp test split |
 | [ZeroGrasp-11B](https://github.com/sh8/ZeroGrasp) | One million synthetic observations, 12,000 objects, 11.3 billion grasps | Native ZeroGrasp with interchangeable image encoders | Released training shards; no held-out grasp AP is implied |
 | [DexGraspNet 2.0](https://pku-epic.github.io/DexGraspNet2.0/) | 1,319 objects, 8,270 synthetic scenes, approximately 427 million dexterous grasps | Native diffusion; author ISAGrasp and GraspTTA baselines | Rendered depth and 16-joint LEAP-hand prediction; simulation evaluation remains an upstream workflow |
+| [Jacquard](https://jacquard.liris.cnrs.fr/database.php) | Synthetic RGB-D; 54,485 scenes and 4.97 million rectangle annotations | GR-ConvNet RGB-D and depth | Explicit train/validation split; planar IoU evaluation |
 
 GraspClutter6D is a 2025 RA-L dataset, also presented at ICRA 2026 ([paper](https://arxiv.org/pdf/2504.06866)). ZeroGrasp is CVPR 2025 ([paper](https://arxiv.org/pdf/2504.10857)). Scale describes the publishers' datasets, not the number of observations evaluated by this toolbox.
 
@@ -26,7 +27,7 @@ Shared implementations retain dataset-specific adapters. A dense contact seed, a
 
 ## Get data from the UI or CLI
 
-In **Experiments**, choose a dataset, enter **Dataset root on server**, and expand **Get dataset inputs**. **Download starter data** prepares ZeroGrasp shard 0 or DexGraspNet scene 0 views 0–1, including native training supervision. Then download the method weights and check the preset. Starter predictions use training observations; use the published evaluation protocol for scientific comparisons.
+In **Experiments**, choose a dataset, enter **Dataset root on server**, and expand **Get dataset inputs**. **Download starter data** prepares ZeroGrasp shard 0, DexGraspNet scene 0 views 0–1, or the official Jacquard sample, including native training supervision. Then download the method weights and check the preset. Starter predictions use training observations; use the published evaluation protocol for scientific comparisons.
 
 The CLI previews the destination, exact sources and download size without writing files. Add `--fetch` to download:
 
@@ -203,3 +204,54 @@ Dexterous-hand success is not GraspNet parallel-gripper AP. The toolbox does not
 ## Data locations
 
 `/data/...` paths above are examples. Point each configuration at your own storage. Large data, weight files, native build caches and experiment outputs can live on a mounted storage volume; keep the source checkout separate. Use `--runs-dir /storage/experiments` for CLI outputs and `GRASPPANDA_RUNS` for the browser. Dataset-specific defaults are `GRASPPANDA_GRASPCLUTTER6D_ROOT` `GRASPPANDA_ZEROGRASP11B_ROOT` and `GRASPPANDA_DEXGRASPNET2_ROOT`; GraspNet retains `GRASPPANDA_DATASET_ROOT`.
+
+## Jacquard
+
+[Jacquard](https://jacquard.liris.cnrs.fr/database.php) contains 54,485 rendered scenes of 11,619 objects and approximately 4.97 million planar grasp annotations. The registered [GR-ConvNet implementation](https://github.com/skumra/robotic-grasping) supplies both RGB-D and depth-only Jacquard checkpoints. These predict image-space rectangles; they do not produce calibrated 6-DoF poses.
+
+### Download and predict
+
+The starter downloads the official 57.9 MB ZIP, verifies it, and installs RGB, perfect-depth and target files for 48 observations of 10 objects. The archive stays under the chosen root. In the browser, select **Jacquard → Get dataset inputs → Download starter data**, then **Download registered weights → Check current form → Run current form**.
+
+```bash
+./panda data jacquard --root /data/Jacquard --fetch
+./panda weights grconvnet_rgbd --camera synthetic-rgbd
+./panda init --dataset jacquard --dataset-root /data/Jacquard -o jacquard.local.yaml
+./panda check jacquard.local.yaml
+./panda run jacquard.local.yaml
+```
+
+Use `--method grconvnet_depth` and `./panda weights grconvnet_depth --camera synthetic-rgbd` for depth-only prediction. Both use the same shared environment. The source remains pinned and its weights are checksum-verified.
+
+For the full dataset, follow the [author's access instructions](https://jacquard.liris.cnrs.fr/), download its archives to your data volume, and extract them there. Select a root containing the extracted object folders; nested archive directories are supported. Keep one copy of each observation under the root. Do not extract the starter and the full dataset into overlapping trees.
+
+```text
+Jacquard/
+  object-id/
+    0_object-id_RGB.png
+    0_object-id_perfect_depth.tiff
+    0_object-id_grasps.txt
+  ...
+```
+
+### Splits, training and evaluation
+
+The default split assigns 90% of object identities to training, with a deterministic seed. Validation objects are disjoint from training objects. Change these controls in **Input & preprocessing → Dataset parameters**, or in the configuration:
+
+```yaml
+dataset_options:
+  train_fraction: 0.9
+  split_policy: object
+  split_seed: 0
+  iou_threshold: 0.25
+```
+
+`split_policy: ordered_image` instead splits the sorted image list, matching the author's unshuffled image-split convention; it may share objects across splits. `scene` is the zero-based sample index within the chosen split, `frame` is always `0`, and `frames` is the sample count. `native_image` preserves native image preprocessing and requires `collision_thresh: 0`.
+
+Use `./panda init --example jacquard-train --dataset-root /data/Jacquard -o train.local.yaml`. **Train across epochs** with `train_batch_limit: 0` visits the full training split once per epoch; bounded training uses the selected sample range. **Short training run** performs the requested optimizer steps. Set `checkpoint: ''` to train from scratch. The native 300-pixel network, rotation/zoom augmentation, Adam optimizer and four Smooth L1 terms are retained. This finite loader replaces the author's repeated fixed-batch epoch convention. Validation reports native loss after each epoch; `eval_batch_limit: 0` covers the full validation split.
+
+Epoch checkpoints support `initialize` and `resume`. For resume, retain the data, split and training configuration, set `checkpoint` to the saved `checkpoint.pt`, set `train_checkpoint_mode: resume`, and increase `epochs`. Checkpoints retain optimizer and random states, configuration and file metadata for both splits. Changed configuration, input sizes or modification times are rejected. Use **Prepare inference from checkpoint** to inspect a trained model.
+
+For rectangle evaluation, predict **every** observation of `split: val` in one inference run (`scene: 0`, `frames` equal to its sample count, reported by **Check current form**). Then select **Evaluate predictions**, keep the same checkpoint and dataset parameters, and point **Prediction directory** to that run's `predictions/`. The verifier requires complete split coverage, matching input hashes, checkpoint and maps. `metrics.planar_iou_success` is the fraction of samples with a matching top-1 rectangle under the chosen IoU threshold and the native 30-degree angle criterion. Width maps are in pixels of the 300-pixel model input. This metric is neither physical grasp success nor GraspNet AP. Author pretrained models may have seen the selected observations; use a declared held-out training protocol for research claims.
+
+The original TIFF reader is adapted to Pillow to preserve floating-point pixels without the legacy optional TIFF codec. Encoder replacement is not registered for GR-ConvNet; its architecture and published checkpoints load strictly.

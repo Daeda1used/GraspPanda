@@ -20,6 +20,7 @@ class DatasetSpec:
     default_method: str = 'graspnet_baseline'
     scene_label: str = 'First scene'
     frame_label: str = 'First frame'
+    runner: str | None = None
 
     @property
     def inference_split(self):
@@ -126,3 +127,16 @@ register_dataset(DatasetSpec('zerograsp11b', 'ZeroGrasp-11B', ('synthetic-rgbd',
                   'Training-set predictions are not held-out grasp AP.',
     default_method='zerograsp', scene_label='First shard', frame_label='First sample'),
     'grasppanda.integrations.zerograsp11b')
+
+
+register_dataset(DatasetSpec('jacquard', 'Jacquard', ('synthetic-rgbd',),
+    {'train': (0, 54485), 'val': (0, 54485)}, 1,
+    ('rgb', 'perfect_depth', 'planar_grasp_rectangles'),
+    'https://jacquard.liris.cnrs.fr/database.php',
+    method_actions={method: ('infer', 'train_short', 'train', 'evaluate')
+                    for method in ('grconvnet_rgbd', 'grconvnet_depth')},
+    protocol_note='Planar image-space grasps, not camera-frame 6-DoF poses. '
+                  'The toolbox defaults to a deterministic object-disjoint train/validation split. '
+                  'Published weights may have seen these observations; starter results are not held-out paper reproduction.',
+    default_method='grconvnet_rgbd', scene_label='First sample in split', frame_label='Frame (always 0)',
+    runner='grasppanda.methods.grconvnet'), 'grasppanda.integrations.jacquard')

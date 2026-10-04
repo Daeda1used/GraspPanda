@@ -202,5 +202,17 @@
     "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
     "path": "upstream/single_view/dexterous/dexgraspnet2",
     "pinned_commit": "26ecd76121e3c8218ad53db9840cf34f6b81b076"
+  },
+  {
+    "id": "grconvnet_rgbd",
+    "repository": "https://github.com/skumra/robotic-grasping",
+    "path": "upstream/planar/grconvnet",
+    "pinned_commit": "183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d"
+  },
+  {
+    "id": "grconvnet_depth",
+    "repository": "https://github.com/skumra/robotic-grasping",
+    "path": "upstream/planar/grconvnet",
+    "pinned_commit": "183c6f68c44c1c7ff0f07707e2db6fcfd6840d2d"
   }
 ]
