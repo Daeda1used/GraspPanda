@@ -4,6 +4,21 @@ Choose a method by its observation protocol and available operation. Status desc
 
 PDF links point to publisher or author copies. “PDF not located” means no verified public PDF was found; the paper page is retained where available. Ports are identified separately from the underlying paper.
 
+## Implementation provenance
+
+Open **Method details & input requirements** in the browser, or run `./panda describe graspness --dataset graspnet1b`. Each method description links its paper, implementation and pinned revision, identifies the adaptation, and lists compatible component slots. `--json` includes the exact parameter rules and registered checkpoint URLs/checksums without loading a model or requiring a GPU.
+
+| Source label | Meaning |
+|---|---|
+| **Author source** | Source supplied by the paper or dataset authors; toolbox adaptations are stated separately |
+| **Third-party port** | An independent implementation or framework port of the underlying method |
+| **Source mirror** | An available copy used when the paper-linked repository is unavailable |
+| **Toolbox reconstruction** | Released interfaces require reconstruction in this toolbox; see the method's protocol notes |
+| **Author binary SDK** | An author-distributed binary interface, without open training source |
+| **Authorship not verified** | A source repository is available, but its author/publication relationship is not established |
+
+Source identity does not imply reproduced paper accuracy or unchanged training. The browser and CLI derive operations, component choices and parameter rules from the executable registries, while source attribution is maintained in the method metadata.
+
 ## Native dataset workflows
 
 | Dataset / method IDs | Publication | Available operations | Paper | Author implementation |

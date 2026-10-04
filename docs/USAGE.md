@@ -57,6 +57,15 @@ export GRASPPANDA_DATASET_ROOT=/data/GraspNet-1B
 
 ## Explore before installation
 
+Inspect implementation provenance and component contracts with Python 3.10+:
+
+```bash
+./panda describe graspness --dataset graspnet1b
+./panda describe hggd --json
+```
+
+Descriptions distinguish author sources, ports, mirrors and reconstructions, and expose pinned revisions, weight download URLs, compatible slots and accepted parameter rules. This command does not download weights or import GPU libraries.
+
 With system Python 3.10 or newer, these commands need no GPU, dataset or third-party packages:
 
 ```bash

@@ -30,6 +30,10 @@ def main():
     ui.add_argument("--port", type=int, default=7860)
     listing = commands.add_parser("list", help="List runnable methods and operations")
     listing.add_argument('--dataset', choices=list(datasets()), default='graspnet1b')
+    describe = commands.add_parser('describe', help='Inspect implementation sources, operations, components and parameter rules')
+    describe.add_argument('method', choices=list(catalogue()))
+    describe.add_argument('--dataset', choices=list(datasets()))
+    describe.add_argument('--json', action='store_true', help='Emit a machine-readable method description')
     guides = {'usage': 'USAGE.md', 'install': 'INSTALL.md', 'downloads': 'DOWNLOADS.md',
               'methods': 'METHODS.md', 'modules': 'MODULES.md', 'reference': 'REFERENCE.md',
               'licenses': 'THIRD_PARTY.md', 'datasets': 'DATASETS.md'}
@@ -101,6 +105,10 @@ def main():
         for mid, m in catalogue().items():
             if not capabilities(mid, args.dataset): continue
             print(f"{mid:28} {m['group']:28} {','.join(capabilities(mid, args.dataset))}")
+    elif args.command == 'describe':
+        from .catalog import method_description, format_method
+        description = method_description(args.method, args.dataset)
+        print(json.dumps(description, indent=2) if args.json else format_method(description))
     elif args.command == 'init':
         from .templates import configuration, examples, write_configuration
         if args.list:

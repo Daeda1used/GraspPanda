@@ -9,7 +9,13 @@
     "datasets": [
       "graspclutter6d"
     ],
-    "input_note": "Official GC6D baseline. The registered checkpoint is trained on realsense-d435; other cameras are cross-camera transfer. Native PointNet++ contact heads; compatible shared encoders can be trained through explicit component replacement."
+    "input_note": "Official GC6D baseline. The registered checkpoint is trained on realsense-d435; other cameras are cross-camera transfer. Native PointNet++ contact heads; compatible shared encoders can be trained through explicit component replacement.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "RA-L 2025; ICRA 2026 presentation",
+      "paper_url": "https://arxiv.org/pdf/2504.06866",
+      "adapter_note": "GraspClutter6D author implementation. Contact-GraspNet is the dataset authors' PyTorch baseline adaptation, not the original TensorFlow implementation."
+    }
   },
   {
     "id": "graspnet_baseline",
@@ -22,7 +28,13 @@
     "datasets": [
       "graspnet1b",
       "graspclutter6d"
-    ]
+    ],
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2020 \u00b7 CVPR",
+      "paper_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf",
+      "adapter_note": "Inference / evaluation; epoch training."
+    }
   },
   {
     "id": "graspness",
@@ -35,7 +47,13 @@
     "datasets": [
       "graspnet1b",
       "graspclutter6d"
-    ]
+    ],
+    "provenance": {
+      "kind": "third_party_port",
+      "publication": "2021 \u00b7 ICCV",
+      "paper_url": "https://openaccess.thecvf.com/content/ICCV2021/papers/Wang_Graspness_Discovery_in_Clutters_for_Fast_and_Accurate_Grasp_Detection_ICCV_2021_paper.pdf",
+      "adapter_note": "Inference / evaluation; epoch training. Third-party implementation; original weights."
+    }
   },
   {
     "id": "scale_balanced_grasp",
@@ -44,7 +62,13 @@
     "paper_title": "Towards Scale Balanced 6-DoF Grasp Detection in Cluttered Scenes",
     "path": "upstream/single_view/pointcloud/scale_balanced_grasp",
     "name": "Scale-Balanced-Grasp",
-    "input_note": "Single-view point inference and training with optional DSN-based object-balanced inference sampling and noisy-clean mixed training."
+    "input_note": "Single-view point inference and training with optional DSN-based object-balanced inference sampling and noisy-clean mixed training.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2022 \u00b7 CoRL",
+      "paper_url": "https://arxiv.org/pdf/2212.05275",
+      "adapter_note": "Inference / evaluation; epoch training and [configurable components/objectives](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#scale-balanced-grasp-components). Optional DSN-based OBS inference and noisy-clean mixed training."
+    }
   },
   {
     "id": "fgc_graspnet",
@@ -53,7 +77,13 @@
     "paper_title": "Hybrid Physical Metric For 6-DoF Grasp Pose Detection",
     "path": "upstream/single_view/pointcloud/fgc_graspnet",
     "name": "FGC-GraspNet",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2022 \u00b7 ICRA",
+      "paper_url": "https://arxiv.org/pdf/2206.11141",
+      "adapter_note": "Inference / evaluation; short training."
+    }
   },
   {
     "id": "granet",
@@ -62,7 +92,13 @@
     "paper_title": "GraNet: A Multi-Level Graph Network for 6-DoF Grasp Pose Generation in Cluttered Scenes",
     "path": "upstream/single_view/pointcloud/granet",
     "name": "GraNet",
-    "input_note": "Use your trained checkpoint; author weights require separately distributed old code."
+    "input_note": "Use your trained checkpoint; author weights require separately distributed old code.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2023 \u00b7 IROS",
+      "paper_url": "https://arxiv.org/pdf/2312.03345",
+      "adapter_note": "Inference / evaluation; short training. Use your trained checkpoint; author weights require separately distributed old code."
+    }
   },
   {
     "id": "hggd",
@@ -71,7 +107,13 @@
     "paper_title": "Efficient Heatmap-Guided 6-Dof Grasp Detection in Cluttered Scenes",
     "path": "upstream/single_view/rgbd/hggd",
     "name": "HGGD",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2023 \u00b7 RA-L",
+      "paper_url": "https://arxiv.org/pdf/2403.18546",
+      "adapter_note": "Inference / evaluation; epoch training."
+    }
   },
   {
     "id": "economicgrasp",
@@ -80,7 +122,13 @@
     "paper_title": "An Economic Framework for 6-DoF Grasp Detection",
     "path": "upstream/single_view/pointcloud/economicgrasp",
     "name": "EconomicGrasp",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 ECCV",
+      "paper_url": "https://arxiv.org/pdf/2407.08366",
+      "adapter_note": "Inference / evaluation; epoch training and configurable components/objectives."
+    }
   },
   {
     "id": "generalizing_grasp",
@@ -89,7 +137,13 @@
     "paper_title": "Generalizing 6-DoF Grasp Detection via Domain Prior Knowledge",
     "path": "upstream/multi_view/fusion/generalizing_grasp",
     "name": "Generalizing-Grasp",
-    "input_note": "One fused scene of table-frame XYZ and normals. Inference needs no instance labels; contact-score refinement uses predicted instances and camera calibration. Short training retains matched instance supervision and native SDF objectives."
+    "input_note": "One fused scene of table-frame XYZ and normals. Inference needs no instance labels; contact-score refinement uses predicted instances and camera calibration. Short training retains matched instance supervision and native SDF objectives.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 CVPR",
+      "paper_url": "https://openaccess.thecvf.com/content/CVPR2024/papers/Ma_Generalizing_6-DoF_Grasp_Detection_via_Domain_Prior_Knowledge_CVPR_2024_paper.pdf",
+      "adapter_note": "Fused-scene inference / short training. Optional [predicted-instance contact-score refinement](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#contact-score-refinement); adaptation of the author GT-grouped optimizer."
+    }
   },
   {
     "id": "active_ngf",
@@ -98,7 +152,13 @@
     "paper_title": "Active Perception for Grasp Detection via Neural Graspness Field",
     "path": "upstream/multi_view/active/active_ngf",
     "name": "ActiveNGF",
-    "input_note": "Two-view online field optimization and next-view selection."
+    "input_note": "Two-view online field optimization and next-view selection.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 NeurIPS",
+      "paper_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/4364fef031fdf7bfd9d1c9c56b287084-Paper-Conference.pdf",
+      "adapter_note": "Recipe. Two-view online field optimization and next-view selection."
+    }
   },
   {
     "id": "dograspnet",
@@ -107,7 +167,13 @@
     "paper_title": "A Multi-Modal Framework with Offset-Driven Local Feature Aggregation for 6-DoF Grasp Pose Estimation",
     "path": "upstream/single_view/rgbd/dograspnet",
     "name": "DOGraspNet",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "unverified",
+      "publication": "2026 \u00b7 IROS (accepted; upstream claim)",
+      "paper_url": null,
+      "adapter_note": "Inference / evaluation; short training."
+    }
   },
   {
     "id": "graspbalance",
@@ -116,7 +182,13 @@
     "paper_title": "Balanced Grasp Pose Detection for Multi-scale Objects with Point Cloud",
     "path": "upstream/single_view/pointcloud/graspbalance",
     "name": "GraspBalance",
-    "input_note": "Use your trained checkpoint; no released weights registered."
+    "input_note": "Use your trained checkpoint; no released weights registered.",
+    "provenance": {
+      "kind": "unverified",
+      "publication": "\u2014 \u00b7 Not verified",
+      "paper_url": null,
+      "adapter_note": "Inference / evaluation; short training. Use your trained checkpoint; no released weights registered."
+    }
   },
   {
     "id": "graspfast",
@@ -125,7 +197,13 @@
     "paper_title": "GraspFast: Multi-stage Lightweight 6-DoF Grasp Pose Fast Detection with RGB-D Image",
     "path": "upstream/single_view/pointcloud/graspfast",
     "name": "GraspFast",
-    "input_note": "Available mirror; paper-linked original repository is unavailable."
+    "input_note": "Available mirror; paper-linked original repository is unavailable.",
+    "provenance": {
+      "kind": "source_mirror",
+      "publication": "2025 \u00b7 Pattern Recognition",
+      "paper_url": "https://doi.org/10.1016/j.patcog.2024.111318",
+      "adapter_note": "Inference / evaluation; short training. Available mirror; paper-linked original repository is unavailable."
+    }
   },
   {
     "id": "gfla",
@@ -134,7 +212,13 @@
     "paper_title": "GFLA: A Grasping Framework With Learning-Based Perception and Analytical Modeling for Single-View Scenes",
     "path": "upstream/single_view/rgbd/gfla",
     "name": "GFLA",
-    "input_note": "RGB-D, table pose, FastSAM and scene completion."
+    "input_note": "RGB-D, table pose, FastSAM and scene completion.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2026 \u00b7 IEEE T-RO",
+      "paper_url": "https://doi.org/10.1109/tro.2026.3715994",
+      "adapter_note": "Recipe; short training. RGB-D, table pose, FastSAM and scene completion."
+    }
   },
   {
     "id": "region_normalized_grasp",
@@ -143,7 +227,13 @@
     "paper_title": "Region-aware Grasp Framework with Normalized Grasp Space for Efficient 6-DoF Grasping",
     "path": "upstream/single_view/rgbd/region_normalized_grasp",
     "name": "RegionNormalizedGrasp",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 CoRL",
+      "paper_url": "https://arxiv.org/pdf/2406.01767",
+      "adapter_note": "Inference / evaluation; short training."
+    }
   },
   {
     "id": "rgb_matters",
@@ -152,7 +242,13 @@
     "paper_title": "RGB Matters: Learning 7-DoF Grasp Poses on Monocular RGBD Images",
     "path": "upstream/single_view/rgbd/rgb_matters",
     "name": "RGB Matters",
-    "input_note": "RGB-D with generated surface normals."
+    "input_note": "RGB-D with generated surface normals.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2021 \u00b7 ICRA",
+      "paper_url": "https://arxiv.org/pdf/2103.02184",
+      "adapter_note": "Recipe; short training. RGB-D with generated surface normals."
+    }
   },
   {
     "id": "motiongrasp",
@@ -161,7 +257,13 @@
     "paper_title": "MotionGrasp: Long-Term Grasp Motion Tracking for Dynamic Grasping",
     "path": "upstream/temporal/motiongrasp",
     "name": "MotionGrasp",
-    "input_note": "Temporal tracking recipe and short sequence training."
+    "input_note": "Temporal tracking recipe and short sequence training.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2025 \u00b7 IEEE RA-L",
+      "paper_url": "https://doi.org/10.1109/lra.2024.3504792",
+      "adapter_note": "Recipe; short training. Temporal tracking recipe and short sequence training."
+    }
   },
   {
     "id": "spahybgen",
@@ -170,7 +272,13 @@
     "paper_title": "Learning contact representations in real-world clutter for universal robotic grasping",
     "path": "upstream/related/multi_hand/spahybgen",
     "name": "SpaHybGen",
-    "input_note": "Author voxel sample / contact optimization; GraspNet contact training."
+    "input_note": "Author voxel sample / contact optimization; GraspNet contact training.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2026 \u00b7 Nature Machine Intelligence",
+      "paper_url": "https://doi.org/10.1038/s42256-026-01292-y",
+      "adapter_note": "Recipe; short training. Author voxel sample / contact optimization; GraspNet contact training."
+    }
   },
   {
     "id": "contact_graspnet_g1b",
@@ -179,7 +287,13 @@
     "paper_title": "Contact-GraspNet: Efficient 6-DoF Grasp Generation in Cluttered Scenes",
     "path": "upstream/adaptations/contact_graspnet_g1b",
     "name": "Contact-GraspNet (GraspNet port)",
-    "input_note": "GraspNet adaptation; native GT object bounds."
+    "input_note": "GraspNet adaptation; native GT object bounds.",
+    "provenance": {
+      "kind": "third_party_port",
+      "publication": "2021 \u00b7 ICRA",
+      "paper_url": "https://arxiv.org/pdf/2103.14127",
+      "adapter_note": "Recipe; short training. GraspNet adaptation; native GT object bounds."
+    }
   },
   {
     "id": "dreds",
@@ -188,7 +302,13 @@
     "paper_title": "Domain Randomization-Enhanced Depth Simulation and Restoration for Perceiving and Grasping Specular and Transparent Objects",
     "path": "upstream/auxiliary/dreds",
     "name": "DREDS",
-    "input_note": "Auxiliary depth restoration only."
+    "input_note": "Auxiliary depth restoration only.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2022 \u00b7 ECCV",
+      "paper_url": "https://arxiv.org/pdf/2208.03792",
+      "adapter_note": "Recipe. Auxiliary depth restoration only."
+    }
   },
   {
     "id": "rngnet_sdk",
@@ -197,7 +317,13 @@
     "paper_title": "Region-aware Grasp Framework with Normalized Grasp Space for Efficient 6-DoF Grasping",
     "path": "upstream/sdk/rngnet_sdk",
     "name": "RNGNet SDK",
-    "input_note": "Binary inference only; training source not released."
+    "input_note": "Binary inference only; training source not released.",
+    "provenance": {
+      "kind": "author_binary_sdk",
+      "publication": "2024 \u00b7 CoRL (underlying paper; compiled SDK variant)",
+      "paper_url": "https://arxiv.org/pdf/2406.01767",
+      "adapter_note": "Recipe. Binary inference only; training source not released."
+    }
   },
   {
     "id": "graspness_modern",
@@ -206,7 +332,13 @@
     "paper_title": "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection",
     "path": "upstream/modernization/graspness_modern",
     "name": "Graspness modern",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "third_party_port",
+      "publication": "2021 \u00b7 ICCV",
+      "paper_url": "https://openaccess.thecvf.com/content/ICCV2021/papers/Wang_Graspness_Discovery_in_Clutters_for_Fast_and_Accurate_Grasp_Detection_ICCV_2021_paper.pdf",
+      "adapter_note": "Inference / evaluation; short training."
+    }
   },
   {
     "id": "pointnet2_upgrade",
@@ -215,7 +347,13 @@
     "paper_title": "",
     "path": "upstream/modernization/pointnet2_upgrade",
     "name": "Baseline PointNet2 port",
-    "input_note": ""
+    "input_note": "",
+    "provenance": {
+      "kind": "third_party_port",
+      "publication": "\u2014 \u00b7 Not verified",
+      "paper_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf",
+      "adapter_note": "Inference / evaluation; short training."
+    }
   },
   {
     "id": "graspnet_api",
@@ -224,7 +362,13 @@
     "paper_title": "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping",
     "path": "upstream/infrastructure/graspnet_api",
     "name": "GraspNet API",
-    "input_note": "Dataset reader and official evaluator."
+    "input_note": "Dataset reader and official evaluator.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2020 \u00b7 CVPR",
+      "paper_url": "https://openaccess.thecvf.com/content_CVPR_2020/papers/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.pdf",
+      "adapter_note": "Dataset reader and official evaluator."
+    }
   },
   {
     "id": "asgrasp",
@@ -233,7 +377,13 @@
     "paper_title": "ASGrasp: Generalizable Transparent Object Reconstruction and 6-DoF Grasp Detection from RGB-D Active Stereo Camera",
     "path": "upstream/auxiliary/stereo/asgrasp",
     "name": "ASGrasp",
-    "input_note": "Author RGB + stereo IR sample; standard RGB-D lacks the IR pair."
+    "input_note": "Author RGB + stereo IR sample; standard RGB-D lacks the IR pair.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 ICRA",
+      "paper_url": "https://arxiv.org/pdf/2405.05648",
+      "adapter_note": "Recipe. Author RGB + stereo IR sample; standard RGB-D lacks the IR pair."
+    }
   },
   {
     "id": "zerograsp",
@@ -249,7 +399,13 @@
     "datasets": [
       "graspnet1b",
       "zerograsp11b"
-    ]
+    ],
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2025 \u00b7 CVPR",
+      "paper_url": "https://arxiv.org/pdf/2504.10857",
+      "adapter_note": "Recipe. Author RGB-D + masks sample; pretrained on ZeroGrasp-11B."
+    }
   },
   {
     "id": "centergrasp",
@@ -258,7 +414,13 @@
     "paper_title": "CenterGrasp: Object-Aware Implicit Representation Learning for Simultaneous Shape Reconstruction and 6-DoF Grasp Estimation",
     "path": "upstream/single_view/rgbd/centergrasp",
     "name": "CenterGrasp",
-    "input_note": "Kinect RGB/SGDF pair with native ICP and collision filtering."
+    "input_note": "Kinect RGB/SGDF pair with native ICP and collision filtering.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2024 \u00b7 IEEE RA-L",
+      "paper_url": "https://arxiv.org/pdf/2312.08240",
+      "adapter_note": "Recipe; short training. Kinect RGB/SGDF pair with native ICP and collision filtering."
+    }
   },
   {
     "id": "finegrasp",
@@ -267,7 +429,13 @@
     "group": "single_view/pointcloud",
     "paper_title": "FineGrasp: Towards Robust Grasping for Delicate Objects",
     "name": "FineGrasp",
-    "input_note": "RGB-D wrapper; detector uses XYZ and depth-derived normals. Native camera-space bounds: x/y [-1,1] m, z [0,2] m."
+    "input_note": "RGB-D wrapper; detector uses XYZ and depth-derived normals. Native camera-space bounds: x/y [-1,1] m, z [0,2] m.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2025 \u00b7 preprint",
+      "paper_url": "https://arxiv.org/pdf/2507.05978",
+      "adapter_note": "Inference / evaluation; epoch training and configurable components/objectives. XYZ + normals; derived training inputs use the documented preprocessing adaptation."
+    }
   },
   {
     "id": "gtg2",
@@ -276,7 +444,13 @@
     "paper_title": "Grasp the Graph 2.0: Ensemble of GNNs for High-Precision Grasp Pose Detection in Clutter",
     "path": "upstream/single_view/candidate_graphs/gtg2",
     "name": "GtG2 reconstruction",
-    "input_note": "Reconstructed candidate-graph workflow; train your own ensemble. Author helpers and compatible weights are incomplete."
+    "input_note": "Reconstructed candidate-graph workflow; train your own ensemble. Author helpers and compatible weights are incomplete.",
+    "provenance": {
+      "kind": "toolbox_reconstruction",
+      "publication": "2025 \u00b7 preprint",
+      "paper_url": "https://arxiv.org/pdf/2505.02664",
+      "adapter_note": "Inference / evaluation; epoch ensemble training. Toolbox reconstruction of incomplete author interfaces; train your own weights. [Protocol and components](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#candidate-graph-experiments)."
+    }
   },
   {
     "id": "spgrasp",
@@ -285,7 +459,13 @@
     "group": "temporal/planar",
     "path": "upstream/temporal/planar/spgrasp",
     "paper_title": "SPGrasp: Spatiotemporal Prompt-Driven Grasp Synthesis in Dynamic Scenes",
-    "input_note": "RGB sequences and explicit first-frame boxes or points; planar grasp outputs. SAM2 weights initialize training only. Inference requires a trained SPGrasp checkpoint."
+    "input_note": "RGB sequences and explicit first-frame boxes or points; planar grasp outputs. SAM2 weights initialize training only. Inference requires a trained SPGrasp checkpoint.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "2026 \u00b7 IEEE JSTSP",
+      "paper_url": "https://arxiv.org/pdf/2508.20547",
+      "adapter_note": "Planar sequence inference; short training with configurable Hiera and temporal memory. Train your own grasp checkpoint from the SAM2 initializer. [Protocol and components](https://github.com/Daeda1used/GraspPanda/blob/main/docs/REFERENCE.md#prompted-planar-sequences)."
+    }
   },
   {
     "id": "graspclutter6d_api",
@@ -297,11 +477,17 @@
     "datasets": [
       "graspclutter6d"
     ],
-    "input_note": "Official dataset reader and grasp evaluator."
+    "input_note": "Official dataset reader and grasp evaluator.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "RA-L 2025; ICRA 2026 presentation",
+      "paper_url": "https://arxiv.org/pdf/2504.06866",
+      "adapter_note": "GraspClutter6D author implementation. Contact-GraspNet is the dataset authors' PyTorch baseline adaptation, not the original TensorFlow implementation."
+    }
   },
   {
     "id": "dexgraspnet2",
-    "name": "DexGraspNet 2.0 · Diffusion",
+    "name": "DexGraspNet 2.0 \u00b7 Diffusion",
     "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
     "path": "upstream/single_view/dexterous/dexgraspnet2",
     "group": "single_view/dexterous",
@@ -309,11 +495,17 @@
       "dexgraspnet2"
     ],
     "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
-    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors\u2019 graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "CoRL 2024",
+      "paper_url": "https://arxiv.org/pdf/2410.23004",
+      "adapter_note": "Uses the DexGraspNet 2.0 authors' implementation, including their ISAGrasp and GraspTTA baselines. Native simulation success evaluation remains upstream."
+    }
   },
   {
     "id": "dexgraspnet2_isa",
-    "name": "DexGraspNet 2.0 · ISAGrasp baseline",
+    "name": "DexGraspNet 2.0 \u00b7 ISAGrasp baseline",
     "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
     "path": "upstream/single_view/dexterous/dexgraspnet2",
     "group": "single_view/dexterous",
@@ -321,11 +513,17 @@
       "dexgraspnet2"
     ],
     "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
-    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors\u2019 graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "CoRL 2024",
+      "paper_url": "https://arxiv.org/pdf/2410.23004",
+      "adapter_note": "Uses the DexGraspNet 2.0 authors' implementation, including their ISAGrasp and GraspTTA baselines. Native simulation success evaluation remains upstream."
+    }
   },
   {
     "id": "dexgraspnet2_cvae",
-    "name": "DexGraspNet 2.0 · GraspTTA baseline",
+    "name": "DexGraspNet 2.0 \u00b7 GraspTTA baseline",
     "repository": "https://github.com/PKU-EPIC/DexGraspNet2",
     "path": "upstream/single_view/dexterous/dexgraspnet2",
     "group": "single_view/dexterous",
@@ -333,6 +531,12 @@
       "dexgraspnet2"
     ],
     "paper_title": "DexGraspNet 2.0: Learning Generative Dexterous Grasping in Large-scale Synthetic Cluttered Scenes",
-    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors’ graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim."
+    "input_note": "Author DexGraspNet implementation: rendered depth, native graspness and LEAP-hand output. Baselines are the dataset authors\u2019 graspness-conditioned adaptations. Includes shared sparse encoders, native supervised losses and resumable selected-view epochs; no simulated-success claim.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "CoRL 2024",
+      "paper_url": "https://arxiv.org/pdf/2410.23004",
+      "adapter_note": "Uses the DexGraspNet 2.0 authors' implementation, including their ISAGrasp and GraspTTA baselines. Native simulation success evaluation remains upstream."
+    }
   }
 ]

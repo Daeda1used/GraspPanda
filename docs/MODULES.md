@@ -4,6 +4,8 @@ Start from a method preset, replace a compatible part, then train and compare th
 
 Shared point and image encoders also support registered [cross-dataset contracts](DATASETS.md#components-across-datasets). The selector exposes only the slots supported by the chosen method; native supervision and output geometry stay dataset-specific.
 
+To inspect a model before configuring it, use `./panda describe METHOD --json`. Each component includes its `configuration_path` (for example `modules.backbone`), choices, input/output contracts and parameter rules. These are the same rules used to validate experiments. In the browser, choose a component under **Compose modules**, then inspect **Available component parameters**; the full experiment is editable under **Configuration editor**.
+
 ## First composition
 
 ```bash

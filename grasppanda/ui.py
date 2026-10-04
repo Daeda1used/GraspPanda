@@ -37,12 +37,12 @@ def action_choices(method, dataset='graspnet1b'):
 
 
 def method_card(method, dataset='graspnet1b'):
-    item = catalogue()[method]
-    note = item.get('dataset_notes', {}).get(dataset, item.get('input_note', ''))
+    from .catalog import method_description, format_method
+    description = method_description(method, dataset)
     recipe = RECIPES.get(method, ('', ''))[1] if 'infer' not in capabilities(method, dataset) else ''
-    protocol = get_dataset(dataset).protocol_note
-    return (f"### {item.get('name', method)}\n{item['paper_title']}\n\n"
-            f"[Implementation]({item['repository']})\n\n{recipe or note}" + (f'\n\n{protocol}' if protocol else ''))
+    if recipe:
+        description['input_note'] = recipe
+    return format_method(description)
 
 
 def result_snapshot(directory, state):
