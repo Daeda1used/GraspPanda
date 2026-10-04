@@ -232,5 +232,11 @@
     "repository": "https://github.com/TARGO-benchmark/TARGO",
     "path": "upstream/target_driven/targo",
     "pinned_commit": "e71d00e6c081aa39a164a6a402375aa75173ff80"
+  },
+  {
+    "id": "graspldm",
+    "repository": "https://github.com/kuldeepbrd1/graspLDM",
+    "path": "upstream/object_centric/graspldm",
+    "pinned_commit": "747687402eaebd8fb3ca8d954ed0cf8b772d070e"
   }
 ]

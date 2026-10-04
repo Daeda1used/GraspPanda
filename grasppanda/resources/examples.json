@@ -2953,5 +2953,71 @@
       "learning_rate": 0.0002,
       "epochs": 2
     }
+  },
+  "acronym-diffusion": {
+    "description": "ACRONYM partial-depth prediction using the released GraspLDM diffusion checkpoint.",
+    "config": {
+      "dataset": "acronym",
+      "method": "graspldm",
+      "action": "infer",
+      "camera": "synthetic-depth",
+      "split": "test",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 1024,
+      "workspace": "acronym_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspldm/ddm/checkpoints/last.ckpt",
+      "learning_rate": 0.001
+    }
+  },
+  "acronym-vae-train": {
+    "description": "Native VAE objective with explicit toolbox all-success-label supervision.",
+    "config": {
+      "dataset": "acronym",
+      "method": "graspldm",
+      "action": "train",
+      "camera": "synthetic-depth",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 1024,
+      "workspace": "acronym_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspldm/ddm/checkpoints/last.ckpt",
+      "learning_rate": 0.001,
+      "epochs": 2,
+      "trainer": {
+        "stage": "vae",
+        "grasps_per_view": 100,
+        "supervision": "all_success"
+      }
+    }
+  },
+  "acronym-diffusion-train": {
+    "description": "Native latent denoising with frozen VAE; toolbox all-success-label supervision.",
+    "config": {
+      "dataset": "acronym",
+      "method": "graspldm",
+      "action": "train",
+      "camera": "synthetic-depth",
+      "split": "train",
+      "scene": 0,
+      "frame": 0,
+      "frames": 1,
+      "num_points": 1024,
+      "workspace": "acronym_partial",
+      "collision_thresh": 0,
+      "checkpoint": "checkpoints/graspldm/ddm/checkpoints/last.ckpt",
+      "learning_rate": 0.001,
+      "epochs": 2,
+      "trainer": {
+        "stage": "diffusion",
+        "grasps_per_view": 100,
+        "supervision": "all_success"
+      }
+    }
   }
 }

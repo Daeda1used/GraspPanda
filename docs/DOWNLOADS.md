@@ -435,3 +435,14 @@ The registry selects one pinned checkpoint per modality and verifies its size an
 | Paper | [IJCV 2026 PDF](https://arxiv.org/pdf/2407.06168) |
 
 `./panda data targo --root /data/TARGO --fetch` installs a 5.2 MB original-label starter. `./panda weights targonet --camera synthetic-depth` installs both official models. [Full dataset layout, inputs and training](DATASETS.md#targo). URLs, source revisions, byte ranges and hashes are registered; no dataset or weight binary is bundled in the Git repository.
+
+## ACRONYM and GraspLDM
+
+| Artifact | Original source |
+|---|---|
+| Full annotations, examples and mesh preparation | [NVIDIA ACRONYM](https://github.com/NVlabs/acronym#using-the-full-acronym-dataset) |
+| Complete object meshes and access terms | [ShapeNet](https://www.shapenet.org/) |
+| GraspLDM partial-cloud weights and category splits | [Author release](https://huggingface.co/kuldeepbarad/GraspLDM/tree/3da18c20aac385fcb1ae4843a83f2ffa43001a99) |
+| Implementation and paper | [Author code](https://github.com/kuldeepbrd1/graspLDM) · [IEEE Access 2024 PDF](https://arxiv.org/pdf/2312.11243) |
+
+`./panda data acronym --root /data/ACRONYM --fetch` installs the 0.6 MB two-object starter. `./panda weights graspldm --camera synthetic-depth` installs both original partial-cloud checkpoints. URLs, sizes and SHA-256 hashes are registered; [full data layout and protocol](DATASETS.md#acronym) explain the separate mesh download and locally generated observations.

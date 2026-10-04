@@ -169,6 +169,9 @@ class JobManager:
         if config.method == 'graspgen':
             from .integrations.graspgen import assets
             provenance.setdefault('auxiliary_weights',{}).update({str(path):digest(path) for path in assets(config).values()})
+        if config.method == 'graspldm':
+            from .integrations.acronym import assets
+            provenance.setdefault('auxiliary_weights',{}).update({str(path):digest(path) for path in assets(config).values()})
         if config.method == 'targonet':
             from .integrations.targo import assets
             provenance.setdefault('auxiliary_weights',{}).update({str(path):digest(path) for path in assets(config).values()})

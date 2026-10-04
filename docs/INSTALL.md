@@ -52,8 +52,9 @@ All integrated methods use one environment. Rerun `./panda install` after updati
 |---|---|
 | Missing `nvcc` or wrong CUDA release | Set `GRASPPANDA_CUDA_HOME` to the CUDA 11.8 toolkit directory. |
 | No CUDA GPU visible / unsupported architecture | Check the NVIDIA driver and `CUDA_VISIBLE_DEVICES`; use one of the GPU architectures listed above. The installer checks this before native compilation. |
-| GraspGen cannot initialize EGL | Install `libegl1` and `libglu1-mesa`; ensure the NVIDIA graphics/EGL driver is visible. CUDA compute alone does not provide headless rendering. |
+| GraspGen / GraspLDM cannot initialize EGL | Install `libegl1` and `libglu1-mesa`; ensure the NVIDIA graphics/EGL driver is visible. CUDA compute alone does not provide headless rendering. |
 | TARGO native operator build fails | Check the CUDA 11.8 compiler and system C++ prerequisites. Build logs are in `environments/artifact-cache/targo/`; the author checkout stays unchanged. |
+| GraspLDM PVCNN build fails | Check CUDA 11.8 and `MAX_JOBS`; versioned operators and build inputs stay in `environments/artifact-cache/graspldm/`. Rerun `./panda install` after changing the runtime. |
 | Undefined symbol / incompatible CUDA extension | Rebuild with `./panda install` using the locked environment; do not reuse wheels from a different ABI. |
 | Out of memory during compilation | Set `MAX_JOBS=2` before running the installer. |
 | Google Drive quota or academic mirror unavailable | Retry later or manually download the exact registered file; paths and checksums are in `grasppanda/resources/checkpoints.json`. |
@@ -90,6 +91,7 @@ All components use the same Python environment. The installer fetches pinned bui
 | PTv2 / ResLFE | Compiles Pointcept / DeepLA operators with separate namespaces to coexist with legacy grasp operators. |
 | GtG2 | Builds the GPG candidate generator against system PCL. |
 | DexGraspNet 2.0 | Builds the native primitive-distance CUDA loss in the shared environment. Prediction and training do not require Isaac Gym; the author simulation evaluation has separate legacy requirements. |
+| GraspLDM | Builds the author's PVCNN operators for the active GPU and shared runtime, without editing upstream code. Partial-depth observations use headless EGL and a separate dataset cache. |
 | PointCNN++ / Swin3D | Builds the pinned CUDA operators using the shared CUDA 11.8 toolkit; versioned artifacts are activated only after verification. |
 
 </details>

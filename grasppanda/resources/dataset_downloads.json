@@ -4202,5 +4202,44 @@
         }
       ]
     }
+  },
+  "acronym": {
+    "repository": "https://github.com/NVlabs/acronym",
+    "terms": "ACRONYM annotations and example assets retain author CC BY-NC 4.0 terms; full ShapeNetSem meshes require separate access and terms.",
+    "starter": {
+      "description": "Two original NVIDIA examples (Mug and Table), their meshes and 4000 original grasp trials. Toolbox demonstration split: Mug train, Table test. Depth views are generated locally.",
+      "files": [
+        {
+          "path": "grasps/Mug_10f6e09036350e92b3f21f1137c3c347_0.0002682457830986903.h5",
+          "url": "https://raw.githubusercontent.com/NVlabs/acronym/d02f58fb3a556c3b719976e206cce0dce0103199/data/examples/grasps/Mug_10f6e09036350e92b3f21f1137c3c347_0.0002682457830986903.h5",
+          "bytes": 232764,
+          "sha256": "a18b524c37f0ac40de980ed87b9b334390b7675a9f734e10a3e9a15435235cb0"
+        },
+        {
+          "path": "grasps/Table_99cf659ae2fe4b87b72437fd995483b_0.009700376721042367.h5",
+          "url": "https://raw.githubusercontent.com/NVlabs/acronym/d02f58fb3a556c3b719976e206cce0dce0103199/data/examples/grasps/Table_99cf659ae2fe4b87b72437fd995483b_0.009700376721042367.h5",
+          "bytes": 236569,
+          "sha256": "c7e2c589120011ccbd48d7fd47626e939523968fc696e4b801109549ed347d88"
+        },
+        {
+          "path": "meshes/Mug/10f6e09036350e92b3f21f1137c3c347.obj",
+          "url": "https://raw.githubusercontent.com/NVlabs/acronym/d02f58fb3a556c3b719976e206cce0dce0103199/data/examples/meshes/Mug/10f6e09036350e92b3f21f1137c3c347.obj",
+          "bytes": 95821,
+          "sha256": "5d7aa38e4bb19efd34201ab7399983842dd0d750ad144c7daacd5821f506d350"
+        },
+        {
+          "path": "meshes/Table/99cf659ae2fe4b87b72437fd995483b.obj",
+          "url": "https://raw.githubusercontent.com/NVlabs/acronym/d02f58fb3a556c3b719976e206cce0dce0103199/data/examples/meshes/Table/99cf659ae2fe4b87b72437fd995483b.obj",
+          "bytes": 49158,
+          "sha256": "8a8fb9db0d83f25284593690affc310a6de3861e6bd31a9a7cb0f975047394fc"
+        },
+        {
+          "path": "splits.json",
+          "text": "{\n  \"train\": [\n    \"Mug_10f6e09036350e92b3f21f1137c3c347_0.0002682457830986903.h5\"\n  ],\n  \"test\": [\n    \"Table_99cf659ae2fe4b87b72437fd995483b_0.009700376721042367.h5\"\n  ]\n}\n",
+          "bytes": 174,
+          "sha256": "46ed88b281c3e080d02e8e604023f455d23b8ed2555e46ec8c3107785fcded55"
+        }
+      ]
+    }
   }
 }

@@ -126,7 +126,9 @@ class Experiment:
                        for name in ('objectness', 'graspness')):
                 raise ValueError('Proposal warmup requires an active objectness or graspness objective')
         if self.method != 'spgrasp':
-            if self.method == 'graspgen':
+            if self.method == 'graspldm':
+                from grasppanda.integrations.acronym import validate_options as validate_trainer
+            elif self.method == 'graspgen':
                 from grasppanda.integrations.graspgen import validate_options as validate_trainer
             elif self.method == 'gtg2':
                 from grasppanda.methods.gtg2_options import validate_config as validate_trainer
@@ -145,6 +147,9 @@ class Experiment:
             validate_options(self)
         elif self.dataset == 'graspgen':
             from .integrations.graspgen import validate_options
+            validate_options(self)
+        elif self.dataset == 'acronym':
+            from .integrations.acronym import validate_options
             validate_options(self)
         elif self.dataset == 'targo':
             from .integrations.targo import validate_options
@@ -178,8 +183,10 @@ class Experiment:
             raise ValueError('EconomicGrasp training has no validation loop; evaluate complete split predictions separately')
         if self.camera not in spec.cameras or self.split not in spec.splits:
             raise ValueError("Unknown camera or split")
-        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "target_depth", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
+        if self.workspace not in ("official_gt_workspace", "depth_only", "native_demo", "native_image", "object_partial", "acronym_partial", "target_depth", "fused_gt_workspace", "fused_scene", "provided_instance_masks"):
             raise ValueError("Unknown workspace policy")
+        if (self.dataset == 'acronym') != (self.workspace == 'acronym_partial'):
+            raise ValueError('acronym_partial is specific to the ACRONYM dataset adapter')
         if (self.dataset == 'targo') != (self.workspace == 'target_depth'):
             raise ValueError('target_depth is specific to the TARGO dataset adapter')
         if (self.dataset == 'graspgen') != (self.workspace == 'object_partial'):
@@ -200,7 +207,7 @@ class Experiment:
                 raise ValueError('This adapter retains the upstream official_gt_workspace preprocessing')
         last_scene=max(stop for _,stop in spec.splits.values())
         for key, low, high in (("scene", 0, last_scene-1), ("frame", 0, spec.frames_per_scene-1), ("frames", 1, last_scene*spec.frames_per_scene),
-                               ("num_points", 2048, 50000), ("seed", 0, 2**31-1),
+                               ("num_points", 1024 if self.dataset == 'acronym' else 2048, 50000), ("seed", 0, 2**31-1),
                                ("batch_size", 1, 256 if self.method == 'gtg2' else 64), ("training_steps", 1, 1000), ("epochs", 1, 10000), ("gpu", 0, 127),
                                ("train_batch_limit",0,25600),("eval_batch_limit",0,7680),("data_workers",0,32),
                                ("timeout_minutes", 1, 43200)):
@@ -222,6 +229,7 @@ class Experiment:
             if self.dataset in ('jacquard','suctionnet1b'): expected = 'native_image'
             if self.dataset == 'graspgen': expected = 'object_partial'
             if self.dataset == 'targo': expected = 'target_depth'
+            if self.dataset == 'acronym': expected = 'acronym_partial'
             if self.workspace != expected: raise ValueError('This training adapter requires workspace: '+expected)
         if self.action=='train_short':
             if self.method=='motiongrasp' and self.training_steps>6:raise ValueError('MotionGrasp short training supports 1–6 temporal updates per native seven-frame sequence')
@@ -231,6 +239,7 @@ class Experiment:
             if self.dataset in ('jacquard','suctionnet1b'): expected = 'native_image'
             if self.dataset == 'graspgen': expected = 'object_partial'
             if self.dataset == 'targo': expected = 'target_depth'
+            if self.dataset == 'acronym': expected = 'acronym_partial'
             if self.method=='generalizing_grasp' and (self.scene>=30 or self.frame!=0):raise ValueError('The native fusion trainer uses scenes 0–29, one fused sample per scene (frame=0)')
             if self.workspace!=expected:raise ValueError(f'This training operation requires workspace: {expected}')
         if self.action == 'train_short' and self.scene not in spec.scene_ids('train'):

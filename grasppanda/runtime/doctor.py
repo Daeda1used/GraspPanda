@@ -12,7 +12,7 @@ modules = ["torch", "gradio", "MinkowskiEngine", "pytorch3d", "pointnet2._ext", 
 result = {"python": sys.version, "executable": sys.executable, "platform": platform.platform(), "modules": {}}
 modules += ['opt_einsum', 'flash_attn', '_grasppanda_sampling_cuda', '_grasppanda_pointrope_cuda', '_grasppanda_pointops', '_grasppanda_pointcept_cuda', 'ocnn', 'dwconv.core', '_grasppanda_gpg', 'fpsample', 'torch_cluster', '_grasppanda_pointmamba_scan', '_grasppanda_causal_conv1d', '_grasppanda_pcm_scan', '_grasppanda_pcm_causal']
 modules += ['diffusers', 'nflows', 'urdf_parser_py', 'ikpy', 'torchprimitivesdf._C']
-modules += ['pysdf', 'torchtyping', 'linear_attention_transformer']
+modules += ['pysdf', 'torchtyping', 'linear_attention_transformer', 'yapf']
 for name in modules:
     try:
         mod = importlib.import_module(name)
@@ -32,6 +32,12 @@ try:
     result['modules']['targo_native'] = {'status':'ok','file':str(prepared)}
 except Exception as error:
     result['modules']['targo_native'] = {'status':'failed','error':str(error)}
+try:
+    from grasppanda.runtime.build_graspldm import build as build_graspldm
+    module = build_graspldm(allow_build=False)
+    result['modules']['graspldm_native'] = {'status':'ok','file':module.__file__}
+except Exception as error:
+    result['modules']['graspldm_native'] = {'status':'failed','error':str(error)}
 result["sources"] = []
 pins=json.loads((ROOT / "grasppanda/resources/upstreams.lock.json").read_text())
 pins+=json.loads((ROOT / "grasppanda/resources/component_sources.lock.json").read_text())

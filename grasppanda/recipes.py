@@ -36,6 +36,12 @@ def checkpoint_camera(method, camera, dataset='graspnet1b'):
 def preset(method, dataset_root='', dataset='graspnet1b'):
     from .config import Experiment, HEATMAP, capabilities
     from .weights import primary, records
+    if dataset == 'acronym':
+        if not capabilities(method,dataset):raise ValueError('Select the registered GraspLDM method')
+        return Experiment(dataset=dataset,method=method,action='infer',dataset_root=dataset_root,
+                          camera='synthetic-depth',split='test',scene=0,workspace='acronym_partial',
+                          num_points=1024,collision_thresh=0,checkpoint=primary(method,'synthetic-depth') or 'checkpoints/graspldm/ddm/checkpoints/last.ckpt',
+                          batch_size=2,learning_rate=.001)
     if dataset == 'targo':
         if not capabilities(method,dataset):raise ValueError('Select the registered TARGO-Net method')
         return Experiment(dataset=dataset,method=method,action='infer',dataset_root=dataset_root,

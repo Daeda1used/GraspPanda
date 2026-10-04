@@ -11,6 +11,8 @@ Select a dataset first. The browser then offers its methods, cameras, splits and
 | [Jacquard](https://jacquard.liris.cnrs.fr/database.php) | Synthetic RGB-D; 54,485 scenes and 4.97 million rectangle annotations | GR-ConvNet RGB-D and depth | Explicit train/validation split; planar IoU evaluation |
 | [SuctionNet-1B](https://graspnet.net/suction) | Shared GraspNet RGB-D scenes; separate suction supervision | Native SuctionNet RGB-D | RealSense prediction, training and resume; native suction outputs |
 | [TARGO](https://huggingface.co/datasets/randing2000/TARGO) | Synthetic target grasping; 2.47 million released training trials | TARGO-Net + frozen AdaPoinTr | Native prediction and training; scene-disjoint labelled validation |
+| [GraspGen](https://github.com/NVlabs/GraspGen) | Object-centric rendered partial depth and grasp labels | Native GraspGen generator/discriminator | Separate stage training; simulation evaluation remains upstream |
+| [ACRONYM](https://github.com/NVlabs/acronym) | 8,872 objects and 17.7 million simulated parallel-jaw grasps | GraspLDM partial-cloud VAE/diffusion | Toolbox depth rendering and all-success-label training; native networks and objectives |
 
 GraspClutter6D is a 2025 RA-L dataset, also presented at ICRA 2026 ([paper](https://arxiv.org/pdf/2504.06866)). ZeroGrasp is CVPR 2025 ([paper](https://arxiv.org/pdf/2504.10857)). Scale describes the publishers' datasets, not the number of observations evaluated by this toolbox.
 
@@ -385,3 +387,52 @@ Training uses the author's released target TSDF points and surrounding scene poi
 `scene` and `frames` select scene indices and counts in the chosen split. Unbounded epoch training consumes all labels in its training split, including the final partial batch; short training and bounded epochs use the selected scenes. `data_workers` remains zero. Dataset inventories are reused in the UI and invalidated when source metadata changes. See [training, resume and decoding controls](REFERENCE.md#targo-training).
 
 Epoch validation reports held-out grasp losses and binary label accuracy. **These are not physical grasp success rates.** PyBullet evaluation requires separate object URDFs/meshes and the upstream simulation workflow; it is not exposed as a toolbox evaluator. The author-linked GIGA object asset archive was unavailable when this adapter was validated. No training-accuracy proxy is substituted for simulation results.
+
+## ACRONYM
+
+[ACRONYM](https://github.com/NVlabs/acronym) contains **17.7 million simulated grasps on 8,872 objects**. The integrated [GraspLDM model (IEEE Access 2024)](https://arxiv.org/pdf/2312.11243) uses its released **partial-point-cloud** weights, with a PVCNN encoder, conditional VAE and latent diffusion model. Full-surface point sampling is not used as a visual observation.
+
+### Start with original assets
+
+```bash
+./panda data acronym --root /data/ACRONYM --fetch
+./panda weights graspldm --camera synthetic-depth
+./panda init --example acronym-diffusion --dataset-root /data/ACRONYM -o acronym.local.yaml
+./panda check acronym.local.yaml
+./panda run acronym.local.yaml
+```
+
+The **0.6 MB starter** downloads NVIDIA's original Mug and Table examples, their meshes and **4,000 original grasp trials**. Its explicit toolbox demonstration split assigns Mug to training and Table to testing; this is not the paper's split. The paired model downloads total **46 MB**. In the browser, select **ACRONYM**, download the starter and registered weights, then check and run the preset. New data, caches and experiments follow your selected [storage volume](INSTALL.md#choose-the-storage-volume-first).
+
+Each input is **1,024 points from a single rendered depth image** of an isolated object, using the author's 640×480 camera calibration and 0.1 mm depth quantization. The toolbox samples seeded camera views on a 0.5–0.8 m shell, independent of grasp labels. Mesh geometry and scale generate the synthetic observation; only the resulting partial point cloud enters the model. The author's point-cloud centering and normalization are retained. This object-centric protocol does not include scene segmentation or clutter collision rejection.
+
+`scene` indexes an object in the selected split, `frame` selects one of its 20 seeded views, and `frames` counts views, continuing to the next object when necessary. Derived numeric observations are verified and reused under `DATASET_ROOT/.grasppanda/acronym-depth-v1/`; set `label_root` to a writable cache directory when the dataset is read-only. A changed mesh, camera calibration or view seed selects a new cache entry.
+
+Outputs store `poses` (N×4×4), `scores`, `points` and `object_to_camera` in NPZ files. Translations use metres in the **OpenCV camera frame**; the grasp frame is the native ACRONYM Franka gripper base. Width is not predicted. The PNG and interactive GLB use the author's gripper marker. Scores are native sigmoid outputs, not measured simulation success probabilities.
+
+### Full dataset
+
+Follow [NVIDIA's full ACRONYM instructions](https://github.com/NVlabs/acronym#using-the-full-acronym-dataset) for the approximately 1.6 GB annotation archive, **ShapeNetSem access**, mesh terms and watertight preprocessing. Original HDF5 metadata determines each mesh's path and scale. The starter examples do not grant access to the complete ShapeNet collection.
+
+For the author's category split files:
+
+```bash
+hf download kuldeepbarad/GraspLDM \
+  --revision 3da18c20aac385fcb1ae4843a83f2ffa43001a99 \
+  --include "splits/*.json" --local-dir /data/ACRONYM-full
+```
+
+```text
+ACRONYM-full/
+  grasps/<category>_<mesh-id>_<scale>.h5
+  meshes/<category>/<mesh-id>.obj
+  splits/<category>.json
+```
+
+Every object listed in the selected split must be installed. Alternatively, create `splits.json` with explicit `train` and `test` lists of original HDF5 basenames; it takes precedence over `splits/`. Mesh identities may not overlap between those lists, including differently scaled copies. Use a separate full-dataset root so the starter's demonstration `splits.json` does not override your full split.
+
+### Training protocol
+
+Both native objectives are available through **Train across epochs → Method training stages → GraspLDM training stage**. The toolbox renders observations lazily and samples original **successful** grasps as supervision. It does **not** reproduce the paper's visibility-filtered targets: the public author renderer imports `GripperCollision`, which is absent from the pinned source. Its rendered training release is also not supplied by the registered weight repository. The selectable toolbox protocol is explicitly named **`all_success`**; it may supervise grasps on surfaces hidden from the selected view.
+
+An unbounded epoch visits all 20 views of every training object once, sampling `grasps_per_view` labels per view. It is not an exhaustive pass over every grasp trial. Objects are not silently skipped; missing meshes, unusable depth or objects without successful labels stop the job. See [stage selection, initialization, resume and checkpoint reuse](REFERENCE.md#acronym-and-graspldm). The starter validates operation only; no full-dataset convergence or simulator benchmark is claimed.

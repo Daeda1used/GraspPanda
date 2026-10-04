@@ -394,5 +394,23 @@
     "bytes": 389299512,
     "sha256": "97677a6204a3cf468569db67a48b1ea45c038ccf5d124b0d01eff2a05338c6b9",
     "role": "auxiliary"
+  },
+  {
+    "method": "graspldm",
+    "camera": "synthetic-depth",
+    "role": "primary",
+    "path": "checkpoints/graspldm/ddm/checkpoints/last.ckpt",
+    "source": "https://huggingface.co/kuldeepbarad/GraspLDM/resolve/3da18c20aac385fcb1ae4843a83f2ffa43001a99/checkpoints/generation/ppc_1a_partial_63cat8k_filtered_latentc3_z16_pc256_180k/ddm/checkpoints/last.ckpt",
+    "bytes": 25175359,
+    "sha256": "1cb9d2683e0d750df0c163b4ad4d5d9288ec9d7bb2b4246d11f90250dd856f28"
+  },
+  {
+    "method": "graspldm",
+    "camera": "synthetic-depth",
+    "role": "auxiliary",
+    "path": "checkpoints/graspldm/vae/checkpoints/last.ckpt",
+    "source": "https://huggingface.co/kuldeepbarad/GraspLDM/resolve/3da18c20aac385fcb1ae4843a83f2ffa43001a99/checkpoints/generation/ppc_1a_partial_63cat8k_filtered_latentc3_z16_pc256_180k/vae/checkpoints/last.ckpt",
+    "bytes": 20985977,
+    "sha256": "6f0e017b0790fcb742797dbd6c3a31cb9c48ba62020ebffd08408c3f395d44e7"
   }
 ]

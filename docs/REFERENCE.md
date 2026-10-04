@@ -1895,3 +1895,35 @@ Select **TARGO → Train across epochs** or initialize `targo-train`. The native
 Training retains the author quality BCE, symmetric quaternion loss and width loss. Adam uses the configured learning rate; the native exponential schedule multiplies it by `0.95` every ten epochs. Custom optimizer, augmentation, loss and scheduler overrides are rejected. To resume, select a completed epoch checkpoint, keep its training/data settings and increase `epochs`. Saved state includes the grasp network, Adam moments, scheduler, completed epochs/updates and Python/NumPy/Torch/CUDA random states. The frozen completion network remains the registered auxiliary checkpoint. Native sparse CUDA operators do not promise bitwise reproducibility across runs or machines.
 
 The loader fails with the original scene ID on invalid input instead of silently replacing it with a different label. Validation is independent of model selection by simulator success: saved checkpoints describe completed epochs, and `validation` records contain explicit labelled losses and accuracy. Binary accuracy can be dominated by negative trials; it is not a grasp-success metric. Use a resumed checkpoint for prediction with `train_checkpoint_mode: initialize` (or **Reuse checkpoint** in the browser).
+
+## ACRONYM and GraspLDM
+
+GraspPanda loads the released **partial-cloud** architecture and checkpoints. PVCNN, the VAE and the latent denoiser remain native; no interchangeable encoder/head slots are registered. [Input geometry and the adapted training protocol](DATASETS.md#acronym) are part of every experiment's provenance.
+
+| Configuration | Where to edit | Meaning |
+|---|---|---|
+| `dataset_options.mode` | Input & preprocessing → Dataset parameters | `diffusion` (default) or `vae` |
+| `dataset_options.sampler` | Dataset parameters | `ddim` (default) or `ddpm`; applies to diffusion inference |
+| `dataset_options.inference_steps` | Dataset parameters | `100` by default; 1–1,000 DDIM steps, or exactly 1,000 for DDPM |
+| `dataset_options.num_grasps` | Dataset parameters | `20` by default; 1–1,000 generated candidates |
+| `scene`, `frame`, `frames` | Input & preprocessing | Object index, first rendered view (0–19), and number of views |
+| `trainer.stage` | Training settings → Method training stages | `vae` (default) or `diffusion`; dedicated stage selector |
+| `trainer.grasps_per_view` | Trainer parameters | `100` by default; sample successful labels, with replacement only if fewer are available |
+| `trainer.supervision` | Trainer parameters | `all_success`; author visibility filtering is not substituted or claimed |
+| `label_root` | Prepared targets / cache root | Optional writable observation cache; default is under the dataset root |
+| `batch_size`, `learning_rate` | Training settings | Views per batch; native Adam, default learning rate `0.001` |
+| `train_batch_limit` | Training settings | `0`: all training views; positive: limit batches from the explicit view selection |
+
+```bash
+./panda init --example acronym-vae-train --dataset-root /data/ACRONYM -o vae.local.yaml
+./panda run vae.local.yaml
+./panda init --example acronym-diffusion-train --dataset-root /data/ACRONYM -o diffusion.local.yaml
+# Set checkpoint in diffusion.local.yaml to the completed VAE run's checkpoint.pt.
+./panda run diffusion.local.yaml
+```
+
+The VAE stage optimizes the native reconstruction, classification and annealed KL objectives. The diffusion stage freezes its paired VAE, keeps it in evaluation mode and optimizes the native denoising loss. Training retains native rotation, jitter and point-dropout augmentation. Adam's learning rate drops by 0.1 after 60,000 and 120,000 updates; VAE KL annealing retains the native 180,000-step schedule. Loss, optimizer, scheduler and augmentation replacements are rejected for this adapter.
+
+A registered author checkpoint initializes both networks. An empty checkpoint starts a fresh VAE in the VAE stage; in the diffusion stage it starts a fresh denoiser with the separately registered author VAE. Switching stages uses `train_checkpoint_mode: initialize`. Resume uses `resume`, the same stage/data/settings and a larger final `epochs`; paired networks, optimizer, scheduler, update count and random states are restored. Native CUDA operations do not promise bitwise-identical training.
+
+**Runs & results → Prepare inference from checkpoint** selects VAE sampling for VAE-stage checkpoints and diffusion sampling for diffusion-stage checkpoints. Direct CLI inference with a VAE-stage checkpoint must set `dataset_options.mode: vae`; it cannot claim a matching trained diffusion prior until that stage is trained. Evaluation batch limits and background loader workers remain zero. Training loss is not a success-rate metric; there is no simulator-evaluation action.

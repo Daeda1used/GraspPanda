@@ -32,7 +32,8 @@ class DatasetSpec:
             raise ValueError(f'Unknown {self.title} split: {split}')
         if split in self.scene_splits:
             return self.scene_splits[split]
-        return tuple(range(*self.splits[split]))
+        # Large object datasets need bounds and indexing, not millions of allocated IDs.
+        return range(*self.splits[split])
 
     def frame_keys(self, split, scene, frame, count):
         """Walk the declared split, including non-contiguous scene indices."""
@@ -182,3 +183,15 @@ register_dataset(DatasetSpec('targo', 'TARGO', ('synthetic-depth',),
     default_method='targonet',scene_label='First scene in split',frame_label='Frame (always 0)',
     runner='grasppanda.methods.targo',hidden_controls=('num_points','frame','collision_thresh')),
     'grasppanda.integrations.targo')
+
+
+register_dataset(DatasetSpec('acronym','ACRONYM',('synthetic-depth',),
+    {'train':(0,1000000),'test':(0,1000000)},20,
+    ('rendered_depth','intrinsics','object_mesh','grasp_labels'), 'https://github.com/NVlabs/acronym',
+    method_actions={'graspldm':('infer','train_short','train')},
+    protocol_note='Object-centric single-view depth. Native partial-cloud GraspLDM networks and losses; '
+                  'toolbox seeded rendering and all-success-label supervision. Author visibility-filtered '
+                  'training and simulator benchmark results are not reproduced.',
+    default_method='graspldm',scene_label='First object in split',frame_label='First rendered view (0–19)',
+    runner='grasppanda.methods.graspldm',hidden_controls=('num_points','collision_thresh')),
+    'grasppanda.integrations.acronym')

@@ -47,5 +47,6 @@ python3 grasppanda/runtime/clone_upstreams.py
 .venv/bin/python grasppanda/runtime/build_components.py
 .venv/bin/python grasppanda/runtime/build_extras.py
 .venv/bin/python grasppanda/runtime/build_targo.py
+.venv/bin/python grasppanda/runtime/build_graspldm.py
 "$UV_BIN" pip check --python .venv/bin/python
 echo 'GraspPanda installed. Run ./panda weights graspness, then ./panda ui.'

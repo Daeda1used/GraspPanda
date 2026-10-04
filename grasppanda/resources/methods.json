@@ -677,5 +677,54 @@
         "ui": "Training settings \u2192 Learning rate"
       }
     }
+  },
+  {
+    "id": "graspldm",
+    "name": "GraspLDM",
+    "repository": "https://github.com/kuldeepbrd1/graspLDM",
+    "path": "upstream/object_centric/graspldm",
+    "group": "object_centric/partial_pointcloud",
+    "datasets": [
+      "acronym"
+    ],
+    "paper_title": "GraspLDM: Generative 6-DoF Grasp Synthesis using Latent Diffusion Models",
+    "input_note": "One rendered isolated-object depth view. Native partial-cloud PVCNN/VAE and latent diffusion, with original released weights.",
+    "provenance": {
+      "kind": "author_source",
+      "publication": "IEEE Access 2024",
+      "paper_url": "https://arxiv.org/pdf/2312.11243",
+      "adapter_note": "Native networks, weights, normalization, loss functions and sampler. Toolbox supplies deterministic partial-depth rendering, finite two-stage training on all original successful grasp labels and resume. The author visibility-filter helper is absent from the public source; its filtered training protocol is not reproduced. No arbitrary component replacements or simulation scores."
+    },
+    "configuration_reference": "docs/REFERENCE.md#acronym-and-graspldm",
+    "configuration_parameters": {
+      "dataset_options.mode": {
+        "default": "diffusion",
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.sampler": {
+        "default": "ddim",
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.inference_steps": {
+        "default": 100,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "dataset_options.num_grasps": {
+        "default": 20,
+        "ui": "Input & preprocessing \u2192 Dataset parameters"
+      },
+      "trainer.stage": {
+        "default": "vae",
+        "ui": "Training settings \u2192 Method training stages \u2192 GraspLDM training stage"
+      },
+      "trainer.grasps_per_view": {
+        "default": 100,
+        "ui": "Training settings \u2192 Method training stages \u2192 Trainer parameters"
+      },
+      "trainer.supervision": {
+        "default": "all_success",
+        "ui": "Training settings \u2192 Method training stages \u2192 Trainer parameters"
+      }
+    }
   }
 ]

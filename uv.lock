@@ -1072,7 +1072,7 @@ wheels = [
 
 [[package]]
 name = "grasppanda"
-version = "0.60.0"
+version = "0.61.0"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1169,6 +1169,7 @@ dependencies = [
     { name = "webdataset" },
     { name = "wheel" },
     { name = "xformers" },
+    { name = "yapf" },
     { name = "yourdfpy" },
     { name = "zarr" },
     { name = "zstandard" },
@@ -1270,6 +1271,7 @@ requires-dist = [
     { name = "webdataset", specifier = ">=1.0.2" },
     { name = "wheel", specifier = "==0.48.0" },
     { name = "xformers", specifier = "==0.0.28.post3", index = "https://download.pytorch.org/whl/cu118" },
+    { name = "yapf", specifier = "==0.32.0" },
     { name = "yourdfpy", specifier = "==0.0.56" },
     { name = "zarr", specifier = "<3" },
     { name = "zstandard", specifier = ">=0.25.0" },
@@ -4422,6 +4424,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/44/3e/4a45cb0738da6565f134c01d82ba291c746551b5bc82e781ec876eb20909/yacs-0.1.8.tar.gz", hash = "sha256:efc4c732942b3103bea904ee89af98bcd27d01f0ac12d8d4d369f1e7a2914384", size = 11100, upload-time = "2020-08-10T16:37:47.755Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/4f/fe9a4d472aa867878ce3bb7efb16654c5d63672b86dc0e6e953a67018433/yacs-0.1.8-py3-none-any.whl", hash = "sha256:99f893e30497a4b66842821bac316386f7bd5c4f47ad35c9073ef089aa33af32", size = 14747, upload-time = "2020-08-10T16:37:46.4Z" },
+]
+
+[[package]]
+name = "yapf"
+version = "0.32.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/cd/d0d1e95b8d78b8097d90ca97af92f4af7fb2e867262a2b6e37d6f48e612a/yapf-0.32.0.tar.gz", hash = "sha256:a3f5085d37ef7e3e004c4ba9f9b3e40c54ff1901cd111f05145ae313a7c67d1b", size = 194820, upload-time = "2021-12-26T07:48:02.924Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/88/843c2e68f18a5879b4fbf37cb99fbabe1ffc4343b2e63191c8462235c008/yapf-0.32.0-py2.py3-none-any.whl", hash = "sha256:8fea849025584e486fd06d6ba2bed717f396080fd3cc236ba10cb97c4c51cf32", size = 190236, upload-time = "2021-12-26T07:48:00.432Z" },
 ]
 
 [[package]]

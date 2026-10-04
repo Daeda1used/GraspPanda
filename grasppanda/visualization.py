@@ -1,5 +1,20 @@
-"""Interactive views of saved geometry without importing a model implementation."""
+"""Interactive experiment views without importing a model implementation."""
 from pathlib import Path
+
+
+def training_loss(values, run_id):
+    import plotly.graph_objects as go
+    stages = {}
+    for value in values:
+        stages.setdefault(value.get('stage', 'Training'), []).append(value['total'])
+    figure = go.Figure()
+    for stage, losses in stages.items():
+        figure.add_trace(go.Scatter(x=list(range(1, len(losses) + 1)), y=losses,
+                                   mode='lines+markers', name=stage, marker=dict(size=4)))
+    figure.update_layout(title='Training loss by stage', xaxis_title='Batch', yaxis_title='Loss',
+                         template='plotly_white', height=380, margin=dict(l=55, r=20, t=55, b=45),
+                         legend=dict(orientation='h'), uirevision=str(run_id))
+    return figure
 
 
 def hand_scene(path, label='Predicted hand', frame='Camera'):
