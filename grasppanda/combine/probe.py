@@ -119,6 +119,10 @@ class ProbeReport:
         seconds_data: Median time spent waiting for a batch.
         peak_gpu_mib: Peak GPU memory allocated by PyTorch in this process.
         grasps_per_frame: Number of grasps predicted for each probed frame.
+        postprocessing: For the evaluation variant ``post``, when the config has one:
+            ``steps`` (component types, in order), ``grasps`` (per predicted frame:
+            the number predicted, then the number left after every step) and
+            ``seconds`` (per frame, per step; measured on this machine).
         predicted_frames: Their keys.
         nonfinite: Non-finite values that were met, as sentences.
         failure: Phase, component, exception type and message of a failure.
@@ -150,6 +154,7 @@ class ProbeReport:
     seconds_data: float | None = None
     peak_gpu_mib: float | None = None
     grasps_per_frame: list[int] = field(default_factory=list)
+    postprocessing: dict[str, Any] = field(default_factory=dict)
     predicted_frames: list[str] = field(default_factory=list)
     nonfinite: list[str] = field(default_factory=list)
     failure: dict[str, str] | None = None
@@ -480,15 +485,58 @@ def _train_and_predict(report: ProbeReport, run: Any, section: str | None, **opt
     try:
         model.eval()
         dataset = build_dataset(cfg, section or "train")
+        predicted: list[Any] = []
         for index in range(min(options["predict_frames"], len(dataset))):
             batch = dataset.collate([dataset[index]]).to(device)
             with torch.no_grad():
                 groups = model.predict(batch.observation)
             _count_grasps(report, batch.observation.keys, groups)
+            predicted.append((batch.observation, list(groups)))
     except Exception as error:
         _fail(report, error, "predict")
         return False
+    try:
+        _post_process(report, cfg, predicted, device)
+    except Exception as error:
+        _fail(report, error, "predict", "post-processing the predictions")
+        return False
     return True
+
+
+def _post_process(report: ProbeReport, cfg: Any, predicted: list[Any], device: Any) -> None:
+    """Apply the evaluation variant ``post`` of the config, step by step, to the
+    predictions of every probed frame, and record what each step left and took.
+
+    The grasps of a probe come from a detector trained for a few iterations: the
+    record shows that every step runs on real frames and how many grasps it passes
+    there, not what it does to a trained detector's grasps."""
+    from grasppanda.registry import POSTPROCESSORS
+
+    from .post import POST_VARIANT
+
+    nodes = ((cfg.get("evaluation") or {}).get("variants") or {}).get(POST_VARIANT)
+    if not nodes:
+        return
+    steps = [POSTPROCESSORS.build(node) for node in nodes]
+    record: dict[str, Any] = {
+        "steps": [type(step).__name__ for step in steps],
+        "grasps": [],
+        "seconds": [],
+    }
+    for observation, groups in predicted:
+        for key, grasps in zip(observation.keys, groups):
+            grasps.key = grasps.key or key
+            sizes, times = [len(grasps)], []
+            for step in steps:
+                started = time.perf_counter()
+                grasps = step(grasps, observation)
+                if device.type == "cuda":
+                    torch.cuda.synchronize(device)
+                times.append(round(time.perf_counter() - started, 4))
+                sizes.append(len(grasps))
+            record["grasps"].append(sizes)
+            record["seconds"].append(times)
+    report.postprocessing = record
 
 
 def _count_grasps(report: ProbeReport, keys: Sequence[Any], groups: Any) -> None:

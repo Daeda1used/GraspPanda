@@ -1,0 +1,30 @@
+# OctFormer (ScanNet segmentation layout) on an octree with 5 mm leaves.
+#
+# Needs the `ocnn` library (pip install "grasppanda[ocnn]"). A room-scale encoder whose
+# unit of length has to be changed. No published GraspNet-1Billion result uses it. The
+# released ScanNet weights were not tried: random init.
+#
+# What must be re-tuned, and why:
+# * voxel_size: 0.005 m, GSNet's grid (the class default, 0.01 m, is the ScanNet
+#   setting). The stem reduces by four per axis, so the first attention stage works on
+#   2 cm nodes and the last on 16 cm nodes.
+# * octree_depth: 11 (the class default), so a frame must fit a cube of
+#   0.005 * 2**11 = 10.24 m around the middle of its bounding box; a larger cloud is
+#   refused with that number.
+# * patch_size and dilation: 26 nodes per attention group, dilation 4, the ScanNet
+#   values. A group is a count of nodes along the z-order curve, so its metric extent
+#   follows the density.
+# * drop_path: 0.5 is the ScanNet recipe for 600 epochs of a 44 M-parameter model; for
+#   a short schedule it is the first thing to lower.
+# * out_channels: 512, the width of SparseUNet14's output. Compose sets it to the width
+#   of the encoder it replaces.
+# * in_channels: 3 constant ones; the position of the points inside their leaf is
+#   appended (`local_coords`), the published model reads normals and colour as well.
+# * batch composition: attention groups are cut from the nodes of the whole batch, so a
+#   frame's features depend slightly on the frames before it in the batch.
+model:
+  backbone:
+    type: OctFormer               # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    out_channels: 512
+    voxel_size: 0.005

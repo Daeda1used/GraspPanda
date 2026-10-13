@@ -63,7 +63,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import torch
 import torch.nn.functional as F
@@ -76,6 +76,7 @@ from grasppanda.structures import ContractError, PointFeatures, PointSet
 from grasppanda.utils.imports import require
 
 from ._packed import check_features, cloud_sizes
+from ._pretrained import load_pretrained
 from .ptv3 import (
     _MLP,
     _cloud_depths,
@@ -377,6 +378,12 @@ class LitePT(Backbone):
             in attending blocks).
         pre_norm: Normalise before attention and MLP (``True``) or after the residual.
         shuffle_orders: Permute the curves among the blocks at every training step.
+        pretrained: Released weights to start from: a name of
+            ``grasppanda.models.backbones._pretrained.RELEASED`` or a file path. The
+            encoder part of the file is loaded at construction and reported in the log.
+        pretrained_mismatch: ``error`` refuses when a tensor of the encoder is absent
+            from the file or has another shape there; ``skip`` keeps the initialisation
+            of such tensors (the stem, when the number of input channels differs).
     """
 
     output = "dense"
@@ -412,6 +419,8 @@ class LitePT(Backbone):
         drop_path: float = 0.3,
         pre_norm: bool = True,
         shuffle_orders: bool = True,
+        pretrained: str | None = None,
+        pretrained_mismatch: Literal["error", "skip"] = "error",
     ) -> None:
         super().__init__()
         spconv = require("spconv.pytorch", extra="spconv-cu118", purpose="LitePT")
@@ -549,6 +558,11 @@ class LitePT(Backbone):
             )
             self.dec[f"dec{stage}"] = modules
         self.out_channels = widths[0]
+        self.pretrained_report = (
+            None
+            if pretrained is None
+            else load_pretrained(self, pretrained, mismatch=pretrained_mismatch)
+        )
 
     # --------------------------------------------------------------------- forward
 

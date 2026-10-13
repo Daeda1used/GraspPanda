@@ -1,0 +1,25 @@
+# Hiera-Tiny through transformers `AutoBackbone`, colour only, at its fixed 224 x 224.
+#
+# 27.1 M parameters, four maps at strides 4 to 32, widths 96 to 768. Weights:
+# `facebook/hiera-tiny-224-hf`, CC BY-NC 4.0: NON-COMMERCIAL weights.
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * input_size: this checkpoint has position embeddings for 224 x 224 only, so the 360 x 640 image
+#   is squeezed to a square a third of its width. It runs; expect it to be the weakest way to use
+#   Hiera. Prefer `hiera-small-abswin` or `sam2-hiera-tiny`, which take the image at its size.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: HFImageEncoder
+    name: facebook/hiera-tiny-224-hf  # hub id or a local directory
+    out_indices: [1, 2, 3, 4]
+    input_size: [224, 224]
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

@@ -1,0 +1,22 @@
+# EdgeConv layers of DGCNN on a static graph, at full resolution, through PyTorch Geometric.
+#
+# A bridge: the layer is `torch_geometric.nn.EdgeConv`
+# (DGCNN, ACM TOG 2019). The stack around it (stem, three layers with batch
+# norm and residuals, 256-channel output) is GraspPanda's and is not a published
+# network. Needs `pip install "grasppanda[torch_geometric]"`. No AP is claimed.
+#
+# What must be re-tuned, and why:
+# * k: 16 neighbours on one spatial graph per frame. There is no subsampling, so three
+#   layers reach three hops: a few centimetres at 5 mm point spacing.
+#   For the dynamic (feature-space) graph of the paper use the `dgcnn` preset.
+# * channels: [64, 64, 128]; one width per layer, any values.
+# * in_channels: 3 constant ones, with the coordinates put in front of them.
+# * out_channels: 256, the width Scale-Balanced-Grasp's gated crop needs.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PyGPointEncoder         # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones; the coordinates are added by the encoder
+    conv: edge
+    channels: [64, 64, 128]
+    k: 16

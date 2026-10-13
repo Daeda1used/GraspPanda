@@ -1,0 +1,40 @@
+# ImagePainted: the sparse U-Net of GSNet with image features painted onto its input points.
+#
+# An adapter around a `dense` scene encoder and an image encoder: the colour image is
+# encoded once (here by an ImageNet ResNet-18, strides 4 and 8), every point is projected
+# into it, the maps are sampled there and projected to `paint_channels`, and the 3-D
+# network reads them as extra input channels. Compose does not insert this adapter and
+# `--set backbone=` does not take it: copy the node into `model.backbone` of a config of
+# your own (docs/slots/image_encoders.md has the complete fragment).
+#
+# What must be re-tuned, and why:
+# * the dataset. Every split needs `images: [rgb]`, and the training transforms must not
+#   move the cloud: remove RandomFlip and RandomRotation (a dataset that serves images
+#   refuses them). Training without that augmentation is a different recipe from the base
+#   method's; no AP is claimed.
+# * backbone.in_channels: what the detector feeds plus `paint_channels`: 3 constant ones
+#   for GSNet and EconomicGrasp (35 here), 6 for FineGrasp's normals (38). With
+#   `fusion: output` it is what the detector feeds, unchanged.
+# * image_encoder: any node of grasppanda/presets/image_encoder/ with `depth: rgb_only`.
+#   `out_indices` picks the maps that are sampled; fine maps (strides 4 and 8) keep object
+#   boundaries, a ViT has one stride only.
+# * image_scale: 0.5 encodes a 640 x 360 image instead of the 1280 x 720 sensor image.
+# * fusion: `input` (early; the 3-D network is trained on painted points) or `output`
+#   (late; a zero-initialised residual on the encoder's features).
+model:
+  backbone:
+    type: ImagePainted            # `dense`, like the encoder it wraps
+    fusion: input
+    paint_channels: 32
+    image_scale: 0.5
+    image_encoder:
+      type: TimmImageEncoder
+      name: resnet18.a1_in1k
+      pretrained: true
+      out_indices: [1, 2]         # strides 4 and 8
+      depth: rgb_only             # the points already carry the depth
+    backbone:
+      type: SparseUNet14
+      in_channels: 35             # 3 constant ones + 32 painted channels
+      out_channels: 512
+      voxel_size: 0.005

@@ -1,0 +1,28 @@
+# DINOv2 ViT-S/14 through transformers `AutoBackbone`, four layers, colour only.
+#
+# 22.1 M parameters; blocks 3, 6, 9 and 12 as maps at stride 14, width 384. Weights:
+# `facebook/dinov2-small`, Apache-2.0 (hub card).
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * size_multiple: 14. The image is resampled up to the next multiple of the patch size (364 x 644
+#   for a 360 x 640 image); the maps come at stride 14 and the decoder resamples them to the
+#   proposal stride.
+# * single-scale maps: a plain ViT returns every map at its patch stride, so the pyramid decoder
+#   merges layers, not resolutions. The heat-map is decoded from stride 14; fine structure has to
+#   be learned by the decoder.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: HFImageEncoder
+    name: facebook/dinov2-small   # hub id or a local directory
+    out_indices: [3, 6, 9, 12]
+    size_multiple: 14
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

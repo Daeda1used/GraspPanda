@@ -16,20 +16,22 @@ that takes a full training run and an evaluation on a benchmark split.
 
 ## What was run
 
-- **Grid**: 208 cells (145 `runs`, 6 `runs-unstable`, 51 `refused`, 6 `fails`): every shipped method config as it is, every registered scene encoder under every seed-based method, every variant of every other stage with one stage replaced at a time, the legal sets of stage variants, and HGGD as it is. The variants of a stage are its presets plus every component whose constructor defaults no preset states.
+- **Grid**: 468 cells (388 `runs`, 10 `runs-unstable`, 51 `refused`, 19 `fails`): every shipped method config as it is, every registered scene encoder under every seed-based method, every variant of every other stage with one stage replaced at a time, the legal sets of stage variants, HGGD as it is, and every image-encoder preset under HGGD. The variants of a stage are its presets plus every component whose constructor defaults no preset states.
 - **A cell**: `grasppanda compose <method config> --set <slot>=<choice>`, so that an encoder is fitted and adapters are inserted exactly as a user gets them, then `grasppanda probe <composed config> --iters 20 --frames 8`: the real trainer with the method's own recipe on the split `sample` of GraspNet-1Billion (RealSense; scene 0, frames 0, 32, …, 224), then prediction on two of those frames. Both commands of every cell are in the [measured file](measured_combinations.json).
 - **One exception to "as a user gets them"**: configs that read the width histogram of Scale-Balanced-Grasp were probed with the reference's own file (`scale_statistic.source: legacy_import`), because the native histogram is a statistic of the whole training split and a probe reads eight frames. The override is part of the recorded command.
-- **When and where**: 208 cells on 2026-10-13 with GraspPanda at commit `e849e98`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time.
-- **Two cells with one config are one experiment.** A cell that composes to the very config of another cell (the same config hash) shares its probe; one that composes to its method's shipped config is marked *own*. 43 of the 208 cells share a probe.
+- **When and where**: 174 cells on 2026-10-13 with GraspPanda at commit `e849e98`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 16 cells on 2026-10-13 with GraspPanda at commit `f5ebe25`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 12 cells on 2026-10-13 with GraspPanda at commit `9b777e8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 35 cells on 2026-10-13 with GraspPanda at commit `ade1b10`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 39 cells on 2026-10-13 with GraspPanda at commit `c3e5827`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 53 cells on 2026-10-13 with GraspPanda at commit `0634455`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 33 cells on 2026-10-13 with GraspPanda at commit `274c338`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 17 cells on 2026-10-13 with GraspPanda at commit `d4ae6aa`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 75 cells on 2026-10-13 with GraspPanda at commit `466721f`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 14 cells on 2026-10-13 with GraspPanda at commit `131fcb8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time.
+- **Two cells with one config are one experiment.** A cell that composes to the very config of another cell (the same config hash) shares its probe; one that composes to its method's shipped config is marked *own*. 42 of the 468 cells share a probe.
 
 | Group | Cells probed | `runs` | `runs-unstable` | `refused` | `fails` |
 |---|---|---|---|---|---|
 | `reference`: the methods as shipped | 5 of 5 | 5 | — | — | — |
-| `encoder`: one scene encoder replaced | 55 of 55 | 43 | 6 | — | 6 |
+| `encoder`: one scene encoder replaced | 235 of 235 | 207 | 10 | — | 18 |
 | `stage`: one other stage replaced | 95 of 95 | 44 | — | 51 | — |
 | `stage-set`: sets of stages | 52 of 52 | 52 | — | — | — |
 | `family`: other detector families, as shipped | 1 of 1 | 1 | — | — | — |
-| **all** | **208 of 208** | **145** | **6** | **51** | **6** |
+| `family-slot`: one component of another detector family replaced | 38 of 38 | 38 | — | — | — |
+| `post`: one post-processing step as the variant `post` | 42 of 42 | 41 | — | — | 1 |
+| **all** | **468 of 468** | **388** | **10** | **51** | **19** |
 
 ## Verdicts
 
@@ -57,7 +59,7 @@ A component **works** under a method when its cell is `runs` or `runs-unstable`:
 
 | Slot | universal | most | some | specific | none |
 |---|---|---|---|---|---|
-| Scene encoders | `OACNNs` ≈2<br>`PointNet2`<br>`PointNet2Transformer`<br>`SpUNet`<br>`SparseUNet14` | `LitePT`<br>`PTv3`<br>`PTv3Sonata` ≈2<br>`PTv3Utonia` ≈2<br>`PointNeXt`<br>`PointNet2Dense` | — | — | — |
+| Scene encoders | `ASSANet`<br>`DGCNN` (`dgcnn-static`)<br>`DGCNN` (`dgcnn`)<br>`DeLA`<br>`MinkUNet` (`minkunet18a-openscene`)<br>`MinkUNet` (`minkunet18a`)<br>`MinkUNet` (`minkunet34c-pointcontrast`)<br>`MinkUNet` (`minkunet34c`)<br>`OACNNs` ≈2<br>`OctFormer`<br>`PointMLP`<br>`PointMamba`<br>`PointNet2`<br>`PointNet2MSG`<br>`PointNet2MSGDense`<br>`PointNet2Transformer`<br>`PointTransformerV1`<br>`PointTransformerV2`<br>`PointViT`<br>`PyGPointEncoder` (`pyg-edgeconv`)<br>`PyGPointEncoder` (`pyg-point-transformer`)<br>`PyGPointEncoder` (`pyg-pointgnn`)<br>`PyGPointEncoder` (`pyg-pointnet`)<br>`RandLANet`<br>`SpUNet` (`spunet-gaussiancross`)<br>`SpUNet` (`spunet`)<br>`SparseUNet14`<br>`Uni3D`<br>`Volt` | `LitePT` (`litept-structured3d`)<br>`LitePT` (`litept`)<br>`PTv3` (`ptv3-encoder`) ≈2<br>`PTv3` (`ptv3-ppt`)<br>`PTv3` (`ptv3-scannet200`)<br>`PTv3` (`ptv3`)<br>`PTv3Sonata` (`ptv3-sonata-small`) ≈2<br>`PTv3Sonata` (`ptv3-sonata`) ≈2<br>`PTv3Utonia` ≈2<br>`PointMetaBase` (`pointmetabase-xl`)<br>`PointMetaBase` (`pointmetabase`)<br>`PointNeXt` (`pointnext-b`)<br>`PointNeXt` (`pointnext-l`)<br>`PointNeXt` (`pointnext-xl`)<br>`PointNeXt` (`pointnext`)<br>`PointNet2Dense`<br>`PointVector` (`pointvector-xl`)<br>`PointVector` (`pointvector`) | — | — | — |
 | Seed proposals | `SubsampledSeeds` | `GraspnessFPS` | — | — | — |
 | View stages | — | `TemplateViewStage` | `ObjectnessViewStage` (`objectness-view-graspable`)<br>`ObjectnessViewStage` (`objectness-view`) | — | — |
 | Assigners | — | `NearestLabelAssigner` (`nearest-label-object-seeds`) | `CompactLabelAssigner`<br>`ScaleBalancedAssigner` | `NearestLabelAssigner` (defaults) | — |
@@ -73,7 +75,7 @@ A component **works** under a method when its cell is `runs` or `runs-unstable`:
 | FineGrasp | `finegrasp/finegrasp_sunet14_g1b-realsense_10e` | ✓ | 19 145 441 | 19.76 → 5.667 | 1.00 | 0.11 | 1024, 1024 | 0.49 | 11.4 |
 | GraspNet-baseline | `graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e` | ✓ | 1 025 964 | 3.374 → 1.823 | 1.00 | 0.49 | 741, 950 | 0.13 | 3.9 |
 | Scale-Balanced-Grasp | `scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e` | ✓ | 1 577 196 | 3.065 → 1.711 | 1.00 | 0.49 | 11, 1 | 0.59 | 9.4 |
-| HGGD | `hggd/hggd_r34w8_g1b-realsense_15e` | ✓ | 3 425 590 | 7459 → 264.4 | — | — | 393, 349 | 0.44 | 8.0 |
+| HGGD | `hggd/hggd_r34w8_g1b-realsense_15e` | ✓ | 3 425 590 | 7459 → 265 | — | — | 432, 403 | 1.22 | 8.1 |
 
 ## One component replaced
 
@@ -81,78 +83,285 @@ A component **works** under a method when its cell is `runs` or `runs-unstable`:
 
 | Component | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp | Class |
 |---|---|---|---|---|---|---|
+| `ASSANet`<br>preset `assanet` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | ✓ in `FurthestPointSubsample` | **universal** |
+| `DGCNN`<br>preset `dgcnn-static` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `DGCNN`<br>preset `dgcnn` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `DeLA`<br>preset `dela` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | ✓ in `FurthestPointSubsample` | **universal** |
+| `LitePT`<br>preset `litept-structured3d` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (1) | **most** |
 | `LitePT`<br>preset `litept` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (1) | **most** |
+| `MinkUNet`<br>preset `minkunet18a-openscene` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `MinkUNet`<br>preset `minkunet18a` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `MinkUNet`<br>preset `minkunet34c-pointcontrast` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `MinkUNet`<br>preset `minkunet34c` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
 | `OACNNs`<br>preset `oacnns` | ≈ (2) | ≈ (3) | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** ≈2 |
-| `PTv3`<br>preset `ptv3` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (4) | **most** |
-| `PTv3Sonata`<br>preset `ptv3-sonata` | ≈ (5) | ≈ (6) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** ≈2 |
-| `PTv3Utonia`<br>preset `ptv3-utonia` | ≈ (8) | ≈ (8) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (9) | **most** ≈2 |
-| `PointNeXt`<br>preset `pointnext` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (10) | **most** |
+| `OctFormer`<br>preset `octformer` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PTv3`<br>preset `ptv3-encoder` | ≈ (4) | ≈ (5) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (6) | **most** ≈2 |
+| `PTv3`<br>preset `ptv3-ppt` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PTv3`<br>preset `ptv3-scannet200` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PTv3`<br>preset `ptv3` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PTv3Sonata`<br>preset `ptv3-sonata-small` | ≈ (8) | ≈ (4) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (6) | **most** ≈2 |
+| `PTv3Sonata`<br>preset `ptv3-sonata` | ≈ (9) | ≈ (10) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (11) | **most** ≈2 |
+| `PTv3Utonia`<br>preset `ptv3-utonia` | ≈ (5) | ≈ (5) | ✓† | ✓ in `FurthestPointSubsample` | **fails** (12) | **most** ≈2 |
+| `PointMLP`<br>preset `pointmlp` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample` | ✓ in `FurthestPointSubsample` | **universal** |
+| `PointMamba`<br>preset `point-mamba` | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓† | ✓† | **universal** |
+| `PointMetaBase`<br>preset `pointmetabase-xl` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PointMetaBase`<br>preset `pointmetabase` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (13) | **most** |
+| `PointNeXt`<br>preset `pointnext-b` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (13) | **most** |
+| `PointNeXt`<br>preset `pointnext-l` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (13) | **most** |
+| `PointNeXt`<br>preset `pointnext-xl` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PointNeXt`<br>preset `pointnext` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (13) | **most** |
 | `PointNet2`<br>preset `pointnet2` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation`† | ✓ own | ✓ | **universal** |
-| `PointNet2Dense`<br>preset `pointnet2-dense` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (11) | **most** |
+| `PointNet2Dense`<br>preset `pointnet2-dense` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (14) | **most** |
+| `PointNet2MSG`<br>preset `pointnet2-msg` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation`† | ✓ | ✓ | **universal** |
+| `PointNet2MSGDense`<br>preset `pointnet2-msg-dense` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | ✓ in `FurthestPointSubsample` | **universal** |
 | `PointNet2Transformer`<br>preset `pointnet2-transformer` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation` | ✓ in `FeaturePropagation`† | ✓ | ✓ own | **universal** |
+| `PointTransformerV1`<br>preset `point-transformer-v1` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PointTransformerV2`<br>preset `point-transformer-v2` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PointVector`<br>preset `pointvector-xl` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (7) | **most** |
+| `PointVector`<br>preset `pointvector` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample` | **fails** (13) | **most** |
+| `PointViT`<br>preset `point-vit` | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓† | ✓† | **universal** |
+| `PyGPointEncoder`<br>preset `pyg-edgeconv` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PyGPointEncoder`<br>preset `pyg-point-transformer` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PyGPointEncoder`<br>preset `pyg-pointgnn` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `PyGPointEncoder`<br>preset `pyg-pointnet` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `RandLANet`<br>preset `randlanet` | ✓† | ✓† | ✓† | ✓ in `FurthestPointSubsample` | ✓ in `FurthestPointSubsample` | **universal** |
+| `SpUNet`<br>preset `spunet-gaussiancross` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
 | `SpUNet`<br>preset `spunet` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
 | `SparseUNet14`<br>preset `sparse-unet14` | ✓ own | ✓ own | ✓ own | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
+| `Uni3D`<br>preset `uni3d` | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓ in `FeaturePropagation`† | ✓† | ✓† | **universal** |
+| `Volt`<br>preset `volt` | ✓ | ✓ | ✓† | ✓ in `FurthestPointSubsample`† | ✓ in `FurthestPointSubsample`† | **universal** |
 
 1. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 72-channel seed features to 256-channel crop features.
 2. 5 of 20 iterations had no real seed (iteration 4, 5, 6, 19, 20).
 3. 1 of 20 iterations had no real seed (iteration 3).
-4. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 64-channel seed features to 256-channel crop features.
-5. 4 of 20 iterations had no real seed (iteration 4, 5, 8, 12).
-6. 3 of 20 iterations had no real seed (iteration 4, 5, 7).
-7. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 1232-channel seed features to 256-channel crop features.
-8. 2 of 20 iterations had no real seed (iteration 3, 5).
-9. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 1386-channel seed features to 256-channel crop features.
-10. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 32-channel seed features to 256-channel crop features.
-11. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 128-channel seed features to 256-channel crop features.
+4. 2 of 20 iterations had no real seed (iteration 3, 6).
+5. 2 of 20 iterations had no real seed (iteration 3, 5).
+6. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 992-channel seed features to 256-channel crop features.
+7. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 64-channel seed features to 256-channel crop features.
+8. 5 of 20 iterations had no real seed (iteration 3, 6, 7, 12, 19).
+9. 5 of 20 iterations had no real seed (iteration 4, 5, 7, 10, 18).
+10. 4 of 20 iterations had no real seed (iteration 4, 5, 7, 13).
+11. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 1232-channel seed features to 256-channel crop features.
+12. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 1386-channel seed features to 256-channel crop features.
+13. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 32-channel seed features to 256-channel crop features.
+14. at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 128-channel seed features to 256-channel crop features.
 
 ??? note "What the probes of the scene encoders saw"
 
     | Combination | Parameters | Total loss, first → last | Real seeds, min | Supervised seeds, mean | Grasps per frame | s / iteration ‡ | GPU GiB ‡ |
     |---|---|---|---|---|---|---|---|
-    | `LitePT`, preset `litept` under GSNet | 12 903 031 | 9.97 → 1.834 | 1.00 | 1.00 | 1024, 1024 | 0.23 | 1.6 |
-    | `LitePT`, preset `litept` under EconomicGrasp | 13 299 494 | 11.63 → 4.646 | 1.00 | 0.14 | 1024, 1024 | 0.22 | 1.8 |
-    | `LitePT`, preset `litept` under FineGrasp | 16 358 277 | 13.6 → 6.448 | 0.87 | 0.14 | 1024, 1024 | 0.52 | 10.3 |
-    | `LitePT`, preset `litept` under GraspNet-baseline | 12 967 068 | 3.498 → 1.54 | 1.00 | 0.49 | 664, 680 | 0.17 | 3.3 |
+    | `ASSANet`, preset `assanet` under GSNet | 2 877 085 | 6.699 → 1.496 | 1.00 | 1.00 | 0, 0 | 0.44 | 1.6 |
+    | `ASSANet`, preset `assanet` under EconomicGrasp | 3 273 548 | 12.4 → 4.453 | 1.00 | 0.17 | 0, 0 | 0.58 | 1.9 |
+    | `ASSANet`, preset `assanet` under FineGrasp | 6 460 191 | 13.28 → 5.113 | 0.85 | 0.16 | 0, 0 | 0.61 | 11.0 |
+    | `ASSANet`, preset `assanet` under GraspNet-baseline | 2 894 202 | 0.7294 → 1.806 | 1.00 | 0.49 | 0, 0 | 0.34 | 3.3 |
+    | `ASSANet`, preset `assanet` under Scale-Balanced-Grasp | 3 348 538 | 0.8202 → 2.024 | 1.00 | 0.49 | 0, 0 | 0.40 | 8.6 |
+    | `DGCNN`, preset `dgcnn-static` under GSNet | 1 095 439 | 6.452 → 1.495 | 0.99 | 1.00 | 1024, 1024 | 0.75 | 10.7 |
+    | `DGCNN`, preset `dgcnn-static` under EconomicGrasp | 1 491 902 | 11.73 → 4.632 | 1.00 | 0.18 | 0, 0 | 0.77 | 14.1 |
+    | `DGCNN`, preset `dgcnn-static` under FineGrasp | 4 875 489 | 11.17 → 4.571 | 1.00 | 0.12 | 0, 0 | 1.64 | 35.8 |
+    | `DGCNN`, preset `dgcnn-static` under GraspNet-baseline | 641 004 | 3.343 → 1.572 | 1.00 | 0.49 | 413, 523 | 0.84 | 9.2 |
+    | `DGCNN`, preset `dgcnn-static` under Scale-Balanced-Grasp | 1 095 340 | 3.371 → 1.358 | 1.00 | 0.49 | 1, 3 | 0.61 | 14.5 |
+    | `DGCNN`, preset `dgcnn` under GSNet | 1 818 383 | 5.59 → 1.626 | 0.25 | 0.56 | 0, 0 | 0.78 | 8.4 |
+    | `DGCNN`, preset `dgcnn` under EconomicGrasp | 2 214 846 | 17.27 → 5.549 | 0.25 | 0.07 | 1024, 1024 | 1.72 | 11.0 |
+    | `DGCNN`, preset `dgcnn` under FineGrasp | 5 598 433 | 16.64 → 5.842 | 0.82 | 0.12 | 1024, 1024 | 2.60 | 29.6 |
+    | `DGCNN`, preset `dgcnn` under GraspNet-baseline | 1 363 948 | 2.776 → 1.626 | 1.00 | 0.49 | 0, 813 | 0.90 | 7.6 |
+    | `DGCNN`, preset `dgcnn` under Scale-Balanced-Grasp | 1 818 284 | 3.045 → 1.83 | 1.00 | 0.49 | 0, 0 | 1.26 | 13.0 |
+    | `DeLA`, preset `dela` under GSNet | 7 378 599 | 7.437 → 1.446 | 1.00 | 1.00 | 0, 0 | 0.52 | 7.7 |
+    | `DeLA`, preset `dela` under EconomicGrasp | 7 775 062 | 10.74 → 4.675 | 1.00 | 0.20 | 0, 0 | 0.78 | 9.2 |
+    | `DeLA`, preset `dela` under FineGrasp | 10 961 705 | 12.02 → 4.791 | 1.00 | 0.22 | 0, 0 | 1.11 | 25.2 |
+    | `DeLA`, preset `dela` under GraspNet-baseline | 7 395 716 | 3.146 → 1.383 | 1.00 | 0.49 | 596, 589 | 0.53 | 7.1 |
+    | `DeLA`, preset `dela` under Scale-Balanced-Grasp | 7 850 052 | 2.912 → 1.429 | 1.00 | 0.49 | 11, 0 | 0.88 | 12.4 |
+    | `LitePT`, preset `litept-structured3d` under GSNet | 12 903 031 | 8.552 → 1.945 | 1.00 | 1.00 | 1024, 1024 | 0.40 | 1.6 |
+    | `LitePT`, preset `litept-structured3d` under EconomicGrasp | 13 299 494 | 11.21 → 4.962 | 1.00 | 0.14 | 1024, 1024 | 0.49 | 1.8 |
+    | `LitePT`, preset `litept-structured3d` under FineGrasp | 16 358 277 | 12.95 → 6.054 | 0.59 | 0.20 | 0, 6 | 1.73 | 10.3 |
+    | `LitePT`, preset `litept-structured3d` under GraspNet-baseline | 12 967 068 | 2.76 → 1.334 | 1.00 | 0.49 | 558, 604 | 0.77 | 3.3 |
+    | `LitePT`, preset `litept` under GSNet | 12 903 031 | 9.97 → 1.753 | 1.00 | 1.00 | 1024, 1024 | 0.37 | 1.6 |
+    | `LitePT`, preset `litept` under EconomicGrasp | 13 299 494 | 11.63 → 4.749 | 1.00 | 0.14 | 1024, 1024 | 0.34 | 1.8 |
+    | `LitePT`, preset `litept` under FineGrasp | 16 358 277 | 13.6 → 6.549 | 0.87 | 0.15 | 1024, 1024 | 1.63 | 10.3 |
+    | `LitePT`, preset `litept` under GraspNet-baseline | 12 967 068 | 3.498 → 1.592 | 1.00 | 0.49 | 753, 710 | 0.85 | 3.3 |
+    | `MinkUNet`, preset `minkunet18a-openscene` under GSNet | 16 247 855 | 9.302 → 2.015 | 0.04 | 0.97 | 1024, 1024 | 0.41 | 1.8 |
+    | `MinkUNet`, preset `minkunet18a-openscene` under EconomicGrasp | 16 644 318 | 4.145 → 4.268 | 0.01 | 0.10 | 1024, 1024 | 0.53 | 2.0 |
+    | `MinkUNet`, preset `minkunet18a-openscene` under FineGrasp | 20 039 521 | 14.82 → 4.885 | 0.26 | 0.10 | 1024, 1024 | 0.70 | 11.3 |
+    | `MinkUNet`, preset `minkunet18a-openscene` under GraspNet-baseline | 15 900 172 | 3.149 → 1.616 | 1.00 | 0.49 | 856, 750 | 0.23 | 3.3 |
+    | `MinkUNet`, preset `minkunet18a-openscene` under Scale-Balanced-Grasp | 16 354 508 | 2.365 → 1.199 | 1.00 | 0.49 | 0, 0 | 0.46 | 8.6 |
+    | `MinkUNet`, preset `minkunet18a` under GSNet | 16 247 855 | 8.85 → 1.635 | 0.22 | 1.00 | 1024, 1024 | 0.40 | 1.8 |
+    | `MinkUNet`, preset `minkunet18a` under EconomicGrasp | 16 644 318 | 12.07 → 4.802 | 0.10 | 0.13 | 1024, 1024 | 0.62 | 2.0 |
+    | `MinkUNet`, preset `minkunet18a` under FineGrasp | 20 039 521 | 16.21 → 4.996 | 0.94 | 0.12 | 1024, 1024 | 0.93 | 11.3 |
+    | `MinkUNet`, preset `minkunet18a` under GraspNet-baseline | 15 900 172 | 3.314 → 1.641 | 1.00 | 0.49 | 522, 383 | 0.39 | 3.3 |
+    | `MinkUNet`, preset `minkunet18a` under Scale-Balanced-Grasp | 16 354 508 | 3.224 → 1.653 | 1.00 | 0.49 | 0, 0 | 0.36 | 8.6 |
+    | `MinkUNet`, preset `minkunet34c-pointcontrast` under GSNet | 38 601 327 | 6.371 → 1.619 | 0.63 | 1.00 | 21, 58 | 0.26 | 2.0 |
+    | `MinkUNet`, preset `minkunet34c-pointcontrast` under EconomicGrasp | 38 997 790 | 9.382 → 4.515 | 0.51 | 0.14 | 185, 964 | 0.28 | 2.2 |
+    | `MinkUNet`, preset `minkunet34c-pointcontrast` under FineGrasp | 42 383 585 | 14.05 → 4.609 | 0.12 | 0.06 | 1024, 1024 | 0.89 | 11.5 |
+    | `MinkUNet`, preset `minkunet34c-pointcontrast` under GraspNet-baseline | 38 253 644 | 3.047 → 1.416 | 1.00 | 0.49 | 556, 681 | 0.41 | 3.5 |
+    | `MinkUNet`, preset `minkunet34c-pointcontrast` under Scale-Balanced-Grasp | 38 707 980 | 2.808 → 1.233 | 1.00 | 0.49 | 42, 68 | 0.55 | 8.9 |
+    | `MinkUNet`, preset `minkunet34c` under GSNet | 38 610 735 | 9.585 → 1.553 | 0.06 | 1.00 | 1024, 1024 | 0.23 | 2.0 |
+    | `MinkUNet`, preset `minkunet34c` under EconomicGrasp | 39 007 198 | 13.24 → 4.567 | 0.25 | 0.12 | 1024, 1024 | 0.61 | 2.2 |
+    | `MinkUNet`, preset `minkunet34c` under FineGrasp | 42 402 401 | 13.63 → 4.607 | 0.38 | 0.11 | 1024, 1024 | 1.09 | 11.6 |
+    | `MinkUNet`, preset `minkunet34c` under GraspNet-baseline | 38 263 052 | 3.516 → 1.532 | 1.00 | 0.49 | 666, 660 | 0.46 | 3.6 |
+    | `MinkUNet`, preset `minkunet34c` under Scale-Balanced-Grasp | 38 717 388 | 3.202 → 1.715 | 1.00 | 0.49 | 1, 4 | 0.47 | 8.9 |
     | `OACNNs`, preset `oacnns` under GSNet | 52 317 519 | 5.46 → 1.018 | 0.00 | 0.74 | 0, 0 | 0.34 | 3.2 |
     | `OACNNs`, preset `oacnns` under EconomicGrasp | 52 713 982 | 11.33 → 4.492 | 0.00 | 0.13 | 0, 0 | 0.34 | 3.5 |
     | `OACNNs`, preset `oacnns` under FineGrasp | 56 102 369 | 10.09 → 4.244 | 1.00 | 0.11 | 0, 0 | 0.74 | 13.8 |
     | `OACNNs`, preset `oacnns` under GraspNet-baseline | 51 928 876 | 2.902 → 1.466 | 1.00 | 0.49 | 976, 941 | 0.36 | 4.3 |
     | `OACNNs`, preset `oacnns` under Scale-Balanced-Grasp | 52 383 212 | 3.294 → 1.625 | 1.00 | 0.49 | 5, 3 | 0.47 | 9.6 |
-    | `PTv3`, preset `ptv3` under GSNet | 46 352 303 | 16.8 → 1.908 | 0.81 | 1.00 | 1024, 1024 | 0.23 | 2.7 |
-    | `PTv3`, preset `ptv3` under EconomicGrasp | 46 748 766 | 20.99 → 4.609 | 1.00 | 0.15 | 594, 440 | 0.24 | 3.0 |
-    | `PTv3`, preset `ptv3` under FineGrasp | 49 799 905 | 23.5 → 6.081 | 1.00 | 0.13 | 1024, 1024 | 0.62 | 12.2 |
-    | `PTv3`, preset `ptv3` under GraspNet-baseline | 46 418 380 | 3.187 → 1.42 | 1.00 | 0.49 | 496, 502 | 0.23 | 4.1 |
-    | `PTv3Sonata`, preset `ptv3-sonata` under GSNet | 110 826 927 | 30.68 → 24.42 | 0.00 | 0.74 | 0, 0 | 0.30 | 4.2 |
-    | `PTv3Sonata`, preset `ptv3-sonata` under EconomicGrasp | 111 223 390 | 33.43 → 14.14 | 0.00 | 0.12 | 1024, 1024 | 0.32 | 4.5 |
-    | `PTv3Sonata`, preset `ptv3-sonata` under FineGrasp | 115 159 697 | 32.5 → 16.56 | 0.01 | 0.12 | 11, 1 | 0.80 | 16.2 |
-    | `PTv3Sonata`, preset `ptv3-sonata` under GraspNet-baseline | 110 595 164 | 3.067 → 1.543 | 1.00 | 0.49 | 10, 5 | 0.28 | 4.9 |
-    | `PTv3Utonia`, preset `ptv3-utonia` under GSNet | 140 108 671 | 32.42 → 14.36 | 0.00 | 0.78 | 1024, 1024 | 0.37 | 7.7 |
-    | `PTv3Utonia`, preset `ptv3-utonia` under EconomicGrasp | 140 505 134 | 38.35 → 9.904 | 0.00 | 0.14 | 1024, 1024 | 0.40 | 8.2 |
-    | `PTv3Utonia`, preset `ptv3-utonia` under FineGrasp | 144 559 731 | 34.89 → 48.79 | 0.01 | 0.16 | 1024, 1024 | 1.08 | 23.0 |
-    | `PTv3Utonia`, preset `ptv3-utonia` under GraspNet-baseline | 139 837 638 | 2.994 → 1.57 | 1.00 | 0.49 | 490, 543 | 0.33 | 7.0 |
-    | `PointNeXt`, preset `pointnext` under GSNet | 967 727 | 7.86 → 2.107 | 1.00 | 1.00 | 0, 0 | 0.12 | 1.9 |
-    | `PointNeXt`, preset `pointnext` under EconomicGrasp | 1 364 190 | 13.04 → 4.856 | 1.00 | 0.15 | 0, 0 | 0.15 | 2.4 |
-    | `PointNeXt`, preset `pointnext` under FineGrasp | 4 378 849 | 13.43 → 6.645 | 0.88 | 0.15 | 0, 0 | 0.51 | 11.5 |
-    | `PointNeXt`, preset `pointnext` under GraspNet-baseline | 1 041 964 | 2.842 → 1.464 | 1.00 | 0.49 | 718, 686 | 0.17 | 3.5 |
+    | `OctFormer`, preset `octformer` under GSNet | 44 766 423 | 8.164 → 1.477 | 0.80 | 1.00 | 1024, 1024 | 1.60 | 2.3 |
+    | `OctFormer`, preset `octformer` under EconomicGrasp | 45 162 886 | 11.49 → 4.096 | 0.99 | 0.13 | 43, 43 | 1.20 | 2.6 |
+    | `OctFormer`, preset `octformer` under FineGrasp | 48 548 033 | 12.27 → 4.778 | 1.00 | 0.11 | 19, 14 | 0.99 | 12.1 |
+    | `OctFormer`, preset `octformer` under GraspNet-baseline | 44 399 796 | 3.383 → 1.569 | 1.00 | 0.49 | 961, 967 | 1.07 | 3.8 |
+    | `OctFormer`, preset `octformer` under Scale-Balanced-Grasp | 44 854 132 | 3.541 → 1.653 | 1.00 | 0.49 | 0, 0 | 0.60 | 9.1 |
+    | `PTv3`, preset `ptv3-encoder` under GSNet | 40 358 319 | 22.31 → 10.81 | 0.00 | 0.79 | 1024, 1024 | 0.23 | 2.6 |
+    | `PTv3`, preset `ptv3-encoder` under EconomicGrasp | 40 754 782 | 26.48 → 7.87 | 0.00 | 0.16 | 176, 309 | 0.40 | 2.8 |
+    | `PTv3`, preset `ptv3-encoder` under FineGrasp | 44 518 625 | 27.7 → 11.09 | 0.01 | 0.13 | 1024, 1024 | 0.80 | 13.4 |
+    | `PTv3`, preset `ptv3-encoder` under GraspNet-baseline | 40 187 756 | 3.311 → 1.393 | 1.00 | 0.49 | 683, 653 | 0.56 | 3.7 |
+    | `PTv3`, preset `ptv3-ppt` under GSNet | 37 128 939 | 8.582 → 1.661 | 0.02 | 1.00 | 1024, 1024 | 2.31 | 3.6 |
+    | `PTv3`, preset `ptv3-ppt` under EconomicGrasp | 37 525 402 | 11.19 → 4.183 | 0.05 | 0.10 | 1024, 1024 | 3.11 | 3.9 |
+    | `PTv3`, preset `ptv3-ppt` under FineGrasp | 40 576 541 | 11.2 → 4.663 | 0.98 | 0.12 | 1024, 1024 | 5.21 | 14.0 |
+    | `PTv3`, preset `ptv3-ppt` under GraspNet-baseline | 37 195 016 | 3.097 → 1.292 | 1.00 | 0.49 | 440, 492 | 2.16 | 4.6 |
+    | `PTv3`, preset `ptv3-scannet200` under GSNet | 46 352 303 | 16.43 → 1.859 | 0.10 | 0.99 | 15, 309 | 0.81 | 2.7 |
+    | `PTv3`, preset `ptv3-scannet200` under EconomicGrasp | 46 748 766 | 21.32 → 4.518 | 0.26 | 0.12 | 1, 8 | 0.77 | 3.0 |
+    | `PTv3`, preset `ptv3-scannet200` under FineGrasp | 49 799 905 | 25.32 → 5.283 | 0.86 | 0.11 | 1024, 1024 | 1.03 | 12.2 |
+    | `PTv3`, preset `ptv3-scannet200` under GraspNet-baseline | 46 418 380 | 2.86 → 1.43 | 1.00 | 0.49 | 560, 546 | 0.45 | 4.1 |
+    | `PTv3`, preset `ptv3` under GSNet | 46 352 303 | 16.8 → 1.909 | 0.79 | 1.00 | 1024, 1024 | 0.36 | 2.7 |
+    | `PTv3`, preset `ptv3` under EconomicGrasp | 46 748 766 | 20.99 → 4.395 | 1.00 | 0.15 | 228, 133 | 0.69 | 3.0 |
+    | `PTv3`, preset `ptv3` under FineGrasp | 49 799 905 | 23.5 → 5.977 | 1.00 | 0.13 | 1024, 1024 | 1.09 | 12.2 |
+    | `PTv3`, preset `ptv3` under GraspNet-baseline | 46 418 380 | 3.187 → 1.437 | 1.00 | 0.49 | 456, 463 | 0.46 | 4.1 |
+    | `PTv3Sonata`, preset `ptv3-sonata-small` under GSNet | 40 346 479 | 5.463 → 2.65 | 0.00 | 0.65 | 1024, 1024 | 0.78 | 2.5 |
+    | `PTv3Sonata`, preset `ptv3-sonata-small` under EconomicGrasp | 40 742 942 | 11.26 → 4.31 | 0.00 | 0.13 | 1024, 1024 | 0.52 | 2.8 |
+    | `PTv3Sonata`, preset `ptv3-sonata-small` under FineGrasp | 44 494 881 | 8.911 → 4.638 | 0.91 | 0.14 | 1024, 1024 | 1.28 | 13.3 |
+    | `PTv3Sonata`, preset `ptv3-sonata-small` under GraspNet-baseline | 40 175 916 | 3.119 → 1.608 | 1.00 | 0.49 | 388, 422 | 0.64 | 3.7 |
+    | `PTv3Sonata`, preset `ptv3-sonata` under GSNet | 110 826 927 | 30.68 → 28.22 | 0.00 | 0.62 | 0, 0 | 0.78 | 4.2 |
+    | `PTv3Sonata`, preset `ptv3-sonata` under EconomicGrasp | 111 223 390 | 33.43 → 31.92 | 0.00 | 0.10 | 1024, 1024 | 0.94 | 4.5 |
+    | `PTv3Sonata`, preset `ptv3-sonata` under FineGrasp | 115 159 697 | 32.5 → 14.7 | 0.01 | 0.14 | 9, 0 | 0.97 | 16.2 |
+    | `PTv3Sonata`, preset `ptv3-sonata` under GraspNet-baseline | 110 595 164 | 3.067 → 1.538 | 1.00 | 0.49 | 9, 7 | 0.74 | 4.9 |
+    | `PTv3Utonia`, preset `ptv3-utonia` under GSNet | 140 108 671 | 32.42 → 12.8 | 0.00 | 0.78 | 1024, 1024 | 2.30 | 7.7 |
+    | `PTv3Utonia`, preset `ptv3-utonia` under EconomicGrasp | 140 505 134 | 38.35 → 16.82 | 0.00 | 0.12 | 1024, 1024 | 2.51 | 8.2 |
+    | `PTv3Utonia`, preset `ptv3-utonia` under FineGrasp | 144 559 731 | 34.89 → 19.12 | 0.11 | 0.14 | 3, 0 | 2.14 | 23.0 |
+    | `PTv3Utonia`, preset `ptv3-utonia` under GraspNet-baseline | 139 837 638 | 2.994 → 1.545 | 1.00 | 0.49 | 326, 339 | 1.21 | 7.0 |
+    | `PointMLP`, preset `pointmlp` under GSNet | 17 517 159 | 15 → 1.62 | 0.61 | 1.00 | 1024, 1024 | 0.83 | 7.8 |
+    | `PointMLP`, preset `pointmlp` under EconomicGrasp | 17 913 622 | 11.79 → 4.3 | 0.83 | 0.12 | 1024, 1024 | 0.97 | 10.2 |
+    | `PointMLP`, preset `pointmlp` under FineGrasp | 21 297 017 | 13.15 → 4.565 | 1.00 | 0.11 | 1024, 1024 | 1.72 | 27.6 |
+    | `PointMLP`, preset `pointmlp` under GraspNet-baseline | 17 144 388 | 3.158 → 1.533 | 1.00 | 0.49 | 221, 420 | 0.60 | 7.4 |
+    | `PointMLP`, preset `pointmlp` under Scale-Balanced-Grasp | 17 598 724 | 2.766 → 1.555 | 1.00 | 0.49 | 2, 0 | 1.00 | 12.7 |
+    | `PointMamba`, preset `point-mamba` under GSNet | 12 883 855 | 7.102 → 1.675 | 1.00 | 1.00 | 0, 0 | 0.47 | 5.4 |
+    | `PointMamba`, preset `point-mamba` under EconomicGrasp | 13 280 318 | 18.41 → 4.556 | 1.00 | 0.15 | 155, 275 | 0.52 | 5.7 |
+    | `PointMamba`, preset `point-mamba` under FineGrasp | 16 469 217 | 12.12 → 4.497 | 1.00 | 0.15 | 1024, 1024 | 1.52 | 18.3 |
+    | `PointMamba`, preset `point-mamba` under GraspNet-baseline | 12 604 780 | 3.261 → 1.554 | 1.00 | 0.49 | 0, 0 | 0.34 | 5.0 |
+    | `PointMamba`, preset `point-mamba` under Scale-Balanced-Grasp | 13 059 116 | 3.608 → 1.416 | 1.00 | 0.49 | 2, 0 | 0.69 | 10.3 |
+    | `PointMetaBase`, preset `pointmetabase-xl` under GSNet | 15 476 879 | 8.535 → 1.595 | 1.00 | 1.00 | 0, 0 | 0.34 | 5.7 |
+    | `PointMetaBase`, preset `pointmetabase-xl` under EconomicGrasp | 15 873 342 | 12.71 → 4.876 | 1.00 | 0.19 | 0, 0 | 0.52 | 7.4 |
+    | `PointMetaBase`, preset `pointmetabase-xl` under FineGrasp | 18 912 673 | 11.86 → 5.63 | 0.94 | 0.13 | 0, 0 | 1.09 | 21.4 |
+    | `PointMetaBase`, preset `pointmetabase-xl` under GraspNet-baseline | 15 542 956 | 2.96 → 1.349 | 1.00 | 0.49 | 924, 884 | 0.70 | 6.1 |
+    | `PointMetaBase`, preset `pointmetabase` under GSNet | 2 913 167 | 8.537 → 2.176 | 1.00 | 1.00 | 1024, 1024 | 0.26 | 3.0 |
+    | `PointMetaBase`, preset `pointmetabase` under EconomicGrasp | 3 309 630 | 12.41 → 5.436 | 1.00 | 0.09 | 1024, 1024 | 0.42 | 3.8 |
+    | `PointMetaBase`, preset `pointmetabase` under FineGrasp | 6 324 289 | 12.23 → 6.243 | 1.00 | 0.16 | 0, 0 | 0.70 | 14.4 |
+    | `PointMetaBase`, preset `pointmetabase` under GraspNet-baseline | 2 987 404 | 2.957 → 1.466 | 1.00 | 0.49 | 431, 443 | 0.51 | 4.3 |
+    | `PointNeXt`, preset `pointnext-b` under GSNet | 4 003 343 | 7.227 → 2.137 | 1.00 | 1.00 | 0, 0 | 0.29 | 2.6 |
+    | `PointNeXt`, preset `pointnext-b` under EconomicGrasp | 4 399 806 | 12.46 → 5.031 | 1.00 | 0.15 | 0, 0 | 0.41 | 3.3 |
+    | `PointNeXt`, preset `pointnext-b` under FineGrasp | 7 414 465 | 12.07 → 6.275 | 1.00 | 0.12 | 0, 0 | 0.70 | 13.4 |
+    | `PointNeXt`, preset `pointnext-b` under GraspNet-baseline | 4 077 580 | 2.89 → 1.575 | 1.00 | 0.49 | 1, 0 | 0.29 | 4.0 |
+    | `PointNeXt`, preset `pointnext-l` under GSNet | 7 300 559 | 6.757 → 2.182 | 1.00 | 1.00 | 0, 0 | 0.34 | 3.6 |
+    | `PointNeXt`, preset `pointnext-l` under EconomicGrasp | 7 697 022 | 15.33 → 5.034 | 1.00 | 0.10 | 0, 0 | 0.64 | 4.6 |
+    | `PointNeXt`, preset `pointnext-l` under FineGrasp | 10 711 681 | 11.82 → 6.728 | 0.81 | 0.09 | 0, 0 | 0.84 | 15.9 |
+    | `PointNeXt`, preset `pointnext-l` under GraspNet-baseline | 7 374 796 | 2.862 → 1.582 | 1.00 | 0.49 | 0, 0 | 0.24 | 4.7 |
+    | `PointNeXt`, preset `pointnext-xl` under GSNet | 41 769 359 | 6.935 → 1.703 | 1.00 | 1.00 | 0, 0 | 0.62 | 8.3 |
+    | `PointNeXt`, preset `pointnext-xl` under EconomicGrasp | 42 165 822 | 11.75 → 4.655 | 1.00 | 0.14 | 0, 0 | 0.86 | 10.7 |
+    | `PointNeXt`, preset `pointnext-xl` under FineGrasp | 45 205 153 | 13.19 → 5.731 | 0.96 | 0.11 | 0, 0 | 1.95 | 27.8 |
+    | `PointNeXt`, preset `pointnext-xl` under GraspNet-baseline | 41 835 436 | 3.295 → 1.453 | 1.00 | 0.49 | 0, 0 | 0.49 | 8.0 |
+    | `PointNeXt`, preset `pointnext` under GSNet | 967 727 | 7.86 → 2.143 | 1.00 | 1.00 | 0, 0 | 0.23 | 1.9 |
+    | `PointNeXt`, preset `pointnext` under EconomicGrasp | 1 364 190 | 13.04 → 5.237 | 1.00 | 0.15 | 0, 0 | 0.34 | 2.4 |
+    | `PointNeXt`, preset `pointnext` under FineGrasp | 4 378 849 | 13.43 → 6.726 | 0.86 | 0.16 | 0, 0 | 1.00 | 11.5 |
+    | `PointNeXt`, preset `pointnext` under GraspNet-baseline | 1 041 964 | 2.842 → 1.415 | 1.00 | 0.49 | 716, 915 | 0.29 | 3.5 |
     | `PointNet2`, preset `pointnet2` under GSNet | 1 140 943 | 5.757 → 1.764 | 1.00 | 1.00 | 1024, 1024 | 0.14 | 3.2 |
     | `PointNet2`, preset `pointnet2` under EconomicGrasp | 1 537 406 | 11.83 → 4.536 | 1.00 | 0.14 | 1024, 1024 | 0.15 | 3.5 |
     | `PointNet2`, preset `pointnet2` under FineGrasp | 4 725 921 | 17.03 → 5.795 | 0.64 | 0.10 | 1024, 12 | 0.60 | 14.2 |
-    | `PointNet2`, preset `pointnet2` under Scale-Balanced-Grasp | 1 480 300 | 3.568 → 1.883 | 1.00 | 0.49 | 1, 0 | 0.24 | 9.2 |
+    | `PointNet2`, preset `pointnet2` under Scale-Balanced-Grasp | 1 480 300 | 3.568 → 1.85 | 1.00 | 0.49 | 0, 0 | 0.51 | 9.2 |
     | `PointNet2Dense`, preset `pointnet2-dense` under GSNet | 1 191 983 | 7.373 → 1.765 | 1.00 | 1.00 | 0, 0 | 0.12 | 2.4 |
     | `PointNet2Dense`, preset `pointnet2-dense` under EconomicGrasp | 1 588 446 | 12.08 → 4.646 | 1.00 | 0.13 | 0, 0 | 0.13 | 2.6 |
     | `PointNet2Dense`, preset `pointnet2-dense` under FineGrasp | 4 677 697 | 11.78 → 5.266 | 1.00 | 0.10 | 338, 1024 | 0.51 | 12.3 |
     | `PointNet2Dense`, preset `pointnet2-dense` under GraspNet-baseline | 1 241 740 | 3.454 → 1.565 | 1.00 | 0.49 | 13, 80 | 0.14 | 3.7 |
+    | `PointNet2MSG`, preset `pointnet2-msg` under GSNet | 1 606 639 | 7.171 → 1.596 | 1.00 | 1.00 | 57, 1024 | 0.31 | 4.0 |
+    | `PointNet2MSG`, preset `pointnet2-msg` under EconomicGrasp | 2 003 102 | 11.65 → 4.776 | 1.00 | 0.14 | 1024, 1024 | 0.73 | 4.3 |
+    | `PointNet2MSG`, preset `pointnet2-msg` under FineGrasp | 5 191 809 | 13.54 → 6.298 | 0.68 | 0.08 | 1024, 1024 | 1.38 | 15.7 |
+    | `PointNet2MSG`, preset `pointnet2-msg` under GraspNet-baseline | 1 491 660 | 3.083 → 1.501 | 1.00 | 0.49 | 647, 737 | 0.29 | 4.3 |
+    | `PointNet2MSG`, preset `pointnet2-msg` under Scale-Balanced-Grasp | 1 945 996 | 3.022 → 1.636 | 1.00 | 0.49 | 0, 27 | 0.46 | 9.6 |
+    | `PointNet2MSGDense`, preset `pointnet2-msg-dense` under GSNet | 2 340 719 | 8.435 → 1.786 | 0.47 | 1.00 | 460, 1024 | 0.36 | 3.3 |
+    | `PointNet2MSGDense`, preset `pointnet2-msg-dense` under EconomicGrasp | 2 737 182 | 12.65 → 4.515 | 0.77 | 0.15 | 1024, 1024 | 0.43 | 3.5 |
+    | `PointNet2MSGDense`, preset `pointnet2-msg-dense` under FineGrasp | 5 925 601 | 16.87 → 4.901 | 0.95 | 0.12 | 1024, 1024 | 1.45 | 14.3 |
+    | `PointNet2MSGDense`, preset `pointnet2-msg-dense` under GraspNet-baseline | 2 357 836 | 2.909 → 1.568 | 1.00 | 0.49 | 580, 640 | 0.41 | 4.1 |
+    | `PointNet2MSGDense`, preset `pointnet2-msg-dense` under Scale-Balanced-Grasp | 2 812 172 | 3.284 → 1.624 | 1.00 | 0.49 | 9, 11 | 0.74 | 9.4 |
     | `PointNet2Transformer`, preset `pointnet2-transformer` under GSNet | 1 237 839 | 6.207 → 1.611 | 0.91 | 1.00 | 0, 0 | 0.17 | 3.6 |
     | `PointNet2Transformer`, preset `pointnet2-transformer` under EconomicGrasp | 1 634 302 | 15.14 → 4.518 | 0.90 | 0.11 | 1024, 1024 | 0.17 | 3.9 |
     | `PointNet2Transformer`, preset `pointnet2-transformer` under FineGrasp | 4 822 817 | 12.11 → 5.057 | 1.00 | 0.09 | 1024, 1024 | 0.65 | 14.9 |
     | `PointNet2Transformer`, preset `pointnet2-transformer` under GraspNet-baseline | 1 122 860 | 3.377 → 1.62 | 1.00 | 0.49 | 1007, 1024 | 0.14 | 4.1 |
-    | `SpUNet`, preset `spunet` under GSNet | 39 900 527 | 5.99 → 1.474 | 0.04 | 1.00 | 1024, 1024 | 0.15 | 2.0 |
-    | `SpUNet`, preset `spunet` under EconomicGrasp | 40 296 990 | 10.93 → 4.433 | 1.00 | 0.12 | 0, 0 | 0.19 | 2.3 |
-    | `SpUNet`, preset `spunet` under FineGrasp | 43 692 193 | 10.12 → 3.93 | 1.00 | 0.12 | 0, 0 | 0.58 | 11.6 |
-    | `SpUNet`, preset `spunet` under GraspNet-baseline | 39 552 844 | 3.107 → 1.65 | 1.00 | 0.49 | 631, 545 | 0.16 | 3.6 |
-    | `SpUNet`, preset `spunet` under Scale-Balanced-Grasp | 40 007 180 | 3.212 → 1.534 | 1.00 | 0.49 | 2, 2 | 0.28 | 8.9 |
+    | `PointTransformerV1`, preset `point-transformer-v1` under GSNet | 5 577 379 | 7.29 → 1.421 | 1.00 | 1.00 | 1024, 1024 | 0.60 | 3.6 |
+    | `PointTransformerV1`, preset `point-transformer-v1` under EconomicGrasp | 5 973 842 | 15.22 → 4.436 | 1.00 | 0.11 | 1024, 1024 | 0.90 | 4.5 |
+    | `PointTransformerV1`, preset `point-transformer-v1` under FineGrasp | 9 357 141 | 11.12 → 4.731 | 1.00 | 0.11 | 1024, 1024 | 1.48 | 16.5 |
+    | `PointTransformerV1`, preset `point-transformer-v1` under GraspNet-baseline | 5 245 568 | 3.468 → 1.458 | 1.00 | 0.49 | 0, 0 | 0.42 | 4.5 |
+    | `PointTransformerV1`, preset `point-transformer-v1` under Scale-Balanced-Grasp | 5 699 904 | 2.869 → 1.55 | 1.00 | 0.49 | 0, 0 | 0.81 | 9.8 |
+    | `PointTransformerV2`, preset `point-transformer-v2` under GSNet | 12 053 303 | 6.273 → 1.424 | 0.82 | 1.00 | 1024, 1024 | 0.72 | 4.4 |
+    | `PointTransformerV2`, preset `point-transformer-v2` under EconomicGrasp | 12 449 766 | 12.93 → 4.293 | 1.00 | 0.13 | 0, 0 | 0.66 | 5.3 |
+    | `PointTransformerV2`, preset `point-transformer-v2` under FineGrasp | 15 833 113 | 12.75 → 4.724 | 1.00 | 0.12 | 1024, 1024 | 1.71 | 17.8 |
+    | `PointTransformerV2`, preset `point-transformer-v2` under GraspNet-baseline | 11 717 396 | 3.28 → 1.403 | 1.00 | 0.49 | 0, 0 | 0.50 | 5.0 |
+    | `PointTransformerV2`, preset `point-transformer-v2` under Scale-Balanced-Grasp | 12 171 732 | 2.639 → 1.312 | 1.00 | 0.49 | 0, 0 | 0.78 | 10.3 |
+    | `PointVector`, preset `pointvector-xl` under GSNet | 24 290 831 | 8.437 → 1.645 | 1.00 | 1.00 | 1024, 1024 | 0.95 | 8.4 |
+    | `PointVector`, preset `pointvector-xl` under EconomicGrasp | 24 687 294 | 12.21 → 4.817 | 1.00 | 0.16 | 1024, 1024 | 1.56 | 10.9 |
+    | `PointVector`, preset `pointvector-xl` under FineGrasp | 27 726 625 | 10.47 → 5.255 | 1.00 | 0.12 | 627, 565 | 1.75 | 28.2 |
+    | `PointVector`, preset `pointvector-xl` under GraspNet-baseline | 24 356 908 | 2.76 → 1.446 | 1.00 | 0.49 | 251, 275 | 1.32 | 8.0 |
+    | `PointVector`, preset `pointvector` under GSNet | 4 390 735 | 11.65 → 3.93 | 0.05 | 1.00 | 0, 0 | 0.50 | 3.6 |
+    | `PointVector`, preset `pointvector` under EconomicGrasp | 4 787 198 | 15.08 → 7.881 | 0.04 | 0.16 | 0, 0 | 0.58 | 4.7 |
+    | `PointVector`, preset `pointvector` under FineGrasp | 7 801 857 | 13.1 → 6.644 | 0.95 | 0.11 | 0, 0 | 1.06 | 16.1 |
+    | `PointVector`, preset `pointvector` under GraspNet-baseline | 4 464 972 | 3.438 → 1.601 | 1.00 | 0.49 | 34, 257 | 0.66 | 4.7 |
+    | `PointViT`, preset `point-vit` under GSNet | 22 586 767 | 6.853 → 1.606 | 0.34 | 1.00 | 0, 0 | 0.41 | 5.4 |
+    | `PointViT`, preset `point-vit` under EconomicGrasp | 22 983 230 | 11.58 → 4.677 | 0.39 | 0.13 | 1024, 1024 | 0.41 | 5.4 |
+    | `PointViT`, preset `point-vit` under FineGrasp | 26 172 129 | 13.76 → 5.315 | 0.64 | 0.15 | 0, 0 | 1.12 | 15.5 |
+    | `PointViT`, preset `point-vit` under GraspNet-baseline | 22 307 692 | 3.648 → 1.774 | 1.00 | 0.49 | 0, 0 | 0.35 | 4.4 |
+    | `PointViT`, preset `point-vit` under Scale-Balanced-Grasp | 22 762 028 | 2.977 → 1.501 | 1.00 | 0.49 | 0, 0 | 0.59 | 9.7 |
+    | `PyGPointEncoder`, preset `pyg-edgeconv` under GSNet | 832 335 | 5.463 → 1.418 | 0.34 | 1.00 | 0, 0 | 0.62 | 4.7 |
+    | `PyGPointEncoder`, preset `pyg-edgeconv` under EconomicGrasp | 1 228 798 | 12.46 → 4.782 | 1.00 | 0.20 | 1024, 1024 | 0.71 | 6.1 |
+    | `PyGPointEncoder`, preset `pyg-edgeconv` under FineGrasp | 4 612 193 | 9.793 → 4.307 | 1.00 | 0.11 | 0, 0 | 2.26 | 19.7 |
+    | `PyGPointEncoder`, preset `pyg-edgeconv` under GraspNet-baseline | 476 460 | 3.545 → 1.565 | 1.00 | 0.49 | 551, 639 | 0.48 | 5.2 |
+    | `PyGPointEncoder`, preset `pyg-edgeconv` under Scale-Balanced-Grasp | 930 796 | 3.362 → 1.874 | 1.00 | 0.49 | 0, 0 | 0.45 | 10.6 |
+    | `PyGPointEncoder`, preset `pyg-point-transformer` under GSNet | 824 143 | 4.995 → 1.725 | 0.31 | 0.93 | 0, 0 | 0.62 | 6.2 |
+    | `PyGPointEncoder`, preset `pyg-point-transformer` under EconomicGrasp | 1 220 606 | 10.3 → 4.838 | 0.61 | 0.23 | 1024, 1024 | 0.65 | 8.4 |
+    | `PyGPointEncoder`, preset `pyg-point-transformer` under FineGrasp | 4 604 001 | 10.67 → 4.395 | 1.00 | 0.13 | 1024, 1024 | 1.43 | 20.8 |
+    | `PyGPointEncoder`, preset `pyg-point-transformer` under GraspNet-baseline | 468 268 | 3.345 → 1.626 | 1.00 | 0.49 | 344, 485 | 0.68 | 5.5 |
+    | `PyGPointEncoder`, preset `pyg-point-transformer` under Scale-Balanced-Grasp | 922 604 | 3.311 → 1.672 | 1.00 | 0.49 | 0, 0 | 0.83 | 10.9 |
+    | `PyGPointEncoder`, preset `pyg-pointgnn` under GSNet | 1 026 968 | 10.89 → 1.605 | 0.76 | 1.00 | 9, 271 | 0.76 | 10.2 |
+    | `PyGPointEncoder`, preset `pyg-pointgnn` under EconomicGrasp | 1 423 431 | 14.6 → 4.701 | 1.00 | 0.19 | 0, 0 | 1.18 | 13.4 |
+    | `PyGPointEncoder`, preset `pyg-pointgnn` under FineGrasp | 4 807 018 | 25.23 → 5.975 | 1.00 | 0.12 | 1024, 1024 | 2.18 | 34.3 |
+    | `PyGPointEncoder`, preset `pyg-pointgnn` under GraspNet-baseline | 671 093 | 3.535 → 1.583 | 1.00 | 0.49 | 191, 339 | 0.74 | 8.9 |
+    | `PyGPointEncoder`, preset `pyg-pointgnn` under Scale-Balanced-Grasp | 1 125 429 | 2.968 → 1.408 | 1.00 | 0.49 | 0, 0 | 0.50 | 14.2 |
+    | `PyGPointEncoder`, preset `pyg-pointnet` under GSNet | 816 719 | 4.572 → 1.749 | 0.16 | 0.99 | 0, 0 | 0.42 | 4.1 |
+    | `PyGPointEncoder`, preset `pyg-pointnet` under EconomicGrasp | 1 213 182 | 10.07 → 4.536 | 1.00 | 0.18 | 10, 0 | 0.91 | 5.2 |
+    | `PyGPointEncoder`, preset `pyg-pointnet` under FineGrasp | 4 596 577 | 11.31 → 4.445 | 0.24 | 0.15 | 0, 0 | 2.34 | 17.9 |
+    | `PyGPointEncoder`, preset `pyg-pointnet` under GraspNet-baseline | 460 844 | 3.114 → 1.647 | 1.00 | 0.49 | 390, 516 | 0.40 | 4.8 |
+    | `PyGPointEncoder`, preset `pyg-pointnet` under Scale-Balanced-Grasp | 915 180 | 3.151 → 1.623 | 1.00 | 0.49 | 0, 0 | 0.62 | 10.1 |
+    | `RandLANet`, preset `randlanet` under GSNet | 1 980 823 | 6.809 → 1.52 | 1.00 | 1.00 | 0, 0 | 0.41 | 2.9 |
+    | `RandLANet`, preset `randlanet` under EconomicGrasp | 2 377 286 | 14.44 → 4.724 | 1.00 | 0.17 | 0, 0 | 0.62 | 3.7 |
+    | `RandLANet`, preset `randlanet` under FineGrasp | 5 760 513 | 13.04 → 4.44 | 1.00 | 0.13 | 0, 0 | 1.23 | 14.9 |
+    | `RandLANet`, preset `randlanet` under GraspNet-baseline | 1 640 820 | 3.365 → 1.695 | 1.00 | 0.49 | 303, 374 | 0.32 | 4.0 |
+    | `RandLANet`, preset `randlanet` under Scale-Balanced-Grasp | 2 095 156 | 2.892 → 1.519 | 1.00 | 0.49 | 0, 0 | 0.46 | 9.3 |
+    | `SpUNet`, preset `spunet-gaussiancross` under GSNet | 39 900 527 | 6.537 → 1.752 | 0.00 | 0.93 | 1024, 1024 | 0.44 | 2.0 |
+    | `SpUNet`, preset `spunet-gaussiancross` under EconomicGrasp | 40 296 990 | 2.12 → 4.572 | 0.00 | 0.23 | 1024, 1024 | 0.60 | 2.3 |
+    | `SpUNet`, preset `spunet-gaussiancross` under FineGrasp | 43 692 193 | 1.376 → 8.449 | 0.00 | 0.10 | 0, 0 | 0.86 | 11.6 |
+    | `SpUNet`, preset `spunet-gaussiancross` under GraspNet-baseline | 39 552 844 | 2.922 → 1.398 | 1.00 | 0.49 | 595, 555 | 0.40 | 3.6 |
+    | `SpUNet`, preset `spunet-gaussiancross` under Scale-Balanced-Grasp | 40 007 180 | 2.996 → 1.335 | 1.00 | 0.49 | 59, 105 | 0.59 | 8.9 |
+    | `SpUNet`, preset `spunet` under GSNet | 39 900 527 | 5.99 → 1.805 | 0.15 | 1.00 | 0, 0 | 0.30 | 2.0 |
+    | `SpUNet`, preset `spunet` under EconomicGrasp | 40 296 990 | 10.93 → 4.003 | 1.00 | 0.12 | 0, 0 | 0.44 | 2.3 |
+    | `SpUNet`, preset `spunet` under FineGrasp | 43 692 193 | 10.12 → 4.186 | 1.00 | 0.12 | 0, 0 | 0.62 | 11.6 |
+    | `SpUNet`, preset `spunet` under GraspNet-baseline | 39 552 844 | 3.107 → 1.586 | 1.00 | 0.49 | 629, 482 | 0.60 | 3.6 |
+    | `SpUNet`, preset `spunet` under Scale-Balanced-Grasp | 40 007 180 | 3.212 → 1.571 | 1.00 | 0.49 | 1, 1 | 0.83 | 8.9 |
     | `SparseUNet14`, preset `sparse-unet14` under GraspNet-baseline | 14 981 516 | 3.212 → 1.527 | 1.00 | 0.49 | 748, 815 | 0.18 | 3.3 |
     | `SparseUNet14`, preset `sparse-unet14` under Scale-Balanced-Grasp | 15 435 852 | 3.211 → 1.757 | 1.00 | 0.49 | 0, 1 | 0.26 | 8.6 |
+    | `Uni3D`, preset `uni3d` under GSNet | 22 866 703 | 7.999 → 1.686 | 0.78 | 1.00 | 396, 442 | 0.69 | 7.4 |
+    | `Uni3D`, preset `uni3d` under EconomicGrasp | 23 263 166 | 11.46 → 4.767 | 0.81 | 0.19 | 1024, 1024 | 0.96 | 7.2 |
+    | `Uni3D`, preset `uni3d` under FineGrasp | 26 450 913 | 11.86 → 4.451 | 1.00 | 0.19 | 0, 0 | 1.54 | 18.5 |
+    | `Uni3D`, preset `uni3d` under GraspNet-baseline | 22 586 860 | 3.169 → 1.428 | 1.00 | 0.49 | 557, 537 | 0.38 | 5.1 |
+    | `Uni3D`, preset `uni3d` under Scale-Balanced-Grasp | 23 041 196 | 3.064 → 1.397 | 1.00 | 0.49 | 0, 0 | 0.47 | 10.5 |
+    | `Volt`, preset `volt` under GSNet | 24 313 103 | 9.063 → 1.623 | 1.00 | 1.00 | 0, 0 | 0.72 | 2.9 |
+    | `Volt`, preset `volt` under EconomicGrasp | 24 709 566 | 13.17 → 4.047 | 1.00 | 0.11 | 0, 0 | 0.55 | 3.2 |
+    | `Volt`, preset `volt` under FineGrasp | 28 236 769 | 13.05 → 4.773 | 1.00 | 0.11 | 0, 0 | 0.87 | 13.4 |
+    | `Volt`, preset `volt` under GraspNet-baseline | 23 956 972 | 3.4 → 1.817 | 1.00 | 0.49 | 148, 137 | 0.37 | 4.0 |
+    | `Volt`, preset `volt` under Scale-Balanced-Grasp | 24 411 308 | 3.194 → 1.922 | 1.00 | 0.49 | 0, 0 | 0.51 | 9.3 |
 
 ### Encoder adapters
 
@@ -160,8 +369,8 @@ An adapter wraps an encoder and is not one itself, so it has no row above: compo
 
 | Adapter | Cells it was inserted in | `runs` | `runs-unstable` | `refused` | `fails` | Under |
 |---|---|---|---|---|---|---|
-| `FeaturePropagation`<br>preset `feature-propagation` | 8 | 6 | — | 2 | — | GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp |
-| `FurthestPointSubsample`<br>preset `furthest-point-subsample` | 21 | 15 | — | — | 6 | GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp |
+| `FeaturePropagation`<br>preset `feature-propagation` | 20 | 18 | — | 2 | — | GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp |
+| `FurthestPointSubsample`<br>preset `furthest-point-subsample` | 85 | 67 | — | — | 18 | GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp |
 
 ### Seed proposals
 
@@ -367,7 +576,7 @@ An adapter wraps an encoder and is not one itself, so it has no row above: compo
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `nearest-label-object-seeds` + `CylinderInteractionGroup` + `swad` | 1 503 954 | 5.302 → 0.7489 | 1.00 | 0.49 | 0, 0 | 0.20 | 4.3 |
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `nearest-label-object-seeds` + `DepthCylinderGroup` + `operation-objectness` | 1 025 964 | 3.551 → 1.414 | 1.00 | 0.49 | 0, 2 | 0.16 | 3.9 |
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `nearest-label-object-seeds` + `DepthCylinderGroup` + `operation` | 1 025 964 | 3.57 → 1.454 | 1.00 | 0.49 | 0, 0 | 0.15 | 3.9 |
-    | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `scale-balanced` + `depth-cylinder-multi-scale` + `operation-objectness` | 1 480 300 | 3.568 → 1.883 | 1.00 | 0.49 | 1, 0 | 0.24 | 9.2 |
+    | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `scale-balanced` + `depth-cylinder-multi-scale` + `operation-objectness` | 1 480 300 | 3.568 → 1.85 | 1.00 | 0.49 | 0, 0 | 0.51 | 9.2 |
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `scale-balanced` + `depth-cylinder-multi-scale` + `operation` | 1 480 300 | 3.593 → 1.827 | 1.00 | 0.49 | 3, 13 | 0.30 | 9.2 |
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `scale-balanced` + `DepthCylinderGroup` + `operation-objectness` | 1 025 964 | 3.53 → 1.86 | 1.00 | 0.49 | 6, 0 | 0.21 | 3.9 |
     | `pointnet2` + `SubsampledSeeds` + `objectness-view-graspable` + `scale-balanced` + `DepthCylinderGroup` + `operation` | 1 025 964 | 3.553 → 1.905 | 1.00 | 0.49 | 0, 39 | 0.19 | 3.9 |
@@ -395,15 +604,87 @@ An adapter wraps an encoder and is not one itself, so it has no row above: compo
     | `pointnet2` + `SubsampledSeeds` + `template-view` + `NearestLabelAssigner` + `CylinderInteractionGroup` + `swad` | 1 410 818 | 5.473 → 0.6205 | 1.00 | 1.00 | 1024, 1024 | 0.16 | 3.7 |
     | `pointnet2` + `SubsampledSeeds` + `template-view` + `NearestLabelAssigner` + `DepthCylinderGroup` + `operation` | 932 828 | 4.465 → 1.633 | 1.00 | 1.00 | 1024, 1024 | 0.13 | 3.9 |
 
+## Other detector families: one component replaced
+
+A detector that is not built on the seed-based skeleton has slots of its own; HGGD has one, the encoder of its image network ([Image encoders](../slots/image_encoders.md)). Every preset of such a slot was composed into the family's shipped config and probed:
+
+### HGGD: `image_encoder`
+
+| `image_encoder=` | Component | HGGD | Parameters | Total loss, first → last | Real seeds, min | Supervised seeds, mean | Grasps per frame | s / iteration ‡ | GPU GiB ‡ |
+|---|---|---|---|---|---|---|---|---|---|
+| `convnextv2-atto` | `TimmImageEncoder` | ✓ | 5 677 022 | 6417 → 149.5 | — | — | 270, 90 | 0.96 | 8.9 |
+| `convnextv2-tiny` | `TimmImageEncoder` | ✓ | 30 208 982 | 1.403e+04 → 591.8 | — | — | 31, 42 | 1.20 | 10.4 |
+| `dinov2-small-reg-depth-stem` | `TimmImageEncoder` | ✓ | 24 278 841 | 1.013e+04 → 675.4 | — | — | 450, 480 | 0.82 | 9.0 |
+| `dinov2-small-reg` | `TimmImageEncoder` | ✓ | 24 278 614 | 1.502e+04 → 716.5 | — | — | 400, 330 | 1.78 | 9.2 |
+| `dinov3-convnext-tiny` | `TimmImageEncoder` | ✓ | 30 162 614 | 9801 → 559.4 | — | — | 362, 309 | 1.13 | 10.3 |
+| `dinov3-vits16` | `TimmImageEncoder` | ✓ | 23 874 646 | 1.577e+04 → 897.3 | — | — | 300, 279 | 1.38 | 9.4 |
+| `efficientnetv2-s` | `TimmImageEncoder` | ✓ | 22 171 558 | 1.336e+04 → 630.7 | — | — | 191, 192 | 1.14 | 10.0 |
+| `efficientvit-b1` | `TimmImageEncoder` | ✓ | 6 926 518 | 1.242e+04 → 442.6 | — | — | 282, 266 | 0.98 | 9.3 |
+| `eva02-tiny` | `TimmImageEncoder` | ✓ | 7 933 846 | 1.738e+04 → 1401 | — | — | 36, 72 | 1.25 | 8.8 |
+| `fastvit-sa12` | `TimmImageEncoder` | ✓ | 12 722 774 | 1.202e+04 → 369.1 | — | — | 480, 400 | 0.63 | 9.6 |
+| `fastvit-t8` | `TimmImageEncoder` | ✓ | 5 469 878 | 1.198e+04 → 607.2 | — | — | 215, 197 | 1.06 | 9.0 |
+| `hf-convnextv2-tiny` | `HFImageEncoder` | ✓ | 30 211 862 | 8662 → 129.6 | — | — | 0, 0 | 0.80 | 11.4 |
+| `hf-depth-anything-v2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 1.069e+04 → 202 | — | — | 374, 350 | 1.58 | 9.9 |
+| `hf-dinov2-small-reg` | `HFImageEncoder` | ✓ | 24 223 190 | 1.739e+04 → 989.1 | — | — | 336, 336 | 0.77 | 9.6 |
+| `hf-dinov2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 8158 → 255.4 | — | — | 328, 335 | 0.94 | 9.9 |
+| `hf-hiera-tiny` | `HFImageEncoder` | ✓ | 29 486 582 | 5560 → 189.3 | — | — | 74, 74 | 0.70 | 7.4 |
+| `hf-radio-v3-base` | `HFImageEncoder` | ✓ | 100 444 502 | 5615 → 262.6 | — | — | 255, 272 | 1.51 | 11.1 |
+| `hf-siglip2-base` | `HFImageEncoder` | ✓ | 95 119 958 | 5303 → 216.8 | — | — | 43, 130 | 1.17 | 11.1 |
+| `hf-swinv2-tiny` | `HFImageEncoder` | ✓ | 29 920 640 | 5975 → 150.2 | — | — | 256, 200 | 0.98 | 10.2 |
+| `hggd-residual` | `HGGDResidualEncoder` | ✓ | 3 425 590 | 7459 → 263.4 | — | — | 383, 350 | 1.36 | 8.0 |
+| `hiera-small-abswin` | `TimmImageEncoder` | ✓ | 35 935 286 | 6536 → 137.2 | — | — | 432, 423 | 0.99 | 10.7 |
+| `maxvit-tiny` | `TimmImageEncoder` | ✓ | 32 603 566 | 1.335e+04 → 493.6 | — | — | 337, 340 | 1.36 | 13.7 |
+| `mobilenetv4-conv-small` | `TimmImageEncoder` | ✓ | 3 626 422 | 5663 → 456 | — | — | 385, 332 | 1.33 | 8.5 |
+| `mobilenetv4-hybrid-medium` | `TimmImageEncoder` | ✓ | 10 933 190 | 1.056e+04 → 599 | — | — | 0, 0 | 1.05 | 9.5 |
+| `pe-spatial-tiny` | `TimmImageEncoder` | ✓ | 7 914 838 | 1.14e+04 → 300.4 | — | — | 19, 117 | 1.27 | 8.4 |
+| `repvit-m1` | `TimmImageEncoder` | ✓ | 7 011 654 | 6997 → 243 | — | — | 378, 405 | 0.53 | 9.2 |
+| `resnet18` | `TimmImageEncoder` | ✓ | 13 531 030 | 1.287e+04 → 301.4 | — | — | 281, 256 | 0.82 | 8.7 |
+| `resnet34-rgbd` | `TimmImageEncoder` | ✓ | 23 642 326 | 1.103e+04 → 760.7 | — | — | 402, 400 | 1.12 | 9.0 |
+| `resnet34` | `TimmImageEncoder` | ✓ | 23 639 190 | 1.103e+04 → 670 | — | — | 362, 354 | 1.20 | 9.1 |
+| `resnet50` | `TimmImageEncoder` | ✓ | 26 046 870 | 1.265e+04 → 281.5 | — | — | 254, 353 | 0.81 | 10.1 |
+| `sam2-hiera-tiny` | `TimmImageEncoder` | ✓ | 29 193 494 | 1.068e+04 → 396.8 | — | — | 0, 0 | 0.79 | 10.4 |
+| `siglip2-base` | `TimmImageEncoder` | ✓ | 88 713 814 | 8241 → 453.4 | — | — | 336, 336 | 0.96 | 11.4 |
+| `swinv2-tiny` | `TimmImageEncoder` | ✓ | 29 920 640 | 2.152e+04 → 893.1 | — | — | 201, 246 | 0.90 | 10.7 |
+| `tv-convnext-tiny` | `TorchvisionImageEncoder` | ✓ | 30 162 614 | 1.428e+04 → 434.4 | — | — | 162, 270 | 0.76 | 10.0 |
+| `tv-efficientnetv2-s` | `TorchvisionImageEncoder` | ✓ | 22 567 334 | 9755 → 477.6 | — | — | 393, 386 | 1.04 | 11.4 |
+| `tv-mobilenetv3-large` | `TorchvisionImageEncoder` | ✓ | 5 334 662 | 1.276e+04 → 641.7 | — | — | 364, 341 | 1.09 | 9.1 |
+| `tv-regnet-y-800mf` | `TorchvisionImageEncoder` | ✓ | 8 022 510 | 9280 → 462 | — | — | 311, 372 | 0.74 | 9.1 |
+| `tv-resnet34` | `TorchvisionImageEncoder` | ✓ | 23 597 974 | 1.723e+04 → 815.2 | — | — | 212, 182 | 1.19 | 8.4 |
+
+## Post-processing
+
+Every post-processing preset as the evaluation variant `post` of a method (`grasppanda compose <config> --set post=<preset>`), applied by the probe to the predictions of its two frames: grasps predicted → grasps left. A post-processor reads grasps and the observation, never a network, so three methods stand for the three kinds of input: seeds on a dense cloud with the full cloud kept, seeds of a sub-sampling encoder, and HGGD. The grasps are those of a detector trained for the iterations of the probe; [the page of the slot](../slots/post.md) has the same steps on the predictions of released weights.
+
+| preset | GSNet | GraspNet-baseline | HGGD |
+|---|---|---|---|
+| `approach-cone` (ApproachAngleFilter) | runs: 319 → 267; 362 → 310 | runs: 92 → 46; 360 → 129 | runs: 433 → 99; 396 → 130 |
+| `center-gripper` (GripperCentering) | runs: 382 → 382; 385 → 385 | runs: 864 → 864; 740 → 740 | runs: 386 → 386; 378 → 378 |
+| `collision-strict` (ModelFreeCollisionFilter) | runs: 436 → 58; 524 → 75 | runs: 155 → 16; 128 → 2 | runs: 391 → 25; 373 → 24 |
+| `collision` (ModelFreeCollisionFilter) | runs: 335 → 22; 456 → 30 | runs: 382 → 15; 316 → 23 | fails. at predict, in the post-processor ModelFreeCollisionFilter: ContractError: ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide. |
+| `furthest-sampling` (FurthestGraspSampling) | runs: 311 → 50; 328 → 50 | runs: 755 → 50; 511 → 50 | runs: 411 → 50; 360 → 50 |
+| `gripper-limits` (GripperLimits) | runs: 216 → 216; 308 → 308 | runs: 425 → 243; 345 → 189 | runs: 384 → 283; 360 → 216 |
+| `mesh-collision` (GripperMeshCollisionFilter) | runs: 337 → 54; 386 → 54 | runs: 430 → 26; 583 → 79 | runs: 385 → 85; 361 → 100 |
+| `nms` (GraspNMS) | runs: 360 → 160; 427 → 148 | runs: 456 → 223; 205 → 131 | runs: 433 → 125; 403 → 223 |
+| `score-threshold` (ScoreThreshold) | runs: 263 → 132; 314 → 157 | runs: 514 → 257; 540 → 270 | runs: 431 → 216; 404 → 202 |
+| `table-plane` (TablePlaneFilter) | runs: 236 → 70; 264 → 93 | runs: 347 → 85; 434 → 117 | runs: 384 → 255; 359 → 252 |
+| `to-base-frame` (ToFrame) | runs: 327 → 327; 378 → 378 | runs: 572 → 572; 727 → 727 | runs: 383 → 383; 344 → 344 |
+| `top-k` (TopK) | runs: 123 → 50; 173 → 50 | runs: 457 → 50; 575 → 50 | runs: 392 → 50; 343 → 50 |
+| `width-from-cloud` (WidthFromCloud) | runs: 286 → 286; 391 → 391 | runs: 877 → 877; 824 → 824 | runs: 395 → 395; 369 → 369 |
+| `workspace` (WorkspaceFilter) | runs: 210 → 210; 263 → 263 | runs: 297 → 297; 181 → 181 | runs: 384 → 384; 344 → 344 |
+
 ## Passed the check, failed afterwards
 
-6 cell(s) passed the config check and failed afterwards. A combination should be refused with the conflict and the fix, or run; each group below is a gap between what the config check knows and what the components need. (*N* stands for a number that differs from cell to cell.)
+19 cell(s) passed the config check and failed afterwards. A combination should be refused with the conflict and the fix, or run; each group below is a gap between what the config check knows and what the components need. (*N* stands for a number that differs from cell to cell.)
 
-- **at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds N-channel seed features to N-channel crop features.** 6 cell(s): `encoder/Scale-Balanced-Grasp/LitePT`, `encoder/Scale-Balanced-Grasp/PTv3`, `encoder/Scale-Balanced-Grasp/PTv3Sonata`, `encoder/Scale-Balanced-Grasp/PTv3Utonia`, `encoder/Scale-Balanced-Grasp/PointNeXt`, `encoder/Scale-Balanced-Grasp/PointNet2Dense`.
+- **at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds N-channel seed features to N-channel crop features.** 18 cell(s): `encoder/Scale-Balanced-Grasp/LitePT@litept-structured3d`, `encoder/Scale-Balanced-Grasp/LitePT@litept`, `encoder/Scale-Balanced-Grasp/PTv3@ptv3-encoder`, `encoder/Scale-Balanced-Grasp/PTv3@ptv3-ppt`, `encoder/Scale-Balanced-Grasp/PTv3@ptv3-scannet200`, `encoder/Scale-Balanced-Grasp/PTv3@ptv3`, `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata-small`, `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata`, `encoder/Scale-Balanced-Grasp/PTv3Utonia`, `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase-xl`, `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase`, `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-b`, `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-l`, `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-xl`, `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext`, `encoder/Scale-Balanced-Grasp/PointNet2Dense`, `encoder/Scale-Balanced-Grasp/PointVector@pointvector-xl`, `encoder/Scale-Balanced-Grasp/PointVector@pointvector`.
 
     The message of the first, whole: *DepthCylinderGroup: the gated seed residual adds 72-channel seed features to 256-channel crop features; the two must be equal (in_channels is injected by the detector: it is the width of the scene encoder). End mlp_channels on 72, or use an encoder that returns 256 channels, or set seed_residual: none.*
 
     Why the check does not see it: the contract rules compare what components declare, and no contract states the width an encoder returns; it is known once the encoder is built. An encoder with an `out_channels` option does not meet the gap, because compose sets that option to the width of the encoder it replaces. The encoders above have no such option and return their own width, which this grouper cannot add to its 256-channel crops. Until a width contract closes the gap, `grasppanda probe` is what catches it, and the ways out are the three of the message.
+
+- **at predict, in the post-processor ModelFreeCollisionFilter: ContractError: ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide.** 1 cell(s): `post/HGGD/collision`.
+
+    The message of the first, whole: *ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide. Keep it with `keep_full_points: true` in the dataset section of the config (`--opts data.test.dataset.keep_full_points=true`), or test the cloud the network saw with `cloud: points`*
 
 ## Not on this page
 

@@ -1,0 +1,386 @@
+# Scene encoders: transformers, state-space models, pretrained 3-D encoders
+
+Slot `model.backbone` of the seed-based detectors (GSNet, EconomicGrasp, FineGrasp,
+GraspNet-baseline, Scale-Balanced-Grasp). This page covers the attention-based and
+sequence-model encoders added from existing code: Point Transformer V1 and V2, Volt,
+OctFormer, the point-token family (PointViT, PointMamba, Uni3D) and the released weights
+that fit them. PTv3 (with Sonata, Concerto and Utonia weights), LitePT and the
+PointNet++ / transformer encoder of Scale-Balanced-Grasp were in the toolbox before; see
+[the backbone zoo](../model_zoo_backbones.md).
+
+**Nothing on this page is a grasp-detection result.** Every option was built, trained
+for 20 iterations and used for prediction on real GraspNet-1Billion frames under each
+method (a *probe*); no AP was measured for any of them, and no released weight was
+evaluated on grasp data.
+
+## 1. The task of the slot
+
+The scene encoder turns the point cloud of one depth frame into per-point features.
+Everything after it reads those features: the proposal stage scores points and picks
+seeds, the view stage chooses an approach direction per seed, the grouper crops a
+neighbourhood per seed and the head predicts angle, depth, width and score. The encoder
+is the only stage that sees the whole scene, so it decides how much context a seed
+feature carries and most of the model's cost.
+
+```
+Observation.points ──► backbone ──► proposal ──► view ──► grouper ──► head ──► GraspGroup
+     PointSet        PointFeatures    SeedSet   ApproachSet GroupFeatures
+```
+
+## 2. Input and output
+
+```python
+class Backbone(nn.Module):                      # grasppanda/models/base.py
+    output: ClassVar[Literal["dense", "subsampled"]]
+    in_channels: int
+    out_channels: int
+    def forward(self, points: PointSet, feats: Tensor) -> PointFeatures: ...
+```
+
+| | |
+|---|---|
+| `points` | `PointSet`: `coords` `(N, 3)` float32, **metres, camera frame**, all clouds of the batch concatenated; `batch_offsets` `(B + 1,)` marks the clouds. The shipped GraspNet-1Billion pipelines sample 15 000 or 20 000 points per frame after a workspace crop; clouds of a batch may differ in size. |
+| `feats` | `(N, in_channels)` per-point input features, or `None` when `in_channels == 0`. The detector feeds constant ones (`point_features: ones`, in every shipped method except FineGrasp) or what the dataset provides (`point_features: observation`). |
+| returns | `PointFeatures`: `feats` `(M, out_channels)` **bound to a point set**. |
+| `output = "dense"` | `M == N`: one feature per input point, bound to `points` itself. |
+| `output = "subsampled"` | `M < N`: features on `points.subset(index)`, a child set that remembers which rows of the parent it kept. An equal number of points per cloud. |
+
+What the neighbours require, and what the config checker does with it:
+
+* The proposal stage declares `requires`. GSNet, EconomicGrasp and FineGrasp score every
+  scene point (`GraspnessFPS`: `dense`); GraspNet-baseline and Scale-Balanced-Grasp take
+  the encoder's subsample as their seeds (`SubsampledSeeds`: `subsampled`, and the
+  number of kept points must be `proposal.num_seeds`, 1024).
+* A mismatch is refused before anything is built, and the message names the adapter:
+  `FeaturePropagation` (three-neighbour interpolation back to every point) makes a
+  `subsampled` encoder `dense`; `FurthestPointSubsample` makes a `dense` encoder
+  `subsampled`. `grasppanda compose` inserts the adapter itself and says so.
+* `out_channels` is the `in_channels` of proposal, view stage and grouper, injected by
+  the detector. Scale-Balanced-Grasp adds seed features to crop features, so there the
+  encoder must be exactly as wide as the crop features (256). Every encoder of this page
+  has an `out_channels` option, which `compose` sets to the width of the encoder it
+  replaces (512 under the sparse U-Net methods, 256 under the PointNet++ methods).
+* Features must not mix clouds of a batch. All encoders here keep that in evaluation
+  mode, with two documented exceptions: `OctFormer` (attention groups are cut from the
+  nodes of the whole batch, as upstream) and, within float noise of its CUDA kernel,
+  `PointMamba`.
+
+## 3. Options at a glance
+
+"Fit" is the verdict of the probe on real frames under GSNet / EconomicGrasp / FineGrasp
+/ GraspNet-baseline / Scale-Balanced-Grasp, taken from
+[the measured page](../advanced_guides/measured_combinations.md): **runs**, **runs with
+adapter** (the adapter `compose` inserted is named there), **refused**, **fails**.
+
+| `--set backbone=` (class) | What it is | Paper | Code taken from | Weights | Extra | Fit: GSNet / Economic / Fine / baseline / SBG | Universal? |
+|---|---|---|---|---|---|---|---|
+| `point-transformer-v1` (`PointTransformerV1`) | U-Net, vector attention over k-NN, FPS by ratio; `dense` | Zhao, Jiang, Jia, Torr, Koltun, "Point Transformer", ICCV 2021 (Oral) | [Pointcept](https://github.com/Pointcept/Pointcept) @ `1342eda`, MIT | none released: random init | — | runs / runs / runs / runs with adapter / runs with adapter | universal: no unit of length, any point count ≥ 256 |
+| `point-transformer-v2` (`PointTransformerV2`) | U-Net, grouped vector attention, grid pooling in metres; `dense` | Wu, Lao, Jiang, Liu, Zhao, "Point Transformer V2", NeurIPS 2022 | Pointcept @ `1342eda`, MIT | none released: random init | — | runs / runs / runs / runs with adapter / runs with adapter | universal: `grid_sizes` must be set for the scene scale |
+| `volt` (`Volt`) | plain ViT with global attention over voxel-patch tokens, linear detokeniser; `dense` | Yilmaz et al., "Volume Transformer", ECCV 2026 (Long Oral, per its README) | [YilmazKadir/Volt](https://github.com/YilmazKadir/Volt) @ `8dcd608`, MIT | [KadirYilmaz/Volt](https://huggingface.co/KadirYilmaz/Volt) (MIT): ScanNet, ScanNet200, ScanNet++ | — | runs / runs / runs / runs with adapter / runs with adapter | universal: token edge = `grid_size × kernel_size` must suit the scene |
+| `octformer` (`OctFormer`) | octree attention over fixed-size groups of nodes, FPN head; `dense` | P.-S. Wang, "OctFormer", ACM Transactions on Graphics 42(4) (SIGGRAPH 2023) | [octree-nn/octformer](https://github.com/octree-nn/octformer) @ `c2975ab`, MIT; octree operators from `ocnn` | released ScanNet files not tried: random init | `ocnn` | runs / runs / runs / runs with adapter / runs with adapter | universal: `voxel_size` is the unit of length; batch-dependent attention groups |
+| `point-vit` (`PointViT`) | plain ViT over FPS / k-NN point-patch tokens; `subsampled` | Yu et al., "Point-BERT", CVPR 2022; Pang et al., "Point-MAE", ECCV 2022 | [Pang-Yatian/Point-MAE](https://github.com/Pang-Yatian/Point-MAE) @ `7445a68`, MIT | Point-MAE and MaskPoint ShapeNet checkpoints (section 5) | — | runs with adapter / runs with adapter / runs with adapter / runs / runs | universal: an object-level design; tokens are the seeds |
+| `point-mamba` (`PointMamba`) | Mamba blocks over the same tokens in Hilbert order; `subsampled` | Liang et al. (HUST, Baidu), "PointMamba", NeurIPS 2024 | layout of [LMD0311/PointMamba](https://github.com/LMD0311/PointMamba) @ `80858e0`, Apache-2.0; mixer from `mamba-ssm` | PointMamba ShapeNet checkpoint (section 5) | `mamba-ssm` | runs with adapter / runs with adapter / runs with adapter / runs / runs | universal on a GPU: CUDA only |
+| `uni3d` (`Uni3D`) | the same tokens with colour through `timm` EVA-02 blocks; `subsampled` | Zhou et al. (BAAI), "Uni3D", ICLR 2024 (Spotlight) | layout of [baaivision/Uni3D](https://github.com/baaivision/Uni3D) @ `64e03c3`, MIT; blocks from `timm` | [BAAI/Uni3D](https://huggingface.co/BAAI/Uni3D) `uni3d-ti`, `uni3d-s` (model card states no licence) | `timm` | runs with adapter / runs with adapter / runs with adapter / runs / runs | universal: an object-level design; wants colour |
+
+All seven are method-independent: none reads anything but points and per-point features.
+What differs is what has to be re-tuned for a table top, which the header of each preset
+(`grasppanda/presets/backbone/<name>.yaml`) spells out.
+
+Numbers of the probes (20 training iterations at the batch size of the method, then
+prediction on 8 frames of the `sample` split; timings and memory on a GPU shared with
+other jobs, so they say little about speed). A falling loss over 20 iterations shows
+that gradients flow, nothing more.
+
+| Encoder | Method | Verdict | Parameters of the detector | Loss, first → last iteration | Share of real seeds | s / iteration | Peak GPU GiB |
+|---|---|---|---|---|---|---|---|
+| `PointTransformerV1` | GSNet | runs | 5 577 379 | 7.29 → 1.421 | 1.0 | 0.605 | 3.6 |
+| `PointTransformerV1` | EconomicGrasp | runs | 5 973 842 | 15.22 → 4.436 | 1.0 | 0.896 | 4.5 |
+| `PointTransformerV1` | FineGrasp | runs | 9 357 141 | 11.12 → 4.731 | 1.0 | 1.483 | 16.5 |
+| `PointTransformerV1` | GraspNet-baseline | runs in `FurthestPointSubsample` | 5 245 568 | 3.468 → 1.458 | 1.0 | 0.423 | 4.5 |
+| `PointTransformerV1` | Scale-Balanced-Grasp | runs in `FurthestPointSubsample` | 5 699 904 | 2.869 → 1.55 | 1.0 | 0.815 | 9.8 |
+| `PointTransformerV2` | GSNet | runs | 12 053 303 | 6.273 → 1.424 | 0.991 | 0.721 | 4.4 |
+| `PointTransformerV2` | EconomicGrasp | runs | 12 449 766 | 12.93 → 4.293 | 1.0 | 0.659 | 5.3 |
+| `PointTransformerV2` | FineGrasp | runs | 15 833 113 | 12.75 → 4.724 | 1.0 | 1.711 | 17.8 |
+| `PointTransformerV2` | GraspNet-baseline | runs in `FurthestPointSubsample` | 11 717 396 | 3.28 → 1.403 | 1.0 | 0.499 | 5.0 |
+| `PointTransformerV2` | Scale-Balanced-Grasp | runs in `FurthestPointSubsample` | 12 171 732 | 2.639 → 1.312 | 1.0 | 0.776 | 10.3 |
+| `Volt` | GSNet | runs | 24 313 103 | 9.063 → 1.623 | 1.0 | 0.724 | 2.9 |
+| `Volt` | EconomicGrasp | runs | 24 709 566 | 13.17 → 4.047 | 1.0 | 0.547 | 3.2 |
+| `Volt` | FineGrasp | runs | 28 236 769 | 13.05 → 4.773 | 1.0 | 0.868 | 13.4 |
+| `Volt` | GraspNet-baseline | runs in `FurthestPointSubsample` | 23 956 972 | 3.4 → 1.817 | 1.0 | 0.367 | 4.0 |
+| `Volt` | Scale-Balanced-Grasp | runs in `FurthestPointSubsample` | 24 411 308 | 3.194 → 1.922 | 1.0 | 0.513 | 9.3 |
+| `OctFormer` | GSNet | runs | 44 766 423 | 8.164 → 1.477 | 0.99 | 1.604 | 2.3 |
+| `OctFormer` | EconomicGrasp | runs | 45 162 886 | 11.49 → 4.096 | 0.999 | 1.201 | 2.6 |
+| `OctFormer` | FineGrasp | runs | 48 548 033 | 12.27 → 4.778 | 1.0 | 0.987 | 12.1 |
+| `OctFormer` | GraspNet-baseline | runs in `FurthestPointSubsample` | 44 399 796 | 3.383 → 1.569 | 1.0 | 1.069 | 3.8 |
+| `OctFormer` | Scale-Balanced-Grasp | runs in `FurthestPointSubsample` | 44 854 132 | 3.541 → 1.653 | 1.0 | 0.601 | 9.1 |
+| `PointViT` | GSNet | runs in `FeaturePropagation` | 22 586 767 | 6.853 → 1.606 | 0.9 | 0.412 | 5.4 |
+| `PointViT` | EconomicGrasp | runs in `FeaturePropagation` | 22 983 230 | 11.58 → 4.677 | 0.955 | 0.41 | 5.4 |
+| `PointViT` | FineGrasp | runs in `FeaturePropagation` | 26 172 129 | 13.76 → 5.315 | 0.847 | 1.124 | 15.5 |
+| `PointViT` | GraspNet-baseline | runs | 22 307 692 | 3.648 → 1.774 | 1.0 | 0.35 | 4.4 |
+| `PointViT` | Scale-Balanced-Grasp | runs | 22 762 028 | 2.977 → 1.501 | 1.0 | 0.594 | 9.7 |
+| `PointMamba` | GSNet | runs in `FeaturePropagation` | 12 883 855 | 7.102 → 1.675 | 1.0 | 0.474 | 5.4 |
+| `PointMamba` | EconomicGrasp | runs in `FeaturePropagation` | 13 280 318 | 18.41 → 4.556 | 1.0 | 0.521 | 5.7 |
+| `PointMamba` | FineGrasp | runs in `FeaturePropagation` | 16 469 217 | 12.12 → 4.497 | 1.0 | 1.524 | 18.3 |
+| `PointMamba` | GraspNet-baseline | runs | 12 604 780 | 3.261 → 1.554 | 1.0 | 0.345 | 5.0 |
+| `PointMamba` | Scale-Balanced-Grasp | runs | 13 059 116 | 3.608 → 1.416 | 1.0 | 0.693 | 10.3 |
+| `Uni3D` | GSNet | runs in `FeaturePropagation` | 22 866 703 | 7.999 → 1.686 | 0.989 | 0.694 | 7.4 |
+| `Uni3D` | EconomicGrasp | runs in `FeaturePropagation` | 23 263 166 | 11.46 → 4.767 | 0.985 | 0.956 | 7.2 |
+| `Uni3D` | FineGrasp | runs in `FeaturePropagation` | 26 450 913 | 11.86 → 4.451 | 1.0 | 1.538 | 18.5 |
+| `Uni3D` | GraspNet-baseline | runs | 22 586 860 | 3.169 → 1.428 | 1.0 | 0.383 | 5.1 |
+| `Uni3D` | Scale-Balanced-Grasp | runs | 23 041 196 | 3.064 → 1.397 | 1.0 | 0.469 | 10.5 |
+
+## 4. How to use each option
+
+One command composes a config, a second one probes it:
+
+```console
+$ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=volt -o gsnet_volt.yaml
+$ grasppanda probe gsnet_volt.yaml
+```
+
+`compose` prints what it changed. Two real examples, the same encoder under a method
+that wants subsampled features and under one that wants dense ones:
+
+```console
+$ grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --set backbone=point-vit -o baseline_point-vit.yaml
+
+slot      component             from
+────────  ────────────────────  ──────────────────
+backbone  PointViT              preset `point-vit`
+proposal  SubsampledSeeds       base config
+...
+what compose did
+  • backbone: preset `point-vit` (PointViT). Plain transformer over 1024 point-patch tokens (the
+    Point-BERT / Point-MAE encoder).
+  • out_channels: 256, the output width of the encoder it replaces (PointNet2), so that the other
+    stages keep the width they have in the base model and the encoder is the only stage that
+    differs.
+config check
+  ✓ valid  (hash 5d1fec9f95b3)
+
+$ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=point-vit -o gsnet_point-vit.yaml
+
+slot      component                       from
+────────  ──────────────────────────────  ─────────────────────────────────────────────────────
+backbone  PointViT in FeaturePropagation  preset `point-vit`, in the adapter FeaturePropagation
+...
+  • wrapped PointViT in the adapter FeaturePropagation (preset `feature-propagation`): GraspnessFPS
+    requires 'dense' scene features, but PointViT returns 'subsampled' ones (features on a
+    sub-sampled point set). An adapter changes the model; its notes below say how.
+```
+
+To change an option of the preset, add `--opts model.backbone.<option>=<value>` to
+`compose`, or write the fragment into your own config. The fragments below are the
+presets; the comments say which settings matter.
+
+### Point Transformer V1
+
+```yaml
+model:
+  backbone:
+    type: PointTransformerV1
+    in_channels: 3                 # constant ones
+    out_channels: 512              # optional projection; omit for the 32-channel decoder
+    # blocks: [1, 2, 3, 5, 2]      # Seg50, the model of the paper (default: Seg26)
+```
+
+No metric setting: sub-sampling is by ratio (÷4 per stage), neighbourhoods are 8 or 16
+nearest points. A cloud needs at least 256 points (the product of the strides).
+
+### Point Transformer V2
+
+```yaml
+model:
+  backbone:
+    type: PointTransformerV2
+    in_channels: 3
+    out_channels: 512
+    grid_sizes: [0.015, 0.0375, 0.09375, 0.234375]   # metres; the ScanNet values ÷ 4
+```
+
+`grid_sizes` is the setting that matters: the cell edge of the four poolings, in metres.
+The class defaults (0.06 … 0.94 m) are for rooms. `pe_multiplier: true` gives the
+paper's `PT-v2m1` attention; the default is `PT-v2m2`, which the Pointcept README
+recommends.
+
+### Volt
+
+```yaml
+model:
+  backbone:
+    type: Volt
+    in_channels: 3
+    out_channels: 512
+    up_mlp_dim: 128
+    grid_size: 0.005               # voxel edge, metres
+    kernel_size: 5                 # voxels per token and axis: tokens of 2.5 cm
+    embed_dim: 384                 # Volt-S; 768 with num_heads: 12 is Volt-B
+    num_heads: 6                   # embed_dim / num_heads must be 64 (rope_split)
+    qk_norm: true
+```
+
+`grid_size × kernel_size` is the edge of a token. Smaller tokens resolve finer geometry
+and cost quadratically more attention. The authors state that Volt overfits without
+their training recipe (strong augmentation, distillation from a sparse U-Net, EMA); that
+recipe is not part of this toolbox.
+
+### OctFormer
+
+```console
+$ pip install "grasppanda[ocnn]"
+```
+
+```yaml
+model:
+  backbone:
+    type: OctFormer
+    in_channels: 3
+    out_channels: 512
+    voxel_size: 0.005              # edge of an octree leaf, metres
+    # octree_depth: 11             # a frame must fit a cube of voxel_size * 2**depth
+    # patch_size: 26               # octree nodes per attention group
+    # drop_path: 0.5               # the ScanNet recipe; lower it for short schedules
+```
+
+### PointViT, PointMamba, Uni3D (point-patch tokens)
+
+```console
+$ pip install "grasppanda[timm]"         # Uni3D
+$ pip install "grasppanda[mamba-ssm]"    # PointMamba; or a wheel from the mamba releases page
+```
+
+```yaml
+model:
+  backbone:
+    type: PointViT                 # or PointMamba, or Uni3D
+    in_channels: 0                 # coordinates only (Uni3D: 3, colour or constant ones)
+    num_group: 1024                # tokens per cloud = points with features = seeds
+    group_size: 32                 # nearest points per token (Uni3D: 64)
+    coord_scale: 2.0               # metres -> the unit-sphere scale of the object models
+    # PointViT:   embed_dim: 384, depth: 12, num_heads: 6, token_dim: 384 (256: Point-BERT)
+    # PointMamba: serialization_grid: 0.02, ssm_cfg: {d_state: 16}
+    # Uni3D:      timm_model: eva02_small_patch14_224
+```
+
+`num_group` must equal `proposal.num_seeds` under GraspNet-baseline and
+Scale-Balanced-Grasp (1024 in the shipped configs). `PointViT` attends globally
+(quadratic in `num_group`); `PointMamba` is linear in it.
+
+## 5. Released weights
+
+Weights are never downloaded by the toolbox. Download a file, convert it for the config
+you composed, and start training from it:
+
+```console
+$ curl -L -o pretrain.pth https://github.com/Pang-Yatian/Point-MAE/releases/download/main/pretrain.pth
+$ python -m tools.convert_encoder_checkpoint pretrain.pth point-mae_for_baseline.pth --config baseline_point-vit.yaml
+pretrain.pth: 156 tensors fit PointViT (as `backbone.*`), 53 dropped (decoders, tokens, heads)
+  left at their initial values: proj.weight, proj.bias
+wrote point-mae_for_baseline.pth
+$ grasppanda train baseline_point-vit.yaml --opts runtime.load_from=point-mae_for_baseline.pth runtime.allow_weight_mismatch=true
+```
+
+A probe started from that file ran (the trainer lists the keys the file does not hold):
+
+```console
+$ grasppanda probe baseline_point-vit.yaml --opts runtime.load_from=point-mae_for_baseline.pth runtime.allow_weight_mismatch=true
+    loss                        3.411 → 1.342
+  predicted   2 frame(s) · 493, 482 grasps
+✓ runs: trained 20 iterations on 8 frames of the dataset and predicted on 2 frame(s), with finite losses and real seeds in every iteration.
+```
+
+Under a method where `compose` wrapped the encoder in an adapter the tool writes the
+keys as `backbone.backbone.*`; it reads that from the config. With sizes that do not
+match, nothing is written:
+
+```console
+$ python -m tools.convert_encoder_checkpoint maskpoint_pretrain_shapenet.pth out.pth --config baseline_point-vit.yaml
+maskpoint_pretrain_shapenet.pth: 154 tensors fit PointViT (as `backbone.*`), 26 dropped (decoders, tokens, heads)
+  left at their initial values: proj.weight, proj.bias
+  shape differs: module.transformer_q.encoder.second_conv.3.weight: file (256, 512, 1), model (384, 512, 1)
+  shape differs: module.transformer_q.encoder.second_conv.3.bias: file (256,), model (384,)
+  not in the file: encoder.second_conv.3.weight
+  not in the file: encoder.second_conv.3.bias
+Nothing was written: set the encoder sizes of the config to those of the file (for example `token_dim: 256` for Point-BERT and MaskPoint files), or name what may stay new with --fresh.
+```
+
+Files that were downloaded and loaded in this work (every tensor of the encoder found
+with its shape, then a forward pass; `tests/integration/test_encoder_checkpoints.py`
+repeats it when the files lie under `$GRASPPANDA_WEIGHTS/components/`):
+
+| File (size) | Fits | Encoder options | Trained on | Licence | SHA-256 (first 16) |
+|---|---|---|---|---|---|
+| Point-MAE [`pretrain.pth`](https://github.com/Pang-Yatian/Point-MAE/releases/download/main/pretrain.pth) (348 MB) | `PointViT` | defaults | ShapeNet objects, masked autoencoding | repository MIT; no separate statement for the file | `27ded932bb0a2625` |
+| MaskPoint [`pretrain_shapenet.pth`](https://static.hliu.cc/files/projects/maskpoint/checkpoints/pretrain_shapenet.pth) (286 MB) | `PointViT` | `token_dim: 256` (the Point-BERT layout) | ShapeNet objects, masked discrimination (ECCV 2022) | repository BSD-3-Clause; no separate statement for the file | `8173353d4117669c` |
+| PointMamba [`pretrain.pth`](https://github.com/LMD0311/PointMamba/releases/download/ckpts-2/pretrain.pth) (64 MB) | `PointMamba` | defaults | ShapeNet objects | repository Apache-2.0; no separate statement for the file | `3d1a89683d8b135d` |
+| Uni3D [`uni3d-ti/model.pt`](https://huggingface.co/BAAI/Uni3D/resolve/main/modelzoo/uni3d-ti/model.pt) (13 MB) | `Uni3D` | `timm_model: eva02_tiny_patch14_224` | object collections with colour, aligned with CLIP (see the Uni3D README) | code MIT; **the model card states no licence** | `6ff7e821e6997cb8` |
+| Uni3D [`uni3d-s/model.pt`](https://huggingface.co/BAAI/Uni3D/resolve/main/modelzoo/uni3d-s/model.pt) (46 MB) | `Uni3D` | `timm_model: eva02_small_patch14_224` (the preset) | same | same | `9a6342fda2245f00` |
+| Volt-S [`joint_training_small/scannet/model/model_last.pth`](https://huggingface.co/KadirYilmaz/Volt/resolve/main/Volt_experiments/joint_training_small/scannet/model/model_last.pth) (381 MB) | `Volt` | `embed_dim: 384, num_heads: 6, qk_norm: true, up_mlp_dim: 128`, **`in_channels: 6`, `grid_size: 0.02`** | ScanNet, ScanNet200, ScanNet++, ARKitScenes jointly, with distillation (its config) | MIT (model card) | `2ce43d64b17999fa` |
+
+What these weights are and are not:
+
+* All but Volt were trained on **single objects scaled to the unit sphere**, 1024 to
+  10 000 points, 64 to 512 tokens. On a metric scene with 1024 tokens of 2 cm they are
+  an initialisation of the transformer, not a feature extractor.
+* Volt-S was trained on rooms with **colour and normal** as input on a 2 cm grid. With
+  the preset (three constant channels, 5 mm grid) the tokeniser has another shape; give
+  `--fresh tokenizer.proj` to the tool to keep the transformer and the decoder and start
+  the tokeniser anew. This was run:
+
+  ```console
+  $ python -m tools.convert_encoder_checkpoint volt-small-scannet.pth volt-s_for_gsnet.pth --config gsnet_volt.yaml --fresh tokenizer.proj
+  volt-small-scannet.pth: 211 tensors fit Volt (as `backbone.*`), 16 dropped (decoders, tokens, heads)
+    left at their initial values: tokenizer.proj.weight, head.0.weight, head.1.weight, head.1.bias, head.1.running_mean, head.1.running_var, head.1.num_batches_tracked
+  wrote volt-s_for_gsnet.pth
+  ```
+* The larger Uni3D files (`uni3d-b`, `-l`, `-g`: 178 MB to 2 GB) and the other Volt
+  experiments have the same layout by their configs; they were not downloaded.
+
+## 6. Pitfalls met
+
+* **`mamba-ssm` on PyPI is a source build.** Prebuilt wheels per torch / CUDA / Python
+  version are on the [releases page](https://github.com/state-spaces/mamba/releases);
+  `mamba_ssm-2.3.2.post1+cu11torch2.7cxx11abiTRUE-cp312` was used here (installed with
+  `--no-deps`).
+* **`import mamba_ssm` compiles a Triton helper** and fails with
+  `/usr/bin/ld: cannot find -lcuda` when the machine has `libcuda.so.1` but no
+  `libcuda.so`. Point Triton at a directory that holds a link of that name:
+  `mkdir libcuda && ln -s /usr/lib/x86_64-linux-gnu/libcuda.so.1 libcuda/libcuda.so &&
+  export TRITON_LIBCUDA_PATH=$PWD/libcuda`.
+* **`PointMamba` has no CPU path** (the selective scan is a CUDA kernel). On the CPU it
+  raises `PointMamba runs on CUDA only ...`; its unit tests need a GPU.
+* **`ocnn` 2.3.3 runs its 3×3×3 convolutions on Triton kernels by default on CUDA**; with
+  the Triton 3.3.1 of this environment they did not compile
+  (`triton.compiler.errors.CompilationError`). `OctFormer` therefore sets ocnn's
+  pure-PyTorch path (`conv_method: block_gemm`); `conv_method: triton` asks for the
+  kernels. `import ocnn` itself needs `triton` to be importable.
+* **OctFormer's features depend on the batch**: attention groups are fixed counts of
+  z-ordered nodes of the *whole batch*, so where a group starts inside a frame depends on
+  the frames before it. This is the reference behaviour.
+* **Object checkpoints use other sizes than the first config you try.** MaskPoint's
+  ShapeNet file has the Point-BERT layout (`token_dim: 256`); MaskPoint's ScanNet file
+  (`pretrain_scannet_medium_enc12x.pth`) is a 3DETR encoder and does not fit `PointViT`
+  (2 of 156 tensors matched).
+* **Width under Scale-Balanced-Grasp.** An encoder that returns 32 channels is refused
+  at build time by the gated seed residual of `DepthCylinderGroup` (it met
+  `PointTransformerV1` before that class had `out_channels`). Keep `out_channels` at the
+  value `compose` sets.
+* **Memory at scene size** (one forward and backward pass, 35 000 points in two clouds,
+  random weights, RTX A6000 shared with other jobs; a rough guide, not a benchmark):
+  `PointTransformerV1` 1.4 GiB, `PointTransformerV2` 6.2 GiB, `Volt` (Volt-S, 2.5 cm
+  tokens of a 0.6 × 0.6 m slab) 2.1 GiB, `OctFormer` 1.0 GiB (leaves of 1 cm),
+  `PointViT` 2.7 GiB, `PointMamba` 2.6 GiB.
+
+## 7. Not wrapped
+
+| Candidate | Opened | Why not |
+|---|---|---|
+| Swin3D (Microsoft) | [microsoft/Swin3D](https://github.com/microsoft/Swin3D) @ `57d5137`, MIT | Built on MinkowskiEngine (`requirements.txt`, `Swin3D/models/Swin3D.py`) plus its own CUDA package; neither is a dependency of this toolbox, and MinkowskiEngine has no build for this stack. |
+| Superpoint Transformer / EZ-SP | [drprojects/superpoint_transformer](https://github.com/drprojects/superpoint_transformer) @ `6bcee31`, MIT | Needs a superpoint partition computed outside the network (`pgeof`, `pycut-pursuit`, FRNN, built by its `install.sh`); the model consumes that hierarchy, not a `PointSet`. It does not fit `forward(points, feats)` without a preprocessing stage. |
+| Mamba3D (ACM MM 2024) | [xhanxu/Mamba3D](https://github.com/xhanxu/Mamba3D) @ `b519a9c` | No licence file in the repository. |
+| Point Cloud Mamba | [SkyworkAI/PointCloudMamba](https://github.com/SkyworkAI/PointCloudMamba) @ `57fdb29` | No licence file in the repository. |
+| PointGPT (NeurIPS 2023) | [CGuangyan-BIT/PointGPT](https://github.com/CGuangyan-BIT/PointGPT) @ `9ba3d40`, MIT | Same tokeniser, but its blocks are `nn.MultiheadAttention` in a GPT extractor (`models/GPT.py`): the checkpoints do not fit `PointViT` without a second block type. Not done. |
+| ReCon, ACT (ICLR 2023), PCP-MAE (NeurIPS 2024 Spotlight), Point-JEPA, Point-BERT's own file | [qizekun/ReCon](https://github.com/qizekun/ReCon) @ `51a8be0`, [RunpeiDong/ACT](https://github.com/RunpeiDong/ACT) @ `d580115`, [aHapBean/PCP-MAE](https://github.com/aHapBean/PCP-MAE) @ `33b896d`, [Ayumu-J-S/Point-JEPA](https://github.com/Ayumu-J-S/Point-JEPA) @ `c36b51c`, [Julie-tang00/Point-BERT](https://github.com/Julie-tang00/Point-BERT) @ `ce5a6e1` | Checkpoints are behind Google Drive or Tsinghua Cloud links and were not downloaded, so nothing is claimed. The converter strips the `MAE_encoder.` / `transformer_q.` prefixes these families use; whether every tensor fits `PointViT` is untested (ReCon adds image and text tokens). |
+| Point-M2AE (NeurIPS 2022) | [ZrrSkywalker/Point-M2AE](https://github.com/ZrrSkywalker/Point-M2AE) @ `1bdbe05`, MIT | A hierarchical encoder (`H_Encoder`, three token scales), not the shared single-scale layout; weights on Google Drive. Not done. |
+| OctFormer released weights | README of octree-nn/octformer (OneDrive links) | Not downloaded; the reference trains with the separate `dwconv` CUDA extension, and whether its tensors fit ocnn's built-in depth-wise convolution was not checked. |
+| MaskPoint ScanNet weights | [`pretrain_scannet_medium_enc12x.pth`](https://static.hliu.cc/files/projects/maskpoint/checkpoints/pretrain_scannet_medium_enc12x.pth) | Downloaded and tried: a 3DETR-style encoder with other tensor names and 256 channels; 2 of 156 `PointViT` tensors matched. |

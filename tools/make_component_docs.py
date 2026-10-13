@@ -52,6 +52,7 @@ SWAPPING_PAGE = REPO / "docs" / "advanced_guides" / "swapping.md"
 TITLES = {
     "DETECTORS": "Detectors",
     "BACKBONES": "Scene encoders",
+    "IMAGE_ENCODERS": "Image encoders",
     "PROPOSALS": "Seed proposals",
     "VIEWS": "View stages",
     "ASSIGNERS": "Assigners",
@@ -192,12 +193,21 @@ def reference_models() -> dict[str, dict[str, Any]]:
     return models
 
 
+def _wraps(name: str) -> bool:
+    """Whether a registered backbone wraps another backbone."""
+    params, _ = component_parameters(BACKBONES.get(name))
+    return "backbone" in params
+
+
 def adapters() -> dict[str, str]:
-    """Output kind an adapter produces -> its name. An adapter wraps another backbone."""
+    """Output kind an adapter produces -> its name. An adapter wraps another backbone.
+
+    Wrappers that no contract asks for (point painting, ``compose_inserts = False``) are
+    not adapters in this sense: nothing inserts them.
+    """
     found = {}
     for name in in_tree("BACKBONES"):
-        params, _ = component_parameters(BACKBONES.get(name))
-        if "backbone" in params:
+        if _wraps(name) and getattr(BACKBONES.get(name), "compose_inserts", True):
             found[BACKBONES.get(name).output] = name
     return found
 
@@ -215,7 +225,7 @@ def encoder_verdicts() -> dict[str, dict[str, str]]:
     wrap, models = adapters(), reference_models()
     verdicts: dict[str, dict[str, str]] = {}
     for name in in_tree("BACKBONES"):
-        if name in wrap.values():
+        if _wraps(name):
             continue
         verdicts[name] = {}
         for detector, model in models.items():

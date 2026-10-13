@@ -1,0 +1,26 @@
+# Point Transformer (V1) U-Net, PointTransformer-Seg26 of Pointcept, as published.
+#
+# A room-scale encoder that has no unit of length: every neighbourhood is counted in
+# points (k nearest), sub-sampling is by ratio. No published GraspNet-1Billion result
+# uses this network (Scale-Balanced-Grasp uses its attention layer inside PointNet++,
+# which is the PointNet2Transformer encoder). No weights were released: random init.
+#
+# What must be re-tuned, and why:
+# * nothing metric. With 20 000 points per frame the five stages hold 20 000 / 5 000 /
+#   1 250 / 312 / 78 points; the receptive field follows the density of the cloud, not a
+#   radius, so it changes with the number of points a method samples.
+# * in_channels: 3 constant ones (the published model reads colour and normal), so
+#   geometry enters through the relative coordinates of the attention only.
+# * size: Seg26, 4.9 M parameters. `blocks: [1, 2, 2, 2, 2]` is Seg38,
+#   `[1, 2, 3, 5, 2]` Seg50 (the model of the paper).
+# * out_channels: 512, the width of SparseUNet14's output; it adds a linear layer with
+#   batch norm and ReLU after the 32-channel decoder (the first half of the official
+#   segmentation head). Compose sets it to the width of the encoder it replaces.
+# * batch norm over points throughout: with two frames per batch the coarsest stage
+#   normalises over about 150 points.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointTransformerV1      # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    out_channels: 512

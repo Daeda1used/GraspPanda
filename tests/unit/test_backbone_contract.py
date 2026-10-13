@@ -248,6 +248,149 @@ CASES = {
         },
         marks=(needs_spconv,),
     ),
+    "PointTransformerV1": Case(
+        "PointTransformerV1",
+        {
+            "in_channels": 3,
+            "planes": [16, 16, 24],
+            "blocks": [1, 2, 1],
+            "strides": [1, 2, 2],
+            "nsamples": [4, 8, 8],
+            "share_planes": 4,
+        },
+        too_few=3,
+    ),
+    # 20 points leave 5 at the coarsest level, fewer than its 8 neighbours: the masked path.
+    "PointTransformerV1+few": Case(
+        "PointTransformerV1",
+        {
+            "in_channels": 2,
+            "planes": [8, 16, 16],
+            "blocks": [1, 1, 1],
+            "strides": [1, 2, 2],
+            "nsamples": [4, 8, 8],
+            "share_planes": 4,
+        },
+        sizes=(20, 37),
+    ),
+    "PointTransformerV2": Case(
+        "PointTransformerV2",
+        {
+            "in_channels": 3,
+            "patch_embed_channels": 12,
+            "patch_embed_groups": 3,
+            "patch_embed_neighbours": 4,
+            "enc_depths": [1, 2],
+            "enc_channels": [16, 24],
+            "enc_groups": [4, 4],
+            "enc_neighbours": [8, 8],
+            "dec_depths": [1, 1],
+            "dec_channels": [12, 16],
+            "dec_groups": [3, 4],
+            "dec_neighbours": [8, 8],
+            "grid_sizes": [0.15, 0.4],
+        },
+    ),
+    # The paper's variant (position-encoding multiplier), a projection to a chosen width,
+    # and a second pooling so coarse that a cloud keeps fewer cells than neighbours.
+    "PointTransformerV2+multiplier": Case(
+        "PointTransformerV2",
+        {
+            "in_channels": 2,
+            "out_channels": 10,
+            "patch_embed_channels": 12,
+            "patch_embed_groups": 3,
+            "patch_embed_neighbours": 4,
+            "enc_depths": [1, 1],
+            "enc_channels": [16, 24],
+            "enc_groups": [4, 4],
+            "enc_neighbours": [8, 16],
+            "dec_depths": [1, 1],
+            "dec_channels": [12, 16],
+            "dec_groups": [3, 4],
+            "dec_neighbours": [8, 8],
+            "grid_sizes": [0.15, 0.6],
+            "pe_multiplier": True,
+        },
+    ),
+    "PointTransformerV1+head": Case(
+        "PointTransformerV1",
+        {
+            "in_channels": 3,
+            "out_channels": 10,
+            "planes": [8, 16],
+            "blocks": [1, 1],
+            "strides": [1, 4],
+            "nsamples": [4, 8],
+            "share_planes": 4,
+        },
+        too_few=3,
+    ),
+    "Volt": Case(
+        "Volt",
+        {
+            "in_channels": 3,
+            "up_mlp_dim": 12,
+            "grid_size": 0.05,
+            "kernel_size": 2,
+            "embed_dim": 16,
+            "depth": 2,
+            "num_heads": 2,
+            "qk_norm": True,
+            "drop_path": 0.0,
+            "rope_split": [1, 2, 1],
+        },
+    ),
+    # Layer scale, a projection of the output and patches of three voxels.
+    "Volt+head": Case(
+        "Volt",
+        {
+            "in_channels": 2,
+            "out_channels": 10,
+            "up_mlp_dim": 12,
+            "grid_size": 0.04,
+            "kernel_size": 3,
+            "embed_dim": 16,
+            "depth": 1,
+            "num_heads": 2,
+            "init_values": 0.1,
+            "drop_path": 0.0,
+            "increase_drop_path": False,
+            "rope_split": [2, 1, 1],
+        },
+    ),
+    "PointViT": Case(
+        "PointViT",
+        {
+            "num_group": 24,
+            "group_size": 8,
+            "embed_dim": 16,
+            "depth": 2,
+            "num_heads": 2,
+            "token_dim": 16,
+            "drop_path_rate": 0.0,
+        },
+        too_few=24,
+    ),
+    # Extra point features, a patch encoder narrower than the transformer (Point-BERT)
+    # and a projection of the output.
+    "PointViT+feats": Case(
+        "PointViT",
+        {
+            "in_channels": 2,
+            "out_channels": 10,
+            "num_group": 24,
+            "group_size": 8,
+            "embed_dim": 16,
+            "depth": 1,
+            "num_heads": 2,
+            "token_dim": 12,
+            "drop_path_rate": 0.0,
+            "coord_scale": 2.0,
+            "centre_clouds": False,
+        },
+        too_few=24,
+    ),
 }
 
 
@@ -287,7 +430,7 @@ def test_backbone_declares_a_checkable_contract(case):
     cls = BACKBONES.get(case.type)
     assert issubclass(cls, Backbone)
     assert cls.output in ("dense", "subsampled")
-    assert cls.status in ("tested", "weights-verified")
+    assert cls.status in ("tested", "weights-verified", "bridge")
     assert cls.__doc__ and inspect.getmodule(cls).__doc__
     params, var_kwargs = component_parameters(cls)
     assert not var_kwargs

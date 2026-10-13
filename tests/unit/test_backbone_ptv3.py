@@ -252,3 +252,22 @@ def test_inconsistent_configurations_are_rejected(kind, change, message):
     extra = DECODER if kind == "PTv3" else {}
     with pytest.raises(ValueError, match=message):
         BACKBONES.build({"type": kind, **TINY, **extra, **change})
+
+
+def test_ptv3_without_decoder_is_the_encoder_half_of_the_full_model():
+    """`enc_mode` builds no decoder; the encoder keeps its names, so an encoder-only
+    checkpoint loads strictly and a full one leaves only decoder tensors over."""
+    full = build("PTv3")
+    encoder = build("PTv3", enc_mode=True)
+    assert not hasattr(encoder, "dec") and encoder.out_channels == TINY["enc_channels"][-1]
+    state = full.state_dict()
+    assert set(encoder.state_dict()) == {key for key in state if not key.startswith("dec.")}
+    result = encoder.load_state_dict(state, strict=False)
+    assert not result.missing_keys
+    assert all(key.startswith("dec.") for key in result.unexpected_keys)
+    coords, feats = scene()
+    out = encoder.train()(PointSet(coords), feats)
+    assert out.feats.shape == (len(coords), encoder.out_channels)
+    out.feats.sum().backward()
+    wide = build("PTv3", enc_mode=True, concat_stages=None)
+    assert wide.out_channels == sum(TINY["enc_channels"])

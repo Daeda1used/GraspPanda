@@ -1,0 +1,39 @@
+# PTv3 started from the Point Prompt Training weights (ScanNet + S3DIS + Structured3D, MIT).
+#
+# The released file `ptv3-ppt-s3dis` (446 MB) is PTv3 trained jointly on three indoor
+# datasets with prompt-driven normalisation: one set of normalisation layers per
+# dataset. `pretrained_condition` picks one set and the model stays a plain PTv3 (the
+# other sets are dropped). Fetch the file first: the error of a missing file prints the
+# command. No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_condition: 0 takes the normalisation statistics of ScanNet (real RGB-D
+#   scans), 1 those of S3DIS, 2 those of Structured3D (synthetic). None of them is a
+#   table-top; batch norms re-estimate their statistics while training.
+# * pretrained_mismatch: skip. One tensor does not come from the file: the stem kernel
+#   (the release reads colour and normal, 6 channels; the grasp methods feed 3 constant
+#   ones). With `in_channels: 6` and real colour and normal the load is strict.
+# * sizes: the widths, heads, patch size 128 and relative position bias below are those
+#   of the checkpoint (they differ from the class defaults); change them and the
+#   weights no longer fit.
+# * grid_size: 0.005 m, GSNet's; the weights were trained on rooms at 0.02 m.
+# * output width: 64 channels; proposal, view stage and grouper are built that wide.
+# * optimizer and schedule: fine-tuning a transformer usually takes AdamW, a lower rate
+#   and warm-up; the base method's recipe was tuned for its own encoder.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005
+    enable_rpe: true
+    enc_channels: [32, 64, 128, 256, 384]
+    enc_num_head: [2, 4, 8, 16, 24]
+    enc_patch_size: [128, 128, 128, 128, 128]
+    dec_channels: [64, 64, 128, 256]
+    dec_num_head: [4, 4, 8, 16]
+    dec_patch_size: [128, 128, 128, 128]
+    pretrained: ptv3-ppt-s3dis
+    pretrained_condition: 0       # the normalisation layers trained on ScanNet
+    pretrained_mismatch: skip     # the stem keeps its initialisation

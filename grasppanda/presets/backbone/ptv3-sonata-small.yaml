@@ -1,0 +1,31 @@
+# The small Sonata encoder with its released self-supervised weights (CC BY-NC 4.0), 5 mm grid.
+#
+# NON-COMMERCIAL WEIGHTS. `sonata-small` (154 MB) is the small PT-v3m2 encoder of Sonata;
+# it loads key for key into PTv3Sonata with the sizes below. Fetch it first: the error of
+# a missing file prints the command. The base files load with the class defaults
+# (`sonata`, `concerto-base-origin`: the Concerto model of the paper).
+# No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_mismatch: skip. One tensor does not come from the file: the stem (the
+#   release reads coordinates, colour and normal, 9 channels; the grasp methods feed 3
+#   constant ones). With `in_channels: 9` and that input the load is strict.
+# * size: 2-2-2-6-2 blocks and 32 to 512 channels, the published small layout. The
+#   class defaults are the base encoder (108.5 M parameters).
+# * output: 992 channels, the five encoder stages concatenated (`enc_mode`), the
+#   authors' linear-probing protocol. Proposal, view stage and grouper are built that
+#   wide; `concat_stages` keeps fewer stages.
+# * grid_size: 0.005 m, GSNet's; the weights were trained at 0.02 m.
+# * optimizer and schedule: the base method's, tuned for its own encoder.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: PTv3Sonata              # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005
+    enc_depths: [2, 2, 2, 6, 2]
+    enc_channels: [32, 64, 128, 256, 512]
+    enc_num_head: [2, 4, 8, 16, 32]
+    pretrained: sonata-small
+    pretrained_mismatch: skip     # the stem keeps its initialisation

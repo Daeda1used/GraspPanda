@@ -40,6 +40,9 @@ __all__ = ["PRESET_ROOT", "RETUNE_HEADING", "Preset", "PresetError", "find", "pr
 PRESET_ROOT = Path(__file__).resolve().parents[1] / "presets"
 #: The line of a preset header after which its re-tuning notes are listed.
 RETUNE_HEADING = "What must be re-tuned, and why:"
+#: The slot of post-processing presets. Their files hold a config fragment,
+#: ``evaluation.variants.post: [<one node>]``, instead of ``model.<slot>``.
+POST_SLOT = "post"
 
 _KEY = re.compile(r"^(?P<indent> *)(?P<key>[A-Za-z_][\w-]*):(?P<rest>.*)$")
 
@@ -134,6 +137,24 @@ def _inline_comments(body: str) -> dict[tuple[str, ...], str]:
     return comments
 
 
+def _post_as_model(content: Any, where: str) -> dict[str, Any]:
+    """A post-processing preset, ``evaluation.variants.post: [node]``, in the shape of
+    a stage preset (``model.post: node``), so that one reader serves both."""
+    try:
+        (section,), (variants,) = list(content), list(content.values())
+        (group,), (chains,) = list(variants), list(variants.values())
+        (variant,), (chain,) = list(chains), list(chains.values())
+        (node,) = chain
+    except (TypeError, ValueError, AttributeError):
+        section = group = variant = node = None
+    if (section, group, variant) != ("evaluation", "variants", POST_SLOT):
+        raise PresetError(
+            f"{where} must hold exactly `evaluation.variants.{POST_SLOT}` with one "
+            "post-processor node in its list"
+        )
+    return {"model": {POST_SLOT: node}}
+
+
 def read(path: Path, slot: str | None = None) -> Preset:
     """Read and check one preset file; ``slot`` defaults to the name of its directory."""
     slot = slot or path.parent.name
@@ -144,6 +165,8 @@ def read(path: Path, slot: str | None = None) -> Preset:
         content = parse_yaml(body)
     except Exception as error:
         raise PresetError(f"{where}: invalid YAML: {error}") from None
+    if slot == POST_SLOT:
+        content = _post_as_model(content, where)
     if not isinstance(content, dict) or set(content) - {"model", "data"}:
         raise PresetError(f"{where} must hold `model:` and optionally `data:`, nothing else")
     model = content.get("model")

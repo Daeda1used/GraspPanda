@@ -40,6 +40,18 @@ from .conftest import REPO
 
 HAS_SPCONV = importlib.util.find_spec("spconv") is not None
 needs_spconv = pytest.mark.skipif(not HAS_SPCONV, reason="needs the spconv extra")
+needs_ocnn = pytest.mark.skipif(
+    importlib.util.find_spec("ocnn") is None, reason="needs the ocnn extra"
+)
+needs_timm = pytest.mark.skipif(
+    importlib.util.find_spec("timm") is None, reason="needs the timm extra"
+)
+#: The selective scan of mamba-ssm is a CUDA kernel and these tests run on the CPU; the
+#: encoder is run under a method by ``tests/unit/test_backbone_point_tokens.py`` on a GPU.
+needs_cuda_scan = pytest.mark.skip(reason="PointMamba runs on CUDA only (mamba-ssm)")
+needs_pyg = pytest.mark.skipif(
+    importlib.util.find_spec("torch_geometric") is None, reason="needs the torch_geometric extra"
+)
 
 VIEW_COUNT, ANGLES, DEPTHS, SEEDS, POINTS, FRAMES = 10, 3, 2, 12, 96, 2
 #: Channels of every tiny encoder: Scale-Balanced-Grasp adds seed features to crop
@@ -64,6 +76,12 @@ _SA = {
     "radii": [0.2, 0.4, 0.6, 0.9],
     "nsamples": [8, 8, 4, 4],
     "sa_mlps": [[8, 8], [8, 16], [16, 16], [16, 16]],
+}
+_SA_MSG = {
+    "npoints": [48, SEEDS, 8, 4],
+    "radii": [[0.2, 0.3], [0.4, 0.5], [0.6, 0.7], [0.9, 1.0]],
+    "nsamples": [[6, 8], [6, 8], [4, 4], [4, 4]],
+    "sa_mlps": [[[8], [8]], [[8], [8]], [[8], [8]], [[8], [8]]],
 }
 _PTV3 = {
     "in_channels": 3,
@@ -146,6 +164,17 @@ ENCODERS: dict[str, tuple[dict[str, Any], tuple[Any, ...]]] = {
         },
         (needs_spconv,),
     ),
+    "MinkUNet": (
+        {
+            "in_channels": 3,
+            "out_channels": WIDTH,
+            "voxel_size": 0.05,
+            "layers": [1, 1, 1, 1, 1, 1, 1, 1],
+            "planes": [6, 8, 8, 10, 8, 8, 6, 6],
+            "init_dim": 6,
+        },
+        (needs_spconv,),
+    ),
     "PointNet2Dense": ({**_SA, "in_channels": 3, "fp_mlps": [[16], [16], [16], [WIDTH]]}, ()),
     "PointNeXt": (
         {
@@ -158,7 +187,177 @@ ENCODERS: dict[str, tuple[dict[str, Any], tuple[Any, ...]]] = {
         },
         (),
     ),
+    "PointTransformerV1": (
+        {
+            "in_channels": 3,
+            "planes": [WIDTH, 16, 24],
+            "blocks": [1, 1, 1],
+            "strides": [1, 2, 2],
+            "nsamples": [4, 8, 8],
+            "share_planes": 4,
+        },
+        (),
+    ),
+    "PointTransformerV2": (
+        {
+            "in_channels": 3,
+            "patch_embed_channels": WIDTH,
+            "patch_embed_groups": 3,
+            "patch_embed_neighbours": 4,
+            "enc_depths": [1, 1],
+            "enc_channels": [16, 24],
+            "enc_groups": [4, 4],
+            "enc_neighbours": [8, 8],
+            "dec_depths": [1, 1],
+            "dec_channels": [WIDTH, 16],
+            "dec_groups": [3, 4],
+            "dec_neighbours": [8, 8],
+            "grid_sizes": [0.15, 0.4],
+        },
+        (),
+    ),
+    "Volt": (
+        {
+            "in_channels": 3,
+            "up_mlp_dim": WIDTH,
+            "grid_size": 0.05,
+            "kernel_size": 2,
+            "embed_dim": 16,
+            "depth": 1,
+            "num_heads": 2,
+            "rope_split": [1, 2, 1],
+        },
+        (),
+    ),
+    "OctFormer": (
+        {
+            "in_channels": 3,
+            "out_channels": WIDTH,
+            "voxel_size": 0.05,
+            "octree_depth": 6,
+            "channels": [8, 16],
+            "num_blocks": [2, 2],
+            "num_heads": [2, 4],
+            "patch_size": 4,
+            "dilation": 2,
+            "drop_path": 0.0,
+            "fpn_channel": 8,
+        },
+        (needs_ocnn,),
+    ),
     "PointNet2": ({**_SA, "fp_mlps": [[16, 16], [16, WIDTH]]}, ()),
+    "PointViT": (
+        {
+            "num_group": SEEDS,
+            "group_size": 8,
+            "embed_dim": WIDTH,
+            "depth": 1,
+            "num_heads": 2,
+            "token_dim": WIDTH,
+        },
+        (),
+    ),
+    "Uni3D": (
+        {
+            "out_channels": WIDTH,
+            "num_group": SEEDS,
+            "group_size": 8,
+            "timm_model": "eva02_tiny_patch14_224",
+            "token_dim": 16,
+        },
+        (needs_timm,),
+    ),
+    "PointMamba": (
+        {"num_group": SEEDS, "group_size": 8, "embed_dim": WIDTH, "depth": 1, "token_dim": WIDTH},
+        (needs_cuda_scan,),
+    ),
+    "DGCNN": (
+        {"in_channels": 3, "k": 6, "width": 8, "emb_dims": 16, "out_channels": WIDTH},
+        (),
+    ),
+    "ASSANet": (
+        {
+            "in_channels": 3,
+            "width": 6,
+            "strides": [2, 2],
+            "radii": [[0.2, 0.3], [0.4, 0.5]],
+            "nsamples": [[6, 8], [6, 6]],
+            "mlps": [[[6, 6, 9], [9, 9, 12]], [[12, 12, 12], [12, 12, 18]]],
+            "fp_mlps": [[WIDTH, WIDTH], [16, 16]],
+        },
+        (),
+    ),
+    "DeLA": (
+        {
+            "in_channels": 3,
+            "grid_size": [0.1, 0.3],
+            "k": [6, 6],
+            "depths": [1, 2],
+            "dims": [8, 12],
+            "nbr_dims": [8, 8],
+            "head_dim": WIDTH,
+        },
+        (),
+    ),
+    "PointMLP": (
+        {
+            "in_channels": 3,
+            "embed_dim": 8,
+            "dim_expansion": [2, 1],
+            "pre_blocks": [1, 1],
+            "pos_blocks": [1, 1],
+            "k_neighbors": [6, 4],
+            "reducers": [2, 2],
+            "de_dims": [16, 12],
+            "de_blocks": [1, 1],
+            "gmp_dim": 8,
+            "out_channels": WIDTH,
+        },
+        (),
+    ),
+    "RandLANet": (
+        {
+            "in_channels": 3,
+            "num_neighbors": 4,
+            "sub_sampling_ratio": [2, 2],
+            "dim_features": 4,
+            "dim_output": [4, 8],
+            "out_channels": WIDTH,
+        },
+        (),
+    ),
+    "PyGPointEncoder": (
+        {"in_channels": 3, "conv": "pointnet", "channels": [8, 8], "out_channels": WIDTH, "k": 6},
+        (needs_pyg,),
+    ),
+    "PointMetaBase": (
+        {
+            "in_channels": 3,
+            "width": WIDTH,
+            "strides": [1, 2, 2],
+            "blocks": [1, 2, 1],
+            "radius": 0.2,
+            "nsample": 8,
+        },
+        (),
+    ),
+    "PointVector": (
+        {
+            "in_channels": 3,
+            "width": WIDTH,
+            "strides": [1, 2, 2],
+            "blocks": [1, 2, 1],
+            "radius": 0.2,
+            "nsample": 8,
+            "block_nsample": 4,
+        },
+        (),
+    ),
+    "PointNet2MSG": ({**_SA_MSG, "fp_mlps": [[16, 16], [16, WIDTH]]}, ()),
+    "PointNet2MSGDense": (
+        {**_SA_MSG, "in_channels": 3, "fp_mlps": [[16], [16], [16], [WIDTH]]},
+        (),
+    ),
     "PointNet2Transformer": (
         {
             "npoints": [24, SEEDS],
@@ -384,7 +583,10 @@ def registered(registry_name: str) -> list[str]:
 
 def test_every_registered_stage_is_in_the_matrix():
     adapters = {ADAPTERS[kind]({"type": "x"})["type"] for kind in ADAPTERS}
-    assert set(registered("BACKBONES")) == set(ENCODERS) | adapters
+    # Point painting wraps an encoder and reads the colour image, which the clouds of this
+    # matrix do not have; it is covered by tests/unit/test_backbone_image_painting.py.
+    painted = {"ImagePainted", "ImagePaintedSubsampled"}
+    assert set(registered("BACKBONES")) == set(ENCODERS) | adapters | painted
     for slot, registry in (
         ("proposal", "PROPOSALS"),
         ("view", "VIEWS"),

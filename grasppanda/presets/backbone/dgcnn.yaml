@@ -1,0 +1,26 @@
+# DGCNN (ACM TOG 2019), scene-segmentation form: three EdgeConv layers at full
+# resolution, the graph rebuilt in feature space for the second and third.
+#
+# A graph encoder without any subsampling: every input point keeps its own feature, 256
+# channels (the width Scale-Balanced-Grasp's gated crop needs). GraNet builds a
+# GraspNet-1Billion method on EdgeConv graphs; this is the plain DGCNN, and no AP is
+# claimed for it.
+#
+# What must be re-tuned, and why:
+# * k: 20 neighbours, the reference value for 4096-point room blocks. In a 15 000 to
+#   20 000 point frame at about 5 mm spacing, 20 spatial neighbours span about 1 cm, so
+#   the first layer is very local; the feature-space graphs of layers 2 and 3 are what
+#   reaches further. Raise k (memory grows linearly) or try `dgcnn-static` to compare.
+# * emb_dims: 1024, a max-pooled vector of the whole frame given to every point. It
+#   makes features depend on the workspace crop; 0 removes it.
+# * in_channels: 3 constant ones, with the coordinates put in front of them
+#   (`coords_as_features`), because EdgeConv sees geometry only through its input.
+#   Coordinates are camera-frame metres, not normalised.
+# * memory and speed: the feature-space neighbour search compares all point pairs of a
+#   frame in blocks of `knn_chunk` queries (2048 x 20 000 distances at a time).
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: DGCNN                   # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones; the coordinates are added by the encoder
+    k: 20

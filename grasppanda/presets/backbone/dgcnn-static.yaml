@@ -1,0 +1,20 @@
+# DGCNN with a static spatial graph and no global vector: the local, cheap variant.
+#
+# The same three EdgeConv layers as `dgcnn`, but all on the spatial k-nearest-neighbour
+# graph of the first layer (`dynamic: false`) and without the frame-level max-pooled
+# vector (`emb_dims: 0`). Features then depend on a point's surroundings only, like
+# those of a sparse U-Net, and the two feature-space neighbour searches are saved. No AP
+# is claimed.
+#
+# What must be re-tuned, and why:
+# * k: 32. Three layers on one graph reach three hops, about 2 to 3 cm at 5 mm spacing:
+#   a much smaller receptive field than any hierarchical encoder. Raise k for more.
+# * in_channels: 3 constant ones, coordinates added by the encoder.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: DGCNN                   # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones; the coordinates are added by the encoder
+    k: 32
+    dynamic: false
+    emb_dims: 0

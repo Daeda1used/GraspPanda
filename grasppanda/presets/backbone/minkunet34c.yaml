@@ -1,0 +1,24 @@
+# MinkUNet34C (Res16UNet34C) of MinkowskiEngine, trained from scratch on a 5 mm grid.
+#
+# The network behind most published sparse-voxel scene results: 2-3-4-6 residual blocks
+# down, 2-2-2-2 up, decoder widths 256-128-96-96 (37.8 M parameters). It differs from
+# the `spunet` preset (Pointcept's network of the same sizes) in where a stage changes
+# its width, so the checkpoints of one do not fit the other. No grasp result is claimed.
+#
+# What must be re-tuned, and why:
+# * voxel_size: 0.005 m, the grid GSNet, EconomicGrasp and FineGrasp train at (the class
+#   default, 0.02 m, is for rooms). Four stride-2 stages: the coarsest voxel is 8 cm.
+# * stem_kernel: 5, as in MinkUNet and in the reference encoder; the released
+#   Res16UNet34C checkpoints use 3 (preset `minkunet34c-pointcontrast`).
+# * out_channels: a free 1 x 1 projection; compose sets it to the width of the encoder
+#   it replaces. `null` returns the 96 channels of the last decoder stage.
+# * learning rate: the recipes of the reference methods were tuned for a network a
+#   third of this depth; a deep network under Adam 1e-3 without warm-up may diverge.
+# * batch size and memory: more per frame than the reference encoder.
+model:
+  backbone:
+    type: MinkUNet                # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the voxel grid
+    out_channels: 512
+    voxel_size: 0.005
+    stem_kernel: 5

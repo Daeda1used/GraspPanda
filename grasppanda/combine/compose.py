@@ -33,6 +33,7 @@ import os
 import shlex
 import tempfile
 import textwrap
+import types
 import typing
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -51,6 +52,7 @@ from grasppanda.registry import (
 )
 
 from . import yamltext
+from .post import POST_SLOT, POST_VARIANT, PostSpecError, chain_nodes
 from .presets import Preset, PresetError, find, presets
 
 __all__ = [
@@ -137,6 +139,8 @@ class Composition:
         problems: Contract problems of the whole stage set.
         issues: What the config check reports beyond those problems.
         config_hash: Hash of the composed config; ``None`` when the check refuses it.
+        post: The post-processing chain of ``--set post=...`` as it was typed; it
+            becomes the evaluation variant ``post``.
     """
 
     base: str
@@ -156,6 +160,7 @@ class Composition:
     problems: list[str] = field(default_factory=list)
     issues: list[Issue] = field(default_factory=list)
     config_hash: str | None = None
+    post: tuple[str, ...] = ()
 
     @property
     def accepted(self) -> bool:
@@ -167,6 +172,7 @@ class Composition:
         """The command that composes this config again."""
         parts = [_COMMAND, self.base]
         parts += [f"--set {choice.slot}={choice.request}" for choice in self.choices]
+        parts += ["--set " + shlex.quote(f"{POST_SLOT}={text}") for text in self.post]
         if self.overrides:
             parts.append("--opts " + " ".join(shlex.quote(item) for item in self.overrides))
         if not self.adapters:
@@ -281,8 +287,9 @@ def _command_lines(command: str) -> list[str]:
 def component_slots(detector: type) -> dict[str, Registry]:
     """Slot → registry for the component slots of a registered class.
 
-    A slot is a constructor parameter annotated ``Cfg[Base]``. A detector whose parts are
-    plain options has none, and nothing can be composed into it.
+    A slot is a constructor parameter annotated ``Cfg[Base]`` or, for a slot with a
+    built-in default, ``Cfg[Base] | None``. A detector whose parts are plain options has
+    none, and nothing can be composed into it.
     """
     try:
         hints = typing.get_type_hints(detector.__init__)
@@ -291,8 +298,12 @@ def component_slots(detector: type) -> dict[str, Registry]:
     params, _ = component_parameters(detector)
     slots = {}
     for name in params:
+        hint = hints.get(name)
+        if typing.get_origin(hint) in (typing.Union, types.UnionType):
+            members = [arg for arg in typing.get_args(hint) if arg is not type(None)]
+            hint = members[0] if len(members) == 1 else hint
         try:
-            registry = slot_registry(hints.get(name))
+            registry = slot_registry(hint)
         except RegistryError:
             registry = None
         if registry is not None:
@@ -351,8 +362,16 @@ def _parse_sets(sets: Sequence[str], slots: Mapping[str, Registry], detector: st
         if slot not in slots:
             close = difflib.get_close_matches(slot, list(slots), n=1, cutoff=0.5)
             hint = f" Did you mean '{close[0]}'?" if close else ""
+            family = (
+                ""
+                if "backbone" in slots
+                else f" {detector} is a detector family of its own: the stages of the "
+                "seed-based methods (backbone, proposal, view, grouper, head) do not exist in "
+                "it. Its other parts are options of the detector (`grasppanda components "
+                f"{detector}`); change them with `--opts model.<part>.<option>=<value>`."
+            )
             raise ComposeError(
-                f"{detector} has no slot '{slot}'.{hint} Its slots: {', '.join(slots)}."
+                f"{detector} has no slot '{slot}'.{hint} Its slots: {', '.join(slots)}.{family}"
             )
         if any(choice.slot == slot for choice in choices):
             raise ComposeError(f"slot '{slot}' is set twice")
@@ -601,6 +620,9 @@ def compose(
         raise ComposeError(f"{base} has no `model` section to compose into")
     detector = DETECTORS.get(model["type"])
     slots = component_slots(detector)
+    # Post-processing is no part of the model: every detector has this slot.
+    post_sets = [item for item in sets if item.partition("=")[0].strip() == POST_SLOT]
+    sets = [item for item in sets if item not in post_sets]
     seed_based = issubclass(detector, SeedGraspDetector)
     result = Composition(
         base=_shipped_name(base_path) or str(base),
@@ -690,6 +712,8 @@ def compose(
             )
     if added:
         body["data"] = {"train": {"dataset": added}}
+    if post_sets:
+        _set_post(result, body, post_sets)
     if rest:
         tree = LoadedTree(data=body)
         apply_overrides(tree, rest)
@@ -698,6 +722,28 @@ def compose(
     result.body, result.comments = body, comments
     _check(result)
     return result
+
+
+def _set_post(result: Composition, body: dict[str, Any], post_sets: Sequence[str]) -> None:
+    """Write the chain of ``--set post=a+b`` as the evaluation variant ``post``."""
+    if len(post_sets) > 1:
+        raise ComposeError(
+            f"slot '{POST_SLOT}' is set twice; a chain is one `--set {POST_SLOT}=...` "
+            "with its steps joined by `+`, e.g. `--set post=collision+nms+top-k=50`"
+        )
+    text = post_sets[0].partition("=")[2].strip()
+    try:
+        chain = chain_nodes(text)
+    except PostSpecError as error:
+        raise ComposeError(str(error)) from None
+    body.setdefault("evaluation", {}).setdefault("variants", {})[POST_VARIANT] = chain
+    result.post = (text,)
+    steps = " → ".join(str(node["type"]) for node in chain)
+    result.actions.append(
+        f"post: evaluation variant `{POST_VARIANT}` = {steps}, applied in this order to the "
+        "raw predictions of every frame and scored beside the variants of the base config "
+        f"(`grasppanda demo --variant {POST_VARIANT}` applies it to one frame)."
+    )
 
 
 def _check(result: Composition) -> None:
@@ -748,7 +794,8 @@ def command_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Ar
         action="append",
         default=[],
         metavar="SLOT=CHOICE",
-        help="put a preset or a component into a slot, e.g. backbone=ptv3 (repeatable)",
+        help="put a preset or a component into a slot, e.g. backbone=ptv3 (repeatable); "
+        "post=collision+nms+top-k=50 defines a post-processing variant",
     )
     parser.add_argument(
         "--opts",

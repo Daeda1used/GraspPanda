@@ -1,0 +1,20 @@
+# Keep grasps that approach within 60 degrees of the table normal: from above.
+#
+# Rejects grasps from below the table and grasps flatter than 30 degrees above it. The table is
+# the largest plane of the cloud, fitted per frame; no calibration.
+#
+# Use: `--post approach-cone` with grasppanda test, infer or demo; `--set post=approach-cone`
+# with grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * max_angle: 60 degrees. A top-down picker uses 30 to 45; a shelf picker gives `direction` as
+#   a vector instead of the table normal.
+# * min_keep: 0. Set it to 1 to always get the best-aligned grasp back.
+# * min_inliers: 0.1; a frame whose largest plane holds less of the cloud is refused (no table
+#   in view): then give `plane: [a, b, c, d]`.
+evaluation:
+  variants:
+    post:
+      - type: ApproachAngleFilter
+        direction: table_normal
+        max_angle: 60.0

@@ -1,0 +1,16 @@
+# Shift each grasp along its closing axis to the middle of what is between the fingers.
+#
+# Poses change, scores do not, nothing is removed. Run it before a collision filter.
+#
+# Use: `--post center-gripper` with grasppanda test, infer or demo; `--set post=center-gripper`
+# with grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * max_shift: 0.02 m, so that a stray point cannot drag a grasp off its object.
+# * min_points: 5 points between the fingers, else the grasp is left as it is.
+evaluation:
+  variants:
+    post:
+      - type: GripperCentering
+        max_shift: 0.02
+        min_points: 5

@@ -51,7 +51,8 @@ import torch
 from torch import Tensor
 
 from grasppanda.models.base import BaseGraspDetector
-from grasppanda.registry import DETECTORS
+from grasppanda.models.image_encoders import ImageEncoder
+from grasppanda.registry import DETECTORS, IMAGE_ENCODERS, Cfg
 from grasppanda.structures import ContractError, GraspGroup, Gripper, Observation, Supervision
 
 from .anchor_head import AnchorHead
@@ -108,6 +109,10 @@ class HGGD(BaseGraspDetector):
         gripper: Gripper the predictions refer to; ``None`` is the benchmark gripper.
         image: Network input; :class:`~.options.ImageOptions`.
         encoder: Image network; :class:`~.options.EncoderOptions`.
+        image_encoder: The encoder of the image network, any registered image encoder.
+            ``None`` is the reference encoder described by ``encoder.base_width`` and
+            ``encoder.blocks``; another encoder is followed by a pyramid decoder of
+            ``encoder.decoder_channels``.
         proposal: Heat-map stage; :class:`~.options.ProposalOptions`.
         region: Region stage; :class:`~.options.RegionOptions`.
         local: Region network; :class:`~.options.LocalOptions`.
@@ -127,6 +132,7 @@ class HGGD(BaseGraspDetector):
         region: RegionOptions | None = None,
         local: LocalOptions | None = None,
         anchors: AnchorOptions | None = None,
+        image_encoder: Cfg[ImageEncoder] | None = None,
     ) -> None:
         super().__init__()
         self.gripper = options_from(Gripper, gripper)
@@ -134,6 +140,14 @@ class HGGD(BaseGraspDetector):
         encoder = options_from(EncoderOptions, encoder)
         local = options_from(LocalOptions, local)
         self.proposal = HeatmapStage(proposal)
+        built = None if image_encoder is None else IMAGE_ENCODERS.build(image_encoder)
+        if built is not None and (encoder.base_width, tuple(encoder.blocks)) != (8, (3, 4, 6, 3)):
+            raise ContractError(
+                f"{type(self).__name__}: encoder.base_width and encoder.blocks describe the "
+                f"reference encoder, but image_encoder puts {type(built).__name__} in its "
+                "place. Set them on the image_encoder node (HGGDResidualEncoder has both "
+                "options) or remove them."
+            )
         self.image_net = ImageNet(
             in_channels=4,
             base_width=encoder.base_width,
@@ -142,6 +156,8 @@ class HGGD(BaseGraspDetector):
             num_angles=self.proposal.num_angles,
             stride=self.proposal.stride,
             detach_features=encoder.detach_features,
+            encoder=built,
+            decoder_channels=encoder.decoder_channels,
         )
         self.region = RegionStage(region)
         self.anchors = AnchorHead(anchors, gripper=self.gripper)

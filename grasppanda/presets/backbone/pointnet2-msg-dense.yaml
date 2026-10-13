@@ -1,0 +1,25 @@
+# PointNet++ with multi-scale grouping (MSG), propagated back to every input point.
+#
+# The multi-scale segmentation network of Pointnet2_PyTorch (four abstraction and four
+# propagation levels, 128 output channels) with table-top level sizes and radii. For
+# methods whose proposal scores every scene point (GSNet, EconomicGrasp, FineGrasp).
+#
+# What must be re-tuned, and why:
+# * npoints, radii. The class defaults (1024 / 256 / 64 / 16 points, balls of 0.05 to
+#   0.8 m) are for rooms. Here: the 2048 / 1024 / 512 / 256 points of the
+#   GraspNet-baseline encoder and two balls per level from 0.02 to 0.3 m. By analogy.
+# * what the proposal can resolve: features are interpolated from 2048 kept points, a
+#   sparse U-Net has one per 5 mm voxel. Expect coarser graspness maps.
+# * fp_mlps: every propagation level 256 wide, so the output has the 256 channels
+#   Scale-Balanced-Grasp's gated crop needs (the class default ends on 128).
+# * in_channels: 0, coordinates only.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointNet2MSGDense       # `dense`: one feature per input point, 256 channels
+    in_channels: 0                # coordinates only
+    npoints: [2048, 1024, 512, 256]
+    radii: [[0.02, 0.04], [0.05, 0.1], [0.1, 0.2], [0.2, 0.3]]
+    nsamples: [[32, 64], [16, 32], [16, 16], [16, 16]]
+    fp_mlps: [[256, 256], [256, 256], [256, 256], [256, 256]]
+    normalize_xyz: true

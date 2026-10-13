@@ -1,0 +1,20 @@
+# Express the grasps in the robot base frame, with the grasp point at the fingertips.
+#
+# PLACEHOLDER CALIBRATION: the transform below is a camera 1 m above the base origin looking
+# straight down. Replace it with your hand-eye calibration (T_base_camera). Must be the LAST
+# step: steps that read the cloud refuse grasps in another frame.
+#
+# Use: `--post to-base-frame` with grasppanda test, infer or demo; `--set post=to-base-frame`
+# with grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * transform: your 4x4 T_base_camera, nested lists or the path of a .npy/.txt file.
+# * origin: fingertips moves the grasp point to the middle between the fingertips and sets depth
+#   to 0 (a tool centre point); grasp_point keeps the convention.
+evaluation:
+  variants:
+    post:
+      - type: ToFrame
+        transform: [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 1.0], [0, 0, 0, 1]]
+        frame: base
+        origin: fingertips

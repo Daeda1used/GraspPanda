@@ -12,11 +12,21 @@ import pytest
 
 from grasppanda.cli.components import collect
 from grasppanda.combine.compose import is_adapter
-from grasppanda.combine.grid import METHODS, encoder_presets, stage_variants
+from grasppanda.combine.grid import (
+    FAMILIES,
+    METHODS,
+    encoder_presets,
+    family_slots,
+    stage_variants,
+)
 from grasppanda.combine.presets import PRESET_ROOT, RETUNE_HEADING, PresetError, find, presets, read
 from grasppanda.config import Config, parse_yaml
 from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
-from grasppanda.registry import BACKBONES, component_parameters
+from grasppanda.registry import BACKBONES, POSTPROCESSORS, component_parameters
+
+#: Slot → registry of every slot that has presets: the stages, and post-processing, whose
+#: presets are fragments of `evaluation.variants` (grasppanda.combine.post).
+SLOT_REGISTRIES = {**STAGE_REGISTRIES, "post": POSTPROCESSORS}
 
 #: Stages that need no preset, each with the reason. The constructor defaults of every
 #: one are the reference values of the method named, and the stage reads no label asset
@@ -26,6 +36,18 @@ DEFAULTS_ARE_ENOUGH = {
     "CylinderGroup": "defaults are GSNet's crop; no loss, no label asset",
     "CylinderInteractionGroup": "defaults are EconomicGrasp's crop; no loss, no label asset",
 }
+
+
+def slot_owners(slot: str) -> tuple[object, list[str]]:
+    """The registry of a preset's slot and the configs it can be composed into: a stage of
+    the seed-based skeleton under the five methods, a slot of another detector family
+    (HGGD's ``image_encoder``) under that family. Post-processing presets, fragments of
+    ``evaluation.variants``, go with the five methods as well."""
+    if slot in SLOT_REGISTRIES:
+        return SLOT_REGISTRIES[slot], list(METHODS.values())
+    owners = {name: family_slots(name) for name in FAMILIES}
+    registry = next(slots[slot] for slots in owners.values() if slot in slots)
+    return registry, [FAMILIES[name] for name, slots in owners.items() if slot in slots]
 
 
 def every_preset():
@@ -46,7 +68,7 @@ def test_a_preset_says_what_it_is_and_what_to_retune(preset):
     assert f"# {RETUNE_HEADING}" in text
     assert max(len(line) for line in text.splitlines()) <= 100
     # The component exists in the registry of the slot and takes every option that is set.
-    registry = STAGE_REGISTRIES[preset.slot]
+    registry, _ = slot_owners(preset.slot)
     params, _ = component_parameters(registry.get(preset.type))
     assert set(preset.node) - {"type"} <= set(params), preset.node
     # Every inline comment belongs to a line that exists.
@@ -130,10 +152,11 @@ def test_every_preset_passes_the_signature_check_under_a_method_that_fits():
     from grasppanda.combine.compose import compose
 
     for preset in every_preset():
-        if is_adapter(STAGE_REGISTRIES[preset.slot].get(preset.type)) and preset.slot == "backbone":
+        registry, bases = slot_owners(preset.slot)
+        if preset.slot == "backbone" and is_adapter(registry.get(preset.type)):
             continue
         accepted = 0
-        for base in METHODS.values():
+        for base in bases:
             result = compose(base, [f"{preset.slot}={preset.name}"])
             accepted += result.accepted
             for issue in result.issues:

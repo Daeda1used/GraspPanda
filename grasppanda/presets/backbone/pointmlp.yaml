@@ -1,0 +1,27 @@
+# PointMLP (ICLR 2022), dense form: residual MLPs with the geometric affine module.
+#
+# The part-segmentation network of the official repository as a scene encoder: four
+# stages of furthest point sampling and k-nearest-neighbour groups, residual point-wise
+# MLPs, a propagation decoder, a max-pooled context vector; features on every input
+# point. Experimental on scenes: the authors published it for 2048-point objects, and
+# the grasp evidence (FlexLoG) is for a region encoder. No AP is claimed.
+#
+# What must be re-tuned, and why:
+# * reducers: 4 per stage, 20 000 points become 5000 / 1250 / 312 / 78 anchors (the
+#   official model has 2048 points and 512 / 128 / 32 / 8 anchors).
+# * k_neighbors: 32 per stage, by count: no radius to convert. The geometric affine
+#   divides every group by one standard deviation of the whole frame, so the scale of a
+#   frame is normalised away; two frames of different extent are scaled differently.
+# * gmp_dim: 64, a context vector of the whole frame on every point; 0 removes it.
+# * out_channels: 256 here (class default 128), the width Scale-Balanced-Grasp's gated
+#   crop needs.
+# * in_channels: 3 constant ones; the coordinates are read by the encoder (the official
+#   model reads coordinates and normals: feed normals with `point_features: observation`).
+# * size: 16.7 M parameters at the defaults. `embed_dim: 32` and `res_expansion: 0.25`
+#   are the authors' "elite" settings for classification.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointMLP                # `dense`: one feature per input point
+    in_channels: 3                # constant ones; the coordinates are read by the encoder
+    out_channels: 256

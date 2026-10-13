@@ -75,6 +75,7 @@ from grasppanda.structures import ContractError, PointFeatures, PointSet
 from grasppanda.utils.imports import require
 
 from ._packed import check_features, cloud_sizes
+from ._pretrained import load_pretrained
 
 __all__ = ["PTv3", "PTv3Sonata", "PTv3Utonia"]
 
@@ -813,6 +814,26 @@ class PTv3(_PTv3):
         enable_rpe: Add a learned relative-position bias to the attention logits.
         fuse_before_decoder_cpe: ``False`` reproduces the official model, whose first
             positional convolution of a decoder stage reads the skip features only.
+        enc_mode: Encoder only (Pointcept's ``cls_mode``, made dense): no decoder is
+            built, and the feature of a point is the deepest ``concat_stages`` encoder
+            stages concatenated through the pooling maps, as :class:`PTv3Sonata` does it.
+            Checkpoints that hold an encoder alone then load strictly; a full
+            checkpoint loads too, its decoder tensors reported as not in the model.
+        concat_stages: With ``enc_mode``, how many of the deepest stages are
+            concatenated (1: the coarsest stage alone, 512 channels by default);
+            ``None`` concatenates all of them.
+        pretrained: Released weights to start from: a name of
+            ``grasppanda.models.backbones._pretrained.RELEASED`` or a file path. The
+            encoder part of the file is loaded at construction and reported in the log.
+        pretrained_mismatch: ``error`` refuses when a tensor of the encoder is absent
+            from the file or has another shape there; ``skip`` keeps the initialisation
+            of such tensors (the stem, when the number of input channels differs).
+        pretrained_condition: For checkpoints trained with prompt-driven normalisation
+            (Point Prompt Training, ``PT-v3m1`` with ``pdnorm_*``), which hold one set of
+            normalisation layers per training dataset: the index of the set to load, in
+            the order of the checkpoint's ``pdnorm_conditions`` (ScanNet, S3DIS,
+            Structured3D in the released models). The other sets are dropped: the model
+            stays a plain PTv3 with the statistics of that one dataset.
     """
 
     status = "weights-verified"
@@ -843,6 +864,11 @@ class PTv3(_PTv3):
         shuffle_orders: bool = True,
         enable_rpe: bool = False,
         fuse_before_decoder_cpe: bool = False,
+        enc_mode: bool = False,
+        concat_stages: int | None = 1,
+        pretrained: str | None = None,
+        pretrained_mismatch: Literal["error", "skip"] = "error",
+        pretrained_condition: int | None = None,
     ) -> None:
         super().__init__(
             variant="m1",
@@ -870,9 +896,16 @@ class PTv3(_PTv3):
             enable_rpe=enable_rpe,
             rope_base=None,
             mask_token=False,
-            enc_mode=False,
-            concat_stages=1,
+            enc_mode=enc_mode,
+            concat_stages=concat_stages,
             fuse_before_decoder_cpe=fuse_before_decoder_cpe,
+        )
+        self.pretrained_report = (
+            None
+            if pretrained is None
+            else load_pretrained(
+                self, pretrained, mismatch=pretrained_mismatch, condition=pretrained_condition
+            )
         )
 
 
@@ -904,6 +937,12 @@ class PTv3Sonata(_PTv3):
         concat_stages: With ``enc_mode``, how many of the deepest stages are
             concatenated; shallower ones only pass the result down to the input voxels.
             ``None`` concatenates all of them.
+        pretrained: Released weights to start from: a name of
+            ``grasppanda.models.backbones._pretrained.RELEASED`` or a file path. The
+            encoder part of the file is loaded at construction and reported in the log.
+        pretrained_mismatch: ``error`` refuses when a tensor of the encoder is absent
+            from the file or has another shape there; ``skip`` keeps the initialisation
+            of such tensors (the stem, when the number of input channels differs).
     """
 
     status = "weights-verified"
@@ -937,6 +976,8 @@ class PTv3Sonata(_PTv3):
         mask_token: bool = True,
         enc_mode: bool = True,
         concat_stages: int | None = None,
+        pretrained: str | None = None,
+        pretrained_mismatch: Literal["error", "skip"] = "error",
     ) -> None:
         super().__init__(
             variant="m2",
@@ -968,6 +1009,11 @@ class PTv3Sonata(_PTv3):
             concat_stages=concat_stages,
             fuse_before_decoder_cpe=True,
         )
+        self.pretrained_report = (
+            None
+            if pretrained is None
+            else load_pretrained(self, pretrained, mismatch=pretrained_mismatch)
+        )
 
 
 @BACKBONES.register()
@@ -985,6 +1031,12 @@ class PTv3Utonia(_PTv3):
         rope_base: Base of the rotary frequencies. Every head width must be divisible
             by 6.
         Others: As in :class:`PTv3Sonata`.
+        pretrained: Released weights to start from: a name of
+            ``grasppanda.models.backbones._pretrained.RELEASED`` or a file path. The
+            encoder part of the file is loaded at construction and reported in the log.
+        pretrained_mismatch: ``error`` refuses when a tensor of the encoder is absent
+            from the file or has another shape there; ``skip`` keeps the initialisation
+            of such tensors (the stem, when the number of input channels differs).
     """
 
     status = "weights-verified"
@@ -1019,6 +1071,8 @@ class PTv3Utonia(_PTv3):
         mask_token: bool = True,
         enc_mode: bool = True,
         concat_stages: int | None = None,
+        pretrained: str | None = None,
+        pretrained_mismatch: Literal["error", "skip"] = "error",
     ) -> None:
         super().__init__(
             variant="m2",
@@ -1049,4 +1103,9 @@ class PTv3Utonia(_PTv3):
             enc_mode=enc_mode,
             concat_stages=concat_stages,
             fuse_before_decoder_cpe=True,
+        )
+        self.pretrained_report = (
+            None
+            if pretrained is None
+            else load_pretrained(self, pretrained, mismatch=pretrained_mismatch)
         )

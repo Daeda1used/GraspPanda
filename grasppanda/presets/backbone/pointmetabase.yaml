@@ -1,0 +1,23 @@
+# PointMetaBase-L (CVPR 2023) with a table-top radius.
+#
+# A PointNeXt-family encoder-decoder: the neighbour offsets are embedded once per stage
+# and added to the neighbour features, and the blocks have expansion 1, so it is several
+# times cheaper than PointNeXt at equal depth. This is the published "L" size
+# (2.7 M parameters with the segmentation head; 32 output channels). No grasp
+# result with this encoder is published; no AP is claimed.
+#
+# What must be re-tuned, and why:
+# * radius: 0.04 m doubling per stage (0.04 / 0.08 / 0.16 / 0.32 m) in place of the room
+#   value 0.1 m; the first radius of the GraspNet-baseline PointNet++. By analogy.
+# * in_channels: 3 constant ones (the published model reads colour and height), so
+#   geometry enters through the grouped offsets only.
+# * width: 32 output channels against 512 of the sparse U-Net. A stage that needs
+#   its own width (`DepthCylinderGroup` with `seed_residual: gated`) says so when built.
+# * optimizer and schedule: the base method's.
+# * memory and speed: ball queries on the pure-PyTorch reference operators, one per
+#   stage for all its blocks.
+model:
+  backbone:
+    type: PointMetaBase           # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    radius: 0.04

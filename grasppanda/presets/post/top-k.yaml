@@ -1,0 +1,16 @@
+# Keep the 50 best-scoring grasps of a frame, best first.
+#
+# Reads only the grasps, so it follows every method. Put it after the filters: a collision
+# filter applied to the best 50 leaves fewer than 50.
+#
+# Use: `--post top-k` with grasppanda test, infer or demo; `--set post=top-k` with grasppanda
+# compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * k: 50 is what the GraspNet-1Billion evaluator scores per frame. A robot that tries
+#   candidates in order until one is reachable needs 10 to 20.
+evaluation:
+  variants:
+    post:
+      - type: TopK
+        k: 50

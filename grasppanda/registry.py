@@ -34,6 +34,7 @@ __all__ = [
     "GROUPERS",
     "HEADS",
     "HOOKS",
+    "IMAGE_ENCODERS",
     "INJECTED",
     "LOSSES",
     "OPTIMIZERS",
@@ -429,6 +430,7 @@ def _populate_schedulers(registry: Registry) -> None:
 DATASETS = Registry("DATASETS", location="grasppanda.datasets")
 TRANSFORMS = Registry("TRANSFORMS", location="grasppanda.transforms")
 BACKBONES = Registry("BACKBONES", location="grasppanda.models.backbones")
+IMAGE_ENCODERS = Registry("IMAGE_ENCODERS", location="grasppanda.models.image_encoders")
 PROPOSALS = Registry("PROPOSALS", location="grasppanda.models.proposals")
 VIEWS = Registry("VIEWS", location="grasppanda.models.views")
 GROUPERS = Registry("GROUPERS", location="grasppanda.models.groupers")

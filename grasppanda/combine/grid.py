@@ -16,7 +16,12 @@ added to either gets its cells without anyone listing them:
     every set of stage variants the contract rules accept, once under a dense and once
     under a sub-sampling encoder;
 ``family``
-    detectors that are not built on the seed-based skeleton, as they are.
+    detectors that are not built on the seed-based skeleton, as they are;
+``family-slot``
+    every preset of every component slot such a detector has (HGGD: ``image_encoder``).
+``post``
+    every post-processing preset as the evaluation variant ``post`` of three methods
+    (:data:`POST_METHODS`), seed-based or not: a post-processor reads grasps, not a network.
 
 ``tools/probe_grid.py`` runs the cells; ``tools/make_combination_docs.py`` renders what
 was recorded. Nothing here probes anything.
@@ -32,16 +37,19 @@ from typing import Any
 from grasppanda.registry import BACKBONES, component_parameters
 
 from .compose import is_adapter
-from .presets import Preset, presets
+from .presets import POST_SLOT, Preset, presets
 
 __all__ = [
     "FAMILIES",
     "METHODS",
+    "POST_METHODS",
+    "POST_NOT_PROBED",
     "STAGE_SET_ENCODERS",
     "STAGE_SLOTS",
     "Cell",
     "cells",
     "encoder_presets",
+    "family_slots",
     "stage_variants",
 ]
 
@@ -55,6 +63,16 @@ METHODS: dict[str, str] = {
 }
 #: Detector families of their own, probed as they are.
 FAMILIES: dict[str, str] = {"HGGD": "hggd/hggd_r34w8_g1b-realsense_15e"}
+#: The methods post-processing is probed under. A post-processor reads grasps and the
+#: observation, never a network, so three kinds of input cover the six methods: seeds on a
+#: dense cloud with the full cloud kept (GSNet, as EconomicGrasp and FineGrasp), seeds of a
+#: sub-sampling encoder (GraspNet-baseline, as Scale-Balanced-Grasp), and HGGD, whose grasp
+#: centres are computed and whose observation carries images.
+POST_METHODS = ("GSNet", "GraspNet-baseline", "HGGD")
+#: Post-processing presets without a cell, each with the reason.
+POST_NOT_PROBED: dict[str, str] = {
+    "target-mask": "reads observation.masks, which no shipped dataset fills",
+}
 #: Slots of the seed-based skeleton besides the encoder, in the order data flows.
 STAGE_SLOTS = ("proposal", "view", "assigner", "grouper", "head")
 #: Encoder preset used for the stage sets, by the kind of features it returns.
@@ -67,7 +85,8 @@ class Cell:
 
     Attributes:
         id: Unique name, also the name of its files (``encoder/GSNet/PTv3``).
-        group: ``reference``, ``encoder``, ``stage``, ``stage-set`` or ``family``.
+        group: ``reference``, ``encoder``, ``stage``, ``stage-set``, ``family`` or
+            ``family-slot``.
         method: The method (a key of :data:`METHODS` or :data:`FAMILIES`).
         base: The config it is composed from.
         sets: ``slot=choice`` pairs of the compose request; empty for a config as shipped.
@@ -132,6 +151,17 @@ def stage_variants(slot: str) -> list[tuple[str, str]]:
         if not stated:
             variants.append((name, name))
     return variants
+
+
+def family_slots(method: str) -> dict[str, Any]:
+    """Slot → registry of the component slots of a detector family of :data:`FAMILIES`."""
+    from grasppanda.config import Config
+    from grasppanda.registry import DETECTORS
+
+    from .compose import component_slots
+
+    detector = Config.load(FAMILIES[method]).resolved()["model"]["type"]
+    return component_slots(DETECTORS.get(detector))
 
 
 def _in_tree(registry: Any, name: str) -> bool:
@@ -251,6 +281,38 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
         )
     for method, base in FAMILIES.items():
         found.append(Cell(f"family/{method}", "family", method, base))
+    for method, base in FAMILIES.items():
+        for slot in family_slots(method):
+            for preset in presets().get(slot, {}).values():
+                found.append(
+                    Cell(
+                        f"family-slot/{method}/{slot}/{preset.name}",
+                        "family-slot",
+                        method,
+                        base,
+                        (f"{slot}={preset.name}",),
+                        slot,
+                        preset.type,
+                        preset.name,
+                    )
+                )
+    for preset in presets().get(POST_SLOT, {}).values():
+        if preset.name in POST_NOT_PROBED:
+            continue
+        for method in POST_METHODS:
+            base = {**METHODS, **FAMILIES}[method]
+            found.append(
+                Cell(
+                    f"post/{method}/{preset.name}",
+                    "post",
+                    method,
+                    base,
+                    (f"{POST_SLOT}={preset.name}",),
+                    POST_SLOT,
+                    preset.type,
+                    preset.name,
+                )
+            )
     if groups is not None:
         found = [cell for cell in found if cell.group in groups]
     return found

@@ -1,0 +1,30 @@
+# PointMamba: Mamba blocks over 1024 point-patch tokens in Hilbert order.
+#
+# Needs the `mamba-ssm` library and a GPU (pip install "grasppanda[mamba-ssm]"; its
+# selective scan is a CUDA kernel). The tokeniser is PointViT's; the sequence model is
+# linear in the number of tokens. Features live on the 1024 centres; under a method
+# whose proposal scores every scene point compose wraps it in FeaturePropagation. No
+# published GraspNet-1Billion result uses it.
+#
+# What must be re-tuned, and why:
+# * num_group: 1024, the number of seeds of a method that takes the subsample as its
+#   seed set; the object models use 64 or 128 groups.
+# * coord_scale: 2.0 and serialization_grid: 0.02. The released model saw objects
+#   scaled to the unit sphere and orders its tokens on a grid of 0.02 in that unit; a
+#   table top about 1 m across fills the same sphere at scale 2, where a cell of the
+#   curve is 1 cm. A choice by analogy, not a tuned value.
+# * weights: random init as written. The ShapeNet checkpoint of PointMamba fills this
+#   encoder (docs/slots/scene_encoders_transformer.md says how).
+# * read-out: every token appears twice in the sequence (two curves); the feature of a
+#   centre is the mean of its two copies, which is our choice (the reference pools the
+#   whole sequence for classification).
+# * in_channels: 0, coordinates only, as in the released model.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointMamba              # `subsampled`: features on 1024 points, 384 channels
+    in_channels: 0                # coordinates only
+    num_group: 1024
+    group_size: 32
+    coord_scale: 2.0
+    serialization_grid: 0.02

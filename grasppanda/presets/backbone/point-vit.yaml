@@ -1,0 +1,29 @@
+# Plain transformer over 1024 point-patch tokens (the Point-BERT / Point-MAE encoder).
+#
+# An object-level encoder used on a scene: the tokens are 1024 furthest-point samples
+# with their 32 nearest points, and every token attends to every other. Features live
+# on the 1024 centres, the place of PointNet++ in GraspNet-baseline; under a method
+# whose proposal scores every scene point compose wraps it in FeaturePropagation. No
+# published GraspNet-1Billion result uses it.
+#
+# What must be re-tuned, and why:
+# * num_group: 1024, the number of seeds of a method that takes the subsample as its
+#   seed set (`model.proposal.num_seeds`); the object models use 64 groups.
+# * coord_scale: 2.0. The released models saw objects scaled to the unit sphere; a
+#   table top about 1 m across then fills the same sphere. The groups do not match
+#   whatever the scale: 32 neighbours out of 20 000 points span about 2 cm, a tenth of
+#   a group of the object models. A choice by analogy, not a tuned value.
+# * weights: random init as written. The ShapeNet checkpoints of Point-MAE, Point-BERT
+#   and MaskPoint fill this encoder (docs/slots/scene_encoders_transformer.md says how);
+#   they are an initialisation from single objects, not scene features.
+# * in_channels: 0, coordinates only, as in the released models.
+# * size: ViT-S, 21.8 M parameters, 384 channels; global attention over 1024 tokens.
+# * optimizer and schedule: the base method's. Transformers of this family are trained
+#   with AdamW, weight decay 0.05 and a cosine schedule in their own papers.
+model:
+  backbone:
+    type: PointViT                # `subsampled`: features on 1024 points, 384 channels
+    in_channels: 0                # coordinates only
+    num_group: 1024
+    group_size: 32
+    coord_scale: 2.0

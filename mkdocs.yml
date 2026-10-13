@@ -62,6 +62,12 @@ nav:
       - Training and testing: user_guides/train_test.md
       - Inference and visualisation: user_guides/inference.md
       - Try a combination: user_guides/combinations.md
+  - Slots:
+      - Post-processing: slots/post.md
+      - "Scene encoders: point-based networks": slots/scene_encoders_point.md
+      - "Scene encoders: transformers and pretrained": slots/scene_encoders_transformer.md
+      - "Scene encoders: sparse-voxel networks and released weights": slots/scene_encoders_sparse.md
+      - Image encoders: slots/image_encoders.md
   - Advanced Guides:
       - Add a component: advanced_guides/add_component.md
       - Swapping components: advanced_guides/swapping.md

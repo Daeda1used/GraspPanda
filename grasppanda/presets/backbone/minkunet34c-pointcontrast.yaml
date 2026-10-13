@@ -1,0 +1,31 @@
+# MinkUNet34C started from the PointContrast weights (pre-trained on partial RGB-D frames).
+#
+# The released file `pointcontrast-nce` (303 MB; Res16UNet34C pre-trained without labels
+# on pairs of single ScanNet RGB-D frames, the regime of a table-top view) loads key for
+# key. Fetch it first: the error of a missing file prints the command. The code of
+# PointContrast is MIT; the licence of the weights is not stated and ScanNet's terms
+# apply. No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_mismatch: skip. One layer does not come from the file: the final 1 x 1
+#   layer (the release ends on a 32-channel contrastive output; compose sets
+#   `out_channels` to the width of the encoder it replaces). The 3 x 3 x 3 stem loads:
+#   the release reads 3 channels and the grasp methods feed 3 constant ones, which need
+#   not be the input it was trained on.
+# * voxel_size: 0.005 m, GSNet's. The published pre-training config voxelises at
+#   0.025 m, a grid five times coarser; 0.025 m matches it.
+# * bn_momentum: 0.05, the value PointContrast trains with.
+# * learning rate: a pretrained encoder under a random head usually takes a lower rate
+#   or a warm-up; the base method's recipe has neither.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: MinkUNet                # `dense`: one feature per input point
+    in_channels: 3                # constant ones; the release has 3 channels too
+    out_channels: 512
+    voxel_size: 0.005
+    stem_kernel: 3
+    bn_momentum: 0.05
+    pretrained: pointcontrast-nce
+    pretrained_mismatch: skip     # the final layer keeps its initialisation

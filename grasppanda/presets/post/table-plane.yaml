@@ -1,0 +1,16 @@
+# Remove grasps whose gripper box would reach below the table plane.
+#
+# The table is the largest plane of the cloud, fitted per frame. It also covers the part of the
+# table a workspace crop or a shadow removed from the cloud.
+#
+# Use: `--post table-plane` with grasppanda test, infer or demo; `--set post=table-plane` with
+# grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * clearance: 0.005 m between the lowest gripper corner and the table.
+# * finger_length: 0.06 m, the benchmark gripper. Use the finger length of the robot.
+evaluation:
+  variants:
+    post:
+      - type: TablePlaneFilter
+        clearance: 0.005

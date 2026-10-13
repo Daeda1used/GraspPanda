@@ -1,0 +1,23 @@
+# The strict collision filter of HGGD: one point in a gripper box rejects a grasp.
+#
+# HGGD's own parameters, on the points the network saw: also rejects grasps with at most two
+# points between the fingers. It is the first step of HGGD's `cd` variant.
+#
+# Use: `--post collision-strict` with grasppanda test, infer or demo; `--set
+# post=collision-strict` with grasppanda compose; or copy the fragment into
+# `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * collision_threshold: 0.0 with voxel_size 0.01 m; a noisy cloud removes most grasps.
+#   precision: float16 only matters for parity with HGGD's reference code.
+# * cloud: points, the sub-sampled cloud; `full_points` needs keep_full_points.
+evaluation:
+  variants:
+    post:
+      - type: ModelFreeCollisionFilter
+        cloud: points
+        finger_length: 0.04
+        height: 0.01
+        depth: 0.02
+        collision_threshold: 0.0
+        min_points_between: 2

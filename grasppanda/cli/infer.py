@@ -42,6 +42,14 @@ def register(commands: Any) -> None:
     )
     parser.add_argument("--output", metavar="DIR", help="run directory to create and write into")
     parser.add_argument(
+        "--post",
+        nargs="+",
+        metavar="STEP",
+        help="also write the variant `post`: this chain of post-processing steps, e.g. "
+        "collision nms top-k=50 (presets of `grasppanda compose --list post`, or component "
+        "names; name=value sets the main option, name:option=value,... any option)",
+    )
+    parser.add_argument(
         "--opts", nargs="+", default=[], metavar="KEY=VALUE", help="override config values"
     )
     parser.set_defaults(handler=run)
@@ -61,6 +69,13 @@ def overrides(args: argparse.Namespace) -> list[str]:
             raise ConfigError([Issue("--input", message)])
         section = Config.load(args.config, out, validate=False).select("evaluation.split", "test")
         out.append(f"data.{section}.dataset.root={json.dumps(args.input)}")
+    if getattr(args, "post", None):
+        from grasppanda.combine.post import PostSpecError, chain_override
+
+        try:
+            out.append(chain_override(args.post))
+        except PostSpecError as error:
+            raise ConfigError([Issue("--post", str(error))]) from None
     if args.output:
         target = Path(args.output).expanduser().resolve()
         out.append(f"runtime.work_dir={json.dumps(str(target.parent))}")

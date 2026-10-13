@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import textwrap
@@ -142,9 +143,18 @@ CONFIG = """
 """
 
 
+def _free_port() -> int:
+    """A port nobody listens on: torchrun's default (29500) is taken when two suites run on
+    one machine at the same time."""
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
 def torchrun(*arguments: str) -> subprocess.CompletedProcess:
     """``torchrun --nproc_per_node=2 -m grasppanda.cli.main ...`` with the CPU (gloo) backend."""
     command = [sys.executable, "-m", "torch.distributed.run", "--nproc_per_node=2"]
+    command.append(f"--master_port={_free_port()}")
     command += ["-m", "grasppanda.cli.main", *arguments]
     environment = {**os.environ, "PYTHONPATH": str(REPO), "OMP_NUM_THREADS": "1"}
     for name in ("RANK", "LOCAL_RANK", "WORLD_SIZE"):

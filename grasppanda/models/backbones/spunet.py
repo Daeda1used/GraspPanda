@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from torch import Tensor, nn
@@ -50,6 +50,7 @@ from grasppanda.structures import PointFeatures, PointSet
 
 from ._grid import grid_cells
 from ._packed import check_features
+from ._pretrained import load_pretrained
 
 __all__ = ["SpUNet", "convert_pointcept_state"]
 
@@ -145,6 +146,13 @@ class SpUNet(Backbone):
         channels: Width of every stage: the encoder stages, each of which halves the
             grid first, then as many decoder stages, coarsest first.
         layers: Residual blocks of every stage, in the order of ``channels``.
+        pretrained: Released weights to start from: a name of
+            ``grasppanda.models.backbones._pretrained.RELEASED`` or a file path. The
+            encoder part of the file is loaded at construction and reported in the log; the 1×1
+            kernels of a Pointcept file are re-laid by :func:`convert_pointcept_state`.
+        pretrained_mismatch: ``error`` refuses when a tensor of the encoder is absent
+            from the file or has another shape there; ``skip`` keeps the initialisation
+            of such tensors (the stem, when the number of input channels differs).
     """
 
     output = "dense"
@@ -162,6 +170,8 @@ class SpUNet(Backbone):
         base_channels: int = 32,
         channels: Sequence[int] = (32, 64, 128, 256, 256, 128, 96, 96),
         layers: Sequence[int] = (2, 3, 4, 6, 2, 2, 2, 2),
+        pretrained: str | None = None,
+        pretrained_mismatch: Literal["error", "skip"] = "error",
     ) -> None:
         super().__init__()
         name = type(self).__name__
@@ -216,6 +226,13 @@ class SpUNet(Backbone):
             )
         self.final = None if out_channels is None else sparse.Linear(channels[-1], out_channels)
         self.reset_parameters()
+        self.pretrained_report = (
+            None
+            if pretrained is None
+            else load_pretrained(
+                self, pretrained, mismatch=pretrained_mismatch, convert=convert_pointcept_state
+            )
+        )
 
     def reset_parameters(self) -> None:
         """Initialise as the official model does.
