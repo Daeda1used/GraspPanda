@@ -88,14 +88,20 @@ SLOTS: dict[str, tuple[str, str]] = {
 
 #: Registry -> class attributes that make up the contract of its components.
 CONTRACT_FIELDS: dict[str, tuple[str, ...]] = {
-    "DETECTORS": ("required_inputs",),
+    "DETECTORS": ("required_inputs", "needs_supervision"),
     "BACKBONES": ("output",),
-    "PROPOSALS": ("requires", "seed_scores"),
+    "PROPOSALS": ("requires", "seed_scores", "needs_supervision"),
     "SAMPLERS": ("needs",),
     "VIEWS": ("seed_scores", "label_formats", "needs_matched", "applies_seed_weights"),
-    "ASSIGNERS": ("label_format", "optional_outputs"),
+    "ASSIGNERS": ("label_format", "optional_outputs", "needs_supervision"),
     "GROUPERS": ("support", "out_axes"),
-    "HEADS": ("in_axes", "label_format", "score_kind", "applies_seed_weights"),
+    "HEADS": (
+        "in_axes",
+        "label_format",
+        "score_kind",
+        "applies_seed_weights",
+        "needs_supervision",
+    ),
     "LOSSES": ("accepts", "prediction"),
 }
 
@@ -148,6 +154,11 @@ FIELD_HELP: dict[str, str] = {
     "prediction": (
         "How the primitive reads the output of a `unit` term: as the `value` itself or as a "
         "`logit`. A stage hands a logit on through its sigmoid."
+    ),
+    "needs_supervision": (
+        "Fields of the training supervision the component reads (`objects` are the dense "
+        "label grids), each with the option that makes it read the field. The training "
+        "dataset must serve every one; the config check compares."
     ),
 }
 
@@ -416,6 +427,29 @@ def _print_slot(registry: str, entries: list[Entry], color: bool, legend: bool =
     print()
 
 
+def _preset_lines(entry: Entry) -> list[str]:
+    """The presets that configure a component for `grasppanda compose`, as lines of the
+    detail view: a title, then one indented line per preset. Empty for a component that
+    is not a stage of the seed-based skeleton."""
+    from grasppanda.combine.presets import presets
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    slot = next((s for s, reg in STAGE_REGISTRIES.items() if reg.name == entry.registry), None)
+    if slot is None:
+        return []
+    mine = [preset for preset in presets().get(slot, {}).values() if preset.type == entry.name]
+    lines = ["presets  (grasppanda compose <config> --set <slot>=<preset>)"]
+    lines += [
+        f"  {slot}={preset.name}    grasppanda compose --show {slot}={preset.name}"
+        for preset in mine
+    ]
+    if not mine:
+        lines.append(
+            f"  (none)    --set {slot}={entry.name} composes it with the defaults listed above"
+        )
+    return lines
+
+
 def _print_detail(entry: Entry, color: bool) -> None:
     where, _ = SLOTS.get(entry.registry, ("", ""))
     print(f"{style(entry.name, 'bold', 'green', enabled=color)}  {entry.registry}  ({where})")
@@ -440,6 +474,8 @@ def _print_detail(entry: Entry, color: bool) -> None:
     print(style("shipped configs", "bold", enabled=color))
     for config in entry.used_by or ("(none)",):
         print(f"  {config}")
+    for line in _preset_lines(entry):
+        print(line if line.startswith(" ") else "\n" + style(line, "bold", enabled=color))
     for registry, verdicts in compatibility(entry).items():
         print()
         print(style(f"with {registry.lower()}", "bold", enabled=color))

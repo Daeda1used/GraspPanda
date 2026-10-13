@@ -66,6 +66,59 @@ def command_requirements(data: Mapping[str, Any], command: str | None) -> Iterat
             yield path, f"`grasppanda {command}` needs this section, but it is not set."
 
 
+def _spelled(field: str) -> str:
+    """A supervision field as it is written in code: ``point_labels.x`` → ``point_labels['x']``."""
+    head, _, name = field.partition(".")
+    if head in ("point_labels", "extras") and name:
+        return f"supervision.{head}['{name}']"
+    return f"supervision.{field}"
+
+
+@rule
+def training_data_serves_what_the_model_reads(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """The training dataset must put into its batches every label the model reads.
+
+    Both sides declare it: a detector what it reads (``supervision_needs``, collected from
+    the ``needs_supervision`` of its stages), a dataset reader what a config makes it
+    serve (``served_supervision``). A side that declares nothing is not compared. Only
+    ``train`` reads the training data, so other commands skip the rule.
+    """
+    from grasppanda.registry import DATASETS, DETECTORS
+
+    if command not in (None, "train"):
+        return
+    model, dataset = _select(data, ("model",)), _select(data, ("data", "train", "dataset"))
+    if not (isinstance(model, Mapping) and isinstance(dataset, Mapping)):
+        return
+    if model.get("type") not in DETECTORS or dataset.get("type") not in DATASETS:
+        return  # an unknown component: the signature check reports it
+    detector, reader = DETECTORS.get(model["type"]), DATASETS.get(dataset["type"])
+    try:
+        needs = getattr(detector, "supervision_needs", lambda node: None)(model)
+        served = getattr(reader, "served_supervision", lambda node: None)(dataset)
+    except (LookupError, TypeError, ValueError, AttributeError):
+        return  # a malformed node: the signature check reports it
+    if needs is None or served is None:
+        return
+    readers: dict[str, list[str]] = {}
+    for field, who in needs:
+        if field not in served and who not in readers.setdefault(field, []):
+            readers[field].append(who)
+    for field, names in readers.items():
+        if any(field.startswith(f"{other}.") for other in readers):
+            continue  # a part of something that is itself not served: said once, there
+        who = " and ".join(names)
+        verb = "reads" if len(names) == 1 else "read"
+        hint = reader.supervision_hint(field, dataset)
+        yield (
+            ("data", "train", "dataset"),
+            f"{who} {verb} `{_spelled(field)}`, which this training dataset does not serve."
+            + (f" {hint}" if hint else ""),
+        )
+
+
 @rule
 def save_best_names_a_variant(data: Mapping[str, Any], command: str | None) -> Iterator[Finding]:
     """``evaluation.save_best`` must monitor a metric of a declared variant."""

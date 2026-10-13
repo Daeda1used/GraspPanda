@@ -80,8 +80,10 @@ pytorch_optimizer, schedulefree; all Apache-2.0). Options marked "core" need not
 Everything is random-init: a recipe has no weights. "Measured" is the verdict of
 `grasppanda probe` per method, from the records of
 [Measured combinations](../advanced_guides/measured_combinations.md#the-training-recipe);
-G = GSNet, E = EconomicGrasp, H = HGGD. "Universal" means it ran under a seed-based
-method and under HGGD, a detector family with its own data path, hooks and clipping.
+G = GSNet, E = EconomicGrasp, H = HGGD. A recipe preset was probed under two methods, not
+five, so the last column is not a class of the measured page: "universal" here means it
+ran under a seed-based method and under HGGD, a detector family with its own data path,
+hooks and clipping.
 
 ### Components (name them as `type:` in a config)
 
@@ -145,8 +147,8 @@ re-tuning notes.
 | hooks | `hooks=grad-clip` | Clip the global L2 norm of the gradient at 1.0 before every optimizer step. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | hooks | `hooks=swa` | Stochastic weight averaging: the mean of the weights after each of the last epochs. | SWAHook | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | augment | `augment=dropout` | Remove 20 % of the points of every second sample, before the cloud is sampled. | RandomDropout | core | G runs, H runs | universal: ran under GSNet and HGGD |
-| augment | `augment=jitter` | Clipped Gaussian noise of 1 mm on the input points, after the other point transforms. | RandomJitter | core | G runs, H fails | point-cloud methods only: refused for samples with images |
-| augment | `augment=shift` | Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow. | RandomShift | core | G runs, H fails | point-cloud methods only: refused for samples with images |
+| augment | `augment=jitter` | Clipped Gaussian noise of 1 mm on the input points, after the other point transforms. | RandomJitter | core | G runs, H fails | point-cloud methods only: stops at the first sample with images |
+| augment | `augment=shift` | Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow. | RandomShift | core | G runs, H fails | point-cloud methods only: stops at the first sample with images |
 | recipe | `recipe=adamw-onecycle` | AdamW with a one-cycle schedule, the recipe Pointcept trains PTv3 with, at a rate for grasp batches. | AdamW, OneCycleLR | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | recipe | `recipe=finetune-encoder` | Fine-tuning recipe for a pretrained scene encoder: layer-wise decay, warm-up and cosine, one frozen epoch, EMA. | ParamGroups, TimmSchedule, FreezeHook, EMAHook | `optim` | G runs, E runs | seed-based only: it names the `backbone` module |
 | recipe | `recipe=ptv3-adamw-onecycle` | Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks. | ParamGroups, OneCycleLR | core | G runs, E runs | PTv3 encoders only: the pattern matches its blocks |
@@ -372,8 +374,8 @@ methods' own: `adamw_onecycle_10e.yaml`, `adamw_warmup-cosine_10e.yaml`,
   them (HGGD needs its `EpochSignalHook`).
 - **`SWAHook.start_epoch` must be below `train.epochs`**; the run refuses to start
   otherwise ("nothing would be averaged").
-- **Point augmentation next to images is refused at the first sample, not by the config
-  check**: the config check does not know that HGGD's dataset serves images.
+- **Point augmentation next to images stops at the first sample (a `ContractError`), it is
+  not refused by the config check**: the config check does not know that HGGD's dataset serves images.
 - **A wrong optimizer name passes the config check** and fails when the optimizer is
   built, with the list of valid names: the check does not import the libraries.
 - **Mixed precision is not ready for the ported methods.** `hooks=amp` (`train.amp: true`)

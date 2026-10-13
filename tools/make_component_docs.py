@@ -38,12 +38,13 @@ from grasppanda.cli.components import (
     render_value,
 )
 from grasppanda.config import Config, ConfigError
+from grasppanda.models.base import configured_width
 from grasppanda.models.detectors.seed_based import (
     STAGE_REGISTRIES,
     SeedGraspDetector,
     stage_contract_problems,
 )
-from grasppanda.registry import BACKBONES, DETECTORS, component_parameters
+from grasppanda.registry import BACKBONES, DETECTORS, GROUPERS, component_parameters
 
 REPO = Path(__file__).resolve().parents[1]
 COMPONENTS_PAGE = REPO / "docs" / "components.md"
@@ -114,7 +115,10 @@ def components_page() -> str:
         "```",
         "",
         "Which components can replace which, and what a swap changes besides the line in the",
-        "config, is the subject of [Swapping components](advanced_guides/swapping.md).",
+        "config, is the subject of [Swapping components](advanced_guides/swapping.md). Turning a",
+        "combination into a checked config and trying it on real frames is",
+        "[Try a combination](user_guides/combinations.md); what that gave for every component",
+        "under every method is [Measured combinations](advanced_guides/measured_combinations.md).",
         "",
         "## How to read the tables",
         "",
@@ -233,7 +237,7 @@ def _refusal(model: dict[str, Any]) -> list[str]:
 
 
 def encoder_verdicts() -> dict[str, dict[str, str]]:
-    """Encoder -> detector type -> "" (runs as is), an adapter name, or "refused"."""
+    """Encoder -> detector type -> "" (its kind fits as is), an adapter name, or "refused"."""
     wrap, models = adapters(), reference_models()
     verdicts: dict[str, dict[str, str]] = {}
     for name in in_tree("BACKBONES"):
@@ -250,6 +254,20 @@ def encoder_verdicts() -> dict[str, dict[str, str]]:
                 if not _refusal({**model, "backbone": wrapped}):
                     verdicts[name][detector] = adapter
     return verdicts
+
+
+def seed_widths() -> dict[str, tuple[int, str]]:
+    """Detector type -> (seed width its reference grouper fixes, the grouper), for the
+    reference models whose grouper fixes one (``Grouper.required_seed_channels``)."""
+    found = {}
+    for detector, model in reference_models().items():
+        cls = GROUPERS.get(model["grouper"]["type"])
+        params, _ = component_parameters(cls)
+        defaults = {name: param.default for name, param in params.items()}
+        width = cls.required_seed_channels({**defaults, **model["grouper"]})
+        if width is not None:
+            found[detector] = (width, cls.__name__)
+    return found
 
 
 def assigner_variants() -> dict[str, dict[str, Any]]:
@@ -346,11 +364,17 @@ def _encoders_region() -> str:
     models, verdicts = reference_models(), encoder_verdicts()
     wrap = adapters()
     entries = {entry.name: entry for entry in collect(["BACKBONES"], in_tree_only=True)}
-    headers = ["Encoder", "`output`", "Status", "Needs", *(f"`{name}`" for name in models)]
+    headers = ["Encoder", "`output`", "Width", "Status", "Needs"]
+    headers += [f"`{name}`" for name in models]
     rows = []
     for name, per_method in verdicts.items():
         entry = entries[name]
-        row = [f"`{name}`", f"`{entry.contract['output']}`", f"`{entry.status}`"]
+        settable = "out_channels" in component_parameters(BACKBONES.get(name))[0]
+        declared = configured_width({"type": name})
+        width = ("once built" if declared is None else f"{declared}") + (
+            " (`out_channels`)" if settable else ""
+        )
+        row = [f"`{name}`", f"`{entry.contract['output']}`", width, f"`{entry.status}`"]
         row += [", ".join(f"`{extra}`" for extra in entry.extras) or "—"]
         for detector in models:
             verdict = per_method[detector]
@@ -359,15 +383,34 @@ def _encoders_region() -> str:
     lines = _table(headers, rows)
     lines += [
         "",
-        f"{YES}: `model.backbone: {{type: <Encoder>}}` passes the config check as it stands. "
-        "*in `Adapter`*: the bare swap is refused with a message that names the adapter; "
-        "`model.backbone: {type: <Adapter>, backbone: {type: <Encoder>}}` passes.",
+        f"{YES}: the features of `model.backbone: {{type: <Encoder>}}` live where the proposal "
+        "of the method needs them. *in `Adapter`*: the bare swap is refused with a message "
+        "that names the adapter; `model.backbone: {type: <Adapter>, backbone: {type: "
+        "<Encoder>}}` passes that rule.",
         "",
         "Adapters: "
         + "; ".join(
             f"`{name}` turns any encoder into a `{kind}` one" for kind, name in wrap.items()
         )
         + ".",
+        "",
+        "*Width* is the number of channels the encoder returns with its constructor "
+        "defaults, as it declares it (`Backbone.output_channels`); `(out_channels)` marks an "
+        "encoder that has an option of that name to set it. The other stages take whatever "
+        "width arrives, with these exceptions among the reference models: "
+        + (
+            "; ".join(
+                f"`{detector}` needs **{width}** channels (`{grouper}` adds the seed features "
+                "to its crop features)"
+                for detector, (width, grouper) in seed_widths().items()
+            )
+            or "none"
+        )
+        + ". An encoder of another width is refused there by the config check, with both "
+        "numbers and the ways out; `grasppanda compose` takes one of them by itself (the "
+        "encoder's `out_channels`, or the projected variant of the grouper). *once built*: "
+        "the width follows from a library model or a layout that only the constructor "
+        "resolves, so the check builds the encoder once, without released weights.",
     ]
     return "\n".join(lines)
 

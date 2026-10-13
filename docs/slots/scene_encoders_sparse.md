@@ -46,12 +46,12 @@ What the neighbours require:
 - A proposal states `requires = "dense"`, `"subsampled"` or `"any"`. GraspNet-baseline and
   Scale-Balanced-Grasp take seeds from a sub-sampling encoder; `compose` then wraps a
   dense encoder in the adapter `FurthestPointSubsample` (and tells you).
-- The width is free, with one exception met in the probes: the grouper of
-  Scale-Balanced-Grasp (`DepthCylinderGroup` with a gated seed residual) adds seed
-  features to 256-channel crop features, so the encoder must return 256 channels there.
-  Encoders with a free `out_channels` (`SparseUNet14`, `SpUNet`, `MinkUNet`) are set to the
-  width of the encoder they replace; PTv3 and LitePT have a fixed width and fail to build
-  under that one method, with a message that says so.
+- The width is free, with one exception: the grouper of Scale-Balanced-Grasp
+  (`DepthCylinderGroup` with a gated seed residual) adds seed features to 256-channel crop
+  features. Encoders with a free `out_channels` (`SparseUNet14`, `SpUNet`, `MinkUNet`) are
+  set to the width of the encoder they replace. PTv3 and LitePT have a fixed width; for
+  them `compose` puts `DepthCylinderProjectionGroup` in place of that grouper and says so
+  (the width is a contract the config check compares; [Grouper](grouper.md), section 5).
 
 What a sparse-voxel encoder does with this input, in all classes of this page: it
 quantises the coordinates to a grid it owns (`voxel_size` or `grid_size`, **0.005 m in
@@ -68,10 +68,10 @@ the extent per kernel. Sparse convolutions go through the facade `grasppanda.ops
 toolbox has, **own** = written for this code base earlier (see
 [Scene encoders](../model_zoo_backbones.md)). "Measured fit" is the verdict of
 `grasppanda probe` on real frames, in the vocabulary of
-[Measured combinations](../advanced_guides/measured_combinations.md): *runs*, *runs
-(adapter)* when `compose` inserted `FurthestPointSubsample`, *fails* with the reason.
-All options are **universal** in intent: the slot contract is the same for the five
-methods; the one method-specific limit is the 256-channel rule above.
+[Measured combinations](../advanced_guides/measured_combinations.md): *runs*, *runs in
+`FurthestPointSubsample`* when `compose` inserted that adapter, *runs-unstable*.
+All options are **universal** in the words of that page: each works under all five
+seed-based methods.
 
 ### 3.1 Encoders
 
@@ -151,32 +151,33 @@ report asks for.
 ### 3.3 Measured fit
 
 Verdicts of `grasppanda probe` (20 training iterations and a prediction on 8 real
-GraspNet-1Billion frames; run `wave5-enc_sparse`, 2026-10-13, on an RTX A6000 shared with
-other jobs). The same records are in
+GraspNet-1Billion frames; 2026-10-13, on an RTX A6000 shared with other jobs). The same records are in
 [Measured combinations](../advanced_guides/measured_combinations.md) with their numbers.
 
 | Preset | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp |
 |---|---|---|---|---|---|
-| `minkunet18a` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `minkunet34c` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `minkunet34c-pointcontrast` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `minkunet18a-openscene` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `spunet` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `spunet-gaussiancross` | runs | runs | runs | runs (adapter) | runs (adapter) |
-| `ptv3` | runs | runs | runs | runs (adapter) | fails (width: needs 256) |
-| `ptv3-scannet200` | runs | runs | runs | runs (adapter) | fails (width: needs 256) |
-| `ptv3-ppt` | runs | runs | runs | runs (adapter) | fails (width: needs 256) |
-| `ptv3-encoder` | runs-unstable | runs-unstable | runs | runs (adapter) | fails (width: needs 256) |
-| `ptv3-sonata` | runs-unstable | runs-unstable | runs | runs (adapter) | fails (width: needs 256) |
-| `ptv3-sonata-small` | runs-unstable | runs-unstable | runs | runs (adapter) | fails (width: needs 256) |
-| `litept` | runs | runs | runs | runs (adapter) | fails (width: needs 256) |
-| `litept-structured3d` | runs | runs | runs | runs (adapter) | fails (width: needs 256) |
+| `minkunet18a` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `minkunet34c` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `minkunet34c-pointcontrast` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `minkunet18a-openscene` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `spunet` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `spunet-gaussiancross` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3-scannet200` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3-ppt` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3-encoder` | runs-unstable | runs-unstable | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3-sonata` | runs-unstable | runs-unstable | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `ptv3-sonata-small` | runs-unstable | runs-unstable | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `litept` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
+| `litept-structured3d` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` |
 
-*runs (adapter)*: `compose` wrapped the encoder in `FurthestPointSubsample`, because the
-proposal of that method takes seeds from a sub-sampling encoder. *runs-unstable*: the
+*runs in `FurthestPointSubsample`*: `compose` wrapped the encoder in that adapter, because
+the proposal of that method takes seeds from a sub-sampling encoder. *runs-unstable*: the
 iterations completed and the model predicted, but a loss became non-finite or an
-iteration had no real or no supervised seed (the linked page has the cell). *fails (width:
-needs 256)*: the model was refused when built, with the message quoted in section 5.
+iteration had no real or no supervised seed (the linked page has the cell). Under
+Scale-Balanced-Grasp the PTv3 and LitePT rows ran with `DepthCylinderProjectionGroup` in
+place of the method's grouper; before the width became a contract those cells failed at
+build.
 `mask3d-scannet` and the other names of table 3.2 without a preset were loaded strictly
 (section 3.2) but not probed under a method.
 
@@ -355,10 +356,10 @@ here):
   the 3³ blocks of its level built, ran on CPU with a 3³ stem and failed on the GPU with
   `you must provide same algo to layers share same indice key`. The stem of `MinkUNet`
   has its own key; the unit test runs a 5³ stem.
-- **Fixed-width encoders under Scale-Balanced-Grasp** fail when the model is built
-  (`DepthCylinderGroup: the gated seed residual adds 64-channel seed features to
-  256-channel crop features`). Use an encoder with a free `out_channels`, or change the
-  grouper's residual.
+- **Fixed-width encoders under Scale-Balanced-Grasp** used to fail when the model was built
+  (the gated seed residual adds the seed features to 256-channel crop features). The
+  config check compares the widths now and `compose` puts the projected grouper in place;
+  with `--no-adapter` the pair is refused with the fix.
 - **Old checkpoints in the legacy (non-zip) PyTorch format that pickle foreign objects**
   cannot be read without executing them and are refused (met with the Contrastive Scene
   Contexts files). Re-save the state dict in the environment that wrote it.
@@ -372,9 +373,9 @@ here):
 |---|---|---|
 | Contrastive Scene Contexts, Res16UNet34C pre-training ([repository](https://github.com/facebookresearch/ContrastiveSceneContexts), MIT, archived) | `partition8_4096_100k.pth` was downloaded | The file is a legacy-format pickle with objects of its code base; the reader refuses to execute it. The network is the one `pointcontrast-nce` loads into. |
 | FCAF3D / TR3D sparse backbones (single-view RGB-D detection; `MinkResNet` in [MMDetection3D](https://github.com/open-mmlab/mmdetection3d) @ `fe25f7a`, Apache-2.0) | `mmdet3d/models/backbones/mink_resnet.py` | Kernel-3 stride-2 convolutions, max pooling and strided 1×1 shortcuts in the MinkowskiEngine rule: layers the facade does not have, and not what spconv's strided layer computes. It returns a pyramid of coarse levels, not per-point features. |
-| SPVCNN / SPVNAS ([mit-han-lab/spvnas](https://github.com/mit-han-lab/spvnas), MIT, archived) | repository metadata only | It runs on TorchSparse ([mit-han-lab/torchsparse](https://github.com/mit-han-lab/torchsparse), MIT), a second sparse library the facade has no backend for. The research report describes a point branch with trilinear devoxelisation and weights for driving LiDAR; neither was read here. |
+| SPVCNN / SPVNAS ([mit-han-lab/spvnas](https://github.com/mit-han-lab/spvnas), MIT, archived) | repository metadata only | It runs on TorchSparse ([mit-han-lab/torchsparse](https://github.com/mit-han-lab/torchsparse), MIT), a second sparse library the facade has no backend for. Its point branch and its weights for driving LiDAR were not read here. |
 | PonderV2 `SpUNet-v1m3` ([hub](https://huggingface.co/HaoyiZhu/PonderV2), MIT; six files of about 350 MB) | file list, Pointcept `spconv_unet_v1m3_pdnorm.py` | Another module tree than `SpUNet-v1m1` (named `conv`/`bn` members, `bns.<i>` per dataset); needs a key map in addition to the condition choice. Small follow-up. |
-| Point-MoE ([hub](https://huggingface.co/uva-cv-lab/Point-MoE), MIT) | hub metadata | According to the key comparison of the research report its attention projections are mixtures of experts (`attn.proj.experts.*`): a change of the block, not weights for `PTv3` as it is. Not downloaded. |
+| Point-MoE ([hub](https://huggingface.co/uva-cv-lab/Point-MoE), MIT) | hub metadata | According to an earlier comparison of its keys (not repeated for this page) its attention projections are mixtures of experts (`attn.proj.experts.*`): a change of the block, not weights for `PTv3` as it is. Not downloaded. |
 | D-DITR distilled PTv3 ([hub](https://huggingface.co/rwthvision/ditr)) | hub metadata | The weights are **AGPL-3.0**. They have the plain PTv3 layout, so `pretrained: <path>` is expected to load them; not downloaded, not listed. |
 | LAM3C ([hub](https://huggingface.co/aist-cvrt/lam3c-roomtours), CC BY-NC 4.0) | hub metadata | Non-commercial; same layout as Sonata, so `pretrained: <path>` on `PTv3Sonata` is expected to load it. Not downloaded. |
 | GraspGen object encoder ([NVlabs/GraspGen](https://github.com/NVlabs/GraspGen), "NVIDIA License") | licence file, hub file list | Non-commercial code and weights, and an object-level encoder (one segmented object, not a scene). `PTv3(in_channels: 3, enc_mode: true)` is the architecture; nothing was downloaded. |

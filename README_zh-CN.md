@@ -33,14 +33,20 @@
 > [!NOTE]
 > **Alpha 阶段。** 现在已经可用：配置系统、两个基准的数据读取、两个评测器（与官方工具逐阶段一致）、
 > 拆成可替换组件的六个方法（GSNet、EconomicGrasp、FineGrasp、HGGD、GraspNet-baseline、Scale-Balanced-Grasp，
-> 用转换后的权重各自与参考实现逐阶段一致）、十一个可互换的场景编码器，
-> 以及 `train` / `test` / `infer` / `demo` / `analyze` / `sweep` 命令。Model zoo 仍然是空的，这是有意为之：
-> 方法必须先在本工具箱内训练*并*评测才能进入，第一个从零复现正在训练中。
+> 用转换后的权重各自与参考实现逐阶段一致）、流程中每个槽位的可选组件（见[槽位总览](docs/slots/index.md)），
+> 以及 `train` / `test` / `infer` / `demo` / `analyze` / `sweep` / `compose` / `probe` / `explore` 命令。
+> Model zoo 仍然是空的，这是有意为之：方法必须先在本工具箱内训练*并*评测才能进入，第一个从零复现正在训练中。
+> 凡不属于已移植方法的选项，一律不声明精度。
 
 <div align="center">
-<img src="resources/terminal-demo.png" alt="grasppanda print-config 校验配置，发现拼错的键，并拒绝不兼容的组件替换" width="820">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/showcase-dark.svg">
+  <img src="resources/showcase-light.svg" alt="终端里用另一个场景编码器和分组器组合 GSNet；错误的检测头替换被拒绝，并给出冲突和修复方法；在真实帧上的 probe 以 runs 结论结束；上方管线的各个槽位随之切换" width="830">
+</picture>
 
-*真实输出。拼错的键和不兼容的替换，在加载任何数据之前就被拦下。*
+*真实输出，只删行，不编造。一个组合就是一条命令；错误的组合在构建之前就被拒绝并给出改法；probe 告诉你它能不能训练。probe 不代表任何精度。*
+
+**[在浏览器里动手试组合 →](https://daeda1used.github.io/GraspPanda/explorer/)** 每个槽位、每个选项：980 条已记录组合的实测结论（其中 745 条由各自的 probe 在真实帧上训练过），任意两处替换还附带真实 `compose` 的回答。也可以在本地运行 `grasppanda explore`，由你自己的安装实时检查任意组合。
 
 <img src="resources/demo.webp" alt="GraspPanda 在 GraspNet-1Billion 杂乱测试场景上渲染的抓取预测" width="720">
 
@@ -51,7 +57,9 @@
 
 - **2026-10** — 重建后的第一个公开版本。六个方法拆成可互换组件，各自与参考实现逐阶段一致；十一个场景编码器；`grasppanda components`、`demo`、`analyze`；GraspClutter6D 端到端可用。v0.56 及以前的版本是更早的、无关的代码库，仍可通过原有 tag 和 `legacy` 分支获取。
 - **2026-10** — `grasppanda compose` 用一个方法配置加一个预设拼出组合，`grasppanda probe` 在真实帧上训练几步试跑；另有一页自动生成的实测结果，覆盖 208 个组合（哪个组件能在哪个方法下工作，哪些被契约规则拒绝）。
-- **进行中** — 为每个槽位（图像与场景编码器、seed 提议、朝向、局部分组、head 与损失、后处理、训练配方）接入更多来自已发表代码和模型库的选项，每个都配用法说明。
+- **2026-10** — [每个槽位都有了可选项](docs/slots/index.md)，共 248 个，来自已发表的代码和模型库（图像与场景编码器、seed 提议、朝向、局部分组、head 与损失、后处理、训练配方）。每个选项在所属槽位的页面上有一行说明和一条命令，并有逐方法的实测结论；它们都还没有完整训练和评测过，所以都不带精度数字。
+- **2026-10** — [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：选一个方法，换一个槽位，就能看到实测结论、对应命令和被拒绝的原因；没有记录的两处替换给出 `compose` 的存档回答；`grasppanda explore` 在本地打开同一页面，并用真实的 `compose` 检查任意选择。
+- **2026-10** — 又有两类错误组合在配置检查时就被拒绝，而不是到后面才报错：数据配方不提供某个阶段所需标签的组合，以及编码器输出宽度与分组器不匹配的组合（此时 `compose` 会调整编码器宽度或换上带投影的分组器，并明确说明）。
 
 ## 🤔 为什么做 GraspPanda
 
@@ -107,6 +115,24 @@ grasppanda print-config <config> --defaults
 <img src="resources/pipeline.png" alt="流程槽位：backbone、proposal、view、grouper 和 head bundle，以及每个槽位输出的数据契约" width="820">
 </div>
 
+### 每个槽位都有可选项
+
+“选项”就是写在 `--set <槽位>=` 后面的名字：一个组件，加上一套适合桌面深度点云的设置。每个槽位的页面先讲这个阶段要做什么、
+输入输出是什么，然后每个选项一行说明、一条命令。[槽位总览](docs/slots/index.md)根据实测记录把每个选项归为
+universal（五个方法通用）、most、some 或 specific（只适用于一个方法）。文档目前为英文。
+
+| 槽位 | 选项数 | 内容 |
+|---|---|---|
+| [图像编码器](docs/slots/image_encoders.md) | 38 | HGGD 自带的编码器，以及通往 timm、transformers、torchvision 的桥接；seed-based 方法可通过 point painting 使用 |
+| [场景编码器](docs/slots/scene_encoders.md) | 47 | 基于点的网络、稀疏体素网络、Transformer 和预训练三维编码器；有公开权重且能对上的都可以加载 |
+| [Seed 提议](docs/slots/proposal.md) | 24 | 打分或不打分的 seed 选取，配十一种采样器 |
+| [朝向（view）](docs/slots/view.md) | 21 | 任意大小的视角格点、直接回归方向、回归完整旋转 |
+| [局部分组（grouper）](docs/slots/grouper.md) | 32 | 在 seed 之间或在整个场景上取局部区域：形状、编码方式、池化、RoI 池化、图卷积层 |
+| [Head bundle 与标签分配](docs/slots/head_loss.md) | 10 + 4 | 已移植方法的 head、一个解耦的网格 head，以及与之配套的标签分配器 |
+| [损失](docs/slots/head_loss.md) | 20 | focal、质量、鲁棒、集合类损失，难例挖掘、类别平衡、不确定性加权，按损失项替换 |
+| [后处理](docs/slots/post.md) | 15 | 碰撞、桌面、工作空间、夹爪限位等过滤，NMS，筛选，坐标系变换 |
+| [训练配方](docs/slots/recipe.md) | 37 | 优化器、学习率调度、hook、数据增强 |
+
 ## 🗺️ 总览
 
 ✅ 已可用 · 🚧 进行中 · 📅 计划中
@@ -116,11 +142,11 @@ grasppanda print-config <config> --defaults
 | **核心** | ✅ | 支持继承和三层严格校验的 YAML 配置 · 自动延迟导入的注册表 · 构建时注入 · 运行快照 |
 | **数据契约** | ✅ | `Observation` / `Supervision` · `PointSet` / `PointFeatures` · `SeedSet` · `ApproachSet` · `GroupFeatures` · `GraspGroup` |
 | **算子** | ✅ | 最远点采样 · ball / cylinder query · kNN · 插值 · grasp NMS · 体素化 · 空间填充曲线 · view 模板（纯 PyTorch 参考实现，可在 CPU 上测试）· 四个热点算子有可选的 CPU / CUDA 编译内核，在实际运行的设备上与参考实现自检一致（[详情](docs/advanced_guides/operators.md)） |
-| **命令行** | ✅ `train`、`test`、`infer`、`demo`、`analyze`、`components`、`sweep`、`prepare`、`print-config`、`env` · 📅 `profile` | |
+| **命令行** | ✅ `train`、`test`、`infer`、`demo`、`analyze`、`components`、`compose`、`probe`、`explore`、`sweep`、`prepare`、`print-config`、`env` · 📅 `profile` | |
 | **数据集** | ✅ GraspNet-1Billion 和 GraspClutter6D 的读取、split 清单、带内容哈希的标签资产（在记录帧上与参考预处理一致） | |
 | **评测** | ✅ GraspNet-1Billion 和 GraspClutter6D 评测器，带 coverage 和出处的结果记录 | |
 | **方法** | ✅ GSNet、EconomicGrasp、FineGrasp、GraspNet-baseline、Scale-Balanced-Grasp（共用一个 seed-based 骨架）和 HGGD（自成一族）：用转换后的权重各自与参考实现逐阶段一致 · 🚧 全量测试集评测和从零复现 · 📅 Contact-GraspNet | |
-| **场景编码器** | ✅ 稀疏 U-Net（spconv）、SpUNet（MinkUNet-34C 结构）、OA-CNNs、PointNet++（两种形式）、PointNeXt、PTv3、带 Concerto 和 Utonia 权重的 PTv3、LitePT，以及稠密与下采样编码器之间的两个适配器；凡是有官方权重的都能加载，输出与官方代码一致（[详情](docs/model_zoo_backbones.md)）· 编码器与方法的每一种组合，要么能训练，要么在配置阶段被拒绝并给出改法（[互换矩阵](docs/advanced_guides/swapping.md)） | |
+| **场景编码器** | ✅ 有官方权重、已与官方代码对比过输出的：稀疏 U-Net（spconv）、SpUNet（MinkUNet-34C 结构）、OA-CNNs、PointNet++（两种形式）、PointNeXt、PTv3、带 Concerto 和 Utonia 权重的 PTv3、LitePT（[详情](docs/model_zoo_backbones.md)）· ✅ 可用但未做对比的：[槽位页面](docs/slots/scene_encoders.md)里的其余编码器 · 编码器与方法的每一种组合，要么能训练，要么在配置阶段被拒绝并给出改法（[互换矩阵](docs/advanced_guides/swapping.md)） | |
 
 ## 🏆 Model zoo
 
@@ -200,13 +226,18 @@ grasppanda demo <config> --weights <file> --depth depth.png --intrinsics fx,fy,c
 ### 试一个组合
 
 ```bash
-grasppanda components --slot backbones                       # 有哪些组件，各自的契约
+grasppanda compose --list grouper                            # 一个槽位有哪些选项，每个一行
 grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
 grasppanda probe gsnet_ptv3.yaml                             # 在真实帧上训练 20 步，再预测
 grasppanda train gsnet_ptv3.yaml
+
+# 一次换两个槽位，用的是 2026-10 新增的选项（已有记录：runs）
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=point-transformer-v2 \
+    --set grouper=cylinder-vector-attention -o gsnet_ptv2_attention.yaml
+grasppanda explore                                           # 在浏览器里做同样的事，由 compose 检查
 ```
 
-`compose` 由方法配置和预设写出一份检查过的配置；阶段契约需要适配器时会自动插入并说明；被契约拒绝的组合会给出冲突原因和改法。`probe` 最后给出一个结论（`runs`、`runs-unstable`、`fails`、`refused`）。哪个组件能在哪个方法下工作是在真实帧上实测的，不是推断的：见[试一个组合](docs/user_guides/combinations.md)和[实测组合表](docs/advanced_guides/measured_combinations.md)。组合在完成训练和评测之前，不对其精度作任何声明。
+`compose` 由方法配置和预设写出一份检查过的配置；阶段契约需要适配器时会自动插入并说明；被契约拒绝的组合会给出冲突原因和改法；组合出的配置还可以作为基础继续组合。`probe` 最后给出一个结论（`runs`、`runs-unstable`、`fails`、`refused`）。哪个组件能在哪个方法下工作是在真实帧上实测的，不是推断的：见[槽位总览](docs/slots/index.md)、[试一个组合](docs/user_guides/combinations.md)和[实测组合表](docs/advanced_guides/measured_combinations.md)。组合在完成训练和评测之前，不对其精度作任何声明。
 
 ### 基准数据集
 
@@ -268,6 +299,7 @@ array = grasps.to_graspnet_array()         # (64, 17)，GraspNet 的交换格式
 ## 📚 教程
 
 - [配置指南](docs/user_guides/config.md)：继承、合并规则、命令行覆盖、校验。
+- [槽位总览](docs/slots/index.md)：每个阶段做什么、有哪些选项、哪个选项适用于哪个方法。
 - [试一个组合](docs/user_guides/combinations.md)：查目录、拼组合、试跑、训练。
 - [新增组件](docs/advanced_guides/add_component.md)：不 fork 就能注册 backbone 或 head bundle。
 - [数据契约](docs/advanced_guides/data_flow.md)：每个阶段接收什么、返回什么。
@@ -296,8 +328,10 @@ GraspPanda 借鉴了 [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)、
 [Pointcept](https://github.com/Pointcept/Pointcept) 的设计，建立在
 [GraspNet-1Billion](https://graspnet.net) 与
 [GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) 两个基准，
-以及所复现方法的作者们的工作之上。方法实现参照论文和对参考代码行为的研究独立编写，
-没有拷贝任何第三方源文件。
+以及所复现方法的作者们的工作之上。各个方法和评测器参照论文和对参考代码行为的研究独立编写，
+没有拷贝这些仓库的任何源文件。另有一部分组件改编自 MIT、BSD 或 Apache-2.0 许可的代码，逐一列在
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中（仓库、commit、许可）；桥接到可选依赖库的组件不包含该库的任何代码
+（见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [NOTICE](NOTICE)）。
 
 ## 📄 License
 

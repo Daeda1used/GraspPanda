@@ -33,7 +33,8 @@ stage, which see the same neighbourhoods upstream too.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -223,7 +224,7 @@ class _Family(Backbone):
 
 @BACKBONES.register()
 class PointMetaBase(_Family):
-    """PointMetaBase encoder-decoder with features on every input point.
+    """PointMetaBase: set abstraction with the building block of PointMeta, per-point output.
 
     The defaults are PointMetaBase-L as published for S3DIS: 4 input channels, width 32
     doubling at each of four stride-4 stages, blocks 1-3-5-3-3 with expansion 1, radius
@@ -252,6 +253,11 @@ class PointMetaBase(_Family):
     source = (
         "PointMetaBase (Lin et al., CVPR 2023), adapted from linhaojia13/PointMetaBase@c364a67, MIT"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The decoder ends on the width of the stem."""
+        return options["width"]
 
     def __init__(
         self,
@@ -334,6 +340,11 @@ class PointVector(_Family):
     source = (
         "PointVector (Deng et al., CVPR 2023), adapted from guochengqian/openpoints@bc778ec, MIT"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The decoder ends on the width of the stem."""
+        return options["width"]
 
     def __init__(
         self,

@@ -57,7 +57,7 @@ What the neighbours require:
 * **Seeds are chosen from the predictions in training too**, so a sampler changes which examples
   the view stage and the head are trained on from the first iteration.
 
-The contract attributes, and what the config check (`grasppanda compose`, `grasppanda validate`,
+The contract attributes, and what the config check (`grasppanda compose`, `grasppanda print-config --check`,
 the detector's constructor) does with them:
 
 | Attribute | Values | Rule |
@@ -96,40 +96,43 @@ a sampler has no parameters, and the scorer of `ScoredSeeds` is trained with the
 
 **Ready-made options** (presets: the name to write after `--set proposal=`). "Fit" is the verdict
 of the probe under GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline / Scale-Balanced-Grasp,
-in that order, in the words of the measured page.
+in that order, in the words of the measured page (`runs in <adapter>`: compose wrapped the
+encoder in that adapter and said so).
 
 <!-- FIT TABLE -->
-| `--set proposal=` | What it is | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp | Real seeds | Scope |
+| `--set proposal=` | What it is | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp | Real seeds | Measured class |
 |---|---|---|---|---|---|---|---|---|
-| `graspness-fps` | `GraspnessFPS`: GSNet's proposal as ported (reference) | runs | runs | runs | refused | refused | 0.96 to 1.00 | graspness family |
-| `SubsampledSeeds` | `SubsampledSeeds`: the encoder's subsample (reference) | runs with adapter | runs with adapter | runs with adapter | runs | runs | 1.00 to 1.00 | universal |
-| `scored-fps` | `ScoredSeeds` defaults: GSNet's rule, plain `FPS` | runs | runs | runs | refused | refused | 0.98 to 1.00 | graspness family |
-| `graspness-ffps` | graspable points, `FeatureFPS` (F-FPS, 3DSSD) | runs | runs | runs | refused | refused | 0.93 to 1.00 | graspness family |
-| `graspness-fusion-fps` | graspable points, `FusionFPS` (FS, 3DSSD) | runs | runs | runs | refused | refused | 0.93 to 1.00 | graspness family |
-| `graspness-sfps` | graspable points, `ScoreWeightedFPS` (S-FPS, SASA) | runs | runs | runs | refused | refused | 0.96 to 1.00 | graspness family |
-| `graspness-topk` | graspable points, `TopK` (IA-SSD, GraNet) | runs | runs | runs | refused | refused | 0.98 to 1.00 | graspness family |
-| `graspness-random` | graspable points, `RandomSampler` | runs | runs | runs | refused | refused | 0.94 to 1.00 | graspness family |
-| `graspness-voxel` | graspable points, `VoxelGridSampler` 1 cm | runs | runs | runs | refused | refused | 0.83 to 1.00 | graspness family |
-| `graspness-fps-topk` | graspable points, `FPSThenTopK` (Contact-GraspNet's rule) | runs | runs | runs | refused | refused | 0.93 to 1.00 | graspness family |
-| `graspness-nms` | graspable points, `ScoreNMS` 1 cm (S4G's rule) | runs | runs | runs | refused | refused | 0.68 to 0.93 | graspness family |
-| `graspness-fpsample` | graspable points, `FpsampleFPS` (QuickFPS, extra `fpsample`) | runs | runs | runs | refused | refused | 0.98 to 1.00 | graspness family |
-| `graspness-torch-cluster` | graspable points, `TorchClusterFPS` (extra `torch-cluster`) | runs | runs | runs | refused | refused | 0.97 to 1.00 | graspness family |
-| `objectness-fps` | `select_by: objectness`: predicted foreground, `FPS` | runs | runs | runs | refused | refused | 1.00 to 1.00 | graspness family |
-| `product-fps` | `select_by: product`: P(object) × graspness > 0.1, `FPS` (MultiGraspNet's rule) | runs | runs | runs | refused | refused | 0.94 to 1.00 | graspness family |
-| `graspness-top-fraction` | `top_fraction: 0.1`: rank cut, `FPS` (DexGraspNet 2.0's rule) | runs | runs | runs | refused | refused | 1.00 to 1.00 | graspness family |
-| `graspness-fps-fill` | `too_few: best_rest`: GSNet's rule without empty frames | runs | runs | runs | refused | refused | 1.00 to 1.00 | graspness family |
-| `dense-fps` | `SampledSeeds` defaults: `FPS` over all scene points | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
-| `dense-ffps` | all scene points, `FeatureFPS` (F-FPS, 3DSSD) | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
-| `dense-fusion-fps` | all scene points, `FusionFPS` (FS, 3DSSD) | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
-| `dense-random` | all scene points, `RandomSampler` | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
-| `dense-voxel` | all scene points, `VoxelGridSampler` 2 cm | runs | runs | runs | runs with adapter | runs with adapter | 0.84 to 0.86 | universal |
-| `dense-fpsample` | all scene points, `FpsampleFPS` (extra `fpsample`) | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
-| `dense-torch-cluster` | all scene points, `TorchClusterFPS` (extra `torch-cluster`) | runs | runs | runs | runs with adapter | runs with adapter | 1.00 to 1.00 | universal |
+| `graspness-fps` | `GraspnessFPS`: GSNet's proposal as ported (reference) | runs | runs | runs | refused | refused | 0.96 to 1.00 | most (3 of 5) |
+| `SubsampledSeeds` | `SubsampledSeeds`: the encoder's subsample (reference) | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | runs | runs | 1.00 to 1.00 | universal |
+| `scored-fps` | `ScoredSeeds` defaults: GSNet's rule, plain `FPS` | runs | runs | runs | refused | refused | 0.98 to 1.00 | most (3 of 5) |
+| `graspness-ffps` | graspable points, `FeatureFPS` (F-FPS, 3DSSD) | runs | runs | runs | refused | refused | 0.93 to 1.00 | most (3 of 5) |
+| `graspness-fusion-fps` | graspable points, `FusionFPS` (FS, 3DSSD) | runs | runs | runs | refused | refused | 0.93 to 1.00 | most (3 of 5) |
+| `graspness-sfps` | graspable points, `ScoreWeightedFPS` (S-FPS, SASA) | runs | runs | runs | refused | refused | 0.96 to 1.00 | most (3 of 5) |
+| `graspness-topk` | graspable points, `TopK` (IA-SSD, GraNet) | runs | runs | runs | refused | refused | 0.98 to 1.00 | most (3 of 5) |
+| `graspness-random` | graspable points, `RandomSampler` | runs | runs | runs | refused | refused | 0.94 to 1.00 | most (3 of 5) |
+| `graspness-voxel` | graspable points, `VoxelGridSampler` 1 cm | runs | runs | runs | refused | refused | 0.83 to 1.00 | most (3 of 5) |
+| `graspness-fps-topk` | graspable points, `FPSThenTopK` (Contact-GraspNet's rule) | runs | runs | runs | refused | refused | 0.93 to 1.00 | most (3 of 5) |
+| `graspness-nms` | graspable points, `ScoreNMS` 1 cm (S4G's rule) | runs | runs | runs | refused | refused | 0.68 to 0.93 | most (3 of 5) |
+| `graspness-fpsample` | graspable points, `FpsampleFPS` (QuickFPS, extra `fpsample`) | runs | runs | runs | refused | refused | 0.98 to 1.00 | most (3 of 5) |
+| `graspness-torch-cluster` | graspable points, `TorchClusterFPS` (extra `torch-cluster`) | runs | runs | runs | refused | refused | 0.97 to 1.00 | most (3 of 5) |
+| `objectness-fps` | `select_by: objectness`: predicted foreground, `FPS` | runs | runs | runs | refused | refused | 1.00 to 1.00 | most (3 of 5) |
+| `product-fps` | `select_by: product`: P(object) × graspness > 0.1, `FPS` (MultiGraspNet's rule) | runs | runs | runs | refused | refused | 0.94 to 1.00 | most (3 of 5) |
+| `graspness-top-fraction` | `top_fraction: 0.1`: rank cut, `FPS` (DexGraspNet 2.0's rule) | runs | runs | runs | refused | refused | 1.00 to 1.00 | most (3 of 5) |
+| `graspness-fps-fill` | `too_few: best_rest`: GSNet's rule without empty frames | runs | runs | runs | refused | refused | 1.00 to 1.00 | most (3 of 5) |
+| `dense-fps` | `SampledSeeds` defaults: `FPS` over all scene points | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
+| `dense-ffps` | all scene points, `FeatureFPS` (F-FPS, 3DSSD) | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
+| `dense-fusion-fps` | all scene points, `FusionFPS` (FS, 3DSSD) | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
+| `dense-random` | all scene points, `RandomSampler` | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
+| `dense-voxel` | all scene points, `VoxelGridSampler` 2 cm | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 0.84 to 0.86 | universal |
+| `dense-fpsample` | all scene points, `FpsampleFPS` (extra `fpsample`) | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
+| `dense-torch-cluster` | all scene points, `TorchClusterFPS` (extra `torch-cluster`) | runs | runs | runs | runs in `FeaturePropagation` | runs in `FeaturePropagation` | 1.00 to 1.00 | universal |
 
 "Real seeds" is the mean share of seed slots that held a real seed during the 20 probe iterations (smallest and largest over the methods that ran), with a scorer that started untrained: a low value is the padding of frames in which few points passed the candidate rule yet, not a defect.
 
-How to read the last column: the `graspness-*`, `objectness-*`, `product-*` and `scored-*` options
-are **specific to the graspness family** (GSNet, EconomicGrasp, FineGrasp): they predict objectness,
+How to read the last column (the classes of the
+[measured page](../advanced_guides/measured_combinations.md#measured-classes)): the `graspness-*`,
+`objectness-*`, `product-*` and `scored-*` options are **most**: they work under the three methods
+of the graspness family (GSNet, EconomicGrasp, FineGrasp) and nowhere else. They predict objectness,
 and the view stage of GraspNet-baseline and Scale-Balanced-Grasp predicts it too, so the contract
 rule "one owner per score" refuses the pair with a message that names both stages. The `dense-*`
 options predict nothing and are **universal**: each ran under all five methods.
@@ -306,4 +309,4 @@ grasppanda components ScoredSeeds
 | S4G code, Contact-GraspNet code | [s4g-release](https://github.com/yzqin/s4g-release) (no licence file), [contact_graspnet](https://github.com/NVlabs/contact_graspnet) (NVIDIA licence) | licences; the two selection rules are small and were written from the papers (`ScoreNMS`, `FPSThenTopK`). |
 | PyTorch3D `sample_farthest_points`, Open3D `farthest_point_down_sample`, mmcv `PointsSampler` | [mmcv@d2111bd](https://github.com/open-mmlab/mmcv/blob/d2111bd/mmcv/ops/points_sampler.py) | not installed in the shared environment (PyTorch3D and mmcv need a compiled build matching the local PyTorch); they would add a third and fourth spelling of the same D-FPS. |
 | Voted seeds (VoteGrasp), mask queries (M2T2), image heat-map centres (HGGD, RNGNet, KGN) | none opened for this page | they emit virtual seeds or a variable number of regions; the seed-based skeleton needs scene points with `parent_index` (label matching). Another detector family. |
-| A sampler option inside the encoders (`PointNet2`, `FurthestPointSubsample`), where 3DSSD, IA-SSD and SASA place theirs | — | outside this slot's lane (backbone package). The `SAMPLERS` registry is ready for it. |
+| A sampler option inside the encoders (`PointNet2`, `FurthestPointSubsample`), where 3DSSD, IA-SSD and SASA place theirs | — | a change to the encoders, not to this slot. The `SAMPLERS` registry is ready for it. |

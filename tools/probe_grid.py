@@ -7,14 +7,21 @@ its own, the commands recorded with the outcome. Results are appended to
 where it stopped; the composed configs and the output of every probe lie beside it.
 
     python -m tools.probe_grid run --groups reference encoder stage family
-    python -m tools.probe_grid run --groups stage-set          # the legal stage sets, later
+    python -m tools.probe_grid run --groups stage-set          # the stage sets, later
     python -m tools.probe_grid status
     python -m tools.probe_grid export       # -> docs/advanced_guides/measured_combinations.json
 
+Configs that read the width histogram of Scale-Balanced-Grasp need the imported
+reference file (a probe cannot build a statistic of a whole split from eight frames):
+pass its SHA-256 as ``--scale-statistic-sha <sha>`` to ``run``, or those cells end as
+``wired`` and are not accepted as measurements.
+
 Two cells that compose to the same config (the same config hash) are one experiment: it
 is probed once and both cells record it, naming the command that ran. At most ``--jobs``
-probes run at a time; a probe that ran out of GPU memory next to another one is run
-again alone before it is recorded.
+probes run at a time. A probe that ran out of GPU memory says nothing about its config
+on a shared machine: it is run again alone, ``--retries`` times with a pause, and if
+memory is still short the cell is **not recorded**; the run then ends with status 1 and
+a later ``run`` picks the cell up.
 
 The export is the compact file the documentation page is generated from
 (``python -m tools.make_combination_docs``): one line per cell with its verdict, its two
@@ -24,11 +31,14 @@ that shares the probe of another one names it instead of repeating its numbers, 
 composed config is named as a file of the working directory, not by its place in the
 cache of the machine that ran the grid.
 
-The export merges: cells this run recorded replace or join those of the file as it is,
-and every cell names the run that measured it (date, commit, environment). Adding a
-component therefore takes its own cells, on any machine with the dataset::
+The export merges: cells this run recorded replace or join those of the file as it is.
+Every record carries the date, the commit and the environment of the probe that measured
+it, and the file lists those runs; a record that reuses an earlier probe of the same
+config keeps the run of that probe. Adding a component therefore takes its own cells, on
+any machine with the dataset::
 
-    python -m tools.probe_grid run --name mine --only 'encoder/*/MyEncoder'
+    python -m tools.probe_grid run --name mine --only 'encoder/*/MyEncoder' \\
+        --scale-statistic-sha <SHA-256 of the imported reference histogram>
     python -m tools.probe_grid export --name mine
     python -m tools.make_combination_docs
 
@@ -150,7 +160,8 @@ def compose_cell(cell: Cell, name: str) -> dict[str, Any]:
         command += ["--set", item]
     record["compose_command"] = _spell(command)
     log = directory(name) / "logs" / f"{safe}.compose.log"
-    status, output = _run([*command, "-o", str(target), "--json"], log, 600)
+    # --force: a cell composed again replaces the config of its earlier run.
+    status, output = _run([*command, "-o", str(target), "--force", "--json"], log, 600)
     report = _json(output)
     if status not in (0, 1) or report is None:
         record.update(
@@ -264,9 +275,11 @@ def run(args: argparse.Namespace) -> int:
     print(f"{root}: {len(wanted)} cells selected, {len(wanted) - len(pending)} already recorded")
     if not pending:
         return 0
+    environment = _environment(args)
     (root / "run.json").write_text(
-        json.dumps(_environment(args), indent=1, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(environment, indent=1, sort_keys=True) + "\n", encoding="utf-8"
     )
+    measured = _measured(environment)
     # Configs are loaded on this thread only (the registries import lazily and not
     # thread-safely); the pool runs nothing but the compose processes.
     shipped = {cell.id: compose_cell(cell, name) for cell in pending if not cell.sets}
@@ -278,7 +291,7 @@ def run(args: argparse.Namespace) -> int:
             record["probe_options"] = _probe_options(record["config"], args)
     refused = [record for record in composed if "verdict" in record]
     for record in refused:
-        _append(name, {**record, "finished": _now()})
+        _append(name, {**record, "finished": _now(), "measured": measured})
     print(f"composed {len(composed)} cells: {len(refused)} refused, probing the others")
 
     # One probe per distinct config: cells that compose to the same config share it. With
@@ -294,7 +307,15 @@ def run(args: argparse.Namespace) -> int:
         if "verdict" not in record:
             groups.setdefault(record["config_hash"], []).append(record)
 
-    def finish(members: list[dict[str, Any]], command: str, report: dict[str, Any], owner: str):
+    def finish(
+        members: list[dict[str, Any]],
+        command: str,
+        report: dict[str, Any],
+        owner: str,
+        when: dict[str, Any],
+    ) -> None:
+        """Record the probe of a config for every cell that composes to it. ``when`` is
+        the run that probed it: this one, or the earlier one whose probe is reused."""
         for record in members:
             extra = {} if record["id"] == owner else {"probed_as": owner}
             _append(
@@ -306,6 +327,7 @@ def run(args: argparse.Namespace) -> int:
                     "probe": report,
                     "verdict": report["verdict"],
                     "finished": _now(),
+                    "measured": when,
                 },
             )
         print(
@@ -317,22 +339,42 @@ def run(args: argparse.Namespace) -> int:
         digest, members = item
         if digest in probed:
             earlier = probed[digest]
-            finish(members, earlier["probe_command"], earlier["probe"], earlier["id"])
+            # The cell that owns the probe is named by the id it has in this grid.
+            owner = next((r["id"] for r in members if r["id"] == earlier["id"]), members[0]["id"])
+            when = earlier.get("measured") or measured
+            finish(members, earlier["probe_command"], earlier["probe"], owner, when)
             return None
         first = members[0]
         command, report = _probe_first(members, name, args)
         if _out_of_memory(report):
             return item  # run again alone, below
-        finish(members, command, report, first["id"])
+        finish(members, command, report, first["id"], measured)
         return None
 
     with ThreadPoolExecutor(max(args.jobs, 1)) as pool:
         again = [item for item in pool.map(work, groups.items()) if item is not None]
+    starved = []
     for _digest, members in again:
         first = members[0]
-        command, report = _probe_first(members, name, args)
+        for attempt in range(max(args.retries, 1)):
+            if attempt:
+                time.sleep(args.wait)
+            command, report = _probe_first(members, name, args)
+            if not _out_of_memory(report):
+                break
+        if _out_of_memory(report):
+            # Not a statement about the config: the cell stays without a record.
+            starved.append(first["id"])
+            print(f"  {'no GPU memory':<14}{first['id']}  (not recorded)")
+            continue
         report.setdefault("notes", []).append("probed alone after running out of GPU memory")
-        finish(members, command, report, first["id"])
+        finish(members, command, report, first["id"], measured)
+    if starved:
+        print(
+            f"{len(starved)} probe(s) ran out of GPU memory {max(args.retries, 1)} time(s) alone "
+            "and were not recorded: the device is shared. Run the same command again."
+        )
+        return 1
     return 0
 
 
@@ -341,14 +383,18 @@ def _now() -> str:
 
 
 def _environment(args: argparse.Namespace) -> dict[str, Any]:
+    """Where and with what a run probes. The code is named by its commit, from git or,
+    for an exported copy of the repository, from ``--commit``; the version string of the
+    package is not recorded, because it is whatever the last build wrote."""
     import torch
 
-    from grasppanda import __version__
-
+    git = git_info()
+    commit = args.commit or (git.get("commit") if git.get("available") else None) or ""
+    if not args.commit and git.get("dirty"):
+        commit += "+dirty"
     gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none"
     return {
-        "grasppanda": __version__,
-        "git": git_info(),
+        "git": git,
         "torch": torch.__version__,
         "python": platform.python_version(),
         "gpu": gpu,
@@ -358,7 +404,22 @@ def _environment(args: argparse.Namespace) -> dict[str, Any]:
         "frames": args.frames,
         "jobs": args.jobs,
         "scale_statistic_sha": args.scale_statistic_sha,
-        "commit": args.commit,
+        "commit": commit,
+    }
+
+
+def _measured(environment: dict[str, Any], date: str | None = None) -> dict[str, Any]:
+    """What a record keeps of the run that measured it."""
+    commit = environment.get("commit") or (environment.get("git") or {}).get("commit") or ""
+    short = commit[:7] + ("+dirty" if commit.endswith("+dirty") else "")
+    return {
+        "date": date or environment.get("started", _now())[:10],
+        "commit": short or None,
+        "torch": environment["torch"],
+        "python": environment["python"],
+        "gpu": environment["gpu"],
+        "probes_at_a_time": environment["jobs"],
+        "scale_statistic_sha256": environment.get("scale_statistic_sha"),
     }
 
 
@@ -391,7 +452,8 @@ def _rounded(pair: list[float]) -> list[float]:
 #: What a cell of the measured file holds, field by field; exported with the cells.
 FIELDS: dict[str, str] = {
     "id": "the cell: <group>/<method>/..., unique",
-    "group": "reference, encoder, stage, stage-set, family, family-slot or post "
+    "group": "reference, encoder, stage, stage-set, family, family-slot, post, loss, recipe "
+    "or cross "
     "(grasppanda.combine.grid)",
     "method": "the method whose shipped config the cell starts from",
     "sets": "the slot=choice pairs of the compose request; absent for a config as shipped",
@@ -401,8 +463,8 @@ FIELDS: dict[str, str] = {
     "config_hash": "first 16 hex digits of the hash of the composed config; null when the "
     "config check refused it",
     "compose": "the command that wrote the config; absent for a config as shipped",
-    "probe": "the command that probed it. Run after `compose` in the same directory it "
-    "repeats the cell",
+    "probe": "the command that probed it, to be run after `compose` in the same directory. "
+    "It repeats the experiment, not its numbers: see about.one_run",
     "probed_as": "the cell whose probe this cell shares: both composed to the same config "
     "(the same hash), which was probed once. The numbers are in that cell",
     "adapter": "the encoder adapter compose inserted, when it did",
@@ -421,7 +483,11 @@ FIELDS: dict[str, str] = {
     "postprocessing": "for post cells: the steps of the variant `post`, and per predicted "
     "frame the number of grasps predicted and left after every step. The grasps are those "
     "of a detector trained for the iterations of the probe",
-    "run": "the run that measured the cell (about.runs): date, commit and environment",
+    "notes": "what the probe changed or noticed, in its own words: for example a batch "
+    "smaller than the recipe's because the split has fewer frames",
+    "run": "the run that measured the cell (about.runs): date, commit and environment. A "
+    "record is bound to that commit: it is replaced when its config changes, not when the "
+    "code of a component does",
 }
 
 _FITTED = re.compile(r"(in_channels|out_channels): (\d+)|added `(data[\w.]+)`")
@@ -525,6 +591,10 @@ def dump(payload: dict[str, Any]) -> str:
     return f'{{\n "about": {indented},\n "cells": [\n{cells_}\n ]\n}}\n'
 
 
+def _run_id(measured: dict[str, Any]) -> str:
+    return f"{measured['date']}@{measured.get('commit') or 'unknown'}"
+
+
 def merge(
     previous: dict[str, Any] | None,
     records: dict[str, dict[str, Any]],
@@ -535,7 +605,9 @@ def merge(
 
     So a component that is added later needs only its own cells probed, on any machine:
     the other cells of the committed file stay what they are, with the run that measured
-    them. Cells that are no longer in the grid are dropped.
+    them. Cells that are no longer in the grid are dropped. A record carries the run that
+    measured it (``measured``); one written before records did is given the environment
+    of the run directory and the date it finished.
     """
     probe = {"iterations": environment["iters"], "frames": environment["frames"]}
     about = (previous or {}).get("about", {})
@@ -545,22 +617,20 @@ def merge(
             "one file, one probe. Run with the same --iters and --frames, or export with "
             "--fresh to start the file again from this run alone."
         )
-    commit = environment.get("commit") or (environment.get("git") or {}).get("commit") or ""
-    date = max(record["finished"] for record in records.values())[:10]
-    run_id = f"{date}@{commit[:7] or 'unknown'}"
-    runs = dict(about.get("runs", {}))
-    runs[run_id] = {key: environment[key] for key in ("grasppanda", "torch", "python", "gpu")} | {
-        "commit": commit[:7] or None,
-        "date": date,
-        "probes_at_a_time": environment["jobs"],
-        "scale_statistic_sha256": environment.get("scale_statistic_sha"),
+    # The version string of the package is not part of a run (see `_environment`).
+    runs = {
+        key: {field: value for field, value in run.items() if field != "grasppanda"}
+        for key, run in about.get("runs", {}).items()
     }
     kept = {cell["id"]: cell for cell in (previous or {}).get("cells", [])}
     merged = []
     order = [cell.id for cell in cells()]
     for cell_id in order:
         if cell_id in records:
-            merged.append({**compact(records[cell_id]), "run": run_id})
+            record = records[cell_id]
+            when = record.get("measured") or _measured(environment, record["finished"][:10])
+            runs[_run_id(when)] = when
+            merged.append({**compact(record), "run": _run_id(when)})
         elif cell_id in kept:
             merged.append(kept[cell_id])
     used = {cell["run"] for cell in merged}
@@ -575,7 +645,15 @@ def merge(
             "verdicts": VERDICTS,
             "fields": FIELDS,
             "probe": probe,
-            "runs": {key: value for key, value in runs.items() if key in used},
+            "runs": {key: runs[key] for key in sorted(runs) if key in used},
+            "one_run": (
+                "A cell is one run, and training on a GPU is not repeatable here. The config "
+                "hash and the parameter count repeat exactly and the losses of the first "
+                "iteration to the digits given; later losses, `real_seeds`, "
+                "`supervised_seeds`, `grasps_per_frame` and, for a combination near the edge, "
+                "the split between `runs` and `runs-unstable` are those of the recorded run "
+                "and differ in the next one."
+            ),
             "scale_statistic": (
                 "Configs that read the width histogram of Scale-Balanced-Grasp were probed with "
                 "the reference's own file (`scale_statistic.source: legacy_import`, the SHA-256 "
@@ -686,6 +764,16 @@ def main(argv: list[str] | None = None) -> int:
             sub.add_argument("--iters", type=int, default=20)
             sub.add_argument("--frames", type=int, default=8)
             sub.add_argument("--timeout", type=float, default=1200.0, help="seconds per probe")
+            sub.add_argument(
+                "--retries",
+                type=int,
+                default=3,
+                help="probes of a config that ran out of GPU memory, alone, before it is left "
+                "without a record (default 3)",
+            )
+            sub.add_argument(
+                "--wait", type=float, default=30.0, help="seconds between those (default 30)"
+            )
             sub.add_argument("--redo", action="store_true", help="ignore earlier records")
             sub.add_argument(
                 "--commit",

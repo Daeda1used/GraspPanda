@@ -20,7 +20,7 @@ the input features as a skip connection, then a shared MLP.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 from torch import Tensor
@@ -62,6 +62,10 @@ class FeaturePropagation(Backbone):
     output = "dense"
     status = "tested"
     source = "PointNet++ feature propagation (Qi et al., NeurIPS 2017)"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        return options["mlp"][-1]
 
     def __init__(
         self,

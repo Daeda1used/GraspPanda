@@ -45,7 +45,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 import torch
 from torch import Tensor
@@ -122,6 +122,8 @@ class HGGD(BaseGraspDetector):
     status = "tested"
     source = "HGGD (Chen et al., RA-L 2023)"
     required_inputs = frozenset({"rgb", "depth", "intrinsics", "points"})
+    #: The per-view grasp labels the losses are computed from.
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {f"extras.{LABELS}": None}
 
     def __init__(
         self,

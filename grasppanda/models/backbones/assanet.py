@@ -24,8 +24,8 @@ samplers and groupers of the upstream are replaced by :mod:`grasppanda.ops`.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
-from typing import Literal
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 
 import torch
 from torch import Tensor, nn
@@ -141,7 +141,7 @@ class _Level(nn.Module):
 
 @BACKBONES.register()
 class ASSANet(Backbone):
-    """ASSANet encoder-decoder with features on every input point.
+    """ASSANet: PointNet++ with separable set abstraction, features on every input point.
 
     The defaults are ASSANet as published for S3DIS in the PointNeXt model zoo: 4 input
     channels, a 16-channel stem with one aggregation at full resolution, four stride-4
@@ -171,6 +171,11 @@ class ASSANet(Backbone):
     source = (
         "ASSANet (Qian et al., NeurIPS 2021), adapted from guochengqian/openpoints@bc778ec, MIT"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The last width of the finest propagation level."""
+        return options["fp_mlps"][0][-1]
 
     def __init__(
         self,

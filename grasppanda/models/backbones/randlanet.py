@@ -109,7 +109,7 @@ def _prefix_rows(sizes: Sequence[int], counts: Sequence[int], device: torch.devi
 
 @BACKBONES.register()
 class RandLANet(Backbone):
-    """RandLA-Net encoder-decoder with features on every input point.
+    """RandLA-Net: random sub-sampling with attentive local aggregation, per-point output.
 
     The defaults are the published network: four levels that each keep a quarter of the
     points, 16 neighbours, widths 16 / 64 / 128 / 256 (doubled at each level's output),

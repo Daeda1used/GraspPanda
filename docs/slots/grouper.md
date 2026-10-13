@@ -124,7 +124,7 @@ From the measured records
 `stage/<method>/grouper/<name>`), probe runs of 2026-10-13: composed with
 `grasppanda compose <method config> --set grouper=<name>` and probed with
 `grasppanda probe <file> --iters 20 --frames 8` on GraspNet-1Billion (RealSense).
-**runs** = trained 20 iterations with finite losses and predicted grasps; **refused** = the
+`runs` = trained 20 iterations with finite losses and predicted grasps; `refused` = the
 config check refuses the combination and says why (for a grouper: its axes do not fit the
 head; take the option of the other table, or wrap it, section 4.6).
 Every option was probed under all five methods.
@@ -132,34 +132,34 @@ Every option was probed under all five methods.
 <!-- FIT TABLE -->
 | name | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp |
 |---|---|---|---|---|---|
-| `CylinderGroup` | **runs** | **runs** | **runs** | refused | refused |
-| `CylinderInteractionGroup` | **runs** | **runs** | **runs** | refused | refused |
-| `multi-scale` | **runs** | **runs** | **runs** | refused | refused |
-| `multi-scale-linear` | **runs** | **runs** | **runs** | refused | refused |
-| `ball` | **runs** | **runs** | **runs** | refused | refused |
-| `knn` | **runs** | **runs** | **runs** | refused | refused |
-| `box` | **runs** | **runs** | **runs** | refused | refused |
-| `cylinder-edgeconv` | **runs** | **runs** | **runs** | refused | refused |
-| `cylinder-attentive` | **runs** | **runs** | **runs** | refused | refused |
-| `cylinder-vector-attention` | **runs** | **runs** | **runs** | refused | refused |
-| `cylinder-invres` | **runs** | **runs** | **runs** | refused | refused |
-| `roi-grid` | **runs** | **runs** | **runs** | refused | refused |
-| `roi-aware` | **runs** | **runs** | **runs** | refused | refused |
-| `voxel-set-abstraction` | **runs** | **runs** | **runs** | refused | refused |
-| `pyg-pointnet-conv` | **runs** | **runs** | **runs** | refused | refused |
-| `pyg-point-transformer-conv` | **runs** | **runs** | **runs** | refused | refused |
-| `pyg-edge-conv` | **runs** | **runs** | **runs** | refused | refused |
-| `pyg-gatv2-conv` | **runs** | **runs** | **runs** | refused | refused |
-| `pyg-transformer-conv` | **runs** | **runs** | **runs** | refused | refused |
-| `depth-pool` | **runs** | **runs** | **runs** | refused | refused |
-| `DepthCylinderGroup` | refused | refused | refused | **runs** | **runs** |
-| `depth-cylinder-multi-scale` | refused | refused | refused | **runs** | **runs** |
-| `depth-cylinder-projection` | refused | refused | refused | **runs** | **runs** |
-| `depth-ball` | refused | refused | refused | **runs** | **runs** |
-| `depth-box` | refused | refused | refused | **runs** | **runs** |
-| `depth-knn` | refused | refused | refused | **runs** | **runs** |
-| `depth-cylinder-attentive` | refused | refused | refused | **runs** | **runs** |
-| `depth-embed` | refused | refused | refused | **runs** | **runs** |
+| `CylinderGroup` | runs | runs | runs | refused | refused |
+| `CylinderInteractionGroup` | runs | runs | runs | refused | refused |
+| `multi-scale` | runs | runs | runs | refused | refused |
+| `multi-scale-linear` | runs | runs | runs | refused | refused |
+| `ball` | runs | runs | runs | refused | refused |
+| `knn` | runs | runs | runs | refused | refused |
+| `box` | runs | runs | runs | refused | refused |
+| `cylinder-edgeconv` | runs | runs | runs | refused | refused |
+| `cylinder-attentive` | runs | runs | runs | refused | refused |
+| `cylinder-vector-attention` | runs | runs | runs | refused | refused |
+| `cylinder-invres` | runs | runs | runs | refused | refused |
+| `roi-grid` | runs | runs | runs | refused | refused |
+| `roi-aware` | runs | runs | runs | refused | refused |
+| `voxel-set-abstraction` | runs | runs | runs | refused | refused |
+| `pyg-pointnet-conv` | runs | runs | runs | refused | refused |
+| `pyg-point-transformer-conv` | runs | runs | runs | refused | refused |
+| `pyg-edge-conv` | runs | runs | runs | refused | refused |
+| `pyg-gatv2-conv` | runs | runs | runs | refused | refused |
+| `pyg-transformer-conv` | runs | runs | runs | refused | refused |
+| `depth-pool` | runs | runs | runs | refused | refused |
+| `DepthCylinderGroup` | refused | refused | refused | runs | runs |
+| `depth-cylinder-multi-scale` | refused | refused | refused | runs | runs |
+| `depth-cylinder-projection` | refused | refused | refused | runs | runs |
+| `depth-ball` | refused | refused | refused | runs | runs |
+| `depth-box` | refused | refused | refused | runs | runs |
+| `depth-knn` | refused | refused | refused | runs | runs |
+| `depth-cylinder-attentive` | refused | refused | refused | runs | runs |
+| `depth-embed` | refused | refused | refused | runs | runs |
 <!-- /FIT TABLE -->
 
 Universal or method-specific: every `(seed, channel)` option fits GSNet, EconomicGrasp and
@@ -364,7 +364,7 @@ model:
 embedding, which is weaker than a crop per depth; `depth-pool` throws the depth resolution
 away. They exist so that a swap is possible, not because a paper proposes them.
 
-## 5. The width of the seed features (a fixed contract gap)
+## 5. The width of the seed features
 
 Scale-Balanced-Grasp's crop adds `sigmoid(W f) · f` of the seed feature `f` to its
 256-channel crop features, so the encoder had to return 256 channels. An encoder with an
@@ -373,8 +373,9 @@ variants, PointNeXt, PointNet2Dense) passed the config check and failed when the
 built. Now:
 
 * `DepthCylinderGroup.required_seed_channels(options)` states the width, and the config
-  check compares it with the encoder's (read from `out_channels`, or by building the encoder
-  once when its config does not say). `grasppanda compose ... --set backbone=PointNeXt
+  check compares it with the width the encoder declares for its options
+  (`Backbone.output_channels`; an encoder whose width is known only once built, such as
+  Uni3D without `out_channels`, is built once for the check, without released weights). `grasppanda compose ... --set backbone=PointNeXt
   --no-adapter` under Scale-Balanced-Grasp now ends with:
 
   ```text
@@ -411,30 +412,30 @@ built. Now:
 
 The same holds for every encoder preset without a 256-channel output, including those
 that start from released weights (the check learns the width from the architecture, so its
-verdict does not depend on which weight files are on the machine). The twenty encoder
+verdict does not depend on which weight files are on the machine). The encoder
 cells under Scale-Balanced-Grasp that used to fail at build were probed again; in each,
 compose put `DepthCylinderProjectionGroup` in place of `DepthCylinderGroup`:
 
 <!-- WIDTH TABLE -->
 | cell | before | now |
 |---|---|---|
-| `encoder/Scale-Balanced-Grasp/LitePT@litept-structured3d` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/LitePT@litept` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-encoder` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-ppt` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-scannet200` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3@ptv3` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata-small` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PTv3Utonia` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase-xl` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-b` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-l` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-xl` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointVector@pointvector-xl` | fails at build | **runs with adapter** |
-| `encoder/Scale-Balanced-Grasp/PointVector@pointvector` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/LitePT@litept-structured3d` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/LitePT@litept` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-encoder` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-ppt` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-scannet200` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata-small` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PTv3Utonia` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase-xl` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-b` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-l` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-xl` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointVector@pointvector-xl` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
+| `encoder/Scale-Balanced-Grasp/PointVector@pointvector` | fails at build | runs in `FurthestPointSubsample`, projected grouper |
 <!-- /WIDTH TABLE -->
 
 ## 6. Pitfalls met while building this

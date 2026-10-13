@@ -62,10 +62,13 @@ What the neighbours require, and what the config checker does with it:
   encoder it replaces (512 for the sparse U-Net methods, 256 for the PointNet++ ones),
   so the other stages keep their width. When the width is fixed by the architecture,
   the other stages are built that wide.
-- One thing the checker cannot see: the crop of Scale-Balanced-Grasp adds the seed
-  feature to a 256-channel crop feature (`seed_residual: gated`), so the encoder must
-  return 256 channels. An encoder of another width passes the check and fails when the
-  model is built, with the fix in the message (rows marked "fails at build" below).
+- The width of the seed features is a contract too. The crop of Scale-Balanced-Grasp adds
+  the seed feature to a 256-channel crop feature (`seed_residual: gated`). An encoder
+  declares the width it returns (`Backbone.output_channels`), the grouper the width it
+  needs, and the config check compares the two without building anything. For an encoder
+  of another width `compose` puts `DepthCylinderProjectionGroup` in place (the same crop
+  with a linear layer in front of the residual) and says so; `--no-adapter` leaves the
+  pair refused ([Grouper](grouper.md), section 5).
 - No contract checks the unit of length. Every published configuration of these
   networks is for rooms (first radius 0.1 m, grids from 4 cm). The presets below
   restate radii and grids for a table top and say what they were derived from; all of
@@ -102,8 +105,8 @@ repository owner in the code column is the nearest verified fact.
 
 ### Measured fit per method
 
-From the measured records (`docs/advanced_guides/measured_combinations.md`, where the
-commands and numbers of every cell are): `runs` = 20 training iterations on 8 real
+From the measured records ([Measured combinations](../advanced_guides/measured_combinations.md),
+where the commands and numbers of every cell are): `runs` = 20 training iterations on 8 real
 frames and a prediction on 2, with finite losses and real seeds; "in adapter" = compose
 wrapped the encoder in the named adapter first.
 
@@ -112,14 +115,14 @@ wrapped the encoder in the named adapter first.
 |---|---|---|---|---|---|---|
 | `pointnet2-msg` | runs in `FeaturePropagation` | runs in `FeaturePropagation` | runs in `FeaturePropagation` | runs | runs | 4 to 16 |
 | `pointnet2-msg-dense` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 3 to 14 |
-| `pointnext` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 2 to 12 |
-| `pointnext-b` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 3 to 13 |
-| `pointnext-l` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 4 to 16 |
-| `pointnext-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 8 to 28 |
-| `pointmetabase` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 3 to 14 |
-| `pointmetabase-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 6 to 21 |
-| `pointvector` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 4 to 16 |
-| `pointvector-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | fails at build: encoder width is not 256 | 8 to 28 |
+| `pointnext` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 2 to 12 |
+| `pointnext-b` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 3 to 13 |
+| `pointnext-l` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 4 to 16 |
+| `pointnext-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 8 to 28 |
+| `pointmetabase` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 3 to 14 |
+| `pointmetabase-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 6 to 21 |
+| `pointvector` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 4 to 16 |
+| `pointvector-xl` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 8 to 28 |
 | `assanet` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 2 to 11 |
 | `pointmlp` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 7 to 28 |
 | `dela` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 7 to 25 |
@@ -132,14 +135,12 @@ wrapped the encoder in the named adapter first.
 | `pyg-pointnet` | runs | runs | runs | runs in `FurthestPointSubsample` | runs in `FurthestPointSubsample` | 4 to 18 |
 <!-- fit-table:end -->
 
-100 cells: 92 `runs`, 8 `fails` at build. All options are **universal** in the sense of
-the contract: each runs under every seed-based method, directly or in the adapter
-compose inserts, except where the row says "fails at build" (a fixed output width other
-than 256 under Scale-Balanced-Grasp, see section 2). None is specific to one method. Which of them is *good* for grasping is not
-known. According to the research notes of this project (not re-opened for this page),
-the point-based encoders with published scene-level grasp results are PointNet++
-(GraspNet-baseline; multi-scale grouping in Contact-GraspNet and GPR), PointNeXt
-(vMF-Contact, on its own simulated data) and EdgeConv graphs (GraNet).
+All 100 cells `runs`. Every option is **universal** in the words of the measured page:
+it works under all five seed-based methods, directly or in the adapter compose inserts.
+Under Scale-Balanced-Grasp the encoders with a fixed width other than 256 (`pointnext*`,
+`pointmetabase*`, `pointvector*`) run with `DepthCylinderProjectionGroup` in place of the
+method's grouper (section 2). None is specific to one method. Which of them is *good* for
+grasping is not known: no option here has been trained and evaluated.
 
 ## 4. How to use each option
 
@@ -459,12 +460,11 @@ Read before you rely on such an initialisation:
 
 ## 6. Pitfalls met while building this page
 
-- **Scale-Balanced-Grasp needs 256 channels from the encoder.** `pointnext*`,
-  `pointmetabase*` and `pointvector*` end on their stem width (32 or 64); the composed
-  config passes the check and fails at build:
-  `DepthCylinderGroup: the gated seed residual adds 32-channel seed features to
-  256-channel crop features; the two must be equal ... End mlp_channels on 32, or use an
-  encoder that returns 256 channels, or set seed_residual: none.` The presets of the
+- **The grouper of Scale-Balanced-Grasp wants 256 channels from the encoder.** `pointnext*`,
+  `pointmetabase*` and `pointvector*` end on their stem width (32 or 64). When this page
+  was first written such a config passed the check and failed at build; the width is a
+  contract now, and `compose` puts the projected grouper in place (section 2). The model
+  is then a variant of Scale-Balanced-Grasp, not the paper's. The presets of the
   encoders whose width is free (`assanet`, `pointnet2-msg-dense`, and every class with
   `out_channels`) are 256 wide for this reason.
 - **Probing Scale-Balanced-Grasp needs its width histogram.** Without
@@ -497,10 +497,10 @@ Read before you rely on such an initialisation:
 | Candidate | Opened | Why not |
 |---|---|---|
 | KPConv (ICCV 2019), rigid and deformable | [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch) (MIT per the GitHub licence record; model files read), [Open3D-ML](https://github.com/isl-org/Open3D-ML) (MIT) | Not a thin adaptation: it needs kernel-point dispositions (an optimisation whose results the upstream caches as files), radius neighbourhoods with a shadow point, a grid pyramid with barycentre subsampling, all computed in the upstream data pipeline with compiled code; the deformable form also owns loss terms, for which the slot has no channel. A follow-up of its own. |
-| KPConvX / KPConvD (CVPR 2024) | licence file of [apple/ml-kpconvx](https://github.com/apple/ml-kpconvx) (MIT, Copyright 2024 Apple Inc.); the code was not read | Same prerequisites as KPConv according to the research notes. Not attempted. |
+| KPConvX / KPConvD (CVPR 2024) | licence file of [apple/ml-kpconvx](https://github.com/apple/ml-kpconvx) (MIT, Copyright 2024 Apple Inc.); the code was not read | Expected to have the same prerequisites as KPConv (not checked). Not attempted. |
 | RandLA-Net, authors' repository | licence file of [QingyongHu/RandLA-Net](https://github.com/QingyongHu/RandLA-Net) | CC BY-NC-SA 4.0 (and TensorFlow); the MIT implementation of Open3D-ML was adapted instead. |
-| Contact-GraspNet's PointNet++ MSG layout and weights | hyper-parameters as reported in the research notes | NVIDIA Source Code License (non-commercial): no code taken. Its three-scale layout can be written as a `PointNet2MSG` config by hand; its checkpoints were not converted (the TensorFlow original and the PyTorch port are two different networks). |
+| Contact-GraspNet's PointNet++ MSG layout and weights | not opened for this page | NVIDIA Source Code License (non-commercial): no code taken. Its three-scale layout can be written as a `PointNet2MSG` config by hand; its checkpoints were not converted (the TensorFlow original and the PyTorch port are two different networks). |
 | `torch_geometric.nn.XConv` (PointCNN), `GravNetConv` | `torch_geometric` 2.8.1 | They build their neighbour graph inside the layer through `knn` / `knn_graph`, which needs `pyg-lib` in this version of the library. |
-| PointNeXt checkpoints of the Hugging Face organisation `torch-pointcloud` | research report only | Third-party conversions with their own key layout; the official files fit directly. |
-| DeepLA-Net (CVPR 2025), LinNet (NeurIPS 2024), PointMixer (ECCV 2022) | research report only | No licence file in the repositories according to the research notes; not opened further. |
-| SPoTr, X-3D, HPENet V2, PAConv, RepSurf, PVCNN, DeepGCN, BAAF-Net | research report only | Not reached in this wave. All are MIT or Apache-2.0 according to the research notes; SPoTr, X-3D and HPENet V2 are forks of the same code base as `PointMetaBase` and would follow its pattern. |
+| PointNeXt checkpoints of the Hugging Face organisation `torch-pointcloud` | not opened for this page | Third-party conversions with their own key layout; the official files fit directly. |
+| DeepLA-Net, LinNet, PointMixer | not opened for this page | Earlier notes found no licence file in the repositories; venues and licences were not re-checked. |
+| SPoTr, X-3D, HPENet V2, PAConv, RepSurf, PVCNN, DeepGCN, BAAF-Net | not opened for this page | Not reached. Their licences were not re-checked; SPoTr, X-3D and HPENet V2 are forks of the same code base as `PointMetaBase` and would follow its pattern. |

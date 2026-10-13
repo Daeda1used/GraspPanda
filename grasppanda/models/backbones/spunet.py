@@ -162,6 +162,13 @@ class SpUNet(Backbone):
     #: Each stage halves the resolution.
     stage_stride = 2
 
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        """The projection's width, or the last decoder width when there is none."""
+        if options["out_channels"] is None:
+            return options["channels"][-1]
+        return options["out_channels"]
+
     def __init__(
         self,
         in_channels: int = 6,

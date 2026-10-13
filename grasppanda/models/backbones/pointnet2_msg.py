@@ -28,8 +28,9 @@ first.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -82,6 +83,13 @@ class _SetAbstractionMSG(nn.Module):
 
 
 class _PointNet2MSG(Backbone):
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The last propagation width; without propagation, the scales of the last level joined."""
+        if options["fp_mlps"]:
+            return options["fp_mlps"][-1][-1]
+        return sum(mlp[-1] for mlp in options["sa_mlps"][-1])
+
     def __init__(
         self,
         in_channels: int,

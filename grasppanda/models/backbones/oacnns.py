@@ -48,7 +48,7 @@ Needs spconv for the sparse convolutions; nothing else beyond PyTorch.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -286,6 +286,10 @@ class OACNNs(Backbone):
     extras = ("spconv",)
     #: Each stage halves the resolution.
     stage_stride = 2
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        return options["out_channels"]
 
     def __init__(
         self,

@@ -43,10 +43,13 @@ PAGE = REPO / "docs" / "advanced_guides" / "measured_combinations.md"
 NOT_PROBED: dict[str, str] = {}
 #: Groups every registered component must have records in. The sets of stages are probed
 #: too, but a new stage does not have to wait for its sets: the page counts what is missing.
-REQUIRED_GROUPS = ("reference", "encoder", "stage", "family", "family-slot", "loss")
+REQUIRED_GROUPS = ("reference", "encoder", "stage", "family", "family-slot", "loss", "cross")
 HOW_TO_PROBE = (
     "Probe them on a machine with GraspNet-1Billion and a GPU, then export and regenerate:\n"
-    "  python -m tools.probe_grid run --name mine --only '<cell id>' ...\n"
+    "  python -m tools.probe_grid run --name mine --only '<cell id>' ... \\\n"
+    "      --scale-statistic-sha <SHA-256 of the imported reference histogram>\n"
+    "(Cells under Scale-Balanced-Grasp read its width histogram; without the SHA they end as\n"
+    "`wired`, which is no measurement. A cell the config check refuses needs no GPU.)\n"
     "  python -m tools.probe_grid export --name mine\n"
     "  python -m tools.make_combination_docs\n"
 )
@@ -98,6 +101,7 @@ def test_the_grid_follows_the_registries_and_the_shipped_configs():
         "post",
         "loss",
         "recipe",
+        "cross",
     }
     # The methods are the seed-based detectors' own shipped configs, HGGD is the other family.
     shipped = set(available_configs())
@@ -129,6 +133,12 @@ def test_the_grid_follows_the_registries_and_the_shipped_configs():
     for cell in grid:
         if cell.group == "stage-set":
             assert [item.split("=")[0] for item in cell.sets] == ["backbone", *STAGE_SLOTS]
+    # A cross cell replaces an encoder together with options of other slots.
+    for cell in grid:
+        if cell.group == "cross":
+            slots = [item.split("=")[0] for item in cell.sets]
+            assert slots[0] in ("backbone", "image_encoder") and len(set(slots)) >= 2, cell.id
+    assert {cell.method for cell in grid if cell.group == "cross"} == {*METHODS, *FAMILIES}
     assert cells(("family",)) == [cell for cell in grid if cell.group == "family"]
     # Every preset of every slot of another detector family, under that family.
     assert {(cell.method, cell.slot, cell.variant) for cell in cells(("family-slot",))} == {
@@ -285,6 +295,52 @@ def test_a_probe_that_ran_out_of_gpu_memory_never_stands_for_its_config():
     assert grid._conclusive(contract) and grid._conclusive({"probe": {"verdict": "runs"}})
 
 
+def test_a_probe_that_runs_out_of_memory_is_not_recorded(tmp_path, monkeypatch, capsys):
+    """On a shared GPU "out of memory" says nothing about a config: the runner probes the
+    config again alone and, if memory stays short, leaves the cell without a record."""
+    runner = tool("probe_grid")
+    monkeypatch.setenv("GRASPPANDA_CACHE", str(tmp_path))
+    monkeypatch.setattr(runner.time, "sleep", lambda seconds: None)
+    starved = {
+        "verdict": "fails",
+        "failure": {"phase": "loss", "error": "OutOfMemoryError", "message": "CUDA out of memory."},
+        "seconds": 1.0,
+    }
+    fine = {"verdict": "runs", "iterations": 2, "seconds": 1.0}
+    outcomes: list[dict] = []
+    calls: list[str] = []
+
+    def probe_config(config, options, tag, name, args):
+        calls.append(tag)
+        return "grasppanda probe x --iters 2 --frames 8", dict(outcomes.pop(0))
+
+    monkeypatch.setattr(runner, "probe_config", probe_config)
+    arguments = ["run", "--name", "shared", "--only", "reference/GSNet", "--iters", "2"]
+    arguments += ["--retries", "2", "--wait", "0", "--commit", "abcdef0123"]
+    # Out of memory next to another probe, and twice more alone: no record, status 1.
+    outcomes[:] = [starved, starved, starved]
+    assert runner.main(arguments) == 1
+    assert len(calls) == 3 and runner.load("shared") == {}
+    assert "not recorded" in capsys.readouterr().out
+    # The next run picks the cell up. Out of memory once, then memory: recorded, with a note.
+    outcomes[:] = [starved, fine]
+    assert runner.main(arguments) == 0
+    (record,) = runner.load("shared").values()
+    assert record["verdict"] == "runs" and record["id"] == "reference/GSNet"
+    assert record["probe"]["notes"] == ["probed alone after running out of GPU memory"]
+    # Every record names the run that measured it; the commit is the one that was given.
+    assert record["measured"]["commit"] == "abcdef0" and record["measured"]["probes_at_a_time"] == 2
+    assert re.fullmatch(r"\d{4}-\d\d-\d\d", record["measured"]["date"])
+    # Any other failure is a verdict about the config and is recorded as it is.
+    broken = {
+        "verdict": "fails",
+        "failure": {"phase": "build", "error": "ValueError", "message": "x"},
+    }
+    outcomes[:] = [{**broken, "seconds": 1.0}]
+    assert runner.main(["run", "--name", "other", *arguments[3:]]) == 0
+    assert runner.load("other")["reference/GSNet"]["verdict"] == "fails"
+
+
 def test_the_methods_as_shipped_run(by_id):
     for method in [*METHODS, *FAMILIES]:
         group = "reference" if method in METHODS else "family"
@@ -310,7 +366,6 @@ def test_a_run_merges_into_the_file_and_names_itself():
     runner = tool("probe_grid")
     first, second = (cell.id for cell in cells(("reference",))[:2])
     environment = {
-        "grasppanda": "0",
         "torch": "0",
         "python": "3",
         "gpu": "none",
@@ -349,6 +404,22 @@ def test_a_run_merges_into_the_file_and_names_itself():
     again = runner.merge(two, {first: record(first, "2026-03-03")}, later)
     assert set(again["about"]["runs"]) == {"2026-02-02@1234567", "2026-03-03@1234567"}
     assert json.loads(runner.dump(again)) == again
+    # A record that carries the run that measured it keeps it, whatever the directory's
+    # last run was: a probe reused for the same config is not dated again.
+    earlier = {"date": "2025-12-12", "commit": "0123456", "torch": "0", "python": "3"}
+    earlier |= {"gpu": "none", "probes_at_a_time": 2, "scale_statistic_sha256": None}
+    reused = runner.merge(
+        None,
+        {
+            first: {**record(first, "2026-03-03"), "measured": earlier},
+            second: record(second, "2026-03-03"),
+        },
+        later,
+    )
+    assert [cell["run"] for cell in reused["cells"]] == ["2025-12-12@0123456", "2026-03-03@1234567"]
+    assert reused["about"]["runs"]["2025-12-12@0123456"] == earlier
+    assert "grasppanda" not in reused["about"]["runs"]["2026-03-03@1234567"]
+    assert "not repeatable" in reused["about"]["one_run"]
     with pytest.raises(SystemExit, match="one file, one probe"):
         runner.merge(two, {first: record(first, "2026-03-03")}, {**later, "iters": 5})
     # Commands name the composed config as a file, not by its place in a cache.
@@ -397,7 +468,8 @@ def test_the_page_states_what_it_measures_and_what_it_does_not(measured):
     counts = Counter(record["verdict"] for record in measured["cells"])
     for verdict, count in counts.items():
         assert f"{count} `{verdict}`" in page
-    assert "not probed" not in page.split("## Sets of stages")[0]
+    if not NOT_PROBED:  # every cell of the required groups has a verdict on the page
+        assert "not probed" not in page.split("## Sets of stages")[0]
 
 
 def test_classes_are_counted_from_the_cells(measured, by_id):
@@ -425,12 +497,17 @@ def test_classes_are_counted_from_the_cells(measured, by_id):
         for component, variant, name, works, unsteady in generator.slot_classes(
             slot, records, group
         ):
-            members = [
-                by_id[cell.id]
+            wanted = [
+                cell.id
                 for cell in generator.grid(group)
                 if (cell.slot, cell.component, cell.variant) == (slot, component, variant)
             ]
-            assert len(members) == len(METHODS)
+            assert len(wanted) == len(METHODS)
+            if any(cell_id not in by_id for cell_id in wanted):
+                # A class is a count over all methods: without every cell there is none.
+                assert name == generator.INCOMPLETE and set(wanted) & set(NOT_PROBED)
+                continue
+            members = [by_id[cell_id] for cell_id in wanted]
             assert works == sum(record["verdict"] in generator.WORKS for record in members)
             assert works in generator.CLASSES[name][0]
             label = generator._label(component, variant, slot)
@@ -438,5 +515,41 @@ def test_classes_are_counted_from_the_cells(measured, by_id):
             assert row.endswith(f"| {generator._class_text(name, unsteady)} |")
     # Every method's own encoder works under it.
     for cell in cells(("encoder",)):
-        if by_id[cell.id].get("probed_as") == f"reference/{cell.method}":
+        if cell.id in by_id and by_id[cell.id].get("probed_as") == f"reference/{cell.method}":
             assert by_id[cell.id]["verdict"] == "runs"
+
+
+# -------------------------------------------------------------------- the slot index
+
+
+def test_the_slot_index_counts_what_exists_and_classifies_from_the_records(measured):
+    generator = docs_tool()
+    slots = REPO / "docs" / "slots"
+    page = (slots / "index.md").read_text(encoding="utf-8")
+    assert page == generator.slots_index(generator.Records(measured["cells"]))
+    assert "**No accuracy is claimed" in page and "the model zoo is still empty" in page
+    # Every slot page is linked from the index, and every link of the slot table exists.
+    for path in slots.glob("*.md"):
+        assert path.name == "index.md" or f"]({path.name})" in page, path.name
+    for _, _, link, _, _ in generator.SLOTS.values():
+        assert not link or (slots / link).is_file(), link
+    # The numbers are counted: what can be written after `--set <slot>=`.
+    counts = generator.option_counts()
+    for slot in STAGE_SLOTS:
+        shipped = in_tree(STAGE_REGISTRIES[slot].name)
+        assert counts[slot][0] == sum(c in shipped for _, c in stage_variants(slot))
+    assert counts["image_encoder"][0] == len(presets()["image_encoder"])
+    for options, types in counts.values():
+        assert f"| {options} ({types} component type" in page
+    # Every option of a seed-based slot stands under exactly one class.
+    table = page.split("| Slot | Probed under |")[1].split("\n\n")[0]
+    for slot in STAGE_SLOTS:
+        shipped = in_tree(STAGE_REGISTRIES[slot].name)
+        for choice, component in stage_variants(slot):
+            assert component not in shipped or f"`{choice}`" in table, choice
+    # Fewer than five methods probed: the class counts those, and the page says so.
+    assert generator._relative_class(3, 3) == "universal"
+    assert generator._relative_class(2, 3) == "most"
+    assert generator._relative_class(1, 2) == "some"
+    assert generator._relative_class(0, 2) == "none"
+    assert "† The slot was not probed under the five seed-based methods" in page

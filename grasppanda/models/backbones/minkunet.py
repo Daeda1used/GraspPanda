@@ -193,6 +193,16 @@ class MinkUNet(Backbone):
     #: Each stage halves the resolution.
     stage_stride = 2
 
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the last decoder stage."""
+        width = options.get("out_channels")
+        return (
+            width
+            if isinstance(width, int)
+            else options["planes"][7] * (1 if options["block"] == "basic" else 4)
+        )
+
     def __init__(
         self,
         in_channels: int = 3,

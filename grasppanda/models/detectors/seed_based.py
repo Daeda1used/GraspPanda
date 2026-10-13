@@ -34,6 +34,7 @@ from grasppanda.models.base import (
     Loss,
     Proposal,
     ViewStage,
+    configured_width,
 )
 from grasppanda.models.heads.friction import SCORE_TARGETS
 from grasppanda.models.losses.terms import (
@@ -376,17 +377,18 @@ def _built_width(node: str) -> int | None:
 def _encoder_width(backbone: _Stage) -> int | None:
     """Channels of the features an encoder returns, or ``None`` when that cannot be told.
 
-    A built encoder says it; a config node says it through its ``out_channels`` option
-    or, when it has none or leaves it open, by being built (once per distinct node).
+    A built encoder says it. A config node says it through what its class declares
+    (``Backbone.output_channels``); where that is "known only once built", the node is
+    built once, without released weights.
     """
     if backbone.built is not None:
         width = getattr(backbone.built, "out_channels", None)
         return int(width) if isinstance(width, int) else None
-    width = backbone.option("out_channels")
-    if isinstance(width, int) and not isinstance(width, bool):
-        return width
     if backbone.node is None:
         return None
+    declared = configured_width(backbone.node)
+    if declared is not None:
+        return declared
     try:
         node = json.dumps(dict(backbone.node), sort_keys=True)
     except TypeError:
@@ -681,6 +683,21 @@ class SeedGraspDetector(BaseGraspDetector):
                 return
             stages[slot] = child
         yield from stage_contract_problems(**stages)
+
+    @classmethod
+    def supervision_needs(cls, node: Mapping[str, Any]) -> list[tuple[str, str]] | None:
+        """What the configured stages read from the training supervision, with the stage
+        that reads each field (``needs_supervision`` of every stage, with its options)."""
+        needs = []
+        for slot in STAGE_REGISTRIES:
+            child = node.get(slot)
+            if not (isinstance(child, Mapping) and child.get("type") in STAGE_REGISTRIES[slot]):
+                return None  # a stage is missing or unknown: the signature check says so
+            stage = _Stage(slot, child)
+            for field, switch in stage.contract("needs_supervision", {}).items():
+                if switch is None or stage.option(switch[0]) == switch[1]:
+                    needs.append((field, stage.name))
+        return needs
 
     # ---------------------------------------------------------------------- stages
 

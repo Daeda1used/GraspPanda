@@ -141,7 +141,7 @@ methods (`tests/unit/test_losses_zoo.py`). Nothing here has weights.
 method) for GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline / Scale-Balanced-Grasp.
 All are randomly initialised; none has released weights.
 
-| Name | Component | What it is | From | Fit | Universal? |
+| Name | Component | What it is | From | Fit | Why |
 |---|---|---|---|---|---|
 | `swad` | `SWADHead` | a score and a width per (angle, depth) cell, regressed; arg-max cell | GSNet (existed) | runs / refused / refused / refused / refused | dense labels, crops without a depth axis |
 | `swad-focal` | `SWADHead` | `swad` with `QualityFocal` on the score grid and a fixed friction range; the score is decoded through the sigmoid | preset of this page | runs / refused / refused / refused / refused | as `swad` |
@@ -157,7 +157,9 @@ Why the refusals: EconomicGrasp and FineGrasp train on `compact` labels, which h
 grasp per seed and not the grid a score-grid head is supervised with; GraspNet-baseline and
 Scale-Balanced-Grasp crop once per depth bin, so their features have a `depth` axis. The
 messages say so (section 5). A head preset can be moved to another method together with the
-stages it depends on, e.g. `--set assigner=nearest --set grouper=cylinder --set head=decoupled-grid`;
+stages it depends on, e.g. under GraspNet-baseline
+`--set view=template-view --set grouper=CylinderGroup --set head=decoupled-grid` (accepted by
+`compose`; not probed);
 which stage sets are legal is in [swapping components](../advanced_guides/swapping.md).
 
 ## 4. How to use each option
@@ -168,9 +170,9 @@ which stage sets are legal is in [swapping components](../advanced_guides/swappi
 grasppanda compose --list loss                    # the presets, one line each
 grasppanda compose --show loss=quality-focal      # one preset with its notes
 grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \
-    --set head.score_loss=quality-focal --set proposal.objectness_loss=focal -o my.yaml
-grasppanda probe my.yaml                          # a few iterations on real frames, about a minute
-grasppanda train my.yaml
+    --set head.score_loss=quality-focal --set proposal.objectness_loss=focal -o gsnet_focal.yaml
+grasppanda probe gsnet_focal.yaml                 # a few iterations on real frames, about a minute
+grasppanda train gsnet_focal.yaml
 ```
 
 The left side of `--set` is `<slot>.<loss option>` from the table of section 2; the right
@@ -283,9 +285,9 @@ decay. Wrapped terms, and so the total loss, can become negative.
 
 ```bash
 grasppanda compose --list head
-grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=swad-focal -o my.yaml
-grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=decoupled-grid-bins -o my.yaml
-grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set head=economic-focal -o my.yaml
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=swad-focal -o gsnet_swad-focal.yaml
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=decoupled-grid-bins -o gsnet_grid-bins.yaml
+grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set head=economic-focal -o eg_focal.yaml
 ```
 
 `DecoupledGridHead` in a config, with the options that matter:
@@ -399,7 +401,7 @@ file, or the repository metadata where no file was found).
 |---|---|
 | The grasp head of [luyh20/FGC-GraspNet](https://github.com/luyh20/FGC-GraspNet) as code | no licence file in the repository (its metadata says MIT), and it derives from graspnet-baseline, whose licence is non-commercial research only. The idea (separate outputs) is what `DecoupledGridHead` implements, without upstream code. |
 | Heads and losses of [graspnet/graspnet-baseline](https://github.com/graspnet/graspnet-baseline) and its descendants as code | non-commercial research licence. The ported methods are written here from papers and behaviour. |
-| [NVlabs/contact_graspnet](https://github.com/NVlabs/contact_graspnet) (per-point contact head with width bins) | no licence file found at the repository root; not copied. Its top-k selection of point errors is the idea behind `TopK`. |
+| [NVlabs/contact_graspnet](https://github.com/NVlabs/contact_graspnet) (per-point contact head with width bins) | its `License.pdf` is the NVIDIA Source Code License for Contact-GraspNet (non-commercial; see [View](view.md), section 6); not copied. Its top-k selection of point errors is the idea behind `TopK`. |
 | [sh8/ZeroGrasp](https://github.com/sh8/ZeroGrasp) | CC BY-NC 4.0. |
 | Gradient surgery between loss terms (PCGrad: [WeiChengTseng/Pytorch-PCGrad](https://github.com/WeiChengTseng/Pytorch-PCGrad), BSD-3-Clause; Jacobian descent: [TorchJD/torchjd](https://github.com/TorchJD/torchjd), MIT) | they need one backward pass per loss term inside the training step; a loss primitive only returns a value. A trainer hook, not an option of this slot. Of the multi-task weightings only the one that is a function of the loss values (uncertainty weighting) is wrapped. |
 | Ranking losses ([allegro/allRank](https://github.com/allegro/allRank), Apache-2.0; [teddykoker/torchsort](https://github.com/teddykoker/torchsort), Apache-2.0) | a loss over the order of the grasps of a scene needs the frame boundaries, which a primitive does not see; torchsort has a compiled extension. Not started. |

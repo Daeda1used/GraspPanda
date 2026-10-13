@@ -135,7 +135,7 @@ class _Propagation(nn.Module):
 
 @BACKBONES.register()
 class PointMLP(Backbone):
-    """PointMLP encoder-decoder with features on every input point.
+    """PointMLP: residual MLP stages with a geometric affine module, features on every point.
 
     The defaults are the part-segmentation network of the official repository
     (``pointMLP``): 64-channel embedding, four stages that keep a quarter of the points

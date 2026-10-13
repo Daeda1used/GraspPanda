@@ -37,7 +37,10 @@ class ImageEncoder(nn.Module):
     in_channels: int
     #: Meaning of those channels.
     input_layout: InputLayout
-    #: Width of every returned map, finest first.
+    #: Width of every returned map, finest first. Known only once the encoder is built:
+    #: a bridge measures it on the library model. No config check compares it, because
+    #: no consumer fixes it: the decoder that follows is built for whatever widths arrive.
+    #: A consumer that needs a fixed width has to say so and compare on the built encoder.
     out_channels: tuple[int, ...]
     #: Nominal stride of every returned map, finest first.
     out_strides: tuple[int, ...]

@@ -30,13 +30,26 @@ from pathlib import Path
 from typing import Any
 
 from grasppanda.combine.compose import recompose
-from grasppanda.combine.grid import FAMILIES, METHODS, STAGE_SLOTS, Cell, cells
-from grasppanda.combine.presets import presets
+from grasppanda.combine.grid import (
+    FAMILIES,
+    LOSS_NOT_PROBED,
+    METHODS,
+    POST_METHODS,
+    POST_NOT_PROBED,
+    STAGE_SLOTS,
+    Cell,
+    cells,
+    encoder_presets,
+    stage_variants,
+)
+from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
+from grasppanda.combine.recipes import recipes
 
 REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "docs" / "advanced_guides" / "measured_combinations.json"
 PAGE = REPO / "docs" / "advanced_guides" / "measured_combinations.md"
 EXPERIMENTAL = REPO / "configs" / "experimental"
+SLOTS_INDEX = REPO / "docs" / "slots" / "index.md"
 
 #: The measured classes: name → (number of methods a component works under, definition).
 CLASSES: dict[str, tuple[range, str]] = {
@@ -67,6 +80,7 @@ GROUP_TITLES = {
     "post": "one post-processing step as the variant `post`",
     "loss": "one loss of one stage replaced",
     "recipe": "one recipe preset applied (optimizer, schedule, hooks, augmentation)",
+    "cross": "options of several slots replaced together",
 }
 
 
@@ -376,7 +390,7 @@ def stage_sets_section(records: Records) -> list[str]:
         ]
     notes = Notes()
     rows, numbers = [], []
-    for cell in wanted:
+    for cell in recorded:
         record = records.get(cell.id)
         chosen = dict(item.split("=", 1) for item in cell.sets)
         own = records.own(record)
@@ -388,15 +402,32 @@ def stage_sets_section(records: Records) -> list[str]:
                 verdict_text(record, own, notes),
             ]
         )
-        if record is not None and record["verdict"] in WORKS and not own:
+        if record["verdict"] in WORKS and not own:
             name = " + ".join(f"`{chosen[slot]}`" for slot in ("backbone", *STAGE_SLOTS))
             numbers.append(_numbers_row(name, records.probed(record)))
     counts = Counter(records.get(cell.id)["verdict"] for cell in recorded)
     summary = ", ".join(f"{counts[v]} `{v}`" for v in VERDICT_ORDER if counts[v])
+
+    def variants(members: list[Cell]) -> set[tuple[str, str]]:
+        """``(kind of encoder, slot=choice)`` of every stage variant in some of the sets."""
+        return {(cell.variant, item) for cell in members for item in cell.sets[1:]}
+
+    listed, seen = variants(wanted), variants(recorded)
     headers = ["Encoder output", "Encoder", "Proposal", "View stage", "Assigner", "Grouper"]
     lines = [
-        f"{len(recorded)} of the {len(wanted)} sets were probed: {summary}. A set states all "
-        "five stages and the encoder: the preset named, under which the set needs no adapter. "
+        f"The contract rules accept {len(wanted)} sets of stage variants, too many to probe "
+        f"each: **{len(recorded)} were probed** ({summary}) and "
+        f"**{len(wanted) - len(recorded)} were not**. The probed sets were picked so that a "
+        "stage variant that occurs in a legal set occurs in a probed one, under a dense and "
+        "under a sub-sampling encoder: "
+        f"{len(seen)} of the {len(listed)} pairs of variant and kind of encoder are in a "
+        "probed set. That a set runs says nothing about another set with the same parts. The "
+        "sets that were not probed are named in `about.not_probed` of the "
+        "[measured file](measured_combinations.json); "
+        "`python -m tools.probe_grid run --only '<id>'` probes one.",
+        "",
+        "A set states all five stages and the encoder: the preset named, under which the set "
+        "needs no adapter. "
         "It was composed onto the method config whose data recipe serves its labels (last but "
         "one column), so the optimizer, the schedule and the data pipeline are that method's.",
         "",
@@ -412,18 +443,10 @@ def stage_sets_section(records: Records) -> list[str]:
 
 #: Commentary on a known gap of the config check, printed under the failures whose reason
 #: contains the key. It explains a measurement; it is not one.
-KNOWN_GAPS: dict[str, str] = {
-    "gated seed residual adds N-channel seed features": (
-        "Why the check does not see it: the contract rules compare what components "
-        "declare, and no contract states the width an encoder returns; it is known once "
-        "the encoder is built. An encoder with an `out_channels` option does not meet the "
-        "gap, because compose sets that option to the width of the encoder it replaces. "
-        "The encoders above have no such option and return their own width, which this "
-        "grouper cannot add to its 256-channel crops. Until a width contract closes the "
-        "gap, `grasppanda probe` is what catches it, and the ways out are the three of the "
-        "message."
-    ),
-}
+KNOWN_GAPS: dict[str, str] = {}
+"""Fragment of a failure message -> why the config check did not see it. Empty: the two
+gaps probing found (the width a grouper fixes, the labels a data recipe serves) are
+contract rules now, and a cell that meets one is `refused`."""
 
 
 def post_section(records: list[dict[str, Any]]) -> list[str]:
@@ -515,6 +538,41 @@ def loss_section(records: list[dict[str, Any]]) -> list[str]:
         *notes.lines(),
         *([""] if notes.items else []),
     ]
+
+
+def cross_section(records: Records) -> list[str]:
+    """Requests that replace options of several slots at once: the request and its verdict."""
+    wanted = grid("cross")
+    if not any(records.get(cell.id) is not None for cell in wanted):
+        return []
+    notes = Notes()
+    rows, numbers = [], []
+    for cell in wanted:
+        record = records.get(cell.id)
+        request = " ".join(f"`{item}`" for item in cell.sets)
+        rows.append([cell.method, request, verdict_text(record, False, notes)])
+        if record is not None and record["verdict"] in WORKS:
+            numbers.append(_numbers_row(f"{cell.method}: {request}", records.probed(record)))
+    lines = [
+        "## Several slots at once",
+        "",
+        "The tables above replace one thing at a time, and the stage sets keep the encoder to "
+        "two. These cells replace an encoder together with options of other slots (a grouper, "
+        "a proposal, a view stage, a recipe preset, a post-processing preset), each "
+        "as one request: `grasppanda compose <method config> --set <slot>=<option> --set …`. "
+        "They are a hand-picked sample, at least two per method, of what a visitor composes; "
+        "a pair or a triple that is not listed here was not probed, and its verdict does "
+        "not follow from the cells of its parts. The [explorer](../explorer/index.md) shows "
+        "what the config check answers for any two options.",
+        "",
+        *_table(["Method", "Request", "Verdict"], rows),
+    ]
+    if notes.items:
+        lines += ["", *notes.lines()]
+    if numbers:
+        lines += ["", '??? note "What the probes of these cells saw"', ""]
+        lines += _indent(_table(NUMBER_HEADERS, numbers))
+    return [*lines, ""]
 
 
 def findings_section(records: list[dict[str, Any]]) -> list[str]:
@@ -697,6 +755,17 @@ def page() -> str:
         "and nothing is inferred from a contract or from another cell. The contract tables of",
         "[Swapping components](swapping.md) say what the config check accepts; this page says",
         "what happened when the accepted combinations were built, trained and asked to predict.",
+        "A `refused` cell is the verdict of the config check on that config: nothing was built.",
+        "The [combination explorer](../explorer/index.md) answers a selection of method and",
+        "options from these records; the [slot pages](../slots/index.md) say what each option is.",
+        "",
+        "**A cell is one run, and a run is not repeatable.** The two recorded commands repeat",
+        "the experiment, not its numbers: the config hash and the parameter count repeat",
+        "exactly and the losses of the first iteration to the digits given; later losses, the",
+        "share of real and of supervised seeds, the grasps per frame and, for a combination",
+        "near the edge, the split between `runs` and `runs-unstable` are those of the recorded",
+        "run and differ in the next one. A record is bound to the commit of its run: it is",
+        "replaced when its config changes, not when the code of a component does.",
         "",
         "**No AP appears on this page, and none follows from it.** A probe trains "
         f"{iterations} iterations",
@@ -711,8 +780,9 @@ def page() -> str:
         + ", ".join(f"{counts[v]} `{v}`" for v in VERDICT_ORDER if counts[v])
         + "): every shipped method config as it is, every registered scene encoder under every "
         "seed-based method, every variant of every other stage with one stage replaced at a "
-        "time, the legal sets of stage variants, HGGD as it is, and every image-encoder preset "
-        "under HGGD. The variants of a stage "
+        "time, a sample of the legal sets of stage variants, HGGD as it is, every image-encoder "
+        "preset under HGGD, every post-processing, loss and recipe preset under two or three "
+        "methods, and a few requests that replace several slots at once. The variants of a stage "
         "are its presets plus every component whose constructor defaults no preset states.",
         "- **A cell**: `grasppanda compose <method config> --set <slot>=<choice>`, so that an "
         "encoder is fitted and adapters are inserted exactly as a user gets them, then "
@@ -791,6 +861,7 @@ def page() -> str:
     lines += family_slots_section(records)
     lines += post_section(cells_)
     lines += loss_section(cells_)
+    lines += cross_section(records)
     lines += ["## Passed the check, failed afterwards", "", *findings_section(cells_)]
     missing = about.get("not_probed") or []
     lines += [
@@ -798,7 +869,8 @@ def page() -> str:
         "",
         "- Accuracy of any kind. See the method pages of the [model zoo](../model_zoo.md).",
         "- Other datasets, cameras and recipes than the ones named above.",
-        "- Combinations of two or more replaced stages beyond the stage sets.",
+        "- Combinations of two or more replaced options beyond the stage sets that were "
+        "probed and the cells of [Several slots at once](#several-slots-at-once).",
         "- Inner parts of HGGD: it has no registered slots yet, so it is probed as it is.",
         *(
             [f"- {len(missing)} cell(s) of the grid that were not probed in this run."]
@@ -824,6 +896,410 @@ def page() -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+# ------------------------------------------------------------------ the slot index
+#
+# The first page of the slot documentation, docs/slots/index.md. Its text is written here;
+# its numbers are not: how many options a slot has is counted from the presets and the
+# registries, and the class of every option from the measured records with the rules of
+# the measured page (`classify`), so the two pages cannot disagree.
+
+#: Slot → (title, where it is written in a config, its page, task, input → output).
+SLOTS: dict[str, tuple[str, str, str, str, str]] = {
+    "image_encoder": (
+        "Image encoder",
+        "`model.image_encoder`",
+        "image_encoders.md",
+        "Turns the colour (or RGB-D) image into feature maps. HGGD predicts its grasp "
+        "heat-map from them; a seed-based method can read them at the pixel of every point "
+        "(point painting).",
+        "image `(B, C, H, W)` → a list of feature maps, finest first",
+    ),
+    "backbone": (
+        "Scene encoder",
+        "`model.backbone`",
+        "scene_encoders.md",
+        "The first learned stage of a seed-based method: one feature vector per point of "
+        "the depth cloud. Its receptive field is what a seed knows before any crop is taken.",
+        "points `(N, 3)` in metres, camera frame, with per-point features → features on "
+        "every point (`dense`) or on a sub-sample (`subsampled`)",
+    ),
+    "proposal": (
+        "Seed proposal",
+        "`model.proposal`",
+        "proposal.md",
+        "Decides where grasps are predicted: picks a fixed number of seeds per frame "
+        "(usually 1024) among the scene points, by a predicted score, a sampler, or both.",
+        "encoder features → `SeedSet`: seed points, their features, named scores",
+    ),
+    "view": (
+        "View",
+        "`model.view`",
+        "view.md",
+        "Chooses the approach direction of every seed: two of the three degrees of freedom "
+        "of the grasp orientation, and the frame the crop is taken in.",
+        "`SeedSet` → `ApproachSet`: a unit direction and a rotation per seed, and the index "
+        "of the label view",
+    ),
+    "assigner": (
+        "Assigner",
+        "`model.assigner`",
+        "",
+        "Training only: matches every seed with the grasp labels of the scene point it "
+        "sits on, in the label set the head is supervised with.",
+        "seeds, approach, supervision → matched labels (`dense` grids or `compact` best "
+        "grasps), optional seed weights",
+    ),
+    "grouper": (
+        "Grouper",
+        "`model.grouper`",
+        "grouper.md",
+        "Gathers the neighbourhood of every seed in the frame of its approach direction "
+        "and turns it into the feature the head reads.",
+        "points with features, crop centres and frames → one feature per seed, or one per "
+        "seed and depth bin",
+    ),
+    "head": (
+        "Head bundle",
+        "`model.head`",
+        "head_loss.md",
+        "Predicts the grasp at a seed: in-plane rotation, depth, width and score. Network "
+        "head, target encoder, loss and decoder share one parameterisation, so they are "
+        "swapped as a whole.",
+        "crop features → loss terms in training; `GraspGroup` (one grasp per seed) at prediction",
+    ),
+    LOSS_SLOT: (
+        "Loss",
+        "`model.<stage>.<term>_loss`",
+        "head_loss.md",
+        "One term of the loss of a stage (objectness, graspness, view score, grasp score, "
+        "angle, depth, width). A stage declares the kind of each term, a loss the kinds it "
+        "fits.",
+        "prediction and target of one term → a weighted scalar",
+    ),
+    POST_SLOT: (
+        "Post-processing",
+        "`evaluation.variants.<name>`",
+        "post.md",
+        "What happens to predicted grasps before an evaluator or a robot gets them: "
+        "filters, selection, corrections of pose and width, a change of frame. Steps are "
+        "chained.",
+        "`GraspGroup` of one frame and the observation → `GraspGroup`",
+    ),
+    "recipe": (
+        "Training recipe",
+        "`optimizer`, `scheduler`, `hooks`, `data.train.dataset.transforms`",
+        "recipe.md",
+        "Everything around the model: how weights are updated, how the learning rate "
+        "moves, what runs around the loop, how a training sample is perturbed.",
+        "parameters and gradients → updates; a training sample → a perturbed sample",
+    ),
+}
+#: Seed-based slots whose class is the count over the five methods (the measured page's).
+SEED_SLOTS = ("backbone", *STAGE_SLOTS)
+CLASS_COLUMNS = tuple(CLASSES)
+
+
+def _works(records: Iterable[dict[str, Any]]) -> tuple[int, int]:
+    """``(methods it works under, methods it has a record under)`` of one option."""
+    by_method: dict[str, bool] = {}
+    for record in records:
+        works = record["verdict"] in WORKS
+        by_method[record["method"]] = by_method.get(record["method"], False) or works
+    return sum(by_method.values()), len(by_method)
+
+
+def _relative_class(works: int, probed: int) -> str:
+    """The class of an option that was probed under fewer than five methods.
+
+    The words are those of the measured page, counted over the methods the option was
+    probed under: all of them, none of them, exactly one of several, or the rest.
+    """
+    if works == probed:
+        return "universal"
+    if works == 0:
+        return "none"
+    return "specific" if works == 1 and probed > 2 else "some" if probed == 2 else "most"
+
+
+def option_counts() -> dict[str, tuple[int, int]]:
+    """Slot → ``(options, component types)``: what can be written after ``--set <slot>=``."""
+    members = presets()
+    counts: dict[str, tuple[int, int]] = {}
+    # Components of the package only: a test or a project may register its own.
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+    from grasppanda.registry import BACKBONES
+
+    encoders = {
+        name: found
+        for name, found in encoder_presets().items()
+        if _in_tree_module(BACKBONES.get(name))
+    }
+    counts["backbone"] = (sum(len(found) or 1 for found in encoders.values()), len(encoders))
+    for slot in STAGE_SLOTS:
+        variants = [
+            (choice, component)
+            for choice, component in stage_variants(slot)
+            if _in_tree_module(STAGE_REGISTRIES[slot].get(component))
+        ]
+        counts[slot] = (len(variants), len({component for _, component in variants}))
+    for slot in ("image_encoder", LOSS_SLOT, POST_SLOT):
+        found = members.get(slot, {})
+        counts[slot] = (len(found), len({preset.type for preset in found.values()}))
+    found = [preset for group in recipes().values() for preset in group.values()]
+    counts["recipe"] = (len(found), len({preset.type for preset in found}))
+    return counts
+
+
+def _pipeline() -> list[str]:
+    """The pipeline as text; the right-hand rail is aligned by construction."""
+    stages = (
+        "  │    scene encoder ─► seed proposal ─► view ─► (assigner) ─► grouper ─► head bundle ─"
+    )
+    hggd = "  └─ HGGD: image encoder ─► heat-map and region stages (no slots of their own yet) "
+    rail = len(stages)
+
+    def to_rail(text: str, end: str, fill: str = " ") -> str:
+        return text + fill * (rail - len(text)) + end
+
+    return [
+        "```text",
+        "observation: a depth image as a point cloud (HGGD also reads the colour image)",
+        "  │",
+        "  ├─ the seed-based methods",
+        to_rail(stages, "┐"),
+        to_rail("  │    features         seeds            approach  labels,       crops", "│"),
+        to_rail("  │                                                training", "│"),
+        to_rail(hggd, "┤", "─"),
+        to_rail(
+            "  grasps for the evaluator or a robot ◄─ post-processing ◄─ GraspGroup ◄", "┘", "─"
+        ),
+        "",
+        "around the model: the loss of every stage · the training recipe",
+        "```",
+    ]
+
+
+def _in_tree_module(cls: Any) -> bool:
+    return cls.__module__.split(".")[0] == "grasppanda"
+
+
+def _slot_table(counts: dict[str, tuple[int, int]]) -> list[str]:
+    rows = []
+    for slot, (title, key, link, task, flow) in SLOTS.items():
+        options, types = counts[slot]
+        name = f"[{title}]({link})" if link else title
+        extra = ""
+        if slot == "proposal":
+            from grasppanda.registry import SAMPLERS
+
+            samplers = [n for n in SAMPLERS.names() if _in_tree_module(SAMPLERS.get(n))]
+            extra = f"; {len(samplers)} samplers as `model.proposal.sampler`"
+        rows.append(
+            [
+                f"**{name}**<br>{key}",
+                f"{task}<br>*{flow}*",
+                f"{options} ({types} component {'type' if types == 1 else 'types'}{extra})",
+            ]
+        )
+    return _table(["Slot", "Task, and input → output", "Options"], rows)
+
+
+def _class_rows(records: Records) -> tuple[list[list[str]], list[str]]:
+    """The rows of the class table and the notes under it."""
+    cells = list(records.by_id.values())
+    rows: list[list[str]] = []
+    notes: list[str] = []
+
+    def row(title: str, under: str, members: dict[str, list[str]]) -> None:
+        rows.append(
+            [title, under, *("<br>".join(members.get(name, [])) or "—" for name in CLASS_COLUMNS)]
+        )
+
+    five = "the five seed-based methods"
+    for slot in SEED_SLOTS:
+        group = "encoder" if slot == "backbone" else "stage"
+        found: dict[str, list[str]] = {}
+        for component, variant, name, _, unstable in slot_classes(slot, records, group):
+            preset = variant in presets().get(slot, {})
+            label = f"`{variant}`" + ("" if preset else " (defaults)")
+            label += f" ≈{unstable}" if unstable else ""
+            if name == INCOMPLETE:
+                notes.append(f"`{variant}` ({SLOTS[slot][0].lower()}): {name}.")
+                continue
+            found.setdefault(name, []).append(label)
+            del component
+        row(SLOTS[slot][0], five, found)
+
+    def relative(slot: str, group: str, names: Iterable[str], under: str, dagger: str) -> None:
+        found: dict[str, list[str]] = {}
+        for name in names:
+            members = [
+                record
+                for record in cells
+                if record["group"] == group
+                and any(item.partition("=")[2] == name for item in record.get("sets", []))
+            ]
+            if not members:
+                continue
+            works, probed = _works(members)
+            found.setdefault(_relative_class(works, probed), []).append(f"`{name}`")
+        row(f"{SLOTS[slot][0]} {dagger}", under, found)
+
+    members = presets()
+    relative(
+        "image_encoder",
+        "family-slot",
+        members.get("image_encoder", {}),
+        "HGGD, the one method with this slot",
+        "†",
+    )
+    relative(
+        LOSS_SLOT,
+        "loss",
+        members.get(LOSS_SLOT, {}),
+        "loss terms under GSNet and under one or two other seed-based methods",
+        "†",
+    )
+    relative(POST_SLOT, "post", members.get(POST_SLOT, {}), ", ".join(POST_METHODS), "†")
+    found: dict[str, list[str]] = {}
+    for slot, group in recipes().items():
+        for name in group:
+            hits = [r for r in cells if r["group"] == "recipe" and f"{slot}={name}" in r["sets"]]
+            if hits:
+                works, probed = _works(hits)
+                found.setdefault(_relative_class(works, probed), []).append(f"`{slot}={name}`")
+    row(f"{SLOTS['recipe'][0]} †", "GSNet and HGGD (GSNet and EconomicGrasp for the presets "
+        "that name the scene encoder)", found)  # fmt: skip
+    for name, reason in {**POST_NOT_PROBED, **LOSS_NOT_PROBED}.items():
+        notes.append(f"`{name}` has no cell of its own: {reason}.")
+    return rows, notes
+
+
+def slots_index(records: Records) -> str:
+    counts = option_counts()
+    cells = list(records.by_id.values())
+    verdicts = Counter(record["verdict"] for record in cells)
+    rows, notes = _class_rows(records)
+    total = sum(options for options, _ in counts.values())
+    methods = ", ".join(METHODS)
+    lines = [
+        "<!-- Generated by tools/make_combination_docs.py from the presets, the registries and",
+        "     measured_combinations.json. Do not edit by hand: the text is in the generator,",
+        "     the counts and the classes are computed. -->",
+        "",
+        "# Slots: the stages of the pipeline and what can go into each",
+        "",
+        "GraspPanda builds a grasp detector from stages, and every stage is a **slot** of the "
+        "config: a place where one component can be replaced by another that keeps the same "
+        f"contract. This page is the map: the pipeline, the task of every slot, its {total} "
+        "options in all, and which option was measured to work under which method. Every "
+        "slot has a page of its own with one row and one command per option.",
+        "",
+        "**No accuracy is claimed for any option that is not one of the six ported methods.** "
+        "An option is listed because it was built, trained for 20 iterations on 8 real "
+        "frames of GraspNet-1Billion and asked to predict (`grasppanda probe`). That shows it "
+        "is usable, not that it is good; the model zoo is still empty.",
+        "",
+        "To try options without reading further, open the "
+        "[combination explorer](../explorer/index.md): pick a method, change a slot, read "
+        "the measured verdict and the command.",
+        "",
+        "## The pipeline",
+        "",
+        *_pipeline(),
+        "",
+        "Six methods are ported. Five share the seed-based skeleton and therefore its six "
+        f"stage slots ({methods}); HGGD is a detector family of its own with one slot so "
+        "far, the image encoder. Losses, post-processing and the training recipe are around "
+        "the stages and apply to all six.",
+        "",
+        "## The slots",
+        "",
+        "An option is a name you can write after `--set <slot>=`: a preset (a component with "
+        "settings for table-top depth clouds) or a component with its defaults.",
+        "",
+        *_slot_table(counts),
+        "",
+        "The assigner has no page of its own: it goes with the head bundle and the label set "
+        "([Heads and losses](head_loss.md), [Data contracts](../advanced_guides/data_flow.md)). "
+        "The scene encoders have an [overview](scene_encoders.md) and three pages: "
+        "[point-based networks](scene_encoders_point.md), "
+        "[sparse-voxel networks and released weights](scene_encoders_sparse.md), "
+        "[transformers and pretrained 3-D encoders](scene_encoders_transformer.md). The "
+        "encoders ported before these pages are in "
+        "[Scene encoders of the model zoo](../model_zoo_backbones.md).",
+        "",
+        "## Which option fits which method",
+        "",
+        "From the [measured records](../advanced_guides/measured_combinations.md), in the "
+        f"words of that page ({len(cells)} recorded cells: "
+        + ", ".join(f"{verdicts[name]} `{name}`" for name in VERDICT_ORDER if verdicts[name])
+        + "). An option **works** under a method when the combination was built, trained for "
+        "the probe's iterations and predicted, directly or in the adapter compose inserted. "
+        "Its class counts the methods it works under, with **one slot replaced at a time**:",
+        "",
+        *[f"- **{name}**: {meaning}." for name, (_, meaning) in CLASSES.items() if name != "none"],
+        "- **none**: it works under none of them as it was probed.",
+        "",
+        "*≈n*: under n of those methods the run was `runs-unstable`. † The slot was not "
+        "probed under the five seed-based methods but under the methods of the second "
+        "column, so its classes count those: *universal* is all of them, *some* one of two, "
+        "*most* all but one of three, *none* none. *(defaults)*: the component named by its "
+        "type and built with its constructor defaults, not a preset; a component that needs "
+        "an option only a preset supplies does not work that way.",
+        "",
+        *_table(["Slot", "Probed under", *CLASS_COLUMNS], rows),
+        "",
+        *[f"- {note}" for note in notes],
+        *([""] if notes else []),
+        "How to read it:",
+        "",
+        "- **A class is not a ranking.** *universal* says that a swap needs nothing else; it "
+        "says nothing about accuracy.",
+        "- **An option that is not universal is usually bound to its neighbours, not to a "
+        "paper.** A head bundle goes with the assigner and the label set it is supervised "
+        "with, a grouper with the axes its head reads, a scoring proposal with the stage "
+        "that owns objectness. Replaced together with what they depend on they run under "
+        "other methods too: see "
+        "[Sets of stages](../advanced_guides/measured_combinations.md#sets-of-stages) and "
+        "[Several slots at once](../advanced_guides/measured_combinations.md#several-slots-at-once).",
+        "- **A refusal comes with the fix.** `grasppanda compose` prints the contract that "
+        "is violated and the option or preset that satisfies it, before anything is built.",
+        "- **A loss or a recipe preset in the column *most*, *some* or *none* did not run "
+        "everywhere it was put**: the [loss](head_loss.md) and [recipe](recipe.md) pages say "
+        "where and why (a term of another kind, a detector that reads images, mixed "
+        "precision).",
+        "- **What was not probed is not classified.** Most combinations of two or more "
+        "options have no record; the explorer shows for any two options what the config "
+        "check answers, which is a weaker statement than a probe.",
+        "",
+        "## How to try one",
+        "",
+        "```bash",
+        "grasppanda compose --list grouper                                # the options of a slot",
+        "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \\",
+        "    --set grouper=roi-grid -o gsnet_roi-grid.yaml                 # a checked config",
+        "grasppanda probe gsnet_roi-grid.yaml                             # 20 iterations on",
+        "                                                                 # real frames: runs?",
+        "grasppanda train gsnet_roi-grid.yaml                             # the real run",
+        "```",
+        "",
+        "- Several `--set` go into one command (`--set backbone=point-transformer-v2 --set "
+        "grouper=cylinder-vector-attention`, a recorded combination); "
+        "`compose` inserts the adapter the contracts ask for and says so, or refuses with the "
+        "conflict and the fix.",
+        "- `grasppanda compose --show grouper=roi-grid` prints one preset with what must be "
+        "re-tuned; `grasppanda components --slot groupers` prints the contracts, sources and "
+        "optional libraries of every component.",
+        "- `grasppanda explore` serves the explorer locally and checks any selection with "
+        "the `compose` of your installation.",
+        "- `probe` needs GraspNet-1Billion and the label assets of the method "
+        "([Try a combination](../user_guides/combinations.md) lists the `prepare` commands). "
+        "An option that is a bridge to a library names the extra to install on its slot page.",
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
 # ------------------------------------------------------------------------- staleness
 
 
@@ -836,6 +1312,7 @@ def expected() -> dict[Path, str]:
     pages = experimental()
     if DATA.is_file():
         pages[PAGE] = page()
+        pages[SLOTS_INDEX] = slots_index(Records(measured()["cells"]))
     return pages
 
 

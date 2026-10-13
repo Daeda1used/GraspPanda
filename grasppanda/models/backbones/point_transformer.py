@@ -32,7 +32,8 @@ released weights for these models; they start from random weights.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -281,6 +282,12 @@ class PointTransformerV1(Backbone):
     source = (
         "Point Transformer (Zhao et al., ICCV 2021); adapted from Pointcept/Pointcept@1342eda, MIT"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the first stage."""
+        width = options.get("out_channels")
+        return width if isinstance(width, int) else options["planes"][0]
 
     def __init__(
         self,
@@ -598,6 +605,12 @@ class PointTransformerV2(Backbone):
         "Point Transformer V2 (Wu et al., NeurIPS 2022); adapted from "
         "Pointcept/Pointcept@1342eda, MIT"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the first decoder stage."""
+        width = options.get("out_channels")
+        return width if isinstance(width, int) else options["dec_channels"][0]
 
     def __init__(
         self,

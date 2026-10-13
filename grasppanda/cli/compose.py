@@ -12,7 +12,8 @@ stage by stage. An accepted combination is written as a child config whose heade
 how it was made; a refused one prints the conflict and the fix, and nothing is written.
 
 Exit status: 0 accepted, 1 refused by the contracts or the config check, 2 the request
-itself is wrong (unknown slot, preset or component; a detector without slots).
+itself is wrong (unknown slot, preset or component; a detector without slots; a base that
+cannot be inherited from; an output file that exists).
 """
 
 from __future__ import annotations
@@ -29,6 +30,33 @@ from grasppanda.utils.console import style, table
 __all__ = ["register"]
 
 
+EPILOG = """\
+slots of a seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
+Scale-Balanced-Grasp), in the order data flows:
+  backbone  proposal  view  assigner  grouper  head
+A choice is a preset (`grasppanda compose --list`) or a registered component by its type
+(`grasppanda components --slot groupers`), which is then built with its own defaults.
+
+examples:
+  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
+  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnet2 \\
+      --set grouper=multi-scale --opts train.epochs=20 -o mine.yaml
+  grasppanda compose mine.yaml --set head=swad -o mine2.yaml    # composed again from its base
+
+the base is a config that inherits fragments only, like the method configs under configs/
+(a chain is two levels deep). A config that was composed is composed again from its own
+base with both requests merged. Without -o the verdict is printed and nothing is written.
+
+exit status:
+  0  accepted (and written, with -o)
+  1  refused by the contract rules or the config check; nothing is written
+  2  the request is wrong: unknown slot, preset or component, a detector without slots,
+     a base that cannot be inherited from, or an output file that exists (see --force)
+
+next: grasppanda probe <the composed config>
+"""
+
+
 def register(commands: Any) -> None:
     from grasppanda.combine.compose import command_parser
 
@@ -40,9 +68,12 @@ def register(commands: Any) -> None:
             "a preset or from the registry. The contract rules and the config check decide "
             "whether it is written."
         ),
+        epilog=EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     command_parser(parser)
     parser.add_argument("-o", "--output", metavar="FILE", help="write the composed config here")
+    parser.add_argument("--force", action="store_true", help="with -o: replace FILE when it exists")
     parser.add_argument(
         "--list",
         dest="list_presets",
@@ -65,6 +96,14 @@ def _stage_slots() -> dict[str, Any]:
     return dict(STAGE_REGISTRIES)
 
 
+def _slot(name: str) -> str | None:
+    """A slot by its name or by the plural `grasppanda components --slot` uses."""
+    registries = _stage_slots()
+    plural = {registry.name.lower(): slot for slot, registry in registries.items()}
+    name = name.strip().lower()
+    return name if name in registries else plural.get(name)
+
+
 def _list(which: str) -> int:
     from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
     from grasppanda.combine.recipes import RECIPE_SLOTS, recipes
@@ -72,7 +111,8 @@ def _list(which: str) -> int:
 
     registries = {**_stage_slots(), LOSS_SLOT: LOSSES, POST_SLOT: POSTPROCESSORS}
     found = presets()
-    slots = [slot for slot in registries if which in ("all", slot)]
+    wanted = _slot(which) or which.strip()
+    slots = [slot for slot in registries if which == "all" or slot == wanted]
     around = [slot for slot in RECIPE_SLOTS if which in ("all", slot)]
     if not slots and not around:
         known = ", ".join([*registries, *RECIPE_SLOTS])
@@ -135,14 +175,23 @@ def _short(summary: str, limit: int = 96) -> str:
 
 def _show(text: str) -> int:
     from grasppanda.combine import recipes
-    from grasppanda.combine.presets import PresetError, find
+    from grasppanda.combine.presets import PresetError, find, presets
 
-    slot, _, name = text.partition("=")
+    slot, separator, name = text.partition("=")
+    known = {*presets(), *recipes.RECIPE_SLOTS}
+    if not separator or (_slot(slot) is None and slot.strip() not in known):
+        print(
+            f"--show takes `slot=preset`, for example `backbone=ptv3`; got '{text}'. "
+            f"Slots: {', '.join(dict.fromkeys([*_stage_slots(), *sorted(known)]))}. "
+            "`grasppanda compose --list` shows the presets.",
+            file=sys.stderr,
+        )
+        return 2
     try:
         if slot.strip() in recipes.RECIPE_SLOTS:
             preset = recipes.find(slot.strip(), name.strip())
         else:
-            preset = find(slot.strip(), name.strip())
+            preset = find(_slot(slot) or slot.strip(), name.strip())
     except PresetError as error:
         print(str(error), file=sys.stderr)
         return 2
@@ -215,6 +264,8 @@ def _report(composition: Any, written: Path | None, color: bool) -> None:
         print(
             f"{bad} refused: nothing was written. The messages above name the conflict and a fix."
         )
+        for hint in composition.hints:
+            _paragraph("→", hint)
     elif written is not None:
         print(f"{ok} written {written}")
         print(f"  next: grasppanda probe {written}")
@@ -238,14 +289,31 @@ def _json(composition: Any, written: Path | None, text: str) -> dict[str, Any]:
         ],
         "problems": composition.problems,
         "issues": [{"path": issue.path, "message": issue.message} for issue in composition.issues],
+        "hints": composition.hints,
         "config_hash": composition.config_hash,
         "output": None if written is None else str(written),
         "config": text,
     }
 
 
+def _output_problem(composition: Any, target: Path, force: bool) -> str:
+    """Why the composed config may not be written to ``target``; empty when it may."""
+    from grasppanda.config import Config
+
+    inherited = {path.resolve() for path in Config.load(composition.base_path).sources}
+    if target.resolve() in inherited:
+        return (
+            f"{target} is the base config or a file it inherits from: writing the composed "
+            "config there would make it inherit from itself. Choose another name for -o."
+        )
+    if target.exists() and not force:
+        return f"{target} exists. Choose another name for -o, or pass --force to replace it."
+    return ""
+
+
 def run(args: argparse.Namespace) -> int:
     from grasppanda.combine.compose import ComposeError, compose
+    from grasppanda.config import Config
 
     if args.list_presets:
         return _list(args.list_presets)
@@ -258,18 +326,32 @@ def run(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
+
+    def wrong(message: str) -> int:
+        mark = style("✗", "bold", "red", enabled=sys.stderr.isatty())
+        lines = textwrap.wrap(message, 96, break_long_words=False, break_on_hyphens=False)
+        print(f"{mark} " + "\n  ".join(lines), file=sys.stderr)
+        return 2
+
     try:
         composition = compose(args.base, args.sets, args.opts, adapters=args.adapters)
     except ComposeError as error:
-        mark = style("✗", "bold", "red", enabled=sys.stderr.isatty())
-        lines = textwrap.wrap(str(error), 96, break_long_words=False, break_on_hyphens=False)
-        print(f"{mark} " + "\n  ".join(lines), file=sys.stderr)
-        return 2
+        return wrong(str(error))
     written = None
     if composition.accepted and args.output:
         written = Path(args.output)
+        problem = _output_problem(composition, written, args.force)
+        if problem:
+            return wrong(problem)
         written.parent.mkdir(parents=True, exist_ok=True)
         written.write_text(composition.text(written), encoding="utf-8")
+        # The checks ran on a scratch copy; the file the user gets must load to the same config.
+        if Config.load(written).digest() != composition.config_hash:
+            written.unlink()
+            return wrong(
+                f"the file written to {written} does not load to the config that was checked; "
+                "it was removed. Please report this with the command."
+            )
     text = composition.text(written)
     if args.json:
         print(json.dumps(_json(composition, written, text), indent=2, ensure_ascii=False))

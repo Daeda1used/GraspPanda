@@ -68,6 +68,14 @@ class _Wrapper(Grouper):
         if isinstance(inner, Mapping) and "type" in inner:
             yield from _inner_problems(cls, GROUPERS.get(inner["type"]))
 
+    @classmethod
+    def required_seed_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The seed width the wrapped grouper needs: the wrapper hands the seeds on."""
+        inner = options.get("grouper")
+        if not (isinstance(inner, Mapping) and inner.get("type") in GROUPERS):
+            return None
+        return GROUPERS.get(inner["type"]).required_seed_channels(inner)
+
 
 @GROUPERS.register()
 class DepthEmbedGroup(_Wrapper):

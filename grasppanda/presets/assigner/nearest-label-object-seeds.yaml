@@ -14,7 +14,9 @@
 #   are centred at the matched label point, inference crops at the seed. `seed` removes
 #   the difference and is a controlled variant, not a correction to apply silently.
 # * It reads the dense label grids (and their tolerance when the head supervises one):
-#   the training dataset must serve them (no `compact_labels` section).
+#   the training dataset must serve them (no `compact_labels` section). On a recipe
+#   that serves compact labels the config check refuses it; compose from a GSNet,
+#   GraspNet-baseline or Scale-Balanced-Grasp config.
 model:
   assigner:
     type: NearestLabelAssigner

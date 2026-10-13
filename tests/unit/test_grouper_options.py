@@ -491,3 +491,19 @@ def test_the_width_of_an_encoder_is_learnt_without_its_released_weights(monkeypa
         assert seed_based._built_width(json.dumps(wrapped)) == 12
     finally:
         seed_based._built_width.cache_clear()
+
+
+def test_a_wrapper_states_the_seed_width_of_the_grouper_it_wraps():
+    """`DepthPoolGroup` hands the seed features on, so the width rule looks through it."""
+    from grasppanda.models.detectors.seed_based import stage_contract_problems
+
+    inner = {"type": "DepthCylinderGroup", "mlp_channels": [8, 8], "seed_residual": "gated"}
+    wrapper = GROUPERS.get("DepthPoolGroup")
+    assert wrapper.required_seed_channels({"grouper": inner}) == 8
+    assert wrapper.required_seed_channels({"grouper": {**inner, "seed_residual": "none"}}) is None
+    assert wrapper.required_seed_channels({}) is None
+    (problem,) = stage_contract_problems(
+        backbone={"type": "SparseUNet14", "out_channels": 12},
+        grouper={"type": "DepthPoolGroup", "grouper": inner},
+    )
+    assert "8-channel crop features" in problem and "returns 12-channel features" in problem

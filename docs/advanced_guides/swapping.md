@@ -69,41 +69,43 @@ YAML file or from `DETECTORS.build(...)` in Python.
 ## Encoders
 
 <!-- generated:encoders:begin -->
-| Encoder | `output` | Status | Needs | `EconomicGrasp` | `GraspNetBaseline` | `GSNet` | `ScaleBalancedGrasp` |
-|---|---|---|---|---|---|---|---|
-| `ASSANet` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `DGCNN` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `DeLA` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `LitePT` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `MinkUNet` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `OACNNs` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `OctFormer` | `dense` | `bridge` | `ocnn` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3Sonata` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3Utonia` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointMLP` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointMamba` | `subsampled` | `bridge` | `mamba-ssm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `PointMetaBase` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointNeXt` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointNet2` | `subsampled` | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `PointNet2Dense` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointNet2MSG` | `subsampled` | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `PointNet2MSGDense` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointNet2Transformer` | `subsampled` | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `PointTransformerV1` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointTransformerV2` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointVector` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PointViT` | `subsampled` | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `PyGPointEncoder` | `dense` | `bridge` | `torch_geometric` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `RandLANet` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `SpUNet` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `SparseUNet14` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `Uni3D` | `subsampled` | `bridge` | `timm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
-| `Volt` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| Encoder | `output` | Width | Status | Needs | `EconomicGrasp` | `GraspNetBaseline` | `GSNet` | `ScaleBalancedGrasp` |
+|---|---|---|---|---|---|---|---|---|
+| `ASSANet` | `dense` | 64 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `DGCNN` | `dense` | 256 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `DeLA` | `dense` | 256 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `LitePT` | `dense` | 72 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `MinkUNet` | `dense` | 96 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `OACNNs` | `dense` | 20 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `OctFormer` | `dense` | 168 (`out_channels`) | `bridge` | `ocnn` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3` | `dense` | 64 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3Sonata` | `dense` | 1232 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3Utonia` | `dense` | 1386 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointMLP` | `dense` | 128 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointMamba` | `subsampled` | 384 (`out_channels`) | `bridge` | `mamba-ssm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointMetaBase` | `dense` | 32 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointNeXt` | `dense` | 32 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointNet2` | `subsampled` | 256 | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointNet2Dense` | `dense` | 128 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointNet2MSG` | `subsampled` | 256 | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointNet2MSGDense` | `dense` | 128 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointNet2Transformer` | `subsampled` | 256 | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointTransformerV1` | `dense` | 32 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointTransformerV2` | `dense` | 48 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointVector` | `dense` | 32 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointViT` | `subsampled` | 384 (`out_channels`) | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PyGPointEncoder` | `dense` | 256 (`out_channels`) | `bridge` | `torch_geometric` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `RandLANet` | `dense` | 32 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `SpUNet` | `dense` | 20 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `SparseUNet14` | `dense` | 512 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `Uni3D` | `subsampled` | once built (`out_channels`) | `bridge` | `timm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `Volt` | `dense` | 256 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 
-✓: `model.backbone: {type: <Encoder>}` passes the config check as it stands. *in `Adapter`*: the bare swap is refused with a message that names the adapter; `model.backbone: {type: <Adapter>, backbone: {type: <Encoder>}}` passes.
+✓: the features of `model.backbone: {type: <Encoder>}` live where the proposal of the method needs them. *in `Adapter`*: the bare swap is refused with a message that names the adapter; `model.backbone: {type: <Adapter>, backbone: {type: <Encoder>}}` passes that rule.
 
 Adapters: `FeaturePropagation` turns any encoder into a `dense` one; `FurthestPointSubsample` turns any encoder into a `subsampled` one.
+
+*Width* is the number of channels the encoder returns with its constructor defaults, as it declares it (`Backbone.output_channels`); `(out_channels)` marks an encoder that has an option of that name to set it. The other stages take whatever width arrives, with these exceptions among the reference models: `ScaleBalancedGrasp` needs **256** channels (`DepthCylinderGroup` adds the seed features to its crop features). An encoder of another width is refused there by the config check, with both numbers and the ways out; `grasppanda compose` takes one of them by itself (the encoder's `out_channels`, or the projected variant of the grouper). *once built*: the width follows from a library model or a layout that only the constructor resolves, so the check builds the encoder once, without released weights.
 <!-- generated:encoders:end -->
 
 Every encoder can serve every method, but never silently. The two adapters are the only
@@ -2162,6 +2164,11 @@ seem. The numbers are stable identifiers: code comments and error messages refer
 | Never | Whether `grid_size`, radii and the recipe suit your scenes; whether the swap helps | — |
 
 ## Ready-made swap configs
+
+`grasppanda compose` writes such a config for any combination and `grasppanda probe`
+trains it for a few iterations on real frames: [Try a combination](../user_guides/combinations.md).
+What that gave for every encoder and stage under every method is on the generated page
+[Measured combinations](measured_combinations.md).
 
 `configs/experimental/` holds a small set of encoder swaps that pass the check and were
 trained for a few iterations on GraspNet-1Billion to prove that data, labels and model

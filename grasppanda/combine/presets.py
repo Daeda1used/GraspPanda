@@ -237,7 +237,7 @@ def find(slot: str, name: str) -> Preset:
     members = presets().get(slot, {})
     if name in members:
         return members[name]
-    close = difflib.get_close_matches(name, list(members), n=3, cutoff=0.5)
+    close = difflib.get_close_matches(name, list(members), n=3, cutoff=0.7)
     hint = f" Did you mean {' or '.join(repr(c) for c in close)}?" if close else ""
     listed = ", ".join(members) or "none"
     raise PresetError(f"no preset '{name}' for slot '{slot}'.{hint} Presets: {listed}.")

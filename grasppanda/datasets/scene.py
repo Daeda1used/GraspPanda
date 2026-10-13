@@ -21,7 +21,7 @@ label grids, read lazily by a label transform. A dataset configured with
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -429,6 +429,86 @@ class GraspSceneDataset(BaseDataset):
                 yield f"`tolerance`: {error}."
         if node.get("frame_step", 1) < 1:
             yield "`frame_step` must be at least 1."
+
+    # ---------------------------------------------------------- what the batches carry
+
+    @classmethod
+    def _serves_dense_grids(cls, node: Mapping[str, Any]) -> bool:
+        """Whether ``supervision.objects`` holds the dense label grids: object labels are
+        on, compact labels do not replace them, and a transform loads the grids."""
+        loaders = [
+            kind
+            for _, kind in _expect_transforms(node.get("transforms"), PointTransform, "", "")
+            if kind is not None and issubclass(kind, SampleGraspLabels)
+        ]
+        return (
+            node.get("object_labels", True) is not False
+            and node.get("compact_labels") is None
+            and bool(loaders)
+        )
+
+    @classmethod
+    def served_supervision(cls, node: Mapping[str, Any]) -> frozenset[str]:
+        """See :meth:`BaseDataset.served_supervision`; read from the config node alone."""
+        if node.get("load_labels", True) is False:
+            return frozenset()
+        served = {"point_labels.objectness", "point_labels.instance"}
+        dense = cls._serves_dense_grids(node)
+        sections = {
+            "graspness": "point_labels.graspness",
+            "view_grasps": "extras.view_grasps",
+            "scale_statistic": "extras.scale_histogram",
+        }
+        served |= {field for section, field in sections.items() if node.get(section) is not None}
+        if dense:
+            served.add("objects")
+            if node.get("tolerance") is not None:
+                served.add("objects.tolerance")
+        elif node.get("compact_labels") is not None and node.get("object_labels", True):
+            served.add(f"extras.{COMPACT_LABELS}")
+        return frozenset(served)
+
+    @classmethod
+    def supervision_hint(cls, field: str, node: Mapping[str, Any]) -> str:
+        """See :meth:`BaseDataset.supervision_hint`."""
+        prepare = f"`grasppanda prepare {cls.name} --"
+        if node.get("load_labels", True) is False:
+            return "It is configured with `load_labels: false` and serves no supervision at all."
+        one_of_two = (
+            "A dataset serves one of the two label sets, and its transforms differ with it: "
+            "the dense grids need a `SampleGraspLabels` transform and no `compact_labels` "
+            "section, compact labels the section and no such transform."
+        )
+        if field in ("objects", "objects.tolerance") and not cls._serves_dense_grids(node):
+            if node.get("object_labels", True) is False:
+                return "It is configured with `object_labels: false`: no grasp labels per object."
+            if node.get("compact_labels") is not None:
+                return (
+                    "It serves compact labels in place of the dense label grids (its "
+                    f"`compact_labels` section). {one_of_two}"
+                )
+            return (
+                "No transform loads the dense label grids: add `SampleGraspLabels` to its "
+                "`transforms` (configs/_base_/datasets/ holds the recipes of the shipped methods)."
+            )
+        if field == f"extras.{COMPACT_LABELS}":
+            return (
+                f"Compact labels are served with a `compact_labels:` section (asset: {prepare}"
+                f"compact-labels --config <this config>`). {one_of_two}"
+            )
+        sections = {
+            "objects.tolerance": ("tolerance", "tolerance"),
+            "point_labels.graspness": ("graspness", "graspness"),
+            "extras.scale_histogram": ("scale_statistic", "scale-statistic"),
+            "extras.view_grasps": ("view_grasps", "view-grasps"),
+        }
+        if field in sections:
+            section, flag = sections[field]
+            return (
+                f"It is served with a `{section}:` section of the dataset (asset: {prepare}{flag} "
+                "--config <this config>`)."
+            )
+        return f"{cls.__name__} has no option that serves it."
 
     # ------------------------------------------------------------------------- assets
 

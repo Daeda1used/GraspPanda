@@ -109,12 +109,12 @@ the components that declare it:
 
 | Slot | Contract attributes |
 |---|---|
-| backbone | `output` |
-| proposal | `requires`, `seed_scores` |
+| backbone | `output`, `output_channels(options)` |
+| proposal | `requires`, `seed_scores`, `needs_supervision` |
 | view stage | `seed_scores`, `label_formats`, `needs_matched`, `applies_seed_weights` |
-| assigner | `label_format`, `optional_outputs` |
-| grouper | `support`, `out_axes` |
-| head bundle | `in_axes`, `label_format`, `score_kind`, `applies_seed_weights`, `required_seed_scores(options)` |
+| assigner | `label_format`, `optional_outputs`, `needs_supervision` |
+| grouper | `support`, `out_axes`, `required_seed_channels(options)` |
+| head bundle | `in_axes`, `label_format`, `score_kind`, `applies_seed_weights`, `needs_supervision`, `required_seed_scores(options)` |
 
 The seed-based skeleton compares them for every detector built on it, on the config and
 again on the built stages (`stage_contract_problems` in
@@ -123,6 +123,28 @@ checking code of its own: declare the attributes truthfully and an illegal combi
 is refused with a message that names both sides. Say only what the code does: a head
 that sets `applies_seed_weights = True` without reading `MatchedLabels.weight` turns a
 config error into a silently wrong model.
+
+Two of them reach beyond the pair of stages next to each other:
+
+- `output_channels(options)` is the width a backbone returns, told from its options
+  alone; return the same number the built module has as `out_channels`
+  (`tests/unit/test_swap_matrix.py` compares them for your tiny config and for your
+  defaults). The default reads an integer `out_channels` option, so an encoder that has
+  one needs nothing more. Return `None` only where the width is known once the encoder
+  is built (a bridge whose width is that of a library model): the config check then
+  builds the encoder once, without released weights, and the test asks for the reason
+  (`WIDTH_KNOWN_ONCE_BUILT`). A grouper that fixes the width of the seed features states
+  it with `required_seed_channels(options)` and names in `projected_variant` the grouper
+  that takes any width, which `grasppanda compose` puts in its place.
+- `needs_supervision` lists what a stage reads from the training `Supervision`, by where
+  it sits (`objects`, `objects.tolerance`, `point_labels.<name>`, `extras.<name>`), each
+  with the option that makes the stage read it, or `None` when it always does. A dataset
+  reader says what a config makes it serve with `served_supervision(node)`, and the
+  config check refuses a training dataset that does not serve what the model reads.
+  `tests/unit/test_supervision_contract.py` trains every legal stage set on a batch that
+  carries exactly the declared fields and without each of them in turn, so a stage that
+  reads more than it declares fails there. A detector that is not built on the skeleton
+  declares `needs_supervision` on itself.
 
 A component that owns slots of another kind can compare its children's contracts before
 anything is built by implementing `check_config`:

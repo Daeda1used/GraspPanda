@@ -69,43 +69,45 @@ Three facts about the neighbours shape every option here:
 | a full grasp frame from two vectors | `two-vector`, `two-vector-baseline` | Gram-Schmidt in the order of the 6-D representation, or of Contact-GraspNet |
 | a full rotation in a representation of your choice | `rotation-6d`, `rotation-9d`, `rotation-quaternion` (or `representation: rotvec`) | the mappings of RoMa |
 
-All options that are not marked "reference" are **universal**: they read dense or
-compact labels, add no seed score, need no optional label field and apply seed
+All options that are not marked "reference" make no demand of their own: they read dense
+or compact labels, add no seed score, need no optional label field and apply seed
 weights, so the contract rules accept them behind every proposal and assigner and in
-front of every grouper and head bundle. The one refusal you will meet is under
+front of every grouper and head bundle. With one stage replaced they are **most** in the
+words of the [measured page](../advanced_guides/measured_combinations.md#measured-classes):
+they work under four of the five seed-based methods. The refusal is under
 Scale-Balanced-Grasp, and it is the head's: its decoder multiplies by the objectness
 of a seed, which only `ObjectnessViewStage` predicts (section 4, last example).
 
 ## 3. Catalogue
 
 Fit per method is the verdict of the probe on real frames
-(`docs/advanced_guides/measured_combinations.md`, probed on 2026-10-13): GS = GSNet,
+([Measured combinations](../advanced_guides/measured_combinations.md), probed on 2026-10-13): GS = GSNet,
 EG = EconomicGrasp, FG = FineGrasp, GB = GraspNet-baseline, SB = Scale-Balanced-Grasp.
 
 <!-- measured:begin -->
-| Preset (`--set view=…`) | Component | What it predicts | GS | EG | FG | GB | SB | Scope |
+| Preset (`--set view=…`) | Component | What it predicts | GS | EG | FG | GB | SB | Measured class |
 |---|---|---|---|---|---|---|---|---|
 | `template-view` | `TemplateViewStage` | score per label view, 300 Fibonacci views | runs | runs | runs | runs | refused | reference (GSNet family) |
 | `objectness-view` | `ObjectnessViewStage` | objectness + score per view | refused | refused | refused | runs | runs | reference (GraspNet-baseline): needs object labels per seed and view widths, owns objectness |
 | `objectness-view-graspable` | `ObjectnessViewStage` | objectness (graspable seeds) + score per view | refused | refused | refused | runs | runs | reference (Scale-Balanced-Grasp): as above |
-| `lattice-view` | `LatticeViewStage` | score per view, 300 Fibonacci views, seed weights applied | runs | runs | runs | runs | refused | universal |
-| `lattice-fibonacci-120` | `LatticeViewStage` | score per view, 120 Fibonacci views | runs | runs | runs | runs | refused | universal |
-| `lattice-hemisphere-60` | `LatticeViewStage` | score per view, 60 camera-facing views | runs | runs | runs | runs | refused | universal |
-| `lattice-best-view` | `LatticeViewStage` | classification of the best view (cross-entropy) | runs | runs | runs | runs | refused | universal |
-| `lattice-angular-cost` | `LatticeViewStage` | classification + angular class loss | runs | runs | runs | runs | refused | universal |
-| `lattice-soft-argmax` | `LatticeViewStage` | score per view; soft-arg-max read-out (top 8, T = 0.05) | runs | runs | runs | runs | refused | universal |
-| `lattice-topk` | `LatticeViewStage` | score per view; training view sampled among the top 10 | runs | runs | runs | runs | refused | universal |
-| `icosphere-162` | `IcosphereViewStage` | score per view, 162 icosphere vertices | runs | runs | runs | runs | refused | universal |
-| `icosphere-642` | `IcosphereViewStage` | score per view, 642 icosphere vertices | runs | runs | runs | runs | refused | universal |
-| `healpix-192` | `HealpixViewStage` | score per view, 192 HEALPix pixels | runs | runs | runs | runs | refused | universal |
-| `healpix-768` | `HealpixViewStage` | score per view, 768 HEALPix pixels | runs | runs | runs | runs | refused | universal |
-| `direction-regression` | `DirectionViewStage` | regressed approach vector, cosine loss | runs | runs | runs | runs | refused | universal |
-| `direction-vmf` | `DirectionViewStage` | regressed approach + concentration, vMF likelihood | runs | runs | runs | runs | refused | universal |
-| `two-vector` | `TwoVectorViewStage` | two vectors, Gram-Schmidt keeping the approach | runs | runs | runs | runs | refused | universal |
-| `two-vector-baseline` | `TwoVectorViewStage` | two vectors, Gram-Schmidt keeping the baseline | runs | runs | runs | runs | refused | universal |
-| `rotation-6d` | `RomaRotationViewStage` | full rotation, 6-D | runs | runs | runs | runs | refused | universal |
-| `rotation-9d` | `RomaRotationViewStage` | full rotation, 9-D + SVD | runs | runs | runs | runs | refused | universal |
-| `rotation-quaternion` | `RomaRotationViewStage` | full rotation, quaternion | runs | runs | runs | runs | refused | universal |
+| `lattice-view` | `LatticeViewStage` | score per view, 300 Fibonacci views, seed weights applied | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-fibonacci-120` | `LatticeViewStage` | score per view, 120 Fibonacci views | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-hemisphere-60` | `LatticeViewStage` | score per view, 60 camera-facing views | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-best-view` | `LatticeViewStage` | classification of the best view (cross-entropy) | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-angular-cost` | `LatticeViewStage` | classification + angular class loss | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-soft-argmax` | `LatticeViewStage` | score per view; soft-arg-max read-out (top 8, T = 0.05) | runs | runs | runs | runs | refused | most (4 of 5) |
+| `lattice-topk` | `LatticeViewStage` | score per view; training view sampled among the top 10 | runs | runs | runs | runs | refused | most (4 of 5) |
+| `icosphere-162` | `IcosphereViewStage` | score per view, 162 icosphere vertices | runs | runs | runs | runs | refused | most (4 of 5) |
+| `icosphere-642` | `IcosphereViewStage` | score per view, 642 icosphere vertices | runs | runs | runs | runs | refused | most (4 of 5) |
+| `healpix-192` | `HealpixViewStage` | score per view, 192 HEALPix pixels | runs | runs | runs | runs | refused | most (4 of 5) |
+| `healpix-768` | `HealpixViewStage` | score per view, 768 HEALPix pixels | runs | runs | runs | runs | refused | most (4 of 5) |
+| `direction-regression` | `DirectionViewStage` | regressed approach vector, cosine loss | runs | runs | runs | runs | refused | most (4 of 5) |
+| `direction-vmf` | `DirectionViewStage` | regressed approach + concentration, vMF likelihood | runs | runs | runs | runs | refused | most (4 of 5) |
+| `two-vector` | `TwoVectorViewStage` | two vectors, Gram-Schmidt keeping the approach | runs | runs | runs | runs | refused | most (4 of 5) |
+| `two-vector-baseline` | `TwoVectorViewStage` | two vectors, Gram-Schmidt keeping the baseline | runs | runs | runs | runs | refused | most (4 of 5) |
+| `rotation-6d` | `RomaRotationViewStage` | full rotation, 6-D | runs | runs | runs | runs | refused | most (4 of 5) |
+| `rotation-9d` | `RomaRotationViewStage` | full rotation, 9-D + SVD | runs | runs | runs | runs | refused | most (4 of 5) |
+| `rotation-quaternion` | `RomaRotationViewStage` | full rotation, quaternion | runs | runs | runs | runs | refused | most (4 of 5) |
 <!-- measured:end -->
 
 Sources, as opened for this page:

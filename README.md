@@ -35,15 +35,22 @@ stage, and where every number is produced by the same pinned evaluation.
 > **Alpha.** Working today: the config system, both benchmark readers, both evaluators
 > (equal to the official tools stage by stage), six methods as swappable components
 > (GSNet, EconomicGrasp, FineGrasp, HGGD, GraspNet-baseline, Scale-Balanced-Grasp; each equal to its
-> reference implementation stage by stage with converted weights), eleven interchangeable
-> scene encoders, and the `train` / `test` / `infer` / `demo` / `analyze` / `sweep` commands. The model zoo is
-> still empty on purpose: a method enters only after it has been trained *and* evaluated
-> here, and the first from-scratch reproduction is running.
+> reference implementation stage by stage with converted weights), options for every slot
+> of the pipeline ([Slots](docs/slots/index.md)), and the `train` / `test` / `infer` / `demo` /
+> `analyze` / `sweep` / `compose` / `probe` / `explore` commands. The model zoo is still empty on
+> purpose: a method enters only after it has been trained *and* evaluated here, and the
+> first from-scratch reproduction is running. No accuracy is claimed for an option that is
+> not part of a ported method.
 
 <div align="center">
-<img src="resources/terminal-demo.png" alt="grasppanda print-config validating a config, catching a misspelt key and rejecting an incompatible component swap" width="820">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/showcase-dark.svg">
+  <img src="resources/showcase-light.svg" alt="A terminal composes GSNet with another scene encoder and grouper, a wrong head swap is refused with the conflict and the fix, and a probe on real frames ends with the verdict runs; above it the slots of the pipeline flip to the chosen options" width="830">
+</picture>
 
-*Real output. A misspelt key and an incompatible swap are caught before any data is loaded.*
+*Real output, lines dropped, none invented. A combination is one command; a wrong one is refused with the fix before anything is built; a probe says whether it trains. No accuracy is claimed by a probe.*
+
+**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 980 recorded combinations (745 trained on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
 
 <img src="resources/demo.webp" alt="Predicted grasps on a cluttered GraspNet-1Billion test scene, rendered by GraspPanda" width="720">
 
@@ -54,7 +61,9 @@ stage, and where every number is produced by the same pinned evaluation.
 
 - **2026-10** — First public version of the rebuild. Six methods as interchangeable components, each equal to its reference implementation stage by stage; eleven scene encoders; `grasppanda components`, `demo` and `analyze`; GraspClutter6D end to end. Releases up to v0.56 are an earlier, unrelated code base and stay available under their tags and on the `legacy` branch.
 - **2026-10** — `grasppanda compose` builds a combination from a method config and a preset, `grasppanda probe` trains it for a few iterations on real frames, and a generated page shows the measured result of 208 combinations (which component works under which method, and what the contract rules refuse).
-- **In progress** — many more options for every slot (image and scene encoders, seed proposal, orientation, local grouping, heads and losses, post-processing, training recipe), taken from published code and model libraries, each with a usage page.
+- **2026-10** — [Options for every slot](docs/slots/index.md), taken from published code and model libraries: 248 in all (image and scene encoders, seed proposal, view, grouper, heads and losses, post-processing, training recipe). Each has a row and a command on its slot page and a measured verdict per method; none has been trained and evaluated yet, so none carries an accuracy.
+- **2026-10** — The [combination explorer](https://daeda1used.github.io/GraspPanda/explorer/): pick a method, swap a slot, read the measured verdict, the command and the reason of a refusal; two swaps without a record get the stored answer of `compose`; `grasppanda explore` serves it locally and checks any selection with the real `compose`.
+- **2026-10** — Two more families of wrong combinations are refused when a config is checked instead of failing later: stages on a data recipe that does not serve their labels, and an encoder whose width a grouper cannot take (`compose` then fits the encoder or puts the projected grouper in place, and says so).
 
 ## 🤔 Why GraspPanda
 
@@ -110,6 +119,25 @@ grasppanda print-config <config> --defaults
 <img src="resources/pipeline.png" alt="Pipeline slots: backbone, proposal, view, grouper and head bundle, with the data contract each one emits" width="820">
 </div>
 
+### Every slot has options
+
+An option is a name after `--set <slot>=`: a component with settings for table-top depth
+clouds. Each slot page starts with the task of the slot and its input and output, then
+gives one row and one command per option. [The index](docs/slots/index.md) classifies
+every option from the measured records as universal, most, some or specific.
+
+| Slot | Options | What they are |
+|---|---|---|
+| [Image encoder](docs/slots/image_encoders.md) | 38 | HGGD's own encoder and bridges to timm, transformers and torchvision; point painting for the seed-based methods |
+| [Scene encoder](docs/slots/scene_encoders.md) | 47 | point-based networks, sparse-voxel networks, transformers and pretrained 3-D encoders, with released weights where they fit |
+| [Seed proposal](docs/slots/proposal.md) | 24 | scored or plain seeds, with eleven samplers |
+| [View](docs/slots/view.md) | 21 | view lattices of any size, regressed directions, full rotations |
+| [Grouper](docs/slots/grouper.md) | 32 | crops among the seeds or of the scene: shapes, encoders, poolings, RoI pooling, graph layers |
+| [Head bundle and assigner](docs/slots/head_loss.md) | 10 + 4 | the heads of the ported methods, a decoupled grid head, and the label assigners they go with |
+| [Loss](docs/slots/head_loss.md) | 20 | focal, quality, robust and set losses, mining, class balance, uncertainty weighting, per loss term |
+| [Post-processing](docs/slots/post.md) | 15 | collision, table, workspace and gripper filters, NMS, selection, change of frame |
+| [Training recipe](docs/slots/recipe.md) | 37 | optimizers, schedules, hooks, augmentation |
+
 ## 🗺️ Overview
 
 ✅ available · 🚧 in progress · 📅 planned
@@ -119,11 +147,11 @@ grasppanda print-config <config> --defaults
 | **Core** | ✅ | YAML configs with inheritance and strict three-layer validation · registries with lazy auto-import · build-time injection · run snapshots |
 | **Data contracts** | ✅ | `Observation` / `Supervision` · `PointSet` / `PointFeatures` · `SeedSet` · `ApproachSet` · `GroupFeatures` · `GraspGroup` |
 | **Operators** | ✅ | furthest point sampling · ball and cylinder query · kNN · interpolation · grasp NMS · voxelisation · space-filling curves · view templates (pure PyTorch reference, CPU-testable) · optional compiled CPU and CUDA kernels for the four hot operators, checked against the reference on the device they run on ([details](docs/advanced_guides/operators.md)) |
-| **CLI** | ✅ `train`, `test`, `infer`, `demo`, `analyze`, `components`, `sweep`, `prepare`, `print-config`, `env` · 📅 `profile` | |
+| **CLI** | ✅ `train`, `test`, `infer`, `demo`, `analyze`, `components`, `compose`, `probe`, `explore`, `sweep`, `prepare`, `print-config`, `env` · 📅 `profile` | |
 | **Datasets** | ✅ GraspNet-1Billion and GraspClutter6D readers, split manifests, content-hashed label assets (equal to the reference preprocessing on recorded frames) | |
 | **Evaluation** | ✅ GraspNet-1Billion and GraspClutter6D evaluators, result records with coverage and provenance | |
 | **Methods** | ✅ GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp (one seed-based skeleton) and HGGD (a family of its own): each equal to its reference stage by stage with converted weights · 🚧 full-split evaluation and from-scratch reproduction · 📅 Contact-GraspNet | |
-| **Scene encoders** | ✅ sparse U-Net (spconv), SpUNet (MinkUNet-34C layout), OA-CNNs, PointNet++ (two forms), PointNeXt, PTv3, PTv3 with Concerto and Utonia weights, LitePT, and two adapters between dense and sub-sampled encoders; official weights load and outputs match the official code where weights are released ([details](docs/model_zoo_backbones.md)) · every combination of encoder and method either trains or is refused at config time with the fix ([swap matrix](docs/advanced_guides/swapping.md)) | |
+| **Scene encoders** | ✅ compared with the official code where weights are released: sparse U-Net (spconv), SpUNet (MinkUNet-34C layout), OA-CNNs, PointNet++ (two forms), PointNeXt, PTv3, PTv3 with Concerto and Utonia weights, LitePT ([details](docs/model_zoo_backbones.md)) · ✅ usable, not compared: the other encoders of the [slot pages](docs/slots/scene_encoders.md) · every combination of encoder and method either trains or is refused at config time with the fix ([swap matrix](docs/advanced_guides/swapping.md)) | |
 
 ## 🏆 Model zoo
 
@@ -212,18 +240,23 @@ evaluation comes from: see [Inference and visualisation](docs/user_guides/infere
 ### Try a combination
 
 ```bash
-grasppanda components --slot backbones                       # what exists, with contracts
+grasppanda compose --list grouper                            # the options of a slot, one line each
 grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
 grasppanda probe gsnet_ptv3.yaml                             # 20 iterations on real frames, then predict
 grasppanda train gsnet_ptv3.yaml
+
+# two slots at once, with options added in 2026-10 (recorded: runs)
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=point-transformer-v2 \
+    --set grouper=cylinder-vector-attention -o gsnet_ptv2_attention.yaml
+grasppanda explore                                           # the same in a browser, checked by compose
 ```
 
-`compose` writes a checked config from a method config and a preset, inserts an adapter
+`compose` writes a checked config from a method config and presets, inserts an adapter
 where the stage contracts ask for one and says so; a combination the contracts refuse is
-reported with the conflict and the fix. `probe` ends with one verdict (`runs`,
-`runs-unstable`, `fails`, `refused`). Which component works under which method has been
-measured on real frames, not inferred: see
-[Try a combination](docs/user_guides/combinations.md) and
+reported with the conflict and the fix, and a composed config can be composed again.
+`probe` ends with one verdict (`runs`, `runs-unstable`, `fails`, `refused`). Which
+component works under which method has been measured on real frames, not inferred: see
+[Slots](docs/slots/index.md), [Try a combination](docs/user_guides/combinations.md) and
 [Measured combinations](docs/advanced_guides/measured_combinations.md). No accuracy is
 claimed for a combination until it has been trained and evaluated.
 
@@ -289,6 +322,7 @@ The example detector is a wiring template: it is untrained and its grasps are ar
 ## 📚 Tutorials
 
 - [Configuration guide](docs/user_guides/config.md): inheritance, the merge rules, overrides, validation.
+- [Slots](docs/slots/index.md): the task of every stage, its options and which fits which method.
 - [Try a combination](docs/user_guides/combinations.md): catalogue, compose, probe, train.
 - [Add a component](docs/advanced_guides/add_component.md): register a backbone or a head bundle without forking.
 - [Data contracts](docs/advanced_guides/data_flow.md): what each stage receives and returns.
@@ -317,8 +351,12 @@ GraspPanda borrows ideas from [PaddleSeg](https://github.com/PaddlePaddle/Paddle
 [Pointcept](https://github.com/Pointcept/Pointcept), and builds on the
 [GraspNet-1Billion](https://graspnet.net) and
 [GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) benchmarks
-and on the authors of the methods it reproduces. Method implementations are written from
-the papers and from behavioural study of the reference code; no third-party source file is copied.
+and on the authors of the methods it reproduces. The methods and the evaluators are written
+from the papers and from behavioural study of the reference code; no source file of those
+repositories is copied. Some other components are adapted from code under the MIT, BSD or
+Apache-2.0 licence, each listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with
+repository, commit and licence, and components that bridge to an optional library contain
+none of its code ([CONTRIBUTING.md](CONTRIBUTING.md), [NOTICE](NOTICE)).
 
 ## 📄 License
 

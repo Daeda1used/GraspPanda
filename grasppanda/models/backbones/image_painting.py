@@ -28,14 +28,14 @@ Two classes, because where the features live is a class-level contract:
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Any, ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from grasppanda.models.base import Backbone
+from grasppanda.models.base import Backbone, configured_width
 from grasppanda.models.image_encoders import ImageEncoder
 from grasppanda.registry import BACKBONES, IMAGE_ENCODERS, Cfg
 from grasppanda.structures import ContractError, Observation, PointFeatures, PointSet
@@ -108,6 +108,11 @@ class _Painted(Backbone):
     #: Compose inserts an adapter where a contract asks for it; no contract asks for this one.
     compose_inserts: ClassVar[bool] = False
     required_inputs: ClassVar[frozenset[str]] = frozenset({"rgb", "intrinsics"})
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The width of the wrapped encoder: painting does not change it."""
+        return configured_width(options["backbone"])
 
     def __init__(
         self,

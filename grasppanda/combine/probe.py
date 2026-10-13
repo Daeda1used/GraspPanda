@@ -10,6 +10,12 @@ rests on. The probe never reports more than it ran: without a dataset tree, or w
 the label assets of the real frames, it says which and falls back to a wiring check on a
 synthetic scene, whose best verdict is ``wired``, not ``runs``.
 
+A probe is one run, and training on a GPU is not repeatable here. The config hash and
+the parameter count are the same every time and the losses of the first iteration agree
+to about six digits; everything after the first optimizer step (later losses, seed
+fractions, the number of predicted grasps) differs from run to run. A combination near
+the edge can therefore be ``runs`` in one probe and ``runs-unstable`` in the next.
+
     report = probe("experimental/gsnet_ptv3_g1b-realsense_10e", iters=20, frames=8)
     report.verdict, report.detail
 """
@@ -30,19 +36,29 @@ import torch
 from grasppanda.config import Config, ConfigError
 from grasppanda.registry import HOOKS, all_registries
 
-__all__ = ["EXIT_STATUS", "VERDICTS", "ProbeReport", "probe"]
+__all__ = [
+    "EXIT_STATUS",
+    "VERDICTS",
+    "ProbeReport",
+    "ProbeRequestError",
+    "out_of_memory",
+    "probe",
+]
 
 #: The verdicts of a probe and what each one means. Exactly one is reported.
 VERDICTS: dict[str, str] = {
     "runs": (
         "On real frames: the detector was built, every requested training iteration ran "
         "with finite losses and at least one real seed, the weights stayed finite, and "
-        "prediction returned valid grasp groups for every probed frame."
+        "prediction returned one valid grasp group for every probed frame. A group may be "
+        "empty: a model trained for a few iterations often predicts no grasp."
     ),
     "runs-unstable": (
-        "On real frames: training and prediction ran to the end, but a loss or a weight "
-        "became non-finite, or an iteration had no real seed (no scene point passed the "
-        "proposal, so only the proposal was trained), or no iteration supervised a seed."
+        "On real frames: the detector was built, trained and predicted, but a loss or a "
+        "weight became non-finite (a non-finite loss ends the training there), or an "
+        "iteration had no real seed (no scene point passed the proposal, so only the "
+        "proposal was trained), or no iteration supervised a seed, or fewer iterations ran "
+        "or fewer frames were predicted than were asked for."
     ),
     "fails": (
         "An exception was raised after the config check had passed. The report names the "
@@ -179,6 +195,11 @@ class _NoRealFrames(Exception):
     """Real frames cannot be read on this machine; the message says what is missing."""
 
 
+class ProbeRequestError(ValueError):
+    """The probe was asked for something that cannot be run: a split the dataset does not
+    have, or a count below one. A problem of the request, not a verdict about the config."""
+
+
 # -------------------------------------------------------------------------- failures
 
 
@@ -239,6 +260,21 @@ def _fail(report: ProbeReport, error: BaseException, default: str, when: str = "
     where = phase + (f" ({when})" if when else "") + (f", in the {component}" if component else "")
     report.verdict = "fails"
     report.detail = f"at {where}: {type(error).__name__}: {message}"
+    if out_of_memory(report):
+        report.notes.append(
+            "the probe ran out of GPU memory. That is a statement about this machine at this "
+            "moment (other processes may hold memory on the device), not about the "
+            "combination: probe again when the device is free, or with a smaller "
+            "`--opts data.train.batch_size=...`."
+        )
+
+
+def out_of_memory(report: ProbeReport) -> bool:
+    """Whether a probe failed for lack of GPU memory rather than because of its config."""
+    failure = report.failure or {}
+    text = f"{failure.get('error', '')} {failure.get('message', '')}".lower()
+    # The allocator's own error, or a CUDA library that could not allocate its handle.
+    return "out of memory" in text or "alloc_failed" in text
 
 
 # ------------------------------------------------------------------------- recording
@@ -364,18 +400,26 @@ def _plan(
     except FileNotFoundError as error:
         raise _NoRealFrames(f"the dataset is not on this machine. {error}") from None
     except AssetError as error:
-        hint = f" For the frames of the probe add `--split {split}` to that command."
         if "scale_statistic asset" in str(error):
             # A histogram over a whole split: the few frames of a probe leave bins empty,
             # and the generator refuses that. The reference's own file does not depend on
             # the split.
-            hint = (
-                " This width histogram is a statistic of a whole split and cannot be built "
-                "from the few frames of a probe. Import the reference's file "
-                "(configs/scale_balanced_grasp/README.md) and probe with `--opts "
-                "data.train.dataset.scale_statistic.source=legacy_import "
-                "data.train.dataset.scale_statistic.reference_sha256=<its SHA-256>`."
-            )
+            name = cfg["data"]["train"]["dataset"].get("type", "<dataset>").lower()
+            section = "data.train.dataset.scale_statistic"
+            values = f"{section}.source=legacy_import {section}.reference_sha256=<SHA-256>"
+            raise _NoRealFrames(
+                "the width histogram of Scale-Balanced-Grasp (`scale_statistic`) does not "
+                "exist for the frames of the probe, and cannot be built from them: it is a "
+                "statistic of a whole training split. Use the reference's own file, which "
+                "does not depend on the split. If it is imported on this machine, probe with "
+                f"`--opts {values}`. To import it once: write those two values into a config "
+                f"(`grasppanda compose <config> --opts {values} -o <file>`) and run `grasppanda "
+                f"prepare {name} --scale-statistic --import-legacy --scale-statistic-file "
+                "<statistic/scale_distribution.npy of the reference repository> --config "
+                "<file>`; the SHA-256 is that of the file "
+                "(configs/scale_balanced_grasp/README.md)."
+            ) from None
+        hint = f" For the frames of the probe add `--split {split}` to that command."
         raise _NoRealFrames(
             f"a label asset of the frames is missing. {error}"
             + (hint if "split" in options else "")
@@ -383,7 +427,7 @@ def _plan(
     except ValueError as error:
         if "is not a split of" not in str(error):
             raise
-        raise _NoRealFrames(f"{error} Choose the frames with `--split`.") from None
+        raise ProbeRequestError(f"{error} Choose the frames with `--split`.") from None
     count = used = len(dataset)
     loader = cfg["data"]["train"]
     step = max(1, math.ceil(count / max(frames, 1)))
@@ -420,37 +464,49 @@ def _plan(
     return Config.load(config, [*overrides, *added], command="train"), added, section, notes
 
 
-def _real(report: ProbeReport, planned: Config, section: str | None, **options: Any) -> None:
+def _real(
+    report: ProbeReport,
+    planned: Config,
+    section: str | None,
+    *,
+    iters: int,
+    predict_frames: int,
+    device: str | None,
+) -> None:
     """Train ``iters`` iterations with the real trainer, then predict."""
     from grasppanda.engine.run import Run, resolve_device
     from grasppanda.engine.seeding import determinism_restored
     from grasppanda.ops import backends
 
     cfg = planned.resolved()
-    device = resolve_device(options["device"] or cfg["runtime"]["device"])
-    report.device, report.data = str(device), "real"
+    target = resolve_device(device or cfg["runtime"]["device"])
+    report.device, report.data = str(target), "real"
     backends.configure(cfg["runtime"]["ops"])
-    if device.type == "cuda":
-        torch.cuda.reset_peak_memory_stats(device)
+    if target.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(target)
     with tempfile.TemporaryDirectory(prefix="grasppanda-probe-") as scratch, determinism_restored():
-        run = Run(Path(scratch), "probe", "train", planned, cfg, device)
+        run = Run(Path(scratch), "probe", "train", planned, cfg, target)
         try:
-            finished = _train_and_predict(report, run, section, **options)
+            finished = _train_and_predict(
+                report, run, section, iters=iters, predict_frames=predict_frames
+            )
         finally:
-            if device.type == "cuda":
-                report.peak_gpu_mib = round(torch.cuda.max_memory_allocated(device) / 2**20, 1)
+            if target.type == "cuda":
+                report.peak_gpu_mib = round(torch.cuda.max_memory_allocated(target) / 2**20, 1)
     if finished:
-        _judge(report, "runs", f"{len(report.frames)} frames of the dataset")
+        _judge(report, "runs", f"{len(report.frames)} frames of the dataset", predict_frames)
 
 
-def _train_and_predict(report: ProbeReport, run: Any, section: str | None, **options: Any) -> bool:
+def _train_and_predict(
+    report: ProbeReport, run: Any, section: str | None, *, iters: int, predict_frames: int
+) -> bool:
     """The miniature run; ``False`` when it failed (the report then says where)."""
     from grasppanda.engine.builders import build_dataset
     from grasppanda.engine.errors import NonFiniteLossError
     from grasppanda.engine.trainer import Trainer
 
     cfg, device = run.cfg, run.device
-    recorder = _Recorder(options["iters"], device)
+    recorder = _Recorder(iters, device)
     try:
         trainer = Trainer(run)
     except Exception as error:
@@ -490,7 +546,7 @@ def _train_and_predict(report: ProbeReport, run: Any, section: str | None, **opt
         model.eval()
         dataset = build_dataset(cfg, section or "train")
         predicted: list[Any] = []
-        for index in range(min(options["predict_frames"], len(dataset))):
+        for index in range(min(predict_frames, len(dataset))):
             batch = dataset.collate([dataset[index]]).to(device)
             with torch.no_grad():
                 groups = model.predict(batch.observation)
@@ -567,8 +623,12 @@ def _count_grasps(report: ProbeReport, keys: Sequence[Any], groups: Any) -> None
                 report.nonfinite.append(f"predicted {name} of {key} is not finite")
 
 
-def _judge(report: ProbeReport, good: str, what: str) -> None:
-    """Turn the recorded run into a verdict; ``good`` is the verdict of a clean run."""
+def _judge(report: ProbeReport, good: str, what: str, predict_frames: int = 1) -> None:
+    """Turn the recorded run into a verdict; ``good`` is the verdict of a clean run.
+
+    ``predict_frames`` is how many frames were to be predicted: a run that trained or
+    predicted less than it was asked to is not a clean one.
+    """
     unstable = list(report.nonfinite)
     empty = [index + 1 for index, value in enumerate(report.real_seeds) if value == 0.0]
     if empty:
@@ -578,8 +638,14 @@ def _judge(report: ProbeReport, good: str, what: str) -> None:
         )
     if report.supervised_seeds and max(report.supervised_seeds) == 0.0:
         unstable.append("no iteration supervised a seed")
-    if report.iterations < report.iterations_requested and not report.nonfinite:
+    short = report.iterations < max(report.iterations_requested, 1)
+    if short and not report.nonfinite:
         unstable.append(f"only {report.iterations} of {report.iterations_requested} iterations ran")
+    if len(report.grasps_per_frame) < max(predict_frames, 1):
+        unstable.append(
+            f"only {len(report.grasps_per_frame)} of {predict_frames} frame(s) could be "
+            "predicted (the dataset has no more)"
+        )
     done = (
         f"trained {report.iterations} iterations on {what} and predicted on "
         f"{len(report.grasps_per_frame)} frame(s)"
@@ -591,6 +657,11 @@ def _judge(report: ProbeReport, good: str, what: str) -> None:
         report.verdict = good
         seeds = " and real seeds in every iteration" if report.real_seeds else ""
         report.detail = f"{done}, with finite losses{seeds}."
+    if report.grasps_per_frame and not any(report.grasps_per_frame):
+        report.detail += (
+            " No grasp was predicted on any probed frame: every stage ran, and the model "
+            "kept no seed. That is reported, not judged."
+        )
 
 
 # ---------------------------------------------------------------------------- the probe
@@ -625,7 +696,16 @@ def probe(
     Returns:
         The :class:`ProbeReport`. It never raises for a problem of the config: a refused
         config, a missing asset and a crash are all verdicts.
+
+    Raises:
+        ProbeRequestError: The request cannot be run: a count below one, or a split the
+            dataset does not have.
     """
+    for name, value in (("iters", iters), ("frames", frames), ("predict_frames", predict_frames)):
+        if value < 1:
+            raise ProbeRequestError(f"{name} must be at least 1, got {value}")
+    if workers < 0:
+        raise ProbeRequestError(f"workers must be 0 or more, got {workers}")
     started = time.perf_counter()
     report = ProbeReport(config=str(config), overrides=list(overrides), iterations_requested=iters)
     try:
@@ -639,7 +719,6 @@ def probe(
         return report
     report.config_hash = given.digest()
     report.detector = str(given["model"]["type"])
-    options = {"iters": iters, "predict_frames": predict_frames, "device": device}
     if not synthetic:
         try:
             planned, added, section, notes = _plan(
@@ -654,13 +733,17 @@ def probe(
             )
         except _NoRealFrames as reason:
             report.fallback = str(reason)
+        except ProbeRequestError:
+            raise
         except Exception as error:
             _fail(report, error, "data")
             report.seconds = round(time.perf_counter() - started, 1)
             return report
         else:
             report.probe_overrides, report.notes = added, notes
-            _real(report, planned, section, **options)
+            _real(
+                report, planned, section, iters=iters, predict_frames=predict_frames, device=device
+            )
             report.seconds = round(time.perf_counter() - started, 1)
             return report
     from .synthetic import wiring_check

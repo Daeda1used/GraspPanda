@@ -10,7 +10,8 @@ What happens, in this order, and what is reported for each step:
    failing that, to a registered component with its constructor defaults;
 2. a new encoder is fitted to what the base method feeds and expects: its
    ``in_channels`` when the method feeds real point features, and its ``out_channels``,
-   where it has that option, to the width of the encoder it replaces;
+   where it has that option, to the seed width the grouper of the composed model fixes
+   or, when it fixes none, to the width of the encoder it replaces;
 3. when the encoder rule of the stage contracts refuses the pair of encoder and proposal
    and exactly one registered adapter bridges it, the adapter is inserted, with the seed
    count of the proposal and the sampling rules of the replaced encoder;
@@ -21,10 +22,15 @@ What happens, in this order, and what is reported for each step:
 A loss is set inside a stage: ``head.score_loss=quality-focal`` puts a preset of
 ``grasppanda/presets/loss/`` (or a registered loss, by its type) into that loss option of
 the head bundle and keeps the weight of the loss it replaces.
+A config chain is two levels deep, so the base must be a config that inherits fragments
+only (a method config). A base that was itself composed is composed again from *its*
+base, with the two requests merged.
 
 No rule about what fits what lives here: every verdict is
 :func:`~grasppanda.models.detectors.seed_based.stage_contract_problems` or the config
-checker, quoted.
+checker, quoted, and what compose adapts it reads from the contracts the components
+declare (the width an encoder returns, the width a grouper needs, the labels a stage
+reads and a dataset serves).
 """
 
 from __future__ import annotations
@@ -41,14 +47,28 @@ import types
 import typing
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from grasppanda.config import Config, ConfigError, Issue, configs_root, resolve_config_path
+from grasppanda.config import (
+    BASE_KEY,
+    MAX_BASE_HOPS,
+    Config,
+    ConfigError,
+    Issue,
+    available_configs,
+    configs_root,
+    parse_yaml,
+    resolve_config_path,
+)
 from grasppanda.config.loader import LoadedTree, apply_overrides
+from grasppanda.models.base import configured_width
 from grasppanda.registry import (
     BACKBONES,
+    DATASETS,
     DETECTORS,
+    GROUPERS,
     LOSSES,
     Registry,
     RegistryError,
@@ -137,6 +157,9 @@ class Composition:
         adapters: Whether an adapter may be inserted.
         adapter: The adapter that was inserted, if any.
         actions: What compose did, one sentence each.
+        hints: For a refused request: what to type instead, where compose can tell.
+        merged: The model and the training dataset of the composed config as the checks
+            saw them (``model``, ``dataset``); what the hints are computed from.
         body: The child config without its ``_base_``.
         comments: Inline comment per key path of ``body``.
         stages: Slot → final component, for seed-based detectors (``PointNet2 in
@@ -161,6 +184,8 @@ class Composition:
     adapters: bool = True
     adapter: str | None = None
     actions: list[str] = field(default_factory=list)
+    hints: list[str] = field(default_factory=list)
+    merged: dict[str, Any] = field(default_factory=dict, repr=False)
     body: dict[str, Any] = field(default_factory=dict)
     comments: dict[tuple[str, ...], str] = field(default_factory=dict)
     stages: dict[str, str] = field(default_factory=dict)
@@ -199,7 +224,8 @@ class Composition:
 
         ``output`` is where the file will live. Inside the shipped config tree the base is
         referred to by a relative path, as shipped configs do; elsewhere by its absolute
-        path, so the file works from any directory.
+        path, so the file can be moved on this machine but names a path of this
+        installation. The command in its header composes it again anywhere.
         """
         target = None if output is None else Path(output).resolve()
         root = configs_root().resolve()
@@ -285,6 +311,16 @@ class Composition:
         return [p for p in presets().get("backbone", {}).values() if p.type == self.adapter][:1]
 
 
+def _spell(base: str, sets: Sequence[str], overrides: Sequence[str], adapters: bool) -> str:
+    """A compose request as the command a user types."""
+    parts = [_COMMAND, base, *(f"--set {item}" for item in sets)]
+    if overrides:
+        parts.append("--opts " + " ".join(shlex.quote(item) for item in overrides))
+    if not adapters:
+        parts.append("--no-adapter")
+    return " ".join(parts)
+
+
 def _command_lines(command: str) -> list[str]:
     """A command as indented lines of a header, continued with a backslash."""
     lines: list[str] = []
@@ -350,7 +386,7 @@ def _choice(slot: str, registry: Registry, request: str) -> Choice:
     try:
         find(slot, request)
     except PresetError as error:
-        close = difflib.get_close_matches(request, registry.names(), n=3, cutoff=0.6)
+        close = difflib.get_close_matches(request, registry.names(), n=3, cutoff=0.75)
         hint = (
             f" Did you mean the component {' or '.join(repr(c) for c in close)}?" if close else ""
         )
@@ -535,13 +571,14 @@ def _encoder(node: Mapping[str, Any]) -> Mapping[str, Any]:
         node = inner
 
 
-def _output_width(node: Mapping[str, Any]) -> int | None:
-    """Channels a backbone node returns: its ``out_channels`` option, else by building it."""
-    if isinstance(node.get("out_channels"), int):
-        return int(node["out_channels"])
+def _seed_width(grouper: Mapping[str, Any]) -> int | None:
+    """The seed width a grouper node fixes (``Grouper.required_seed_channels``); ``None`` for any."""
     try:
-        return int(BACKBONES.build(copy.deepcopy(dict(node))).out_channels)
-    except Exception:  # an optional dependency is missing, or the node cannot be built alone
+        cls = GROUPERS.get(grouper["type"])
+        params, _ = component_parameters(cls)
+        defaults = {name: param.default for name, param in params.items()}
+        return cls.required_seed_channels({**defaults, **grouper})
+    except (LookupError, TypeError, AttributeError):
         return None
 
 
@@ -560,11 +597,17 @@ def _option(registry: Registry, node: Mapping[str, Any], name: str) -> Any:
 
 
 def _fit_encoder(
-    result: Composition, choice: Choice, model: Mapping[str, Any], keep: set[str]
+    result: Composition,
+    choice: Choice,
+    model: Mapping[str, Any],
+    keep: set[str],
+    grouper: Mapping[str, Any],
 ) -> None:
-    """Fit a new encoder to what the base method feeds and to the width it replaces.
+    """Fit a new encoder to what the base method feeds and to the width the model needs.
 
-    Options named in ``keep`` were set by the user and are left alone.
+    ``grouper`` is the grouper of the composed model. Options named in ``keep`` were set
+    by the user and are left alone. Both widths are read from what the components
+    declare (``Backbone.output_channels``, ``Grouper.required_seed_channels``); nothing is built.
     """
     node = choice.node
     params, _ = component_parameters(BACKBONES.get(node["type"]))
@@ -584,18 +627,34 @@ def _fit_encoder(
             f"(`point_features: observation`, {fed} per point), so the encoder reads those "
             "instead of the constant ones of its preset."
         )
-    width = _output_width(replaced)
-    fits = "out_channels" in params and "out_channels" not in keep and width is not None
-    if fits and node.get("out_channels") != width:
-        node["out_channels"] = width
-        choice.comments[("out_channels",)] = (
-            f"the width of the encoder it replaces ({_describe(replaced)})"
+    if "out_channels" not in params or "out_channels" in keep:
+        return
+    needed, kept = _seed_width(grouper), configured_width(replaced)
+    if needed is not None:
+        width = needed
+        comment = f"the seed width {grouper['type']} needs as configured"
+        why = (
+            f"out_channels: {width}, the width of the seed features {grouper['type']} needs "
+            "as it is configured here (it adds them to its crop features)."
         )
-        result.actions.append(
+    elif kept is not None:
+        width = kept
+        comment = f"the width of the encoder it replaces ({_describe(replaced)})"
+        why = (
             f"out_channels: {width}, the output width of the encoder it replaces "
             f"({_describe(replaced)}), so that the other stages keep the width they have in "
             "the base model and the encoder is the only stage that differs."
         )
+    else:
+        result.actions.append(
+            f"out_channels of {node['type']} was left as it is: {_describe(replaced)}, the "
+            "encoder it replaces, does not declare the width it returns."
+        )
+        return
+    if node.get("out_channels") != width:
+        node["out_channels"] = width
+        choice.comments[("out_channels",)] = comment
+        result.actions.append(why)
 
 
 _PROJECTION_NOTE = "the same crop with a linear layer in front of its seed residual"
@@ -735,11 +794,14 @@ def _split_overrides(
     rest = []
     for item in overrides:
         key = item.partition("=")[0].strip()
-        if any(token.lstrip("-").isdigit() for token in key.split(".")):
+        tokens = key.split(".")
+        numeric = next((i for i, token in enumerate(tokens) if token.lstrip("-").isdigit()), None)
+        if numeric is not None:
+            whole = ".".join(tokens[:numeric])
             raise ComposeError(
                 f"`{item}` addresses an element of a list. A composed config is a child "
                 "config, and a list replaces the inherited one wholesale: give the whole list "
-                f"(`{key.rsplit('.', 1)[0]}=[...]`) or edit the composed file."
+                f"(`{whole}=[...]`) or edit the composed file."
             )
         owner = next((c for c in choices if key.startswith(f"model.{c.slot}.")), None)
         if owner is None:
@@ -764,11 +826,134 @@ def _announce(result: Composition, choice: Choice) -> None:
         return
     members = presets().get(choice.slot, {}).values()
     same = [preset.name for preset in members if preset.type == choice.node["type"]]
-    hint = f" Presets for it: {', '.join(same)}." if same else ""
+    same.sort(key=lambda name: (len(name), name))  # the plain preset before its variants
+    hint = ""
+    if same:
+        hint = (
+            f" Its options are the component's own defaults, not a recipe for table-top "
+            f"clouds; that is what its preset holds: `--set {choice.slot}={same[0]}`"
+            + (f" (also: {', '.join(same[1:])})" if same[1:] else "")
+            + "."
+        )
     result.actions.append(
         f"{choice.slot}: {choice.node['type']} with its constructor defaults; no preset was "
         f"named.{hint}"
     )
+
+
+# ------------------------------------------------------------------- the base of a chain
+
+
+def _bases(path: Path) -> list[Path]:
+    """The files a config file inherits from directly."""
+    try:
+        return list(_bases_of(path, path.stat().st_mtime_ns))
+    except OSError:  # unreadable: loading it reports that
+        return []
+
+
+@lru_cache(maxsize=256)
+def _bases_of(path: Path, stamp: int) -> tuple[Path, ...]:
+    """:func:`_bases` of the file as it was at modification time ``stamp``."""
+    try:
+        raw = parse_yaml(path.read_text(encoding="utf-8"))
+    except Exception:  # not YAML: loading it reports that
+        return ()
+    listed = raw.get(BASE_KEY, []) if isinstance(raw, Mapping) else []
+    listed = [listed] if isinstance(listed, str) else listed
+    return tuple((path.parent / item).resolve() for item in listed if isinstance(item, str))
+
+
+def _levels(path: Path, seen: tuple[Path, ...] = ()) -> int:
+    """How many levels of inheritance lie below a config file; 0 for a fragment."""
+    if path in seen:
+        return 0  # a cycle: loading it reports that
+    return max((1 + _levels(base, (*seen, path)) for base in _bases(path)), default=0)
+
+
+def _name(path: Path) -> str:
+    return _shipped_name(path) or str(path)
+
+
+def _merged_request(
+    path: Path, sets: Sequence[str], overrides: Sequence[str], adapters: bool
+) -> tuple[argparse.Namespace, list[str], list[str], bool] | None:
+    """The request that composes ``path`` plus a new one, as one request on its base.
+
+    ``None`` when ``path`` is not a composed file, or was edited after it was composed
+    (its content, comments aside, is not what the command in its header writes): then
+    that command no longer says what the file is.
+    """
+    try:
+        earlier = _request(path)
+        again = compose(earlier.base, earlier.sets, earlier.opts, adapters=earlier.adapters)
+        if parse_yaml(again.text(path)) != parse_yaml(path.read_text(encoding="utf-8")):
+            return None
+    except (ComposeError, ConfigError, OSError):
+        return None
+    slots = {item.partition("=")[0].strip() for item in sets}
+    merged = [item for item in earlier.sets if item.partition("=")[0].strip() not in slots]
+    keys = {item.partition("=")[0].strip() for item in overrides}
+    kept = [item for item in earlier.opts if item.partition("=")[0].strip() not in keys]
+    return earlier, [*merged, *sets], [*kept, *overrides], earlier.adapters and adapters
+
+
+def _too_deep(base: str | Path, path: Path) -> ComposeError:
+    """Why ``path`` cannot be inherited from once more, and what to compose from instead."""
+    parents = [_name(parent) for parent in _bases(path)]
+    message = (
+        f"{_name(path)} cannot be the base of a composed config: it inherits from "
+        f"{' and '.join(parents)}, and a config chain is limited to {MAX_BASE_HOPS} levels, so "
+        "a composed config (one level more) cannot inherit from it."
+    )
+    try:
+        earlier = _request(path)
+    except ComposeError:
+        earlier = None
+    if earlier is not None:
+        again = _spell(earlier.base, earlier.sets, earlier.opts, earlier.adapters)
+        return ComposeError(
+            f"{message} It was composed with `{again}` and edited afterwards, so that command "
+            f"no longer says what the file is. Compose from `{earlier.base}` in one command, "
+            "with those options and yours, and carry the edits over with `--opts "
+            "key.path=value`."
+        )
+    return ComposeError(
+        f"{message} Compose from `{parents[0] if parents else base}` instead; what this "
+        "config changes on top of it is not carried over, so state it with `--opts "
+        "key.path=value` where you need it."
+    )
+
+
+# ------------------------------------------------------------------------------ compose
+
+
+def _asked_stages(
+    model: Mapping[str, Any], choices: Sequence[Choice], rest: Sequence[str]
+) -> dict[str, Any]:
+    """The stages of the composed model as they were asked for, before compose adapts the
+    encoder: the base config's, the choices, and the overrides addressed to other stages."""
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    stages = {
+        slot: copy.deepcopy(dict(model[slot]))
+        for slot in STAGE_REGISTRIES
+        if isinstance(model.get(slot), Mapping)
+    }
+    stages.update({choice.slot: choice.node for choice in choices if choice.slot in stages})
+    mine = [
+        item
+        for item in rest
+        if (parts := item.partition("=")[0].strip().split("."))[0] == "model"
+        and len(parts) > 2
+        and parts[1] in stages
+    ]
+    tree = LoadedTree(data={"model": stages})
+    try:
+        apply_overrides(tree, mine)
+    except ConfigError:
+        return stages  # an override that cannot be applied: the config check says so
+    return tree.data["model"]
 
 
 def compose(
@@ -781,7 +966,9 @@ def compose(
     """Compose a child config of ``base``.
 
     Args:
-        base: A config file or the name of a shipped config.
+        base: A config file or the name of a shipped config. It must inherit fragments
+            only, like a method config: a chain is two levels deep. A config that was
+            itself composed is composed again from its own base, both requests merged.
         sets: ``slot=choice`` pairs; a choice is a preset name or a component type.
         overrides: Further ``key.path=value`` overrides, written into the child config.
             A path below a slot of ``sets`` (``model.backbone.grid_size=0.01``) addresses
@@ -792,7 +979,8 @@ def compose(
         The :class:`Composition`; check ``accepted`` before writing ``text()``.
 
     Raises:
-        ComposeError: The request names an unknown slot, preset or component.
+        ComposeError: The request names an unknown slot, preset or component, or a base
+            that cannot be inherited from once more.
         ConfigError: The base config itself is invalid, or an override cannot be applied.
     """
     from grasppanda.models.detectors.seed_based import (
@@ -802,6 +990,20 @@ def compose(
     )
 
     base_path = resolve_config_path(base)
+    if base_path.is_file() and _levels(base_path) >= MAX_BASE_HOPS:
+        merged = _merged_request(base_path, sets, overrides, adapters)
+        if merged is None:
+            raise _too_deep(base, base_path)
+        earlier, all_sets, all_overrides, both = merged
+        result = compose(earlier.base, all_sets, all_overrides, adapters=both)
+        result.actions.insert(
+            0,
+            f"{_name(base_path)} is itself a composed config, and a config chain is limited "
+            f"to {MAX_BASE_HOPS} levels: this config is composed from its base, "
+            f"{result.base}, with its request and yours merged (a `--set` of yours replaces "
+            "the one of the same slot).",
+        )
+        return result
     config = Config.load(base_path)
     try:
         sets, recipe_sets = recipe_presets.split(sets)
@@ -846,13 +1048,20 @@ def compose(
                 "encoder and is not one itself. Set the encoder (`--set backbone=<encoder>`); "
                 "compose inserts the adapter when the contracts ask for it."
             )
+        if choice.slot != "backbone" and addressed.get(choice.slot):
+            apply_overrides(LoadedTree(data=choice.node), addressed[choice.slot])
+    # What the other stages will be, so that the encoder is fitted to the model that was
+    # asked for: a grouper or a seed count set by an override counts like one set by --set.
+    asked = _asked_stages(model, result.choices, rest) if seed_based else {}
+    for choice in result.choices:
         _announce(result, choice)
         mine = addressed.get(choice.slot, [])
         if seed_based and choice.slot == "backbone":
             keep = {item.partition("=")[0].strip().split(".")[0] for item in mine}
-            _fit_encoder(result, choice, model, keep)
+            _fit_encoder(result, choice, model, keep, asked.get("grouper", model["grouper"]))
+            if mine:
+                apply_overrides(LoadedTree(data=choice.node), mine)
         if mine:
-            apply_overrides(LoadedTree(data=choice.node), mine)
             for item in mine:
                 choice.comments.pop(tuple(item.partition("=")[0].strip().split(".")), None)
             result.actions.append(f"{choice.slot}: overrides as given, {' '.join(mine)}.")
@@ -860,7 +1069,7 @@ def compose(
     nodes = {choice.slot: choice.node for choice in result.choices}
     notes = {choice.slot: dict(choice.comments) for choice in result.choices}
     if seed_based and adapters:
-        proposal = nodes.get("proposal", model["proposal"])
+        proposal = asked.get("proposal", model["proposal"])
         encoder = nodes.get("backbone", written["backbone"])
         refused = stage_contract_problems(backbone=encoder, proposal=proposal)
         fitting = _adapters_for(encoder, proposal) if refused else []
@@ -939,6 +1148,8 @@ def compose(
         result.actions.append("overrides as given: " + " ".join(rest) + ".")
     result.body, result.comments = body, comments
     _check(result)
+    if not result.accepted:
+        result.hints = _hints(result)
     return result
 
 
@@ -964,6 +1175,109 @@ def _set_post(result: Composition, body: dict[str, Any], post_sets: Sequence[str
     )
 
 
+# -------------------------------------------------------------- what to type instead
+
+
+@lru_cache(maxsize=1)
+def _method_recipes() -> tuple[tuple[str, Mapping[str, Any]], ...]:
+    """Shipped configs a composed config can inherit from, as shipped (not composed), each
+    with the node of its training dataset. Read once per process."""
+    root = configs_root()
+    found = []
+    for name in available_configs():
+        path = root / f"{name}.yaml"
+        if name.startswith(("_base_/", "experimental/")) or _levels(path) != 1:
+            continue
+        try:
+            dataset = Config.load(path, validate=False).to_dict()["data"]["train"]["dataset"]
+        except (ConfigError, LookupError, TypeError):
+            continue
+        found.append((name, dataset))
+    return tuple(found)
+
+
+def _served(dataset: Mapping[str, Any]) -> frozenset[str] | None:
+    reader = DATASETS.get(dataset["type"]) if dataset.get("type") in DATASETS else None
+    declare = getattr(reader, "served_supervision", None)
+    return declare(dataset) if callable(declare) else None
+
+
+def _hints(result: Composition) -> list[str]:
+    """For a request refused because the data recipe of the base config does not serve the
+    labels of the composed model: the preset that brings a missing dataset section and,
+    when that is not the whole answer, the shipped method configs under whose recipe this
+    very request is served.
+
+    Read from what stages and datasets declare (``supervision_needs``,
+    ``served_supervision``); a request refused for another reason gets no hint.
+    """
+    if not any(issue.path == "data.train.dataset" for issue in result.issues):
+        return []
+    model, dataset = result.merged.get("model") or {}, result.merged.get("dataset") or {}
+    try:
+        needs = DETECTORS.get(model["type"]).supervision_needs(model)
+        served = _served(dataset)
+    except (LookupError, TypeError):
+        return []
+    if needs is None or served is None:
+        return []
+    needed = {field for field, _ in needs}
+    missing = needed - served
+    hints = []
+    # A component named by its type whose preset carries the dataset section it reads.
+    sections = dict.fromkeys(
+        section for choice in result.choices if choice.preset for section in choice.preset.data
+    )
+    for choice in result.choices:
+        if choice.preset is not None:
+            continue
+        bringing = [
+            preset
+            for preset in presets().get(choice.slot, {}).values()
+            if preset.type == choice.node["type"]
+            and ((_served({**dataset, **preset.data}) or frozenset()) - served) & missing
+        ]
+        bringing.sort(key=lambda preset: (len(preset.name), preset.name))
+        if bringing:
+            brought = dict.fromkeys(section for preset in bringing for section in preset.data)
+            sections.update(brought)
+            ways = " or ".join(f"`--set {choice.slot}={preset.name}`" for preset in bringing)
+            hints.append(
+                f"{choice.node['type']} was named by its type, which brings no dataset "
+                f"section. A preset of it does (`{'`, `'.join(brought)}`): {ways}."
+            )
+    # The sections presets add, on a recipe: does it then serve everything the model reads?
+    data = {
+        section: value
+        for members in presets().values()
+        for preset in members.values()
+        for section, value in preset.data.items()
+        if section in sections
+    }
+
+    def serves(recipe: Mapping[str, Any]) -> bool:
+        extended = {**{k: v for k, v in data.items() if recipe.get(k) is None}, **recipe}
+        reader = DATASETS.get(recipe["type"]) if recipe.get("type") in DATASETS else None
+        clean = not list(getattr(reader, "check_config", lambda node: ())(extended) or ())
+        return clean and needed <= (_served(extended) or frozenset())
+
+    base = (
+        (Config.load(result.base_path, validate=False).to_dict().get("data") or {}).get("train")
+        or {}
+    ).get("dataset") or {}
+    if hints and serves(base):
+        return hints  # the preset is the whole answer
+    fitting = [name for name, theirs in _method_recipes() if name != result.base and serves(theirs)]
+    if fitting:
+        hints.append(
+            "The data recipe is the base config's, and compose does not rewrite one. Shipped "
+            "configs whose training data serves the labels of this request: "
+            + ", ".join(fitting)
+            + ". Compose from one of them with the same `--set`."
+        )
+    return hints
+
+
 def _check(result: Composition) -> None:
     """Load the composed file as a user would and record what the checks say."""
     from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, stage_contract_problems
@@ -973,6 +1287,8 @@ def _check(result: Composition) -> None:
         path.write_text(result.text(), encoding="utf-8")
         merged = Config.load(path, validate=False)
         model = merged.to_dict().get("model") or {}
+        train = (merged.to_dict().get("data") or {}).get("train") or {}
+        result.merged = {"model": model, "dataset": train.get("dataset") or {}}
         if result.seed_based and all(
             isinstance(model.get(slot), Mapping) and "type" in model[slot]
             for slot in STAGE_REGISTRIES
@@ -1033,8 +1349,9 @@ def command_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Ar
     return parser
 
 
-def recompose(path: str | Path) -> Composition:
-    """Compose again what the header of a composed file says it was composed from."""
+def _request(path: str | Path) -> argparse.Namespace:
+    """The compose request in the header of a composed file (``base``, ``sets``, ``opts``,
+    ``adapters``); :class:`ComposeError` when the file has none."""
     lines = Path(path).read_text(encoding="utf-8").splitlines()
     start = next((i for i, line in enumerate(lines) if line.startswith(f"#   {_COMMAND} ")), None)
     if start is None:
@@ -1046,5 +1363,10 @@ def recompose(path: str | Path) -> Composition:
         if not piece.endswith("\\") or index + 1 >= len(lines):
             break
         index += 1
-    args = command_parser().parse_args(shlex.split(command)[2:])
+    return command_parser().parse_args(shlex.split(command)[2:])
+
+
+def recompose(path: str | Path) -> Composition:
+    """Compose again what the header of a composed file says it was composed from."""
+    args = _request(path)
     return compose(args.base, args.sets, args.opts, adapters=args.adapters)
