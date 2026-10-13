@@ -26,9 +26,9 @@ network are used here, and its released weights are an evaluation aid.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
-from typing import Literal
+from typing import Any, Literal
 
 import torch
 from torch import Tensor, nn
@@ -118,6 +118,10 @@ class PointNet2Transformer(Backbone):
     output = "subsampled"
     status = "weights-verified"
     source = "Scale-Balanced-Grasp (Ma and Huang, CoRL 2022)"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        return options["sa_mlps"][-1][-1]
 
     def __init__(
         self,

@@ -18,7 +18,18 @@ import torch
 import yaml
 
 from grasppanda.cli.main import main
-from grasppanda.combine.probe import EXIT_STATUS, VERDICTS, ProbeReport, _component, _phase, probe
+from grasppanda.combine.probe import (
+    EXIT_STATUS,
+    VERDICTS,
+    ProbeReport,
+    ProbeRequestError,
+    _component,
+    _fail,
+    _judge,
+    _phase,
+    out_of_memory,
+    probe,
+)
 from grasppanda.combine.synthetic import HISTOGRAM_KEY, random_batch, scene_batch
 from grasppanda.config import Config
 from grasppanda.models.assigners import scale_balance
@@ -73,6 +84,110 @@ def test_the_verdicts_are_a_fixed_documented_vocabulary():
     # The guide defines every verdict in the words of the code, so the two cannot drift.
     for name, meaning in VERDICTS.items():
         assert f"| `{name}` | {meaning} |" in page, name
+
+
+def recorded(**fields) -> ProbeReport:
+    """A report as a clean run of twenty iterations leaves it, with ``fields`` changed."""
+    report = ProbeReport(
+        iterations_requested=20,
+        iterations=20,
+        real_seeds=[1.0] * 20,
+        supervised_seeds=[0.5] * 20,
+        grasps_per_frame=[12, 0],
+    )
+    for name, value in fields.items():
+        setattr(report, name, value)
+    return report
+
+
+def test_the_verdict_follows_from_what_was_recorded():
+    """Every branch of the judgement, on reports written by hand."""
+
+    def judged(good: str = "runs", frames: int = 2, **fields) -> ProbeReport:
+        report = recorded(**fields)
+        _judge(report, good, "8 frames of the dataset", frames)
+        return report
+
+    clean = judged()
+    assert clean.verdict == "runs"
+    assert clean.detail == (
+        "trained 20 iterations on 8 frames of the dataset and predicted on 2 frame(s), with "
+        "finite losses and real seeds in every iteration."
+    )
+    # An iteration in which no point passed the proposal trained the proposal only.
+    seedless = judged(real_seeds=[1.0, 0.0, 0.3, 0.0, *[1.0] * 16])
+    assert seedless.verdict == "runs-unstable"
+    assert "2 of 20 iterations had no real seed (iteration 2, 4)" in seedless.detail
+    many = judged(real_seeds=[0.0] * 20)
+    assert "(iteration 1, 2, 3, 4, 5, 6 ...)" in many.detail
+    # Seeds, but none of them ever took part in the grasp losses.
+    assert "no iteration supervised a seed" in judged(supervised_seeds=[0.0] * 20).detail
+    assert judged(supervised_seeds=[0.0] * 19 + [0.01]).verdict == "runs"
+    # A non-finite loss ends the training: said once, not also as "too few iterations".
+    stopped = judged(iterations=7, nonfinite=["the loss is nan at iteration 8"])
+    assert stopped.verdict == "runs-unstable"
+    assert "the loss is nan at iteration 8" in stopped.detail and "only 7" not in stopped.detail
+    assert "a weight is not finite" in judged(nonfinite=["a weight is not finite"]).detail
+    # Less was run than was asked for: an empty loader, a dataset with a single frame.
+    assert "only 3 of 20 iterations ran" in judged(iterations=3).detail
+    assert judged(iterations=0, real_seeds=[], supervised_seeds=[]).verdict == "runs-unstable"
+    one = judged(grasps_per_frame=[5])
+    assert (
+        one.verdict == "runs-unstable" and "only 1 of 2 frame(s) could be predicted" in one.detail
+    )
+    assert judged(grasps_per_frame=[]).verdict == "runs-unstable"
+    # An empty prediction is valid, and it is said.
+    empty = judged(grasps_per_frame=[0, 0])
+    assert empty.verdict == "runs" and "No grasp was predicted on any probed frame" in empty.detail
+    assert "No grasp was predicted" not in clean.detail
+    # A detector that reports no seed metrics is judged on what it does report.
+    plain = judged(real_seeds=[], supervised_seeds=[])
+    assert plain.verdict == "runs" and plain.detail.endswith("with finite losses.")
+    # The wiring check has no unstable verdict: what would be unstable there fails.
+    assert judged("wired").verdict == "wired"
+    assert (
+        judged("wired", nonfinite=["predicted width of a frame is not finite"]).verdict == "fails"
+    )
+
+
+def test_out_of_memory_is_told_apart_from_a_failure_of_the_config():
+    report = ProbeReport()
+    try:
+        raise RuntimeError("CUDA out of memory. Tried to allocate 134.00 MiB.")
+    except RuntimeError as error:
+        _fail(report, error, "loss", "iteration 1")
+    assert report.verdict == "fails" and out_of_memory(report)
+    assert any("not about the combination" in note for note in report.notes)
+    other = ProbeReport()
+    try:
+        raise ValueError("radius must be positive")
+    except ValueError as error:
+        _fail(other, error, "build")
+    assert not out_of_memory(other) and other.notes == []
+
+
+def test_a_request_that_cannot_be_run_is_an_error_not_a_verdict(monkeypatch, capsys):
+    for wrong in ({"iters": 0}, {"iters": -5}, {"frames": 0}, {"predict_frames": 0}):
+        with pytest.raises(ProbeRequestError, match="must be at least 1"):
+            probe(TOY, **wrong)
+    with pytest.raises(ProbeRequestError, match="workers must be 0 or more"):
+        probe(TOY, workers=-1)
+    for arguments in (["--iters", "0"], ["--predict-frames", "0"], ["--frames", "x"]):
+        with pytest.raises(SystemExit) as stop:
+            main(["probe", TOY, *arguments])
+        assert stop.value.code == 2
+    assert "must be at least 1, got 0" in capsys.readouterr().err
+
+    # A split the dataset does not have is a wrong request too, not a reason to fall back
+    # to the synthetic check.
+    def no_such_split(cfg, section):
+        raise ValueError("'bogus' is not a split of toy. Splits: train, sample.")
+
+    monkeypatch.setattr("grasppanda.engine.builders.build_dataset", no_such_split)
+    with pytest.raises(ProbeRequestError, match="'bogus' is not a split of toy"):
+        probe(TOY, split="bogus")
+    assert main(["probe", TOY, "--split", "bogus"]) == 2
+    assert "Choose the frames with `--split`" in capsys.readouterr().err
 
 
 # ---------------------------------------------------------------------------- real path
@@ -229,7 +344,22 @@ def test_without_the_dataset_the_probe_says_so_and_only_claims_wired(tmp_path, c
                 "split": "train",
                 "root": str(tmp_path / "no_dataset_here"),
                 "preprocess": [{"type": "DepthToCloud"}, {"type": "NoWorkspace"}],
-                "transforms": [{"type": "RandomSample", "num_points": 600}],
+                # The labels GSNet's stages read: point-wise graspness and the dense grids.
+                "graspness": {
+                    "source": "native",
+                    "friction_threshold": 0.8,
+                    "poses": "annotations",
+                },
+                "transforms": [
+                    {"type": "RandomSample", "num_points": 600},
+                    {
+                        "type": "SampleGraspLabels",
+                        "point_fraction": 0.25,
+                        "min_points": 300,
+                        "collision": "zero_scores",
+                        "grids": "deferred",
+                    },
+                ],
             },
             "batch_size": 2,
         }
@@ -316,6 +446,8 @@ def test_the_scene_batch_has_every_label_at_the_sizes_asked_for():
 
 
 def test_the_random_batch_is_the_swap_matrix_batch():
+    """`random_batch` is the batch of the swap matrix and of the contract tests; the
+    wiring check of `grasppanda probe` uses `scene_batch`."""
     observation, supervision = random_batch(seed=3)
     theirs, _ = matrix.batch(seed=3)
     assert torch.equal(observation.points.coords, theirs.points.coords)
@@ -341,4 +473,10 @@ def test_the_command_prints_the_numbers_and_one_verdict(capsys):
     assert report["verdict"] == "runs" and report["iterations"] == 4
     with pytest.raises(SystemExit) as stop:
         main(["probe", "--help"])
-    assert stop.value.code == 0 and "--synthetic" in capsys.readouterr().out
+    text = capsys.readouterr().out
+    assert stop.value.code == 0 and "--synthetic" in text
+    # The help defines every verdict with its exit status and says what a probe needs.
+    for name in VERDICTS:
+        assert f"\n  {name} " in text, name
+    for fragment in ("exit status", "what it needs", "a probe is one run", "--split sample"):
+        assert fragment in text, fragment

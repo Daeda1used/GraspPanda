@@ -86,7 +86,16 @@ def test_stages_of_the_pipeline_declare_every_field_of_their_contract():
     assert contracts["GraspnessFPS"] == {
         "requires": "dense",
         "seed_scores": ["graspness", "objectness"],
+        "needs_supervision": {"point_labels.objectness": None, "point_labels.graspness": None},
     }
+    # What a stage reads from the training supervision, with the option that makes it.
+    assert contracts["NearestLabelAssigner"]["needs_supervision"] == {
+        "objects": None,
+        "point_labels.objectness": ["supervise", "object_seeds"],
+    }
+    assert contracts["OperationHead"]["needs_supervision"] == {"objects.tolerance": None}
+    assert contracts["SWADHead"]["needs_supervision"] == {}
+    assert contracts["HGGD"]["needs_supervision"] == {"extras.view_grasps": None}
     assert contracts["DepthCylinderGroup"] == {
         "support": "scene",
         "out_axes": ["seed", "depth", "channel"],

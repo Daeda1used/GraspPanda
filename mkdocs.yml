@@ -52,6 +52,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Explorer: explorer/index.md
   - Get Started:
       - Installation: get_started/installation.md
       - Quick start: get_started/quickstart.md
@@ -63,15 +64,18 @@ nav:
       - Inference and visualisation: user_guides/inference.md
       - Try a combination: user_guides/combinations.md
   - Slots:
-      - Post-processing: slots/post.md
-      - "Grouper: local grouping and region features": slots/grouper.md
-      - "Scene encoders: point-based networks": slots/scene_encoders_point.md
-      - "Scene encoders: transformers and pretrained": slots/scene_encoders_transformer.md
-      - "Scene encoders: sparse-voxel networks and released weights": slots/scene_encoders_sparse.md
+      - Overview: slots/index.md
       - Image encoders: slots/image_encoders.md
-      - Grasp heads and losses: slots/head_loss.md
-      - "View: approach direction and orientation": slots/view.md
+      - Scene encoders:
+          - Overview: slots/scene_encoders.md
+          - Point-based networks: slots/scene_encoders_point.md
+          - Sparse-voxel networks and released weights: slots/scene_encoders_sparse.md
+          - Transformers and pretrained 3-D encoders: slots/scene_encoders_transformer.md
       - Seed proposal and samplers: slots/proposal.md
+      - "View: approach direction and orientation": slots/view.md
+      - "Grouper: local grouping and region features": slots/grouper.md
+      - Grasp heads and losses: slots/head_loss.md
+      - Post-processing: slots/post.md
       - "Training recipe: optimizer, schedule, hooks, augmentation": slots/recipe.md
   - Advanced Guides:
       - Add a component: advanced_guides/add_component.md

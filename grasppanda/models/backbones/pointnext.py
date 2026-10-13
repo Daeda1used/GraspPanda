@@ -25,8 +25,9 @@ official ``BaseSeg`` model on purpose, so that its state dicts load once the
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -204,7 +205,7 @@ class _Propagation(nn.Module):
 
 @BACKBONES.register()
 class PointNeXt(Backbone):
-    """PointNeXt encoder-decoder with features on every input point.
+    """PointNeXt: PointNet++ with inverted residual MLP blocks, features on every input point.
 
     The defaults are PointNeXt-S as published for S3DIS: 4 input channels (colour and
     height), width 32 doubling at each of four stride-4 stages, one block per stage,
@@ -245,6 +246,11 @@ class PointNeXt(Backbone):
     output = "dense"
     status = "tested"
     source = "PointNeXt (Qian et al., NeurIPS 2022)"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        """The decoder ends on the width of the stem."""
+        return options["width"]
 
     def __init__(
         self,

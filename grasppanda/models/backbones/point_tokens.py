@@ -251,6 +251,12 @@ class PointViT(_PointTokenEncoder):
         "adapted from Pang-Yatian/Point-MAE@7445a68, MIT"
     )
 
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the transformer."""
+        width = options.get("out_channels")
+        return width if isinstance(width, int) else options["embed_dim"]
+
     def __init__(
         self,
         in_channels: int = 0,
@@ -354,6 +360,12 @@ class PointMamba(_PointTokenEncoder):
         "PointMamba (Liang et al., NeurIPS 2024), layout of LMD0311/PointMamba@80858e0 "
         "(Apache-2.0); mixer via mamba-ssm"
     )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the model."""
+        width = options.get("out_channels")
+        return width if isinstance(width, int) else options["embed_dim"]
 
     def __init__(
         self,

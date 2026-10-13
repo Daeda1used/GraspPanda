@@ -10,7 +10,7 @@ every loss term first and last, the fraction of real seeds, the grasps per frame
 non-finite value. It ends with one verdict:
 
     runs            trained and predicted on real frames, all finite, seeds every iteration
-    runs-unstable   ran to the end, but with a non-finite value or iterations without seeds
+    runs-unstable   trained and predicted, but with a non-finite value or iterations without seeds
     fails           an exception after the config check passed; phase and component are named
     refused         the config check refused the config; its messages are printed
     wired           no real frame was read: a wiring check on a synthetic scene passed
@@ -18,7 +18,10 @@ non-finite value. It ends with one verdict:
 Without the dataset, or without the label assets of its frames, the probe says what is
 missing and how to build it, runs the synthetic wiring check and reports ``wired`` (exit
 status 3), never ``runs``. Exit status: 0 runs (or ``wired`` with ``--synthetic``),
-1 runs-unstable or fails, 2 refused, 3 wired as a fallback.
+1 runs-unstable or fails, 2 refused or a request that cannot be run, 3 wired as a fallback.
+
+A probe is one run, and training on a GPU is not repeatable: see
+:mod:`grasppanda.combine.probe`.
 """
 
 from __future__ import annotations
@@ -33,6 +36,48 @@ from grasppanda.utils.console import style
 __all__ = ["register"]
 
 
+EPILOG = """\
+verdicts (exactly one is reported) and exit status:
+  runs           0  built, trained every iteration on real frames with finite losses and
+                    real seeds, predicted one grasp group per frame (a group may be empty)
+  runs-unstable  1  built, trained and predicted, but a loss or weight became non-finite,
+                    or an iteration had no real seed, or no seed was ever supervised
+  fails          1  an exception after the config check passed; the phase (build, data,
+                    loss, backward, step, predict), the component and the message are given
+  refused        2  the config check refused the config (as `print-config --check --for
+                    train`); nothing was built
+  wired          3  no real frame was read (0 with --synthetic): the stages connect on a
+                    synthetic scene with random labels; this says nothing about real data
+A request that cannot be run (a count below 1, an unknown --split) also exits with 2.
+
+what it needs: the dataset of the config and the label assets of the probed frames, which
+for the split `sample` are small (`grasppanda prepare <dataset> --check --split sample
+--config <config>` lists them). Without them the probe says what is missing and how to
+build it, runs the synthetic check and reports `wired`, never `runs`.
+
+a probe is one run. The config hash, the parameter count and the first losses repeat;
+later losses, seed fractions and grasp counts differ from run to run, and a combination
+near the edge can be `runs` in one probe and `runs-unstable` in the next.
+
+examples:
+  grasppanda probe gsnet/gsnet_sunet14_g1b-realsense_10e
+  grasppanda probe my_config.yaml --iters 20 --frames 8 --json
+"""
+
+
+def _at_least(minimum: int) -> Any:
+    def parse(text: str) -> int:
+        try:
+            value = int(text)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"expected a whole number, got '{text}'") from None
+        if value < minimum:
+            raise argparse.ArgumentTypeError(f"must be at least {minimum}, got {value}")
+        return value
+
+    return parse
+
+
 def register(commands: Any) -> None:
     parser = commands.add_parser(
         "probe",
@@ -41,6 +86,8 @@ def register(commands: Any) -> None:
             "Build the detector, train a few iterations on real frames, predict, and report "
             "one verdict: runs, runs-unstable, fails, refused or wired."
         ),
+        epilog=EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("config", help="config file or name of a shipped config")
     parser.add_argument(
@@ -50,19 +97,24 @@ def register(commands: Any) -> None:
         metavar="KEY=VALUE",
         help="override config values, as for `grasppanda train`",
     )
-    parser.add_argument("--iters", type=int, default=20, help="training iterations (default 20)")
     parser.add_argument(
-        "--frames", type=int, default=8, help="train on at most this many frames (default 8)"
+        "--iters", type=_at_least(1), default=20, help="training iterations (default 20)"
     )
     parser.add_argument(
-        "--predict-frames", type=int, default=2, help="frames to predict on (default 2)"
+        "--frames",
+        type=_at_least(1),
+        default=8,
+        help="train on at most this many frames (default 8)",
+    )
+    parser.add_argument(
+        "--predict-frames", type=_at_least(1), default=2, help="frames to predict on (default 2)"
     )
     parser.add_argument(
         "--split", default="sample", help="split the frames are taken from (default: sample)"
     )
     parser.add_argument("--device", help="overrides runtime.device, e.g. cpu or cuda:1")
     parser.add_argument(
-        "--workers", type=int, default=0, help="data loader processes (default 0: none)"
+        "--workers", type=_at_least(0), default=0, help="data loader processes (default 0: none)"
     )
     parser.add_argument(
         "--synthetic",
@@ -146,19 +198,24 @@ def _print(report: Any, color: bool) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    from grasppanda.combine.probe import probe
+    from grasppanda.combine.probe import ProbeRequestError, probe
 
-    report = probe(
-        args.config,
-        args.opts,
-        iters=args.iters,
-        frames=args.frames,
-        predict_frames=args.predict_frames,
-        split=args.split,
-        device=args.device,
-        workers=args.workers,
-        synthetic=args.synthetic,
-    )
+    try:
+        report = probe(
+            args.config,
+            args.opts,
+            iters=args.iters,
+            frames=args.frames,
+            predict_frames=args.predict_frames,
+            split=args.split,
+            device=args.device,
+            workers=args.workers,
+            synthetic=args.synthetic,
+        )
+    except ProbeRequestError as error:
+        mark = style("✗", "bold", "red", enabled=sys.stderr.isatty())
+        print(f"{mark} {error}", file=sys.stderr)
+        return 2
     if args.json:
         print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False))
     else:

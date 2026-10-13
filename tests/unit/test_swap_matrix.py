@@ -32,8 +32,16 @@ import torch
 from grasppanda.cli.components import collect
 from grasppanda.combine.synthetic import random_batch
 from grasppanda.config import Config, ConfigError
+from grasppanda.models.base import Backbone
 from grasppanda.models.detectors.seed_based import SeedGraspDetector, stage_contract_problems
-from grasppanda.registry import BACKBONES, DETECTORS, GROUPERS, HEADS, PROPOSALS
+from grasppanda.registry import (
+    BACKBONES,
+    DETECTORS,
+    GROUPERS,
+    HEADS,
+    PROPOSALS,
+    component_parameters,
+)
 from grasppanda.structures import ContractError, GraspGroup, Observation, Supervision
 
 from .conftest import REPO
@@ -979,3 +987,57 @@ def test_a_seed_width_mismatch_is_refused_with_the_fix_and_the_projection_runs()
     }
     model = run(node)
     assert model.grouper.project.in_features == WIDTH and model.grouper.out_channels == 8
+
+
+#: Encoders whose width is "known only once built" for the options named: the class
+#: declares ``None`` there, and the config check builds the encoder to learn the width.
+#: An entry needs the reason; an encoder whose width follows from its options declares it.
+WIDTH_KNOWN_ONCE_BUILT: dict[str, str] = {
+    "Uni3D": "without `out_channels` the width is that of the timm model named by `vit`",
+}
+
+
+def encoder_cases() -> list[Any]:
+    return [pytest.param(name, id=name, marks=ENCODERS[name][1]) for name in ENCODERS]
+
+
+@pytest.mark.parametrize("name", encoder_cases())
+def test_an_encoder_returns_the_width_it_declares(name):
+    """`output_channels` is `out_channels` told from the config: for the tiny encoder of
+    the matrix, alone and inside each adapter, and for the constructor defaults. Where
+    a class says "known only once built", the check learns the width by building."""
+    from grasppanda.models.base import configured_width
+    from grasppanda.models.detectors import seed_based
+
+    node = encoder(name)
+    built = BACKBONES.build(dict(node))
+    assert configured_width(node) == built.out_channels == WIDTH
+    adapter = ADAPTERS["dense" if built.output == "subsampled" else "subsampled"](node)
+    assert configured_width(adapter) == BACKBONES.build(adapter).out_channels == WIDTH
+    default = BACKBONES.build({"type": name}).out_channels
+    if name in WIDTH_KNOWN_ONCE_BUILT:
+        assert configured_width({"type": name}) is None
+        assert seed_based._encoder_width(seed_based._Stage("backbone", {"type": name})) == default
+    else:
+        assert configured_width({"type": name}) == default
+    assert configured_width({"type": "NoSuchEncoder"}) is None
+
+
+def test_every_registered_encoder_declares_its_width_or_says_that_it_cannot():
+    """A new encoder does not get past the seed-width rule by saying nothing: the default
+    declaration reads an `out_channels` option, and an encoder without a default for it
+    either overrides `output_channels` or is listed above with the reason."""
+    from grasppanda.models.base import configured_width
+
+    for name in registered("BACKBONES"):
+        cls = BACKBONES.get(name)
+        params, _ = component_parameters(cls)
+        if "backbone" in params:  # an adapter: the width of what it wraps, or its own
+            assert "output_channels" in vars(cls) or any(
+                "output_channels" in vars(base)
+                for base in cls.__mro__[1:-1]
+                if base is not Backbone
+            ), name
+            continue
+        declared = configured_width({"type": name})
+        assert (declared is None) == (name in WIDTH_KNOWN_ONCE_BUILT), (name, declared)

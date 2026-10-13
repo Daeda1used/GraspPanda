@@ -97,11 +97,14 @@ packages = ["grasppanda"]
 # so `grasppanda <command> <config-name>` works after a plain `pip install`.
 [tool.hatch.build.targets.wheel.force-include]
 "configs" = "grasppanda/_configs"
+# The combination explorer is a page of the docs and is served by `grasppanda explore`.
+"docs/explorer" = "grasppanda/_explorer"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/grasppanda",
     "/configs",
+    "/docs/explorer",
     "/tests",
     "/projects",
     "/README.md",

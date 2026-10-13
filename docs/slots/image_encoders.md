@@ -80,8 +80,8 @@ Measured here: 38 `runs`. The records are the `family-slot/HGGD/image_encoder/*`
 
 Sources of the columns: licences and arXiv numbers were read in this session from timm's
 `pretrained_cfg`, from the model cards on the Hugging Face hub and from torchvision's weight
-enums; venues and groups are the ones recorded in the project's research report where it
-marks them as checked, otherwise "venue not checked". **NC** = non-commercial weights:
+enums. A venue or a group that was not opened in this session is marked "venue not
+checked" or left out. **NC** = non-commercial weights:
 supported, never shipped; you download them under their own terms.
 
 | `--set image_encoder=` | What it is | Paper, venue, group | Class | Weights and their licence | Extra | HGGD, measured |
@@ -106,7 +106,7 @@ supported, never shipped; you download them under their own terms.
 | `sam2-hiera-tiny` | The image encoder of SAM 2.1 (Hiera-Tiny) from timm, colour only | SAM 2 (Ravi et al., arXiv 2408.00714; venue not checked), Meta FAIR | `TimmImageEncoder` | `sam2_hiera_tiny.fb_r896_2pt1`, Apache-2.0 (timm). | `timm` | runs (29.2 M, 10.4 GiB) |
 | `dinov2-small-reg` | DINOv2 ViT-S/14 with registers from timm (LVD-142M), colour only | DINOv2 (Oquab et al., arXiv 2304.07193) with registers (Darcet et al., arXiv 2309.16588); venues not checked; Meta FAIR | `TimmImageEncoder` | `vit_small_patch14_reg4_dinov2.lvd142m`, Apache-2.0 (timm). | `timm` | runs (24.3 M, 9.2 GiB) |
 | `dinov2-small-reg-depth-stem` | Frozen DINOv2 ViT-S/14 with registers (timm) and a trained depth stem in front | as `dinov2-small-reg`; the depth stem is this bridge's | `TimmImageEncoder` | `vit_small_patch14_reg4_dinov2.lvd142m`, Apache-2.0 (timm). | `timm` | runs (24.3 M, 9.0 GiB) |
-| `dinov3-vits16` | DINOv3 ViT-S/16 from timm (LVD-1689M), colour only | DINOv3 (Siméoni et al., arXiv 2508.10104), Meta FAIR | `TimmImageEncoder` | `vit_small_patch16_dinov3.lvd1689m`, DINOv3 License (timm: `dinov3-license`; Meta's own hub repositories are gated, timm's mirror is not). On this machine also `checkpoint: _weights/components/dinov3_small.safetensors`. | `timm` | runs (23.9 M, 9.4 GiB) |
+| `dinov3-vits16` | DINOv3 ViT-S/16 from timm (LVD-1689M), colour only | DINOv3 (Siméoni et al., arXiv 2508.10104), Meta FAIR | `TimmImageEncoder` | `vit_small_patch16_dinov3.lvd1689m`, DINOv3 License (timm: `dinov3-license`; Meta's own hub repositories are gated, timm's mirror is not). | `timm` | runs (23.9 M, 9.4 GiB) |
 | `dinov3-convnext-tiny` | ConvNeXt-Tiny distilled from DINOv3 (LVD-1689M) from timm, colour only | DINOv3 (Siméoni et al., arXiv 2508.10104), ConvNeXt student, Meta FAIR | `TimmImageEncoder` | `convnext_tiny.dinov3_lvd1689m`, DINOv3 License (timm: `dinov3-license`). | `timm` | runs (30.2 M, 10.3 GiB) |
 | `siglip2-base` | The image tower of SigLIP 2 Base/16 from timm (WebLI), colour only | SigLIP 2 (Tschannen et al., arXiv 2502.14786; venue not checked), Google | `TimmImageEncoder` | `vit_base_patch16_siglip_256.v2_webli`, Apache-2.0 (timm). | `timm` | runs (88.7 M, 11.4 GiB) |
 | `eva02-tiny` | EVA-02 Tiny/14 from timm (masked image modelling on ImageNet-22k), colour only | EVA-02 (arXiv 2303.11331; venue not checked) | `TimmImageEncoder` | `eva02_tiny_patch14_224.mim_in22k`, MIT (timm). | `timm` | runs (7.9 M, 8.8 GiB) |
@@ -213,8 +213,7 @@ Pretrained weights:
 
 - **timm**: `pretrained: true` downloads the tag's weights from the hub
   (`HF_HOME` chooses the cache). A local file: `checkpoint: /path/file.safetensors` (timm's key
-  names; on this machine for example `_weights/components/dinov3_small.safetensors` for
-  `vit_small_patch16_dinov3.lvd1689m`, tried here). Random weights: `pretrained: false`.
+  names; tried here with a local file of `vit_small_patch16_dinov3.lvd1689m`). Random weights: `pretrained: false`.
 - **transformers**: `name` is a hub id or a local directory with `config.json` and weights;
   `pretrained: false` builds the architecture from its configuration alone; `config: {model_type: dinov2, …}`
   builds from a configuration you write, without any download.
@@ -312,8 +311,7 @@ An untrained Scale-Balanced-Grasp returns few grasps after 20 iterations with it
 too (11 and 1 in the measured file); the column shows that prediction ran, not how well.
 
 These probes are not cells of the measured grid (the grid composes its cells, and compose
-does not write painted configs); the reports are kept under
-`$GRASPPANDA_CACHE/probe_grid/wave5-enc2d-painted/`.
+does not write painted configs).
 
 ## 6. Pitfalls actually met
 
@@ -369,8 +367,7 @@ does not write painted configs); the reports are kept under
   timm's mirrors instead.
 - **timm's MAE Hiera** (`hiera_tiny_224.mae_in1k_ft_in1k`): cannot be built for another image
   size (position-embedding size mismatch on load). Use `hiera-small-abswin`.
-- **RGB-D fusion encoders** (two streams with fusion at every stage; the research report
-  of this project (local notes, section 5.D) lists CMX, CMNeXt, TokenFusion,
+- **RGB-D fusion encoders** (two streams with fusion at every stage: CMX, CMNeXt, TokenFusion,
   GeminiFusion, DFormer and others; none was opened in this session): they are not a library
   model behind one `forward(image)`, and each needs its own adapted source and licence check.
   The slot contract (`input_layout: rgbd`) is ready for one.

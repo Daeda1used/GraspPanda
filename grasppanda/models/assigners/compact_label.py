@@ -27,7 +27,7 @@ Compact labels reach the assigner through ``supervision.extras[COMPACT_LABELS]``
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, ClassVar, Literal
 
 import torch
 from torch import Tensor
@@ -81,6 +81,9 @@ class CompactLabelAssigner(Assigner):
 
     #: Kind of matched labels the assigner returns; the head bundle must consume the same.
     label_format = "compact"
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {
+        f"extras.{COMPACT_LABELS}": None
+    }
     status = "tested"
     source = "EconomicGrasp (Wu et al., ECCV 2024)"
 

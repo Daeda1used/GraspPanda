@@ -188,6 +188,9 @@ class OperationHead(HeadBundle):
         "width_loss": "value",
         "tolerance_loss": "value",
     }
+    #: The tolerance target is the tolerance of the dense labels, which the assigner
+    #: slices like the widths when the label set carries it.
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {"objects.tolerance": None}
 
     @classmethod
     def required_seed_scores(cls, options: Mapping[str, Any]) -> tuple[str, ...]:

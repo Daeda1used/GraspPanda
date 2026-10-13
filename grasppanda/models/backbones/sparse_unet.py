@@ -18,6 +18,7 @@ The voxel size lives here and nowhere else (``docs/design/ARCHITECTURE.md`` §8.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -148,6 +149,10 @@ class SparseUNet14(Backbone):
     extras = ("spconv",)
     #: Each stage halves the resolution.
     stage_stride = 2
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        return options["out_channels"]
 
     def __init__(
         self,

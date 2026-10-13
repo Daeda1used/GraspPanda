@@ -59,7 +59,7 @@ Needs spconv for the sparse convolutions; nothing else beyond PyTorch.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -526,6 +526,15 @@ class _PTv3(Backbone):
     """Shared engine of the PTv3 family; see the module docstring."""
 
     output = "dense"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        """The finest decoder width; in encoder mode the sum of the concatenated stages."""
+        encoder = list(options["enc_channels"])
+        if options.get("enc_mode", False):
+            stages = options.get("concat_stages") or len(encoder)
+            return sum(encoder[len(encoder) - stages :])
+        return [*options["dec_channels"], encoder[-1]][0]
 
     def __init__(
         self,

@@ -71,25 +71,47 @@ def test_a_composed_swap_with_an_adapter_runs(graspnet1b_root, cuda, tmp_path):
     assert min(report.real_seeds) == 1.0  # a furthest-point subsample has no padding
 
 
-def test_a_width_the_check_cannot_see_fails_at_build_with_the_component(
+def test_a_stage_set_runs_under_a_recipe_that_serves_its_labels_and_is_refused_elsewhere(
     graspnet1b_root, cuda, tmp_path
 ):
-    """Passes the config check, fails when built: the probe says where and why.
-
-    Scale-Balanced-Grasp adds seed features to crop features, so the encoder's width must
-    be the crop's; PTv3 returns 64 channels. (Whether the width histogram of the eight
-    frames exists decides between real frames and the wiring check; the model is built,
-    and fails, either way.)"""
-    composed = compose(
-        "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e", ["backbone=ptv3"]
-    )
-    assert composed.accepted
-    path = tmp_path / "sbg_ptv3.yaml"
+    """GSNet's five stages composed onto GraspNet-baseline's recipe: compose adds the
+    graspness section the proposal reads, and the config trains on real frames. Onto
+    EconomicGrasp's recipe, which serves compact labels, the same stages are refused by
+    the config check; before that rule they failed at the first loss."""
+    stages = [
+        "backbone=sparse-unet14",
+        "proposal=graspness-fps",
+        "view=template-view",
+        "assigner=NearestLabelAssigner",
+        "grouper=CylinderGroup",
+        "head=swad",
+    ]
+    composed = compose(BASELINE, stages)
+    assert composed.accepted and composed.adapter is None
+    assert "graspness" in composed.body["data"]["train"]["dataset"]
+    path = tmp_path / "gsnet_stages_baseline_recipe.yaml"
     path.write_text(composed.text(path), encoding="utf-8")
-    report = probe(path, iters=2)
-    assert report.verdict == "fails" and report.failure["phase"] == "build", report.detail
-    assert report.failure["component"] == "grouper DepthCylinderGroup"
-    assert "64-channel seed features to 256-channel crop features" in report.failure["message"]
+    report = real(probe(path, iters=4))
+    assert report.verdict in ("runs", "runs-unstable"), report.detail
+    assert {"loss/graspness", "loss/view", "loss/score", "loss/width"} <= set(report.losses)
+    assert report.batch_size == 2  # the recipe is GraspNet-baseline's
+    refused = compose("economicgrasp/economicgrasp_sunet14_g1b-realsense_10e", stages)
+    assert not refused.accepted and not refused.problems
+    assert "NearestLabelAssigner reads `supervision.objects`" in refused.issues[0].message
+
+
+def test_an_encoder_of_another_width_is_refused_or_projected_before_a_gpu_is_touched():
+    """Scale-Balanced-Grasp adds seed features to crop features, so the encoder's width
+    must be the crop's; PTv3 returns 64 channels. It used to pass the config check and
+    fail when the grouper was built. Compose puts the projected variant of the grouper
+    in place; without that, the config check refuses the pair."""
+    base = "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e"
+    composed = compose(base, ["backbone=ptv3"])
+    assert composed.accepted
+    assert composed.body["model"]["grouper"]["type"] == "DepthCylinderProjectionGroup"
+    refused = compose(base, ["backbone=ptv3"], adapters=False)
+    assert not refused.accepted
+    assert any("PTv3 returns 64-channel features" in problem for problem in refused.problems)
 
 
 def test_missing_assets_are_named_and_the_verdict_is_only_wired(

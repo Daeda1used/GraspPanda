@@ -27,12 +27,12 @@ of the seeds and leaves the seeds where they were.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Any, Literal
 
 from torch import Tensor
 
-from grasppanda.models.base import Backbone
+from grasppanda.models.base import Backbone, configured_width
 from grasppanda.registry import BACKBONES, Cfg
 from grasppanda.structures import ContractError, PointFeatures, PointSet
 
@@ -67,6 +67,11 @@ class FurthestPointSubsample(Backbone):
     output = "subsampled"
     status = "tested"
     source = "PointNet++ furthest point sampling (Qi et al., NeurIPS 2017)"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """The width of the wrapped backbone: its features are kept as they are."""
+        return configured_width(options["backbone"])
 
     def __init__(
         self,

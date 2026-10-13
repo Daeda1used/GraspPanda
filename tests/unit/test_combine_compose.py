@@ -101,9 +101,13 @@ def test_a_dense_encoder_under_subsampled_seeds_keeps_the_reference_seeds():
     told = " ".join(result.actions)
     assert "out_channels: 256" in told and "npoint: 1024" in told and "fps_tie_break" in told
     assert result.comments[("model", "backbone", "npoint")] == "= model.proposal.num_seeds"
-    # A proposal with another seed count moves the adapter with it.
+    # A proposal with another seed count moves the adapter with it, however it was set:
+    # by an override of the base config's proposal ...
     other = compose(BASELINE, ["backbone=sparse-unet14"], ["model.proposal.num_seeds=512"])
-    assert other.body["model"]["backbone"]["npoint"] == 1024  # the override is not a --set
+    assert other.accepted and other.body["model"]["backbone"]["npoint"] == 512
+    assert other.body["model"]["proposal"] == {"num_seeds": 512}
+    assert any("npoint: 512, the number of seeds" in action for action in other.actions)
+    # ... or by an override of a proposal that was --set.
     fewer = compose(GSNET, ["proposal=SubsampledSeeds"], ["model.proposal.num_seeds=512"])
     assert fewer.accepted and fewer.body["model"]["backbone"]["npoint"] == 512
     # ... and here the encoder is the base config's own, written out inside the adapter.
@@ -155,8 +159,10 @@ def test_overrides_address_the_component_that_was_set_and_win(tmp_path):
     with pytest.raises(ComposeError, match="use `--set backbone="):
         compose(GSNET, ["backbone=ptv3"], ["model.backbone.type=LitePT"])
     # A child config cannot reach into an inherited list; compose says what to write instead.
-    with pytest.raises(ComposeError, match=r"give the whole list \(`hooks.0=\[...\]`\)"):
+    with pytest.raises(ComposeError, match=r"give the whole list \(`hooks=\[...\]`\)"):
         compose(GSNET, ["backbone=ptv3"], ["hooks.0.interval=5"])
+    with pytest.raises(ComposeError, match=r"\(`data.train.dataset.transforms=\[...\]`\)"):
+        compose(GSNET, ["backbone=ptv3"], ["data.train.dataset.transforms.0.num_points=1000"])
     with pytest.raises(ComposeError, match=r"`model.backbone.enc_depths=\[...\]`"):
         compose(GSNET, ["backbone=ptv3"], ["model.backbone.enc_depths.0=3"])
     whole = compose(GSNET, ["backbone=ptv3"], ["model.backbone.enc_depths=[1, 1, 1, 2, 1]"])
@@ -224,7 +230,10 @@ def test_the_bare_component_is_composed_with_its_defaults_and_points_at_the_pres
     result = compose(GSNET, ["backbone=PTv3"])
     assert result.accepted and result.body == {"model": {"backbone": {"type": "PTv3"}}}
     assert result.origins["backbone"] == "constructor defaults"
-    assert any("Presets for it: ptv3" in action for action in result.actions)
+    assert any(
+        "not a recipe for table-top clouds" in action and "`--set backbone=ptv3`" in action
+        for action in result.actions
+    )
     bare = compose(GSNET, ["grouper=MultiScaleGroup"])
     assert not bare.accepted and "requires 'branch'" in bare.issues[0].message
     assert compose(GSNET, ["grouper=multi-scale"]).accepted  # which the preset supplies
@@ -233,6 +242,9 @@ def test_the_bare_component_is_composed_with_its_defaults_and_points_at_the_pres
 def test_requests_that_cannot_be_composed_say_why():
     with pytest.raises(ComposeError, match=r"no preset 'ptv33' for slot 'backbone'.*'ptv3'"):
         compose(GSNET, ["backbone=ptv33"])
+    with pytest.raises(ComposeError) as far:  # nothing near: no guess is offered
+        compose(GSNET, ["backbone=resnet50"])
+    assert "Did you mean" not in str(far.value) and "Presets: " in str(far.value)
     with pytest.raises(ComposeError, match=r"GSNet has no slot 'neck'"):
         compose(GSNET, ["neck=ptv3"])
     with pytest.raises(ComposeError, match=r"slot 'backbone' is set twice"):
@@ -287,6 +299,175 @@ def test_adapters_are_found_from_the_registry_not_from_a_list():
     dense, proposal = {"type": "SparseUNet14"}, {"type": "SubsampledSeeds"}
     assert _adapters_for(dense, proposal) == ["FurthestPointSubsample"]
     assert not is_adapter(BACKBONES.get("PointNet2"))
+
+
+# ------------------------------------------------- what compose reads from the contracts
+
+
+SUBSAMPLED_SET = [
+    "proposal=SubsampledSeeds",
+    "view=objectness-view",
+    "assigner=nearest-label-object-seeds",
+    "grouper=depth-cylinder-multi-scale",
+    "head=operation",
+]
+
+
+def test_the_encoder_is_given_the_width_a_grouper_fixes():
+    """The gated seed residual needs 256-channel seeds. A new encoder with an
+    `out_channels` option gets that width, whatever the encoder it replaces returned; one
+    without the option gets the projected variant of the grouper, as does the base config's
+    own encoder."""
+    fitted = compose(GSNET, ["backbone=sparse-unet14", *SUBSAMPLED_SET])
+    assert fitted.accepted and fitted.adapter == "FurthestPointSubsample"
+    inner = fitted.body["model"]["backbone"]["backbone"]
+    assert inner["out_channels"] == 256  # not the 512 of the encoder it replaces
+    assert any("the seed features DepthCylinderGroup needs" in a for a in fitted.actions)
+    assert fitted.comments[("model", "backbone", "backbone", "out_channels")] == (
+        "the seed width DepthCylinderGroup needs as configured"
+    )
+    # The same grouper set by an override counts like one set by --set ...
+    by_option = compose(BASELINE, ["backbone=sparse-unet14"], ["model.grouper.seed_residual=gated"])
+    assert by_option.accepted
+    assert by_option.body["model"]["backbone"]["backbone"]["out_channels"] == 256
+    # ... and without the residual the width of the replaced encoder is kept.
+    plain = compose(SBG, ["backbone=sparse-unet14"], ["model.grouper.seed_residual=none"])
+    assert any("the encoder it replaces (PointNet2Transformer)" in a for a in plain.actions)
+    # An encoder without the option, and the base config's own encoder, get the projected
+    # variant of the grouper; with --no-adapter the width rule refuses them, with both widths.
+    for sets in (["backbone=ptv3", *SUBSAMPLED_SET], SUBSAMPLED_SET):
+        projected = compose(GSNET, sets)
+        assert projected.accepted
+        assert projected.body["model"]["grouper"]["type"] == "DepthCylinderProjectionGroup"
+        assert any("DepthCylinderProjectionGroup in place of" in a for a in projected.actions)
+        refused = compose(GSNET, sets, adapters=False)
+        assert not refused.accepted and refused.config_hash is None
+        assert any(
+            "adds the seed features to its 256-channel crop features" in problem
+            and "`type: DepthCylinderProjectionGroup`" in problem
+            for problem in refused.problems
+        )
+    assert any(
+        "PTv3 returns 64-channel features" in problem
+        for problem in compose(GSNET, ["backbone=ptv3", *SUBSAMPLED_SET], adapters=False).problems
+    )
+    # The user's own width wins over the fit, and is then what the rule judges.
+    own = compose(
+        GSNET,
+        ["backbone=sparse-unet14", *SUBSAMPLED_SET],
+        ["model.backbone.out_channels=128"],
+        adapters=False,
+    )
+    assert not own.accepted
+    assert any("returns 128-channel features" in problem for problem in own.problems)
+
+
+def test_a_recipe_that_does_not_serve_the_labels_is_refused_with_where_to_start():
+    """GSNet's assigner and head on EconomicGrasp's data recipe: accepted by every stage
+    contract, refused by the config check at the dataset, and compose says which shipped
+    recipes serve the labels."""
+    result = compose(ECONOMIC, ["assigner=NearestLabelAssigner", "head=swad"])
+    assert not result.accepted and not result.problems
+    assert not any(verdict.problems for verdict in result.verdicts)
+    (issue,) = result.issues
+    assert issue.path == "data.train.dataset"
+    assert "NearestLabelAssigner reads `supervision.objects`" in issue.message
+    (hint,) = result.hints
+    assert "compose does not rewrite one" in hint and GSNET in hint
+    # Only recipes under which this very request is served: GSNet's has the dense grids
+    # and the graspness the base's proposal reads; GraspNet-baseline's has no graspness.
+    listed = hint.split("this request: ")[1].split(". Compose")[0].split(", ")
+    assert listed and all(name.startswith("gsnet/") for name in listed)
+    assert all(
+        compose(name, ["assigner=NearestLabelAssigner", "head=swad"]).accepted for name in listed
+    )
+    # The other direction: compact labels on a recipe with dense grids.
+    compact = compose(GSNET, ["assigner=compact-label", "head=economic"])
+    assert not compact.accepted and ECONOMIC in compact.hints[-1] and FINEGRASP in compact.hints[-1]
+    assert GSNET not in compact.hints[-1] and "hggd/" not in compact.hints[-1]
+
+
+def test_a_component_named_by_its_type_is_pointed_at_the_preset_with_its_dataset_section():
+    bare = compose(BASELINE, ["proposal=GraspnessFPS", "view=TemplateViewStage"])
+    assert not bare.accepted
+    (issue,) = bare.issues
+    assert "GraspnessFPS reads `supervision.point_labels['graspness']`" in issue.message
+    assert any("`--set proposal=graspness-fps`" in hint for hint in bare.hints)
+    assert len(bare.hints) == 1  # the preset is the whole answer: no other recipe is named
+    # With the preset the section is added, and the same stages are accepted.
+    preset = compose(BASELINE, ["proposal=graspness-fps", "view=template-view"])
+    assert preset.accepted and "graspness" in preset.body["data"]["train"]["dataset"]
+    tolerance = compose(GSNET, ["grouper=DepthCylinderGroup", "head=OperationHead"])
+    assert not tolerance.accepted
+    assert any("`--set head=operation`" in hint for hint in tolerance.hints)
+    assert compose(GSNET, ["grouper=DepthCylinderGroup", "head=operation"]).accepted
+    histogram = compose(BASELINE, ["assigner=ScaleBalancedAssigner"])
+    assert any("`--set assigner=scale-balanced`" in hint for hint in histogram.hints)
+    # A request refused by a stage contract alone gets no hint about data.
+    assert compose(GSNET, ["grouper=DepthCylinderGroup"]).hints == []
+
+
+# -------------------------------------------------------------------- the base config
+
+
+def test_a_composed_config_is_composed_again_from_its_base(tmp_path):
+    """A chain is two levels deep, so a composed config cannot be inherited from. Its
+    header says how it was made: the two requests are merged and composed from its base."""
+    first = tmp_path / "gsnet_pointnet2.yaml"
+    assert main(["compose", GSNET, "--set", "backbone=pointnet2", "-o", str(first)]) == 0
+    again = compose(first, ["grouper=multi-scale"], ["train.epochs=3"])
+    assert again.accepted and again.base == GSNET
+    assert again.command == (
+        f"grasppanda compose {GSNET} --set backbone=pointnet2 --set grouper=multi-scale "
+        "--opts train.epochs=3"
+    )
+    assert (
+        again.config_hash
+        == compose(
+            GSNET, ["backbone=pointnet2", "grouper=multi-scale"], ["train.epochs=3"]
+        ).config_hash
+    )
+    assert "is itself a composed config" in again.actions[0] and GSNET in again.actions[0]
+    # A --set of the new request replaces the one of the same slot; so does an override.
+    second = tmp_path / "second.yaml"
+    second.write_text(again.text(second), encoding="utf-8")
+    replaced = compose(second, ["backbone=ptv3"], ["train.epochs=5"])
+    assert replaced.command == (
+        f"grasppanda compose {GSNET} --set grouper=multi-scale --set backbone=ptv3 "
+        "--opts train.epochs=5"
+    )
+    # The shipped experimental configs are composed configs.
+    shipped = compose(EXPERIMENTAL[0], ["grouper=CylinderInteractionGroup"])
+    assert shipped.accepted and shipped.base in (GSNET, ECONOMIC, BASELINE)
+
+
+def test_a_base_that_cannot_be_inherited_from_says_what_to_compose_from(tmp_path, capsys):
+    # A composed file that was edited: its header no longer says what it is.
+    edited = tmp_path / "edited.yaml"
+    text = compose(GSNET, ["backbone=ptv3"]).text(edited)
+    edited.write_text(text + "\ntrain:\n  epochs: 3\n", encoding="utf-8")
+    with pytest.raises(ComposeError) as error:
+        compose(edited, ["grouper=multi-scale"])
+    message = str(error.value)
+    assert "limited to 2 levels" in message and "edited afterwards" in message
+    assert f"Compose from `{GSNET}` in one command" in message and "--set backbone=ptv3" in message
+    # A shipped child config that is not composed: the cross-dataset configs.
+    child = "gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e"
+    with pytest.raises(ComposeError) as error:
+        compose(child, ["backbone=ptv3"])
+    assert f"Compose from `{GSNET}` instead" in str(error.value)
+    assert main(["compose", child, "--set", "backbone=ptv3"]) == 2
+    assert "cannot be the base of a composed config" in capsys.readouterr().err
+    # Every shipped config either composes or says so.
+    bases = 0
+    for name in available_configs():
+        if name.startswith("_base_/"):
+            continue
+        try:
+            bases += compose(name).accepted
+        except ComposeError as refusal:
+            assert "cannot be the base of a composed config" in str(refusal), name
+    assert bases >= 16
 
 
 # ------------------------------------------------------------------------ the file
@@ -398,4 +579,45 @@ def test_the_command_as_json_and_its_listings(capsys):
     assert "compose needs a base config" in capsys.readouterr().err
     with pytest.raises(SystemExit) as stop:
         main(["compose", "--help"])
-    assert stop.value.code == 0 and "--set" in capsys.readouterr().out
+    text = capsys.readouterr().out
+    assert stop.value.code == 0 and "--set" in text
+    # The help is enough to use the command: slots, examples, the base, exit statuses.
+    for fragment in (
+        "backbone  proposal  view  assigner  grouper  head",
+        "examples:",
+        "exit status:",
+        "composed again from its own",
+        "grasppanda probe",
+    ):
+        assert fragment in text, fragment
+    # Slots are also known by the plural `grasppanda components --slot` uses.
+    assert main(["compose", "--list", "backbones"]) == 0
+    assert "ptv3" in capsys.readouterr().out
+    assert main(["compose", "--show", "ptv3"]) == 2
+    assert "--show takes `slot=preset`" in capsys.readouterr().err
+    assert main(["compose", "--show", "encoder=ptv3"]) == 2
+    assert "Slots: backbone, proposal" in capsys.readouterr().err
+
+
+def test_the_command_does_not_overwrite_a_file_or_its_own_base(tmp_path, capsys):
+    target = tmp_path / "mine.yaml"
+    arguments = ["compose", GSNET, "--set", "backbone=ptv3", "-o", str(target)]
+    assert main(arguments) == 0
+    first = target.read_text(encoding="utf-8")
+    capsys.readouterr()
+    other = ["compose", GSNET, "--set", "backbone=litept", "-o", str(target)]
+    assert main(other) == 2  # the file exists
+    assert "exists" in capsys.readouterr().err and target.read_text(encoding="utf-8") == first
+    assert main([*other, "--force"]) == 0 and target.read_text(encoding="utf-8") != first
+    capsys.readouterr()
+    # Writing onto the base config would make it inherit from itself.
+    base = tmp_path / "base.yaml"
+    shipped = (configs_root() / f"{GSNET}.yaml").read_text(encoding="utf-8")
+    base.write_text(shipped.replace("../_base_/", f"{configs_root()}/_base_/"), encoding="utf-8")
+    before = base.read_text(encoding="utf-8")
+    assert main(["compose", str(base), "--set", "backbone=ptv3", "-o", str(base), "--force"]) == 2
+    assert "inherit from itself" in capsys.readouterr().err
+    assert base.read_text(encoding="utf-8") == before
+    # A refused request never touches the output, existing or not.
+    assert main(["compose", GSNET, "--set", "head=economic", "-o", str(target), "--force"]) == 1
+    assert "LitePT" in target.read_text(encoding="utf-8")

@@ -61,7 +61,7 @@ Needs spconv for the sparse convolutions; nothing else beyond PyTorch.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -563,6 +563,11 @@ class LitePT(Backbone):
             if pretrained is None
             else load_pretrained(self, pretrained, mismatch=pretrained_mismatch)
         )
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        """The width of the finest decoder stage (of the encoder, when it has one stage)."""
+        return [*options["dec_channels"], options["enc_channels"][-1]][0]
 
     # --------------------------------------------------------------------- forward
 

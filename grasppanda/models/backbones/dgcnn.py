@@ -71,7 +71,7 @@ def _point_block(inputs: int, outputs: int) -> nn.Sequential:
 
 @BACKBONES.register()
 class DGCNN(Backbone):
-    """Dynamic Graph CNN with features on every input point.
+    """Dynamic Graph CNN: EdgeConv over k-nearest-neighbour graphs, features on every point.
 
     The defaults are the S3DIS segmentation network of the PyTorch reference: three
     EdgeConv layers of 64 channels with 20 neighbours, a 1024-channel global vector,

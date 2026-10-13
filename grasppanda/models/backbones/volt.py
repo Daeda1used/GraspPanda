@@ -230,6 +230,12 @@ class Volt(Backbone):
         "YilmazKadir/Volt@8dcd608, MIT"
     )
 
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """``out_channels``, or the width of the decoder."""
+        width = options.get("out_channels")
+        return width if isinstance(width, int) else options["up_mlp_dim"]
+
     def __init__(
         self,
         in_channels: int = 6,

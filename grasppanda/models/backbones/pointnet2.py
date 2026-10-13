@@ -33,9 +33,9 @@ here, and its released weights are an evaluation aid, not part of this project.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
-from typing import Literal
+from typing import Any, Literal
 
 import torch
 from torch import Tensor, nn
@@ -159,6 +159,12 @@ class _Propagation(nn.Module):
 
 class _PointNet2(Backbone):
     """Set abstraction down, feature propagation part or all of the way back up."""
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int:
+        """The last width of the last propagation level, or of the last abstraction."""
+        last = options["fp_mlps"][-1] if options["fp_mlps"] else options["sa_mlps"][-1]
+        return last[-1]
 
     def __init__(
         self,

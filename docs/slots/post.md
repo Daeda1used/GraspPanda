@@ -58,7 +58,7 @@ otherwise. "Probe" is the verdict of the measured records
 ([measured combinations](../advanced_guides/measured_combinations.md), group `post`)
 under GSNet / GraspNet-baseline / HGGD. Weights: none anywhere (nothing is trained).
 
-| Name | Component | What it does | Idea from (as recorded by the slot research; no code was copied) | Code | Extra | Probe | Reads beyond the grasps |
+| Name | Component | What it does | Idea from (sources not re-opened for this page; no code was copied) | Code | Extra | Probe | Reads beyond the grasps |
 |---|---|---|---|---|---|---|---|
 | `top-k` | `TopK` | keep the `k` best | AnyGrasp (Fang et al., arXiv 2212.08333, §IV-D: top-100), GPD `num_selected` | written here | — | runs / runs / runs | nothing |
 | `score-threshold` | `ScoreThreshold` | keep scores above an absolute, quantile or relative limit | 6-DOF GraspNet `choose_fn` (Mousavian et al., arXiv 1905.10520) | written here | — | runs / runs / runs | nothing |
@@ -71,7 +71,7 @@ under GSNet / GraspNet-baseline / HGGD. Weights: none anywhere (nothing is train
 | `gripper-limits` | `GripperLimits` | opening (and depth) within what a real gripper does; remove or clip | AnyGrasp SDK `max_gripper_width`, GPD apertures | written here | — | runs / runs / runs | nothing |
 | `center-gripper` | `GripperCentering` | shift along the closing axis to the middle of the contacts | AnyGrasp §IV-D | written here | — | runs / runs / runs | a cloud |
 | `width-from-cloud` | `WidthFromCloud` | opening = extent between the fingers + clearance | ZeroGrasp's width refinement, single-view form | written here | — | runs / runs / runs | a cloud |
-| `collision` | `ModelFreeCollisionFilter` | four gripper boxes against the voxelised **full** cloud (GSNet test script) | GraspNet-1Billion collision detector | existed | — | runs / runs / fails (clear message: no full cloud) | `full_points`: **refused under HGGD as shipped** (its dataset keeps no full cloud; message says how) |
+| `collision` | `ModelFreeCollisionFilter` | four gripper boxes against the voxelised **full** cloud (GSNet test script) | GraspNet-1Billion collision detector | existed | — | runs / runs / fails (clear message: no full cloud) | `full_points`: **fails under HGGD as shipped** (its dataset keeps no full cloud; the message says how to supply one) |
 | `collision-strict` | `ModelFreeCollisionFilter` | HGGD's parameters: one point rejects, on the network's cloud | HGGD test script | existed | — | runs / runs / runs | `points` |
 | `mesh-collision` | `GripperMeshCollisionFilter` | scene points inside a gripper **mesh** (STL/OBJ/PLY of your gripper, or built-in boxes) | GraspGen's cloud-against-gripper-mesh check (Murali et al., arXiv 2507.13097), as containment | **route L**: [trimesh](https://github.com/mikedh/trimesh) (MIT) loads, splits, hulls; placement and containment in PyTorch | `trimesh` | runs / runs / runs | a cloud |
 | `to-base-frame` | `ToFrame` | grasps into the robot base frame; optionally the grasp point at the fingertips | — | written here on `GraspGroup.transform` | — | runs / runs / runs | nothing; must be last |
@@ -249,10 +249,10 @@ points in gripper frames, a rigid transform from a config and a plane fit are in
 
 ## 5. Pitfalls met while building this
 
-* **`collision` under HGGD is refused at run time**: HGGD's dataset section keeps no full
+* **`collision` under HGGD stops when it runs** (verdict `fails`, not a refusal of the config check): HGGD's dataset section keeps no full
   cloud. The message names both remedies: `--opts data.test.dataset.keep_full_points=true`,
-  or `cloud: points` (`collision-strict` already reads the network's cloud). The steps
-  written in this wave (`center-gripper`, `width-from-cloud`, `table-plane`, `approach-cone`,
+  or `cloud: points` (`collision-strict` already reads the network's cloud). The newer steps
+  (`center-gripper`, `width-from-cloud`, `table-plane`, `approach-cone`,
   `mesh-collision`) read the full cloud when it is there and the network's cloud otherwise.
 * **A full cloud is half a million points.** Centring 1024 grasps against 519 612 points took
   0.8 s and gigabytes of work memory; both refiners now down-sample to 5 mm voxels first

@@ -32,6 +32,11 @@ added to either gets its cells without anyone listing them:
     every recipe preset (optimizer, schedule, hooks, augment, recipe) under GSNet and
     under HGGD, a detector family of its own; the presets that name the scene encoder
     of the seed-based skeleton under a second seed-based method instead.
+``cross``
+    options of several slots replaced together (:data:`CROSS_CELLS`): an encoder with a
+    grouper, a proposal, a view stage, a recipe or a post-processing preset. The
+    other groups replace one thing at a time (or five stages under two fixed encoders);
+    these cells are a hand-picked sample of what a user composes, not a covering of it.
 
 ``tools/probe_grid.py`` runs the cells; ``tools/make_combination_docs.py`` renders what
 was recorded. Nothing here probes anything.
@@ -51,6 +56,7 @@ from .presets import LOSS_SLOT, POST_SLOT, Preset, presets
 from .recipes import recipes
 
 __all__ = [
+    "CROSS_CELLS",
     "FAMILIES",
     "LOSS_CELLS",
     "LOSS_NOT_PROBED",
@@ -211,6 +217,64 @@ LOSS_NOT_PROBED: dict[str, str] = {
         "`decoupled-grid-bins` (stage cells)"
     ),
 }
+#: The cross cells: a method and options of several slots replaced together, as
+#: ``slot=choice``. Each pairs a scene encoder (or, under HGGD, an image encoder) with
+#: options of other slots, so that every method and every slot appears at least once. One
+#: of them is a request the config check refuses. The pairs of a request are in the order
+#: of the pipeline (stages, post-processing, recipe), the order the explorer writes them in.
+CROSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("GSNet", ("backbone=point-transformer-v2", "grouper=cylinder-vector-attention")),
+    ("GSNet", ("backbone=pointvector", "proposal=graspness-nms", "grouper=roi-grid")),
+    ("GSNet", ("backbone=minkunet34c", "view=healpix-192", "grouper=multi-scale-linear")),
+    (
+        "GSNet",
+        ("backbone=volt", "proposal=graspness-fpsample", "view=icosphere-162", "grouper=knn"),
+    ),
+    ("GSNet", ("backbone=ptv3", "proposal=dense-fps", "view=direction-vmf", "grouper=ball")),
+    (
+        "GSNet",
+        (
+            "backbone=uni3d",
+            "view=rotation-6d",
+            "grouper=multi-scale",
+            "optimizer=schedulefree-adamw",
+        ),
+    ),
+    ("EconomicGrasp", ("backbone=dela", "grouper=pyg-edge-conv", "optimizer=adamw")),
+    (
+        "EconomicGrasp",
+        (
+            "backbone=spunet-gaussiancross",
+            "proposal=graspness-voxel",
+            "grouper=box",
+            "schedule=warmup-cosine",
+        ),
+    ),
+    ("EconomicGrasp", ("backbone=pointmlp", "view=lattice-topk", "grouper=multi-scale")),
+    ("FineGrasp", ("backbone=randlanet", "view=lattice-soft-argmax", "hooks=ema")),
+    ("FineGrasp", ("backbone=point-transformer-v1", "grouper=cylinder-invres")),
+    (
+        "FineGrasp",  # refused: the head reads crops without a depth axis
+        ("backbone=point-transformer-v1", "view=lattice-best-view", "grouper=depth-ball"),
+    ),
+    ("GraspNet-baseline", ("backbone=pointnet2-msg", "grouper=depth-ball", "post=nms")),
+    (
+        "GraspNet-baseline",
+        (
+            "backbone=assanet",
+            "view=two-vector-baseline",
+            "grouper=depth-knn",
+            "optimizer=timm-lamb",
+        ),
+    ),
+    ("Scale-Balanced-Grasp", ("backbone=pointmetabase", "grouper=depth-cylinder-attentive")),
+    ("Scale-Balanced-Grasp", ("backbone=dgcnn", "grouper=depth-box", "post=gripper-limits")),
+    (
+        "HGGD",
+        ("image_encoder=convnextv2-atto", "post=nms", "optimizer=adamw", "schedule=cosine"),
+    ),
+    ("HGGD", ("image_encoder=tv-mobilenetv3-large", "post=top-k", "hooks=ema")),
+)
 #: Stage variants that are left out of the stage sets, each with the reason. A variant
 #: that shares every contract with another one would only repeat that one's sets; it is
 #: probed alone, one stage replaced under every method (group ``stage``).
@@ -248,7 +312,7 @@ class Cell:
     Attributes:
         id: Unique name, also the name of its files (``encoder/GSNet/PTv3``).
         group: ``reference``, ``encoder``, ``stage``, ``stage-set``, ``family``,
-            ``family-slot``, ``post``, ``loss`` or ``recipe``.
+            ``family-slot``, ``post``, ``loss``, ``recipe`` or ``cross``.
         method: The method (a key of :data:`METHODS` or :data:`FAMILIES`).
         base: The config it is composed from.
         sets: ``slot=choice`` pairs of the compose request; empty for a config as shipped.
@@ -381,8 +445,10 @@ def _stage_sets() -> Iterator[tuple[str, dict[str, tuple[str, str]]]]:
         ]
         for slot in STAGE_SLOTS
     }
-    for kind, encoder in STAGE_SET_ENCODERS.items():
-        backbone = dict(members["backbone"][encoder].node)
+    for kind in STAGE_SET_ENCODERS:
+        # "Any encoder of this kind": a set is a statement about the five stages. The
+        # width of the encoder is fitted by compose where a stage fixes one.
+        backbone = type(f"a {kind} encoder", (), {"output": kind})
         for chosen in itertools.product(*(options[slot] for slot in STAGE_SLOTS)):
             picked = dict(zip(STAGE_SLOTS, chosen))
             nodes = {slot: node(slot, choice) for slot, (choice, _) in picked.items()}
@@ -532,6 +598,9 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
                         name,
                     )
                 )
+    for method, sets in CROSS_CELLS:
+        name = "+".join(item.partition("=")[2] for item in sets)
+        found.append(Cell(f"cross/{method}/{name}", "cross", method, bases[method], sets))
     if groups is not None:
         found = [cell for cell in found if cell.group in groups]
     return found

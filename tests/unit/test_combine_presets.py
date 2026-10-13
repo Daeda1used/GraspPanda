@@ -314,6 +314,36 @@ def test_every_loss_preset_is_composed_into_a_term_it_fits_or_says_why_not():
     assert "but QualityFocal fits `unit` terms" in problem and "SmoothL1" in problem
 
 
+def encoder_preset_cases():
+    return [
+        pytest.param(preset, id=preset.name)
+        for preset in presets()["backbone"].values()
+        if not is_adapter(BACKBONES.get(preset.type))  # an adapter preset wraps nothing yet
+    ]
+
+
+@pytest.mark.parametrize("preset", encoder_preset_cases())
+def test_an_encoder_preset_returns_the_width_it_declares(preset):
+    """Compose fits widths from what an encoder declares for its options, without
+    building it: for every preset that number is the width of the built encoder. A
+    preset whose class says "known only once built" is built by the config check."""
+    from grasppanda.models.base import configured_width
+    from grasppanda.utils.imports import MissingDependencyError
+
+    node = dict(preset.node)
+    if "pretrained" in node:  # the width belongs to the architecture, not to the weights
+        node["pretrained"] = None
+    declared = configured_width(preset.node)
+    try:
+        built = BACKBONES.build(node)
+    except MissingDependencyError as error:
+        pytest.skip(str(error).split(". ")[0])
+    if declared is None:
+        assert BACKBONES.get(preset.type).output_channels({"out_channels": None}) is None
+    else:
+        assert declared == built.out_channels
+
+
 # ------------------------------------------------------------------------- the tripwire
 
 

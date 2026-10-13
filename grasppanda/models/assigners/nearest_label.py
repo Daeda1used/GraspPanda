@@ -91,6 +91,10 @@ class NearestLabelAssigner(Assigner):
         "on_object": ("supervise", "object_seeds"),
         "view_width": ("view_widths", True),
     }
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {
+        "objects": None,
+        "point_labels.objectness": ("supervise", "object_seeds"),
+    }
 
     def __init__(
         self,

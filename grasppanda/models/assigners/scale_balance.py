@@ -206,6 +206,10 @@ class ScaleBalancedAssigner(NearestLabelAssigner):
         "view_width": None,
         "weight": None,
     }
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {
+        **NearestLabelAssigner.needs_supervision,
+        f"extras.{HISTOGRAM_KEY}": None,
+    }
 
     def __init__(
         self,

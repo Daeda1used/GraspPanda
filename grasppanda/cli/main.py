@@ -17,6 +17,7 @@ from . import (
     compose,
     demo,
     env,
+    explore,
     infer,
     prepare,
     print_config,
@@ -58,6 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     components.register(commands)
     compose.register(commands)
     probe.register(commands)
+    explore.register(commands)
     prepare.register(commands)
     env.register(commands)
     return parser

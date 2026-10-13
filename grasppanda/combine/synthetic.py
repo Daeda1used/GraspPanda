@@ -3,8 +3,10 @@
 Two generators, both free of any dataset content:
 
 * :func:`random_batch`: frames of uniformly random points with every label a registered
-  stage reads, at any grid size. It is the batch of the swap matrix
-  (``tests/unit/test_swap_matrix.py``), where the stages are a few channels wide.
+  stage reads, at any grid size. It is the batch of the swap matrix and of the label
+  contract tests (``tests/unit/test_swap_matrix.py``,
+  ``tests/unit/test_supervision_contract.py``), where the stages are a few channels wide;
+  it is shipped so that a project can run its own stage through the same batch.
 * :func:`scene_batch`: the ray-cast table-top scene of
   :func:`grasppanda.apis.example.example_scene` as a point cloud in metres (and, for an
   image-based detector, as images), with random labels attached to its objects. A
@@ -25,6 +27,7 @@ from typing import Any
 import numpy as np
 import torch
 
+from grasppanda.models.assigners.scale_balance import HISTOGRAM_KEY
 from grasppanda.registry import DATASETS, PROPOSALS, component_parameters
 from grasppanda.structures import (
     COMPACT_LABELS,
@@ -38,9 +41,6 @@ from grasppanda.structures import (
 
 __all__ = ["HISTOGRAM_KEY", "random_batch", "scene_batch", "wiring_check"]
 
-#: Entry of ``Supervision.extras`` that carries the width histogram of
-#: :mod:`grasppanda.models.assigners.scale_balance`.
-HISTOGRAM_KEY = "scale_histogram"
 _LEVELS = (-1.0, 0.1, 0.3, 0.6, 1.0)  # friction labels: invalid, then good to poor
 
 
@@ -445,4 +445,4 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
             if target.type == "cuda":
                 report.peak_gpu_mib = round(torch.cuda.max_memory_allocated(target) / 2**20, 1)
     report.real_seeds = []  # seeds on noise labels are not something to judge
-    _judge(report, "wired", "a synthetic scene with random labels")
+    _judge(report, "wired", "a synthetic scene with random labels", len(observation.keys))

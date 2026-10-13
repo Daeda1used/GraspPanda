@@ -162,6 +162,7 @@ class EMAHook(Hook):
     """
 
     priority = 20
+    status = "tested"
     source = "Tarvainen and Valpola, NeurIPS 2017 (arXiv 1703.01780), via torch.optim.swa_utils"
 
     def __init__(
@@ -209,6 +210,7 @@ class SWAHook(Hook):
     """
 
     priority = 20
+    status = "tested"
     source = "Izmailov et al., UAI 2018 (arXiv 1803.05407), via torch.optim.swa_utils"
 
     def __init__(self, start_epoch: int, buffers: Literal["copy", "average"] = "copy") -> None:
@@ -251,6 +253,7 @@ class FreezeHook(Hook):
     """
 
     priority = 30
+    status = "tested"
     source = "Howard and Ruder, ACL 2018 (arXiv 1801.06146): gradual unfreezing"
 
     def __init__(
@@ -303,6 +306,7 @@ class ScheduleFreeHook(Hook):
     """
 
     priority = 10
+    status = "tested"
     source = "Defazio et al., The Road Less Scheduled (arXiv 2405.15682), via schedulefree"
 
     def _switch(self, state: TrainState, mode: str) -> None:

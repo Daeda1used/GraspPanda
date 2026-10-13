@@ -31,8 +31,9 @@ Differences from the upstream, each because the slot needs it:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
+from typing import Any
 
 import torch
 from torch import Tensor, nn
@@ -195,7 +196,7 @@ class _Stage(nn.Module):
 
 @BACKBONES.register()
 class DeLA(Backbone):
-    """DeLA encoder with features on every input point.
+    """DeLA: decoupled local aggregation on a grid pyramid, features on every input point.
 
     The defaults are the S3DIS model of the official repository: four stages on grids
     of 0.04 / 0.08 / 0.16 / 0.32 m, 24 neighbours, depths 4-4-8-4, widths 64 to 512,
@@ -224,6 +225,11 @@ class DeLA(Backbone):
     output = "dense"
     status = "tested"
     source = "DeLA (Chen et al., arXiv 2308.16532), adapted from Matrix-ASC/DeLA@0f427c3, MIT"
+
+    @classmethod
+    def output_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """Every stage is projected to ``head_dim`` before the copies are summed."""
+        return options["head_dim"]
 
     def __init__(
         self,

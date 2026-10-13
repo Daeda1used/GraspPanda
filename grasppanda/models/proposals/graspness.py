@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import pairwise
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 import torch
 from torch import Tensor, nn
@@ -92,6 +92,10 @@ class GraspnessFPS(Proposal):
     source = "GSNet (Wang et al., ICCV 2021)"
     seed_scores = ("graspness", "objectness")
     loss_terms: ClassVar[dict[str, str]] = {"objectness_loss": "class", "graspness_loss": "unit"}
+    needs_supervision: ClassVar[dict[str, tuple[str, Any] | None]] = {
+        "point_labels.objectness": None,
+        "point_labels.graspness": None,
+    }
 
     def __init__(
         self,

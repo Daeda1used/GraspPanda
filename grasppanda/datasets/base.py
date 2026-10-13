@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from torch.utils.data import Dataset
 
@@ -37,3 +38,21 @@ class BaseDataset(Dataset):
 
     #: Merges frames into a batch; point clouds may differ in size.
     collate = staticmethod(collate)
+
+    @classmethod
+    def served_supervision(cls, node: Mapping[str, Any]) -> frozenset[str] | None:
+        """Fields of ``Supervision`` in the batches of a dataset configured with ``node``.
+
+        Named as detectors name what they read (``needs_supervision``): ``objects``,
+        ``objects.tolerance``, ``point_labels.<name>``, ``extras.<name>``. The config
+        check refuses a training dataset that does not serve a field its model reads.
+        ``None``, the default, means that the reader does not declare what it serves;
+        nothing is compared then.
+        """
+        return None
+
+    @classmethod
+    def supervision_hint(cls, field: str, node: Mapping[str, Any]) -> str:
+        """What ``node`` would have to say for the dataset to serve ``field``: a sentence
+        for the message of the config check, or nothing when this reader cannot say."""
+        return ""
