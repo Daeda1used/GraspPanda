@@ -1,0 +1,38 @@
+# ScaleBalancedAssigner as Scale-Balanced-Grasp uses it: the matching of
+# GraspNet-baseline plus a loss weight per seed, larger for rare grasp widths.
+#
+# The weight of a seed is 1 - ln(count / max count) of its bin in a histogram of grasp
+# widths over the training labels. The model does not own that histogram: the training
+# dataset serves it (`scale_statistic` section), a derived asset built with
+#   grasppanda prepare graspnet1b --scale-statistic --config <this config>
+# (about 3200 frames, more than an hour), or imported from the reference's own file
+# (configs/scale_balanced_grasp/README.md). A base config that has the section keeps it.
+#
+# What must be re-tuned, and why:
+# * the histogram itself. It is a statistic of the seeds the reference encoder keeps
+#   (a furthest-point subsample, graspable seeds only). Another proposal or seed count
+#   changes the population it should describe: recompute it (`num_seeds`,
+#   `min_graspable_views`) rather than reuse it.
+# * It returns a weight per seed, so the view stage and the head bundle must apply seed
+#   weights (ObjectnessViewStage, OperationHead); next to a stage that would ignore them
+#   it is refused.
+# * supervise: object_seeds and crop_centre: label_point as in GraspNet-baseline.
+model:
+  assigner:
+    type: ScaleBalancedAssigner
+    max_match_distance: null      # no limit, as in the reference
+    crop_centre: label_point      # reference quirk
+    padded_seeds: count
+    supervise: object_seeds
+data:
+  train:
+    dataset:
+      scale_statistic:            # the width histogram behind the loss weights
+        source: native
+        bins: 32
+        frame_step: 8
+        num_seeds: 1024
+        min_graspable_views: 10
+        graspable_score: 0.1
+        max_width: 0.1
+        seed: 0

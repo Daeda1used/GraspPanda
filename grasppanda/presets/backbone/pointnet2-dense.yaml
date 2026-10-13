@@ -1,0 +1,27 @@
+# PointNet++ propagated back to every input point, with the points and radii of
+# GraspNet-baseline.
+#
+# The segmentation network of the PointNet++ paper (four abstraction and four
+# propagation levels, 128 output channels) with table-top neighbourhoods. A deeper
+# alternative to FeaturePropagation around PointNet2, which propagates once.
+#
+# What must be re-tuned, and why:
+# * npoints, radii. The class defaults (1024 / 256 / 64 / 16 points, balls of 0.1 to
+#   0.8 m) are for rooms. Here: the 2048 / 1024 / 512 / 256 points and 0.04 / 0.1 / 0.2 /
+#   0.3 m of the GraspNet-baseline encoder, on the same data. A choice by analogy.
+# * nsamples: 64 / 32 / 16 / 16 neighbours as in that encoder (class default: 32 each).
+# * what the proposal can resolve. Every scene point gets a feature interpolated from
+#   2048 kept points and refined level by level; a sparse U-Net gives one feature per
+#   5 mm voxel. Expect coarser graspness maps.
+# * in_channels: 0, coordinates only.
+# * optimizer and schedule: the base method's.
+# * memory and speed. Sampling and ball queries run on the pure-PyTorch reference
+#   operators: about 0.3 s and 0.4 GiB per forward pass of one 20 000-point frame on an
+#   RTX A6000 (docs/model_zoo_backbones.md), several times that with gradients.
+model:
+  backbone:
+    type: PointNet2Dense          # `dense`: one feature per input point, 128 channels
+    in_channels: 0                # coordinates only
+    npoints: [2048, 1024, 512, 256]
+    radii: [0.04, 0.1, 0.2, 0.3]
+    nsamples: [64, 32, 16, 16]

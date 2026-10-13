@@ -32,6 +32,15 @@ earlier code base with a different design; they stay available under their tags 
   and source. A swap matrix test proves that every combination of registered stages either
   trains and predicts or is refused at config time with the conflict and the fix.
   `configs/experimental/` holds ready-made encoder swaps.
+- **Combinations.** `grasppanda compose <method config> --set <slot>=<preset or component>`
+  writes a checked config, inserting the one encoder adapter the stage contracts ask for;
+  a refused combination prints the conflict and the fix. Presets
+  (`grasppanda/presets/<slot>/`) hold the settings of every encoder and stage variant for
+  table-top depth clouds. `grasppanda probe <config>` runs the real trainer for a few
+  iterations on the `sample` split and predicts, ending with one verdict. The generated
+  page `docs/advanced_guides/measured_combinations.md` records 208 combinations probed on
+  real frames (145 run, 6 run unstably, 51 are refused by the contract rules, 6 fail) and
+  the measured class of every component (universal, most, some, specific). No AP.
 - **Inference and analysis.** `GraspInferencer` and `grasppanda demo` (depth image, point
   cloud, dataset frame or the built-in synthetic scene); `grasppanda analyze` splits an AP
   by scene, object and cause.
@@ -44,5 +53,9 @@ earlier code base with a different design; they stay available under their tags 
 - The model zoo is empty: no method has been trained and evaluated here to the admission
   rule yet. One author checkpoint has been scored on a whole test split (EconomicGrasp,
   Kinect); its result record is in `configs/economicgrasp/records/`.
+- An encoder without an `out_channels` option (LitePT, PTv3 and its pretrained variants,
+  PointNeXt, PointNet2Dense) passes the config check under Scale-Balanced-Grasp and fails
+  when built, because no contract states the width an encoder returns. `grasppanda probe`
+  reports it with the fix.
 - The CPU-only wheel of spconv 2.3.8 miscomputes with more than one OpenMP thread; sparse
   layers detect this and stop with an explanation (see the installation guide).

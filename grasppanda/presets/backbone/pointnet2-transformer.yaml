@@ -1,0 +1,28 @@
+# The encoder of Scale-Balanced-Grasp: two PointNet++ abstraction levels, each followed
+# by a point-transformer layer; features on a 1024-point subsample.
+#
+# The reference encoder of Scale-Balanced-Grasp: under that method this preset is its
+# own backbone. Under a method whose proposal scores every scene point compose wraps it
+# in FeaturePropagation.
+#
+# What must be re-tuned, and why:
+# * npoints, radii, nsamples: 2048 then 1024 points with balls of 0.04 and 0.1 m, the
+#   reference values. `npoints[1]` is the number of seeds of a method that takes the
+#   subsample as its seed set (`model.proposal.num_seeds`). There is no feature
+#   propagation, so a seed feature has seen a ball of 0.1 m plus what attention over its
+#   16 nearest kept points adds (GraspNet-baseline's encoder ends on a ball of 0.3 m).
+# * sampling rules: `fps_tie_break` and `fps_skip_near_origin` are the reference values;
+#   they decide which 1024 points carry features.
+# * in_channels: 0, coordinates only, as in the reference.
+# * optimizer and schedule: Scale-Balanced-Grasp trains it with Adam and a one-cycle
+#   learning rate (peak 1e-3) at batch 2, with a batch-norm momentum schedule.
+model:
+  backbone:
+    type: PointNet2Transformer    # `subsampled`: features on 1024 points, 256 channels
+    in_channels: 0                # coordinates only
+    npoints: [2048, 1024]
+    radii: [0.04, 0.1]
+    nsamples: [64, 32]
+    attention_neighbours: 16
+    fps_skip_near_origin: true
+    fps_tie_break: pointnet2_cuda

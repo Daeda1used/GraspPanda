@@ -1,0 +1,31 @@
+# PointNet++ in the GraspNet-baseline layout: features on a 1024-point subsample.
+#
+# The reference encoder of GraspNet-baseline: under that method this preset is its own
+# backbone. Under a method whose proposal scores every scene point (GSNet, EconomicGrasp,
+# FineGrasp) compose wraps it in FeaturePropagation.
+#
+# What must be re-tuned, and why:
+# * npoints, radii, nsamples: four set-abstraction levels of 2048 / 1024 / 512 / 256
+#   points with balls of 0.04 / 0.1 / 0.2 / 0.3 m, tuned by the GraspNet-baseline authors
+#   for 20 000-point table-top clouds. The second level, 1024 points and 256 channels, is
+#   what the encoder returns: `npoints[1]` is the number of seeds of a method that takes
+#   the subsample as its seed set (`model.proposal.num_seeds`).
+# * sampling rules. `fps_tie_break` and `fps_skip_near_origin` are the reference values
+#   of GraspNet-baseline, kept so that the encoder is the one whose weights were
+#   verified; they decide which 1024 points carry features.
+# * in_channels: 0, coordinates only, as in the reference. A method that feeds real
+#   features (`point_features: observation`) has them concatenated to the grouped offsets.
+# * optimizer and schedule: GraspNet-baseline trains this encoder with Adam 1e-3, steps
+#   at epochs 8 / 12 / 16 and a batch-norm momentum schedule (`BNMomentumHook`), which the
+#   recipes of GSNet and EconomicGrasp do not use.
+# * speed. Furthest point sampling runs on the pure-PyTorch reference operator: about
+#   0.3 s per forward pass of one frame on an RTX A6000 (docs/model_zoo_backbones.md).
+model:
+  backbone:
+    type: PointNet2               # `subsampled`: features on 1024 points, 256 channels
+    in_channels: 0                # coordinates only
+    npoints: [2048, 1024, 512, 256]
+    radii: [0.04, 0.1, 0.2, 0.3]
+    nsamples: [64, 32, 16, 16]
+    fps_skip_near_origin: true
+    fps_tie_break: pointnet2_cuda

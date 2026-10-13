@@ -1,0 +1,24 @@
+# SparseUNet14, the 14-layer sparse U-Net of GSNet and EconomicGrasp, on their 5 mm grid.
+#
+# The reference encoder of GSNet, EconomicGrasp and FineGrasp: under those methods this
+# preset is their own backbone. Under a method written for a sub-sampling encoder
+# (GraspNet-baseline, Scale-Balanced-Grasp) compose wraps it in FurthestPointSubsample.
+#
+# What must be re-tuned, and why:
+# * voxel_size: 0.005 m, the grid the three reference methods train at. It is the
+#   encoder's unit of length: four stride-2 stages make the coarsest voxel 16 x the grid,
+#   8 cm here. GSNet feeds 15 000 points per frame, the other methods 20 000.
+# * out_channels: 512 in the reference. It is a free 1 x 1 projection, so compose sets it
+#   to the width of the encoder it replaces and the other stages keep the width they
+#   have in their reference model (256 under GraspNet-baseline and Scale-Balanced-Grasp).
+# * what a seed feature has seen, under a method whose reference encoder is PointNet++:
+#   that encoder ends on a ball of 0.3 m, the coarsest voxel here is 8 cm.
+# * batch-norm momentum: GSNet trains this network with a fixed momentum; the recipes of
+#   GraspNet-baseline and Scale-Balanced-Grasp decay it (BNMomentumHook), and that hook
+#   then drives the batch norms of this network too.
+model:
+  backbone:
+    type: SparseUNet14            # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the voxel grid
+    out_channels: 512
+    voxel_size: 0.005

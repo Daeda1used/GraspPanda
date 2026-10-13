@@ -61,9 +61,11 @@ nav:
       - Cross-dataset evaluation: user_guides/cross_dataset.md
       - Training and testing: user_guides/train_test.md
       - Inference and visualisation: user_guides/inference.md
+      - Try a combination: user_guides/combinations.md
   - Advanced Guides:
       - Add a component: advanced_guides/add_component.md
       - Swapping components: advanced_guides/swapping.md
+      - Measured combinations: advanced_guides/measured_combinations.md
       - Data contracts: advanced_guides/data_flow.md
       - Data loading: advanced_guides/data_loading.md
       - Operators and backends: advanced_guides/operators.md

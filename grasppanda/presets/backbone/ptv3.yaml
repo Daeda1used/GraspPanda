@@ -1,0 +1,25 @@
+# Point Transformer V3 (encoder + decoder, Pointcept PT-v3m1) on a 5 mm grid.
+#
+# No published GraspNet-1Billion result uses PTv3. The released ScanNet weights belong to
+# a 0.02 m grid and six input channels and do not fit this configuration: it trains from
+# scratch.
+#
+# What must be re-tuned, and why:
+# * grid_size. It is the encoder's unit of length. The class default, 0.02 m, is for
+#   ScanNet rooms; 0.005 m keeps GSNet's grid, so both encoders see the same voxels
+#   (about 11 000 for a 15 000-point frame, more for the 20 000 points other methods feed).
+# * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
+#   serialised voxels, so the receptive field is counted in points, not in metres: a
+#   frame holds about ten patches at the finest level and fewer than one at the coarsest.
+# * output width: 64 channels (`dec_channels[0]`), where SparseUNet14 returns 512 and
+#   PointNet++ 256. Proposal, view stage and grouper are built that wide. A stage that
+#   adds seed features to crop features (`DepthCylinderGroup` with `seed_residual:
+#   gated`, Scale-Balanced-Grasp) needs the two widths equal and says so when built.
+# * optimizer and schedule. The base method's recipe was tuned for its own encoder;
+#   transformers are usually trained with AdamW, weight decay and warm-up, at a lower rate.
+# * batch size and memory: 46.2 M parameters against 14.6 M for SparseUNet14.
+model:
+  backbone:
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005

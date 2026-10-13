@@ -1,0 +1,28 @@
+# DepthCylinderGroup as Scale-Balanced-Grasp uses it: scene-cloud cylinders at four radii
+# per depth bin, fused, plus a gated residual of the seed feature.
+#
+# The class defaults are the single-radius crop of GraspNet-baseline (0.05 m, scene
+# geometry only). This preset is the multi-scale crop of Scale-Balanced-Grasp.
+#
+# What must be re-tuned, and why:
+# * seed_residual: gated adds sigmoid(W f) * f of the seed feature f to the crop feature,
+#   so the encoder's output width must equal the last entry of `mlp_channels` (256). An
+#   encoder with another width is refused when the model is built, with both numbers:
+#   end `mlp_channels` on the encoder's width, or set `seed_residual: none`.
+# * radius: 0.08 m with scales 0.25 to 1 (0.02, 0.04, 0.06 and 0.08 m). The crops gather
+#   raw scene points, 64 per cylinder: the radii belong to the point density of the input
+#   cloud (20 000 points per frame in the reference recipe).
+# * hmax: one far end per depth bin of the head (0.01 to 0.04 m for `num_depth: 4`).
+# * cost: four crops and four MLPs per (seed, depth bin), sixteen cylinder queries per
+#   seed.
+model:
+  grouper:
+    type: DepthCylinderGroup
+    radius: 0.08
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]   # one far end per depth bin of the head
+    nsample: 64
+    mlp_channels: [64, 128, 256]
+    normalize_offsets: false
+    radius_scales: [0.25, 0.5, 0.75, 1.0]   # four crops per (seed, depth), fused by a linear layer
+    seed_residual: gated          # needs encoder width = mlp_channels[-1]

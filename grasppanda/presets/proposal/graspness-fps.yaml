@@ -1,0 +1,37 @@
+# GraspnessFPS as GSNet, EconomicGrasp and FineGrasp use it: 1024 seeds by furthest point
+# sampling among the points predicted graspable.
+#
+# The proposal scores every scene point, so it needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation) and point-wise graspness labels: the `graspness`
+# section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# A base config that already has that section keeps its own (FineGrasp normalises
+# graspness per instance).
+#
+# What must be re-tuned, and why:
+# * graspness_threshold: 0.1. A point is a seed candidate above it; a frame without any
+#   candidate has no real seed and trains the proposal only (`metric/real_seeds` in the
+#   log). With an untrained or badly initialised encoder that happens in the first
+#   iterations; it is the first number to watch after a swap.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+# * graspness_loss weight: 10, against 1 for objectness, tuned with the label statistics
+#   of the reference recipe (15 000 or 20 000 points per frame).
+# * It predicts objectness. A view stage that predicts objectness too
+#   (ObjectnessViewStage) is refused next to it: one owner per score.
+model:
+  proposal:
+    type: GraspnessFPS
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    fps_skip_near_origin: true    # reference quirk of the sampling kernel
+    fps_tie_break: pointnet2_cuda # reference quirk of the sampling kernel
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

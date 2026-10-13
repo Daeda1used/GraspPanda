@@ -17,8 +17,21 @@ pytest                      # the whole suite runs on CPU in seconds
 1. **Only advertise what is verified.** A method enters `configs/` and the model zoo
    after it has been trained and evaluated here. Until then it lives in `projects/`
    with a stated support level.
-2. **Clean room.** Implement from the paper and from the *behaviour* of reference code.
-   Do not copy or adapt upstream source files, whatever their licence says.
+2. **Know where code comes from.** A component reaches the toolbox by one of three
+   routes, and its `source` line says which:
+   - *written here*: from the paper and from the *behaviour* of reference code. The ported
+     grasp detection methods and both evaluators are written this way, because most grasp
+     repositories are under non-commercial terms;
+   - *bridge*: a thin adapter around a library the user installs as an optional extra
+     (`timm`, `transformers`, `torchvision`, ...). The library's own code runs; the
+     component's status is `bridge`;
+   - *adapted*: source taken from a repository under the MIT, BSD or Apache-2.0 licence and
+     fitted to a slot contract. The file keeps the upstream copyright notice and names the
+     repository, the commit and the licence; `THIRD_PARTY_NOTICES.md` lists it.
+
+   Never copy from a repository without a licence file or under non-commercial or
+   research-only terms. Released weights are never committed; their licences are stated
+   where the weights are documented.
 3. **Every number states its provenance** (`reported`, `author-ckpt`, `reproduced`) and
    whether a collision filter was applied.
 4. **Fail loudly.** A mismatch between components is an error with an explanation, never

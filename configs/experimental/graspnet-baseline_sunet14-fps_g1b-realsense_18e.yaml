@@ -1,31 +1,59 @@
-# EXPERIMENTAL. GraspNet-baseline with the sparse U-Net of GSNet as its encoder. No AP
-# is claimed: this config passes the checker and trains for a few iterations on
-# GraspNet-1Billion (configs/experimental/README.md); it has not been trained to
-# convergence or evaluated.
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
 #
-#   grasppanda print-config experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e --check
+#   base  graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e (GraspNetBaseline)
+#   set   backbone `sparse-unet14`
+#
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
+#       --set backbone=sparse-unet14
+#   grasppanda probe experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e
 #   grasppanda train experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e
 #
-# `model.backbone: {type: SparseUNet14}` alone is refused: the baseline's proposal takes
-# the encoder's subsample as the seed set, and a sparse U-Net returns a feature for
-# every point. The adapter is the fix the checker names. It keeps 1024 points by
-# furthest point sampling of the scene, with the sampling rules of the reference
-# PointNet++, so the seeds are the very points the reference encoder ends on
-# (tests/unit/test_backbone_subsample.py). Only their features change: this is the
-# controlled form of the encoder swap. Seed selection by predicted graspness, as in
-# GSNet, would be a different model (another proposal, other label statistics).
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
 #
-# What must be re-tuned, and why:
-# * out_channels: 256 instead of the sparse U-Net's 512, so that the view stage keeps
-#   the width it has in the reference and the encoder is the only stage that differs.
-# * voxel_size: 0.005 m, GSNet's. The baseline feeds 20 000 points, GSNet 15 000.
-# * what a seed feature has seen. The reference encoder ends on a ball of 0.3 m; the
-#   coarsest voxel of the sparse U-Net is 8 cm. The crop and the head read scene
-#   geometry directly (`support: scene`) and are unaffected; objectness and the view
-#   scores are predicted from the seed features.
-# * optimizer and schedule: the baseline's (Adam 1e-3, steps at epochs 8/12/16,
-#   batch 2). Its batch-norm momentum schedule (`BNMomentumHook`) now also drives the
-#   batch norms of the sparse U-Net, which GSNet trains with a fixed momentum.
+# What compose did, and why:
+# * backbone: preset `sparse-unet14` (SparseUNet14). SparseUNet14, the 14-layer sparse U-Net
+#   of GSNet and EconomicGrasp, on their 5 mm grid.
+# * out_channels: 256, the output width of the encoder it replaces (PointNet2), so that the
+#   other stages keep the width they have in the base model and the encoder is the only
+#   stage that differs.
+# * wrapped SparseUNet14 in the adapter FurthestPointSubsample (preset
+#   `furthest-point-subsample`): SubsampledSeeds requires 'subsampled' scene features, but
+#   SparseUNet14 returns 'dense' ones (one feature per scene point). An adapter changes the
+#   model; its notes below say how.
+# * FurthestPointSubsample.npoint: 1024, the number of seeds of the proposal
+#   (`model.proposal.num_seeds`): the points the adapter keeps are the seeds.
+# * FurthestPointSubsample: fps_skip_near_origin: true, fps_tie_break: pointnet2_cuda, the
+#   sampling rules of the encoder it replaces (PointNet2), so that the adapter keeps the
+#   very points that encoder ends on.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `sparse-unet14`
+# * voxel_size: 0.005 m, the grid the three reference methods train at. It is the
+#   encoder's unit of length: four stride-2 stages make the coarsest voxel 16 x the grid,
+#   8 cm here. GSNet feeds 15 000 points per frame, the other methods 20 000.
+# * out_channels: 512 in the reference. It is a free 1 x 1 projection, so compose sets it
+#   to the width of the encoder it replaces and the other stages keep the width they
+#   have in their reference model (256 under GraspNet-baseline and Scale-Balanced-Grasp).
+# * what a seed feature has seen, under a method whose reference encoder is PointNet++:
+#   that encoder ends on a ball of 0.3 m, the coarsest voxel here is 8 cm.
+# * batch-norm momentum: GSNet trains this network with a fixed momentum; the recipes of
+#   GraspNet-baseline and Scale-Balanced-Grasp decay it (BNMomentumHook), and that hook
+#   then drives the batch norms of this network too.
+# backbone `furthest-point-subsample`
+# * npoint: the number of seeds. Compose sets it to `model.proposal.num_seeds`.
+# * sampling rules. With the `fps_tie_break` and `fps_skip_near_origin` of the encoder it
+#   replaces, the adapter keeps exactly the points that encoder ends on, in the same order
+#   (tests/unit/test_backbone_subsample.py): the swap changes the features of the seeds
+#   and leaves the seeds where they were. Compose copies both from the base config.
+# * where the seeds are. They are spread evenly over the cloud, table included; seed
+#   selection by predicted graspness (GraspnessFPS) would be a different model, with
+#   another proposal and other label statistics.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
 _base_:
   - ../graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml
 
@@ -33,10 +61,10 @@ model:
   backbone:
     type: FurthestPointSubsample  # `dense` -> `subsampled`, written down
     npoint: 1024                  # = model.proposal.num_seeds
-    fps_skip_near_origin: true    # the rules of the reference encoder: same seeds
-    fps_tie_break: pointnet2_cuda
+    fps_skip_near_origin: true    # the rule of the encoder it replaces: same seeds
+    fps_tie_break: pointnet2_cuda   # the rule of the encoder it replaces: same seeds
     backbone:
-      type: SparseUNet14
+      type: SparseUNet14          # `dense`: one feature per input point
       in_channels: 3              # constant ones; geometry enters through the voxel grid
-      out_channels: 256
+      out_channels: 256           # the width of the encoder it replaces (PointNet2)
       voxel_size: 0.005

@@ -1,29 +1,53 @@
-# EXPERIMENTAL. GSNet with the PointNet++ encoder of GraspNet-baseline, made dense by
-# an explicit feature-propagation adapter. No AP is claimed: this config passes the
-# checker and trains for a few iterations on GraspNet-1Billion
-# (configs/experimental/README.md); it has not been trained to convergence or evaluated.
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
 #
-#   grasppanda print-config experimental/gsnet_pointnet2-fp_g1b-realsense_10e --check
+#   base  gsnet/gsnet_sunet14_g1b-realsense_10e (GSNet)
+#   set   backbone `pointnet2`
+#
+#   grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnet2
+#   grasppanda probe experimental/gsnet_pointnet2-fp_g1b-realsense_10e
 #   grasppanda train experimental/gsnet_pointnet2-fp_g1b-realsense_10e
 #
-# `model.backbone: {type: PointNet2}` alone is refused: GraspnessFPS scores every scene
-# point and PointNet2 returns features on 1024 of them. The adapter is the fix the
-# checker names. It interpolates the 1024 features onto all 15 000 points (three
-# nearest kept points, inverse distance) and refines them with a shared MLP.
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
 #
-# What must be re-tuned, and why:
-# * What the proposal can resolve. Objectness and graspness are now predicted from
-#   features with the resolution of a 1024-point subsample; the sparse U-Net gave one
-#   feature per 5 mm voxel. Expect coarser graspness maps. `mlp` and `neighbours` of the
-#   adapter, or a deeper propagation (`PointNet2Dense` with these radii), are the knobs.
-# * Sampling rules. `fps_tie_break` and `fps_skip_near_origin` are the reference values
+# What compose did, and why:
+# * backbone: preset `pointnet2` (PointNet2). PointNet++ in the GraspNet-baseline layout:
+#   features on a 1024-point subsample.
+# * wrapped PointNet2 in the adapter FeaturePropagation (preset `feature-propagation`):
+#   GraspnessFPS requires 'dense' scene features, but PointNet2 returns 'subsampled' ones
+#   (features on a sub-sampled point set). An adapter changes the model; its notes below say
+#   how.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `pointnet2`
+# * npoints, radii, nsamples: four set-abstraction levels of 2048 / 1024 / 512 / 256
+#   points with balls of 0.04 / 0.1 / 0.2 / 0.3 m, tuned by the GraspNet-baseline authors
+#   for 20 000-point table-top clouds. The second level, 1024 points and 256 channels, is
+#   what the encoder returns: `npoints[1]` is the number of seeds of a method that takes
+#   the subsample as its seed set (`model.proposal.num_seeds`).
+# * sampling rules. `fps_tie_break` and `fps_skip_near_origin` are the reference values
 #   of GraspNet-baseline, kept so that the encoder is the one whose weights were
 #   verified; they decide which 1024 points carry features.
-# * optimizer and schedule: GSNet's (Adam 1e-3, x0.95 per epoch). GraspNet-baseline
-#   trains this encoder with Adam 1e-3, steps at epochs 8/12/16 and a batch-norm
-#   momentum schedule (`BNMomentumHook`), which this config does not use.
+# * in_channels: 0, coordinates only, as in the reference. A method that feeds real
+#   features (`point_features: observation`) has them concatenated to the grouped offsets.
+# * optimizer and schedule: GraspNet-baseline trains this encoder with Adam 1e-3, steps
+#   at epochs 8 / 12 / 16 and a batch-norm momentum schedule (`BNMomentumHook`), which the
+#   recipes of GSNet and EconomicGrasp do not use.
 # * speed. Furthest point sampling runs on the pure-PyTorch reference operator: about
-#   0.3 s per forward pass for one frame on an RTX A6000 (docs/model_zoo_backbones.md).
+#   0.3 s per forward pass of one frame on an RTX A6000 (docs/model_zoo_backbones.md).
+# backbone `feature-propagation`
+# * what the proposal can resolve. Objectness and graspness are predicted from features
+#   with the resolution of the subsample (1024 points with the GraspNet-baseline layout);
+#   a sparse U-Net gives one feature per 5 mm voxel. Expect coarser graspness maps.
+# * mlp: two layers of 256, which is also the output width (proposal, view stage and
+#   grouper are built 256 wide where SparseUNet14 gives 512). `neighbours` and
+#   `interpolation_power` (1 in the PyTorch PointNet++ lineage, 2 in the paper) are the
+#   other knobs; `PointNet2Dense` is the deeper alternative, with a propagation per level.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
 _base_:
   - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
 
@@ -34,7 +58,7 @@ model:
     neighbours: 3
     interpolation_power: 1.0
     backbone:
-      type: PointNet2             # the GraspNet-baseline layout: 1024 points, 256 channels
+      type: PointNet2             # `subsampled`: features on 1024 points, 256 channels
       in_channels: 0              # coordinates only
       npoints: [2048, 1024, 512, 256]
       radii: [0.04, 0.1, 0.2, 0.3]

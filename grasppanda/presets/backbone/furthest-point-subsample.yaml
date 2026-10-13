@@ -1,0 +1,23 @@
+# FurthestPointSubsample: the adapter that turns a dense encoder into a sub-sampling one.
+#
+# An adapter wraps another encoder (`backbone:`); it is not an encoder itself. Compose
+# inserts it when a dense encoder meets a proposal that takes the encoder's subsample as
+# the seed set, and says so. It keeps `npoint` points of every cloud by furthest point
+# sampling of the scene coordinates and returns the wrapped encoder's features there;
+# nothing is learned and nothing is interpolated.
+#
+# What must be re-tuned, and why:
+# * npoint: the number of seeds. Compose sets it to `model.proposal.num_seeds`.
+# * sampling rules. With the `fps_tie_break` and `fps_skip_near_origin` of the encoder it
+#   replaces, the adapter keeps exactly the points that encoder ends on, in the same order
+#   (tests/unit/test_backbone_subsample.py): the swap changes the features of the seeds
+#   and leaves the seeds where they were. Compose copies both from the base config.
+# * where the seeds are. They are spread evenly over the cloud, table included; seed
+#   selection by predicted graspness (GraspnessFPS) would be a different model, with
+#   another proposal and other label statistics.
+model:
+  backbone:
+    type: FurthestPointSubsample  # `dense` -> `subsampled`, written down
+    npoint: 1024
+    fps_skip_near_origin: true
+    fps_tie_break: pointnet2_cuda

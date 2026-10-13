@@ -1,0 +1,41 @@
+# OperationHead as Scale-Balanced-Grasp uses it: the score is supervised on every depth
+# bin of a supervised seed, and the decoded score is also multiplied by P(object).
+#
+# Two options differ from GraspNet-baseline (preset `operation`). Like that preset it
+# expects crop features with a depth axis and reads tolerance labels (`tolerance` section
+# of the training dataset; `grasppanda prepare graspnet1b --tolerance --config <this
+# config>`).
+#
+# What must be re-tuned, and why:
+# * score_decode: score_x_objectness_x_tolerance reads the objectness of the seeds, so a
+#   stage of the model must predict it (ObjectnessViewStage or GraspnessFPS); the config
+#   check refuses the head otherwise.
+# * score_supervision: seeds_with_a_supervised_depth is a reference quirk: the score is
+#   supervised on all depth bins of a seed that has one supervised bin.
+# * score_target must equal the view stage's (see preset `operation`).
+model:
+  head:
+    type: OperationHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    width_decode_gain: 1.2        # reference quirk
+    max_tolerance: 0.05
+    score_target: log_friction_batch_max   # must equal view.score_target
+    max_friction: 1.0
+    min_score_target: 0.1
+    score_supervision: seeds_with_a_supervised_depth   # reference quirk
+    score_decode: score_x_objectness_x_tolerance       # needs a stage that predicts objectness
+    score_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 0.2}
+    width_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    tolerance_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+data:
+  train:
+    dataset:
+      tolerance:                  # the tolerance labels this head bundle supervises
+        max_friction: 0.55
+        min_good_ratio: 0.8
+        radius_step: 0.001
+        max_radius: 0.05

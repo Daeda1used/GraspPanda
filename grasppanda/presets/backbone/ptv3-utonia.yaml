@@ -1,0 +1,24 @@
+# The PTv3 variant of Utonia (Pointcept PT-v3m3): PTv3Sonata plus rotary position
+# embedding, encoder only, 5 mm grid.
+#
+# This preset is the ARCHITECTURE trained from scratch. The released `utonia.pth` expects
+# nine input channels, a 0.01 m grid after the authors' rescaling of the coordinates and
+# is CC BY-NC 4.0 (docs/model_zoo_backbones.md; trap 2 of
+# docs/advanced_guides/swapping.md).
+#
+# What must be re-tuned, and why:
+# * size: 3-3-3-12-3 blocks, 54 to 576 channels, 137.3 M parameters. Reduce `enc_depths`
+#   and `enc_channels` (multiples of 6 per attention head, which the rotary embedding
+#   needs) before training on a single GPU.
+# * output: 1386 channels, the five encoder stages concatenated (`enc_mode: true`, no
+#   decoder). Proposal, view stage and grouper are built that wide; `enc_mode: false`
+#   adds a decoder with 54 output channels.
+# * grid_size: 0.005 m, GSNet's (the class default is 0.01 m). The rotary embedding
+#   encodes positions in grid cells, so the grid is part of what the attention sees.
+# * in_channels: 3 constant ones, as the base methods feed them.
+# * optimizer and schedule: the base method's, tuned for its own encoder.
+model:
+  backbone:
+    type: PTv3Utonia              # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005

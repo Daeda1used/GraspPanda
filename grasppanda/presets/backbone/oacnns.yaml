@@ -1,0 +1,29 @@
+# OA-CNNs (Pointcept oacnns-v1m1) on a 5 mm grid: a sparse CNN with adaptive pooling.
+#
+# A sparse CNN for a sparse CNN: among the alternatives the closest relative of
+# SparseUNet14, without attention and on the same dependency (spconv). No published
+# GraspNet-1Billion result uses OA-CNNs and no checkpoint has been released for it.
+#
+# What must be re-tuned, and why:
+# * grid_size: 0.005 m, GSNet's. The class default, 0.02 m, is for ScanNet rooms.
+# * point_grid_size. The adaptive pooling grids are counted in cells, so they shrink
+#   with the grid: the published 8 to 16 cells of the first stage cover 0.32 to 0.64 m at
+#   2 cm and 0.08 to 0.16 m at 5 mm. Left at the published values; scaling them by four
+#   restores the published extent in metres, which for a table top is the whole scene.
+# * out_channels: 512, the width of SparseUNet14's output (the published model ends on
+#   20 class scores). Compose sets it to the width of the encoder it replaces.
+# * in_channels: 3 constant ones (the published model reads coordinates, colour and
+#   normal).
+# * crop_odd_extent: true (the class default) is the behaviour of the official model,
+#   which leaves the voxels in the last cell of an odd-sized axis out of every
+#   down-sampling; `false` keeps every voxel and is the variant to compare.
+# * size and learning rate: 51.5 M parameters, the paper's largest model (`enc_depth` and
+#   `enc_channels` give the smaller ones). Under GSNet's Adam 1e-3 without warm-up the
+#   10-iteration training check lost every seed for three iterations
+#   (configs/experimental/README.md).
+model:
+  backbone:
+    type: OACNNs                  # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the voxel grid
+    out_channels: 512
+    grid_size: 0.005

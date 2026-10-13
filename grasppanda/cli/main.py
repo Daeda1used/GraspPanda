@@ -11,7 +11,20 @@ from grasppanda import __version__
 from grasppanda.config import ConfigError
 from grasppanda.utils.console import banner, style
 
-from . import analyze, components, demo, env, infer, prepare, print_config, sweep, test, train
+from . import (
+    analyze,
+    components,
+    compose,
+    demo,
+    env,
+    infer,
+    prepare,
+    print_config,
+    probe,
+    sweep,
+    test,
+    train,
+)
 
 __all__ = ["main"]
 
@@ -43,6 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
     sweep.register(commands)
     print_config.register(commands)
     components.register(commands)
+    compose.register(commands)
+    probe.register(commands)
     prepare.register(commands)
     env.register(commands)
     return parser

@@ -1,31 +1,45 @@
-# EXPERIMENTAL. EconomicGrasp with Point Transformer V3 (encoder + decoder) in place
-# of the sparse U-Net. No AP is claimed: this config passes the checker and trains for
-# a few iterations on GraspNet-1Billion (configs/experimental/README.md); it has not
-# been trained to convergence or evaluated.
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
 #
-#   grasppanda print-config experimental/economicgrasp_ptv3_g1b-realsense_10e --check
+#   base  economicgrasp/economicgrasp_sunet14_g1b-realsense_10e (EconomicGrasp)
+#   set   backbone `ptv3`
+#
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set \
+#       backbone=ptv3
+#   grasppanda probe experimental/economicgrasp_ptv3_g1b-realsense_10e
 #   grasppanda train experimental/economicgrasp_ptv3_g1b-realsense_10e
 #
-# Needs the same assets as the reference config (graspness and compact labels):
-#   grasppanda prepare graspnet1b --graspness --camera realsense
-#   grasppanda prepare graspnet1b --compact-labels \
-#       --config economicgrasp/economicgrasp_sunet14_g1b-realsense_10e
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
 #
-# What must be re-tuned, and why (see also gsnet_ptv3_g1b-realsense_10e.yaml):
-# * grid_size: 0.005 m keeps the grid of the reference encoder; the PTv3 default is
-#   0.02 m. EconomicGrasp feeds 20 000 points per frame, so a frame holds more voxels
-#   than under GSNet and more attention patches of 1024.
-# * the 5 mm matching rule. A seed is supervised only within 5 mm of a label point
-#   (`assigner.max_match_distance`). Which seeds the proposal selects depends on the
-#   encoder, so the fraction of supervised seeds (`metric/supervised_seeds` in the log)
-#   is the first number to compare with the reference run.
-# * optimizer and schedule: EconomicGrasp's (Adam 1e-3, cosine, 10 epochs), tuned for
-#   the sparse U-Net. A starting point only.
+# What compose did, and why:
+# * backbone: preset `ptv3` (PTv3). Point Transformer V3 (encoder + decoder, Pointcept
+#   PT-v3m1) on a 5 mm grid.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `ptv3`
+# * grid_size. It is the encoder's unit of length. The class default, 0.02 m, is for
+#   ScanNet rooms; 0.005 m keeps GSNet's grid, so both encoders see the same voxels
+#   (about 11 000 for a 15 000-point frame, more for the 20 000 points other methods feed).
+# * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
+#   serialised voxels, so the receptive field is counted in points, not in metres: a
+#   frame holds about ten patches at the finest level and fewer than one at the coarsest.
+# * output width: 64 channels (`dec_channels[0]`), where SparseUNet14 returns 512 and
+#   PointNet++ 256. Proposal, view stage and grouper are built that wide. A stage that
+#   adds seed features to crop features (`DepthCylinderGroup` with `seed_residual:
+#   gated`, Scale-Balanced-Grasp) needs the two widths equal and says so when built.
+# * optimizer and schedule. The base method's recipe was tuned for its own encoder;
+#   transformers are usually trained with AdamW, weight decay and warm-up, at a lower rate.
+# * batch size and memory: 46.2 M parameters against 14.6 M for SparseUNet14.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
 _base_:
   - ../economicgrasp/economicgrasp_sunet14_g1b-realsense_10e.yaml
 
 model:
   backbone:
-    type: PTv3
-    in_channels: 3
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
     grid_size: 0.005
