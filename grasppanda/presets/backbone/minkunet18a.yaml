@@ -1,0 +1,28 @@
+# MinkUNet18A of MinkowskiEngine: two residual blocks per stage, on the 5 mm grid of GSNet.
+#
+# The next size up from the 14-layer reference encoder in the same family, in the
+# original MinkowskiEngine arrangement: 2 blocks in each of the eight stages, decoder
+# widths 128-128-96-96. Trained from scratch; no grasp result is claimed for it.
+# `layers` and `planes` give every other member (the table in
+# docs/slots/scene_encoders_sparse.md): 14A-D, 18B, 18D, 34A-C, and 50 / 101 with
+# `block: bottleneck`.
+#
+# What must be re-tuned, and why:
+# * voxel_size: 0.005 m, the grid GSNet, EconomicGrasp and FineGrasp train at (the class
+#   default, 0.02 m, is for rooms). Four stride-2 stages: the coarsest voxel is 8 cm.
+# * stem_kernel: 5, as in MinkUNet and in the reference encoder (Res16UNet checkpoints
+#   use 3, the class default).
+# * out_channels: a free 1 x 1 projection; compose sets it to the width of the encoder
+#   it replaces. `null` returns the 96 channels of the last decoder stage.
+# * bn_momentum: 0.1 as upstream; the hooks of a base method that decay the momentum
+#   drive these batch norms too.
+# * learning rate and batch size: about twice the convolutions of the reference encoder.
+model:
+  backbone:
+    type: MinkUNet                # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the voxel grid
+    out_channels: 512
+    voxel_size: 0.005
+    layers: [2, 2, 2, 2, 2, 2, 2, 2]
+    planes: [32, 64, 128, 256, 128, 128, 96, 96]
+    stem_kernel: 5

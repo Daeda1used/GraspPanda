@@ -1,0 +1,24 @@
+# Point Transformer V3 without its decoder (encoder only, PT-v3m1), on a 5 mm grid.
+#
+# The five encoder stages of PTv3, with no decoder: the feature of a point is its
+# encoder stages concatenated through the pooling maps, the protocol Sonata uses for the
+# newer PT-v3m2 (preset `ptv3-sonata`). 38.7 M parameters against 46.2 M with the decoder.
+# Trained from scratch here; add `pretrained: ptv3-scannet200` with
+# `pretrained_mismatch: skip` to start from the encoder half of a released model.
+# No grasp result is claimed for this arrangement.
+#
+# What must be re-tuned, and why:
+# * concat_stages: null concatenates all five stages, 992 channels (32 + 64 + 128 + 256
+#   + 512); proposal, view stage and grouper are built that wide. 1 keeps the coarsest
+#   stage alone (512 channels, one feature per 16 x 16 x 16 voxels, copied to its points).
+# * grid_size: 0.005 m, GSNet's (the class default is 0.02 m).
+# * in_channels: 3 constant ones, as the base methods feed them.
+# * optimizer and schedule: the base method's, tuned for its own encoder; transformers
+#   are usually trained with AdamW, weight decay and warm-up.
+model:
+  backbone:
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005
+    enc_mode: true
+    concat_stages: null

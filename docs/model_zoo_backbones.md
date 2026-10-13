@@ -29,11 +29,12 @@ recorded them are in the repository (see [Reproducing the evidence](#reproducing
 | `FeaturePropagation` | Qi et al., NeurIPS 2017, §3.4 | same | `dense` (wraps a `subsampled` backbone) | One propagation level as in GraspNet-baseline: 3 neighbours, inverse distance, MLP 256-256 | 132 096 on top of `PointNet2` / no reference (a wrapper) | `tested` | none |
 | `FurthestPointSubsample` | Qi et al., NeurIPS 2017, §3.2 (furthest point sampling) | same | `subsampled` (wraps a `dense` backbone) | The 1024 seeds of GraspNet-baseline, sampled over the scene coordinates with the rules of `PointNet2`; the wrapped backbone's features at those points | 0 on top of the wrapped backbone / no reference (a wrapper) | `tested`; keeps exactly the points `PointNet2` ends on, index for index (unit test on four rule combinations, and at full size against the GraspNet-baseline backbone) | none |
 | `PTv3` | Wu et al., CVPR 2024 | [Pointcept](https://github.com/Pointcept/Pointcept), [PointTransformerV3](https://github.com/Pointcept/PointTransformerV3) (MIT) | `dense` | ScanNet `semseg-pt-v3m1-0-base`: enc 2-2-2-6-2 blocks, 32–512 ch, dec 2-2-2-2, patch 1024, four curves, grid 0.02 m, 6 in, 64 out | 46 166 272 / 46 166 272 (official model); paper: 46.2 M | `weights-verified` | spconv |
-| `PTv3Sonata` | Wu et al., CVPR 2025 (Sonata); Zhang et al., NeurIPS 2025 (Concerto) | [sonata](https://github.com/facebookresearch/sonata), [Concerto](https://github.com/Pointcept/Concerto) (code Apache-2.0) | `dense` | Released base encoder (`sonata`, `concerto_base`): encoder only, 3-3-3-12-3 blocks, 48–512 ch, grid 0.02 m, 9 in, all five stages concatenated: 1232 out | 108 461 376 / 108 461 376 (tensor elements of `concerto_base.pth`) | `weights-verified` (Concerto weights; Sonata weights not on this machine) | spconv |
+| `PTv3Sonata` | Wu et al., CVPR 2025 (Sonata); Zhang et al., NeurIPS 2025 (Concerto) | [sonata](https://github.com/facebookresearch/sonata), [Concerto](https://github.com/Pointcept/Concerto) (code Apache-2.0) | `dense` | Released base encoder (`sonata`, `concerto_base`): encoder only, 3-3-3-12-3 blocks, 48–512 ch, grid 0.02 m, 9 in, all five stages concatenated: 1232 out | 108 461 376 / 108 461 376 (tensor elements of `concerto_base.pth`) | `weights-verified` (with the four default `concerto_*.pth` files, which their model card calls pre-release Utonia models; see the note under the table of weight files). `sonata.pth`, `sonata_small.pth` and `concerto_base_origin.pth` load strictly (`tests/integration/test_backbone_released_weights.py`), without an activation comparison | spconv |
 | `PTv3Utonia` | Zhang et al., ICML 2026 | [Utonia](https://github.com/Pointcept/Utonia) (code Apache-2.0) | `dense` | Released `utonia` encoder: as above with 54–576 ch and rotary embedding (base 10), grid 0.01 m, 1386 out | 137 253 744 / 137 253 744 (official model built from `utonia.pth`) | `weights-verified` | spconv |
 | `LitePT` | Yue et al., CVPR 2026 | [LitePT](https://github.com/prs-eth/LitePT) (MIT); also in Pointcept | `dense` | ScanNet `semseg-litept-small-v1m1` (LitePT-S): enc 2-2-2-6-2 blocks, 36–504 ch, sparse convolution in stages 0–2, attention with PointROPE in stages 3–4, decoder of unpooling steps only, patch 1024, four curves, grid 0.02 m, 6 in, 72 out | 12 712 932 / 12 712 932 (official model); paper: 12.7 M. Also checked: LitePT-S* 15 988 716 (16.0 M), LitePT-B 45 112 788 (45.1 M), LitePT-L 85 880 448 (85.9 M) | `weights-verified` | spconv |
-| `PointNeXt` | Qian et al., NeurIPS 2022 | [PointNeXt](https://github.com/guochengqian/PointNeXt), [openpoints](https://github.com/guochengqian/openpoints) (MIT) | `dense` | PointNeXt-S for S3DIS: width 32, stride 4 × 4 stages, radius 0.1 m × 2 per stage, 32 neighbours, 4 in, 32 out | 790 720 / 790 720 (official `BaseSeg` without head). With the official head: S 0.792 M, B 3.828 M, L 7.125 M, XL 41.576 M, equal to the published numbers | `tested`, plus parity with the official code (no released checkpoint was available to load) | none |
+| `PointNeXt` | Qian et al., NeurIPS 2022 | [PointNeXt](https://github.com/guochengqian/PointNeXt), [openpoints](https://github.com/guochengqian/openpoints) (MIT) | `dense` | PointNeXt-S for S3DIS: width 32, stride 4 × 4 stages, radius 0.1 m × 2 per stage, 32 neighbours, 4 in, 32 out | 790 720 / 790 720 (official `BaseSeg` without head). With the official head: S 0.792 M, B 3.828 M, L 7.125 M, XL 41.576 M, equal to the published numbers | `tested`, plus parity with the official code. Official S3DIS checkpoints of PointNeXt-S, -B, -L and -XL are public in the Google Drive folders of the PointNeXt [model zoo](https://github.com/guochengqian/PointNeXt/blob/master/docs/modelzoo.md) (the folder of PointNeXt-S was opened on 2026-10-13 and holds a `checkpoint` sub-folder); they have not been loaded here | none |
 | `OACNNs` | Peng et al., CVPR 2024 | [Pointcept](https://github.com/Pointcept/Pointcept) `oacnns-v1m1` (MIT) | `dense` | ScanNet `semseg-oacnns-v1m1-0-base`, the paper's OA-CNN (L): stem 64 ch, enc 3-3-9-8 blocks with 64-64-128-256 ch, dec 256 ch, four pooling grids per stage (8-12-16-16, 6-9-12-12, 4-6-8-8, 3-4-6-6 cells), grid 0.02 m, 9 in, 20 out | 51 494 484 / 51 494 484 (official model built from the published config file) | `tested`, plus parity with the official code (no checkpoint has been released) | spconv |
+| `MinkUNet` | Choy et al., CVPR 2019 | [MinkowskiEngine](https://github.com/NVIDIA/MinkowskiEngine) `examples/minkunet.py` @ `02fc608` (MIT), adapted onto `grasppanda.ops.sparse` | `dense` | MinkUNet34C / Res16UNet34C: 3³ stem, enc 2-3-4-6 blocks with 32-64-128-256 ch, dec 2-2-2-2 with 256-128-96-96 ch, grid 0.02 m, 3 in, 96 out without the final layer. `layers`, `planes` and `block` give MinkUNet 14A–D, 18A/B/D, 34A–C, 50 and 101 | 37 847 808 with a 32-channel final layer, the tensor elements of the released PointContrast Res16UNet34C (batch-norm counters aside) | `tested`. The PointContrast and Mask3D backbones load key for key (`tests/integration/test_backbone_released_weights.py`); no activation comparison with MinkowskiEngine was recorded for this class | spconv |
 | `SpUNet` | Choy et al., CVPR 2019 (the residual sparse U-Net and its 34C sizes) | [Pointcept](https://github.com/Pointcept/Pointcept) `SpUNet-v1m1` (MIT) | `dense` | ScanNet `semseg-spunet-v1m1-0-base`: 5³ stem 32 ch, enc 2-3-4-6 blocks with 32-64-128-256 ch, dec 2-2-2-2 blocks with 256-128-96-96 ch, grid 0.02 m, 6 in, 20 out (`out_channels: null` returns the 96 decoder channels) | 39 157 844 / 39 157 844 (official model built from the published config file); 39 155 904 without the final layer | `tested`, plus parity with the official code (its authors have released no checkpoint) | spconv |
 
 Not implemented from the original list: **DGCNN** (see the second table).
@@ -212,7 +213,10 @@ Files under `components/` of the local weight store, and what they are.
 | `concerto_base.pth` (`845ec7de…`) | same | same | same | `PTv3Sonata` (the defaults) | enc 3-3-3-12-3, 48–512 ch, heads 3-6-12-24-32; 108.46 M |
 | `concerto_large.pth` (`04de4954…`) | same | same | same | `PTv3Sonata` | enc 3-3-3-12-3, 64–768 ch, heads 4-8-16-32-48; 207.67 M |
 | `utonia.pth` (`a0a2e5e2…`) | Utonia: one PTv3 encoder pre-trained across domains (the authors show indoor, outdoor and object data), with rotary position embedding | Pointcept group, [Hugging Face](https://huggingface.co/Pointcept/Utonia) | as Concerto | `PTv3Utonia` (the defaults) | enc 3-3-3-12-3, 54–576 ch, heads 3-6-12-24-32, `rope_base` 10; 137.25 M |
-| `sonata.pth` (not on this machine) | Sonata: self-supervised PTv3 encoder, same architecture and size as `concerto_base` | Meta, [Hugging Face](https://huggingface.co/facebook/sonata) | code Apache-2.0; weights CC-BY-NC 4.0 | `PTv3Sonata` (architecture checked against the `sonata` package; these weights were not loaded) | as `concerto_base` |
+| `sonata.pth`, `sonata_small.pth` (under `$GRASPPANDA_CACHE/weights_components`, not in the local weight store) | Sonata: self-supervised PTv3 encoder, same architecture and size as `concerto_base` (`sonata_small`: as `concerto_small`) | Meta, [Hugging Face](https://huggingface.co/facebook/sonata) | code Apache-2.0; weights CC-BY-NC 4.0 (repository README; the model card states none) | `PTv3Sonata`: every tensor loads with equal shape (`pretrained: sonata`, `sonata-small`); activations were not compared with the `sonata` package | as `concerto_base` / `concerto_small` |
+| `concerto_base_origin.pth` (same place) | The Concerto model of the paper | Pointcept group, [Hugging Face](https://huggingface.co/Pointcept/Concerto) | weights CC-BY-NC 4.0 (model card) | `PTv3Sonata` (the defaults): every tensor loads with equal shape (`pretrained: concerto-base-origin`); activations were not compared | as `concerto_base` |
+
+**Which file is "Concerto".** The model card of `Pointcept/Concerto` says: "The default models(concerto_large/base/small/tiny) are the pre-release version of our next work, Utonia, which can deal with input without color and normal. If colors and normals are not available, please set them to zeros. [...] The original Concerto model is `concerto_base_origin.pth`." The four `concerto_*.pth` rows above are therefore the pre-release models, not the networks evaluated in the Concerto paper; the paper's are `concerto_base_origin.pth` and `concerto_large_origin.pth`. The activation fixtures of this page were recorded with the default files.
 
 All of them:
 
@@ -285,14 +289,31 @@ Also used for verification: the ScanNet segmentation checkpoint of PTv3
 checkpoint (`checkpoint-rs.tar`, non-commercial research licence, backbone keys under
 `view_estimator.backbone.`).
 
-No checkpoint of OA-CNNs or of SpUNet has been released by their authors: on 2026-10-12
-the Pointcept organisation on Hugging Face held PTv3, Sonata, Concerto and Utonia only,
-and the Pointcept model zoo lists training commands for the two. Both are therefore
-`tested` with parity against the official code, not `weights-verified`. A ScanNet SpUNet
-converted by a third party into another library's layout exists
-(`torch-pointcloud/spunet-v1m1.scannet20.pointcept`, MIT according to its card, SHA-256
-`11658b4d…`); its card does not say which checkpoint it was converted from, and it was not
-used here.
+No checkpoint of OA-CNNs has been released by its authors: on 2026-10-12 the Pointcept
+organisation on Hugging Face held PTv3, Sonata, Concerto and Utonia only, and the Pointcept
+model zoo lists a training command for it. `OACNNs` is therefore `tested` with parity
+against the official code, not `weights-verified`.
+
+Checkpoints of `SpUNet-v1m1` **are** released, by works that use it as their backbone, and
+they load into `SpUNet` key for key after `convert_pointcept_state`
+(`tests/integration/test_backbone_released_weights.py`; files loaded on 2026-10-13):
+
+| Release | Files loaded here | Licence | `SpUNet` options |
+|---|---|---|---|
+| [RayYoh/GaussianCross](https://huggingface.co/RayYoh/GaussianCross) (GaussianCross, ACM MM 2025) | `scannet/semseg-spunet-base-lin` (157 MB), `scannet/semseg-spunet-base` (470 MB) | MIT (model card) | `out_channels: null` for the linear-probing file, defaults for the fine-tuned one |
+| [KadirYilmaz/Volt](https://huggingface.co/KadirYilmaz/Volt) `teacher_weights/` (the distillation teachers of Volt, ECCV 2026) | `scannet_unet_teacher.pth` (470 MB) | MIT (model card) | defaults |
+
+The MSC archives the Pointcept README links (Masked Scene Contrast, CVPR 2023, on the
+author's SharePoint) were not downloaded here. `SpUNet` stays `tested`: the loads prove
+names and shapes, and no activation comparison with the official model was recorded for
+these files. A ScanNet SpUNet converted by a third party into another library's layout
+also exists (`torch-pointcloud/spunet-v1m1.scannet20.pointcept`, MIT according to its
+card, SHA-256 `11658b4d…`); its card does not say which checkpoint it was converted from,
+and it was not used here.
+
+How to start a grasp model from any of these files, and the full table of released
+weights that load into `SpUNet`, `PTv3`, `PTv3Sonata`, `LitePT` and `MinkUNet`:
+[Scene encoders: sparse-voxel networks and released weights](slots/scene_encoders_sparse.md).
 
 ## Where the implementations deliberately differ from upstream
 
@@ -304,7 +325,8 @@ Each difference exists for the backbone contract and is exact for a single cloud
 | PTv3 serialisation depth | one depth for the batch, from its largest cloud; the Hilbert curve depends on it | one depth per cloud | Batch independence |
 | PTv3 order shuffling | every forward pass, in evaluation mode too | training mode only | Deterministic evaluation |
 | PTv3 voxel representative | a random point of each voxel (training transform) | the first point of each voxel | Deterministic; features go back to exactly the points that produced the voxel |
-| PTv3 multi-dataset norms (`pdnorm_*`, PPT) | supported | not implemented | Needs a per-sample dataset condition the contract does not carry; the `ppt` checkpoints do not load |
+| PTv3 multi-dataset norms (`pdnorm_*`, PPT) | one set of normalisation layers per training dataset, chosen per sample by a `condition` | one set, chosen when the weights are loaded (`pretrained_condition`); the model is a plain PTv3 | The `Backbone` contract carries no per-sample dataset condition. The released `ppt` checkpoints load with the statistics of the chosen dataset; the other sets are dropped |
+| PTv3 `cls_mode` (encoder without decoder) | returns the coarsest level | `enc_mode: true` returns the deepest `concat_stages` encoder stages concatenated on every input voxel | A scene encoder returns one feature per point; encoder-only checkpoints load strictly |
 | LitePT attention backend | flash-attention on float16 queries, keys and values; there is no other path | `scaled_dot_product_attention` in the input precision, on the same patches | No extra dependency. Measured: with the released weights the official output itself moves by 6e-4 to 2e-3 between the two precisions |
 | LitePT PointROPE | a CUDA extension, or a PyTorch fallback that looks the rotations up in a table | computed in PyTorch from the grid coordinates | No compiled code; equal to both (the evidence was recorded with each) |
 | LitePT serialisation depth | one depth for the batch, from its largest cloud | one depth per cloud | Batch independence |
@@ -414,7 +436,6 @@ dependencies listed for those rows are the imports of the Pointcept implementati
 | Encoder | Paper | Code, licence | Extra dependencies | Why not yet, and what it would take |
 |---|---|---|---|---|
 | DGCNN (segmentation form) | Wang et al., TOG 2019 | [WangYueFt/dgcnn](https://github.com/WangYueFt/dgcnn), [dgcnn.pytorch](https://github.com/antao97/dgcnn.pytorch) (both MIT) | none | On the list for this round, dropped for time. Needs a k-NN operator in feature space (the reference `knn` takes 3-D coordinates only), chunked: at 20 000 points every EdgeConv layer compares all pairs of points. The PyTorch port needs no compiled code, so it can serve as an oracle directly. |
-| MinkUNet18/34 in their original arrangement | Choy et al., CVPR 2019 | [MinkowskiEngine](https://github.com/NVIDIA/MinkowskiEngine) (MIT; last push March 2024) | spconv, or MinkowskiEngine for the original weights | `SpUNet` has the 34C sizes in Pointcept's arrangement, where the stride-2 convolution of a stage changes the width. In the original, as in `SparseUNet14`, the first block of the stage does; more blocks per stage there would be a block-count change of `SparseUNet14`, whose kernel conversion already reads MinkowskiEngine checkpoints. |
 | SPVCNN | Tang et al., ECCV 2020 | [spvnas](https://github.com/mit-han-lab/spvnas) (MIT, archived), [torchsparse](https://github.com/mit-han-lab/torchsparse) (MIT) | torchsparse | A third sparse backend for one model. Port the point-voxel branch onto the facade instead. |
 | KPConv | Thomas et al., ICCV 2019 | [KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch) (MIT) | its compiled C++ wrappers (`cpp_subsampling`, `cpp_neighbors`) | Neighbourhoods are precomputed on the CPU in the data loader. That pipeline has to become a transform, or be redone on the GPU with the reference operators. |
 | KPConvX | Thomas et al., CVPR 2024 | [ml-kpconvx](https://github.com/apple/ml-kpconvx) (MIT) | not checked | Successor of KPConv; review together with it. |

@@ -1,0 +1,19 @@
+# Pick 50 grasps spread over the scene by furthest point sampling of grasp points.
+#
+# Only the 300 best grasps take part, so the pick is spread and still good. Use it instead of
+# top-k when the best grasps all sit on one object.
+#
+# Use: `--post furthest-sampling` with grasppanda test, infer or demo; `--set
+# post=furthest-sampling` with grasppanda compose; or copy the fragment into
+# `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * num: 50 grasps are returned, sorted by score.
+# * candidates: 300 of the 1024 grasps of a seed-based method; lower it to stay closer to top-k,
+#   raise it (or null) for more spread.
+evaluation:
+  variants:
+    post:
+      - type: FurthestGraspSampling
+        num: 50
+        candidates: 300

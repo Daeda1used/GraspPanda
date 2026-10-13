@@ -71,17 +71,35 @@ YAML file or from `DETECTORS.build(...)` in Python.
 <!-- generated:encoders:begin -->
 | Encoder | `output` | Status | Needs | `EconomicGrasp` | `GraspNetBaseline` | `GSNet` | `ScaleBalancedGrasp` |
 |---|---|---|---|---|---|---|---|
+| `ASSANet` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `DGCNN` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `DeLA` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `LitePT` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `MinkUNet` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `OACNNs` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `OctFormer` | `dense` | `bridge` | `ocnn` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PTv3` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PTv3Sonata` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PTv3Utonia` | `dense` | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointMLP` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointMamba` | `subsampled` | `bridge` | `mamba-ssm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointMetaBase` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PointNeXt` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PointNet2` | `subsampled` | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
 | `PointNet2Dense` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointNet2MSG` | `subsampled` | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointNet2MSGDense` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PointNet2Transformer` | `subsampled` | `weights-verified` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PointTransformerV1` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointTransformerV2` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointVector` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PointViT` | `subsampled` | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `PyGPointEncoder` | `dense` | `bridge` | `torch_geometric` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `RandLANet` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `SpUNet` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `SparseUNet14` | `dense` | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `Uni3D` | `subsampled` | `bridge` | `timm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
+| `Volt` | `dense` | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 
 ✓: `model.backbone: {type: <Encoder>}` passes the config check as it stands. *in `Adapter`*: the bare swap is refused with a message that names the adapter; `model.backbone: {type: <Adapter>, backbone: {type: <Encoder>}}` passes.
 

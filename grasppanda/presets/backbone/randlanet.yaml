@@ -1,0 +1,26 @@
+# RandLA-Net (CVPR 2020): random subsampling with local feature aggregation.
+#
+# An encoder-decoder that keeps a random quarter of the points per level and aggregates
+# 16 nearest neighbours with attention; features on every input point. Its neighbour
+# search is by count, not by radius, so no length has to be converted from rooms or
+# streets to a table top. No grasp result with this encoder is published; no AP is
+# claimed.
+#
+# What must be re-tuned, and why:
+# * sub_sampling_ratio: 4 per level, 20 000 points become 5000 / 1250 / 312 / 78. The
+#   published model was fed clouds on a 4 to 6 cm grid; a depth frame is denser near the
+#   camera, and random sampling keeps that imbalance (furthest point sampling would not).
+# * num_neighbors: 16. At 5 mm spacing the first level sees about 1 cm; each level
+#   widens the view by its ratio.
+# * out_channels: 256 here (the published head ends on 32), the width
+#   Scale-Balanced-Grasp's gated crop needs; 32 is the class default.
+# * in_channels: 3 constant ones. The network reads the camera-frame coordinates as its
+#   first input channels and in every neighbourhood encoding (absolute positions are
+#   part of the published encoding), so features are not translation invariant.
+# * evaluation uses a fixed permutation (`seed`); training samples anew every step.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: RandLANet               # `dense`: one feature per input point
+    in_channels: 3                # constant ones; the coordinates are read by the encoder
+    out_channels: 256

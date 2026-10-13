@@ -1,0 +1,33 @@
+# MinkUNet18A started from the OpenScene weights (distilled from CLIP features, ScanNet).
+#
+# The released file `openscene-scannet-openseg` (187 MB) is a MinkUNet18A trained to
+# predict, per point, the language-aligned image features of OpenSeg. It was trained on
+# geometry alone: its input is three constant ones per point, exactly what GSNet,
+# EconomicGrasp and GraspNet-baseline feed. Fetch it first: the error of a missing file
+# prints the command. The code of OpenScene is Apache-2.0; the licence of the weights is
+# not stated and ScanNet's terms apply. No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_mismatch: skip. The final 1 x 1 layer does not come from the file: the
+#   release ends on 768 language-aligned channels without bias, and compose sets
+#   `out_channels` to the width of the encoder it replaces. To keep the released output,
+#   add `--opts model.backbone.out_channels=768 model.backbone.final_bias=false`: the
+#   load is then strict and the other stages are built 768 wide.
+# * voxel_size: 0.005 m, GSNet's. The weights were trained on rooms at 0.02 m, so every
+#   kernel sees a quarter of the extent it was trained on; 0.02 m matches the weights.
+# * under FineGrasp the stem does not load either: that method feeds 6 real channels.
+# * learning rate: a pretrained encoder under a random head usually takes a lower rate
+#   or a warm-up; the base method's recipe has neither.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: MinkUNet                # `dense`: one feature per input point
+    in_channels: 3                # constant ones, the input the release was trained on
+    out_channels: 512
+    voxel_size: 0.005
+    layers: [2, 2, 2, 2, 2, 2, 2, 2]
+    planes: [32, 64, 128, 256, 128, 128, 96, 96]
+    stem_kernel: 5
+    pretrained: openscene-scannet-openseg
+    pretrained_mismatch: skip     # the final layer keeps its initialisation

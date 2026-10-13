@@ -1,0 +1,26 @@
+# PointNeXt-L (encoder + decoder) with a table-top radius: the published "L" size.
+#
+# The same class as the `pointnext` preset (PointNeXt-S); only depth and width differ:
+# blocks [1, 3, 5, 3, 3], width 32, a one-layer set abstraction without the
+# residual of the S model, as in cfgs/s3dis/pointnext-l.yaml of the official repository
+# (7.125 M parameters there, with the segmentation head). 32 output channels.
+# No published GraspNet-1Billion result uses PointNeXt; no AP is claimed.
+#
+# What must be re-tuned, and why:
+# * radius: 0.04 m doubling per stage (0.04 / 0.08 / 0.16 / 0.32 m) in place of the room
+#   value 0.1 m; the first radius of the GraspNet-baseline PointNet++. A choice by analogy.
+# * in_channels: 3 constant ones (the published model reads colour and height). The
+#   released S3DIS checkpoints have 4 input channels and room radii: read
+#   docs/slots/scene_encoders_point.md before loading them.
+# * memory and speed grow with depth: every inverted residual block runs a ball query on
+#   the pure-PyTorch reference operators. Start with batch size 1 or 2.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointNeXt               # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    radius: 0.04
+    blocks: [1, 3, 5, 3, 3]
+    width: 32
+    sa_layers: 1
+    sa_use_res: false

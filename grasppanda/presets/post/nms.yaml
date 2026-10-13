@@ -1,0 +1,17 @@
+# Grasp non-maximum suppression: one grasp per 3 cm and 30 degrees, best first.
+#
+# The rule of graspnetAPI. The benchmark evaluators apply it again themselves, so it changes
+# what a robot receives, not a score.
+#
+# Use: `--post nms` with grasppanda test, infer or demo; `--set post=nms` with grasppanda
+# compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * translation_threshold: 0.03 m and rotation_threshold: 30 degrees; both must be undercut for
+#   a grasp to be suppressed. 0.05 m thins harder.
+evaluation:
+  variants:
+    post:
+      - type: GraspNMS
+        translation_threshold: 0.03
+        rotation_threshold: 30.0

@@ -247,8 +247,8 @@ def test_requests_that_cannot_be_composed_say_why():
         compose("gsnet/no_such_config", ["backbone=ptv3"])
 
 
-def test_a_detector_without_slots_says_what_cannot_be_done_yet(tmp_path, capsys):
-    assert component_slots(DETECTORS.get("HGGD")) == {}
+def test_a_detector_family_of_its_own_says_which_slots_it_has(tmp_path, capsys):
+    assert list(component_slots(DETECTORS.get("HGGD"))) == ["image_encoder"]
     assert list(component_slots(DETECTORS.get("GSNet"))) == [
         "backbone",
         "proposal",
@@ -260,10 +260,11 @@ def test_a_detector_without_slots_says_what_cannot_be_done_yet(tmp_path, capsys)
     with pytest.raises(ComposeError) as error:
         compose(HGGD, ["backbone=ptv3"])
     message = str(error.value)
-    assert "HGGD has no component slots" in message and "grasppanda components HGGD" in message
+    assert "HGGD has no slot 'backbone'" in message and "Its slots: image_encoder." in message
+    assert "detector family of its own" in message and "grasppanda components HGGD" in message
     assert "--opts model.<part>.<option>=<value>" in message
     assert main(["compose", HGGD, "--set", "backbone=ptv3"]) == 2
-    assert "HGGD has no component slots" in capsys.readouterr().err
+    assert "HGGD has no slot 'backbone'" in capsys.readouterr().err
     # Its options can still be changed, and the config check is the verdict.
     result = compose(HGGD, overrides=["model.encoder.base_width=16"])
     assert result.accepted and not result.seed_based and result.verdicts == []
@@ -274,7 +275,17 @@ def test_a_detector_without_slots_says_what_cannot_be_done_yet(tmp_path, capsys)
 
 def test_adapters_are_found_from_the_registry_not_from_a_list():
     adapters = sorted(name for name in BACKBONES.names() if is_adapter(BACKBONES.get(name)))
-    assert adapters == ["FeaturePropagation", "FurthestPointSubsample"]
+    assert adapters == [
+        "FeaturePropagation",
+        "FurthestPointSubsample",
+        "ImagePainted",
+        "ImagePaintedSubsampled",
+    ]
+    # ... and only those a contract can ask for are ever inserted.
+    from grasppanda.combine.compose import _adapters_for
+
+    dense, proposal = {"type": "SparseUNet14"}, {"type": "SubsampledSeeds"}
+    assert _adapters_for(dense, proposal) == ["FurthestPointSubsample"]
     assert not is_adapter(BACKBONES.get("PointNet2"))
 
 

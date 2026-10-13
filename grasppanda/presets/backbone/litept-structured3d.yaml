@@ -1,0 +1,25 @@
+# LitePT-S started from the released Structured3D weights (MIT), on a 5 mm grid.
+#
+# The released file `litept-small-structured3d` (152 MB, supervised semantic
+# segmentation of synthetic rooms) loads key for key into LitePT. Fetch it first: the
+# error of a missing file prints the command. `litept-small-nuscenes` loads with
+# `in_channels: 4`.
+# No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_mismatch: skip. One tensor does not come from the file: the stem kernel
+#   (the release reads colour and normal, 6 channels; the grasp methods feed 3 constant
+#   ones). With `in_channels: 6` and real colour and normal the load is strict.
+# * grid_size: 0.005 m, GSNet's; the weights were trained on rooms at 0.02 m. The
+#   convolution stages see a quarter of the extent they were trained on.
+# * output width: 72 channels, as in the `litept` preset; the stages are built that wide.
+# * optimizer and schedule: the base method's, tuned for its own encoder.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: LitePT                  # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005
+    pretrained: litept-small-structured3d
+    pretrained_mismatch: skip     # the stem keeps its initialisation

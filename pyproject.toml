@@ -43,6 +43,20 @@ tensorboard = ["tensorboard>=2.14"]
 wandb = ["wandb>=0.16"]
 # The interactive viewer of `grasppanda demo --show`. Pictures and animations need only Pillow.
 vis = ["open3d>=0.18"]
+# Gripper meshes of GripperMeshCollisionFilter (post-processing).
+trimesh = ["trimesh>=4.0"]
+# Octree operators of the OctFormer scene encoder (pure PyTorch; imports Triton).
+ocnn = ["ocnn>=2.3"]
+# Selective scan of the PointMamba scene encoder. CUDA only; prebuilt wheels per torch and
+# CUDA version are on the releases page of github.com/state-spaces/mamba.
+mamba-ssm = ["mamba-ssm>=2.2"]
+# Image encoders (`model.image_encoder`): one extra per library bridge. timm also provides
+# the vision transformer blocks of the Uni3D scene encoder.
+timm = ["timm>=1.0.20"]
+transformers = ["transformers>=4.56"]
+torchvision = ["torchvision>=0.19"]
+# Point-cloud message-passing layers for the bridge backbone `PyGPointEncoder`.
+torch_geometric = ["torch_geometric>=2.5"]
 dev = ["pytest>=8", "pytest-cov", "ruff>=0.6", "codespell", "pre-commit", "build"]
 docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 

@@ -1,0 +1,36 @@
+# C-RADIOv3-B (NVIDIA's agglomerative ViT-B/16) through transformers and its hub code, colour
+# only.
+#
+# 98.3 M parameters; the spatial tokens as one map at stride 16, width 768. One student distilled
+# from several foundation models. Runs the model code of the hub repository (`trust_remote_code`)
+# and needs `pip install open_clip_torch`. Weights: `nvidia/C-RADIOv3-B`, NVIDIA Open Model
+# License (hub card: `nvidia-open-model-license`; read it before any use beyond research).
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * size_multiple: 16. The image is resampled up to the next multiple of the patch size (368 x 640
+#   for a 360 x 640 image); the maps come at stride 16 and the decoder resamples them to the
+#   proposal stride.
+# * single-scale maps: a plain ViT returns every map at its patch stride, so the pyramid decoder
+#   merges layers, not resolutions. The heat-map is decoded from stride 16; fine structure has to
+#   be learned by the decoder.
+# * mean and std: 0 and 1, because RADIO normalises the image itself.
+# * memory: 98 M parameters; lower the batch size, or set `frozen: true`.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: HFImageEncoder
+    name: nvidia/C-RADIOv3-B      # hub id or a local directory
+    api: radio
+    model_args: {trust_remote_code: true}
+    mean: [0, 0, 0]
+    std: [1, 1, 1]
+    size_multiple: 16
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

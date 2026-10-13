@@ -1,0 +1,20 @@
+# Narrow each opening to the extent of the scene between the fingers plus 1 cm a side.
+#
+# Widths change (only downwards in this preset), poses and scores do not. Run it before a
+# collision filter: a narrower gripper collides less in clutter.
+#
+# Use: `--post width-from-cloud` with grasppanda test, infer or demo; `--set
+# post=width-from-cloud` with grasppanda compose; or copy the fragment into
+# `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * clearance: 0.01 m on each side of the object.
+# * mode: shrink never widens a prediction. `fit` also widens when points lie just outside the
+#   predicted opening.
+evaluation:
+  variants:
+    post:
+      - type: WidthFromCloud
+        clearance: 0.01
+        margin: 0.01
+        mode: shrink

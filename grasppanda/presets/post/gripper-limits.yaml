@@ -1,0 +1,17 @@
+# Remove grasps wider than 0.08 m, the opening of a Franka Emika hand.
+#
+# Detectors trained on GraspNet-1Billion predict openings up to 0.10 m.
+#
+# Use: `--post gripper-limits` with grasppanda test, infer or demo; `--set post=gripper-limits`
+# with grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * max_width: 0.08 m (Franka hand). Robotiq 2F-85: 0.085; 2F-140: 0.14.
+# * mode: remove. `clip` keeps the grasp with the opening cut to the limit, which only suits a
+#   consumer that clips itself, such as a benchmark evaluator.
+evaluation:
+  variants:
+    post:
+      - type: GripperLimits
+        max_width: 0.08
+        mode: remove

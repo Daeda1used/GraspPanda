@@ -1,0 +1,18 @@
+# Keep grasps whose grasp point is between 0.2 m and 1.0 m in front of the camera.
+#
+# The box is in the frame of the grasps (camera: x right, y down, z forward). With `transform`
+# (camera to robot base) the limits are those of the robot's workspace.
+#
+# Use: `--post workspace` with grasppanda test, infer or demo; `--set post=workspace` with
+# grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * z: [0.2, 1.0] m is the working range of a RealSense D435 over a table; x and y are not
+#   limited here. Set all three for a bin.
+# * transform: not set. Give the 4x4 hand-eye calibration (nested lists or a file) to state the
+#   box in the robot base frame.
+evaluation:
+  variants:
+    post:
+      - type: WorkspaceFilter
+        z: [0.2, 1.0]

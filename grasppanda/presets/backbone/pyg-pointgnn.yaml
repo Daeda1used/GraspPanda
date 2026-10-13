@@ -1,0 +1,22 @@
+# Point-GNN layers, at full resolution, through PyTorch Geometric.
+#
+# A bridge: the layer is `torch_geometric.nn.PointGNNConv`
+# (Point-GNN, CVPR 2020). The stack around it (stem, three layers with batch
+# norm and residuals, 256-channel output) is GraspPanda's and is not a published
+# network. Needs `pip install "grasppanda[torch_geometric]"`. No AP is claimed.
+#
+# What must be re-tuned, and why:
+# * k: 16 neighbours on one spatial graph per frame. There is no subsampling, so three
+#   layers reach three hops: a few centimetres at 5 mm point spacing.
+#   Point-GNN was published on a voxel-downsampled radius graph; here it is a kNN graph.
+# * channels: [128, 128, 128]; the layer keeps its input width, so all entries must be equal.
+# * in_channels: 3 constant ones, with the coordinates put in front of them.
+# * out_channels: 256, the width Scale-Balanced-Grasp's gated crop needs.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PyGPointEncoder         # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones; the coordinates are added by the encoder
+    conv: pointgnn
+    channels: [128, 128, 128]
+    k: 16

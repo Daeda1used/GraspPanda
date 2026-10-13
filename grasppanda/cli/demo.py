@@ -101,6 +101,14 @@ def register(commands: Any) -> None:
     )
     parser.add_argument("--variant", metavar="NAME", help="apply this chain of evaluation.variants")
     parser.add_argument(
+        "--post",
+        nargs="+",
+        metavar="STEP",
+        help="post-processing steps applied afterwards, e.g. nms top-k=20 "
+        "gripper-limits=0.08 (presets of `grasppanda compose --list post` or component "
+        "names; name=value sets the main option, name:option=value,... any option)",
+    )
+    parser.add_argument(
         "--top-k", type=int, default=30, metavar="K", help="grasps to draw (default 30)"
     )
     parser.add_argument(
@@ -431,15 +439,25 @@ def _demo(args: argparse.Namespace) -> None:
         cloud += f"; ground-truth-assisted inputs: {', '.join(assisted)}"
     print(f"  {'cloud':<{width}}  {cloud}")
 
-    chain = inferencer.chain(collision_filter=args.collision_filter, variant=args.variant)
+    chain = inferencer.chain(
+        collision_filter=args.collision_filter, variant=args.variant, post=args.post
+    )
     started = time.perf_counter()
     raw = inferencer.predict(observation, seed=args.seed)
     seconds = time.perf_counter() - started
-    grasps = inferencer.postprocess(raw, observation, chain).sort_by_score()
+    counts, grasps, drawn = [], raw, raw
+    for step in chain:  # one step at a time, to say what each one left
+        grasps = inferencer.postprocess(grasps, observation, [step])
+        counts.append(len(grasps))
+        if grasps.frame == raw.frame:  # the picture shows the cloud: grasps in its frame
+            drawn = grasps
+    grasps, drawn = grasps.sort_by_score(), drawn.sort_by_score()
     result = f"{len(raw)} predicted in {seconds:.2f} s (first call, includes warm-up)"
-    if chain:
-        steps = " + ".join(type(step).__name__ for step in chain)
-        result += f"; {len(grasps)} left after {steps}"
+    if len(chain) == 1:
+        result += f"; {len(grasps)} left after {type(chain[0]).__name__}"
+    elif chain:  # what every step left
+        steps = " → ".join(f"{type(step).__name__} {count}" for step, count in zip(chain, counts))
+        result += f"; after {steps}"
     print(f"  {'grasps':<{width}}  {result}")
 
     out.mkdir(parents=True, exist_ok=True)
@@ -453,16 +471,22 @@ def _demo(args: argparse.Namespace) -> None:
     if kind == "--frame" and info["rgb"] is None and observation.rgb is None:
         info["rgb"] = _frame_colour(inferencer, parse_frame_key(args.frame))
     points, colors = _picture_cloud(observation, info)
-    grasps_cpu = grasps.to("cpu")
-    written[1:1] = _draw(points, colors, grasps_cpu, args, out, info["caption"])
+    grasps_cpu, drawn_cpu = grasps.to("cpu"), drawn.to("cpu")
+    written[1:1] = _draw(points, colors, drawn_cpu, args, out, info["caption"])
 
     print()
     if len(grasps):
         print(_grasp_table(grasps_cpu, 10))
-        print(
-            "camera frame, metres: x right, y down, z forward · approach = first column of "
-            "the rotation"
-        )
+        if grasps.frame == "camera":
+            print(
+                "camera frame, metres: x right, y down, z forward · approach = first column "
+                "of the rotation"
+            )
+        else:
+            print(
+                f"frame '{grasps.frame}' (a post-processing step changed it), metres · approach "
+                "= first column of the rotation · the picture shows the grasps before that step"
+            )
     else:
         print(
             "No grasp was returned. That is a valid result: the detector found nothing it "
@@ -474,7 +498,7 @@ def _demo(args: argparse.Namespace) -> None:
     if args.show:
         from grasppanda.visualization.viewer import show
 
-        show(points, colors, grasps_cpu, top_k=args.top_k, title=f"GraspPanda · {name}")
+        show(points, colors, drawn_cpu, top_k=args.top_k, title=f"GraspPanda · {name}")
 
 
 def run(args: argparse.Namespace) -> int:

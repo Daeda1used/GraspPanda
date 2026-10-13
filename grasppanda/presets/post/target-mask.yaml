@@ -1,0 +1,19 @@
+# Keep the grasps on a target object: within 1 cm of a point of the mask `target`.
+#
+# The observation must carry `masks['target']`, a boolean mask over its points (an instance or
+# language-grounded segmentation). No shipped dataset fills it: this preset is for
+# GraspInferencer in your own code, see docs/slots/post.md.
+#
+# Use: `--post target-mask` with grasppanda test, infer or demo; `--set post=target-mask` with
+# grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * mask: the name under which your code stores the mask in observation.masks.
+# * max_distance: 0.01 m. Seed-based methods put grasp points on cloud points, so 0.005 is exact
+#   for them; HGGD computes centres and needs 0.01 to 0.02.
+evaluation:
+  variants:
+    post:
+      - type: MaskFilter
+        mask: target
+        max_distance: 0.01

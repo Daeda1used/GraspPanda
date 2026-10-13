@@ -1,0 +1,20 @@
+# Keep the better half of the grasps of a frame by score.
+#
+# The quantile mode needs no knowledge of the score scale, which differs between methods (GSNet:
+# unbounded, EconomicGrasp: a sum of logits, HGGD: in [0, 1]).
+#
+# Use: `--post score-threshold` with grasppanda test, infer or demo; `--set
+# post=score-threshold` with grasppanda compose; or copy the fragment into
+# `evaluation.variants.<name>` of a config.
+#
+# What must be re-tuned, and why:
+# * threshold: 0.5 with mode quantile keeps the best 50 %. With mode absolute it is a score, to
+#   be chosen per method from the scores of a few frames.
+# * min_keep: 1, so that a frame never ends without a candidate.
+evaluation:
+  variants:
+    post:
+      - type: ScoreThreshold
+        threshold: 0.5
+        mode: quantile
+        min_keep: 1

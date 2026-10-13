@@ -77,12 +77,17 @@ class EncoderOptions:
         detach_features: Hand the feature map to the region stage without gradient, so
             that the region loss does not train the image network. ``false`` is a
             different training recipe.
+        decoder_channels: Width of the pyramid decoder, and of the feature map of the
+            region stage, when ``model.image_encoder`` puts another encoder in place of
+            the reference one. The reference network does not read it; ``base_width``
+            and ``blocks`` in turn describe the reference encoder only.
     """
 
     base_width: int = 8
     blocks: tuple[int, int, int, int] = (3, 4, 6, 3)
     head_channels: int = 32
     detach_features: bool = True
+    decoder_channels: int = 64
 
 
 @dataclass(frozen=True)

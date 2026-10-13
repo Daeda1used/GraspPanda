@@ -1,0 +1,31 @@
+# Uni3D-S: 1024 point-patch tokens through the blocks of timm's EVA-02 small.
+#
+# Needs the `timm` library (pip install "grasppanda[timm]"). An object-level foundation
+# encoder used on a scene. Features live on the 1024 centres; under a method whose
+# proposal scores every scene point compose wraps it in FeaturePropagation. No published
+# GraspNet-1Billion result uses it.
+#
+# What must be re-tuned, and why:
+# * timm_model: `eva02_small_patch14_224` is the transformer of the released `uni3d-s`
+#   (22.1 M parameters, 384 channels); the class docstring lists the other four sizes.
+# * num_group and group_size: 1024 tokens of 64 points (Uni3D: 512 of 64, on 10 000
+#   points of one object). `num_group` is the number of seeds of a method that takes the
+#   subsample as its seed set.
+# * in_channels: 3. The released models read colour in 0..1 next to the offsets; the
+#   base methods feed constant ones, which the tokeniser sees as a white object. A
+#   method with `point_features: observation` feeds what its dataset provides.
+# * coord_scale: 2.0. The released models saw objects scaled to the unit sphere; a
+#   table top about 1 m across then fills the same sphere. A choice by analogy, not a
+#   tuned value.
+# * weights: random init as written. `model.pt` of BAAI/Uni3D fills this encoder
+#   (docs/slots/scene_encoders_transformer.md says how); it was trained to align the
+#   class token of single objects with CLIP, not to give per-token scene features.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: Uni3D                   # `subsampled`: features on 1024 points, 384 channels
+    in_channels: 3                # constant ones stand in for colour
+    num_group: 1024
+    group_size: 64
+    timm_model: eva02_small_patch14_224
+    coord_scale: 2.0

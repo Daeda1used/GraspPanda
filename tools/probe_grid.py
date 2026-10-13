@@ -230,14 +230,21 @@ def _probe_first(
 
 
 def _out_of_memory(report: dict[str, Any]) -> bool:
-    return "out of memory" in json.dumps(report.get("failure") or {}).lower()
+    """Whether a probe died for lack of GPU memory: the allocator's own error, or a CUDA
+    library that could not allocate its handle (``CUBLAS_STATUS_ALLOC_FAILED``)."""
+    text = json.dumps([report.get("failure") or {}, report.get("detail") or ""]).lower()
+    return "out of memory" in text or "alloc_failed" in text
 
 
 def _conclusive(record: dict[str, Any]) -> bool:
     """Whether an earlier probe is a statement about its config and can stand for a new
-    one: it read real frames (or failed before reading any) and ended with a report."""
+    one: it read real frames (or failed before reading any) and ended with a report. A
+    probe that ran out of GPU memory is a statement about the machine at that moment (the
+    GPU is shared), so it never stands for a new one."""
     probe = record.get("probe") or {}
     if not probe or probe.get("verdict") == "wired" or probe.get("fallback"):
+        return False
+    if _out_of_memory(probe):
         return False
     return (probe.get("failure") or {}).get("error") != "ProcessError"
 
@@ -384,7 +391,8 @@ def _rounded(pair: list[float]) -> list[float]:
 #: What a cell of the measured file holds, field by field; exported with the cells.
 FIELDS: dict[str, str] = {
     "id": "the cell: <group>/<method>/..., unique",
-    "group": "reference, encoder, stage, stage-set or family (grasppanda.combine.grid)",
+    "group": "reference, encoder, stage, stage-set, family, family-slot or post "
+    "(grasppanda.combine.grid)",
     "method": "the method whose shipped config the cell starts from",
     "sets": "the slot=choice pairs of the compose request; absent for a config as shipped",
     "slot, component, variant": "for encoder and stage cells: the replaced slot, the "
@@ -410,6 +418,9 @@ FIELDS: dict[str, str] = {
     "number of iterations at zero",
     "shared_machine": "seconds per iteration, peak GPU memory (MiB) and wall time of the "
     "probe (s): numbers that depend on the load of the machine",
+    "postprocessing": "for post cells: the steps of the variant `post`, and per predicted "
+    "frame the number of grasps predicted and left after every step. The grasps are those "
+    "of a detector trained for the iterations of the probe",
     "run": "the run that measured the cell (about.runs): date, commit and environment",
 }
 
@@ -473,6 +484,9 @@ def compact(record: dict[str, Any]) -> dict[str, Any]:
             out[key] = probe[key]
     if probe.get("frames"):
         out["frames"] = len(probe["frames"])
+    post = probe.get("postprocessing") or {}
+    if post:
+        out["postprocessing"] = {"steps": post["steps"], "grasps": post["grasps"]}
     if probe.get("losses"):
         out["losses"] = {name: _rounded(pair) for name, pair in probe["losses"].items()}
     for key in ("real_seeds", "supervised_seeds"):
@@ -489,10 +503,12 @@ def compact(record: dict[str, Any]) -> dict[str, Any]:
         "peak_gpu_mib": probe.get("peak_gpu_mib"),
         "seconds": probe.get("seconds"),
     }
+    if post:  # seconds of the whole chain on the first predicted frame
+        shared["post_seconds"] = sum(post["seconds"][0])
     shared = {key: value for key, value in shared.items() if value is not None}
     if shared:
         out["shared_machine"] = {
-            key: round(value, 3 if key == "seconds_per_iteration" else 1)
+            key: round(value, 3 if key in ("seconds_per_iteration", "post_seconds") else 1)
             for key, value in shared.items()
         }
     return out

@@ -1,0 +1,27 @@
+# Swin Transformer V2-Tiny from timm with ImageNet-1k weights, colour only.
+#
+# 27.6 M parameters, four maps at strides 4 to 32, widths 96 to 768. Weights:
+# `swinv2_tiny_window8_256.ms_in1k`, MIT (timm).
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * input_size and window_size: window attention needs every stage to be a multiple of its window.
+#   The image is resampled to 384 x 640 and the windows are 6 x 10 cells (pretrained at 8 x 8;
+#   Swin V2's position bias is a function, so it transfers). For another image size choose both
+#   again.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: TimmImageEncoder
+    name: swinv2_tiny_window8_256.ms_in1k
+    pretrained: true              # timm downloads the weights; or `checkpoint: <file>`
+    model_args: {img_size: [384, 640], window_size: [6, 10]}
+    input_size: [384, 640]
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

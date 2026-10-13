@@ -1,0 +1,22 @@
+# ResNet-34 from torchvision with its ImageNet-1k weights, colour only.
+#
+# 21.3 M parameters, four maps at strides 4 to 32, widths 64 to 512 (torchvision's stem and
+# pooling are one stage here). Weights: `ResNet34_Weights.IMAGENET1K_V1` from download.pytorch.org
+# (torchvision, BSD-3-Clause code; the weights carry no separate licence statement).
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: TorchvisionImageEncoder
+    name: resnet34
+    weights: DEFAULT              # torchvision downloads them; null: random weights
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

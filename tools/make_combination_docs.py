@@ -63,6 +63,8 @@ GROUP_TITLES = {
     "stage": "one other stage replaced",
     "stage-set": "sets of stages",
     "family": "other detector families, as shipped",
+    "family-slot": "one component of another detector family replaced",
+    "post": "one post-processing step as the variant `post`",
 }
 
 
@@ -320,6 +322,8 @@ def adapters_section(records: list[dict[str, Any]]) -> list[str]:
         cls = BACKBONES.get(name)
         if cls.__module__.split(".")[0] != "grasppanda" or not is_adapter(cls):
             continue
+        if not getattr(cls, "compose_inserts", True):  # a wrapper a user writes down
+            continue
         with_it = [record for record in records if record.get("adapter") == name]
         counts = Counter(record["verdict"] for record in with_it)
         under = [m for m in METHODS if any(record["method"] == m for record in with_it)]
@@ -420,6 +424,49 @@ KNOWN_GAPS: dict[str, str] = {
 }
 
 
+def post_section(records: list[dict[str, Any]]) -> list[str]:
+    """Post-processing presets as the variant ``post``: verdict and grasps left, per method."""
+    members = [record for record in records if record["group"] == "post"]
+    if not members:
+        return []
+    methods = list(dict.fromkeys(record["method"] for record in members))
+    by_variant: dict[str, dict[str, dict[str, Any]]] = {}
+    for record in members:
+        by_variant.setdefault(record["variant"], {})[record["method"]] = record
+    rows = []
+    for variant, found in by_variant.items():
+        component = next(iter(found.values()))["component"]
+        row = [f"`{variant}` ({component})"]
+        for method in methods:
+            record = found.get(method)
+            if record is None:
+                row.append("—")
+                continue
+            counts = (record.get("postprocessing") or {}).get("grasps") or []
+            left = "; ".join(f"{frame[0]} → {frame[-1]}" for frame in counts)
+            text = record["verdict"] + (f": {left}" if left else "")
+            if record["verdict"] in ("fails", "refused"):
+                text += f". {reason(record)}"
+            row.append(text)
+        rows.append(row)
+    return [
+        "## Post-processing",
+        "",
+        "Every post-processing preset as the evaluation variant `post` of a method "
+        "(`grasppanda compose <config> --set post=<preset>`), applied by the probe to the "
+        "predictions of its two frames: grasps predicted → grasps left. A post-processor "
+        "reads grasps and the observation, never a network, so three methods stand for the "
+        "three kinds of input: seeds on a dense cloud with the full cloud kept, seeds of a "
+        "sub-sampling encoder, and HGGD. The grasps are those of a detector trained for the "
+        "iterations of the probe; "
+        "[the page of the slot](../slots/post.md) has the same steps on the predictions of "
+        "released weights.",
+        "",
+        *_table(["preset", *methods], rows),
+        "",
+    ]
+
+
 def findings_section(records: list[dict[str, Any]]) -> list[str]:
     """Cells that passed the config check and failed afterwards, grouped by reason."""
     failed = [record for record in records if record["verdict"] == "fails"]
@@ -444,6 +491,35 @@ def findings_section(records: list[dict[str, Any]]) -> list[str]:
             if fragment in key:
                 lines += [f"    {comment}", ""]
     return lines
+
+
+def family_slots_section(records: Records) -> list[str]:
+    """Every preset of every component slot of a detector family of its own."""
+    members = grid("family-slot")
+    if not members:
+        return []
+    notes = Notes()
+    lines = [
+        "## Other detector families: one component replaced",
+        "",
+        "A detector that is not built on the seed-based skeleton has slots of its own; HGGD has "
+        "one, the encoder of its image network ([Image encoders](../slots/image_encoders.md)). "
+        "Every preset of such a slot was composed into the family's shipped config and probed:",
+        "",
+    ]
+    for method, slot in dict.fromkeys((cell.method, cell.slot) for cell in members):
+        rows = []
+        for cell in members:
+            if (cell.method, cell.slot) != (method, slot):
+                continue
+            record = records.get(cell.id)
+            verdict = verdict_text(record, False, notes)
+            works = record is not None and record["verdict"] in WORKS
+            numbers = _numbers_row("", record)[1:] if works else ["—"] * 7
+            rows.append([f"`{cell.variant}`", f"`{cell.component}`", verdict, *numbers])
+        headers = [f"`{slot}=`", "Component", method, *NUMBER_HEADERS[1:]]
+        lines += [f"### {method}: `{slot}`", "", *_table(headers, rows), ""]
+    return [*lines, *([*notes.lines(), ""] if notes.items else [])]
 
 
 def counts_section(records: list[dict[str, Any]]) -> list[str]:
@@ -538,7 +614,8 @@ def page() -> str:
         + ", ".join(f"{counts[v]} `{v}`" for v in VERDICT_ORDER if counts[v])
         + "): every shipped method config as it is, every registered scene encoder under every "
         "seed-based method, every variant of every other stage with one stage replaced at a "
-        "time, the legal sets of stage variants, and HGGD as it is. The variants of a stage "
+        "time, the legal sets of stage variants, HGGD as it is, and every image-encoder preset "
+        "under HGGD. The variants of a stage "
         "are its presets plus every component whose constructor defaults no preset states.",
         "- **A cell**: `grasppanda compose <method config> --set <slot>=<choice>`, so that an "
         "encoder is fitted and adapters are inserted exactly as a user gets them, then "
@@ -611,6 +688,8 @@ def page() -> str:
     for slot in STAGE_SLOTS:
         lines += slot_section(slot, records, "stage")
     lines += ["## Sets of stages", "", *stage_sets_section(records)]
+    lines += family_slots_section(records)
+    lines += post_section(cells_)
     lines += ["## Passed the check, failed afterwards", "", *findings_section(cells_)]
     missing = about.get("not_probed") or []
     lines += [

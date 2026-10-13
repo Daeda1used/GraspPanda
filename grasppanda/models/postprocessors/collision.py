@@ -36,7 +36,9 @@ from torch import Tensor
 
 from grasppanda.models.base import PostProcessor
 from grasppanda.registry import POSTPROCESSORS
-from grasppanda.structures import ContractError, GraspGroup, Observation
+from grasppanda.structures import GraspGroup, Observation
+
+from .scene import scene_points
 
 __all__ = ["ModelFreeCollisionFilter", "voxel_down_sample"]
 
@@ -185,35 +187,7 @@ class ModelFreeCollisionFilter(PostProcessor):
         return voxel_down_sample(points, self.voxel_size, arithmetic=arithmetic)
 
     def _scene_points(self, grasps: GraspGroup, observation: Observation) -> Tensor:
-        name = type(self).__name__
-        full = observation.full_points if self.cloud == "full_points" else observation.points
-        if full is None:
-            what = (
-                "observation.full_points (the cloud before sub-sampling)"
-                if self.cloud == "full_points"
-                else "observation.points"
-            )
-            raise ContractError(f"{name} reads {what}, which this observation does not provide")
-        if full.frame != grasps.frame:
-            raise ContractError(
-                f"{name}: grasps are in frame '{grasps.frame}' but the scene cloud is in "
-                f"frame '{full.frame}'"
-            )
-        if grasps.key is None:
-            if full.batch_size != 1:
-                raise ContractError(
-                    f"{name} cannot tell which of the {full.batch_size} frames these grasps "
-                    "belong to: the GraspGroup has no key"
-                )
-            frame = 0
-        elif grasps.key in observation.keys:
-            frame = observation.keys.index(grasps.key)
-        else:
-            raise ContractError(f"{name}: the observation does not contain frame {grasps.key}")
-        if full.batch_offsets is None:
-            return full.coords.to(grasps.translation.device)
-        start, stop = full.batch_offsets[frame], full.batch_offsets[frame + 1]
-        return full.coords[start:stop].to(grasps.translation.device)
+        return scene_points(type(self).__name__, grasps, observation, self.cloud)
 
     @torch.no_grad()
     def collision_mask(self, grasps: GraspGroup, scene: Tensor) -> Tensor:

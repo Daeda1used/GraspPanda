@@ -1,0 +1,37 @@
+# Volt-S: a plain transformer with global attention over 2.5 cm voxel-patch tokens.
+#
+# A room-scale encoder whose unit of length has to be changed. No published
+# GraspNet-1Billion result uses it. Needs no sparse-convolution library.
+#
+# What must be re-tuned, and why:
+# * grid_size and kernel_size: 0.005 m voxels (GSNet's grid) in patches of 5, so a token
+#   is a 2.5 cm cube; the released models use 2 cm voxels and 10 cm tokens, larger than
+#   many graspable parts. The token edge decides the cost: attention is over all tokens
+#   of a frame at once, a few thousand for a table top at 2.5 cm.
+# * weights: random init as written. The released checkpoints (ScanNet, ScanNet200,
+#   ScanNet++, MIT) fill the transformer and the decoder of this layout but expect six
+#   input channels (colour and normal) on a 2 cm grid
+#   (docs/slots/scene_encoders_transformer.md says how to load them).
+# * training recipe: the authors report pronounced overfitting without strong
+#   augmentation, distillation from a sparse U-Net and EMA. A run from random weights
+#   under a grasp method's own schedule tests that, not the architecture.
+# * size: Volt-S, 384 channels, 12 blocks, 6 heads, 23.7 M parameters with six input
+#   channels. `embed_dim: 768, num_heads: 12, qk_norm: false, up_mlp_dim: 256` is Volt-B.
+#   A head is 64 wide in both, which the rotary embedding (`rope_split`) relies on.
+# * out_channels: 512, the width of SparseUNet14's output; it adds a linear layer with
+#   batch norm and GELU after the 128-channel decoder. Compose sets it to the width of
+#   the encoder it replaces.
+# * in_channels: 3 constant ones: a token then encodes which of its 125 voxels are
+#   occupied.
+# * drop_path: 0.3, the released value, tuned for 800 epochs of ScanNet.
+model:
+  backbone:
+    type: Volt                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    out_channels: 512
+    up_mlp_dim: 128
+    grid_size: 0.005
+    kernel_size: 5
+    embed_dim: 384
+    num_heads: 6
+    qk_norm: true

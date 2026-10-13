@@ -182,21 +182,28 @@ Both messages say the same thing from two sides: EconomicGrasp's head comes with
 assigner and with a dataset that serves compact labels. Start from an EconomicGrasp or
 FineGrasp config when you want that head.
 
-**HGGD** cannot be composed into yet. It is a detector family of its own whose parts are
-options of the detector, not registered components:
+**HGGD** is a detector family of its own. It has one component slot, the encoder of its
+image network (`image_encoder`, see [Image encoders](../slots/image_encoders.md)); its other
+parts are options of the detector, not registered components:
 
 ```text
+$ grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=resnet34
+  • image_encoder: preset `resnet34` (TimmImageEncoder). ResNet-34 from timm with ImageNet-1k
+    weights, colour only.
+config check
+  ✓ valid
+
 $ grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set backbone=ptv3
-✗ HGGD has no component slots, so `--set backbone=ptv3` has nothing to replace. HGGD is a detector
-  family of its own: its parts are options of the detector (`grasppanda components HGGD`), not
-  registered components, so there is no backbone, proposal, view stage, grouper or head bundle to
-  swap yet. Change its options with `--opts model.<part>.<option>=<value>`, or compose from a
-  config of a seed-based method.
+✗ HGGD has no slot 'backbone'. Its slots: image_encoder. HGGD is a detector family of its own: the
+  stages of the seed-based methods (backbone, proposal, view, grouper, head) do not exist in it.
+  Its other parts are options of the detector (`grasppanda components HGGD`); change them with
+  `--opts model.<part>.<option>=<value>`.
 ```
 
 Compose finds slots from the detector class (constructor parameters annotated
-`Cfg[...]`), so a detector whose parts become registered components is composable
-without a change here. `--opts` works for HGGD today, and `probe` does too.
+`Cfg[...]`, or `Cfg[...] | None` for a slot with a built-in default), so a detector whose
+parts become registered components is composable without a change here. `--opts` and
+`probe` work for HGGD as for every config.
 
 ## 3. Probe
 

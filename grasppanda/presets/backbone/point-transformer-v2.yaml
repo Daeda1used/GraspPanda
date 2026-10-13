@@ -1,0 +1,26 @@
+# Point Transformer V2 (Pointcept PT-v2m2) with grid pooling scaled to a table top.
+#
+# A room-scale encoder whose unit of length has to be changed. No published
+# GraspNet-1Billion result uses it and no weights were released: random init.
+#
+# What must be re-tuned, and why:
+# * grid_sizes: metres, one per pooling. The ScanNet config (0.06 / 0.15 / 0.375 /
+#   0.9375 m on points sampled at 2 cm) is divided by four here, for clouds sampled at
+#   5 mm: 1.5 / 3.75 / 9.4 / 23.4 cm. A choice by analogy, not a tuned value. With the
+#   published sizes the third pooling would merge a whole table top into a few cells.
+# * neighbours are counted in points (8 in the stem, 16 in the stages), so the metric
+#   reach of the attention follows the density left by each pooling.
+# * out_channels: 512, the width of SparseUNet14's output; it adds a linear layer with
+#   batch norm and ReLU after the 48-channel decoder (the first half of the official
+#   segmentation head). Compose sets it to the width of the encoder it replaces.
+# * in_channels: 3 constant ones (the published model reads coordinates, colour, normal).
+# * size and memory: 11.3 M parameters; about 6 GiB with gradients for 35 000 points in
+#   one batch on the pure-PyTorch k-NN (measured once on an RTX A6000).
+# * optimizer and schedule: the base method's. The paper trains with AdamW and a
+#   one-cycle schedule.
+model:
+  backbone:
+    type: PointTransformerV2      # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    out_channels: 512
+    grid_sizes: [0.015, 0.0375, 0.09375, 0.234375]

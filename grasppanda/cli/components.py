@@ -51,6 +51,10 @@ SLOTS: dict[str, tuple[str, str]] = {
         "model.backbone",
         "Scene encoder: points to features, on every point or on a subsample.",
     ),
+    "IMAGE_ENCODERS": (
+        "model.image_encoder",
+        "Image encoder: an RGB or RGB-D image to feature maps (HGGD, point painting).",
+    ),
     "PROPOSALS": ("model.proposal", "Scene features to seeds."),
     "VIEWS": ("model.view", "One approach direction per seed."),
     "ASSIGNERS": (

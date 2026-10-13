@@ -66,9 +66,10 @@ def _stage_slots() -> dict[str, Any]:
 
 
 def _list(which: str) -> int:
-    from grasppanda.combine.presets import presets
+    from grasppanda.combine.presets import POST_SLOT, presets
+    from grasppanda.registry import POSTPROCESSORS
 
-    registries = _stage_slots()
+    registries = {**_stage_slots(), POST_SLOT: POSTPROCESSORS}
     found = presets()
     slots = [slot for slot in registries if which in ("all", slot)]
     if not slots:
@@ -86,6 +87,11 @@ def _list(which: str) -> int:
         if bare:
             print(f"  components without a preset: {', '.join(bare)}")
         print()
+    if POST_SLOT in slots:
+        print(
+            "post is a chain: join steps with `+` and set a main option with `=`, e.g.\n"
+            "  --set post=collision+nms+top-k=50      (also: --post ... of test, infer, demo)\n"
+        )
     print(
         "A component can also be named by its type (`--set grouper=CylinderGroup`): it is then\n"
         "built with its constructor defaults, which `grasppanda components <type>` lists.\n"

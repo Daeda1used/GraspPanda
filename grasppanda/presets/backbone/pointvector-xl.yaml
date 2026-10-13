@@ -1,0 +1,23 @@
+# PointVector-XL (CVPR 2023) with a table-top radius.
+#
+# A PointNeXt-family encoder-decoder whose blocks aggregate neighbours as 3-vectors
+# (two predicted angles and a length per channel, summed over 8 neighbours) in place of
+# a max-pool. The scene-segmentation form of the official code (`flag: 1`), published
+# "XL" size, 64 output channels. No grasp result with this encoder is published;
+# no AP is claimed.
+#
+# What must be re-tuned, and why:
+# * radius: 0.04 m doubling per stage in place of the room value 0.1 m. By analogy with
+#   the first radius of the GraspNet-baseline PointNet++.
+# * block_nsample: 8, fixed in the official code. With sum aggregation a ball with fewer
+#   than 8 points counts its first hit several times (the padding rule of the ball
+#   query, as upstream), so radius and block_nsample belong together.
+# * in_channels: 3 constant ones (the published model reads colour and height).
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: PointVector             # `dense`: one feature per input point
+    in_channels: 3                # constant ones
+    radius: 0.04
+    blocks: [1, 4, 7, 4, 4]
+    width: 64

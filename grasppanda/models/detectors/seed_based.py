@@ -421,7 +421,9 @@ class SeedGraspDetector(BaseGraspDetector):
     What the skeleton calls on its stages, i.e. what a new stage has to provide:
 
     * ``backbone(points, feats) -> PointFeatures``; attributes ``in_channels``,
-      ``out_channels`` and the contract ``output``.
+      ``out_channels`` and the contract ``output``. A backbone with
+      ``uses_observation = True`` is called as ``backbone(points, feats, observation)``
+      and lists the observation fields it reads in ``required_inputs``.
     * ``proposal(feats, observation) -> (SeedSet, scores)`` and
       ``proposal.loss(scores, supervision) -> dict``. Every frame yields the same
       number of seeds; padding is marked in ``SeedSet.valid``.
@@ -476,6 +478,9 @@ class SeedGraspDetector(BaseGraspDetector):
             {"points"} | ({"point_feats"} if point_features == "observation" else set())
         )
         self.backbone = BACKBONES.build(backbone)
+        # A scene encoder that reads more than the cloud (point painting reads the colour
+        # image) says so; it is then handed the observation as a third argument.
+        self.required_inputs |= frozenset(getattr(self.backbone, "required_inputs", ()))
         channels = self.backbone.out_channels
         self.proposal = PROPOSALS.build(proposal, in_channels=channels)
         self.view = VIEWS.build(view, in_channels=channels, gripper=self.gripper)
@@ -545,7 +550,8 @@ class SeedGraspDetector(BaseGraspDetector):
                 f"{name}: the observation lists {len(observation.keys)} sample key(s) for a "
                 f"batch of {observation.points.batch_size} point cloud(s)"
             )
-        feats = self.backbone(observation.points, self._input_features(observation))
+        reads = (observation,) if getattr(self.backbone, "uses_observation", False) else ()
+        feats = self.backbone(observation.points, self._input_features(observation), *reads)
         replay = {} if seed_index is None else {"seed_index": seed_index}
         seeds, point_scores = self.proposal(feats, observation, **replay)
         replay = {} if view_index is None else {"view_index": view_index}

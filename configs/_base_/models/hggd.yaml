@@ -7,8 +7,11 @@
 # Options marked "reference quirk" change numbers; their alternatives are controlled
 # variants, not corrections to apply silently.
 #
-# HGGD is a detector family of its own: none of the stages below is a registered slot,
-# and none of the seed-based slots (backbone / proposal / view / grouper / head) applies.
+# HGGD is a detector family of its own: none of the seed-based slots (backbone / proposal /
+# view / grouper / head) applies, and its stages are options, not registered components.
+# The one exception is the encoder of the image network: `model.image_encoder` takes any
+# registered image encoder (docs/slots/image_encoders.md); left out, as here, it is the
+# reference encoder that `encoder.base_width` and `encoder.blocks` describe.
 # Injected by the detector, so not repeated here: the angle classes and the stride handed
 # to the image network, its feature channels handed to the region network, the number of
 # anchor classes, the gripper handed to the anchor head.

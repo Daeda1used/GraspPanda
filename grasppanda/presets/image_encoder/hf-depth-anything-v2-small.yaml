@@ -1,0 +1,30 @@
+# The encoder of Depth Anything V2 Small (a DINOv2 ViT-S/14) through transformers.
+#
+# 22.1 M parameters; the four layers its depth head reads, as maps at stride 14, width 384. A
+# DINOv2 fine-tuned to predict depth from colour: geometry-aware features from the colour image
+# alone. Weights: `depth-anything/Depth-Anything-V2-Small-hf`, Apache-2.0 (hub card). The Base and
+# Large checkpoints are CC BY-NC 4.0.
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * size_multiple: 14. The image is resampled up to the next multiple of the patch size (364 x 644
+#   for a 360 x 640 image); the maps come at stride 14 and the decoder resamples them to the
+#   proposal stride.
+# * single-scale maps: a plain ViT returns every map at its patch stride, so the pyramid decoder
+#   merges layers, not resolutions. The heat-map is decoded from stride 14; fine structure has to
+#   be learned by the decoder.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: HFImageEncoder
+    name: depth-anything/Depth-Anything-V2-Small-hf  # hub id or a local directory
+    api: depth_backbone
+    size_multiple: 14
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem

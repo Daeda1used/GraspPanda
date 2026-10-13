@@ -1,0 +1,23 @@
+# PointNet++ with multi-scale grouping (MSG), features on 1024 sampled points.
+#
+# The GraspNet-baseline encoder with two balls per level in place of one: the same
+# 2048 / 1024 / 512 / 256 points, the same 1024 seeds and 256 channels, so it replaces
+# `pointnet2` under any method without touching the other stages. Contact-GraspNet and
+# GPR use multi-scale grouping on scene clouds; no GraspNet-1Billion result for this
+# layout is claimed.
+#
+# What must be re-tuned, and why:
+# * radii: (0.02, 0.04), (0.05, 0.1), (0.1, 0.2), (0.2, 0.3) m. The larger ball of each
+#   level is the baseline's; the smaller one is half of it. A choice by analogy with
+#   Contact-GraspNet's (0.02, 0.04, 0.08) first level, not a tuned value.
+# * nsamples: more neighbours in the larger ball. Memory grows with the sum over scales.
+# * in_channels: 0, coordinates only.
+# * optimizer and schedule: the base method's.
+# * memory and speed: about twice the single-scale encoder (two ball queries per level).
+model:
+  backbone:
+    type: PointNet2MSG            # `subsampled`: 1024 seeds, 256 channels
+    in_channels: 0                # coordinates only
+    npoints: [2048, 1024, 512, 256]
+    radii: [[0.02, 0.04], [0.05, 0.1], [0.1, 0.2], [0.2, 0.3]]
+    nsamples: [[32, 64], [16, 32], [16, 16], [16, 16]]

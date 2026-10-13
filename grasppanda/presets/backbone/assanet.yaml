@@ -1,0 +1,25 @@
+# ASSANet (NeurIPS 2021): PointNet++ with separable, anisotropic set abstraction.
+#
+# The point-wise layers of every set abstraction run before the grouping, so the cost of
+# a level does not grow with the number of neighbours; the reduction multiplies each
+# neighbour feature by its offset coordinates to stay direction sensitive. Encoder and
+# decoder; the published network has 2.4 M parameters and 64 output channels. No grasp
+# result with this encoder is published; no AP is claimed.
+#
+# What must be re-tuned, and why:
+# * radii: (0.02, 0.04), (0.04, 0.08), (0.08, 0.16), (0.16, 0.32) m, the published room
+#   radii (0.1 to 1.6 m) divided by 5, so that the first ball is that of the `pointnext`
+#   presets and Contact-GraspNet's first level. A choice by analogy.
+# * nsamples: 16 and 32. The reduction is a mean over padded balls: a ball with fewer
+#   points counts its first hit several times (as upstream), so radius and nsamples
+#   belong together; where points are sparse, lower nsamples or use `reduction: max`.
+# * fp_mlps: the finest propagation level is 256 wide here (published: 64), the width
+#   Scale-Balanced-Grasp's gated crop needs; the other levels are the published ones.
+# * in_channels: 3 constant ones (the published model reads colour and height).
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: ASSANet                 # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones
+    radii: [[0.02, 0.04], [0.04, 0.08], [0.08, 0.16], [0.16, 0.32]]
+    fp_mlps: [[256, 256], [128, 128], [256, 256], [512, 512]]

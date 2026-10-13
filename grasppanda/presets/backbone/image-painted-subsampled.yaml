@@ -1,0 +1,37 @@
+# ImagePaintedSubsampled: the PointNet++ of GraspNet-baseline with painted input points.
+#
+# The same adapter as `image-painted` for encoders that return features on a subsample
+# (`subsampled`): PointNet2, PointNet2Transformer. Compose does not insert it and
+# `--set backbone=` does not take it: copy the node into `model.backbone` of a config of
+# your own (docs/slots/image_encoders.md has the complete fragment).
+#
+# What must be re-tuned, and why:
+# * the dataset. Every split needs `images: [rgb]`, and the training transforms must not
+#   move the cloud: remove RandomFlip and RandomRotation (a dataset that serves images
+#   refuses them). Training without that augmentation is a different recipe from the base
+#   method's; no AP is claimed.
+# * backbone.in_channels: what the detector feeds plus `paint_channels`. GraspNet-baseline
+#   feeds coordinates only (0), so the wrapped PointNet++ reads the 32 painted channels.
+# * fusion: with `output` the image features are sampled at the pixels of the 1024
+#   sub-sampled points the encoder returns, and added to their features.
+# * image_encoder, image_scale: as in the preset `image-painted`.
+model:
+  backbone:
+    type: ImagePaintedSubsampled  # `subsampled`, like the encoder it wraps
+    fusion: input
+    paint_channels: 32
+    image_scale: 0.5
+    image_encoder:
+      type: TimmImageEncoder
+      name: resnet18.a1_in1k
+      pretrained: true
+      out_indices: [1, 2]         # strides 4 and 8
+      depth: rgb_only             # the points already carry the depth
+    backbone:
+      type: PointNet2
+      in_channels: 32             # 0 point features + 32 painted channels
+      npoints: [2048, 1024, 512, 256]
+      radii: [0.04, 0.1, 0.2, 0.3]
+      nsamples: [64, 32, 16, 16]
+      fps_skip_near_origin: true
+      fps_tie_break: pointnet2_cuda

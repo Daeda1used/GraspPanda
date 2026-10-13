@@ -1,0 +1,27 @@
+# Point Transformer V3 started from the released ScanNet200 weights (MIT), on a 5 mm grid.
+#
+# The released file `ptv3-scannet200` (554 MB, supervised semantic segmentation of
+# ScanNet200) loads key for key into PTv3. Fetch it first: the error of a missing file
+# prints the command. `ptv3-s3dis-rpe` and `ptv3-nuscenes` load the same way with the
+# options their rows in docs/slots/scene_encoders_sparse.md give.
+# No grasp result is claimed for this initialisation.
+#
+# What must be re-tuned, and why:
+# * pretrained_mismatch: skip. One tensor does not come from the file: the stem kernel
+#   (the release reads colour and normal, 6 channels; the grasp methods feed 3 constant
+#   ones). With `in_channels: 6` and real colour and normal the load is strict.
+# * grid_size: 0.005 m, GSNet's; the weights were trained on rooms at 0.02 m. Attention
+#   patches are counted in voxels (1024), so the grid mostly changes how many points
+#   share a voxel and what the stem convolution sees.
+# * output width: 64 channels, as in the `ptv3` preset; the stages are built that wide.
+# * optimizer and schedule: fine-tuning a transformer usually takes AdamW, a lower rate
+#   and warm-up; the base method's recipe was tuned for its own encoder.
+# * loading a grasp checkpoint trained from this preset builds the encoder first: keep
+#   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).
+model:
+  backbone:
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005
+    pretrained: ptv3-scannet200
+    pretrained_mismatch: skip     # the stem keeps its initialisation

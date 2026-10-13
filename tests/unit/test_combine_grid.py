@@ -19,7 +19,15 @@ import pytest
 
 from grasppanda.cli.components import collect
 from grasppanda.combine.compose import compose, is_adapter
-from grasppanda.combine.grid import FAMILIES, METHODS, STAGE_SLOTS, cells, stage_variants
+from grasppanda.combine.grid import (
+    FAMILIES,
+    METHODS,
+    STAGE_SLOTS,
+    cells,
+    family_slots,
+    stage_variants,
+)
+from grasppanda.combine.presets import presets
 from grasppanda.combine.probe import VERDICTS
 from grasppanda.config import Config, available_configs
 from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, SeedGraspDetector
@@ -35,7 +43,7 @@ PAGE = REPO / "docs" / "advanced_guides" / "measured_combinations.md"
 NOT_PROBED: dict[str, str] = {}
 #: Groups every registered component must have records in. The sets of stages are probed
 #: too, but a new stage does not have to wait for its sets: the page counts what is missing.
-REQUIRED_GROUPS = ("reference", "encoder", "stage", "family")
+REQUIRED_GROUPS = ("reference", "encoder", "stage", "family", "family-slot")
 HOW_TO_PROBE = (
     "Probe them on a machine with GraspNet-1Billion and a GPU, then export and regenerate:\n"
     "  python -m tools.probe_grid run --name mine --only '<cell id>' ...\n"
@@ -80,7 +88,15 @@ def test_the_grid_follows_the_registries_and_the_shipped_configs():
     grid = cells()
     assert len({cell.id for cell in grid}) == len(grid)
     by_group = Counter(cell.group for cell in grid)
-    assert set(by_group) == {"reference", "encoder", "stage", "stage-set", "family"}
+    assert set(by_group) == {
+        "reference",
+        "encoder",
+        "stage",
+        "stage-set",
+        "family",
+        "family-slot",
+        "post",
+    }
     # The methods are the seed-based detectors' own shipped configs, HGGD is the other family.
     shipped = set(available_configs())
     assert set(METHODS.values()) | set(FAMILIES.values()) <= shipped
@@ -112,6 +128,13 @@ def test_the_grid_follows_the_registries_and_the_shipped_configs():
         if cell.group == "stage-set":
             assert [item.split("=")[0] for item in cell.sets] == ["backbone", *STAGE_SLOTS]
     assert cells(("family",)) == [cell for cell in grid if cell.group == "family"]
+    # Every preset of every slot of another detector family, under that family.
+    assert {(cell.method, cell.slot, cell.variant) for cell in cells(("family-slot",))} == {
+        (method, slot, name)
+        for method in FAMILIES
+        for slot in family_slots(method)
+        for name in presets().get(slot, {})
+    }
 
 
 # --------------------------------------------------------------------- the tripwire
@@ -131,7 +154,12 @@ def test_every_cell_of_a_registered_component_has_a_measured_record(measured, by
     assert set(NOT_PROBED) <= grid
     assert set(measured["about"]["not_probed"]) == grid - set(by_id)
     # An adapter has no cells of its own: it is measured where compose inserted it.
-    adapters = {name for name in in_tree("BACKBONES") if is_adapter(BACKBONES.get(name))}
+    # (Wrappers that compose never inserts, point painting, are probed by hand.)
+    adapters = {
+        name
+        for name in in_tree("BACKBONES")
+        if is_adapter(BACKBONES.get(name)) and getattr(BACKBONES.get(name), "compose_inserts", True)
+    }
     working = {record.get("adapter") for record in measured["cells"] if record["verdict"] == "runs"}
     assert adapters <= working, (
         f"no measured cell runs through the adapter(s) {sorted(adapters - working)}: probe an "
@@ -225,7 +253,31 @@ def test_a_record_is_a_run_with_its_commands_and_a_verdict_of_the_vocabulary(mea
     # The file is the runner's own serialisation: one cell per line, nothing edited by hand.
     assert tool("probe_grid").dump(measured) == text
     assert sum(line.startswith('  {"id": ') for line in text.splitlines()) == len(by_id)
-    assert len(text) < 400_000  # compact: about a kilobyte per probed cell
+    assert len(text) < 1_300 * len(by_id)  # compact: about a kilobyte per probed cell
+
+
+def test_a_probe_that_ran_out_of_gpu_memory_never_stands_for_its_config():
+    """The GPU is shared: an out-of-memory failure says something about the machine at that
+    moment, so the runner probes the config again instead of repeating the old report."""
+    grid = tool("probe_grid")
+
+    def failed(phase, error, message):
+        failure = {"phase": phase, "component": "", "error": error, "message": message}
+        return {
+            "probe": {"verdict": "fails", "detail": f"at {phase}: {message}", "failure": failure}
+        }
+
+    allocator = failed(
+        "loss", "OutOfMemoryError", "CUDA out of memory. Tried to allocate 1006.00 MiB."
+    )
+    library = failed(
+        "backward", "RuntimeError", "CUDA error: CUBLAS_STATUS_ALLOC_FAILED when calling"
+    )
+    contract = failed(
+        "build", "ValueError", "the gated seed residual adds 72-channel seed features"
+    )
+    assert not grid._conclusive(allocator) and not grid._conclusive(library)
+    assert grid._conclusive(contract) and grid._conclusive({"probe": {"verdict": "runs"}})
 
 
 def test_the_methods_as_shipped_run(by_id):

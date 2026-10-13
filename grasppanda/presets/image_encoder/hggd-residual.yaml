@@ -1,0 +1,18 @@
+# HGGD's own image encoder, written out: the reference network as a slot value.
+#
+# ResNet-34 block layout at base width 8 on the four-channel `[depth, R, G, B]` image, trained
+# from scratch, followed by the reference decoder. Composing it gives the reference model,
+# parameter for parameter. Weights: none released for the encoder alone; the authors' HGGD
+# checkpoints convert with `tools/convert_checkpoint.py` and load into this model.
+#
+# What must be re-tuned, and why:
+# * base_width and blocks: the published network. Wider or deeper variants are yours to train;
+#   `model.encoder.base_width` and `model.encoder.blocks` must then stay at their defaults, they
+#   describe the same thing.
+# * no AP is claimed: for this file by itself; the AP of the reference model is in the model zoo.
+model:
+  image_encoder:
+    type: HGGDResidualEncoder
+    in_channels: 4                # [depth, R, G, B]
+    base_width: 8                 # stages have 16, 32, 64 and 128 channels
+    blocks: [3, 4, 6, 3]

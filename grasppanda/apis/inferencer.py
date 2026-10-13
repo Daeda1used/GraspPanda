@@ -636,11 +636,28 @@ class GraspInferencer:
         )
 
     def chain(
-        self, *, collision_filter: bool = False, variant: str | None = None
+        self,
+        *,
+        collision_filter: bool = False,
+        variant: str | None = None,
+        post: Sequence[str] | str | None = None,
     ) -> list[PostProcessor]:
-        """The post-processing chain a call applies: a named variant or the collision filter."""
+        """The post-processing chain a call applies.
+
+        A named variant of the config or its collision filter, followed by the steps of
+        ``post``: short text such as ``"nms+top-k=20"`` or ``["gripper-limits=0.08",
+        "top-k=20"]`` (:mod:`grasppanda.combine.post`), built on the spot.
+        """
         from grasppanda.models.postprocessors.collision import ModelFreeCollisionFilter
 
+        if post:
+            from grasppanda.combine.post import PostSpecError, chain_nodes
+
+            try:
+                extra = [POSTPROCESSORS.build(node) for node in chain_nodes(post)]
+            except PostSpecError as error:
+                raise InputError(str(error)) from None
+            return [*self.chain(collision_filter=collision_filter, variant=variant), *extra]
         if variant is not None:
             if variant not in self._chains:
                 raise InputError(
@@ -668,6 +685,7 @@ class GraspInferencer:
         collision_filter: bool = False,
         variant: str | None = None,
         seed: int | None = None,
+        post: Sequence[str] | str | None = None,
     ) -> GraspGroup:
         """Run the detector, then the requested post-processing, on one observation.
 
@@ -678,12 +696,14 @@ class GraspInferencer:
                 would hit observed points are removed.
             variant: Apply this chain of ``evaluation.variants`` instead, by name.
             seed: Seed of the random draws inside the detector; default ``runtime.seed``.
+            post: Further steps, applied after the variant or the collision filter:
+                ``"nms+top-k=20"`` (see :meth:`chain`).
         """
         from grasppanda.engine.seeding import determinism_restored, preserved_rng, seed_everything
 
         if len(observation) != 1:
             raise InputError(f"predict() takes one frame, got a batch of {len(observation)}")
-        steps = self.chain(collision_filter=collision_filter, variant=variant)
+        steps = self.chain(collision_filter=collision_filter, variant=variant, post=post)
         observation = observation.to(self.device)
         seed = self.seed if seed is None else seed
         with determinism_restored(), preserved_rng(seed):
@@ -723,6 +743,7 @@ class GraspInferencer:
         seed: int | None = None,
         collision_filter: bool = False,
         variant: str | None = None,
+        post: Sequence[str] | str | None = None,
     ) -> GraspGroup:
         """Predict grasps on one input.
 
@@ -758,6 +779,8 @@ class GraspInferencer:
                 and ``runtime.seed``), which is what ``grasppanda test`` uses.
             collision_filter: Apply the config's collision-filter variant.
             variant: Apply this post-processing chain of the config, by name.
+            post: Further post-processing steps as short text, applied afterwards:
+                ``"gripper-limits=0.08+nms+top-k=20"`` (see :meth:`chain`).
 
         Returns:
             The grasps of this input, camera frame, metres; possibly empty.
@@ -779,7 +802,11 @@ class GraspInferencer:
             seed=seed,
         )
         return self.predict(
-            observation, collision_filter=collision_filter, variant=variant, seed=seed
+            observation,
+            collision_filter=collision_filter,
+            variant=variant,
+            seed=seed,
+            post=post,
         )
 
 

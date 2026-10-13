@@ -1,0 +1,24 @@
+# DeLA (decoupled local aggregation, 2023) on a table-top grid pyramid.
+#
+# Offsets are encoded once per stage; the layers after that are point-wise MLPs and a
+# parameter-free max-pool over 24 neighbours. Four stages on a grid pyramid, every stage
+# copied back to the input points and summed; 256 channels per input point. No grasp
+# result with this encoder is published; no AP is claimed.
+#
+# What must be re-tuned, and why:
+# * grid_size: 0.005 / 0.01 / 0.02 / 0.04 m, the official room pyramid (0.04 to 0.32 m)
+#   divided by 8, so that the first entry is the 5 mm point spacing of the frame. The
+#   first entry also fixes the unit of the offset encoding (the official code multiplies
+#   coordinates by 40 for its 4 cm grid; here 1.6 / grid_size[0] = 320).
+# * k: 24 per stage. A coarse level of a small scene can hold fewer points than that;
+#   the neighbour list then repeats the point itself.
+# * in_channels: 3 constant ones (the official model reads colour and height); they
+#   enter the first stage next to the neighbour offsets.
+# * not built: the auxiliary relative-coordinate loss and the stochastic depth of the
+#   official training recipe, so a from-scratch run is not that recipe.
+# * optimizer and schedule: the base method's.
+model:
+  backbone:
+    type: DeLA                    # `dense`: one feature per input point, 256 channels
+    in_channels: 3                # constant ones
+    grid_size: [0.005, 0.01, 0.02, 0.04]

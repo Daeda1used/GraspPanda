@@ -1,0 +1,22 @@
+# ConvNeXt V2-Tiny through transformers `AutoBackbone` (ImageNet-22k), colour only.
+#
+# 27.9 M parameters, four maps at strides 4 to 32, widths 96 to 768. Weights:
+# `facebook/convnextv2-tiny-22k-224`, Apache-2.0 according to its hub card (timm lists the same
+# family as CC BY-NC 4.0; check before commercial use).
+#
+# What must be re-tuned, and why:
+# * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
+#   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
+#   filter to the first convolution (zero at the start, always trained here: no library ships
+#   RGB-D-pretrained weights), `depth_stem` a small stem of its own.
+# * model.encoder.decoder_channels (default 64): width of the pyramid decoder that follows this
+#   encoder and of the feature map of the region stage.
+# * optimizer: HGGD's recipe trains a 1.6 M-parameter network from scratch. A pretrained encoder
+#   usually wants a smaller learning rate than the decoder, or `frozen: true`.
+# * no AP is claimed: this combination was probed for 20 iterations, never trained.
+model:
+  image_encoder:
+    type: HFImageEncoder
+    name: facebook/convnextv2-tiny-22k-224  # hub id or a local directory
+    out_indices: [1, 2, 3, 4]
+    depth: rgb_only               # rgb_only | fourth_channel | depth_stem
