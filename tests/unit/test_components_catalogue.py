@@ -29,7 +29,7 @@ from grasppanda.registry import all_registries
 
 from .conftest import REPO
 
-STATUSES = {"tested", "weights-verified", ""}
+STATUSES = {"tested", "weights-verified", "bridge", ""}
 
 
 def docs_tool():

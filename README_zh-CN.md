@@ -50,7 +50,8 @@
 ## 📰 News
 
 - **2026-10** — 重建后的第一个公开版本。六个方法拆成可互换组件，各自与参考实现逐阶段一致；十一个场景编码器；`grasppanda components`、`demo`、`analyze`；GraspClutter6D 端到端可用。v0.56 及以前的版本是更早的、无关的代码库，仍可通过原有 tag 和 `legacy` 分支获取。
-- **进行中** — 为每个槽位（seed 提议、朝向、局部分组、head 与损失、后处理、小型构件）加入更多可互换模块，把 HGGD 拆成槽位，以及一条命令拼出组合、一条命令在真实帧上试跑组合。
+- **2026-10** — `grasppanda compose` 用一个方法配置加一个预设拼出组合，`grasppanda probe` 在真实帧上训练几步试跑；另有一页自动生成的实测结果，覆盖 208 个组合（哪个组件能在哪个方法下工作，哪些被契约规则拒绝）。
+- **进行中** — 为每个槽位（图像与场景编码器、seed 提议、朝向、局部分组、head 与损失、后处理、训练配方）接入更多来自已发表代码和模型库的选项，每个都配用法说明。
 
 ## 🤔 为什么做 GraspPanda
 
@@ -196,6 +197,17 @@ grasppanda demo <config> --weights <file> --depth depth.png --intrinsics fx,fy,c
 
 这些模型在 GraspNet-1Billion 上训练（RealSense D435 与 Azure Kinect，桌面场景），在其他相机上的效果尚未测量。同一套流程在 Python 里是 `GraspInferencer`；`grasppanda analyze` 说明一次评测的 AP 来自哪里：见[推理与可视化](docs/user_guides/inference.md)。
 
+### 试一个组合
+
+```bash
+grasppanda components --slot backbones                       # 有哪些组件，各自的契约
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
+grasppanda probe gsnet_ptv3.yaml                             # 在真实帧上训练 20 步，再预测
+grasppanda train gsnet_ptv3.yaml
+```
+
+`compose` 由方法配置和预设写出一份检查过的配置；阶段契约需要适配器时会自动插入并说明；被契约拒绝的组合会给出冲突原因和改法。`probe` 最后给出一个结论（`runs`、`runs-unstable`、`fails`、`refused`）。哪个组件能在哪个方法下工作是在真实帧上实测的，不是推断的：见[试一个组合](docs/user_guides/combinations.md)和[实测组合表](docs/advanced_guides/measured_combinations.md)。组合在完成训练和评测之前，不对其精度作任何声明。
+
 ### 基准数据集
 
 磁盘上有 GraspNet-1Billion 时（`export GRASPPANDA_GRASPNET1B_ROOT=...`，
@@ -256,6 +268,7 @@ array = grasps.to_graspnet_array()         # (64, 17)，GraspNet 的交换格式
 ## 📚 教程
 
 - [配置指南](docs/user_guides/config.md)：继承、合并规则、命令行覆盖、校验。
+- [试一个组合](docs/user_guides/combinations.md)：查目录、拼组合、试跑、训练。
 - [新增组件](docs/advanced_guides/add_component.md)：不 fork 就能注册 backbone 或 head bundle。
 - [数据契约](docs/advanced_guides/data_flow.md)：每个阶段接收什么、返回什么。
 - [架构设计](docs/design/ARCHITECTURE.md)：完整设计，以及每个决定背后的依据。

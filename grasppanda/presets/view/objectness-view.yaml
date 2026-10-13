@@ -1,0 +1,29 @@
+# ObjectnessViewStage as GraspNet-baseline uses it: every seed is classified as object or
+# background and takes the best of 300 template views, in training and in inference.
+#
+# The values are the constructor defaults, written out with the losses the stage builds
+# when none is given.
+#
+# What must be re-tuned, and why:
+# * It reads two optional fields of the matched labels (`on_object`, `view_width`): the
+#   assigner must return them (NearestLabelAssigner with `supervise: object_seeds` and
+#   `view_widths: true`, or ScaleBalancedAssigner). Compact labels do not carry them.
+# * It predicts objectness, so a proposal that predicts it too (GraspnessFPS) is refused:
+#   this view stage belongs behind a proposal that selects nothing (SubsampledSeeds).
+# * reject_background: true. In evaluation mode a seed classified as background yields
+#   no grasp, so an untrained model may predict none at all.
+# * score_target: log_friction_batch_max is a reference quirk (scores are scaled by the
+#   worst friction in the batch) and must equal the head bundle's when that bundle uses
+#   the same score definition (OperationHead); the config check compares them.
+model:
+  view:
+    type: ObjectnessViewStage
+    num_views: 300
+    reject_background: true       # evaluation mode: no grasp for a seed classified as background
+    score_target: log_friction_batch_max   # reference quirk; must equal the head bundle's
+    max_friction: 1.0             # used by score_target: log_friction_fixed_max only
+    good_view_score: 0.7          # logging only
+    min_graspable_views: null     # objectness is the object label alone
+    graspable_score: 0.1          # used by min_graspable_views only
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    view_loss: {type: MSE, weight: 1.0}

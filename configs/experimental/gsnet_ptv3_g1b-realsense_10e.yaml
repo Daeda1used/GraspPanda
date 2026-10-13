@@ -1,32 +1,44 @@
-# EXPERIMENTAL. GSNet with Point Transformer V3 (encoder + decoder) in place of the
-# sparse U-Net. No AP is claimed: this config passes the checker and trains for a few
-# iterations on GraspNet-1Billion (configs/experimental/README.md); it has not been
-# trained to convergence or evaluated. No published GraspNet-1Billion result uses PTv3.
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
 #
-#   grasppanda print-config experimental/gsnet_ptv3_g1b-realsense_10e --check
+#   base  gsnet/gsnet_sunet14_g1b-realsense_10e (GSNet)
+#   set   backbone `ptv3`
+#
+#   grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3
+#   grasppanda probe experimental/gsnet_ptv3_g1b-realsense_10e
 #   grasppanda train experimental/gsnet_ptv3_g1b-realsense_10e
 #
-# The swap is the `model.backbone` node. Proposal, view stage, assigner, grouper, head,
-# data and schedule are GSNet's reference; channel counts are injected.
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
 #
-# What must be re-tuned, and why:
-# * grid_size. It is the encoder's unit of length. The PTv3 default, 0.02 m, is for
+# What compose did, and why:
+# * backbone: preset `ptv3` (PTv3). Point Transformer V3 (encoder + decoder, Pointcept
+#   PT-v3m1) on a 5 mm grid.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `ptv3`
+# * grid_size. It is the encoder's unit of length. The class default, 0.02 m, is for
 #   ScanNet rooms; 0.005 m keeps GSNet's grid, so both encoders see the same voxels
-#   (about 11 000 for a 15 000-point frame). The released ScanNet weights belong to
-#   0.02 m and six input channels and do not apply here: this model trains from scratch.
+#   (about 11 000 for a 15 000-point frame, more for the 20 000 points other methods feed).
 # * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
-#   serialised voxels, so the receptive field is counted in points, not in metres. A
+#   serialised voxels, so the receptive field is counted in points, not in metres: a
 #   frame holds about ten patches at the finest level and fewer than one at the coarsest.
-# * optimizer and schedule. Adam 1e-3 with 0.95/epoch is the recipe of the sparse U-Net.
-#   Transformers are usually trained with AdamW, weight decay and warm-up, and at a lower
-#   rate; the values below are GSNet's and are a starting point only.
-# * batch size. 4 as in the reference; memory per frame differs from the sparse U-Net
-#   (46.2 M parameters instead of 14.6 M).
+# * output width: 64 channels (`dec_channels[0]`), where SparseUNet14 returns 512 and
+#   PointNet++ 256. Proposal, view stage and grouper are built that wide. A stage that
+#   adds seed features to crop features (`DepthCylinderGroup` with `seed_residual:
+#   gated`, Scale-Balanced-Grasp) needs the two widths equal and says so when built.
+# * optimizer and schedule. The base method's recipe was tuned for its own encoder;
+#   transformers are usually trained with AdamW, weight decay and warm-up, at a lower rate.
+# * batch size and memory: 46.2 M parameters against 14.6 M for SparseUNet14.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
 _base_:
   - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
 
 model:
   backbone:
-    type: PTv3                    # `dense`: features on every input point, as GraspnessFPS requires
-    in_channels: 3                # the three constant ones of GSNet; geometry enters through the grid
+    type: PTv3                    # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
     grid_size: 0.005

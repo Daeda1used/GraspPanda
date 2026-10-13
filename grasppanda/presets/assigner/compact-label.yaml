@@ -1,0 +1,31 @@
+# CompactLabelAssigner as EconomicGrasp and FineGrasp use it: one labelled grasp per seed
+# at its chosen view, and only for a seed within 5 mm of a label point.
+#
+# It reads compact grasp labels, a derived asset: the `compact_labels` section of the
+# training dataset, built with
+#   grasppanda prepare graspnet1b --compact-labels --config <this config>
+# The head bundle must be supervised with compact labels too (EconomicHead). A dataset
+# serves either compact labels or the dense grids, and its transforms differ with it: a
+# base config whose dataset reads dense grids (`SampleGraspLabels` among its transforms)
+# refuses the section; compose from an EconomicGrasp or FineGrasp config instead.
+#
+# What must be re-tuned, and why:
+# * max_match_distance: 0.005 m, a reference quirk. A seed further than 5 mm from its
+#   nearest label point is not supervised. Which seeds the proposal selects depends on
+#   the encoder, so the fraction of supervised seeds (`metric/supervised_seeds`, about a
+#   tenth with an untrained proposal) is the first number to compare after a swap.
+# * shared_views: lowest and padded_seeds: count are reference quirks
+#   (configs/economicgrasp/README.md).
+model:
+  assigner:
+    type: CompactLabelAssigner
+    max_match_distance: 0.005     # reference quirk; unrelated to the voxel size
+    shared_views: lowest          # reference quirk
+    padded_seeds: count           # reference quirk
+data:
+  train:
+    dataset:
+      compact_labels:             # the label set this assigner reads
+        point_friction_threshold: 0.4
+        view_friction_threshold: 0.6   # = model.view.max_friction (checked at the first loss)
+        max_width: 0.1            # = the gripper opening

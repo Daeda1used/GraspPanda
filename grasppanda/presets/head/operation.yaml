@@ -1,0 +1,43 @@
+# OperationHead as GraspNet-baseline uses it: score, angle class, width and tolerance per
+# (angle, depth bin).
+#
+# The class defaults are the reference values; what cannot be guessed is what it reads.
+# It expects crop features with a depth axis (DepthCylinderGroup) and supervises a grasp
+# tolerance, a derived label the training dataset must serve: the `tolerance` section,
+# built with
+#   grasppanda prepare graspnet1b --tolerance --config <this config>
+# A base config that has the section keeps its own.
+#
+# What must be re-tuned, and why:
+# * score_target: log_friction_batch_max must equal the view stage's when that stage
+#   uses the same score definition (ObjectnessViewStage); the config check compares them.
+# * score_decode: score_x_tolerance. The emitted score is score x tolerance / 0.05, not
+#   comparable with the score of another head bundle.
+# * min_score_target: 0.1. A (seed, depth bin) is supervised only above it, so how many
+#   bins are supervised depends on where the proposal puts the seeds.
+model:
+  head:
+    type: OperationHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    width_decode_gain: 1.2        # reference quirk
+    max_tolerance: 0.05
+    score_target: log_friction_batch_max   # must equal view.score_target
+    max_friction: 1.0
+    min_score_target: 0.1
+    score_supervision: supervised_depths
+    score_decode: score_x_tolerance   # reference quirk
+    score_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 0.2}
+    width_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    tolerance_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+data:
+  train:
+    dataset:
+      tolerance:                  # the tolerance labels this head bundle supervises
+        max_friction: 0.55
+        min_good_ratio: 0.8
+        radius_step: 0.001
+        max_radius: 0.05

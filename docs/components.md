@@ -27,10 +27,16 @@ config, is the subject of [Swapping components](advanced_guides/swapping.md).
   page under [Model zoo](model_zoo.md) says how it was compared with the reference
   implementation. `weights-verified`: additionally, weights released by the authors
   load strictly and the outputs match the official implementation; the measured
-  difference is on the [scene encoder page](model_zoo_backbones.md). `—`: the class
-  declares no status. No status is a claim about grasp-detection accuracy.
-- **Source** is the paper, method or library the component implements. Implementations
-  are clean-room; licences and commits of the references are in the method READMEs.
+  difference is on the [scene encoder page](model_zoo_backbones.md). `bridge`: the
+  component is an adapter around a library installed as an optional extra; the
+  library's own code runs, and the tests here cover the adapter (contract, shapes,
+  gradients), not the library. `—`: the class declares no status. No status is a
+  claim about grasp-detection accuracy.
+- **Source** is the paper, method or library the component implements, and where the
+  code comes from: written for GraspPanda from the paper and the behaviour of the
+  reference code (the ported grasp methods; licences and commits of the references
+  are in the method READMEs), a bridge to a library, or adapted from permissively
+  licensed code (listed in `THIRD_PARTY_NOTICES.md`).
 - **Needs** lists optional dependencies (`pip install "grasppanda[...]"`).
 - **Shipped configs** are the runnable configs under `configs/` whose resolved tree
   names the component.

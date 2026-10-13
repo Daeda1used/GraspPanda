@@ -38,6 +38,28 @@ reference, not searched; and the head sees other seeds and other label statistic
 under the reference encoder. See
 [Swapping components](../../docs/advanced_guides/swapping.md).
 
+## How these files are made
+
+None of them is written by hand. Each is the output of `grasppanda compose` for the
+command in its own header, for example
+
+```bash
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3
+```
+
+The numbers (grid size, radii, widths, sampling rules) live in the presets under
+`grasppanda/presets/<slot>/`, the adapter and the fitted width come from compose, and
+the header repeats the re-tuning notes of the presets. To change a number, edit the
+preset and regenerate (`python -m tools.make_combination_docs`); a unit test fails
+when a file is not what compose writes today. When the files were moved onto presets
+their resolved content did not change: all eight config hashes are the ones the
+hand-written files had.
+
+Any other combination is one command away in the same way
+([Try a combination](../../docs/user_guides/combinations.md)); which component was
+found to run under which method is on the generated page
+[Measured combinations](../../docs/advanced_guides/measured_combinations.md).
+
 ## The training check
 
 Run on 2026-10-12, one RTX A6000 shared with other jobs, PyTorch 2.7.1 + cu118,

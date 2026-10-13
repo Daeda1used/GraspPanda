@@ -1,0 +1,22 @@
+# FeaturePropagation: the adapter that turns a sub-sampling encoder into a dense one.
+#
+# An adapter wraps another encoder (`backbone:`); it is not an encoder itself. Compose
+# inserts it when a sub-sampling encoder meets a proposal that scores every scene point,
+# and says so. It interpolates the features of the kept points onto all scene points
+# (three nearest kept points, inverse distance) and refines them with a shared MLP: one
+# PointNet++ propagation level as configured in GraspNet-baseline.
+#
+# What must be re-tuned, and why:
+# * what the proposal can resolve. Objectness and graspness are predicted from features
+#   with the resolution of the subsample (1024 points with the GraspNet-baseline layout);
+#   a sparse U-Net gives one feature per 5 mm voxel. Expect coarser graspness maps.
+# * mlp: two layers of 256, which is also the output width (proposal, view stage and
+#   grouper are built 256 wide where SparseUNet14 gives 512). `neighbours` and
+#   `interpolation_power` (1 in the PyTorch PointNet++ lineage, 2 in the paper) are the
+#   other knobs; `PointNet2Dense` is the deeper alternative, with a propagation per level.
+model:
+  backbone:
+    type: FeaturePropagation      # `subsampled` -> `dense`, written down
+    mlp: [256, 256]
+    neighbours: 3
+    interpolation_power: 1.0

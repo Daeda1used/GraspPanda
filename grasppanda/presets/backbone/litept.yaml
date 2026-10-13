@@ -1,0 +1,29 @@
+# LitePT-S (official LitePT, Pointcept LitePT-v1) on a 5 mm grid.
+#
+# A light encoder that convolves at fine scale and attends at coarse scale. No published
+# GraspNet-1Billion result uses LitePT. The released checkpoints read six channels
+# (colour and normal) on a 2 cm grid and do not fit this stem: it trains from scratch.
+#
+# What must be re-tuned, and why:
+# * grid_size. The class default, 0.02 m, is for ScanNet rooms; 0.005 m keeps GSNet's
+#   grid. LitePT convolves in its three finest stages (voxels of 5, 10 and 20 mm here)
+#   and attends only in the two coarsest (4 and 8 cm). A table-top frame is a few hundred
+#   voxels there, fewer than one attention patch of 1024, so attention is global over the
+#   scene and `enc_patch_size` has no effect at this scale.
+# * output width: 72 channels (`dec_channels[0]`), where SparseUNet14 returns 512.
+#   Proposal, view stage and grouper are built 72 wide; widening it leaves the published
+#   model. A stage that needs the encoder's width to equal its own
+#   (`DepthCylinderGroup` with `seed_residual: gated`) says so when built.
+# * in_channels: 3 constant ones, as the base methods feed them.
+# * optimizer and schedule: the base method's. The authors train with AdamW, lr 6e-3
+#   (6e-4 for the blocks), weight decay 0.05 and a one-cycle schedule, on much longer
+#   schedules.
+# * drop_path stays at the published 0.3 (the class default): a regulariser for those
+#   long schedules and probably too strong for 10 epochs.
+# * batch size. Batch norm with momentum 0.01 sits in the stem and in every pooling and
+#   unpooling step, so the number of frames per batch matters more than under layer norm.
+model:
+  backbone:
+    type: LitePT                  # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005

@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import importlib.util
 import itertools
-import math
 from collections.abc import Iterator
 from typing import Any
 
@@ -31,22 +30,11 @@ import pytest
 import torch
 
 from grasppanda.cli.components import collect
+from grasppanda.combine.synthetic import random_batch
 from grasppanda.config import Config, ConfigError
-from grasppanda.models.assigners.scale_balance import HISTOGRAM_KEY
 from grasppanda.models.detectors.seed_based import SeedGraspDetector, stage_contract_problems
-from grasppanda.ops import approach_to_rotation
 from grasppanda.registry import BACKBONES, DETECTORS, GROUPERS, HEADS, PROPOSALS
-from grasppanda.structures import (
-    COMPACT_LABELS,
-    CompactGraspLabels,
-    ContractError,
-    GraspGroup,
-    ObjectGraspLabels,
-    Observation,
-    PointSet,
-    SampleKey,
-    Supervision,
-)
+from grasppanda.structures import ContractError, GraspGroup, Observation, Supervision
 
 from .conftest import REPO
 
@@ -341,69 +329,12 @@ def method(detector: str, backbone: dict[str, Any], **replace: str) -> dict[str,
 
 def batch(seed: int = 0) -> tuple[Observation, Supervision]:
     """Two frames with everything any registered stage reads: dense grids with
-    tolerance, compact labels, per-point objectness and graspness, a width histogram."""
-    generator = torch.Generator().manual_seed(seed)
-    cloud = torch.rand(FRAMES, POINTS, 3, generator=generator)
-    observation = Observation(
-        keys=[SampleKey("unit", 7, "none", frame) for frame in range(FRAMES)],
-        points=PointSet.from_dense(cloud),
-    )
-    grid = (20, VIEW_COUNT, ANGLES, DEPTHS)
-    levels = torch.tensor([-1.0, 0.1, 0.3, 0.6, 1.0])
+    tolerance, compact labels, per-point objectness and graspness, a width histogram.
 
-    def integers(high: int) -> torch.Tensor:
-        return torch.randint(0, high, grid[:2], generator=generator).to(torch.uint8)
-
-    dense, compact = [], []
-    for frame in range(FRAMES):
-        dense.append([])
-        compact.append([])
-        for _ in range(2):
-            pose = torch.eye(4)
-            pose[:3, :3] = approach_to_rotation(
-                torch.randn(3, generator=generator), torch.rand((), generator=generator) * math.pi
-            )
-            pose[:3, 3] = torch.rand(3, generator=generator)
-            # Label points on the cloud, so that seeds lie within the matching distance.
-            pick = torch.randint(0, POINTS, (grid[0],), generator=generator)
-            placed = cloud[frame, pick] + 0.01 * torch.randn(grid[0], 3, generator=generator)
-            local = (placed - pose[:3, 3]) @ pose[:3, :3]
-            dense[-1].append(
-                ObjectGraspLabels(
-                    object_id=len(dense),
-                    pose=pose,
-                    points=local,
-                    scores=levels[torch.randint(0, 5, grid, generator=generator)],
-                    widths=torch.rand(grid, generator=generator) * 0.12,
-                    tolerance=torch.randint(0, 51, grid, generator=generator) * 0.001,
-                )
-            )
-            compact[-1].append(
-                CompactGraspLabels(
-                    object_id=len(compact),
-                    pose=pose,
-                    points=local,
-                    view_graspness=torch.rand(grid[:2], generator=generator),
-                    angle=integers(ANGLES),
-                    depth=integers(DEPTHS),
-                    score=integers(11),
-                    width=integers(120),
-                    view_max_friction=0.6,
-                )
-            )
-    histogram = {
-        "edges": torch.linspace(0.0, 0.12, 5, dtype=torch.float64),
-        "counts": torch.tensor([3, 20, 50, 9]),
-    }
-    supervision = Supervision(
-        objects=dense,
-        point_labels={
-            "objectness": (torch.rand(FRAMES * POINTS, generator=generator) < 0.7).long(),
-            "graspness": torch.rand(FRAMES * POINTS, generator=generator),
-        },
-        extras={COMPACT_LABELS: compact, HISTOGRAM_KEY: [histogram] * FRAMES},
+    The generator lives in the package, where ``grasppanda probe`` uses it too."""
+    return random_batch(
+        frames=FRAMES, points=POINTS, views=VIEW_COUNT, angles=ANGLES, depths=DEPTHS, seed=seed
     )
-    return observation, supervision
 
 
 def refusal(node: dict[str, Any]) -> list[str]:

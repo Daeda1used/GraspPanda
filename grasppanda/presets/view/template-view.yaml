@@ -1,0 +1,24 @@
+# TemplateViewStage as GSNet, EconomicGrasp and FineGrasp use it: a score per view of a
+# 300-view template, the training view sampled from the scores.
+#
+# The values are the constructor defaults, written out with the loss the stage builds
+# when none is given. It reads dense label grids or compact labels, whichever the
+# assigner returns, and predicts no seed score of its own.
+#
+# What must be re-tuned, and why:
+# * train_selection: multinomial is a reference quirk: while training, the view of a
+#   seed is drawn from the predicted scores, not taken as their arg-max, so the crop and
+#   the head see views the model would not choose at inference. `argmax` is the
+#   controlled variant.
+# * max_friction: 0.6. A grasp counts towards the graspness of a view up to this
+#   friction; compact labels are generated with the same value
+#   (`compact_labels.view_friction_threshold`), and the first loss checks that they agree.
+# * loss weight: 100, tuned against the other loss terms of GSNet.
+# * num_views: 300, the lattice the label files are indexed by. It is not a free choice.
+model:
+  view:
+    type: TemplateViewStage
+    num_views: 300
+    train_selection: multinomial  # reference quirk
+    max_friction: 0.6
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}

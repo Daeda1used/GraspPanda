@@ -7,7 +7,8 @@ see ``docs/design/ARCHITECTURE.md`` §8.
 Besides its contract, every registered component describes itself with three class
 attributes that ``grasppanda components`` and ``docs/components.md`` are generated from:
 
-* ``status``: what has been proven about it (``tested``, ``weights-verified``, …);
+* ``status``: what has been proven about it (``tested``, ``weights-verified``, or
+  ``bridge`` for an adapter around an optional library whose own code runs);
 * ``source``: the paper, method or library it implements, as a short citation;
 * ``extras``: optional dependencies it needs (``("spconv",)``), empty when none.
 

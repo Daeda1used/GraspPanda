@@ -1,2 +1,4 @@
 dev export-ignore
 dev/** export-ignore
+# Sections are appended by independent contributions; keep both sides on merge.
+THIRD_PARTY_NOTICES.md merge=union

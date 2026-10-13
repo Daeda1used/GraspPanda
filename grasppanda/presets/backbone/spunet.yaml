@@ -1,0 +1,25 @@
+# SpUNet, the deep sparse U-Net of Pointcept (MinkUNet-34C block counts), on a 5 mm grid.
+#
+# The smallest step away from SparseUNet14: the same kind of network, the same stem and
+# the same four stride-2 stages, with 2-3-4-6 residual blocks per stage where the
+# reference has one (39.2 M parameters against 14.6 M). No published GraspNet-1Billion
+# result uses this network, and its authors have released no checkpoint for it.
+#
+# What must be re-tuned, and why:
+# * grid_size: 0.005 m, GSNet's. The class default, 0.02 m, is for ScanNet rooms. The
+#   coarsest voxel is 16 x the grid, 8 cm here; what grows against SparseUNet14 is the
+#   number of 3 x 3 x 3 convolutions per level, and with it how far a feature reaches.
+# * out_channels: 512, the width of SparseUNet14's output. The published model ends on
+#   20 class scores; `null` returns the 96 channels of the last decoder stage. Compose
+#   sets it to the width of the encoder it replaces.
+# * in_channels: 3 constant ones (the published model reads colour and normal).
+# * learning rate. The recipes of the reference methods (Adam 1e-3 without warm-up) were
+#   tuned for a network a third of this depth: in the 10-iteration training check under
+#   GSNet most seeds were lost in two iterations (configs/experimental/README.md).
+# * batch size and memory: more per frame than the reference encoder.
+model:
+  backbone:
+    type: SpUNet                  # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the voxel grid
+    out_channels: 512
+    grid_size: 0.005

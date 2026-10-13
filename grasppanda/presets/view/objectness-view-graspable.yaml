@@ -1,0 +1,27 @@
+# ObjectnessViewStage as Scale-Balanced-Grasp uses it: a seed is positive only when it is
+# on an object AND has more than ten graspable views.
+#
+# The preset `objectness-view` is the view stage of GraspNet-baseline, where objectness
+# is the object label alone; this one is the single option Scale-Balanced-Grasp changes.
+#
+# What must be re-tuned, and why:
+# * min_graspable_views: 10 and graspable_score: 0.1 decide which seeds count as
+#   positives, and with them the balance of the objectness loss. They were set for seeds
+#   spread evenly over the scene by furthest point sampling; under another seed set the
+#   fraction of positives moves.
+# * It reads two optional fields of the matched labels (`on_object`, `view_width`): the
+#   assigner must return them (NearestLabelAssigner with `supervise: object_seeds` and
+#   `view_widths: true`, or ScaleBalancedAssigner).
+# * It predicts objectness, so a proposal that predicts it too (GraspnessFPS) is refused.
+model:
+  view:
+    type: ObjectnessViewStage
+    num_views: 300
+    reject_background: true       # evaluation mode: no grasp for a seed classified as background
+    score_target: log_friction_batch_max   # reference quirk; must equal the head bundle's
+    max_friction: 1.0             # used by score_target: log_friction_fixed_max only
+    good_view_score: 0.7          # logging only
+    min_graspable_views: 10       # Scale-Balanced-Grasp; `null` is GraspNet-baseline
+    graspable_score: 0.1          # a view is graspable when its target exceeds this
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    view_loss: {type: MSE, weight: 1.0}

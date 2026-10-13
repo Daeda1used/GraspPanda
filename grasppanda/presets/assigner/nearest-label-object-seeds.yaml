@@ -1,0 +1,25 @@
+# NearestLabelAssigner as GraspNet-baseline uses it: only seeds on an object are
+# supervised, and training crops sit at the matched label point.
+#
+# The class defaults are GSNet's matching (every seed supervised, crop at the seed).
+# These three options are what a stage of GraspNet-baseline needs from the assigner:
+# ObjectnessViewStage reads `on_object` and `view_width` of the matched labels, which the
+# assigner returns only with `supervise: object_seeds` and `view_widths: true`.
+#
+# What must be re-tuned, and why:
+# * supervise: object_seeds. View and grasp losses see about half of the seeds of a
+#   furthest-point subsample (`metric/supervised_seeds` in the log); under a proposal
+#   that already selects object points nearly all of them.
+# * crop_centre: label_point is a reference quirk of GraspNet-baseline: training crops
+#   are centred at the matched label point, inference crops at the seed. `seed` removes
+#   the difference and is a controlled variant, not a correction to apply silently.
+# * It reads the dense label grids (and their tolerance when the head supervises one):
+#   the training dataset must serve them (no `compact_labels` section).
+model:
+  assigner:
+    type: NearestLabelAssigner
+    max_match_distance: null      # no limit, as in the reference
+    crop_centre: label_point      # reference quirk
+    padded_seeds: count
+    supervise: object_seeds       # returns `on_object`
+    view_widths: true             # returns `view_width`

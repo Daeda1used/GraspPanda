@@ -3,10 +3,15 @@ Copyright 2026 The GraspPanda Contributors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Method implementations in this repository are written from the cited papers and from
-behavioural study of the reference implementations. No third-party source file is
-copied. Licences of upstream repositories, datasets and released weights are recorded
-per method in configs/<method>/metafile.yaml.
+The grasp detection methods and the benchmark evaluators in this repository are written
+from the cited papers and from behavioural study of the reference implementations; no
+source file of those repositories is copied. Licences of upstream repositories, datasets
+and released weights are recorded per method in configs/<method>/metafile.yaml.
+
+Some components are adapted from third-party code under the MIT, BSD or Apache-2.0
+licence. Each such file keeps the upstream copyright notice; THIRD_PARTY_NOTICES.md lists
+them with repository, commit and licence. Components that bridge to an optional library
+(their status is "bridge") contain none of that library's code.
 
 GraspNet-1Billion (CC BY-NC-SA 4.0) and GraspClutter6D (CC BY-SA 4.0) are datasets of
 their respective authors and are not distributed with this software.

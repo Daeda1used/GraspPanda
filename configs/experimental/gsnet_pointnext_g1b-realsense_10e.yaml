@@ -1,35 +1,48 @@
-# EXPERIMENTAL. GSNet with PointNeXt-S (encoder + decoder) in place of the sparse
-# U-Net. No AP is claimed: this config passes the checker and trains for a few
-# iterations on GraspNet-1Billion (configs/experimental/README.md); it has not been
-# trained to convergence or evaluated. No published GraspNet-1Billion result uses
-# PointNeXt.
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
 #
-#   grasppanda print-config experimental/gsnet_pointnext_g1b-realsense_10e --check
+#   base  gsnet/gsnet_sunet14_g1b-realsense_10e (GSNet)
+#   set   backbone `pointnext`
+#
+#   grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnext
+#   grasppanda probe experimental/gsnet_pointnext_g1b-realsense_10e
 #   grasppanda train experimental/gsnet_pointnext_g1b-realsense_10e
 #
-# What must be re-tuned, and why:
-# * radius. The PointNeXt-S default, 0.1 m doubling per stage, is for S3DIS rooms. A
-#   tabletop frame is about 0.6 m across, so the first ball would already span a sixth
-#   of the scene. 0.04 m is the first radius of the GraspNet-baseline PointNet++ on the
-#   same data; with doubling the stages see 0.04 / 0.08 / 0.16 / 0.32 m. This value is a
-#   choice by analogy, not a tuned one.
-# * in_channels. The published model reads four features per point (colour and height
-#   in S3DIS). Here it reads GSNet's three constant ones, so geometry enters through the
-#   grouped offsets only; `point_features: observation` with real features is the
-#   obvious variant.
-# * width and depth. PointNeXt-S (0.8 M parameters) against a 14.6 M sparse U-Net.
-#   The published B/L/XL variants are `width`, `blocks`, `sa_layers` and `expansion`.
-# * optimizer and schedule: GSNet's (Adam 1e-3, x0.95 per epoch). PointNeXt's own
-#   recipe (AdamW, cosine, label smoothing) is part of what that paper claims.
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
+#
+# What compose did, and why:
+# * backbone: preset `pointnext` (PointNeXt). PointNeXt-S (encoder + decoder) with a
+#   table-top radius.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `pointnext`
+# * radius. The class default, 0.1 m doubling per stage, is for S3DIS rooms. A table-top
+#   frame is about 0.6 m across, so the first ball would already span a sixth of the
+#   scene. 0.04 m is the first radius of the GraspNet-baseline PointNet++ on the same
+#   data; with doubling the stages see 0.04 / 0.08 / 0.16 / 0.32 m. A choice by analogy,
+#   not a tuned value.
+# * in_channels: 3 constant ones (the published model reads colour and height), so
+#   geometry enters through the grouped offsets only; a method that feeds real features
+#   (`point_features: observation`) is the obvious variant.
+# * width and depth: PointNeXt-S, 0.8 M parameters and 32 output channels, against a
+#   14.6 M sparse U-Net with 512. The published B / L / XL variants are `width`, `blocks`,
+#   `sa_layers` and `expansion`. A stage that needs the encoder's width to equal its own
+#   (`DepthCylinderGroup` with `seed_residual: gated`) says so when built.
+# * optimizer and schedule: the base method's. PointNeXt's own recipe (AdamW, cosine,
+#   label smoothing) is part of what that paper claims.
 # * memory and speed. Sampling and ball queries run on the pure-PyTorch reference
 #   operators: about 0.5 s and 1.7 GiB per forward pass of one 20 000-point frame on an
-#   RTX A6000 (docs/model_zoo_backbones.md), several times that with gradients at
-#   batch 4.
+#   RTX A6000 (docs/model_zoo_backbones.md), several times that with gradients.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
 _base_:
   - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
 
 model:
   backbone:
-    type: PointNeXt               # `dense`: features on every input point
-    in_channels: 3
+    type: PointNeXt               # `dense`: one feature per input point
+    in_channels: 3                # constant ones
     radius: 0.04

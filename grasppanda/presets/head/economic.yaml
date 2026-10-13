@@ -1,0 +1,43 @@
+# EconomicHead as EconomicGrasp and FineGrasp use it: angle, depth and quality classes
+# plus a width per seed.
+#
+# The class defaults are the reference values; what cannot be guessed is its label set.
+# It is supervised with compact grasp labels, so the assigner must return them
+# (CompactLabelAssigner) and the training dataset must serve them: the `compact_labels`
+# section, built with
+#   grasppanda prepare graspnet1b --compact-labels --config <this config>
+# A base config whose dataset reads dense grids (`SampleGraspLabels` among its
+# transforms) refuses the section; compose from an EconomicGrasp or FineGrasp config.
+#
+# What must be re-tuned, and why:
+# * the reference quirks (`unmatched_class`, `decode_argmax`, `score_decode`) change
+#   numbers; their alternatives are controlled variants (configs/economicgrasp/README.md).
+# * score_kind. The decoded score is a weighted sum of raw logits, not a probability and
+#   not comparable with the score of another head bundle: anything that thresholds or
+#   fuses scores must be fitted again.
+model:
+  head:
+    type: EconomicHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    num_score: 6
+    width_target_scale: 10.0
+    width_decode_gain: 1.2        # reference quirk
+    unmatched_class: true         # reference quirk
+    decode_argmax: all_logits     # reference quirk
+    score_decode: logit_weighted  # reference quirk
+    token_channels: 64
+    attention_heads: 1
+    attention_dropout: 0.05
+    angle_loss: {type: CrossEntropy, weight: 1.0}
+    depth_loss: {type: CrossEntropy, weight: 1.0}
+    score_loss: {type: CrossEntropy, weight: 1.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
+data:
+  train:
+    dataset:
+      compact_labels:             # the label set this head bundle is supervised with
+        point_friction_threshold: 0.4
+        view_friction_threshold: 0.6   # = model.view.max_friction (checked at the first loss)
+        max_width: 0.1            # = the gripper opening

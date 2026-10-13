@@ -53,7 +53,8 @@ stage, and where every number is produced by the same pinned evaluation.
 ## 📰 News
 
 - **2026-10** — First public version of the rebuild. Six methods as interchangeable components, each equal to its reference implementation stage by stage; eleven scene encoders; `grasppanda components`, `demo` and `analyze`; GraspClutter6D end to end. Releases up to v0.56 are an earlier, unrelated code base and stay available under their tags and on the `legacy` branch.
-- **In progress** — more interchangeable modules for every slot (seed proposal, orientation, local grouping, heads and losses, post-processing, small building blocks), HGGD opened into slots, and one command each to compose a combination and to probe it on real frames.
+- **2026-10** — `grasppanda compose` builds a combination from a method config and a preset, `grasppanda probe` trains it for a few iterations on real frames, and a generated page shows the measured result of 208 combinations (which component works under which method, and what the contract rules refuse).
+- **In progress** — many more options for every slot (image and scene encoders, seed proposal, orientation, local grouping, heads and losses, post-processing, training recipe), taken from published code and model libraries, each with a usage page.
 
 ## 🤔 Why GraspPanda
 
@@ -208,6 +209,24 @@ scenes); results on other cameras have not been measured. The same pipeline is a
 in Python as `GraspInferencer`, and `grasppanda analyze` says where the AP of an
 evaluation comes from: see [Inference and visualisation](docs/user_guides/inference.md).
 
+### Try a combination
+
+```bash
+grasppanda components --slot backbones                       # what exists, with contracts
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
+grasppanda probe gsnet_ptv3.yaml                             # 20 iterations on real frames, then predict
+grasppanda train gsnet_ptv3.yaml
+```
+
+`compose` writes a checked config from a method config and a preset, inserts an adapter
+where the stage contracts ask for one and says so; a combination the contracts refuse is
+reported with the conflict and the fix. `probe` ends with one verdict (`runs`,
+`runs-unstable`, `fails`, `refused`). Which component works under which method has been
+measured on real frames, not inferred: see
+[Try a combination](docs/user_guides/combinations.md) and
+[Measured combinations](docs/advanced_guides/measured_combinations.md). No accuracy is
+claimed for a combination until it has been trained and evaluated.
+
 ### Benchmarks
 
 With GraspNet-1Billion on disk (`export GRASPPANDA_GRASPNET1B_ROOT=...`, and the sparse
@@ -270,6 +289,7 @@ The example detector is a wiring template: it is untrained and its grasps are ar
 ## 📚 Tutorials
 
 - [Configuration guide](docs/user_guides/config.md): inheritance, the merge rules, overrides, validation.
+- [Try a combination](docs/user_guides/combinations.md): catalogue, compose, probe, train.
 - [Add a component](docs/advanced_guides/add_component.md): register a backbone or a head bundle without forking.
 - [Data contracts](docs/advanced_guides/data_flow.md): what each stage receives and returns.
 - [Architecture](docs/design/ARCHITECTURE.md): the full design, with the evidence behind each decision.

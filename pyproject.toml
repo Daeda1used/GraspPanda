@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "grasppanda"
 dynamic = ["version"]
-description = "A toolbox for 6-DoF grasp detection in clutter: certified reproductions, swappable components, one pinned evaluation."
+description = "A toolbox for 6-DoF grasp detection in clutter: swappable components, faithful ports, one pinned evaluation."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-license-files = ["LICENSE", "NOTICE"]
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 authors = [{ name = "GraspPanda Contributors" }]
 keywords = [
     "robotics",
@@ -85,6 +85,7 @@ include = [
     "/CITATION.cff",
     "/LICENSE",
     "/NOTICE",
+    "/THIRD_PARTY_NOTICES.md",
     "/resources/*.svg",
 ]
 

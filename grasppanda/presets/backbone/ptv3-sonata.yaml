@@ -1,0 +1,25 @@
+# The PTv3 variant of Sonata and Concerto (Pointcept PT-v3m2), encoder only, 5 mm grid.
+#
+# This preset is the ARCHITECTURE trained from scratch. It is not "PTv3 with Sonata
+# weights": the released self-supervised checkpoints expect nine input channels
+# (coordinates, colour, normal), a 0.02 m grid and their own input pipeline, and they
+# are CC BY-NC 4.0 (docs/model_zoo_backbones.md; trap 2 of docs/advanced_guides/swapping.md).
+#
+# What must be re-tuned, and why:
+# * size. The class defaults are the released base encoder: 3-3-3-12-3 blocks, 48 to 512
+#   channels, 108.5 M parameters, for a few thousand voxels per frame here. `enc_depths`,
+#   `enc_channels` and `enc_num_head` give the published small (38.7 M) and tiny (4.9 M)
+#   layouts; start there on a single GPU.
+# * output: 1232 channels. With `enc_mode: true` there is no decoder: the dense feature
+#   of a point is its five encoder stages concatenated through the pooling maps (the
+#   authors' linear-probing protocol). Proposal, view stage and grouper are built 1232
+#   wide. `enc_mode: false` adds a decoder with 64 output channels instead;
+#   `concat_stages` keeps fewer stages.
+# * grid_size: 0.005 m, GSNet's (the class default is 0.02 m).
+# * in_channels: 3 constant ones, as the base methods feed them.
+# * optimizer and schedule: the base method's, tuned for its own encoder.
+model:
+  backbone:
+    type: PTv3Sonata              # `dense`: one feature per input point
+    in_channels: 3                # constant ones; geometry enters through the grid
+    grid_size: 0.005

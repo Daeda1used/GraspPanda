@@ -1,0 +1,37 @@
+# MultiScaleGroup as FineGrasp uses it: a crop among the seeds at four radii, each by an
+# EconomicGrasp crop module of its own, fused per seed by attention over the scales.
+#
+# `branch` is required and cannot be guessed: it is the crop module copied once per
+# radius (its own `radius` is set by `radius_scales`). Any seeds-support grouper with the
+# same output axes fits; FineGrasp uses CylinderInteractionGroup with these values.
+#
+# What must be re-tuned, and why:
+# * radius: 0.07 m, the largest crop; `radius_scales` gives 0.0175, 0.035, 0.0525 and
+#   0.07 m. EconomicGrasp and GSNet crop once, at 0.05 m. The crops gather among the
+#   SEEDS, at most 16 per crop: how many neighbours a radius holds depends on how densely
+#   the proposal places seeds, so the radii belong to the proposal as much as to the
+#   objects.
+# * branch.mlp_channels / post_mlp_channels: the last width is the output width the head
+#   bundle is built for (256).
+# * fusion_*: a two-layer transformer encoder over the four scale tokens (8 heads,
+#   feed-forward 1024, dropout 0.1). It holds 1.6 M parameters and the four crop modules
+#   2.4 M under a 512-channel encoder, against 0.2 M for GSNet's CylinderGroup.
+model:
+  grouper:
+    type: MultiScaleGroup
+    radius: 0.07                  # largest crop
+    radius_scales: [0.25, 0.5, 0.75, 1.0]
+    fusion_layers: 2
+    fusion_heads: 8
+    fusion_feedforward_channels: 1024
+    fusion_dropout: 0.1
+    branch:                       # one copy per radius
+      type: CylinderInteractionGroup
+      hmin: -0.02
+      hmax: 0.04
+      nsample: 16
+      mlp_channels: [256, 256]
+      centre_coordinates: true
+      attention_heads: 1
+      attention_dropout: 0.05
+      post_mlp_channels: [256, 256]
