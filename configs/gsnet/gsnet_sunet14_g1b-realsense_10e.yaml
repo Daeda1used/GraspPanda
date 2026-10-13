@@ -1,0 +1,27 @@
+# GSNet (ICCV 2021) with the 14-layer sparse U-Net of the reference implementation,
+# GraspNet-1Billion, RealSense, the reference recipe (10 epochs).
+#
+#   grasppanda train gsnet/gsnet_sunet14_g1b-realsense_10e
+#   grasppanda test  gsnet/gsnet_sunet14_g1b-realsense_10e --weights <checkpoint>
+#
+# Results are always reported for both post-processing variants below.
+_base_:
+  - ../_base_/models/gsnet.yaml
+  - ../_base_/datasets/graspnet1b_realsense.yaml
+  - ../_base_/schedules/gsnet_10e.yaml
+  - ../_base_/default_runtime.yaml
+
+data:
+  val:
+    dataset:
+      keep_full_points: true      # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                       # predictions as the model emits them
+    cd:                           # the reference's optional model-free collision filter
+      - {type: ModelFreeCollisionFilter}

@@ -1,0 +1,87 @@
+# GraspNet-1Billion, RealSense camera, with the data recipe of GraspNet-baseline
+# (graspnet/graspnet-baseline @ fb2f089: dataset/graspnet_dataset.py,
+# dataset/generate_tolerance_label.py, train.py, test.py). Scale-Balanced-Grasp uses the
+# same recipe.
+#
+# The dataset root is not written here. It resolves from `root` (if a child config sets
+# it), then $GRASPPANDA_GRASPNET1B_ROOT, then $GRASPPANDA_DATA/graspnet1b, then
+# ./data/graspnet1b. Derived labels live under $GRASPPANDA_CACHE and are built with
+#     grasppanda prepare graspnet1b --labels
+#     grasppanda prepare graspnet1b --tolerance --config _base_/datasets/graspnet1b_realsense_tolerance.yaml
+#
+# Differences from the Graspness recipe (graspnet1b_realsense.yaml): 20 000 points instead
+# of 15 000, no point-wise graspness, grasp tolerance labels, label points drawn from the
+# visible side of each object only, object 18 never supervised, coordinates as the only
+# input (no constant feature channels).
+data:
+  train:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: train               # all 100 training scenes, as the authors train
+      load_labels: true
+      preprocess:
+        - {type: DepthToCloud}
+        # The reference crops to the bounding box of the GROUND-TRUTH segmentation, at
+        # test time too; results are therefore stamped gt_assisted: [workspace].
+        - {type: SegmentationBoxWorkspace, margin: 0.02, invalid_depth_foreground: include}
+      tolerance:                 # parameters of the tolerance asset (reference generator defaults)
+        max_friction: 0.55       # a grasp is good when its friction is in (0, 0.55]
+        min_good_ratio: 0.8      # of the annotated points within a radius
+        radius_step: 0.001
+        max_radius: 0.05
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        # The reference loads no labels for object 18 and skips barely visible objects.
+        - {type: FilterObjects, min_visible_points: 50, exclude_object_ids: [18]}
+        - type: SampleGraspLabels
+          point_fraction: 0.25
+          min_points: 300
+          collision: zero_scores   # also zeroes the tolerance of colliding grasps
+          visible_within: 0.01     # reference: annotated points within 1 cm of the object's visible points
+          # The grids (scores, widths, tolerance: about 0.8 GiB per batch of two frames)
+          # stay in the label store and label matching reads the rows it matched; same
+          # labels and same random draws as `dense` (docs/advanced_guides/data_loading.md).
+          grids: deferred
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        # The reference comment says z; its matrix rotates about the camera x-axis.
+        - {type: RandomRotation, axis: x, max_angle: 30.0}
+      keep_full_points: false    # only post-processors need the unsampled cloud
+    batch_size: 2
+    num_workers: 4
+    shuffle: true
+    drop_last: false
+
+  # Progress monitor on the ten `val_dev` scenes, every 16th frame.
+  # NOTE: val_dev is a subset of `train`, so this loader measures fit, not generalisation.
+  # For model selection train on `train_dev` (`--opts data.train.dataset.split=train_dev`);
+  # the two then partition the training scenes. The reference instead computes its losses
+  # on test_seen after every epoch; that is not replicated.
+  val:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: val_dev
+      frame_step: 16
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+      seed: 0                    # the same points every evaluation (the reference draws afresh)
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: test                # scenes 100-189; test_seen / test_similar / test_novel also exist
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

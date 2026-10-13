@@ -1,0 +1,34 @@
+# EXPERIMENTAL. GSNet with SpUNet, the deep sparse U-Net of Pointcept (MinkUNet-34C
+# block counts and widths), in place of its 14-layer sparse U-Net. No AP is claimed:
+# this config passes the checker and trains for a few iterations on GraspNet-1Billion
+# (configs/experimental/README.md); it has not been trained to convergence or
+# evaluated. No published GraspNet-1Billion result uses this network.
+#
+#   grasppanda print-config experimental/gsnet_spunet_g1b-realsense_10e --check
+#   grasppanda train experimental/gsnet_spunet_g1b-realsense_10e
+#
+# The smallest step away from the reference: the same kind of network, on the same
+# grid, with the same stem and the same four stride-2 stages, and 2-3-4-6 residual
+# blocks per stage where the reference has one (39.2 M parameters against 14.6 M).
+#
+# What must be re-tuned, and why:
+# * grid_size: 0.005 m, GSNet's. The SpUNet default, 0.02 m, is for ScanNet rooms. The
+#   coarsest voxel is 16 x the grid in both networks, 8 cm here; what grows is the
+#   number of 3x3x3 convolutions at every level, and with it how far a feature reaches
+#   in voxels.
+# * out_channels: 512, the width of the reference encoder's output, so that proposal,
+#   view stage and grouper are built as in GSNet. The published model ends on 20 class
+#   scores; `null` returns the 96 channels of the last decoder stage instead.
+# * in_channels: 3, GSNet's constant ones (the published model reads colour and
+#   normal). The authors have released no checkpoint for this network.
+# * optimizer and schedule: GSNet's (Adam 1e-3, x0.95 per epoch), tuned for a network
+#   a third of this depth. Batch size 4 as in the reference; memory per frame is higher.
+_base_:
+  - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: SpUNet                  # `dense`: features on every input point
+    in_channels: 3
+    out_channels: 512
+    grid_size: 0.005

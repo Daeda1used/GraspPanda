@@ -1,0 +1,85 @@
+# GraspNet-baseline (GraspNet-1Billion, CVPR 2020): the full reference model.
+#
+# Every value below is the default of its component and reproduces
+# graspnet/graspnet-baseline @ fb2f089, with four exceptions that are set to the baseline's
+# behaviour here: three assigner options, whose component defaults are those of the
+# Graspness reference, and backbone.fps_tie_break. Options marked "reference quirk" change
+# numbers; their alternatives are controlled variants, not corrections to apply silently.
+#
+# Injected by the detector, so not repeated here: channel counts between stages, the view
+# template handed to the assigner, the gripper handed to the view stage and the head.
+model:
+  type: GraspNetBaseline
+  point_features: ones            # the backbone takes coordinates only (in_channels: 0)
+  gripper:                        # GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1                # labels wider than this are unusable; decoded widths are clamped
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  backbone:
+    type: PointNet2               # features on a 1024-point subsample: `subsampled`
+    in_channels: 0
+    npoints: [2048, 1024, 512, 256]
+    radii: [0.04, 0.1, 0.2, 0.3]
+    nsamples: [64, 32, 16, 16]
+    sa_mlps: [[64, 64, 128], [128, 128, 256], [128, 128, 256], [128, 128, 256]]
+    fp_mlps: [[256, 256], [256, 256]]
+    normalize_xyz: true
+    interpolation_power: 1.0
+    fps_skip_near_origin: true    # reference quirk: the sampling kernel never picks points with |p|² <= 1e-3
+    fps_tie_break: pointnet2_cuda # reference quirk: equally distant candidates in the order of that kernel
+
+  proposal:
+    type: SubsampledSeeds         # every point the backbone kept is a seed; nothing is selected
+    num_seeds: 1024
+
+  view:
+    type: ObjectnessViewStage     # objectness and view scores from one head; arg-max view in both modes
+    num_views: 300
+    reject_background: true       # evaluation mode: no grasp for a seed classified as background
+    score_target: log_friction_batch_max   # reference quirk: scaled by the worst friction in the batch
+    max_friction: 1.0             # used by score_target: log_friction_fixed_max only
+    good_view_score: 0.7          # logging only
+    min_graspable_views: null     # objectness is the object label alone (Scale-Balanced-Grasp: 10)
+    graspable_score: 0.1          # used by min_graspable_views only
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    view_loss: {type: MSE, weight: 1.0}
+
+  assigner:
+    type: NearestLabelAssigner
+    max_match_distance: null      # no limit, as in the reference
+    crop_centre: label_point      # reference quirk: training crops sit at the matched label point, inference crops at the seed
+    padded_seeds: count           # every seed is real here
+    supervise: object_seeds       # view and grasp losses only for seeds on an object
+    view_widths: true             # the view target discards grasps wider than the gripper
+
+  grouper:
+    type: DepthCylinderGroup      # scene-cloud cylinders: `scene` support, a depth axis
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]   # one far end per depth bin of the head
+    nsample: 64
+    mlp_channels: [64, 128, 256]
+    normalize_offsets: false
+    radius_scales: [1.0]          # one crop radius
+    seed_residual: none           # the crop is scene geometry only
+
+  head:
+    type: OperationHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    width_decode_gain: 1.2        # reference quirk: applied by the decoder only, not by the loss target
+    max_tolerance: 0.05
+    score_target: log_friction_batch_max   # must equal view.score_target
+    max_friction: 1.0
+    min_score_target: 0.1         # a (seed, depth) is supervised only above this score target
+    score_supervision: supervised_depths
+    score_decode: score_x_tolerance   # reference quirk: emitted score = score × tolerance / max_tolerance
+    score_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 0.2}
+    width_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    tolerance_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}

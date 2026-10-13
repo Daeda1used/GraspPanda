@@ -1,0 +1,126 @@
+[build-system]
+requires = ["hatchling>=1.27", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "grasppanda"
+dynamic = ["version"]
+description = "A toolbox for 6-DoF grasp detection in clutter: certified reproductions, swappable components, one pinned evaluation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "GraspPanda Contributors" }]
+keywords = [
+    "robotics",
+    "grasping",
+    "grasp detection",
+    "6-DoF",
+    "point cloud",
+    "GraspNet-1Billion",
+    "GraspClutter6D",
+    "pytorch",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["torch>=2.1", "numpy>=1.26", "scipy>=1.11", "pyyaml>=6.0", "pillow>=10", "tqdm>=4.66"]
+
+[project.optional-dependencies]
+spconv-cu118 = ["spconv-cu118>=2.3.8"]
+spconv-cu121 = ["spconv-cu121>=2.3.8"]
+spconv-cu124 = ["spconv-cu124>=2.3.8"]
+spconv-cu126 = ["spconv-cu126>=2.3.8"]
+spconv-cpu = ["spconv>=2.3.8"]
+tensorboard = ["tensorboard>=2.14"]
+wandb = ["wandb>=0.16"]
+# The interactive viewer of `grasppanda demo --show`. Pictures and animations need only Pillow.
+vis = ["open3d>=0.18"]
+dev = ["pytest>=8", "pytest-cov", "ruff>=0.6", "codespell", "pre-commit", "build"]
+docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
+
+[project.urls]
+Homepage = "https://github.com/Daeda1used/GraspPanda"
+Documentation = "https://daeda1used.github.io/GraspPanda"
+Repository = "https://github.com/Daeda1used/GraspPanda"
+Issues = "https://github.com/Daeda1used/GraspPanda/issues"
+Changelog = "https://github.com/Daeda1used/GraspPanda/blob/main/CHANGELOG.md"
+
+[project.scripts]
+grasppanda = "grasppanda.cli.main:main"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+fallback_version = "0.1.0.dev0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "grasppanda/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["grasppanda"]
+
+# Configs live at the repository root for visibility and ship inside the wheel,
+# so `grasppanda <command> <config-name>` works after a plain `pip install`.
+[tool.hatch.build.targets.wheel.force-include]
+"configs" = "grasppanda/_configs"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/grasppanda",
+    "/configs",
+    "/tests",
+    "/projects",
+    "/README.md",
+    "/README_zh-CN.md",
+    "/CHANGELOG.md",
+    "/CITATION.cff",
+    "/LICENSE",
+    "/NOTICE",
+    "/resources/*.svg",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "gpu: needs a CUDA device",
+    "slow: takes more than a few seconds",
+    "dataset: needs a real dataset on disk",
+    "oracle: compares against values recorded from an upstream implementation",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["grasppanda/_version.py", "*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B905",   # zip() without strict= is fine for same-length locals
+    "RUF001", # mathematical symbols in docstrings are intentional
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "RUF043"]
+# Oracle scripts run under the old interpreters of upstream environments (Python 3.7/3.8).
+"tools/oracle/*" = ["UP", "I001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["grasppanda"]
+
+[tool.codespell]
+skip = "*.svg,*.png,*.lock,.venv,site,work_dirs"
+ignore-words-list = "ot,nd,fpr,mor"

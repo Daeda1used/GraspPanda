@@ -1,0 +1,20 @@
+# Training recipe of GraspNet-baseline (graspnet/graspnet-baseline @ fb2f089, train.py):
+# Adam, lr 1e-3, no weight decay; the learning rate is multiplied by 0.1 before epochs 8,
+# 12 and 16 (0-based); 18 epochs. The momentum of every batch norm starts at 0.5 and is
+# halved every two epochs, with a floor of 0.001.
+optimizer:
+  type: Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+scheduler:
+  type: MultiStepLR
+  milestones: [8, 12, 16]
+  gamma: 0.1
+
+train:
+  epochs: 18
+  scheduler_unit: epoch
+
+hooks:
+  - {type: BNMomentumHook, initial: 0.5, decay: 0.5, step: 2, minimum: 0.001}

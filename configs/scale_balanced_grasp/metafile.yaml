@@ -1,0 +1,42 @@
+# Machine-readable description of Scale-Balanced-Grasp; validated by grasppanda.hub.load_metafile.
+#
+# Only numbers with a stated provenance appear here. The authors' checkpoint has been
+# verified stage by stage against the reference implementation, but it has not been
+# evaluated on the full test splits with this toolbox yet, and no model has been trained
+# here, so there is no `author-ckpt` and no `reproduced` result. The 20-frame subset
+# measurement reported in README.md is not a split AP and is deliberately not listed.
+method: Scale-Balanced-Grasp
+title: "Towards Scale Balanced 6-DoF Grasp Detection in Cluttered Scenes"
+venue: CoRL 2022
+paper: https://openreview.net/pdf?id=tiPHpS4eA4
+upstream:
+  repository: mahaoxiang822/Scale-Balanced-Grasp
+  commit: 995d6f892474c91fbfcdf58f7d79589be4cbb41c
+  license: MIT (LICENSE file); the code derives from graspnet-baseline, which is under a non-commercial research licence
+implementation: clean-room
+
+models:
+  - name: sbg_pointnet2-transformer_g1b-realsense_18e
+    config: scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    weights:
+      # The authors' checkpoint-rs.tar from the folder below, to be converted with
+      #   python -m tools.convert_checkpoint ... --source-format scale-balanced-grasp
+      # The digest is that of the copy the parity tests ran on (dated 2023-01-05); it has
+      # not been compared with a fresh download.
+      url: https://drive.google.com/drive/folders/1Y2o0uAbhS6-yZhPkKMAAnL0tCpbiJfk0?usp=share_link
+      sha256: ebf63c146a7dfd8ced4543b9b9e5b9506cff320bb4b8157cab0c78b3e6ce5aef
+      license: as the upstream repository (MIT file; derived from non-commercial code)
+      source: author
+    results:
+      # Quoted from Table 2 of the paper (arXiv 2212.05275); whether these rows use
+      # object-balanced sampling is not stated.
+      - provenance: reported
+        collision_filter: false
+        source: paper (arXiv 2212.05275), Table 2, "Ours"
+        AP: {seen: 58.95, similar: 52.97, novel: 22.63}
+      - provenance: reported
+        collision_filter: true
+        source: paper (arXiv 2212.05275), Table 2, "Ours + CD"
+        AP: {seen: 63.83, similar: 58.46, novel: 24.63}

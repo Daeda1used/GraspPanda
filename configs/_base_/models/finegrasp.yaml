@@ -1,0 +1,98 @@
+# FineGrasp (FineGrasp: Towards Robust Grasping for Delicate Objects, arXiv 2507.05978):
+# the full reference model.
+#
+# FineGrasp is EconomicGrasp with two stages reconfigured, so it is the EconomicGrasp
+# detector here and not a class of its own. Lines marked "= EconomicGrasp" hold the same
+# component with the same values as _base_/models/economicgrasp.yaml; the lines marked
+# "FineGrasp" are what the method changes in the model:
+#
+#   * the encoder reads [x, y, z | surface normal] instead of three ones;
+#   * the crop is taken at four radii, each by an EconomicGrasp crop module of its own,
+#     and the four are fused per seed by attention over the scales (MultiScaleGroup).
+#
+# Its third change, instance-normalised graspness, is a label asset and lives in the
+# dataset section of the runnable config. Every value below reproduces
+# HorizonRobotics/robo_orchard_lab @ 221ec0e (projects/finegrasp_graspnet1b) and the
+# configuration shipped with the released weights. Options marked "reference quirk" are
+# inherited from EconomicGrasp; see configs/economicgrasp/README.md.
+model:
+  type: EconomicGrasp               # = EconomicGrasp: backbone -> proposal -> view -> grouper -> head
+  point_features: observation       # FineGrasp: the features the data pipeline builds (EconomicGrasp: ones)
+  gripper:                          # = EconomicGrasp: GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  backbone:
+    type: SparseUNet14              # = EconomicGrasp, except for the input channels
+    in_channels: 6                  # FineGrasp: x, y, z and the normal (EconomicGrasp: 3)
+    out_channels: 512
+    voxel_size: 0.005
+    stem_channels: 32
+    stem_kernel: 5
+    encoder_channels: [32, 64, 128, 256]
+    decoder_channels: [192, 192, 192, 192]
+    voxel_features: first           # points sharing a voxel: the first one's features (it matters
+                                    # now that the features differ from point to point)
+
+  proposal:                         # = EconomicGrasp
+    type: GraspnessFPS
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    fps_skip_near_origin: true      # reference quirk
+    fps_tie_break: pointnet2_cuda   # reference quirk
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
+
+  view:                             # = EconomicGrasp
+    type: TemplateViewStage
+    num_views: 300
+    train_selection: multinomial    # reference quirk
+    max_friction: 0.6
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
+
+  assigner:                         # = EconomicGrasp
+    type: CompactLabelAssigner
+    max_match_distance: 0.005       # reference quirk
+    shared_views: lowest            # reference quirk
+    padded_seeds: count             # reference quirk
+
+  grouper:
+    type: MultiScaleGroup           # FineGrasp: "multi-range attention"
+    radius: 0.07                    # largest crop (EconomicGrasp crops once, at 0.05)
+    radius_scales: [0.25, 0.5, 0.75, 1.0]   # crops at 0.0175, 0.035, 0.0525 and 0.07 m
+    fusion_layers: 2                # post-norm transformer encoder layers over the four scale tokens
+    fusion_heads: 8
+    fusion_feedforward_channels: 1024
+    fusion_dropout: 0.1
+    branch:                         # = EconomicGrasp's grouper, one copy per radius
+      type: CylinderInteractionGroup
+      hmin: -0.02
+      hmax: 0.04
+      nsample: 16
+      mlp_channels: [256, 256]
+      centre_coordinates: true
+      attention_heads: 1
+      attention_dropout: 0.05
+      post_mlp_channels: [256, 256]
+
+  head:                             # = EconomicGrasp
+    type: EconomicHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    num_score: 6
+    width_target_scale: 10.0
+    width_decode_gain: 1.2          # reference quirk
+    unmatched_class: true           # reference quirk
+    decode_argmax: all_logits       # reference quirk (FineGrasp was not given upstream's later fix)
+    score_decode: logit_weighted    # reference quirk
+    token_channels: 64
+    attention_heads: 1
+    attention_dropout: 0.05
+    angle_loss: {type: CrossEntropy, weight: 1.0}
+    depth_loss: {type: CrossEntropy, weight: 1.0}
+    score_loss: {type: CrossEntropy, weight: 1.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}

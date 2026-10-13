@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="GraspPanda: The toolbox for 6-DoF grasp detection in clutter">
+  <g transform="translate(70 28) scale(0.515)">
+  <!-- ears -->
+  <circle cx="128" cy="146" r="68" fill="#1f2328"/>
+  <circle cx="384" cy="146" r="68" fill="#1f2328"/>
+  <!-- head -->
+  <circle cx="256" cy="290" r="192" fill="#ffffff" stroke="#1f2328" stroke-width="16"/>
+  <!-- parallel-jaw gripper reaching in from above: wrist, palm, two fingers (the eye patches) -->
+  <rect x="234" y="40" width="44" height="176" rx="12" fill="#2da44e"/>
+  <rect x="218" y="176" width="76" height="34" rx="10" fill="#1a7f37"/>
+  <rect x="124" y="204" width="264" height="46" rx="23" fill="#1f2328"/>
+  <g fill="#1f2328">
+    <rect x="140" y="212" width="76" height="150" rx="38" transform="rotate(10 178 228)"/>
+    <rect x="296" y="212" width="76" height="150" rx="38" transform="rotate(-10 334 228)"/>
+  </g>
+  <!-- eyes -->
+  <circle cx="170" cy="314" r="17" fill="#ffffff"/>
+  <circle cx="342" cy="314" r="17" fill="#ffffff"/>
+  <!-- nose and mouth -->
+  <ellipse cx="256" cy="374" rx="24" ry="16" fill="#1f2328"/>
+  <path d="M232 408 q24 22 48 0" fill="none" stroke="#1f2328" stroke-width="10" stroke-linecap="round"/>
+</g>
+  <text x="372" y="158" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-2">
+    <tspan fill="#2da44e">Grasp</tspan><tspan fill="#1f2328">Panda</tspan>
+  </text>
+  <text x="378" y="212" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="31" fill="#1f2328">The toolbox for 6-DoF grasp detection in clutter</text>
+  <text x="378" y="258" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#57606a">Swappable components  ·  Faithful ports  ·  One pinned evaluation</text>
+</svg>

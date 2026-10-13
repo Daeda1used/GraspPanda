@@ -1,0 +1,32 @@
+# EXPERIMENTAL. GSNet with Point Transformer V3 (encoder + decoder) in place of the
+# sparse U-Net. No AP is claimed: this config passes the checker and trains for a few
+# iterations on GraspNet-1Billion (configs/experimental/README.md); it has not been
+# trained to convergence or evaluated. No published GraspNet-1Billion result uses PTv3.
+#
+#   grasppanda print-config experimental/gsnet_ptv3_g1b-realsense_10e --check
+#   grasppanda train experimental/gsnet_ptv3_g1b-realsense_10e
+#
+# The swap is the `model.backbone` node. Proposal, view stage, assigner, grouper, head,
+# data and schedule are GSNet's reference; channel counts are injected.
+#
+# What must be re-tuned, and why:
+# * grid_size. It is the encoder's unit of length. The PTv3 default, 0.02 m, is for
+#   ScanNet rooms; 0.005 m keeps GSNet's grid, so both encoders see the same voxels
+#   (about 11 000 for a 15 000-point frame). The released ScanNet weights belong to
+#   0.02 m and six input channels and do not apply here: this model trains from scratch.
+# * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
+#   serialised voxels, so the receptive field is counted in points, not in metres. A
+#   frame holds about ten patches at the finest level and fewer than one at the coarsest.
+# * optimizer and schedule. Adam 1e-3 with 0.95/epoch is the recipe of the sparse U-Net.
+#   Transformers are usually trained with AdamW, weight decay and warm-up, and at a lower
+#   rate; the values below are GSNet's and are a starting point only.
+# * batch size. 4 as in the reference; memory per frame differs from the sparse U-Net
+#   (46.2 M parameters instead of 14.6 M).
+_base_:
+  - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: PTv3                    # `dense`: features on every input point, as GraspnessFPS requires
+    in_channels: 3                # the three constant ones of GSNet; geometry enters through the grid
+    grid_size: 0.005

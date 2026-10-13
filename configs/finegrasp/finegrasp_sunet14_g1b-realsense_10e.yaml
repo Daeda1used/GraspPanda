@@ -1,0 +1,73 @@
+# FineGrasp (arXiv 2507.05978) with the 14-layer sparse U-Net of the reference
+# implementation, GraspNet-1Billion, RealSense, the reference recipe (10 epochs).
+#
+#   grasppanda prepare graspnet1b --labels
+#   grasppanda prepare graspnet1b --graspness --camera realsense \
+#       --config finegrasp/finegrasp_sunet14_g1b-realsense_10e   # the instance-normalised asset
+#   grasppanda prepare graspnet1b --compact-labels \
+#       --config finegrasp/finegrasp_sunet14_g1b-realsense_10e   # the same asset as EconomicGrasp
+#   grasppanda train finegrasp/finegrasp_sunet14_g1b-realsense_10e
+#   grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkpoint>
+#
+# Results are always reported for both post-processing variants below.
+_base_:
+  - ../_base_/models/finegrasp.yaml
+  - ../_base_/datasets/graspnet1b_realsense.yaml
+  - ../_base_/schedules/finegrasp_10e.yaml
+  - ../_base_/default_runtime.yaml
+
+# The data recipe is that of EconomicGrasp (compact labels, 20 000 points, every object
+# and label point, the flip as the only augmentation; see configs/economicgrasp) with
+# three changes, all of them FineGrasp's:
+#
+#   * graspness labels are normalised within every object instance before they are
+#     normalised over the frame (`graspness.normalization: instance`);
+#   * every point carries the surface normal of its pixel (DepthNormals, which reads the
+#     depth image: `images: [depth]`), in the encoding the released weights expect;
+#   * the input features are [x, y, z | normal] (CoordinateFeatures) instead of ones.
+#
+# DepthNormals runs first, on the whole image; CoordinateFeatures runs last, so the
+# coordinates are those of the augmented cloud while the normals are those of the
+# sensor frame: the reference mirrors the cloud and leaves the normals as they were.
+data:
+  train:
+    dataset:
+      images: [depth]
+      graspness:
+        normalization: instance       # FineGrasp; `scene` is GSNet's and EconomicGrasp's label
+      compact_labels:                 # the asset of `prepare --compact-labels`, shared with EconomicGrasp
+        point_friction_threshold: 0.4
+        view_friction_threshold: 0.6  # = model.view.max_friction (checked when the loss is computed)
+        max_width: 0.1                # = the gripper opening
+      transforms:
+        - {type: DepthNormals, step: 1, towards_camera: true, encoding: image8}
+        - {type: RandomSample, num_points: 20000}
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        - {type: CoordinateFeatures}
+    batch_size: 32                    # the paper's 8 processes x 4; the schedule counts on it
+  val:
+    dataset:
+      images: [depth]
+      transforms:
+        - {type: DepthNormals, step: 1, towards_camera: true, encoding: image8}
+        - {type: RandomSample, num_points: 20000}
+        - {type: CoordinateFeatures}
+      keep_full_points: true          # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      images: [depth]
+      transforms:
+        - {type: DepthNormals, step: 1, towards_camera: true, encoding: image8}
+        - {type: RandomSample, num_points: 20000}
+        - {type: CoordinateFeatures}
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                           # predictions as the model emits them
+    cd:                               # the model-free collision filter of the reference metric
+      - type: ModelFreeCollisionFilter  # and of the released inference processor
+        voxel_size: 0.01              # (EconomicGrasp's test script uses 0.005)
+        approach_distance: 0.05
+        collision_threshold: 0.01

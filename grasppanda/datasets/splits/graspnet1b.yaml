@@ -1,0 +1,30 @@
+# Split manifests of GraspNet-1Billion.
+#
+# A split is a set of scenes times a set of frames; every scene has 256 frames per
+# camera. Ranges are inclusive: "100-129" is 30 scenes, "0-255:32" is every 32nd frame.
+#
+# train / test_seen / test_similar / test_novel are the official splits. `test` is the
+# union of the three test splits.
+#
+# train_dev / val_dev partition the 100 training scenes at scene level, so frames of one
+# scene never straddle the two. The ten validation scenes were drawn once, one from each
+# block of ten consecutive scene ids, with
+#     rng = numpy.random.default_rng(2026)
+#     [10 * block + int(rng.integers(10)) for block in range(10)]
+# and are frozen here. They are for model selection in controlled experiments; no test
+# split is ever used for that.
+#
+# `sample` is a few frames of one training scene for smoke tests and the quick start.
+dataset: graspnet1b
+version: 1
+cameras: [realsense, kinect]
+frames_per_scene: 256
+splits:
+  train: {scenes: "0-99"}
+  test_seen: {scenes: "100-129"}
+  test_similar: {scenes: "130-159"}
+  test_novel: {scenes: "160-189"}
+  test: {scenes: "100-189"}
+  train_dev: {scenes: "0-99", exclude: [8, 11, 20, 36, 43, 54, 60, 73, 86, 93]}
+  val_dev: {scenes: [8, 11, 20, 36, 43, 54, 60, 73, 86, 93]}
+  sample: {scenes: [0], frames: "0-255:32"}

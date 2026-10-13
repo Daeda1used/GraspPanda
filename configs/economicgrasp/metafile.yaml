@@ -1,0 +1,54 @@
+# Machine-readable source of the EconomicGrasp zoo entries; validated by
+# grasppanda.hub.load_metafile. Only author-reported numbers so far: nothing has been
+# trained here, and the author checkpoint has not been scored on the full protocol.
+method: EconomicGrasp
+title: "An Economic Framework for 6-DoF Grasp Detection"
+venue: ECCV 2024
+paper: https://arxiv.org/abs/2407.08366
+upstream:
+  repository: iSEE-Laboratory/EconomicGrasp
+  commit: 7361bb6
+  license: "MIT (the repository vendors operator code derived from a non-commercial project)"
+implementation: clean-room
+models:
+  - name: economicgrasp_sunet14_g1b-kinect_10e
+    config: economicgrasp/economicgrasp_sunet14_g1b-kinect_10e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: kinect
+    weights:
+      # The authors' economicgrasp_kinect.tar of upstream release v1 (epoch 10), converted with
+      #   python -m tools.convert_checkpoint economicgrasp_kinect.tar economicgrasp_kinect.pth \
+      #       --source-format economicgrasp --camera kinect
+      url: https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_kinect.tar
+      sha256: a47b717ad41870e9b34e85b1487de2a3f0f134ddc1a71a98a1b55bca7fc5804a
+      license: "MIT (the repository vendors operator code derived from a non-commercial project); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
+    results:
+      - provenance: reported
+        collision_filter: false
+        source: "upstream README, Results table. Neither the table nor the paper states the collision filter; the shipped test command leaves it off."
+        AP: {seen: 62.59, similar: 51.73, novel: 19.54}
+      # The whole test split (90 scenes, 23,040 frames) through `grasppanda test` at commit
+      # ccb8704, scored by GraspNet1BEvaluator. Seen is 1.12 AP above the reported value;
+      # see README.md, "Results", for what is known about the gap.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/economicgrasp_author_kinect_g1b-test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 63.71, similar: 52.28, novel: 19.73}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/economicgrasp_author_kinect_g1b-test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 65.47, similar: 53.64, novel: 20.36}
+  - name: economicgrasp_sunet14_g1b-realsense_10e
+    config: economicgrasp/economicgrasp_sunet14_g1b-realsense_10e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    results:
+      - provenance: reported
+        collision_filter: false
+        source: "upstream README, Results table. Neither the table nor the paper states the collision filter; the shipped test command leaves it off."
+        AP: {seen: 68.21, similar: 61.19, novel: 25.48}

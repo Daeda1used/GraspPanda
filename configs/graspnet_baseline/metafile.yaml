@@ -1,0 +1,40 @@
+# Machine-readable description of GraspNet-baseline; validated by grasppanda.hub.load_metafile.
+#
+# Only numbers with a stated provenance appear here. The authors' checkpoint has been
+# verified stage by stage against the reference implementation, but it has not been
+# evaluated on the full test splits with this toolbox yet, and no model has been trained
+# here, so there is no `author-ckpt` and no `reproduced` result. The 20-frame subset
+# measurement reported in README.md is not a split AP and is deliberately not listed.
+method: GraspNet-baseline
+title: "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping"
+venue: CVPR 2020
+paper: https://openaccess.thecvf.com/content_CVPR_2020/html/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.html
+upstream:
+  repository: graspnet/graspnet-baseline
+  commit: fb2f089a9515d2a5e433b28b53827c1c914437f2
+  license: GraspNet-Baseline Software License Agreement (non-commercial research use only)
+implementation: clean-room
+
+models:
+  - name: graspnet-baseline_pointnet2_g1b-realsense_18e
+    config: graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    weights:
+      # The authors' checkpoint-rs.tar, to be converted with
+      #   python -m tools.convert_checkpoint ... --source-format graspnet-baseline
+      # The digest is that of the copy the parity tests ran on (dated 2020-12-22); it has
+      # not been compared with a fresh download of the link (the host refused it).
+      url: https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view?usp=sharing
+      sha256: 60680087c61cba2b6791614fef1519071e294f6dcaf99b3f581bb95f7c51a868
+      license: GraspNet-Baseline Software License Agreement (non-commercial research use only)
+      source: author
+    results:
+      - provenance: reported
+        collision_filter: true
+        source: reference repository README, "In repo" (collision threshold 0.01)
+        AP: {seen: 47.47, similar: 42.27, novel: 16.61}
+      - provenance: reported
+        collision_filter: null    # the publication does not say
+        source: paper, as quoted in the reference repository README ("In paper")
+        AP: {seen: 27.56, similar: 26.11, novel: 10.55}

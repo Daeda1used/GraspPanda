@@ -1,0 +1,75 @@
+# GraspClutter6D, RealSense D435, with the data recipe of HGGD carried over from
+# graspnet1b_realsense_hggd.yaml: colour and depth IMAGES beside a cloud of 25 600 points
+# drawn from every pixel with depth, no workspace crop (so nothing derived from ground
+# truth shapes the input) and per-view grasp labels instead of the dense per-object
+# labels. It is NOT a reproduction of a published GraspClutter6D training recipe.
+#
+# The D435 images are 1920 x 1080, three times HGGD's 640 x 360 network image (the
+# GraspNet-1Billion images are twice it); the detector accepts any integer factor. The
+# Azure Kinect images (3840 x 2160) fit as well, the Zivid images (1920 x 1200) do not.
+#
+# Two `view_grasps` values differ from the GraspNet-1Billion recipe because the dataset
+# does: object poses come from scene_gt.json (the only source), and labels are projected
+# with the calibration of each frame, which varies from view to view here (the
+# reference's per-camera constants exist for GraspNet-1Billion only). Build the asset with
+#     grasppanda prepare graspclutter6d --labels
+#     grasppanda prepare graspclutter6d --view-grasps --camera realsense-d435 \
+#         --config _base_/datasets/graspclutter6d_d435_hggd.yaml
+data:
+  train:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: train               # the 413 training scenes of the dataset's split file
+      load_labels: true
+      object_labels: false       # HGGD does not read the dense grasp grids
+      images: [rgb, depth]
+      view_grasps:               # every other value is the reference converter's; see
+        friction_threshold: 0.2  # grasppanda/datasets/view_grasps.py for the full list
+        poses: scene_gt
+        intrinsics: frame
+      preprocess:
+        - {type: DepthToCloud}
+        - {type: NoWorkspace}    # every pixel with depth; nothing derived from ground truth
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false    # HGGD's collision filter reads the sampled cloud
+    batch_size: 4
+    num_workers: 4
+    shuffle: true
+    drop_last: true              # the reference skips incomplete batches
+
+  # Progress monitor on the 41 `val_dev` scenes, every 4th view (164 frames).
+  # NOTE: val_dev is a subset of `train`; see graspclutter6d_d435.yaml.
+  val:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: val_dev
+      frame_step: 4
+      load_labels: false
+      images: [rgb, depth]
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false
+      seed: 0                    # the same points every evaluation
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: test                # 235 scenes x 13 views; `test_mini` is a 24-scene subset
+      load_labels: false
+      images: [rgb, depth]
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

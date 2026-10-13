@@ -1,0 +1,93 @@
+# GraspClutter6D, RealSense D435 (the camera of the paper's benchmark table), with the
+# data recipe of the Graspness reference implementation carried over from
+# graspnet1b_realsense.yaml: the same point count, label steps and augmentation, so that
+# a model trained on GraspNet-1Billion can be evaluated here unchanged and a model
+# trained here differs from it in the data only. It is NOT a reproduction of a published
+# GraspClutter6D training recipe; none exists for the methods ported so far.
+#
+# The dataset root resolves from `root` (if a child config sets it), then
+# $GRASPPANDA_GRASPCLUTTER6D_ROOT, then $GRASPPANDA_DATA/graspclutter6d, then
+# ./data/graspclutter6d. Splits come from the dataset's own
+# split_info/grasp_{train,test}_scene_ids.json (413 and 235 scenes, with disjoint object
+# sets); a scene has 13 views per camera. Derived labels live under $GRASPPANDA_CACHE:
+#     grasppanda prepare graspclutter6d --labels
+#     grasppanda prepare graspclutter6d --graspness --camera realsense-d435
+#
+# `preprocess` follows the official tool (graspclutter6dAPI @ ddb2ee7, loadScenePointCloud
+# with use_workspace=True): depth to cloud with the per-image intrinsics and depth scale,
+# then a crop to the image rectangle around the GROUND-TRUTH segmentation, enlarged by
+# 10 % of the image size. Results on this input are therefore stamped
+# gt_assisted: [workspace]. For input without ground truth use NoWorkspace or
+# TableBoxWorkspace (bounds in the world frame of the rig). The graspness asset is tied
+# to this preprocessing by its fingerprint.
+data:
+  train:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: train               # the 413 training scenes of the dataset's split file
+      load_labels: true
+      preprocess:
+        - {type: DepthToCloud}
+        - {type: SegmentationRectWorkspace, margin: 0.1}
+      graspness:
+        source: native
+        friction_threshold: 0.8  # as on GraspNet-1Billion
+        poses: scene_gt          # the only pose source of this dataset
+        dtype: float16
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: FilterObjects, min_visible_points: 50}
+        # `grids: deferred` leaves the (P, 300, 12, 4) label grids in the label store; label
+        # matching reads the rows of the label points it matched. Same labels and same
+        # random draws as `dense`, which copies about 1.4 GiB per batch of four frames
+        # into the sample (docs/advanced_guides/data_loading.md).
+        - type: SampleGraspLabels
+          point_fraction: 0.25
+          min_points: 300
+          collision: zero_scores
+          grids: deferred
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        - {type: RandomRotation, axis: x, max_angle: 30.0}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: false    # only post-processors need the unsampled cloud
+    batch_size: 4
+    num_workers: 4
+    shuffle: true
+    drop_last: false
+
+  # Progress monitor on the 41 `val_dev` scenes, every 4th view (164 frames).
+  # NOTE: val_dev is a subset of `train`, so this loader measures fit, not generalisation.
+  # For model selection train on `train_dev` (`--opts data.train.dataset.split=train_dev`);
+  # the two then partition the training scenes. Even then every object of val_dev is a
+  # training object: the test split, and only it, holds unseen objects.
+  val:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: val_dev
+      frame_step: 4
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: ConstantFeatures, channels: 3}
+      seed: 0                    # the same points every evaluation
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: test                # 235 scenes x 13 views; `test_mini` is a 24-scene subset
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: ConstantFeatures, channels: 3}
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

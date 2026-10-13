@@ -1,0 +1,20 @@
+# Training recipe of Scale-Balanced-Grasp (mahaoxiang822/Scale-Balanced-Grasp @ 995d6f8,
+# train.py): Adam, no weight decay; one-cycle learning rate with a peak of 1e-3, stepped
+# every iteration over 18 epochs (PyTorch defaults: 30 % warm-up, cosine annealing, start
+# at peak / 25, end at start / 1e4). The momentum of every batch norm starts at 0.5 and
+# is halved every two epochs, with a floor of 0.001.
+optimizer:
+  type: Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+scheduler:
+  type: OneCycleLR
+  max_lr: 1e-3                   # total_steps is filled in by the engine: epochs x iterations
+
+train:
+  epochs: 18
+  scheduler_unit: iteration
+
+hooks:
+  - {type: BNMomentumHook, initial: 0.5, decay: 0.5, step: 2, minimum: 0.001}

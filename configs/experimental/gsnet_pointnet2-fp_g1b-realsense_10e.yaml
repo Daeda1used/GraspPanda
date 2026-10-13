@@ -1,0 +1,43 @@
+# EXPERIMENTAL. GSNet with the PointNet++ encoder of GraspNet-baseline, made dense by
+# an explicit feature-propagation adapter. No AP is claimed: this config passes the
+# checker and trains for a few iterations on GraspNet-1Billion
+# (configs/experimental/README.md); it has not been trained to convergence or evaluated.
+#
+#   grasppanda print-config experimental/gsnet_pointnet2-fp_g1b-realsense_10e --check
+#   grasppanda train experimental/gsnet_pointnet2-fp_g1b-realsense_10e
+#
+# `model.backbone: {type: PointNet2}` alone is refused: GraspnessFPS scores every scene
+# point and PointNet2 returns features on 1024 of them. The adapter is the fix the
+# checker names. It interpolates the 1024 features onto all 15 000 points (three
+# nearest kept points, inverse distance) and refines them with a shared MLP.
+#
+# What must be re-tuned, and why:
+# * What the proposal can resolve. Objectness and graspness are now predicted from
+#   features with the resolution of a 1024-point subsample; the sparse U-Net gave one
+#   feature per 5 mm voxel. Expect coarser graspness maps. `mlp` and `neighbours` of the
+#   adapter, or a deeper propagation (`PointNet2Dense` with these radii), are the knobs.
+# * Sampling rules. `fps_tie_break` and `fps_skip_near_origin` are the reference values
+#   of GraspNet-baseline, kept so that the encoder is the one whose weights were
+#   verified; they decide which 1024 points carry features.
+# * optimizer and schedule: GSNet's (Adam 1e-3, x0.95 per epoch). GraspNet-baseline
+#   trains this encoder with Adam 1e-3, steps at epochs 8/12/16 and a batch-norm
+#   momentum schedule (`BNMomentumHook`), which this config does not use.
+# * speed. Furthest point sampling runs on the pure-PyTorch reference operator: about
+#   0.3 s per forward pass for one frame on an RTX A6000 (docs/model_zoo_backbones.md).
+_base_:
+  - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: FeaturePropagation      # `subsampled` -> `dense`, written down
+    mlp: [256, 256]
+    neighbours: 3
+    interpolation_power: 1.0
+    backbone:
+      type: PointNet2             # the GraspNet-baseline layout: 1024 points, 256 channels
+      in_channels: 0              # coordinates only
+      npoints: [2048, 1024, 512, 256]
+      radii: [0.04, 0.1, 0.2, 0.3]
+      nsamples: [64, 32, 16, 16]
+      fps_skip_near_origin: true
+      fps_tie_break: pointnet2_cuda

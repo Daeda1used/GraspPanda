@@ -1,0 +1,76 @@
+# GraspClutter6D, RealSense D435, with the data recipe of GraspNet-baseline carried over
+# from graspnet1b_realsense_tolerance.yaml (Scale-Balanced-Grasp uses the same recipe):
+# 20 000 points, grasp tolerance labels, label points drawn from the visible side of each
+# object, coordinates as the only input, no point-wise graspness. It is NOT a reproduction
+# of a published GraspClutter6D training recipe.
+#
+# Derived labels live under $GRASPPANDA_CACHE and are built with
+#     grasppanda prepare graspclutter6d --labels
+#     grasppanda prepare graspclutter6d --tolerance --config _base_/datasets/graspclutter6d_d435_tolerance.yaml
+#
+# One line of the GraspNet-1Billion recipe is not carried over: its reference never
+# supervises object 18 of that dataset. GraspClutter6D has no such exception.
+#
+# `preprocess` is the crop of the official GraspClutter6D tool; see graspclutter6d_d435.yaml.
+data:
+  train:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: train               # the 413 training scenes of the dataset's split file
+      load_labels: true
+      preprocess:
+        - {type: DepthToCloud}
+        - {type: SegmentationRectWorkspace, margin: 0.1}
+      tolerance:                 # parameters of the tolerance asset (reference generator defaults)
+        max_friction: 0.55       # a grasp is good when its friction is in (0, 0.55]
+        min_good_ratio: 0.8      # of the annotated points within a radius
+        radius_step: 0.001
+        max_radius: 0.05
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: FilterObjects, min_visible_points: 50}
+        - type: SampleGraspLabels
+          point_fraction: 0.25
+          min_points: 300
+          collision: zero_scores   # also zeroes the tolerance of colliding grasps
+          visible_within: 0.01     # annotated points within 1 cm of the object's visible points
+          grids: deferred          # label grids stay in the store (docs/advanced_guides/data_loading.md)
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        - {type: RandomRotation, axis: x, max_angle: 30.0}
+      keep_full_points: false    # only post-processors need the unsampled cloud
+    batch_size: 2
+    num_workers: 4
+    shuffle: true
+    drop_last: false
+
+  # Progress monitor on the 41 `val_dev` scenes, every 4th view (164 frames).
+  # NOTE: val_dev is a subset of `train`; see graspclutter6d_d435.yaml.
+  val:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: val_dev
+      frame_step: 4
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+      seed: 0                    # the same points every evaluation
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspClutter6D
+      camera: realsense-d435
+      split: test                # 235 scenes x 13 views; `test_mini` is a 24-scene subset
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

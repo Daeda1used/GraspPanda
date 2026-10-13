@@ -1,0 +1,31 @@
+# GraspNet-baseline (CVPR 2020) with the PointNet++ backbone of the reference
+# implementation, GraspNet-1Billion, RealSense, the reference recipe (18 epochs).
+#
+#   grasppanda prepare graspnet1b --labels
+#   grasppanda prepare graspnet1b --tolerance --config graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e
+#   grasppanda train graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e
+#   grasppanda test  graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --weights <checkpoint>
+#
+# Results are always reported for both post-processing variants below. The numbers of
+# the reference repository are the `cd` variant: its test script filters collisions by
+# default (threshold 0.01 m, voxel 0.01 m).
+_base_:
+  - ../_base_/models/graspnet_baseline.yaml
+  - ../_base_/datasets/graspnet1b_realsense_tolerance.yaml
+  - ../_base_/schedules/graspnet_baseline_18e.yaml
+  - ../_base_/default_runtime.yaml
+
+data:
+  val:
+    dataset:
+      keep_full_points: true      # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                       # predictions as the model emits them
+    cd:                           # the reference's model-free collision filter, on by default there
+      - {type: ModelFreeCollisionFilter}

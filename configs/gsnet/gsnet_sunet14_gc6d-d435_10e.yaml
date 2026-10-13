@@ -1,0 +1,38 @@
+# GSNet trained on GraspClutter6D (RealSense D435) with the schedule and the data recipe
+# of the GraspNet-1Billion reference (10 epochs).
+#
+#   grasppanda prepare graspclutter6d --labels
+#   grasppanda prepare graspclutter6d --graspness --camera realsense-d435
+#   grasppanda train gsnet/gsnet_sunet14_gc6d-d435_10e
+#   grasppanda test  gsnet/gsnet_sunet14_gc6d-d435_10e --weights <checkpoint>
+#
+# No GSNet recipe for GraspClutter6D has been published, so this is this toolbox's choice,
+# not a reproduction: everything is the GraspNet-1Billion recipe except what the dataset
+# fixes. Besides the frames and the workspace crop (see the dataset base) that is one
+# value, the gripper. No model has been trained with this config yet.
+_base_:
+  - ../_base_/models/gsnet.yaml
+  - ../_base_/datasets/graspclutter6d_d435.yaml
+  - ../_base_/schedules/gsnet_10e.yaml
+  - ../_base_/default_runtime.yaml
+
+model:
+  gripper:
+    name: graspclutter6d-parallel-jaw
+    max_width: 0.14               # the benchmark gripper opens to 0.14 m (GraspNet-1Billion: 0.1):
+                                  # labels up to this width are supervised, decoded widths clamped to it
+
+data:
+  val:
+    dataset:
+      keep_full_points: true      # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspClutter6DEvaluator}
+  variants:
+    raw: []                       # predictions as the model emits them
+    cd:                           # the model-free collision filter of the GSNet reference
+      - {type: ModelFreeCollisionFilter}

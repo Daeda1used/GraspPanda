@@ -1,0 +1,14 @@
+# Out-of-tree example: `grasppanda print-config projects/example_project/configs/toy_detector.yaml --check`
+_base_:
+  - ../../../configs/_base_/default_runtime.yaml
+  - ../../../configs/_base_/schedules/gsnet_10e.yaml
+
+custom_imports:
+  - ../toy_components.py          # a .py path is resolved relative to this file
+
+model:
+  type: ToyDetector
+  num_seeds: 64
+  backbone: {type: ToyBackbone, out_channels: 64}
+  grouper:  {type: ToyGrouper, radius: 0.05, nsample: 16}
+  head:     {type: ToyHead, num_angle: 12, num_depth: 4}

@@ -1,0 +1,1 @@
+"""Seed proposal stages."""

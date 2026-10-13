@@ -1,0 +1,34 @@
+# Training recipe of the FineGrasp reference implementation
+# (HorizonRobotics/robo_orchard_lab @ 221ec0e, projects/finegrasp_graspnet1b:
+# configs/config_finegrasp_minkunet.py, train.py) in the setting of the paper: eight
+# processes with batches of four, i.e. 32 frames per optimizer step, Adam with learning
+# rate 8e-3 (the paper states 1e-3 per process) and weight decay 1e-5, gradients clipped
+# to a global norm of 10, 10 epochs.
+#
+# The learning rate changes after every optimizer step: a linear warm-up from 1e-5 of
+# the rate over the first epoch, then a cosine whose period the reference sets to the
+# length of the whole run, so it is cut off one epoch early and the last step still
+# trains at 2.4 % of the rate (WarmupCosineLR).
+#
+# The scheduler counts optimizer steps, so its two lengths belong to this batch size:
+# 25 600 training frames / 32 = 800 steps per epoch. With another total batch size or
+# number of epochs, set warmup_steps to one epoch and cosine_steps to the whole run.
+# The runnable config sets the batch size (32 in one process). Not verified here: no
+# training run has been made with this recipe.
+
+optimizer:
+  type: Adam
+  lr: 8e-3
+  weight_decay: 1e-5
+
+scheduler:
+  type: WarmupCosineLR
+  warmup_steps: 800               # one epoch
+  cosine_steps: 8000              # ten epochs: the reference's "total steps"
+  min_factor: 1e-5
+
+train:
+  epochs: 10
+  scheduler_unit: iteration
+  grad_clip: 10.0
+  grad_clip_mode: norm

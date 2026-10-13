@@ -1,0 +1,56 @@
+# EconomicGrasp (ECCV 2024) with the 14-layer sparse U-Net of the reference
+# implementation, GraspNet-1Billion, Azure Kinect, the reference recipe (10 epochs).
+#
+#   grasppanda prepare graspnet1b --labels
+#   grasppanda prepare graspnet1b --graspness --camera kinect
+#   grasppanda prepare graspnet1b --compact-labels \
+#       --config economicgrasp/economicgrasp_sunet14_g1b-kinect_10e
+#   grasppanda train economicgrasp/economicgrasp_sunet14_g1b-kinect_10e
+#   grasppanda test  economicgrasp/economicgrasp_sunet14_g1b-kinect_10e --weights <checkpoint>
+#
+# Results are always reported for both post-processing variants below.
+_base_:
+  - ../_base_/models/economicgrasp.yaml
+  - ../_base_/datasets/graspnet1b_kinect.yaml
+  - ../_base_/schedules/economicgrasp_10e.yaml
+  - ../_base_/default_runtime.yaml
+
+# The data recipe of the reference implementation (dataset/graspnet_dataset.py,
+# dataset/generate_economic.py @ 7361bb6) differs from the Graspness one of the dataset
+# base in four places: compact labels instead of dense grids, 20 000 points instead of
+# 15 000, every object and every kept label point is used (no visibility filter, no
+# label sub-sampling), and the only augmentation is the flip. Preprocessing, workspace
+# crop and point-wise graspness are the same.
+data:
+  train:
+    dataset:
+      compact_labels:                 # the asset of `prepare --compact-labels`
+        point_friction_threshold: 0.4 # a label point needs one collision-free grasp at least this good
+        view_friction_threshold: 0.6  # = model.view.max_friction (checked when the loss is computed)
+        max_width: 0.1                # = the gripper opening
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        - {type: ConstantFeatures, channels: 3}
+  val:
+    dataset:
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: true          # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                           # predictions as the model emits them (the published numbers)
+    cd:                               # the optional model-free collision filter of the reference test
+      - type: ModelFreeCollisionFilter  # script, which reuses the sparse-conv voxel size for it
+        voxel_size: 0.005
+        approach_distance: 0.05
+        collision_threshold: 0.01

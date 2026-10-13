@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use GraspPanda in your research, please cite it as below."
+title: "GraspPanda: A Toolbox for 6-DoF Grasp Detection in Clutter"
+type: software
+authors:
+  - name: "The GraspPanda Contributors"
+license: Apache-2.0
+repository-code: "https://github.com/Daeda1used/GraspPanda"
+url: "https://daeda1used.github.io/GraspPanda"
+keywords:
+  - grasp detection
+  - robotic grasping
+  - 6-DoF grasping
+  - point cloud
+  - GraspNet-1Billion
+date-released: "2026-10-12"

@@ -1,0 +1,39 @@
+# Cross-dataset transfer: HGGD trained on GraspNet-1Billion (RealSense), tested on
+# GraspClutter6D (RealSense D435, the camera of the GraspClutter6D paper's benchmark).
+#
+#   grasppanda test hggd/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e --weights <checkpoint>
+#   ... --opts data.test.dataset.split=test_mini      # 24 scenes, a quick check only
+#
+# This file inherits the GraspNet-1Billion config and replaces two things: the frames
+# that are scored (`data.test`) and the evaluator. Model, network image size, point count
+# and both post-processing variants are the inherited ones. See
+# docs/user_guides/cross_dataset.md for what changes with the dataset and what must not.
+# To train, use the config this one inherits from.
+#
+# The D435 images of GraspClutter6D are 1920 x 1080, three times the 640 x 360 network
+# image (GraspNet-1Billion: twice). The focal length of the network image is nearly the
+# same (465 to 472 px here, 464 px there), but the objects are about 1.6 times as far from
+# the camera (0.70 m against 0.44 m in the median), so in the network image they are
+# about 0.6 times as large as in training.
+_base_:
+  - hggd_r34w8_g1b-realsense_15e.yaml
+
+data:
+  test:
+    dataset:
+      type: GraspClutter6D        # a changed type replaces the inherited node
+      camera: realsense-d435
+      split: test                 # 235 scenes x 13 views
+      load_labels: false
+      images: [rgb, depth]
+      preprocess:
+        - {type: DepthToCloud}
+        - {type: NoWorkspace}     # as in training: every pixel with depth, no ground truth
+      transforms: ${data.val.dataset.transforms}    # the point count of the recipe
+      keep_full_points: false     # HGGD's collision filter reads the sampled cloud
+      seed: 0
+
+evaluation:
+  evaluator: {type: GraspClutter6DEvaluator}
+  interval: 0                   # a test config: this evaluator cannot score the inherited
+                                # GraspNet-1Billion val loader, so `train` would not validate
