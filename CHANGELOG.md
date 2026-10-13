@@ -48,6 +48,14 @@ earlier code base with a different design; they stay available under their tags 
   query and nearest neighbours with bit-identical results; dense label grids are read where
   they are matched instead of being copied into every batch.
 
+### Changed
+
+- The config hash no longer includes the defaults of library classes (PyTorch's optimizers
+  and schedulers, named by class), which differ between PyTorch versions: one config now
+  hashes the same on every machine. Hashes written before this change differ; a checkpoint
+  saved before it resumes with `runtime.allow_config_mismatch=true`, and
+  `python -m tools.probe_grid rehash` rewrites the hashes of measured records.
+
 ### Known limits
 
 - The model zoo is empty: no method has been trained and evaluated here to the admission

@@ -25,7 +25,7 @@ grasppanda infer $CFG --weights work_dirs/toy_train/demo/checkpoints/best.pth \
 ```text
 ʕ•ᴥ•ʔ  GraspPanda 0.1.0  ·  6-DoF grasp detection in clutter
   train
-  config      projects/example_project/configs/toy_train.yaml  (hash 08b7a4c78cd8)
+  config      projects/example_project/configs/toy_train.yaml  (hash be81c4b1301a)
   run         work_dirs/toy_train/demo
   device      cpu · 1 process · seed 0 · deterministic off
   model       ToyDetector · 7,601 parameters (7,601 trainable)

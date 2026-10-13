@@ -167,7 +167,10 @@ def test_every_recorded_cell_is_what_compose_writes_today(by_id):
             outdated.append(cell.id)
     assert not outdated, (
         f"{len(outdated)} measured cell(s) are not what compose writes today, e.g. "
-        f"{outdated[:5]}. {HOW_TO_PROBE}(`--only` takes several ids and glob patterns.)"
+        f"{outdated[:5]}. {HOW_TO_PROBE}(`--only` takes several ids and glob patterns.)\n"
+        "Records made before the config hash stopped depending on the installed PyTorch are "
+        "rewritten, without probing, by `python -m tools.probe_grid rehash` on the machine "
+        "that measured them."
     )
 
 

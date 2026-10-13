@@ -317,7 +317,7 @@ def _plain(value: Any) -> Any:
     return value
 
 
-def _fill(value: Any, annotation: Any) -> Any:
+def _fill(value: Any, annotation: Any, library: bool = True) -> Any:
     origin = typing.get_origin(annotation)
     if origin in (Union, types.UnionType):
         if value is None:
@@ -325,14 +325,14 @@ def _fill(value: Any, annotation: Any) -> Any:
         for candidate in typing.get_args(annotation):
             structural = typing.get_origin(candidate) is Cfg or dataclasses.is_dataclass(candidate)
             if isinstance(value, Mapping) and structural:
-                return _fill(value, candidate)
+                return _fill(value, candidate, library)
         return value
     if dataclasses.is_dataclass(annotation) and isinstance(value, Mapping):
         hints = _hints(annotation)
         out = dict(value)
         for spec in dataclasses.fields(annotation):
             if spec.name in out:
-                out[spec.name] = _fill(out[spec.name], hints[spec.name])
+                out[spec.name] = _fill(out[spec.name], hints[spec.name], library)
             elif spec.default is not dataclasses.MISSING:
                 out[spec.name] = _plain(spec.default)
             elif spec.default_factory is not dataclasses.MISSING:
@@ -350,11 +350,16 @@ def _fill(value: Any, annotation: Any) -> Any:
             return value
         params, _ = component_parameters(cls)
         out = dict(value)
+        # A class of an installed library (an optimizer or a scheduler of PyTorch named by
+        # class) has the defaults of whatever version is installed.
+        foreign = registry.third_party and cls.__module__.split(".")[0] != "grasppanda"
+        own = library or not foreign
         for name, param in params.items():
             if name in out:
-                out[name] = _fill(out[name], hints.get(name, Any))
+                out[name] = _fill(out[name], hints.get(name, Any), library)
             elif (
-                name not in registry.provided
+                own
+                and name not in registry.provided
                 and param.default is not inspect.Parameter.empty
                 and param.default is not INJECTED
                 and _serialisable(param.default)
@@ -363,18 +368,25 @@ def _fill(value: Any, annotation: Any) -> Any:
         return out
     if origin in _SEQUENCE_ORIGINS and isinstance(value, list):
         args = [a for a in typing.get_args(annotation) if a is not Ellipsis]
-        return [_fill(item, args[0]) for item in value] if args else value
+        return [_fill(item, args[0], library) for item in value] if args else value
     if origin in _MAPPING_ORIGINS and isinstance(value, Mapping):
         args = typing.get_args(annotation)
-        return {k: _fill(v, args[1]) for k, v in value.items()} if len(args) == 2 else value
+        if len(args) != 2:
+            return value
+        return {k: _fill(v, args[1], library) for k, v in value.items()}
     return value
 
 
-def fill_defaults(data: Mapping[str, Any]) -> dict[str, Any]:
-    """Return a copy of ``data`` with schema and component defaults written out."""
+def fill_defaults(data: Mapping[str, Any], *, library: bool = True) -> dict[str, Any]:
+    """Return a copy of ``data`` with schema and component defaults written out.
+
+    With ``library=False`` the defaults of classes that belong to an installed library
+    (PyTorch's optimizers and schedulers, named by class) are left out: they change with
+    the installed version, while everything GraspPanda defines does not.
+    """
     from .schema import RootConfig
 
-    return _fill(dict(data), RootConfig)
+    return _fill(dict(data), RootConfig, library)
 
 
 # ----------------------------------------------------------------- component nodes

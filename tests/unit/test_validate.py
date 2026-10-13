@@ -167,6 +167,44 @@ def test_defaults_are_written_out_and_the_digest_ignores_run_location():
     assert config.digest() != changed.digest()
 
 
+def test_the_digest_does_not_depend_on_the_installed_pytorch(monkeypatch):
+    """Optimizers and schedulers are PyTorch's classes named by class, and their defaults
+    change between versions (2.1 has a ``verbose`` argument of schedulers that 2.7 lacks).
+    A config must hash the same on every machine, so those defaults are shown by
+    ``resolved`` and left out of the digest; GraspPanda's own defaults stay in it."""
+    import torch
+
+    node = {
+        **model(),
+        "optimizer": {"type": "Adam", "lr": 1e-3},
+        "scheduler": {"type": "StepLR", "step_size": 5},
+    }
+    config = Config.from_dict(node)
+    assert config.resolved()["optimizer"]["betas"] == [0.9, 0.999]  # still shown
+    before = config.digest()
+
+    original = torch.optim.Adam.__init__
+
+    def another_version(self, params, lr=1e-3, betas=(0.5, 0.5), brand_new_option=7):
+        original(self, params, lr=lr, betas=betas)
+
+    monkeypatch.setattr(torch.optim.Adam, "__init__", another_version)
+    again = Config.from_dict(node)
+    assert again.resolved()["optimizer"]["brand_new_option"] == 7
+    assert again.digest() == before
+    # What the user wrote for a library class is part of the experiment.
+    assert Config.from_dict({**node, "optimizer": {"type": "Adam", "lr": 2e-3}}).digest() != before
+    explicit = {**node, "optimizer": {"type": "Adam", "lr": 1e-3, "betas": [0.9, 0.99]}}
+    assert Config.from_dict(explicit).digest() != before
+    # A scheduler defined by GraspPanda keeps its defaults in the digest.
+    cosine = {"type": "WarmupCosineLR", "warmup_steps": 5, "cosine_steps": 50}
+    own = Config.from_dict({**node, "scheduler": cosine})
+    assert own.resolved()["scheduler"]["min_factor"] == 1e-5  # a default of GraspPanda's own
+    spelled = Config.from_dict({**node, "scheduler": {**cosine, "min_factor": 1e-5}})
+    other = Config.from_dict({**node, "scheduler": {**cosine, "min_factor": 0.1}})
+    assert own.digest() == spelled.digest() != other.digest()
+
+
 def test_dump_round_trips():
     config = Config.from_dict({**model(), "optimizer": {"type": "Adam", "lr": 1e-5}})
     from grasppanda.config import parse_yaml
