@@ -351,9 +351,9 @@ def test_the_command_writes_the_file_and_reports_stage_by_stage(tmp_path, capsys
     out = " ".join(capsys.readouterr().out.split())
     assert "PointNet2 in FeaturePropagation" in out and "what compose did" in out
     assert "✓ backbone · proposal" in out and "✓ proposal · view · head" in out
-    assert "✓ valid (hash 3ee8770e1e94)" in out and f"✓ written {target}" in out
+    assert "✓ valid (hash c5b4b20c28d3)" in out and f"✓ written {target}" in out
     assert f"grasppanda probe {target}" in out
-    assert Config.load(target).digest().startswith("3ee8770e1e94")
+    assert Config.load(target).digest().startswith("c5b4b20c28d3")
     # Without -o nothing is written and the report says how to get the file.
     assert main(["compose", GSNET, "--set", "backbone=ptv3"]) == 0
     assert "Pass -o FILE" in capsys.readouterr().out
@@ -363,7 +363,7 @@ def test_the_command_as_json_and_its_listings(capsys):
     assert main(["compose", GSNET, "--set", "backbone=pointnet2", "--json"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["accepted"] and report["adapter"] == "FeaturePropagation"
-    assert report["config_hash"].startswith("3ee8770e1e94") and report["output"] is None
+    assert report["config_hash"].startswith("c5b4b20c28d3") and report["output"] is None
     assert parse_yaml(report["config"])["model"]["backbone"]["type"] == "FeaturePropagation"
     assert [entry["slots"] for entry in report["contracts"]] == [list(g) for g in CONTRACT_GROUPS]
     assert main(["compose", GSNET, "--set", "view=ObjectnessViewStage", "--json"]) == 1

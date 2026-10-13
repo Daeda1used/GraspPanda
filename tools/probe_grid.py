@@ -598,12 +598,70 @@ def export(args: argparse.Namespace) -> int:
     return 0
 
 
+def _hashes(cell: Cell, scratch: Path) -> tuple[str | None, str | None]:
+    """The hash of the config a cell composes to today, and the hash the same config had
+    before the digest left out the defaults of library classes."""
+    if not cell.sets:
+        config = Config.load(cell.base)
+    else:
+        from grasppanda.combine.compose import compose
+
+        result = compose(cell.base, cell.sets)
+        if result.config_hash is None:
+            return None, None
+        written = scratch / (cell.id.replace("/", "__") + ".yaml")
+        written.write_text(result.text(written), encoding="utf-8")
+        config = Config.load(written)
+    return config.digest()[:16], config._digest(library=True)[:16]
+
+
+def rehash(args: argparse.Namespace) -> int:
+    """Rewrite the hashes of records made before the config hash stopped depending on the
+    installed PyTorch (it used to include the defaults of the optimizer and scheduler
+    classes). A record is rewritten only when the config its cell composes to today had
+    exactly the recorded hash under the old scheme, which can be checked only with the
+    PyTorch version the record was made with; any other record is left alone and listed."""
+    import tempfile
+
+    target = Path(args.to)
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    by_id = {cell.id: cell for cell in cells()}
+    rewritten, current, other = [], 0, []
+    with tempfile.TemporaryDirectory() as scratch:
+        for record in payload["cells"]:
+            cell = by_id.get(record["id"])
+            if cell is None or not record.get("config_hash"):
+                continue
+            new, old = _hashes(cell, Path(scratch))
+            if record["config_hash"] == new:
+                current += 1
+            elif old is not None and record["config_hash"] == old:
+                record["config_hash"] = new
+                rewritten.append(record["id"])
+            else:
+                other.append(record["id"])
+    if rewritten:
+        target.write_text(dump(payload), encoding="utf-8")
+    print(f"{target}: {current} hashes current, {len(rewritten)} rewritten, {len(other)} neither")
+    if other:
+        print(
+            "neither the hash of today's config nor its old-scheme hash (a changed preset or "
+            "config, or records made with another PyTorch); probe these again:\n  "
+            + "\n  ".join(other)
+        )
+    return 1 if other else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    for label, handler in (("run", run), ("status", status), ("export", export)):
-        sub = commands.add_parser(label)
-        sub.add_argument("--name", default="current", help="name of the run directory")
+    handlers = (("run", run), ("status", status), ("export", export), ("rehash", rehash))
+    for label, handler in handlers:
+        sub = commands.add_parser(label, help=(handler.__doc__ or "").split(".")[0] or None)
+        if label != "rehash":
+            sub.add_argument("--name", default="current", help="name of the run directory")
+        else:
+            sub.add_argument("--to", default=str(EXPORT), help="the measured file to rewrite")
         sub.set_defaults(handler=handler)
         if label == "run":
             sub.add_argument("--groups", nargs="+", help="cell groups to run (default: all)")

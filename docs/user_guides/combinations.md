@@ -93,7 +93,7 @@ contracts
   ✓ proposal · view · head
 
 config check
-  ✓ valid  (hash 674b4a11bfeb)
+  ✓ valid  (hash 76e5ab997651)
 
 ✓ written gsnet_pointnet2_multi-scale.yaml
   next: grasppanda probe gsnet_pointnet2_multi-scale.yaml
@@ -202,7 +202,7 @@ without a change here. `--opts` works for HGGD today, and `probe` does too.
 
 ```text
 $ grasppanda probe gsnet_pointnet2_multi-scale.yaml
-  config      gsnet_pointnet2_multi-scale.yaml  (hash 674b4a11bfeb)
+  config      gsnet_pointnet2_multi-scale.yaml  (hash 76e5ab997651)
   model       GSNet · 4,730,280 parameters
   data        8 frames of the config's dataset · 4 per iteration
   probe       as `grasppanda train` with data.train.dataset.split=sample data.train.num_workers=0 evaluation.interval=0 evaluation.save_best=null train.epochs=10 data.val.dataset.split=sample data.val.dataset.frame_step=4 data.val.num_workers=0
@@ -309,7 +309,7 @@ build it, falls back to a wiring check on a synthetic scene and reports `wired`,
 
 ```text
 $ grasppanda probe gsnet_pointnet2_multi-scale.yaml --opts data.train.dataset.root=/data/not-mounted
-  config      gsnet_pointnet2_multi-scale.yaml  (hash 908bb3fb70cb)
+  config      gsnet_pointnet2_multi-scale.yaml  (hash 3f3ae3d710e7)
   overrides   data.train.dataset.root=/data/not-mounted
   model       GSNet · 4,730,280 parameters
   dataset     NOT READ: the dataset is not on this machine. GraspNet-1Billion not found at /data/not-mounted. Set `root` in the dataset config, or the environment variable GRASPPANDA_GRASPNET1B_ROOT.

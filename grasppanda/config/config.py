@@ -202,8 +202,24 @@ class Config(Mapping[str, Any]):
         return yaml.dump(data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100)
 
     def digest(self) -> str:
-        """Hash of what the experiment *is*: resolved config minus run-location keys."""
-        data = self.resolved()
+        """Hash of what the experiment *is*: resolved config minus run-location keys.
+
+        Defaults of GraspPanda's own schema and components are part of it, so a changed
+        default changes the hash. Defaults of classes of an installed library (an optimizer
+        or a scheduler of PyTorch named by class) are not: they differ between versions of
+        the library, and the hash of one config must be the same on every machine. The
+        environment a run used is recorded next to it (``env.json``).
+        """
+        return self._digest(library=False)
+
+    def _digest(self, *, library: bool) -> str:
+        """The hash with (``library=True``) or without the defaults of library classes.
+
+        With them it is the hash written before October 2026, which depended on the
+        installed PyTorch; ``tools/probe_grid.py rehash`` uses it to recognise old records.
+        """
+        data = fill_defaults(self._tree.data, library=library)
+        resolve_interpolations(data, self._builtins())
         for path in _VOLATILE:
             node: Any = data
             for key in path[:-1]:

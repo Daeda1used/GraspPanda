@@ -59,7 +59,7 @@ grasppanda demo graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e 
 ```text
 ʕ•ᴥ•ʔ  GraspPanda 0.1.0  ·  6-DoF grasp detection in clutter
   demo
-  config    graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml  [shipped config]  (hash e705ae2eb32e)
+  config    graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml  [shipped config]  (hash 97137012bcda)
   weights   baseline_realsense.pth  (sha256 f24ba97fcf30; 162 matched, 0 missing, 0 unexpected)
   model     GraspNetBaseline on cuda, reads points
   pipeline  data.test: DepthToCloud() -> SegmentationBoxWorkspace(margin=0.02, invalid_depth_foreground='include') -> RandomSample(num_points=20000)
