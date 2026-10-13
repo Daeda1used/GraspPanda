@@ -1,0 +1,15 @@
+# Distribution focal loss (Generalized Focal Loss): cross-entropy to the two bins around a
+# continuous target.
+#
+# For `bins` terms only: a head that predicts a quantity as a distribution over bins and decodes
+# its expectation (`DecoupledGridHead` with `width: bins`, preset `decoupled-grid-bins`). The
+# regressed outputs of the other heads are refused.
+#
+# What must be re-tuned, and why:
+# * no option. The resolution is the number of bins of the head (`width_bins`).
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than a regression penalty (it is a cross-entropy, of order ln bins),
+#   so compare the logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: DistributionFocal

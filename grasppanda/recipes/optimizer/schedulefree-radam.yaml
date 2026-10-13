@@ -1,0 +1,19 @@
+# Schedule-free RAdam (Defazio et al., arXiv 2405.15682): no schedule and no warm-up.
+#
+# The preset removes the scheduler and adds ScheduleFreeHook, which switches the weights to the
+# averaged iterate for evaluation and checkpoints.
+#
+# What must be re-tuned, and why:
+# * lr: as for schedule-free AdamW, 1 to 3 times the rate of the scheduled optimizer.
+# * batch norm: its statistics are collected at the training point, not at the average the
+#   evaluation uses; the authors re-estimate them.
+# * epochs: without a schedule the run can simply be stopped or extended.
+optimizer:
+  type: ScheduleFree
+  name: radam
+  lr: 0.0025
+
+scheduler: null
+
+hooks:
+  - {type: ScheduleFreeHook}

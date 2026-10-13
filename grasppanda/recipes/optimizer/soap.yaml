@@ -1,0 +1,15 @@
+# SOAP (Vyas et al., arXiv 2409.11321): Adam in the eigenbasis of Shampoo's preconditioner.
+#
+# Through PytorchOptimizer; `pytorch_optimizer.get_supported_optimizers()` names the others, and
+# `options:` takes the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr: the paper uses rates near Adam's; every step costs more time and the preconditioners
+#   cost memory, most for wide linear layers.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: PytorchOptimizer
+  name: soap
+  lr: 0.001
+  weight_decay: 0.0

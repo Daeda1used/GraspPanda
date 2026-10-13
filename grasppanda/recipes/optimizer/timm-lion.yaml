@@ -1,0 +1,15 @@
+# Lion (Chen et al., arXiv 2302.06675): sign momentum, found by program search.
+#
+# Through TimmOptimizer; `timm.optim.list_optimizers()` names the other 97, and `options:` takes
+# the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr and weight_decay: the paper uses a rate 3 to 10 times below AdamW's and a weight decay as
+#   many times above it; the two are coupled.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: TimmOptimizer
+  name: lion
+  lr: 1.0e-04
+  weight_decay: 0.1

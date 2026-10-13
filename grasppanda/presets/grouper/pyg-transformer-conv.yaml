@@ -1,0 +1,26 @@
+# PyGConvGroup with TransformerConv of PyTorch Geometric on GSNet's cylinder.
+#
+# Dot-product graph attention with edge features (Shi et al., IJCAI 2021), four heads
+# averaged and a skip from the seed feature; the crop-frame offset is the edge attribute.
+# Needs the optional library: pip install "grasppanda[torch_geometric]".
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * conv_args: further keyword arguments of the layer, as PyTorch Geometric names them,
+#   e.g. `{heads: 8}`.
+# * out_channels: the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: PyGConvGroup
+    conv: TransformerConv         # a layer of torch_geometric.nn
+    shape: cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    hidden_channels: 256
+    out_channels: 256

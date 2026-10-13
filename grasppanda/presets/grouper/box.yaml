@@ -1,0 +1,27 @@
+# LocalGroup over a gripper-aligned box with cyclic padding: PointRCNN's RoI point
+# pooling.
+#
+# The canonical-frame box crop of PointRCNN (Shi et al., CVPR 2019): the points inside an
+# oriented box, expressed in the frame of the box, missing slots filled by repeating the
+# members in turn. The box is `hmin < x < hmax` along the approach axis and `2 * radius`
+# wide across it; the in-plane angle is not known before the head, so the section is a
+# square.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * padding: cyclic counts every slot; `first` marks the copies instead.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: box                    # hmin < x < hmax, |y| and |z| < radius, in the crop frame
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    padding: cyclic               # repeat the members in turn
+    mlp_channels: [256, 256]

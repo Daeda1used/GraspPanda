@@ -1,0 +1,20 @@
+# Schedule-free AdamW (Defazio et al., arXiv 2405.15682): no schedule, averaged iterates.
+#
+# The preset removes the scheduler and adds ScheduleFreeHook, which switches the weights to the
+# averaged iterate for evaluation and checkpoints.
+#
+# What must be re-tuned, and why:
+# * lr: the authors use rates above the scheduled optimizer's (AdamW: 1 to 3 times, SGD: 10 to
+#   50 times).
+# * warmup_steps: optimizer steps, not epochs; about 5 % of the run.
+# * epochs: without a schedule the run can simply be stopped or extended.
+optimizer:
+  type: ScheduleFree
+  name: adamw
+  lr: 0.0025
+  warmup_steps: 200
+
+scheduler: null
+
+hooks:
+  - {type: ScheduleFreeHook}

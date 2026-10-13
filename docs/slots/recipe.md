@@ -1,0 +1,403 @@
+# The training recipe: optimizer, schedule, hooks, augmentation
+
+Everything on this page is **around** the model: how its weights are updated, how the
+learning rate moves, what runs before and after an epoch, and how a training sample is
+perturbed. None of it changes what the detector computes, so none of it is bound to one
+method: the same line works under GSNet and under HGGD unless the page says otherwise.
+
+No AP is claimed for anything here. "Runs" means: `grasppanda probe` trained 20
+iterations on 8 real frames of GraspNet-1Billion with finite losses and predicted
+grasps. Whether a recipe is *better* takes a training run and an evaluation.
+
+## 1. The task of the slot
+
+A config has four places that make up the recipe, and each is a slot you fill by name:
+
+| Config key | Registry | What it decides | When it runs |
+|---|---|---|---|
+| `optimizer` | `OPTIMIZERS` | how gradients become weight updates | once per `train.accumulate` batches |
+| `scheduler` | `SCHEDULERS` | the learning rate over the run | after every optimizer step or every epoch (`train.scheduler_unit`) |
+| `hooks` | `HOOKS` | anything else around the loop: weight averages, freezing, clipping variants | at `before_run`, `before_epoch`, `before_step`, `after_iter`, `after_epoch`, `after_run` |
+| `data.train.dataset.transforms` | `TRANSFORMS` | augmentation of one training sample | in the data-loader workers, per sample |
+
+Plain options of the loop need no component: `train.amp` (mixed precision),
+`train.accumulate` (gradient accumulation), `train.grad_clip` with `train.grad_clip_mode`
+(clipping), `train.ema` (a fixed-decay weight average), `train.sync_bn`.
+
+The loop itself (`grasppanda/engine/trainer.py`) is short: forward and backward per
+batch; every `train.accumulate` batches `before_step` hooks, clipping, `optimizer.step()`,
+the weight average, the scheduler. Everything on this page plugs into those points.
+
+## 2. Input and output
+
+**Optimizer.** Built by `build_optimizers(model, config["optimizer"])`. The engine
+supplies two arguments a config never writes: `params` (every parameter with
+`requires_grad`, or what the detector's `configure_optimizers` returns) and, for
+components that ask for it, `model` (to name parameters). The result must be a
+`torch.optim.Optimizer`; the bridges on this page return the library's own optimizer
+object, so checkpoints hold its state dict unchanged. A detector may return several
+optimizers; each gets a scheduler of its own.
+
+**Scheduler.** Built per optimizer from the `scheduler` node; it must be a
+`torch.optim.lr_scheduler.LRScheduler`. The trainer calls `step()` once per optimizer step
+(`train.scheduler_unit: iteration`) or once per epoch (`epoch`, the default). The engine
+fills in the length of the run where the schedule needs it: `total_steps` of `OneCycleLR`
+and `TimmSchedule`, `T_max` of `CosineAnnealingLR`, `total_iters` of `PolynomialLR`.
+`scheduler: null` is a constant rate.
+
+**Hook.** A subclass of `grasppanda.engine.hooks.Hook`; every callback receives the
+`TrainState` (model, optimizers, schedulers, gradient scaler, `ema`, epoch and iteration
+counters, the resolved config). Hooks run in ascending `priority`; evaluation is 70,
+checkpointing 80, so a hook that changes the weights used for evaluation has a lower one.
+A weight average installs itself as `state.ema`, which is what `evaluation.weights: ema`
+scores and what a checkpoint stores under `ema`.
+
+**Transform.** A `PointTransform` maps one `PointSample` to one `PointSample` *after* the
+label-alignment boundary. A sample holds `points` `(N, 3)` float64 in metres in the
+camera frame (z along the view), `full_points` (the cloud before sampling), per-point
+labels aligned with `points`, and `objects`: one 4 × 4 object-to-camera pose per
+instance, to which the grasp labels are attached. So an augmentation may
+
+- remove or reorder points only through `sample.gather(index)`, which carries the labels;
+- move the scene only together with the object poses;
+- not move points at all when the sample carries images (`rgb`, `depth`) or camera-bound
+  extras, as HGGD's does: that is refused with a `ContractError` at the first sample.
+
+Scaling the scene is therefore *not* an allowed augmentation: grasp widths, depths and
+the gripper are in metres and would not follow.
+
+**What the config checker does.** `grasppanda print-config --check` (and `compose`) checks
+every key of these nodes against the constructor signature of the named class, without
+importing the optional libraries. Free-form arguments of a library go into one explicit
+mapping, `options`. Whether an optimizer *name* exists in the installed library is known
+only when the optimizer is built: `probe` or `train` then names the valid ones.
+
+## 3. Options at a glance
+
+Install the optional libraries once: `pip install "grasppanda[optim]"` (timm,
+pytorch_optimizer, schedulefree; all Apache-2.0). Options marked "core" need nothing.
+
+Everything is random-init: a recipe has no weights. "Measured" is the verdict of
+`grasppanda probe` per method, from the records of
+[Measured combinations](../advanced_guides/measured_combinations.md#the-training-recipe);
+G = GSNet, E = EconomicGrasp, H = HGGD. "Universal" means it ran under a seed-based
+method and under HGGD, a detector family with its own data path, hooks and clipping.
+
+### Components (name them as `type:` in a config)
+
+| Component | Registry | What it is | Source | Code, licence | Needs |
+|---|---|---|---|---|---|
+| `TimmOptimizer` | optimizer | any of timm's 98 optimizers by `name` | timm (R. Wightman, Hugging Face) | bridge to `timm.optim.create_optimizer_v2`, Apache-2.0 | `optim` |
+| `PytorchOptimizer` | optimizer | any of pytorch_optimizer's 127 optimizers by `name` | pytorch_optimizer (kozistr) | bridge to `pytorch_optimizer.load_optimizer`, Apache-2.0 | `optim` |
+| `ScheduleFree` | optimizer | schedule-free AdamW, RAdam or SGD | Defazio et al., "The Road Less Scheduled", [arXiv 2405.15682](https://arxiv.org/abs/2405.15682) (the authors' package, maintained at Meta) | bridge to `schedulefree`, Apache-2.0 | `optim` |
+| `ParamGroups` | optimizer | wraps any optimizer: learning-rate multiplier per module, layer-wise decay, no weight decay on 1-D parameters | layer-wise decay: Bao et al., BEiT, [arXiv 2106.08254](https://arxiv.org/abs/2106.08254); the rule `decay ** (L - i)` as in `timm.optim` | written here (about 80 lines) | core |
+| every class of `torch.optim` | optimizer | `Adam`, `AdamW`, `SGD`, `RAdam`, `NAdam`, `Adafactor`, … | PyTorch | PyTorch, BSD-3 | core |
+| `TimmSchedule` | scheduler | timm's cosine, tanh, poly, step and multi-step schedules with built-in warm-up and restarts | timm | bridge to `timm.scheduler`, Apache-2.0 | `optim` |
+| `WarmupCosineLR` | scheduler | linear warm-up then cosine, in closed form (FineGrasp's schedule) | existed before this page | written here | core |
+| every class of `torch.optim.lr_scheduler` | scheduler | `OneCycleLR`, `CosineAnnealingLR`, `StepLR`, `MultiStepLR`, `ExponentialLR`, `CosineAnnealingWarmRestarts`, … (not the five that take objects or functions) | PyTorch | PyTorch, BSD-3 | core |
+| `EMAHook` | hook | exponential moving average of the weights with warm-up of the decay | Tarvainen and Valpola, NIPS 2017, [arXiv 1703.01780](https://arxiv.org/abs/1703.01780) | `torch.optim.swa_utils.AveragedModel` | core |
+| `SWAHook` | hook | stochastic weight averaging over the last epochs | Izmailov et al., UAI 2018, [arXiv 1803.05407](https://arxiv.org/abs/1803.05407) | `torch.optim.swa_utils.AveragedModel` | core |
+| `FreezeHook` | hook | freeze sub-modules for the first epochs, then release them | gradual unfreezing: Howard and Ruder, ACL 2018, [arXiv 1801.06146](https://arxiv.org/abs/1801.06146) | written here (about 30 lines) | core |
+| `ScheduleFreeHook` | hook | switches a schedule-free optimizer between its training point and its average | as `ScheduleFree` | calls `optimizer.train()` / `.eval()` of `schedulefree` | `optim` |
+| `AdaptiveGradClipHook` | hook | adaptive gradient clipping before every optimizer step | Brock et al., [arXiv 2102.06171](https://arxiv.org/abs/2102.06171) | bridge to `timm.utils.adaptive_clip_grad`, Apache-2.0 | `optim` |
+| `RandomJitter` | transform | clipped Gaussian noise on the input points | Qi et al., PointNet++, [arXiv 1706.02413](https://arxiv.org/abs/1706.02413) | adapted from [Pointcept](https://github.com/Pointcept/Pointcept) @ 1342eda, MIT | core |
+| `RandomDropout` | transform | removes a fraction of the points with their labels | as above | adapted from Pointcept @ 1342eda, MIT | core |
+| `RandomShift` | transform | translates the scene and the object poses | Pointcept | adapted from Pointcept @ 1342eda, MIT | core |
+
+### Recipe presets (name them after `--set`)
+
+`grasppanda compose --list optimizer` (or `schedule`, `hooks`, `augment`, `recipe`)
+prints them; `grasppanda compose --show optimizer=timm-lamb` prints one file with its
+re-tuning notes.
+
+<!-- measured:begin -->
+| Slot | `--set` | What it is | Sets | Needs | Measured | Universal? |
+|---|---|---|---|---|---|---|
+| optimizer | `optimizer=adamw-no-decay-1d` | AdamW with no weight decay on biases and normalisation weights, through ParamGroups. | ParamGroups | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=adamw` | AdamW of PyTorch with decoupled weight decay, the default of the transformer encoders. | AdamW | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=ademamix` | AdEMAMix (Pagliardini et al., arXiv 2409.03137): Adam with a second, slow momentum. | PytorchOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=encoder-lr-0.1` | The base method's Adam with the scene encoder at a tenth of the learning rate. | ParamGroups | core | G runs, E runs | seed-based only: it names the `backbone` module |
+| optimizer | `optimizer=layer-decay` | AdamW with layer-wise learning-rate decay through the scene encoder (BEiT, as in timm). | ParamGroups | core | G runs, E runs | seed-based only: it names the `backbone` module |
+| optimizer | `optimizer=prodigy` | Prodigy (Mishchenko and Defazio, arXiv 2306.06101): Adam that estimates its own step size. | PytorchOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=schedulefree-adamw` | Schedule-free AdamW (Defazio et al., arXiv 2405.15682): no schedule, averaged iterates. | ScheduleFree, ScheduleFreeHook | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=schedulefree-radam` | Schedule-free RAdam (Defazio et al., arXiv 2405.15682): no schedule and no warm-up. | ScheduleFree, ScheduleFreeHook | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=schedulefree-sgd` | Schedule-free SGD (Defazio et al., arXiv 2405.15682): no schedule, averaged iterates. | ScheduleFree, ScheduleFreeHook | `optim` | G runs-unstable, H runs | runs under both; see the note below the table |
+| optimizer | `optimizer=soap` | SOAP (Vyas et al., arXiv 2409.11321): Adam in the eigenbasis of Shampoo's preconditioner. | PytorchOptimizer | `optim` | G runs, H fails | no: fails under HGGD, see the note below the table |
+| optimizer | `optimizer=stableadamw` | StableAdamW (Wortsman et al., NeurIPS 2023): AdamW with per-parameter update clipping. | PytorchOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-adan` | Adan (Xie et al., arXiv 2208.06677): Adam with a Nesterov momentum estimate. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-adopt` | ADOPT (Taniguchi et al., NeurIPS 2024): Adam that converges for any beta2. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-lamb` | LAMB (You et al., ICLR 2020): Adam with a per-layer trust ratio, for large batches. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-lion` | Lion (Chen et al., arXiv 2302.06675): sign momentum, found by program search. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-madgrad` | MADGRAD (Defazio and Jelassi, arXiv 2101.11075): dual averaging with momentum. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| optimizer | `optimizer=timm-mars` | MARS (Yuan et al., arXiv 2411.10438): variance-reduced AdamW. | TimmOptimizer | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=constant` | No schedule: the optimizer's learning rate for the whole run. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=cosine-restarts` | Cosine with warm restarts (SGDR, Loshchilov and Hutter, ICLR 2017): cycles of 4 epochs, each peak half the one before. | TimmSchedule | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=cosine` | Cosine annealing of PyTorch over the whole run, stepped per epoch, without warm-up. | CosineAnnealingLR | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=multistep-warmup` | One epoch of linear warm-up, then the rate times 0.1 after epochs 6 and 9 (timm's MultiStepLRScheduler). | TimmSchedule | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=onecycle` | One-cycle schedule of PyTorch: a short warm-up to the peak rate, then a cosine to near zero. | OneCycleLR | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=poly` | Polynomial decay to zero with power 0.9 after 5 % of warm-up, the schedule of segmentation models (timm's PolyLRScheduler). | TimmSchedule | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| schedule | `schedule=warmup-cosine` | Linear warm-up over the first 5 % of the run, then one cosine to 1e-6 (timm's CosineLRScheduler). | TimmSchedule | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| hooks | `hooks=accumulate-2` | Gradient accumulation: one optimizer step per two batches, an effective batch twice as large. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| hooks | `hooks=agc` | Adaptive gradient clipping (Brock et al., arXiv 2102.06171) in place of a fixed clipping norm. | AdaptiveGradClipHook | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
+| hooks | `hooks=amp` | Mixed precision: the forward pass under autocast with a gradient scaler. | train options | core | G fails, H fails | no: fails under both, see the note below the table |
+| hooks | `hooks=ema` | Exponential moving average of the weights with warm-up of the decay; evaluation scores it. | EMAHook | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| hooks | `hooks=freeze-encoder` | Freeze the scene encoder for the first two epochs, then train it with the rest. | FreezeHook | core | G runs, E runs | seed-based only: it names the `backbone` module |
+| hooks | `hooks=grad-clip` | Clip the global L2 norm of the gradient at 1.0 before every optimizer step. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| hooks | `hooks=swa` | Stochastic weight averaging: the mean of the weights after each of the last epochs. | SWAHook | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| augment | `augment=dropout` | Remove 20 % of the points of every second sample, before the cloud is sampled. | RandomDropout | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| augment | `augment=jitter` | Clipped Gaussian noise of 1 mm on the input points, after the other point transforms. | RandomJitter | core | G runs, H fails | point-cloud methods only: refused for samples with images |
+| augment | `augment=shift` | Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow. | RandomShift | core | G runs, H fails | point-cloud methods only: refused for samples with images |
+| recipe | `recipe=adamw-onecycle` | AdamW with a one-cycle schedule, the recipe Pointcept trains PTv3 with, at a rate for grasp batches. | AdamW, OneCycleLR | core | G runs, H runs | universal: ran under GSNet and HGGD |
+| recipe | `recipe=finetune-encoder` | Fine-tuning recipe for a pretrained scene encoder: layer-wise decay, warm-up and cosine, one frozen epoch, EMA. | ParamGroups, TimmSchedule, FreezeHook, EMAHook | `optim` | G runs, E runs | seed-based only: it names the `backbone` module |
+| recipe | `recipe=ptv3-adamw-onecycle` | Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks. | ParamGroups, OneCycleLR | core | G runs, E runs | PTv3 encoders only: the pattern matches its blocks |
+
+What did not simply run, in the words of the probe:
+
+- `recipe/GSNet/optimizer/schedulefree-sgd`, `runs-unstable`: 1 of 20 iterations had no real seed (iteration 3).
+- `recipe/HGGD/optimizer/soap`, `fails`: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect. For debugging consider passing CUDA_LAUNCH_BLOCKING=1 Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+- `recipe/GSNet/hooks/amp`, `fails`: Index put requires the source and destination dtypes match, got Float for the destination and Half for the source.
+- `recipe/HGGD/hooks/amp`, `fails`: non-finite loss at epoch 1, iteration 1: loss/heatmap = nan, loss/angle = inf. Frames in the batch: graspnet1b/scene_0000/realsense/0128, graspnet1b/scene_0000/realsense/0000, graspnet1b/scene_0000/realsense/0224, graspnet1b/scene_0000/realsense/0096.
+- `recipe/HGGD/augment/jitter`, `fails`: graspnet1b/scene_0000/realsense/0128: RandomJitter moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.
+- `recipe/HGGD/augment/shift`, `fails`: graspnet1b/scene_0000/realsense/0128: RandomShift moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.
+<!-- measured:end -->
+
+Under HGGD the three encoder-specific optimizer and hook presets and the two encoder
+recipes are not probed: they name `backbone`, a module only the seed-based skeleton has.
+Their second method is EconomicGrasp.
+
+## 4. How to use each option
+
+### One line with `compose`
+
+```bash
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \
+    --set optimizer=timm-lamb --set schedule=warmup-cosine --set hooks=ema+grad-clip \
+    --set augment=jitter -o my_recipe.yaml
+grasppanda probe my_recipe.yaml          # about a minute: does it train and predict?
+grasppanda train my_recipe.yaml
+```
+
+- `optimizer`, `schedule` and `recipe` take one preset; `hooks` and `augment` take
+  several joined by `+`.
+- Recipe slots combine with stage slots (`--set backbone=ptv3 --set
+  recipe=ptv3-adamw-onecycle`) and work for HGGD, which has no stage slots.
+- `--opts` changes single values and wins over a preset:
+  `--opts optimizer.lr=3e-3 scheduler.warmup_steps=0.1 train.epochs=20`.
+- The composed file lists what each preset says must be re-tuned.
+
+What `compose` writes for HGGD with `--set optimizer=timm-lamb --set
+schedule=warmup-cosine --set hooks=ema` (real output, header omitted):
+
+```yaml
+_base_:
+  - configs/hggd/hggd_r34w8_g1b-realsense_15e.yaml
+
+optimizer:
+  type: TimmOptimizer
+  name: lamb
+  lr: 0.002
+  weight_decay: 0.02
+
+scheduler:
+  type: TimmSchedule
+  name: cosine
+  warmup_steps: 0.05              # fraction of the run
+  warmup_lr_init: 1.0e-06
+  lr_min: 1.0e-06
+
+train:
+  scheduler_unit: iteration
+
+evaluation:
+  weights: ema
+
+hooks: [{type: EpochSignalHook}, {type: BNMomentumHook, initial: 0.5, decay: 0.5, step: 2, minimum: 0.001, delay: 1, module: image_net}, {type: EMAHook, decay: 0.999, warmup: true, buffers: copy}]
+```
+
+The two hooks of HGGD's own recipe are written out again because a list in a child
+config replaces the inherited one.
+
+And a probe of GSNet with `--set optimizer=schedulefree-adamw --set
+hooks=ema+freeze-encoder --set augment=jitter+dropout` (real output, shortened):
+
+```text
+  model       GSNet · 15,353,775 parameters
+  data        8 frames of the config's dataset · 4 per iteration
+  trained     20 of 20 iterations · 0.36 s per iteration (median, without data; data 0.40 s), measured on this machine now
+  memory      peak 1.9 GiB on the GPU, this process
+  predicted   2 frame(s) · 7, 16 grasps
+
+✓ runs: trained 20 iterations on 8 frames of the dataset and predicted on 2 frame(s), with finite losses and real seeds in every iteration.
+```
+
+### Optimizers
+
+```yaml
+optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}                    # torch.optim, by class
+optimizer: {type: TimmOptimizer, name: lamb, lr: 2.0e-3, weight_decay: 0.02}
+optimizer: {type: TimmOptimizer, name: lookahead_adan, lr: 1.0e-3, options: {betas: [0.98, 0.92, 0.99]}}
+optimizer: {type: PytorchOptimizer, name: prodigy, lr: 1.0}
+optimizer: {type: ScheduleFree, name: adamw, lr: 2.5e-3, warmup_steps: 200}
+```
+
+- `lr` and `weight_decay` are arguments of the bridge; everything else the optimizer
+  takes (`betas`, `eps`, `momentum`, …) goes into `options`.
+- Names: `python -c "import timm.optim as o; print(o.list_optimizers())"` and
+  `python -c "import pytorch_optimizer as o; print(o.get_supported_optimizers())"`.
+  A wrong name is reported with the list of valid ones when the optimizer is built.
+- A `lookahead_` prefix wraps any timm optimizer in Lookahead.
+- Learning-rate-free optimizers (`prodigy`, `dadaptadam`, …) want `lr: 1.0` and usually
+  `--set schedule=constant` or a cosine.
+- A schedule-free optimizer needs `scheduler: null` and `ScheduleFreeHook`; the presets
+  `schedulefree-adamw`, `-radam`, `-sgd` set all three.
+
+### Parameter groups: a pretrained encoder, layer-wise decay
+
+```yaml
+optimizer:
+  type: ParamGroups
+  optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}   # any optimizer node; must set lr
+  lr_multipliers: {backbone: 0.1}      # dotted prefix of the parameter name, or "re:<regex>"
+  layer_decay: 0.75                    # null: off
+  layer_decay_module: backbone
+  layer_decay_depth: 2
+  no_decay_1d: true                    # no weight decay on biases and normalisation weights
+```
+
+The rate of a parameter is `lr` × the first matching multiplier × `layer_decay ** (L - i)`
+for layer `i` of the `L` layers of `layer_decay_module`. A layer is a sub-module
+`layer_decay_depth` levels below that module, in registration order:
+
+```text
+sparse-unet14 depth 1: stem, down, encoder, up, decoder, project            (6 layers)
+sparse-unet14 depth 2: stem.conv, stem.norm, down.0, … decoder.3, project   (19 layers)
+ptv3 depth 2: embedding.stem, enc.enc0 … enc.enc4, dec.dec3 … dec.dec0      (10 layers)
+ptv3 depth 3: … enc.enc0.block0, enc.enc0.block1, enc.enc1.down, …          (32 layers)
+```
+
+(`python -c "from grasppanda.engine.optimizers import layer_names; ..."` on your own
+encoder.) In a U-Net the decoder is registered after the encoder and therefore counts as
+*later* layers with a higher rate. A pattern that matches nothing is an error that lists
+the top-level modules. `OneCycleLR` would overwrite all group rates with one `max_lr`;
+the engine scales a scalar `max_lr` per group.
+
+To train a pretrained encoder: load the weights (`runtime.load_from=<checkpoint>`, with
+`runtime.allow_weight_mismatch=true` when the checkpoint does not cover the whole
+detector; the page of the encoder slot says which released weights fit), then `--set recipe=finetune-encoder`
+or the single parts `optimizer=encoder-lr-0.1`, `optimizer=layer-decay`,
+`hooks=freeze-encoder`.
+
+### Schedules
+
+```yaml
+scheduler: {type: OneCycleLR, max_lr: 1.0e-3, pct_start: 0.05, div_factor: 10.0, final_div_factor: 1000.0, cycle_momentum: false}
+scheduler: {type: TimmSchedule, name: cosine, warmup_steps: 0.05, warmup_lr_init: 1.0e-6, lr_min: 1.0e-6}
+scheduler: {type: TimmSchedule, name: multistep, warmup_steps: 1, warmup_lr_init: 1.0e-4, options: {decay_t: [6, 9], decay_rate: 0.1}}
+scheduler: {type: TimmSchedule, name: cosine, options: {t_initial: 4, cycle_limit: 3, cycle_decay: 0.5}}   # restarts
+train: {scheduler_unit: iteration}     # or epoch: the unit of every step count above
+```
+
+- `TimmSchedule.warmup_steps` below 1 is a fraction of the run, from 1 on a step count.
+- `warmup_lr_init` and `lr_min` are absolute rates, not factors.
+- `OneCycleLR.max_lr` replaces `optimizer.lr`; keep `cycle_momentum: false` unless the
+  optimizer has `betas` or `momentum` you want cycled.
+
+### Hooks and train options
+
+```yaml
+hooks:
+  - {type: EMAHook, decay: 0.999, warmup: true, interval: 1, buffers: copy}
+  - {type: SWAHook, start_epoch: 7}
+  - {type: FreezeHook, modules: [backbone], epochs: 2, eval_mode: true}
+  - {type: AdaptiveGradClipHook, clip_factor: 0.01, exclude: [head]}
+evaluation: {weights: ema}             # score the average (EMAHook, SWAHook or train.ema)
+train: {amp: true, accumulate: 2, grad_clip: 1.0, grad_clip_mode: norm}
+```
+
+- One weight average per run: `EMAHook`, `SWAHook` and `train.ema` exclude each other.
+  `EMAHook` differs from `train.ema` in three ways: the decay warms up
+  (`min(decay, (1 + n) / (10 + n))`), buffers are copied rather than averaged by default
+  (batch-norm statistics and HGGD's learned anchors stay those of the trained model),
+  and `interval` can skip steps. A resumed run continues either average exactly.
+- `evaluation.weights: ema` selects the average of a checkpoint in `grasppanda test`
+  as well; `model` selects the trained weights of the same checkpoint.
+- `FreezeHook` sets `requires_grad` per epoch; an optimizer skips a parameter without a
+  gradient, weight decay included, so nothing has to be rebuilt when the modules are
+  released. With `eval_mode` the frozen modules keep their batch-norm statistics.
+- `AdaptiveGradClipHook` and `train.grad_clip` exclude each other (the preset `agc`
+  switches `train.grad_clip` off, which matters under HGGD, whose recipe clips by value).
+
+### Augmentation
+
+```yaml
+data:
+  train:
+    dataset:
+      transforms:
+        - {type: RandomDropout, ratio: 0.2, prob: 0.5}     # before the sampling step
+        - {type: RandomSample, num_points: 15000}
+        # ... the label steps, flip and rotation of the base config ...
+        - {type: RandomShift, shift: [[-0.1, 0.1], [-0.1, 0.1], [-0.05, 0.1]]}
+        - {type: RandomJitter, sigma: 0.001, clip: 0.005}
+```
+
+`--set augment=dropout+shift+jitter` writes exactly this around the list of the base
+config. Units are metres in the camera frame. `RandomJitter` perturbs only the network
+input: `full_points`, poses and labels describe the clean scene.
+
+### Without `compose`: schedule bases
+
+Three method-neutral files under `configs/_base_/schedules/` can be inherited like the
+methods' own: `adamw_onecycle_10e.yaml`, `adamw_warmup-cosine_10e.yaml`,
+`schedulefree-adamw_10e.yaml`. They set `optimizer`, `scheduler` and `train.epochs`.
+
+## 5. Pitfalls
+
+- **`OneCycleLR` and momentum.** Its default `cycle_momentum: true` rewrites `betas` or
+  `momentum` every step and raises for optimizers that have neither. The presets set
+  `false`.
+- **`OneCycleLR` ignores `optimizer.lr`.** The peak is `max_lr`. Changing only
+  `optimizer.lr` with `--opts` changes nothing.
+- **Schedule-free and batch norm.** The weights that are evaluated are an average; the
+  batch-norm statistics were collected at the training point. The authors re-estimate
+  them; this toolbox does not.
+- **Schedule-free in a short probe.** With `warmup_steps: 200` a 20-iteration probe runs
+  entirely inside the warm-up, so its losses fall more slowly than with Adam. That says
+  nothing about a full run.
+- **Per-epoch units and warm-up.** With `train.scheduler_unit: epoch` a warm-up that
+  starts at 0 spends the whole first epoch at rate 0; the preset `multistep-warmup`
+  starts at 1e-4.
+- **Lists replace.** `hooks` and `transforms` of a child config replace the inherited
+  list. `compose` writes the base's entries out again; a hand-written child must repeat
+  them (HGGD needs its `EpochSignalHook`).
+- **`SWAHook.start_epoch` must be below `train.epochs`**; the run refuses to start
+  otherwise ("nothing would be averaged").
+- **Point augmentation next to images is refused at the first sample, not by the config
+  check**: the config check does not know that HGGD's dataset serves images.
+- **A wrong optimizer name passes the config check** and fails when the optimizer is
+  built, with the list of valid names: the check does not import the libraries.
+- **Mixed precision is not ready for the ported methods.** `hooks=amp` (`train.amp: true`)
+  fails under GSNet in the first iteration: the label assigner writes half-precision
+  values into a single-precision tensor ("Index put requires the source and destination
+  dtypes match"). Under HGGD the loss of the first iteration is not finite
+  (`loss/heatmap = nan, loss/angle = inf`). The preset is kept because the switch exists;
+  do not train with it before those two are fixed.
+- **SOAP fails under HGGD.** `optimizer=soap` runs under GSNet; under HGGD the second
+  optimizer step ends in "CUDA error: an illegal memory access was encountered", three
+  times out of three. The cause was not investigated.
+- **Schedule-free SGD in a short probe.** Under GSNet one of the 20 iterations of the
+  probe had no real seed (`runs-unstable`); the AdamW and RAdam variants did not show it.
+
+## 6. Not wrapped
+
+| Candidate | Link | Why not |
+|---|---|---|
+| Normalisation and activation as config keys (GroupNorm, LayerNorm, GELU, SiLU, …) | `torch.nn`; timm `create_act.py` | No shared layer builder exists in the stages: norms and activations are literals at dozens of sites in `grasppanda/models/`, outside this package's lane. A hook that swapped modules after construction would not run at `grasppanda test`, so trained and tested models would differ. Needs one builder used by every stage first. |
+| `RandomScale` | [Pointcept `transform.py`](https://github.com/Pointcept/Pointcept/blob/main/pointcept/datasets/transform.py) | Grasp widths, depths and the gripper are in metres; `PointSample` has no way to scale the label grids with the scene. |
+| `ElasticDistortion` | same file | Not a rigid map: object poses, and the grasp labels attached to them, cannot follow. |
+| Chromatic transforms (auto-contrast, colour jitter) | same file | The ported methods feed no colour to the scene encoder; HGGD's image pipeline is not a point transform. |
+| Mix3D scene mixing | Pointcept `pointcept/datasets/utils.py`, `point_collate_fn(mix_prob)` | Works in the collate function, which is fixed in the engine; two scenes' object poses and label sets would have to be merged. |
+| Sharpness-aware minimisation (SAM) | `pytorch_optimizer/optimizer/sam.py` (class `SAM`) | Its `step()` needs a closure that runs a second forward and backward pass; the loop makes one pass per batch and calls `step()` without a closure. |
+| `ReduceLROnPlateau`, timm `PlateauLRScheduler` | PyTorch, timm | Step on a monitored metric, which the trainer does not hand to schedulers. Refused by name. |
+| timm's learning-rate noise | `timm.scheduler` | `TimmSchedule` evaluates the closed form so that a resumed run needs no state of timm's; the noise is applied in timm's own `step()`. |
+| Batch-norm re-estimation after SWA (`torch.optim.swa_utils.update_bn`) | PyTorch | It iterates a loader of tensors; batches here are `Batch` objects and the detectors compute losses, not plain forwards. |

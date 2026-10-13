@@ -22,6 +22,16 @@ added to either gets its cells without anyone listing them:
 ``post``
     every post-processing preset as the evaluation variant ``post`` of three methods
     (:data:`POST_METHODS`), seed-based or not: a post-processor reads grasps, not a network.
+``loss``
+    every loss preset in a loss term it is meant for (:data:`LOSS_CELLS`), under GSNet
+    and under one more method, several terms of a method replaced per cell, plus a few
+    pairings the contract rules refuse. That a loss runs in *every* term of its kind is a
+    unit test on tiny models (``tests/unit/test_losses_zoo.py``); the grid shows it on
+    real frames.
+``recipe``
+    every recipe preset (optimizer, schedule, hooks, augment, recipe) under GSNet and
+    under HGGD, a detector family of its own; the presets that name the scene encoder
+    of the seed-based skeleton under a second seed-based method instead.
 
 ``tools/probe_grid.py`` runs the cells; ``tools/make_combination_docs.py`` renders what
 was recorded. Nothing here probes anything.
@@ -37,14 +47,21 @@ from typing import Any
 from grasppanda.registry import BACKBONES, component_parameters
 
 from .compose import is_adapter
-from .presets import POST_SLOT, Preset, presets
+from .presets import LOSS_SLOT, POST_SLOT, Preset, presets
+from .recipes import recipes
 
 __all__ = [
     "FAMILIES",
+    "LOSS_CELLS",
+    "LOSS_NOT_PROBED",
     "METHODS",
     "POST_METHODS",
     "POST_NOT_PROBED",
+    "RECIPE_ENCODER_PRESETS",
+    "RECIPE_METHODS",
+    "RECIPE_REQUIRES",
     "STAGE_SET_ENCODERS",
+    "STAGE_SET_SKIPPED",
     "STAGE_SLOTS",
     "Cell",
     "cells",
@@ -73,6 +90,151 @@ POST_METHODS = ("GSNet", "GraspNet-baseline", "HGGD")
 POST_NOT_PROBED: dict[str, str] = {
     "target-mask": "reads observation.masks, which no shipped dataset fills",
 }
+#: The loss cells: a method and the loss terms that are replaced together, as
+#: ``slot.option=preset``. A probe takes a minute or two, so a cell replaces several terms
+#: of one method at once; every loss preset sits in one cell under GSNet and in one under
+#: another method, in a term it is meant for. The last three are single pairings the
+#: config check refuses.
+LOSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=focal",
+            "head.score_loss=quality-focal",
+            "head.width_loss=balanced-l1",
+        ),
+    ),
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=softmax-focal",
+            "head.score_loss=varifocal",
+            "head.width_loss=huber",
+        ),
+    ),
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=label-smoothing",
+            "proposal.graspness_loss=bce",
+            "head.width_loss=ghm-r",
+        ),
+    ),
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=poly1",
+            "head.score_loss=ghm-c",
+            "head.width_loss=charbonnier",
+        ),
+    ),
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=ohem",
+            "head.score_loss=ohem-smooth-l1",
+            "head.width_loss=cauchy",
+        ),
+    ),
+    ("GSNet", ("proposal.objectness_loss=class-balanced",)),
+    ("GSNet", ("proposal.objectness_loss=dice",)),
+    ("GSNet", ("proposal.objectness_loss=lovasz-softmax",)),
+    (
+        "EconomicGrasp",
+        (
+            "proposal.objectness_loss=dice",
+            "proposal.graspness_loss=quality-focal",
+            "head.angle_loss=softmax-focal",
+            "head.depth_loss=label-smoothing",
+            "head.score_loss=class-balanced",
+            "head.width_loss=cauchy",
+        ),
+    ),
+    (
+        "FineGrasp",
+        (
+            "proposal.objectness_loss=lovasz-softmax",
+            "proposal.graspness_loss=bce",
+            "view.loss=varifocal",
+            "head.angle_loss=poly1",
+            "head.depth_loss=ohem",
+            "head.score_loss=focal",
+        ),
+    ),
+    (
+        "GraspNet-baseline",
+        (
+            "view.view_loss=ohem-smooth-l1",
+            "head.score_loss=ghm-r",
+            "head.angle_loss=ghm-c",
+            "head.width_loss=balanced-l1",
+            "head.tolerance_loss=charbonnier",
+        ),
+    ),
+    (
+        "Scale-Balanced-Grasp",
+        (
+            "view.view_loss=huber",
+            "head.angle_loss=class-balanced",
+            "head.width_loss=huber",
+        ),
+    ),
+    (
+        "GSNet",
+        (
+            "proposal.objectness_loss=uncertainty-weighting",
+            "proposal.graspness_loss=uncertainty-weighting",
+            "view.loss=uncertainty-weighting",
+            "head.score_loss=uncertainty-weighting",
+            "head.width_loss=uncertainty-weighting",
+        ),
+    ),
+    (
+        "GraspNet-baseline",
+        (
+            "view.objectness_loss=uncertainty-weighting",
+            "view.view_loss=uncertainty-weighting",
+            "head.score_loss=uncertainty-weighting",
+            "head.angle_loss=uncertainty-weighting",
+            "head.width_loss=uncertainty-weighting",
+            "head.tolerance_loss=uncertainty-weighting",
+        ),
+    ),
+    ("GSNet", ("head.width_loss=focal",)),  # refused: a width is no class and no quality
+    ("GraspNet-baseline", ("head.score_loss=quality-focal",)),  # refused: targets up to ln 10
+    ("Scale-Balanced-Grasp", ("head.angle_loss=dice",)),  # refused: it cannot weight seeds
+)
+#: Loss presets without a cell of their own, each with the reason.
+LOSS_NOT_PROBED: dict[str, str] = {
+    "distribution-focal": (
+        "fits `bins` terms only; probed as the width loss of the head preset "
+        "`decoupled-grid-bins` (stage cells)"
+    ),
+}
+#: Stage variants that are left out of the stage sets, each with the reason. A variant
+#: that shares every contract with another one would only repeat that one's sets; it is
+#: probed alone, one stage replaced under every method (group ``stage``).
+STAGE_SET_SKIPPED: dict[str, str] = {
+    "swad-focal": "preset `swad` with another score loss: the same contracts",
+    "economic-focal": "preset `economic` with other class losses: the same contracts",
+    "decoupled-grid": "the contracts of `swad` (axes, dense labels); probed alone",
+    "decoupled-grid-bins": "as `decoupled-grid`",
+    "decoupled-grid-class": "as `decoupled-grid`",
+    "decoupled-grid-regression": "as `decoupled-grid`",
+}
+#: The methods a recipe preset is probed under: one seed-based, one family of its own.
+RECIPE_METHODS = ("GSNet", "HGGD")
+#: Recipe presets that name the `backbone` of the seed-based skeleton: probed under these
+#: seed-based methods, not under HGGD, which has no such module.
+RECIPE_ENCODER_PRESETS = {
+    "optimizer/encoder-lr-0.1": ("GSNet", "EconomicGrasp"),
+    "optimizer/layer-decay": ("GSNet", "EconomicGrasp"),
+    "hooks/freeze-encoder": ("GSNet", "EconomicGrasp"),
+    "recipe/finetune-encoder": ("GSNet", "EconomicGrasp"),
+    "recipe/ptv3-adamw-onecycle": ("GSNet", "EconomicGrasp"),
+}
+#: What else a recipe preset needs in the same request.
+RECIPE_REQUIRES = {"recipe/ptv3-adamw-onecycle": ("backbone=ptv3",)}
 #: Slots of the seed-based skeleton besides the encoder, in the order data flows.
 STAGE_SLOTS = ("proposal", "view", "assigner", "grouper", "head")
 #: Encoder preset used for the stage sets, by the kind of features it returns.
@@ -85,8 +247,8 @@ class Cell:
 
     Attributes:
         id: Unique name, also the name of its files (``encoder/GSNet/PTv3``).
-        group: ``reference``, ``encoder``, ``stage``, ``stage-set``, ``family`` or
-            ``family-slot``.
+        group: ``reference``, ``encoder``, ``stage``, ``stage-set``, ``family``,
+            ``family-slot``, ``post``, ``loss`` or ``recipe``.
         method: The method (a key of :data:`METHODS` or :data:`FAMILIES`).
         base: The config it is composed from.
         sets: ``slot=choice`` pairs of the compose request; empty for a config as shipped.
@@ -164,6 +326,28 @@ def family_slots(method: str) -> dict[str, Any]:
     return component_slots(DETECTORS.get(detector))
 
 
+def _replaces_an_inner_part(slot: str, choice: str) -> bool:
+    """Whether a variant only replaces a part *inside* its stage (the sampler of a proposal,
+    the score that selects) and leaves every contract with the neighbours as it is.
+
+    Such a variant is measured under every method in the ``stage`` group. In the stage
+    sets it would multiply the sets without measuring a new contract, so the sets take
+    the variant that states the constructor defaults of the component and no other.
+    """
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    preset = presets().get(slot, {}).get(choice)
+    if preset is None or slot != "proposal":
+        return False
+    registry = STAGE_REGISTRIES[slot]
+    if not hasattr(registry.get(preset.type), "sampler_inputs"):
+        return False
+    # A component node among the options is not compared by `_states_defaults`: the
+    # default sampler is named here.
+    sampler = preset.node.get("sampler") or {}
+    return sampler.get("type", "FPS") != "FPS" or not _states_defaults(preset, registry)
+
+
 def _in_tree(registry: Any, name: str) -> bool:
     return registry.get(name).__module__.split(".")[0] == "grasppanda"
 
@@ -190,7 +374,10 @@ def _stage_sets() -> Iterator[tuple[str, dict[str, tuple[str, str]]]]:
         slot: [
             (choice, component)
             for choice, component in stage_variants(slot)
-            if _in_tree(STAGE_REGISTRIES[slot], component) and complete(slot, choice, component)
+            if _in_tree(STAGE_REGISTRIES[slot], component)
+            and complete(slot, choice, component)
+            and choice not in STAGE_SET_SKIPPED
+            and not _replaces_an_inner_part(slot, choice)
         ]
         for slot in STAGE_SLOTS
     }
@@ -313,6 +500,38 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
                     preset.name,
                 )
             )
+    for method, sets in LOSS_CELLS:
+        names = [item.partition("=")[2] for item in sets]
+        terms = [item.partition("=")[0] for item in sets]
+        found.append(
+            Cell(
+                f"loss/{method}/{'+'.join(dict.fromkeys(names))}@{'+'.join(terms)}",
+                "loss",
+                method,
+                METHODS[method],
+                sets,
+                LOSS_SLOT,
+                "+".join(presets()[LOSS_SLOT][name].type for name in names),
+                "+".join(names),
+            )
+        )
+    bases = {**METHODS, **FAMILIES}
+    for slot, members in recipes().items():
+        for name, preset in members.items():
+            key = f"{slot}/{name}"
+            for method in RECIPE_ENCODER_PRESETS.get(key, RECIPE_METHODS):
+                found.append(
+                    Cell(
+                        f"recipe/{method}/{key}",
+                        "recipe",
+                        method,
+                        bases[method],
+                        (*RECIPE_REQUIRES.get(key, ()), f"{slot}={name}"),
+                        slot,
+                        preset.type,
+                        name,
+                    )
+                )
     if groups is not None:
         found = [cell for cell in found if cell.group in groups]
     return found

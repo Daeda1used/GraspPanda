@@ -1,0 +1,20 @@
+# LocalGroup over the 16 nearest seeds of every seed, as DGCNN gathers neighbours.
+#
+# A k-nearest-neighbour crop (Wang et al., DGCNN, TOG 2019) has no radius: every crop has
+# exactly `nsample` members, near or far, so sparse regions reach further.
+#
+# What must be re-tuned, and why:
+# * nsample: k. With 1024 seeds per frame 16 neighbours span a few centimetres on an
+#   object and much more on the table; raise it with the seed count.
+# * radius: only the unit the offsets are divided by; hmin and hmax are not read.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: knn                    # the `nsample` nearest seeds, whatever their distance
+    radius: 0.05                  # unit of the offsets
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    mlp_channels: [256, 256]

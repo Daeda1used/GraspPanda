@@ -1,0 +1,23 @@
+# RoIAwareGroup with its defaults: Part-A2's RoI-aware pooling on a gripper-aligned box.
+#
+# The box of every seed is cut into 4 x 4 x 4 cells; a cell keeps the maximum of the
+# features and the mean position of its seeds, empty cells stay zero (Shi et al., TPAMI
+# 2020; adapted from OpenPCDet, Apache-2.0). A linear layer per cell stands in for the
+# sparse convolutions of Part-A2.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the box; grid_size: cells per side. With 1024 seeds per frame
+#   most of the 64 cells are empty; a coarser grid (2 or 3) is denser.
+# * nsample: seeds of a box that are pooled, the first in index order.
+# * fc_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: RoIAwareGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    grid_size: 4                  # cells per side of the box
+    nsample: 32
+    cell_channels: 32
+    fc_channels: [256, 256]

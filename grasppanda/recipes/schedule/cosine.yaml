@@ -1,0 +1,10 @@
+# Cosine annealing of PyTorch over the whole run, stepped per epoch, without warm-up.
+#
+# What must be re-tuned, and why:
+# * eta_min: the final rate, absolute. The engine fills in T_max, the number of epochs.
+scheduler:
+  type: CosineAnnealingLR
+  eta_min: 1.0e-6
+
+train:
+  scheduler_unit: epoch

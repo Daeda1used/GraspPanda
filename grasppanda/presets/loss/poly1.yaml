@@ -1,0 +1,14 @@
+# Poly-1 loss (PolyLoss): the cross-entropy plus epsilon times (1 - p_t).
+#
+# For `class` terms. A positive epsilon keeps a gradient on elements that are already classified
+# well.
+#
+# What must be re-tuned, and why:
+# * epsilon: 1.0. 0 is the plain cross-entropy; values down to -1 are allowed.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy (larger by up to epsilon), so compare the logged
+#   `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: Poly1CrossEntropy
+    epsilon: 1.0                  # change of the first polynomial coefficient

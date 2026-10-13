@@ -1,0 +1,35 @@
+# Graspable points, then semantics-guided furthest point sampling (S-FPS of SASA, AAAI 2022) with
+# graspness as the weight: spread the seeds, prefer graspable points.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * sampler.gamma: 1.0 (SASA's reference). 0 is plain furthest point sampling started at the best
+#   point; a large value approaches top-k and loses the spread.
+# * sampler.distance: `squared` is the released kernel, `euclidean` the paper's formula; `squared`
+#   with gamma equals `euclidean` with gamma / 2.
+# * graspness_threshold: the weight already prefers graspable points, so the hard threshold can be
+#   lowered (0.01) to let the sampler decide; 0.1 keeps GSNet's cut.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    sampler:
+      type: ScoreWeightedFPS
+      gamma: 1.0
+      distance: squared
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

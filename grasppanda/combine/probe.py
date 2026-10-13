@@ -474,6 +474,10 @@ def _train_and_predict(report: ProbeReport, run: Any, section: str | None, **opt
     except _Enough:
         pass
     except NonFiniteLossError as error:
+        if not recorder.rows:  # the very first loss: nothing was trained, so nothing "ran"
+            _summarise(report, recorder)
+            _fail(report, error, "loss", "iteration 1")
+            return False
         report.nonfinite.append(" ".join(str(error).split()))
     except Exception as error:
         _summarise(report, recorder)

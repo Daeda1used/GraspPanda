@@ -1,0 +1,19 @@
+# Schedule-free AdamW (Defazio et al., arXiv 2405.15682), 10 epochs: no learning-rate schedule;
+# the optimizer averages its iterates and ScheduleFreeHook switches the weights to the
+# average for evaluation and checkpoints. Needs: pip install "grasppanda[optim]".
+# A method-neutral base: no shipped method was tuned with it and no AP is claimed. As a
+# recipe preset: `grasppanda compose <config> --set optimizer=schedulefree-adamw`.
+#
+# A config that inherits this file and lists hooks of its own must repeat the hook: a
+# list replaces the inherited one.
+optimizer:
+  type: ScheduleFree
+  name: adamw
+  lr: 2.5e-3
+  warmup_steps: 200               # optimizer steps, about 5 % of the run
+
+train:
+  epochs: 10
+
+hooks:
+  - {type: ScheduleFreeHook}

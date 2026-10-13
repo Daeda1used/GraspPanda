@@ -1,0 +1,25 @@
+# LocalGroup as GSNet's cylinder followed by the inverted residual MLP of PointNeXt.
+#
+# After the maximum, `ReLU(W2 ReLU(W1 x) + skip(f_i))` with a hidden layer `expansion`
+# times wider and the seed's own feature as the identity branch (InvResMLP, Qian et al.,
+# NeurIPS 2022).
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * expansion: 4 as in PointNeXt; the block adds 0.5 M parameters.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    encoder: invres               # shared MLP, max, then PointNeXt's InvResMLP
+    expansion: 4
+    mlp_channels: [256, 256]

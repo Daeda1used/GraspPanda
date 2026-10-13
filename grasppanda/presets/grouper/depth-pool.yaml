@@ -1,0 +1,22 @@
+# DepthPoolGroup around the baseline's crop: a depth-sliced scene crop under a seeds head.
+#
+# The crops of all depth bins are reduced by a maximum, which lets a (seed, depth,
+# channel) grouper feed the head bundles of GSNet, EconomicGrasp and FineGrasp. The
+# wrapped crop here is GraspNet-baseline's: scene geometry only, no learned features.
+#
+# What must be re-tuned, and why:
+# * grouper: any scene-support grouper that emits (seed, depth, channel); its `hmax` sets
+#   how many crops are pooled.
+# * pool: max or mean over the depth bins.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthPoolGroup
+    pool: max
+    grouper:   # the wrapped crop
+      type: DepthCylinderGroup
+      radius: 0.05
+      hmin: -0.02
+      hmax: [0.01, 0.02, 0.03, 0.04]
+      nsample: 64
+      mlp_channels: [64, 128, 256]

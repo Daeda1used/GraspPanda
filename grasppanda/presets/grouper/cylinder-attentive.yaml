@@ -1,0 +1,25 @@
+# LocalGroup as GSNet's cylinder with RandLA-Net's position encoding and attentive
+# pooling.
+#
+# The neighbours are weighted per channel by a soft-max of a learned score instead of
+# reduced by a maximum, and the offset carries its length (RandLA-Net, Hu et al., CVPR
+# 2020). Padded slots are masked, so a crop with few members is not dominated by copies.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    geometry: offset+distance
+    pool: attentive               # soft-max weights per channel over the real members
+    mlp_channels: [256, 256]

@@ -21,6 +21,7 @@ the ``scheduler`` node.
 from __future__ import annotations
 
 import math
+import warnings
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from typing import Any
@@ -49,6 +50,7 @@ TOTAL_STEPS_ARGUMENT = {
     "OneCycleLR": "total_steps",
     "CosineAnnealingLR": "T_max",
     "PolynomialLR": "total_iters",
+    "TimmSchedule": "total_steps",
 }
 _UNSUPPORTED = {
     "ReduceLROnPlateau": "it steps on a monitored metric, which the trainer does not provide",
@@ -85,7 +87,7 @@ def build_optimizers(model: nn.Module, node: Mapping[str, Any]) -> dict[str, Opt
     return {
         name: value
         if isinstance(value, Optimizer)
-        else OPTIMIZERS.build(node, params=_parameters(value, name))
+        else OPTIMIZERS.build(node, params=_parameters(value, name), model=model)
         for name, value in spec.items()
     }
 
@@ -118,7 +120,35 @@ def build_schedulers(
     per_epoch = node.get("epochs") is not None and node.get("steps_per_epoch") is not None
     if argument and node.get(argument) is None and not (kind == "OneCycleLR" and per_epoch):
         node[argument] = total_steps
-    return {name: SCHEDULERS.build(node, optimizer=opt) for name, opt in optimizers.items()}
+    if kind == "OneCycleLR" and node.get("total_steps") is not None:
+        # PyTorch divides by the length of the warm-up phase, pct_start * total_steps - 1.
+        # A run of a few steps (a probe, a smoke test) gets the shortest warm-up there is.
+        steps = node["total_steps"]
+        warmup = float(node.get("pct_start", 0.3)) * steps
+        if steps < 3:
+            raise EngineError(f"OneCycleLR needs at least 3 scheduler steps, the run has {steps}.")
+        if warmup < 2.0:
+            node["pct_start"] = 2.0 / steps
+            warnings.warn(
+                f"OneCycleLR: pct_start x total steps is {warmup:g} of {steps} steps, and the "
+                f"warm-up needs 2; this run uses pct_start = {node['pct_start']:g}. A run of "
+                "normal length is not affected.",
+                stacklevel=2,
+            )
+    return {
+        name: SCHEDULERS.build(_per_group(node, opt), optimizer=opt)
+        for name, opt in optimizers.items()
+    }
+
+
+def _per_group(node: dict[str, Any], optimizer: Optimizer) -> dict[str, Any]:
+    """``OneCycleLR`` replaces the rate of every group by ``max_lr``; a scalar ``max_lr``
+    would undo the per-group rates of ``ParamGroups``, so it is scaled per group."""
+    scales = [group.get("lr_scale") for group in optimizer.param_groups]
+    scalar = isinstance(node.get("max_lr"), (int, float))
+    if node.get("type") != "OneCycleLR" or not scalar or None in scales:
+        return node
+    return {**node, "max_lr": [node["max_lr"] * scale for scale in scales]}
 
 
 # ------------------------------------------------------------------------ gradients

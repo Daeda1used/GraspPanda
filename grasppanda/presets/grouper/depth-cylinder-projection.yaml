@@ -1,0 +1,24 @@
+# DepthCylinderProjectionGroup with its defaults: the baseline's cylinder plus a gated
+# residual of the projected seed feature.
+#
+# The crop of GraspNet-baseline with the seed residual of Scale-Balanced-Grasp behind a
+# linear layer, so that the encoder may return any width. `grasppanda compose` puts this
+# class in place of DepthCylinderGroup when an encoder of another width meets the gated
+# residual, keeping the options of the crop it replaces.
+#
+# What must be re-tuned, and why:
+# * radius / nsample: the crop gathers raw SCENE points (20 000 per frame in the reference
+#   recipes); both belong to the point density of the input cloud.
+# * hmax: one far end per depth bin of the head (0.01 to 0.04 m for `num_depth: 4`).
+# * radius_scales: [0.25, 0.5, 0.75, 1.0] of radius 0.08 is Scale-Balanced-Grasp's crop.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthCylinderProjectionGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]# one far end per depth bin of the head
+    nsample: 64
+    mlp_channels: [64, 128, 256]
+    normalize_offsets: false
+    radius_scales: [1.0]

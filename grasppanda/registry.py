@@ -40,6 +40,7 @@ __all__ = [
     "OPTIMIZERS",
     "POSTPROCESSORS",
     "PROPOSALS",
+    "SAMPLERS",
     "SCHEDULERS",
     "TRANSFORMS",
     "VIEWS",
@@ -409,6 +410,8 @@ def _populate_optimizers(registry: Registry) -> None:
             and obj is not torch.optim.Optimizer
         ):
             registry.add(obj, name, allow_var_kwargs=True)
+    # Bridges to optimizer libraries and the parameter-group wrapper register themselves.
+    importlib.import_module("grasppanda.engine.optimizers")
 
 
 def _populate_schedulers(registry: Registry) -> None:
@@ -432,6 +435,7 @@ TRANSFORMS = Registry("TRANSFORMS", location="grasppanda.transforms")
 BACKBONES = Registry("BACKBONES", location="grasppanda.models.backbones")
 IMAGE_ENCODERS = Registry("IMAGE_ENCODERS", location="grasppanda.models.image_encoders")
 PROPOSALS = Registry("PROPOSALS", location="grasppanda.models.proposals")
+SAMPLERS = Registry("SAMPLERS", location="grasppanda.models.samplers")
 VIEWS = Registry("VIEWS", location="grasppanda.models.views")
 GROUPERS = Registry("GROUPERS", location="grasppanda.models.groupers")
 ASSIGNERS = Registry("ASSIGNERS", location="grasppanda.models.assigners")
@@ -441,7 +445,7 @@ DETECTORS = Registry("DETECTORS", location="grasppanda.models.detectors")
 POSTPROCESSORS = Registry("POSTPROCESSORS", location="grasppanda.models.postprocessors")
 EVALUATORS = Registry("EVALUATORS", location="grasppanda.evaluation")
 HOOKS = Registry("HOOKS", location="grasppanda.engine.hooks")
-OPTIMIZERS = Registry("OPTIMIZERS", provided=("params",), populate=_populate_optimizers)
+OPTIMIZERS = Registry("OPTIMIZERS", provided=("params", "model"), populate=_populate_optimizers)
 SCHEDULERS = Registry(
     "SCHEDULERS", provided=("optimizer",), injectable=("T_max",), populate=_populate_schedulers
 )

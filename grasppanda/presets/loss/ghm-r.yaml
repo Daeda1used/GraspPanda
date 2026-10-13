@@ -1,0 +1,20 @@
+# Gradient harmonising, regression form (GHM-R): a smooth L1 in which every range of gradient
+# norms counts alike.
+#
+# For `value` and `unit` terms: widths, tolerances, regressed scores. Outliers (wrong labels) and
+# the mass of already-fitted cells are both turned down.
+#
+# What must be re-tuned, and why:
+# * mu: 0.02, the error at which the penalty turns from quadratic to linear, in the units of the
+#   target (SWAD and Economic widths: metres x 10; Operation widths: fractions of the gripper
+#   opening).
+# * bins: 10 and momentum: 0.0 as in GHM-C.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: GHMR
+    mu: 0.02                      # error scale, in the units of the target
+    bins: 10
+    momentum: 0.0

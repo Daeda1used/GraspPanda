@@ -1,0 +1,21 @@
+# Class-balanced cross-entropy: every class is weighted by the inverse of its effective number of
+# samples.
+#
+# For `class` terms with unequal classes: object against background points, the six quality
+# classes of EconomicHead. The weights follow the classes of the batch unless `class_counts` gives
+# the counts of the training set.
+#
+# What must be re-tuned, and why:
+# * beta: 0.999. 0 weights nothing; values close to 1 approach inverse frequency. With tens of
+#   thousands of points per class in a batch, 0.999 already is inverse frequency.
+# * class_counts: null counts the supervised elements of every call. Counts of the label set would
+#   have to be those of the seeds this model selects.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy (a weighted mean), so compare the logged
+#   `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: ClassBalanced
+    beta: 0.999                   # effective number: (1 - beta^n) / (1 - beta)
+    class_counts: null            # null: count the elements of every call
+    loss: {type: CrossEntropy}

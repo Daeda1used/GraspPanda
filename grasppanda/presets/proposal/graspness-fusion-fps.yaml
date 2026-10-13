@@ -1,0 +1,36 @@
+# Graspable points, then fusion sampling (FS of 3DSSD, CVPR 2020): half of the seeds by feature-
+# space, half by coordinate-space furthest point sampling.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * sampler.feature_fraction: 0.5. 3DSSD returns M points of each kind (2 M in all); here both kinds
+#   share the fixed seed count.
+# * sampler.coord_weight and sampler.metric: as for graspness-ffps.
+# * graspness_threshold: 0.1 belongs to graspness normalised to [0, 1] per frame; a frame without
+#   any candidate has no real seed (`metric/real_seeds` in the log), which is the first number to
+#   watch after a swap.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    sampler:
+      type: FusionFPS
+      feature_fraction: 0.5
+      metric: concat
+      coord_weight: 1.0
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

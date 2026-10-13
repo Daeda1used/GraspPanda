@@ -1,0 +1,31 @@
+# Seeds by furthest point sampling over the points whose objectness probability times graspness
+# exceeds 0.1 (the candidate rule of MultiGraspNet).
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * graspness_threshold: 0.1 now cuts the product, a soft version of GSNet's rule: a point of
+#   uncertain objectness needs more graspness to pass.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    select_by: product
+    graspness_threshold: 0.1
+    sampler:
+      type: FPS
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

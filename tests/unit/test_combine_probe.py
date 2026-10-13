@@ -155,18 +155,49 @@ def test_a_refused_config_is_refused_before_anything_is_built(capsys):
 
 
 def test_a_failure_names_the_phase_and_the_component(tmp_path):
-    """Passes the config check, fails when built: the gated seed residual of
-    Scale-Balanced-Grasp needs the encoder's width, which only the built encoder knows."""
-    config = tiny("ScaleBalancedGrasp", "PointNet2")
-    config["model"]["grouper"]["mlp_channels"] = [8, 8]  # the encoder returns 12 channels
-    path = write(tmp_path, "narrow.yaml", config)
+    """Passes the config check, fails when built: the attention of EconomicGrasp's crop
+    needs a head count that divides its token width, which only the built grouper knows."""
+    config = tiny("EconomicGrasp", "PointNet2Dense")
+    config["model"]["grouper"]["attention_heads"] = 7  # tokens are 8 + 3 channels wide
+    path = write(tmp_path, "heads.yaml", config)
     report = probe(path, synthetic=True)
     assert report.verdict == "fails" and report.iterations == 0
     assert report.failure["phase"] == "build" and report.failure["error"] == "ValueError"
-    assert report.failure["component"] == "grouper DepthCylinderGroup"
-    assert "12-channel seed features to 8-channel crop features" in report.failure["message"]
-    assert report.detail.startswith("at build, in the grouper DepthCylinderGroup: ValueError:")
+    assert report.failure["component"] == "grouper CylinderInteractionGroup"
+    assert "num_heads must divide channels" in report.failure["message"]
+    assert report.detail.startswith(
+        "at build, in the grouper CylinderInteractionGroup: ValueError:"
+    )
     assert main(["probe", path, "--synthetic"]) == 1
+
+
+def test_a_first_loss_that_is_not_finite_is_a_failure_not_an_unstable_run(monkeypatch):
+    """`runs-unstable` means that training ran to the end; a loss that is not finite in the
+    first iteration ends the run before anything was trained."""
+    from grasppanda.engine import trainer as engine
+
+    def broken(self):
+        raise engine.NonFiniteLossError("non-finite loss at epoch 1, iteration 1: loss/score = nan")
+
+    monkeypatch.setattr(engine.Trainer, "train", broken)
+    report = probe(TOY, iters=4)
+    assert report.verdict == "fails" and report.iterations == 0 and report.nonfinite == []
+    assert report.failure["when"] == "iteration 1"
+    assert report.failure["error"] == "NonFiniteLossError"
+    assert "loss/score = nan" in report.failure["message"]
+
+
+def test_a_seed_width_mismatch_is_refused_before_anything_is_built(tmp_path):
+    """The gated seed residual of Scale-Balanced-Grasp needs the encoder's width; the
+    grouper states it, so the config check refuses the pair with the ways out."""
+    config = tiny("ScaleBalancedGrasp", "PointNet2")
+    config["model"]["grouper"]["mlp_channels"] = [8, 8]  # the encoder returns 12 channels
+    report = probe(write(tmp_path, "narrow.yaml", config), synthetic=True)
+    assert report.verdict == "refused"
+    assert any("DepthCylinderProjectionGroup" in message for message in report.refusal)
+    del config["model"]["grouper"]["seed_residual"]
+    config["model"]["grouper"]["type"] = "DepthCylinderProjectionGroup"
+    assert probe(write(tmp_path, "projected.yaml", config), synthetic=True).verdict == "wired"
 
 
 def test_phase_and_component_are_read_from_the_traceback():

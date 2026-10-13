@@ -10,13 +10,15 @@ a config names them like any other scheduler.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
 from grasppanda.registry import SCHEDULERS
+from grasppanda.utils.imports import require
 
-__all__ = ["WarmupCosineLR"]
+__all__ = ["TimmSchedule", "WarmupCosineLR"]
 
 
 @SCHEDULERS.register()
@@ -74,3 +76,84 @@ class WarmupCosineLR(LRScheduler):
     def get_lr(self) -> list[float]:
         factor = self.factor(self.last_epoch)
         return [base * factor for base in self.base_lrs]
+
+
+_TIMM = {
+    "cosine": "CosineLRScheduler",
+    "tanh": "TanhLRScheduler",
+    "poly": "PolyLRScheduler",
+    "step": "StepLRScheduler",
+    "multistep": "MultiStepLRScheduler",
+}
+
+
+@SCHEDULERS.register()
+class TimmSchedule(LRScheduler):
+    """A schedule of ``timm.scheduler`` by name: cosine, tanh, polynomial, step, multi-step.
+
+    All of them have a linear warm-up built in, and the cyclic ones restarts with a
+    decaying peak, which ``torch.optim.lr_scheduler`` only offers through objects a
+    config cannot express. The schedule is evaluated in closed form at the step count of
+    the trainer, so resuming needs no state of timm's; timm's learning-rate noise is not
+    applied. Steps are epochs or optimizer steps, as ``train.scheduler_unit`` says.
+
+    Args:
+        optimizer: The optimizer whose rates are scheduled.
+        name: ``cosine``, ``tanh``, ``poly``, ``step`` or ``multistep``.
+        total_steps: Length of the run in scheduler steps; the engine fills it in. It is
+            the length of the first cycle of ``cosine``, ``tanh`` and ``poly``
+            (``t_initial``, the warm-up included).
+        warmup_steps: Steps of linear warm-up; a value below 1 is a fraction of
+            ``total_steps`` (0.05: the first twentieth of the run).
+        warmup_lr_init: Learning rate at step 0 of the warm-up (absolute, not a factor).
+        lr_min: Final learning rate of ``cosine``, ``tanh`` and ``poly`` (absolute).
+        options: Further arguments of the timm class, passed unchanged: ``cycle_limit``,
+            ``cycle_mul``, ``cycle_decay``, ``k_decay`` for restarts, ``power`` for
+            ``poly``, ``decay_t`` and ``decay_rate`` for ``step`` and ``multistep``.
+        last_epoch: Index of the last step when resuming; ``-1`` starts afresh.
+    """
+
+    status = "bridge"
+    extras = ("optim",)
+    source = "Wightman, PyTorch Image Models (timm.scheduler), via timm"
+
+    def __init__(
+        self,
+        optimizer: Optimizer,
+        name: str = "cosine",
+        total_steps: int | None = None,
+        warmup_steps: float = 0.0,
+        warmup_lr_init: float = 0.0,
+        lr_min: float = 0.0,
+        options: dict[str, Any] | None = None,
+        last_epoch: int = -1,
+    ) -> None:
+        library = require("timm.scheduler", extra="optim", purpose="TimmSchedule")
+        if name not in _TIMM:
+            raise ValueError(f"TimmSchedule.name must be one of {', '.join(_TIMM)}, got '{name}'")
+        arguments = dict(options or {})
+        if warmup_steps < 0:
+            raise ValueError(f"TimmSchedule.warmup_steps must not be negative, got {warmup_steps}")
+        if 0 < warmup_steps < 1:
+            if total_steps is None:
+                raise ValueError("a fractional TimmSchedule.warmup_steps needs total_steps")
+            warmup_steps = round(warmup_steps * total_steps)
+        arguments.update(warmup_t=int(warmup_steps), warmup_lr_init=warmup_lr_init)
+        if name in ("cosine", "tanh", "poly"):
+            if "t_initial" not in arguments:
+                if total_steps is None:
+                    raise ValueError(f"TimmSchedule '{name}' needs total_steps")
+                prefix = int(warmup_steps) if arguments.get("warmup_prefix") else 0
+                arguments["t_initial"] = max(total_steps - prefix, 1)
+            arguments["lr_min"] = lr_min
+        elif "decay_t" not in arguments:
+            raise ValueError(f"TimmSchedule '{name}' needs options.decay_t (and decay_rate)")
+        try:
+            self.inner = getattr(library, _TIMM[name])(optimizer, **arguments)
+        except TypeError as error:
+            raise ValueError(f"TimmSchedule '{name}': {error}") from None
+        self.name = name
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self) -> list[float]:
+        return [float(value) for value in self.inner._get_lr(self.last_epoch)]

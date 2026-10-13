@@ -20,7 +20,10 @@ from grasppanda.models.base import Loss
 from grasppanda.registry import LOSSES
 from grasppanda.structures import ContractError
 
-__all__ = ["L1", "CrossEntropy", "ElementwiseLoss", "SmoothL1"]
+__all__ = ["L1", "CrossEntropy", "ElementwiseLoss", "Huber", "SmoothL1"]
+
+#: Kinds of loss term a penalty on the difference of two equally shaped tensors fits.
+DIFFERENCE_TERMS = ("value", "unit")
 
 
 class ElementwiseLoss(Loss):
@@ -82,6 +85,7 @@ class SmoothL1(ElementwiseLoss):
     """Huber-style penalty: quadratic below ``beta``, linear above."""
 
     source = "PyTorch smooth_l1_loss"
+    accepts = DIFFERENCE_TERMS
 
     def __init__(self, weight: float = 1.0, beta: float = 1.0) -> None:
         super().__init__(weight)
@@ -96,6 +100,7 @@ class L1(ElementwiseLoss):
     """Absolute error."""
 
     source = "PyTorch l1_loss"
+    accepts = DIFFERENCE_TERMS
 
     def __init__(self, weight: float = 1.0) -> None:
         super().__init__(weight)
@@ -105,20 +110,54 @@ class L1(ElementwiseLoss):
 
 
 @LOSSES.register()
+class Huber(ElementwiseLoss):
+    """Huber penalty: quadratic below ``delta``, linear with slope ``delta`` above.
+
+    ``Huber(delta) = delta x SmoothL1(beta=delta)``: the two agree at ``delta = 1`` and
+    differ in the scale of the linear part elsewhere, so a loss weight tuned for one does
+    not carry over to the other.
+    """
+
+    source = "PyTorch huber_loss"
+    status = "tested"
+    accepts = DIFFERENCE_TERMS
+
+    def __init__(self, weight: float = 1.0, delta: float = 1.0) -> None:
+        super().__init__(weight)
+        if delta <= 0:
+            raise ValueError(f"delta must be positive, got {delta}")
+        self.delta = delta
+
+    def penalty(self, prediction: Tensor, target: Tensor) -> Tensor:
+        return F.huber_loss(prediction, target, reduction="none", delta=self.delta)
+
+
+@LOSSES.register()
 class CrossEntropy(ElementwiseLoss):
     """Softmax cross-entropy between ``(N, C)`` logits and ``(N,)`` class indices."""
 
     source = "PyTorch cross_entropy"
+    accepts = ("class",)
 
     def __init__(self, weight: float = 1.0) -> None:
         super().__init__(weight)
 
     def _check(self, prediction: Tensor, target: Tensor) -> None:
-        if prediction.ndim != 2 or target.shape != prediction.shape[:1]:
-            raise ContractError(
-                f"CrossEntropy expects (N, C) logits and (N,) class indices, got "
-                f"{tuple(prediction.shape)} and {tuple(target.shape)}"
-            )
+        check_class_term(type(self).__name__, prediction, target)
 
     def penalty(self, prediction: Tensor, target: Tensor) -> Tensor:
         return F.cross_entropy(prediction, target.long(), reduction="none")
+
+
+def check_class_term(name: str, prediction: Tensor, target: Tensor) -> None:
+    """Refuse anything but ``(N, C)`` logits with ``(N,)`` class indices, naming the fix."""
+    if prediction.ndim != 2 or target.shape != prediction.shape[:1]:
+        raise ContractError(
+            f"{name} expects (N, C) logits and (N,) class indices, got "
+            f"{tuple(prediction.shape)} and {tuple(target.shape)}"
+        )
+    if target.is_floating_point():
+        raise ContractError(
+            f"{name} expects integer class indices, got {target.dtype} targets: this is a "
+            "regression term; use a loss for `value` or `unit` terms (SmoothL1, Huber, ...)"
+        )

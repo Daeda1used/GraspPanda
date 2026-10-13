@@ -1,0 +1,25 @@
+# AdamW with a one-cycle schedule, 10 epochs: the recipe Pointcept trains PTv3 with
+# (configs/scannet/semseg-pt-v3m1-0-base.py: AdamW, weight decay 0.05, OneCycleLR with
+# pct_start 0.05, div_factor 10, final_div_factor 1000), at a learning rate for grasp
+# batches. A method-neutral base: no shipped method was tuned with it and no AP is
+# claimed. As a recipe preset: `grasppanda compose <config> --set recipe=adamw-onecycle`.
+#
+# OneCycleLR replaces the optimizer's rate by `max_lr`: keep the two equal. The engine
+# fills in the length of the run. docs/slots/recipe.md describes every part.
+optimizer:
+  type: AdamW
+  lr: 1e-3
+  weight_decay: 0.05
+
+scheduler:
+  type: OneCycleLR
+  max_lr: 1e-3
+  pct_start: 0.05
+  anneal_strategy: cos
+  div_factor: 10.0
+  final_div_factor: 1000.0
+  cycle_momentum: false
+
+train:
+  epochs: 10
+  scheduler_unit: iteration

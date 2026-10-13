@@ -1,0 +1,20 @@
+# AdamW with layer-wise learning-rate decay through the scene encoder (BEiT, as in timm).
+#
+# The last layer of the encoder trains at 0.75 of the rate, each earlier one at 0.75 of the next;
+# the stages after the encoder keep the full rate. Seed-based detectors only.
+#
+# What must be re-tuned, and why:
+# * layer_decay: 0.75 is the usual value for 12 blocks; with L layers the first one trains at
+#   0.75 ** L of the rate, so use a value nearer 1 for deep encoders.
+# * layer_decay_depth: 2 counts the children of the encoder's children as layers;
+#   `grasppanda.engine.optimizers.layer_names(model.backbone)` lists them. In a U-Net the
+#   decoder is registered after the encoder and therefore counts as later layers.
+# * lr: the value is a starting point for batches of 4 frames of 15000 points; every shipped
+#   method was tuned with Adam at 1e-3 (HGGD: AdamW at 1e-2), so compare against that.
+optimizer:
+  type: ParamGroups
+  optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}
+  layer_decay: 0.75
+  layer_decay_module: backbone
+  layer_decay_depth: 2
+  no_decay_1d: true

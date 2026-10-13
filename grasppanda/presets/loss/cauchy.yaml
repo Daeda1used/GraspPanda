@@ -1,0 +1,15 @@
+# Cauchy penalty through kornia: log(d^2 / 2 + 1), which grows only logarithmically for large
+# errors.
+#
+# For `value` and `unit` terms with wrong labels among them: a far-off target pulls much less than
+# under SmoothL1. Needs the extra `kornia`.
+#
+# What must be re-tuned, and why:
+# * kind: cauchy. The scale of a small error is 1 in the units of the target.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: RobustLoss
+    kind: cauchy                  # charbonnier, welsch, cauchy or geman_mcclure

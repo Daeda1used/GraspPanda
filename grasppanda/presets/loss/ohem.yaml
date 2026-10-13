@@ -1,0 +1,21 @@
+# Online hard example mining on a cross-entropy: only the hardest quarter of the supervised
+# elements counts.
+#
+# For `class` terms: objectness of points or seeds, angle, depth and quality classes. The
+# selection runs over the batch, since a loss does not see frame boundaries. Any element-wise loss
+# can be mined: replace the inner `loss`.
+#
+# What must be re-tuned, and why:
+# * fraction: 0.25 of the supervised elements is kept. Contact-GraspNet (ICRA 2021) back-
+#   propagates the k = 512 points with the largest errors; a share is used here because a loss
+#   does not know the number of points of a frame.
+# * the inner loss: `--opts model.<stage>.<term>.loss.type=FocalLoss` mines another penalty.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than the unmined loss (a mean over the hardest elements only), so
+#   compare the logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: TopK
+    fraction: 0.25                # share of the supervised elements that is kept
+    min_kept: 1
+    loss: {type: CrossEntropy}

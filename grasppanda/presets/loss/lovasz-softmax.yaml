@@ -1,0 +1,15 @@
+# Lovasz-Softmax loss through kornia: a surrogate of the mean intersection-over-union of the
+# supervised set.
+#
+# For `class` terms that are a segmentation, as `dice`: objectness of points or seeds. Refused
+# where the assigner returns seed weights. Needs the extra `kornia`.
+#
+# What must be re-tuned, and why:
+# * no option. It sorts the errors of the set at every call: on 20 000 points per frame that costs
+#   a sort per class.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy, so compare the logged `loss/...` values of both
+#   runs and re-tune.
+model:
+  loss:
+    type: LovaszSoftmaxLoss

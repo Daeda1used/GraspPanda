@@ -1,0 +1,15 @@
+# Prodigy (Mishchenko and Defazio, arXiv 2306.06101): Adam that estimates its own step size.
+#
+# Through PytorchOptimizer; `pytorch_optimizer.get_supported_optimizers()` names the others, and
+# `options:` takes the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr: leave it at 1.0, it multiplies the estimated step size; the estimate grows during the
+#   first few hundred steps, so a short probe moves the weights little.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: PytorchOptimizer
+  name: prodigy
+  lr: 1.0
+  weight_decay: 0.0

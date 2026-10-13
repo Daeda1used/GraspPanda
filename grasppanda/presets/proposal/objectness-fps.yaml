@@ -1,0 +1,32 @@
+# Seeds by furthest point sampling over the predicted foreground: objectness alone selects,
+# graspness is still predicted and supervised but does not cut.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * objectness_threshold: 0.5 is the arg-max of the two logits; lower it to keep object borders.
+# * Every object point is a candidate, so many seeds lie where no grasp exists; the head has to
+#   reject them.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    select_by: objectness
+    objectness_threshold: 0.5
+    sampler:
+      type: FPS
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

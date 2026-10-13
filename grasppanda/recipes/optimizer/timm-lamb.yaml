@@ -1,0 +1,14 @@
+# LAMB (You et al., ICLR 2020): Adam with a per-layer trust ratio, for large batches.
+#
+# Through TimmOptimizer; `timm.optim.list_optimizers()` names the other 97, and `options:` takes
+# the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr: LAMB is run with rates above Adam's (timm's ImageNet recipes: 5e-3).
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: TimmOptimizer
+  name: lamb
+  lr: 2.0e-03
+  weight_decay: 0.02

@@ -1,0 +1,15 @@
+# Exponential moving average of the weights with warm-up of the decay; evaluation scores it.
+#
+# torch.optim.swa_utils.AveragedModel behind EMAHook. Checkpoints hold both the trained weights
+# and the average (`ema`).
+#
+# What must be re-tuned, and why:
+# * decay: 0.999 averages over about 1000 optimizer steps; a run of a few thousand steps wants
+#   0.99 to 0.999, a long one 0.9999.
+# * evaluation.weights: `ema` scores the average during training and in `grasppanda test`; set
+#   `model` to score the trained weights of the same checkpoint.
+hooks:
+  - {type: EMAHook, decay: 0.999, warmup: true, buffers: copy}
+
+evaluation:
+  weights: ema

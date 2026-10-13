@@ -1,0 +1,22 @@
+# 1024 seeds by furthest point sampling in feature space (F-FPS of 3DSSD, CVPR 2020) over all points
+# of a dense encoder.
+#
+# Nothing is scored and nothing is supervised here, so it fits every seed-based method: under
+# GraspNet-baseline and Scale-Balanced-Grasp the view stage keeps objectness, under the graspness
+# family the seeds are no longer filtered by graspness. It needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation). No AP has been measured with this option.
+#
+# What must be re-tuned, and why:
+# * sampler.coord_weight: 1.0 as in the released 3DSSD code; raise it to keep spatial spread when
+#   the encoder has hundreds of channels.
+# * Each pick measures every scene point in feature space: about a second per frame for 20 000
+#   points and 256 channels on a GPU.
+model:
+  proposal:
+    type: SampledSeeds
+    num_seeds: 1024
+    sampler:
+      type: FeatureFPS
+      metric: concat
+      coord_weight: 1.0
+      normalize: false

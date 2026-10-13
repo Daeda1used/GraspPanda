@@ -1,0 +1,14 @@
+# AdamW with no weight decay on biases and normalisation weights, through ParamGroups.
+#
+# The rule of timm and of most transformer recipes: only weight matrices are decayed.
+#
+# What must be re-tuned, and why:
+# * lr: the value is a starting point for batches of 4 frames of 15000 points; every shipped
+#   method was tuned with Adam at 1e-3 (HGGD: AdamW at 1e-2), so compare against that.
+# * weight_decay: 0.05 applies to parameters with two or more dimensions.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: ParamGroups
+  optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}
+  no_decay_1d: true

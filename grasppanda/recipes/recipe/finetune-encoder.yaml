@@ -1,0 +1,36 @@
+# Fine-tuning recipe for a pretrained scene encoder: layer-wise decay, warm-up and cosine, one
+# frozen epoch, EMA.
+#
+# The usual recipe of masked-pretraining papers (BEiT, MAE) put together from the parts here.
+# Seed-based detectors only. It does not load weights: set `runtime.load_from` or the encoder's
+# own pretrained option.
+#
+# What must be re-tuned, and why:
+# * layer_decay: 0.75; see `--show optimizer=layer-decay`.
+# * FreezeHook.epochs: 1 of 10, so that the new stages settle before the encoder moves.
+# * EMAHook.decay and evaluation.weights: see `--show hooks=ema`.
+# * lr: the value is a starting point for batches of 4 frames of 15000 points; every shipped
+#   method was tuned with Adam at 1e-3 (HGGD: AdamW at 1e-2), so compare against that.
+optimizer:
+  type: ParamGroups
+  optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}
+  layer_decay: 0.75
+  layer_decay_module: backbone
+  no_decay_1d: true
+
+scheduler:
+  type: TimmSchedule
+  name: cosine
+  warmup_steps: 0.05
+  warmup_lr_init: 1.0e-6
+  lr_min: 1.0e-6
+
+train:
+  scheduler_unit: iteration
+
+hooks:
+  - {type: FreezeHook, modules: [backbone], epochs: 1, eval_mode: true}
+  - {type: EMAHook, decay: 0.999, warmup: true, buffers: copy}
+
+evaluation:
+  weights: ema

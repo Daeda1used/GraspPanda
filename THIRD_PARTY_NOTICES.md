@@ -132,3 +132,43 @@ each library is its own.
 - Files: `grasppanda/models/backbones/minkunet.py` (the layer plan of `examples/minkunet.py`, the
   blocks of `MinkowskiEngine/modules/resnet_block.py` and the initialisation of `examples/resnet.py`,
   rewritten on `grasppanda.ops.sparse`; no MinkowskiEngine code is called).
+## RGB Matters
+
+- Repository: https://github.com/GouMinghao/rgb_matters
+- Commit: 2e176728f6
+- Licence: MIT. Copyright (c) 2022 Gou Minghao
+- Files: `grasppanda/models/views/angular_cost.py` (the angular class loss, adapted from
+  `rgbd_graspnet/net/loss.py`)
+
+## open-mmlab/mmdetection
+
+- Repository: https://github.com/open-mmlab/mmdetection
+- Commit: `cfd5d3a985b0249de009b67d04f37263e11cdf3d`
+- Licence: Apache-2.0. `Copyright 2018-2023 OpenMMLab.`
+- Changes (Apache-2.0, section 4b): the loss functions of `mmdet/models/losses/gfocal_loss.py`,
+  `varifocal_loss.py`, `ghm_loss.py` and `balanced_l1_loss.py` as GraspPanda loss primitives (a penalty
+  per element, a mask, weights, `weight x mean`), without the registry, the reductions by an average
+  factor and the label conventions of the detection heads; the last bin is a valid target of the
+  distribution focal loss; GHM counts only the supervised elements of a call.
+- Files: `grasppanda/models/losses/detection.py`
+
+## OpenPCDet (RoI-grid pooling, RoI-aware pooling, voxel set abstraction)
+
+- Repository: https://github.com/open-mmlab/OpenPCDet
+- Commit: `233f849`
+- Licence: Apache-2.0. The licence file names no copyright holder; the pooling kernels are
+  signed "Written by Shaoshuai Shi".
+- Files: `grasppanda/models/groupers/roi_pool.py` (classes `RoIGridGroup`, `RoIAwareGroup`
+  and `VoxelSetAbstractionGroup`; from `pcdet/models/roi_heads/pvrcnn_head.py`,
+  `pcdet/models/roi_heads/partA2_head.py`, `pcdet/ops/roiaware_pool3d` and
+  `pcdet/models/backbones_3d/pfe/voxel_set_abstraction.py`). Changes are listed at the top
+  of the file: the region is a gripper-aligned box, the CUDA extensions are replaced by
+  operators of this package, and a linear layer per cell stands in for the sparse
+  convolutions of Part-A².
+## Pointcept
+
+- Repository: https://github.com/Pointcept/Pointcept
+- Commit: `1342eda30e96cbb5fadf5374ff8eb18f6de15c71`
+- Licence: MIT. `Copyright (c) 2023 Pointcept`
+- Files: `grasppanda/transforms/pointcept.py` (`RandomJitter`, `RandomDropout`,
+  `RandomShift`, adapted from `pointcept/datasets/transform.py`)

@@ -1,0 +1,28 @@
+# AdamW with a one-cycle schedule, the recipe Pointcept trains PTv3 with, at a rate for grasp
+# batches.
+#
+# Pointcept (configs/scannet/semseg-pt-v3m1-0-base.py): AdamW lr 6e-3, weight decay 0.05,
+# OneCycleLR with pct_start 0.05, div_factor 10, final_div_factor 1000, mixed precision on. Mixed
+# precision is left off here (`--set hooks=amp` adds it).
+#
+# What must be re-tuned, and why:
+# * lr and max_lr: 1e-3 instead of Pointcept's 6e-3, which belongs to batches of 12 rooms; keep
+#   the two equal.
+# * weight_decay: 0.05 on every parameter, as Pointcept does.
+# * epochs: a one-cycle schedule ends near zero, so the length of the run is part of it.
+optimizer:
+  type: AdamW
+  lr: 1.0e-3
+  weight_decay: 0.05
+
+scheduler:
+  type: OneCycleLR
+  max_lr: 1.0e-3
+  pct_start: 0.05
+  anneal_strategy: cos
+  div_factor: 10.0
+  final_div_factor: 1000.0
+  cycle_momentum: false
+
+train:
+  scheduler_unit: iteration

@@ -24,7 +24,7 @@ Targets (reference behaviour, each a named option):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
@@ -109,6 +109,7 @@ class SWADHead(HeadBundle):
     score_kind = "predicted_quality"
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
+    loss_terms: ClassVar[dict[str, str]] = {"score_loss": "unit", "width_loss": "value"}
 
     def __init__(
         self,
@@ -220,7 +221,9 @@ class SWADHead(HeadBundle):
                 f"{type(self).__name__}.decode: {len(raw.score)} predictions, {len(seeds)} seeds "
                 f"and {len(approach)} approaches do not line up"
             )
-        score, cell = self.codec.flatten(raw.score).max(dim=-1)
+        # A score loss that trains logits (QualityFocal, Varifocal, ...) is decoded
+        # through its sigmoid; the best cell is the same either way.
+        score, cell = self.codec.flatten(self.score_loss.as_value(raw.score)).max(dim=-1)
         angle_index, depth_index = self.codec.split_cell(cell)
         width = self.codec.flatten(raw.width).gather(1, cell[:, None]).squeeze(1)
         return GraspGroup(

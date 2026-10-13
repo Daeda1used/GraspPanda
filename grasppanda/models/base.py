@@ -117,6 +117,8 @@ class Proposal(nn.Module):
     #: Per-seed scores the stage predicts, supervises and stores in ``SeedSet.scores``.
     #: Two stages of one detector may not predict the same score.
     seed_scores: ClassVar[tuple[str, ...]] = ()
+    #: Loss option → kind of term (see :class:`Loss`); an undeclared option is not checked.
+    loss_terms: ClassVar[Mapping[str, str]] = {}
 
 
 @VIEWS.base
@@ -127,13 +129,15 @@ class ViewStage(nn.Module):
     from (the assigner's ``label_format`` must be one of them); ``needs_matched`` the
     optional fields of the matched labels it cannot work without; ``seed_scores`` what
     it adds to ``SeedSet.scores``; ``applies_seed_weights`` whether its loss honours a
-    per-seed weight returned by the assigner.
+    per-seed weight returned by the assigner; ``loss_terms`` the kind of every loss
+    option it has (see :class:`Loss`).
     """
 
     seed_scores: ClassVar[tuple[str, ...]] = ()
     label_formats: ClassVar[tuple[str, ...]] = ("dense",)
     needs_matched: ClassVar[tuple[str, ...]] = ()
     applies_seed_weights: ClassVar[bool] = False
+    loss_terms: ClassVar[Mapping[str, str]] = {}
 
 
 @GROUPERS.base
@@ -176,8 +180,9 @@ class HeadBundle(nn.Module):
     The four parts share one grasp parameterization, so they cannot be mixed across
     bundles. ``score_kind`` names the meaning of the scores the decoder emits.
     ``label_format`` is the kind of matched labels the bundle is supervised with (the
-    assigner must return the same); ``needs_matched`` and ``applies_seed_weights`` mean
-    what they mean on :class:`ViewStage`.
+    assigner must return the same); ``needs_matched``, ``applies_seed_weights`` and
+    ``loss_terms`` mean what they mean on :class:`ViewStage`. A bundle whose terms depend
+    on its options defines ``loss_terms_for(options)`` beside the attribute.
     """
 
     in_axes: ClassVar[tuple[str, ...]]
@@ -185,6 +190,7 @@ class HeadBundle(nn.Module):
     label_format: ClassVar[str] = "dense"
     needs_matched: ClassVar[tuple[str, ...]] = ()
     applies_seed_weights: ClassVar[bool] = False
+    loss_terms: ClassVar[Mapping[str, str]] = {}
 
     @classmethod
     def required_seed_scores(cls, options: Mapping[str, Any]) -> tuple[str, ...]:
@@ -199,7 +205,38 @@ class HeadBundle(nn.Module):
 
 @LOSSES.base
 class Loss(nn.Module):
-    """A primitive loss used inside a stage."""
+    """A primitive loss used inside a stage.
+
+    A stage names the kind of every loss term it owns in ``loss_terms`` (option → kind),
+    and a primitive lists in ``accepts`` the kinds it can be put into; the config checker
+    refuses any other pairing and names the primitives that fit. The kinds are
+
+    * ``class``: ``(N, C)`` logits against ``(N,)`` class indices;
+    * ``unit``: prediction and target of equal shape, the target a quality in ``[0, 1]``;
+    * ``value``: prediction and target of equal shape, the target an unbounded quantity
+      (a width, a tolerance, a log-friction score);
+    * ``bins``: ``(N, C)`` logits against ``(N,)`` fractional bin positions in
+      ``[0, C - 1]``.
+
+    ``prediction`` says how the primitive reads the output of a ``unit`` term: as the
+    ``value`` itself or as a ``logit``. A stage hands that output on through
+    :meth:`as_value`, so a threshold or a decoded score sees a quality either way.
+    ``applies_weights`` is false for a primitive that cannot weight single elements; it
+    is then refused where the assigner returns a weight per seed.
+    """
+
+    accepts: ClassVar[tuple[str, ...]] = ()
+    prediction: ClassVar[Literal["value", "logit"]] = "value"
+    applies_weights: ClassVar[bool] = True
+
+    @classmethod
+    def accepted_terms(cls, options: Mapping[str, Any]) -> tuple[str, ...]:
+        """Kinds of loss term the primitive fits when configured with ``options``."""
+        return cls.accepts
+
+    def as_value(self, output: Tensor) -> Tensor:
+        """What a consumer reads from the raw output of a ``unit`` term this loss trains."""
+        return output.sigmoid() if self.prediction == "logit" else output
 
 
 @POSTPROCESSORS.base

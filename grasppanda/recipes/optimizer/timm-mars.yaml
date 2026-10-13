@@ -1,0 +1,14 @@
+# MARS (Yuan et al., arXiv 2411.10438): variance-reduced AdamW.
+#
+# Through TimmOptimizer; `timm.optim.list_optimizers()` names the other 97, and `options:` takes
+# the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr: start at AdamW's rate; the variance reduction is on by default.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: TimmOptimizer
+  name: mars
+  lr: 1.0e-03
+  weight_decay: 0.0

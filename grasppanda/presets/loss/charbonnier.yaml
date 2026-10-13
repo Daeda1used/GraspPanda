@@ -1,0 +1,16 @@
+# Charbonnier penalty through kornia: sqrt(d^2 + 1) - 1, quadratic for small errors and linear for
+# large ones.
+#
+# For `value` and `unit` terms. A smooth relative of SmoothL1; `RobustLoss` also offers `welsch`,
+# `cauchy` and `geman_mcclure`. Needs the extra `kornia`.
+#
+# What must be re-tuned, and why:
+# * kind: charbonnier. The scale of a small error is 1 in the units of the target; widths (metres
+#   x 10) stay in the quadratic part.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: RobustLoss
+    kind: charbonnier             # charbonnier, welsch, cauchy or geman_mcclure

@@ -43,7 +43,7 @@ PAGE = REPO / "docs" / "advanced_guides" / "measured_combinations.md"
 NOT_PROBED: dict[str, str] = {}
 #: Groups every registered component must have records in. The sets of stages are probed
 #: too, but a new stage does not have to wait for its sets: the page counts what is missing.
-REQUIRED_GROUPS = ("reference", "encoder", "stage", "family", "family-slot")
+REQUIRED_GROUPS = ("reference", "encoder", "stage", "family", "family-slot", "loss")
 HOW_TO_PROBE = (
     "Probe them on a machine with GraspNet-1Billion and a GPU, then export and regenerate:\n"
     "  python -m tools.probe_grid run --name mine --only '<cell id>' ...\n"
@@ -96,6 +96,8 @@ def test_the_grid_follows_the_registries_and_the_shipped_configs():
         "family",
         "family-slot",
         "post",
+        "loss",
+        "recipe",
     }
     # The methods are the seed-based detectors' own shipped configs, HGGD is the other family.
     shipped = set(available_configs())
@@ -253,7 +255,10 @@ def test_a_record_is_a_run_with_its_commands_and_a_verdict_of_the_vocabulary(mea
     # The file is the runner's own serialisation: one cell per line, nothing edited by hand.
     assert tool("probe_grid").dump(measured) == text
     assert sum(line.startswith('  {"id": ') for line in text.splitlines()) == len(by_id)
-    assert len(text) < 1_300 * len(by_id)  # compact: about a kilobyte per probed cell
+    # Compact: about a kilobyte per probed cell. The list of the stage sets that were not
+    # probed is no record; it grows with the product of the stage variants.
+    unprobed = len(json.dumps(measured["about"]["not_probed"]))
+    assert len(text) - unprobed < 1_300 * len(by_id)
 
 
 def test_a_probe_that_ran_out_of_gpu_memory_never_stands_for_its_config():

@@ -1,0 +1,10 @@
+# Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow.
+#
+# Adapted from Pointcept's RandomShift. Refused for datasets that serve images.
+#
+# What must be re-tuned, and why:
+# * shift: metres in the camera frame, z along the view. Encoders with absolute coordinates as
+#   input see the scene at other places; relative ones are unaffected.
+transforms:
+  append:
+    - {type: RandomShift, shift: [[-0.1, 0.1], [-0.1, 0.1], [-0.05, 0.1]]}

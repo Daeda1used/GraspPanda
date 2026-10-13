@@ -1,0 +1,19 @@
+# Dice loss through kornia: one minus the overlap of predicted and labelled classes over the
+# supervised set.
+#
+# For `class` terms that are a segmentation: the objectness of scene points
+# (`proposal.objectness_loss`) or of seeds (`view.objectness_loss`). One value for the whole set,
+# so a small foreground is not outvoted. It cannot weight single elements and is refused where the
+# assigner returns seed weights. Needs the extra `kornia`.
+#
+# What must be re-tuned, and why:
+# * average: micro computes one overlap over all classes; macro one per class.
+# * the value lies in [0, 1] and does not go to zero as fast as a cross-entropy; it is often added
+#   to one rather than used alone, which needs a second term in the stage.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy, so compare the logged `loss/...` values of both
+#   runs and re-tune.
+model:
+  loss:
+    type: DiceLoss
+    average: micro                # micro: one overlap; macro: mean over classes

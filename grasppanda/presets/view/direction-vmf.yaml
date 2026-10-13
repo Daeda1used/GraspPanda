@@ -1,0 +1,23 @@
+# DirectionViewStage with a von Mises-Fisher likelihood: a direction and its concentration per
+# seed.
+#
+# Four numbers per seed. The concentration is a confidence of the direction: it is trained
+# by the likelihood and logged (`metric/view_concentration`), and the decoder does not use it.
+#
+# What must be re-tuned, and why:
+# * concentration: true replaces the cosine loss by a negative log-likelihood, which is a
+#   density and may be negative; do not compare its value with the cosine loss.
+# * label_views: 300 is the lattice the label files are indexed by: the regressed direction
+#   is snapped to it for the label lookup. Training crops use the label frame of the snapped
+#   view, inference crops the frame of the regressed direction (up to 9 degrees apart).
+# * direction_weight: 1.0 is untuned; no AP has been
+#   measured for this stage under any method.
+# * max_friction: 0.6 must equal the value compact labels were encoded with.
+model:
+  view:
+    type: DirectionViewStage
+    label_views: 300              # the lattice of the label files; not a free choice
+    max_friction: 0.6
+    direction_weight: 1.0
+    concentration: true           # predict kappa, train with the vMF likelihood
+    residual: true                # add the stage's hidden features to the seed features

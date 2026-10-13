@@ -29,7 +29,7 @@ The seed features are passed on unchanged: this stage adds no residual to them.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
@@ -115,6 +115,10 @@ class ObjectnessViewStage(ViewStage):
     seed_scores = ("objectness",)
     needs_matched = ("on_object", "view_width")
     applies_seed_weights = True
+    #: View targets are log-friction scores, up to ln(10): a `value` term.
+    loss_terms: ClassVar[dict[str, str]] = {"objectness_loss": "class", "view_loss": "value"}
+    #: The seed weights of the assigner reach the view term only.
+    seed_weighted_terms = ("view_loss",)
 
     def __init__(
         self,

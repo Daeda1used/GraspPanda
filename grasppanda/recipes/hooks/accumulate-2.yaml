@@ -1,0 +1,9 @@
+# Gradient accumulation: one optimizer step per two batches, an effective batch twice as large.
+#
+# A train option of the engine, no hook. Gradients are averaged over the batches.
+#
+# What must be re-tuned, and why:
+# * accumulate: the schedule (per-iteration units) and the weight average then step once per two
+#   batches; batch-norm statistics still see single batches.
+train:
+  accumulate: 2

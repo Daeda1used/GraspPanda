@@ -41,6 +41,10 @@ class Hook:
     def before_epoch(self, state: TrainState) -> None:
         """``state.epoch`` is the 0-based index of the epoch about to run."""
 
+    def before_step(self, state: TrainState) -> None:
+        """Before every optimizer step: the accumulated gradients are there, not yet
+        clipped by ``train.grad_clip`` and not yet applied."""
+
     def after_iter(self, state: TrainState) -> None:
         """After every batch; ``state.outputs`` holds its loss terms and metrics."""
 

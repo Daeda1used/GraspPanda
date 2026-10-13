@@ -1,0 +1,15 @@
+# Stochastic weight averaging: the mean of the weights after each of the last epochs.
+#
+# torch.optim.swa_utils.AveragedModel behind SWAHook; evaluation scores the mean once it exists.
+#
+# What must be re-tuned, and why:
+# * start_epoch: completed epochs before averaging starts; 7 averages the last three of a
+#   10-epoch run. It must be below `train.epochs`.
+# * schedule: the paper holds the rate constant or cyclic while averaging; a rate that has
+#   decayed to zero leaves nothing to average.
+# * batch norm: the statistics are the last epoch's, not re-estimated for the mean.
+hooks:
+  - {type: SWAHook, start_epoch: 7, buffers: copy}
+
+evaluation:
+  weights: ema

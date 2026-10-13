@@ -150,7 +150,8 @@ def test_seed_weights_are_never_dropped_silently():
     assert "TemplateViewStage and SWADHead do not apply seed weights" in message
     assert "silently do nothing" in message
     assert (
-        "view stages: ObjectnessViewStage" in message and "head bundles: OperationHead" in message
+        "ObjectnessViewStage" in message.split("view stages: ")[1].split(";")[0]
+        and "head bundles: OperationHead" in message
     )
     message = only(
         stage_contract_problems(

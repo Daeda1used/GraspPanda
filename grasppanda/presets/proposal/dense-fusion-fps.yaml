@@ -1,0 +1,20 @@
+# Fusion sampling (FS of 3DSSD, CVPR 2020) over all points of a dense encoder: half of the seeds by
+# feature distance, half by coordinate distance.
+#
+# Nothing is scored and nothing is supervised here, so it fits every seed-based method: under
+# GraspNet-baseline and Scale-Balanced-Grasp the view stage keeps objectness, under the graspness
+# family the seeds are no longer filtered by graspness. It needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation). No AP has been measured with this option.
+#
+# What must be re-tuned, and why:
+# * sampler.feature_fraction: 0.5; 0 is dense-fps, 1 is dense-ffps.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: SampledSeeds
+    num_seeds: 1024
+    sampler:
+      type: FusionFPS
+      feature_fraction: 0.5
+      metric: concat
+      coord_weight: 1.0

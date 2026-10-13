@@ -16,6 +16,8 @@ Ground truth enters in exactly one place, the assigner, and only through the
 
 from __future__ import annotations
 
+import functools
+import json
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -29,20 +31,29 @@ from grasppanda.models.base import (
     BaseGraspDetector,
     Grouper,
     HeadBundle,
+    Loss,
     Proposal,
     ViewStage,
 )
 from grasppanda.models.heads.friction import SCORE_TARGETS
+from grasppanda.models.losses.terms import (
+    TERM_KINDS,
+    accepted_terms,
+    applies_weights,
+    fitting_losses,
+)
 from grasppanda.registry import (
     ASSIGNERS,
     BACKBONES,
     GROUPERS,
     HEADS,
     INJECTED,
+    LOSSES,
     PROPOSALS,
     VIEWS,
     Cfg,
     Registry,
+    RegistryError,
     component_parameters,
 )
 from grasppanda.structures import (
@@ -107,7 +118,10 @@ class _Stage:
 
     def __init__(self, slot: str, component: Any) -> None:
         self.built: Any = None
+        #: The config node, when the stage was given as one.
+        self.node: Mapping[str, Any] | None = None
         if isinstance(component, Mapping):
+            self.node = component
             self.cls = STAGE_REGISTRIES[slot].get(component["type"])
             self._options: Mapping[str, Any] | None = {**_defaults(self.cls), **component}
         elif isinstance(component, type):
@@ -337,6 +351,77 @@ def _seed_scores_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         )
 
 
+@functools.lru_cache(maxsize=64)
+def _built_width(node: str) -> int | None:
+    """Output width of an encoder node (JSON text), found by building it once.
+
+    Released weights are left out of that build: the width belongs to the architecture,
+    and the verdict must not depend on which files are on the machine that checks.
+    """
+
+    def bare(value: Any) -> Any:  # an adapter holds the encoder as a nested node
+        if isinstance(value, dict):
+            return {k: None if k == "pretrained" else bare(v) for k, v in value.items()}
+        return value
+
+    options = json.loads(node)
+    for attempt in (bare(options), options):
+        try:
+            return int(BACKBONES.build(attempt).out_channels)
+        except Exception:  # an optional dependency is missing, or it cannot be built alone
+            continue
+    return None
+
+
+def _encoder_width(backbone: _Stage) -> int | None:
+    """Channels of the features an encoder returns, or ``None`` when that cannot be told.
+
+    A built encoder says it; a config node says it through its ``out_channels`` option
+    or, when it has none or leaves it open, by being built (once per distinct node).
+    """
+    if backbone.built is not None:
+        width = getattr(backbone.built, "out_channels", None)
+        return int(width) if isinstance(width, int) else None
+    width = backbone.option("out_channels")
+    if isinstance(width, int) and not isinstance(width, bool):
+        return width
+    if backbone.node is None:
+        return None
+    try:
+        node = json.dumps(dict(backbone.node), sort_keys=True)
+    except TypeError:
+        return None
+    return _built_width(node)
+
+
+def _seed_width_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """Width of the seed features: what the encoder returns against what a grouper that
+    adds them to its crops was configured for (``Grouper.required_seed_channels``)."""
+    backbone, grouper = stages.get("backbone"), stages.get("grouper")
+    if backbone is None or grouper is None:
+        return
+    reader = getattr(grouper.cls, "required_seed_channels", None)
+    required = reader(grouper.options) if reader is not None else None
+    if required is None:
+        return
+    width = _encoder_width(backbone)
+    if width is None or width == required:
+        return
+    variant = getattr(grouper.cls, "projected_variant", None)
+    projection = (
+        f"Use `type: {variant}` for the grouper (the same crop with a linear layer in front of "
+        "the residual; `grasppanda compose` does that), or "
+        if variant
+        else "Either "
+    )
+    yield (
+        f"{grouper.name} as configured adds the seed features to its {required}-channel crop "
+        f"features, but {backbone.name} returns {width}-channel features. {projection}give the "
+        f"encoder {required} output channels where it has that option, or end the grouper's "
+        f"`mlp_channels` on {width}, or set `seed_residual: none`."
+    )
+
+
 def _depth_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Size of the depth axis: one crop of the grouper per depth bin of the head."""
     grouper, head = stages.get("grouper"), stages.get("head")
@@ -345,6 +430,15 @@ def _depth_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     reach, bins = grouper.option("hmax"), head.option("num_depth")
     if bins is _UNKNOWN:  # a built head keeps its grid in the codec
         bins = getattr(getattr(head.built, "codec", None), "num_depth", _UNKNOWN)
+    stated = grouper.option("num_depth")  # a grouper whose depth axis is a plain number
+    if not isinstance(reach, (list, tuple)) and isinstance(stated, int) and isinstance(bins, int):
+        # Under a head without a depth axis the axes rule has refused the pair already.
+        if stated != bins and "depth" in (head.contract("in_axes") or ()):
+            yield (
+                f"{grouper.name} has num_depth = {stated}, but the head bundle has num_depth = "
+                f"{bins}. Set the grouper's `num_depth` to {bins}."
+            )
+        return
     if not (isinstance(reach, (list, tuple)) and isinstance(bins, int)) or len(reach) == bins:
         return
     if grouper.built is None:
@@ -378,14 +472,93 @@ def _shared_score_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
             )
 
 
+def _angle_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """Size of the in-plane angle axis: a view stage that turns the labelled angle bin
+    into a rotation target against the angle grid of the head bundle."""
+    view, head = stages.get("view"), stages.get("head")
+    if view is None or head is None:
+        return
+    mine, bins = view.option("num_angle"), head.option("num_angle")
+    if bins is _UNKNOWN:  # a built head keeps its grid in the codec
+        bins = getattr(getattr(head.built, "codec", None), "num_angle", _UNKNOWN)
+    if isinstance(mine, int) and isinstance(bins, int) and mine != bins:
+        yield (
+            f"{view.name} has num_angle = {mine} and {head.name} has num_angle = {bins}. The "
+            "view stage reads the labelled in-plane angle bin as a rotation, so both must use "
+            "the angle grid of the label set."
+        )
+
+
+def _loss_terms_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """Loss terms: the kind of term a stage hands to a primitive against the kinds the
+    primitive fits, and a weight per seed against a primitive that cannot apply one.
+
+    A stage that applies seed weights passes them to every loss term it has, unless it
+    names the terms that receive them in ``seed_weighted_terms``."""
+    assigner = stages.get("assigner")
+    weighted = False
+    if assigner is not None:
+        outputs = assigner.contract("optional_outputs", {})
+        switch = outputs.get("weight", _UNKNOWN)
+        weighted = switch is None or (
+            switch is not _UNKNOWN and assigner.option(switch[0]) in (_UNKNOWN, switch[1])
+        )
+    for slot in ("proposal", "view", "head"):
+        stage = stages.get(slot)
+        if stage is None:
+            continue
+        reader = getattr(stage.cls, "loss_terms_for", None)
+        terms = reader(stage.options) if reader else stage.contract("loss_terms", {})
+        for option, kind in (terms or {}).items():
+            loss = stage.option(option)
+            if stage.built is not None and not isinstance(loss, Loss):
+                loss = getattr(stage.built, f"{option}_fn", None)  # `loss` is also a method
+            try:
+                found = accepted_terms(loss)
+            except RegistryError:
+                continue  # an unknown loss: the config check names it
+            if found is None:
+                continue  # left to the stage: it builds the loss of its reference
+            cls, accepted = found
+            where = f"{stage.name}.{option}"
+            if kind not in accepted:
+                fits = " or ".join(f"`{name}`" for name in accepted) or "no"
+                yield (
+                    f"{where} is a `{kind}` term ({TERM_KINDS.get(kind, 'undescribed')}), but "
+                    f"{cls.__name__} fits {fits} terms. Losses for a `{kind}` term: "
+                    f"{', '.join(fitting_losses(kind)) or 'none registered'}."
+                )
+            elif (
+                weighted
+                and slot != "proposal"
+                and stage.contract("applies_seed_weights", False)
+                and option in stage.contract("seed_weighted_terms", tuple(terms))
+                and not applies_weights(loss)
+            ):
+                able = [
+                    name
+                    for name in fitting_losses(kind)
+                    if getattr(LOSSES.get(name), "applies_weights", True)
+                ]
+                yield (
+                    f"{assigner.name} returns a loss weight per seed and {stage.name} passes it "
+                    f"to {option}, but {cls.__name__} scores the supervised set as a whole and "
+                    f"cannot weight single elements. Losses for a `{kind}` term that apply "
+                    f"weights: {', '.join(able)}."
+                )
+
+
 _RULES: tuple[Callable[[Mapping[str, _Stage]], Iterator[str]], ...] = (
     _encoder_rule,
     _axes_rule,
     _label_format_rule,
     _matched_fields_rule,
     _seed_scores_rule,
+    _seed_width_rule,
     _depth_bins_rule,
     _shared_score_rule,
+    _angle_bins_rule,
+    _loss_terms_rule,
 )
 
 

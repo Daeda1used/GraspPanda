@@ -263,23 +263,28 @@ verdict says which iterations, and the combination still works in the sense of t
 page.
 
 `fails` is a combination that passed the config check and then broke. The probe says
-where. Scale-Balanced-Grasp with PTv3 composes (`✓ valid`), and then (output shortened to
-its last line; the overrides are those of *The width histogram* below):
+where. EconomicGrasp with four attention heads in its crop composes (`✓ valid`), and then
+(output shortened to its last line):
 
 ```text
-$ grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e \
-      --set backbone=ptv3 -o sbg_ptv3.yaml
-$ grasppanda probe sbg_ptv3.yaml --opts data.train.dataset.scale_statistic.source=legacy_import ...
-✗ fails: at build, in the grouper DepthCylinderGroup: ValueError: DepthCylinderGroup: the gated seed residual adds 64-channel seed features to 256-channel crop features; the two must be equal (in_channels is injected by the detector: it is the width of the scene encoder). End mlp_channels on 64, or use an encoder that returns 256 channels, or set seed_residual: none.
+$ grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
+      --set grouper=CylinderInteractionGroup --opts model.grouper.attention_heads=4 -o eg.yaml
+$ grasppanda probe eg.yaml
+✗ fails: at build, in the grouper CylinderInteractionGroup: ValueError: num_heads must divide channels, got channels=259, num_heads=4
 ```
 
 This is a gap of the config check, not the intended behaviour: a combination should be
-refused before anything is built, or run. No contract states the width an encoder
-returns (it is known only once the encoder is built), so the check cannot compare it
-with the width this grouper needs. The measured page lists the cells it affects under
-*Passed the check, failed afterwards*. Until the gap is closed the probe is what
-catches it, with the fix in the message. An encoder with an `out_channels` option does
-not meet it: compose sets the width.
+refused before anything is built, or run. The check compares what components declare, and
+a value that is only known once a component is built escapes it. The measured page lists
+the cells it affects under *Passed the check, failed afterwards*; the probe is what catches
+them, with the fix in the message.
+
+One such gap was closed by a contract: Scale-Balanced-Grasp's crop adds the seed features
+to its 256-channel crop features, so the encoder has to return 256 channels. The grouper
+states that width, the check compares it with the encoder's (building the encoder once
+when its config does not say), and for an encoder of another width `grasppanda compose`
+puts `DepthCylinderProjectionGroup` in its place, the same crop with a linear layer in
+front of the residual ([Grouper](../slots/grouper.md), section 5).
 
 ### What a probe needs
 

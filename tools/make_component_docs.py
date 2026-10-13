@@ -54,6 +54,7 @@ TITLES = {
     "BACKBONES": "Scene encoders",
     "IMAGE_ENCODERS": "Image encoders",
     "PROPOSALS": "Seed proposals",
+    "SAMPLERS": "Seed samplers",
     "VIEWS": "View stages",
     "ASSIGNERS": "Assigners",
     "GROUPERS": "Groupers",
@@ -213,10 +214,21 @@ def adapters() -> dict[str, str]:
 
 
 def _refusal(model: dict[str, Any]) -> list[str]:
+    """Messages of the config check for a model, the width of the seed features aside.
+
+    The tables are about kinds of features and labels. Whether an encoder's width fits a
+    grouper that adds the seed features to its crops depends on options, and `compose`
+    settles it (an `out_channels` option, or the grouper's `seed_projection`).
+    """
     try:
         Config.from_dict({"model": model})
     except ConfigError as error:
-        return [issue.message for issue in error.issues]
+        width = set()
+        if all(isinstance(model.get(slot), dict) for slot in ("backbone", "grouper")):
+            width = set(
+                stage_contract_problems(backbone=model["backbone"], grouper=model["grouper"])
+            )
+        return [issue.message for issue in error.issues if issue.message not in width]
     return []
 
 

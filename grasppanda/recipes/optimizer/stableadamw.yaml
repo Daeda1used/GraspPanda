@@ -1,0 +1,14 @@
+# StableAdamW (Wortsman et al., NeurIPS 2023): AdamW with per-parameter update clipping.
+#
+# Through PytorchOptimizer; `pytorch_optimizer.get_supported_optimizers()` names the others, and
+# `options:` takes the optimizer's own arguments.
+#
+# What must be re-tuned, and why:
+# * lr: AdamW's rate; the update clipping replaces gradient clipping.
+# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
+#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+optimizer:
+  type: PytorchOptimizer
+  name: stableadamw
+  lr: 0.001
+  weight_decay: 0.01

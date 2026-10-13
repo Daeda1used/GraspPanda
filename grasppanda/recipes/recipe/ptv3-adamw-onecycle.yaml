@@ -1,0 +1,26 @@
+# Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks.
+#
+# As `adamw-onecycle`, plus Pointcept's `param_dicts = [dict(keyword="block", lr=lr/10)]` as a
+# ParamGroups pattern. For a PTv3 encoder (`--set backbone=ptv3`): the pattern must match a
+# parameter.
+#
+# What must be re-tuned, and why:
+# * lr_multipliers: the pattern matches parameters with `.block` in their name, the transformer
+#   blocks of PTv3; embedding and pooling layers keep the full rate.
+# * lr and max_lr: 1e-3 instead of Pointcept's 6e-3; OneCycleLR scales max_lr per group.
+optimizer:
+  type: ParamGroups
+  optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}
+  lr_multipliers: {"re:\\.block": 0.1}
+
+scheduler:
+  type: OneCycleLR
+  max_lr: 1.0e-3
+  pct_start: 0.05
+  anneal_strategy: cos
+  div_factor: 10.0
+  final_div_factor: 1000.0
+  cycle_momentum: false
+
+train:
+  scheduler_unit: iteration

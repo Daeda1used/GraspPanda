@@ -1,0 +1,10 @@
+# Clipped Gaussian noise of 1 mm on the input points, after the other point transforms.
+#
+# Adapted from Pointcept's RandomJitter. Labels, object poses and the clean cloud stay.
+#
+# What must be re-tuned, and why:
+# * sigma and clip: metres. Pointcept's 0.01 and 0.05 are for rooms; real depth noise of a
+#   RealSense at table distance is a few millimetres.
+transforms:
+  append:
+    - {type: RandomJitter, sigma: 0.001, clip: 0.005}

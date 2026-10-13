@@ -1,0 +1,33 @@
+# Graspable points in order of graspness, none closer than 1 cm to an accepted one (greedy
+# suppression on points as in S4G, CoRL 2019).
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * sampler.min_distance: 0.01 m. It decides how many seeds a scene yields: fewer than num_seeds are
+#   padded and marked invalid (`metric/real_seeds`).
+# * graspness_threshold: 0.1 belongs to graspness normalised to [0, 1] per frame; a frame without
+#   any candidate has no real seed (`metric/real_seeds` in the log), which is the first number to
+#   watch after a swap.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    sampler:
+      type: ScoreNMS
+      min_distance: 0.01
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

@@ -1,0 +1,21 @@
+# 1024 seeds by exact furthest point sampling on the CPU with the bucket-based QuickFPS of the
+# `fpsample` library (pip install fpsample), over all scene points.
+#
+# Nothing is scored and nothing is supervised here, so it fits every seed-based method: under
+# GraspNet-baseline and Scale-Balanced-Grasp the view stage keeps objectness, under the graspness
+# family the seeds are no longer filtered by graspness. It needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation). No AP has been measured with this option.
+#
+# What must be re-tuned, and why:
+# * sampler.height: 7 (buckets of 128 points) for clouds of 15 000 to 20 000 points; the library
+#   recommends 3 to 5 for small and 9 for very large clouds.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: SampledSeeds
+    num_seeds: 1024
+    sampler:
+      type: FpsampleFPS
+      method: bucket
+      height: 7
+      start: first

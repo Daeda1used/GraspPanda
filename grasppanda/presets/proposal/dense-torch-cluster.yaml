@@ -1,0 +1,18 @@
+# 1024 seeds by furthest point sampling with `torch_cluster.fps`, the kernel of PyTorch Geometric
+# (pip install torch-cluster), over all scene points.
+#
+# Nothing is scored and nothing is supervised here, so it fits every seed-based method: under
+# GraspNet-baseline and Scale-Balanced-Grasp the view stage keeps objectness, under the graspness
+# family the seeds are no longer filtered by graspness. It needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation). No AP has been measured with this option.
+#
+# What must be re-tuned, and why:
+# * sampler.random_start: false starts at the first point (repeatable).
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: SampledSeeds
+    num_seeds: 1024
+    sampler:
+      type: TorchClusterFPS
+      random_start: false

@@ -39,11 +39,13 @@ spconv-cu121 = ["spconv-cu121>=2.3.8"]
 spconv-cu124 = ["spconv-cu124>=2.3.8"]
 spconv-cu126 = ["spconv-cu126>=2.3.8"]
 spconv-cpu = ["spconv>=2.3.8"]
+fpsample = ["fpsample>=1.0"]
+torch-cluster = ["torch-cluster>=1.6"]
 tensorboard = ["tensorboard>=2.14"]
 wandb = ["wandb>=0.16"]
 # The interactive viewer of `grasppanda demo --show`. Pictures and animations need only Pillow.
 vis = ["open3d>=0.18"]
-# Gripper meshes of GripperMeshCollisionFilter (post-processing).
+# Gripper meshes of GripperMeshCollisionFilter (post-processing); icosphere of IcosphereViewStage.
 trimesh = ["trimesh>=4.0"]
 # Octree operators of the OctFormer scene encoder (pure PyTorch; imports Triton).
 ocnn = ["ocnn>=2.3"]
@@ -55,8 +57,17 @@ mamba-ssm = ["mamba-ssm>=2.2"]
 timm = ["timm>=1.0.20"]
 transformers = ["transformers>=4.56"]
 torchvision = ["torchvision>=0.19"]
-# Point-cloud message-passing layers for the bridge backbone `PyGPointEncoder`.
+# Losses of `kornia.losses` (softmax focal, Dice, Lovasz-Softmax, robust penalties).
+kornia = ["kornia>=0.7"]
+# Point-cloud message-passing layers for the bridge backbone `PyGPointEncoder` and the
+# bridge grouper `PyGConvGroup`.
 torch_geometric = ["torch_geometric>=2.5"]
+# Rotation mappings and HEALPix lattice of the view stages that are bridges (docs/slots/view.md).
+roma = ["roma>=1.5"]
+healpix = ["healpix>=2024.1"]
+# Optimizers and schedules beyond torch.optim (TimmOptimizer, PytorchOptimizer, ScheduleFree,
+# TimmSchedule, AdaptiveGradClipHook): docs/slots/recipe.md.
+optim = ["timm>=1.0.20", "pytorch_optimizer>=3.5", "schedulefree>=1.4"]
 dev = ["pytest>=8", "pytest-cov", "ruff>=0.6", "codespell", "pre-commit", "build"]
 docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 

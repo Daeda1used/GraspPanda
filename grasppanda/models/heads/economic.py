@@ -35,7 +35,7 @@ Reference behaviour, each a named option:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import ClassVar, Literal
 
 import torch
 from torch import Tensor, nn
@@ -141,6 +141,12 @@ class EconomicHead(HeadBundle):
     label_format = "compact"
     status = "tested"
     source = "EconomicGrasp (Wu et al., ECCV 2024)"
+    loss_terms: ClassVar[dict[str, str]] = {
+        "angle_loss": "class",
+        "depth_loss": "class",
+        "score_loss": "class",
+        "width_loss": "value",
+    }
 
     def __init__(
         self,

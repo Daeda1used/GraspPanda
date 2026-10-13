@@ -1,0 +1,24 @@
+# LocalGroup as GSNet's cylinder pooled by the vector attention of Point Transformer.
+#
+# The seed is the query: `sum_j softmax(g(q(f_i) - k(h_j) + d_j)) * (v(h_j) + d_j)` with
+# `d_j` an MLP of the crop-frame offset (Zhao et al., ICCV 2021). One weight per channel
+# and neighbour; padded slots are masked.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * cost: five linear maps of width 256 more than the max-pooled crop.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    pool: vector_attention        # Point Transformer layer, the seed as query
+    mlp_channels: [256, 256]

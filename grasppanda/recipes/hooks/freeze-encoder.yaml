@@ -1,0 +1,12 @@
+# Freeze the scene encoder for the first two epochs, then train it with the rest.
+#
+# For a pretrained encoder under freshly initialised stages. Seed-based detectors only: the module
+# is their `backbone`.
+#
+# What must be re-tuned, and why:
+# * epochs: 2 of 10; `null` keeps the encoder frozen for the whole run (linear probing).
+# * eval_mode: true keeps the batch-norm statistics of the pretrained encoder while it is
+#   frozen; set false for an encoder trained from scratch.
+# * modules: with an adapter around the encoder, `backbone` covers both.
+hooks:
+  - {type: FreezeHook, modules: [backbone], epochs: 2, eval_mode: true}

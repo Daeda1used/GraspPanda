@@ -1,0 +1,17 @@
+# Linear warm-up over the first 5 % of the run, then one cosine to 1e-6 (timm's
+# CosineLRScheduler).
+#
+# What must be re-tuned, and why:
+# * warmup_steps: a fraction of the run below 1, a step count from 1 on.
+# * lr_min and warmup_lr_init are absolute rates, not factors of the optimizer's.
+# * train.scheduler_unit: the schedule steps after every optimizer step; with `train.accumulate`
+#   that is every accumulated batch.
+scheduler:
+  type: TimmSchedule
+  name: cosine
+  warmup_steps: 0.05              # fraction of the run
+  warmup_lr_init: 1.0e-6
+  lr_min: 1.0e-6
+
+train:
+  scheduler_unit: iteration

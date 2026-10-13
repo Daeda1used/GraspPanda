@@ -1,0 +1,33 @@
+# The 1024 points with the highest predicted graspness, wherever they are (top-k selection as in IA-
+# SSD, CVPR 2022, and GraNet, IROS 2023): no spatial spread.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * Seeds concentrate on the few best-scored objects, and a grouper that gathers among the seeds
+#   (CylinderGroup, radius 0.05 m) sees much denser neighbourhoods than it was tuned for: re-tune
+#   its nsample, or use graspness-sfps for a middle way.
+# * graspness_threshold: 0.1 belongs to graspness normalised to [0, 1] per frame; a frame without
+#   any candidate has no real seed (`metric/real_seeds` in the log), which is the first number to
+#   watch after a swap.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    sampler:
+      type: TopK
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

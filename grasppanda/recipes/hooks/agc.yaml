@@ -1,0 +1,15 @@
+# Adaptive gradient clipping (Brock et al., arXiv 2102.06171) in place of a fixed clipping norm.
+#
+# timm.utils.adaptive_clip_grad before every optimizer step. The preset switches `train.grad_clip`
+# off: the two do not combine.
+#
+# What must be re-tuned, and why:
+# * clip_factor: 0.01 is the paper's value for batch 4096; smaller batches tolerate 0.02 to
+#   0.16.
+# * exclude: the paper does not clip the final linear layer; name the head's module there to
+#   follow it.
+hooks:
+  - {type: AdaptiveGradClipHook, clip_factor: 0.01, eps: 1.0e-3}
+
+train:
+  grad_clip: null
