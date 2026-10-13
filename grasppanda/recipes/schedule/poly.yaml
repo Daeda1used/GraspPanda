@@ -1,0 +1,16 @@
+# Polynomial decay to zero with power 0.9 after 5 % of warm-up, the schedule of segmentation
+# models (timm's PolyLRScheduler).
+#
+# What must be re-tuned, and why:
+# * options.power: 0.9 is the DeepLab value; 1.0 is a linear decay.
+# * train.scheduler_unit: the schedule steps after every optimizer step; with `train.accumulate`
+#   that is every accumulated batch.
+scheduler:
+  type: TimmSchedule
+  name: poly
+  warmup_steps: 0.05
+  warmup_lr_init: 1.0e-6
+  options: {power: 0.9}
+
+train:
+  scheduler_unit: iteration

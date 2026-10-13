@@ -1,0 +1,32 @@
+# The best tenth of every frame's points by graspness are the candidates, whatever their values (a
+# rank cut as described for DexGraspNet 2.0), then furthest point sampling.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * top_fraction: 0.1. It must leave at least num_seeds candidates: 10 % of 15 000 points are 1500.
+#   The thresholds are not used.
+# * A rank cut never yields an empty frame, so the later stages train from the first iteration; in
+#   turn it also yields candidates on a frame with nothing to grasp.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    select_by: graspness
+    top_fraction: 0.1
+    sampler:
+      type: FPS
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

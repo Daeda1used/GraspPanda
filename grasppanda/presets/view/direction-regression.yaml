@@ -1,0 +1,20 @@
+# DirectionViewStage with its defaults: regress the approach vector of every seed (3 numbers,
+# cosine loss).
+#
+# The target is the approach of the most graspable label view of the seed. On a symmetric
+# object two distant views can tie and the target flips between them.
+#
+# What must be re-tuned, and why:
+# * label_views: 300 is the lattice the label files are indexed by: the regressed direction
+#   is snapped to it for the label lookup. Training crops use the label frame of the snapped
+#   view, inference crops the frame of the regressed direction (up to 9 degrees apart).
+# * direction_weight: 1.0 is untuned (the loss is 1 - cos, at most 2); no AP has been
+#   measured for this stage under any method.
+# * max_friction: 0.6 must equal the value compact labels were encoded with.
+model:
+  view:
+    type: DirectionViewStage
+    label_views: 300              # the lattice of the label files; not a free choice
+    max_friction: 0.6
+    direction_weight: 1.0
+    residual: true                # add the stage's hidden features to the seed features

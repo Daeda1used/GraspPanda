@@ -1,0 +1,22 @@
+# VoxelSetAbstractionGroup with its defaults: PV-RCNN's keypoint feature for every seed.
+#
+# Scene points within 3 and 6 cm of a seed, a shared MLP and a maximum per radius, fused
+# with the seed's own feature by one linear layer (Shi et al., CVPR 2020; adapted from
+# OpenPCDet, Apache-2.0). A scene-support crop that returns (seed, channel): it works
+# under dense and under sub-sampling encoders.
+#
+# What must be re-tuned, and why:
+# * radii / nsample: balls over the raw scene cloud (20 000 points per frame); they belong
+#   to its point density.
+# * scene_features: true reads the dense features of the scene points as well; only a
+#   dense encoder returns them.
+# * out_channels: the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: VoxelSetAbstractionGroup
+    radii: [0.03, 0.06]
+    nsample: [32, 32]
+    mlp_channels: [32, 64]
+    scene_features: false         # true only under a dense encoder
+    out_channels: 256

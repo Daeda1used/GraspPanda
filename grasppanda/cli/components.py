@@ -56,6 +56,10 @@ SLOTS: dict[str, tuple[str, str]] = {
         "Image encoder: an RGB or RGB-D image to feature maps (HGGD, point painting).",
     ),
     "PROPOSALS": ("model.proposal", "Scene features to seeds."),
+    "SAMPLERS": (
+        "model.proposal.sampler",
+        "Part of a proposal: which of the candidate points become seeds.",
+    ),
     "VIEWS": ("model.view", "One approach direction per seed."),
     "ASSIGNERS": (
         "model.assigner",
@@ -87,10 +91,12 @@ CONTRACT_FIELDS: dict[str, tuple[str, ...]] = {
     "DETECTORS": ("required_inputs",),
     "BACKBONES": ("output",),
     "PROPOSALS": ("requires", "seed_scores"),
+    "SAMPLERS": ("needs",),
     "VIEWS": ("seed_scores", "label_formats", "needs_matched", "applies_seed_weights"),
     "ASSIGNERS": ("label_format", "optional_outputs"),
     "GROUPERS": ("support", "out_axes"),
     "HEADS": ("in_axes", "label_format", "score_kind", "applies_seed_weights"),
+    "LOSSES": ("accepts", "prediction"),
 }
 
 #: Contract field -> what it states, in one sentence.
@@ -104,6 +110,10 @@ FIELD_HELP: dict[str, str] = {
     "seed_scores": (
         "Per-seed scores the stage predicts, supervises and stores on the seeds. A score has "
         "one owner per detector."
+    ),
+    "needs": (
+        "What the sampler reads besides coordinates: `scores` (one value per candidate) and/or "
+        "`feats` (the scene features). The proposal that holds it must provide them."
     ),
     "label_formats": "Kinds of matched labels the view stage can compute its targets from.",
     "needs_matched": (
@@ -129,6 +139,16 @@ FIELD_HELP: dict[str, str] = {
     "out_axes": "Named axes of the crop features. Must equal the head bundle's `in_axes`.",
     "in_axes": "Named axes of the crop features the head bundle expects.",
     "score_kind": "Meaning of the decoded grasp score. Scores of different kinds are not comparable.",
+    "accepts": (
+        "Kinds of loss term the primitive fits: `class` (logits against class indices), `unit` "
+        "(a target quality in [0, 1]), `value` (an unbounded target) or `bins` (logits against "
+        "a fractional bin position). A stage names the kind of each of its loss options, and "
+        "the config check refuses any other pairing."
+    ),
+    "prediction": (
+        "How the primitive reads the output of a `unit` term: as the `value` itself or as a "
+        "`logit`. A stage hands a logit on through its sigmoid."
+    ),
 }
 
 #: Pairs of slots whose contracts are compared with each other, per registry.

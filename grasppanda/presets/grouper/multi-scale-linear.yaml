@@ -1,0 +1,25 @@
+# MultiRadiusGroup with GSNet's cylinder at four radii, fused by one linear layer.
+#
+# Seed-support crops at several radii, concatenated and reduced by a linear layer: the
+# multi-scale grouping of PointNet++ as several grasp papers apply it to the crop
+# (FineGrasp's ablation calls it MsCG). The `multi-scale` preset fuses by attention and
+# crops with EconomicGrasp's module instead.
+#
+# What must be re-tuned, and why:
+# * radius: 0.07 m, the largest crop; `radius_scales` gives 0.0175, 0.035, 0.0525 and 0.07
+#   m. The crops gather among the seeds, so the radii belong to the proposal.
+# * fusion: linear here; max and mean are the other values.
+# * branch: any seeds-support grouper with a `radius` (LocalGroup, CylinderGroup, ...).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: MultiRadiusGroup
+    radius: 0.07
+    radius_scales: [0.25, 0.5, 0.75, 1.0]
+    fusion: linear                # concatenate the four crops, one linear layer
+    branch:   # one copy per radius
+      type: CylinderGroup
+      hmin: -0.02
+      hmax: 0.04
+      nsample: 16
+      mlp_channels: [256, 256]

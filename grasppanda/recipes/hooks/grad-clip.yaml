@@ -1,0 +1,10 @@
+# Clip the global L2 norm of the gradient at 1.0 before every optimizer step.
+#
+# A train option of the engine, no hook: `train.grad_clip` with `grad_clip_mode: norm`.
+#
+# What must be re-tuned, and why:
+# * grad_clip: watch `grad_norm` in the log (the norm before clipping) and set the bound near
+#   its typical value; `grad_clip_mode: value` clamps every element instead.
+train:
+  grad_clip: 1.0
+  grad_clip_mode: norm

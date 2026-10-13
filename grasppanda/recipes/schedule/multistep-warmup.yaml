@@ -1,0 +1,19 @@
+# One epoch of linear warm-up, then the rate times 0.1 after epochs 6 and 9 (timm's
+# MultiStepLRScheduler).
+#
+# Warm-up plus steps is what PyTorch offers only through SequentialLR, which a config cannot
+# express.
+#
+# What must be re-tuned, and why:
+# * options.decay_t: the epochs after which the rate drops; these fit a 10-epoch run.
+# * warmup_steps: in epochs here; the rate of the first epoch is warmup_lr_init, which must not
+#   be 0 with a per-epoch unit or the first epoch learns nothing.
+scheduler:
+  type: TimmSchedule
+  name: multistep
+  warmup_steps: 1
+  warmup_lr_init: 1.0e-4
+  options: {decay_t: [6, 9], decay_rate: 0.1}
+
+train:
+  scheduler_unit: epoch

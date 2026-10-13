@@ -1,0 +1,27 @@
+# IcosphereViewStage on 642 views: finer than the 300 views of the labels (needs trimesh).
+#
+# Neighbouring views share a label view, so the targets are piecewise constant: a finer
+# lattice does not add label resolution.
+#
+# What must be re-tuned, and why:
+# * subdivisions: 3. The output layer has 642 units.
+# * loss weight: 100 is GSNet's, tuned against the other loss terms of GSNet; no AP has been
+#   measured for this stage under any method.
+# * label_views: 300 is the lattice the label files are indexed by. The stage ties every
+#   view of its own lattice to the nearest of those 300; it does not create finer labels.
+# * max_friction: 0.6 must equal the value compact labels were encoded with
+#   (`compact_labels.view_friction_threshold`); the first loss checks it.
+model:
+  view:
+    type: IcosphereViewStage
+    subdivisions: 3               # 642 views
+    hemisphere: false
+    target: score                 # regress a score per view (GSNet)
+    selection: argmax             # evaluation mode: the best view
+    train_selection: multinomial  # training mode: draw a view from the scores
+    top_k: null
+    temperature: 1.0
+    label_views: 300              # the lattice of the label files; not a free choice
+    max_friction: 0.6
+    residual: true                # add the stage's hidden features to the seed features
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}

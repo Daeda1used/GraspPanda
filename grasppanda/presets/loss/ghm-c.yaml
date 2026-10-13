@@ -1,0 +1,22 @@
+# Gradient harmonising, classification form (GHM-C): sigmoid cross-entropy in which every range of
+# gradient norms counts alike.
+#
+# Turns down both the mass of easy elements and the few very hard ones, which are often label
+# noise. For `unit` terms (score grid, graspness, view scores) and, with one-vs-all targets, for
+# `class` terms (objectness, angle classes).
+#
+# What must be re-tuned, and why:
+# * bins: 10 ranges of the gradient norm |sigmoid - target|.
+# * momentum: 0.0 counts every call on its own. Above 0 the counts are a running mean, a buffer of
+#   the module that is saved with the checkpoint.
+# * the output becomes a logit. SWADHead decodes its score and GraspnessFPS compares its graspness
+#   with the threshold through the sigmoid; a value you read from the raw output yourself is a
+#   logit.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1 or CrossEntropy, so compare the logged `loss/...`
+#   values of both runs and re-tune.
+model:
+  loss:
+    type: GHMC
+    bins: 10                      # ranges of the gradient norm
+    momentum: 0.0                 # > 0: running mean of the counts over calls

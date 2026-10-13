@@ -41,7 +41,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
@@ -181,6 +181,13 @@ class OperationHead(HeadBundle):
     status = "tested"
     source = "GraspNet-baseline (Fang et al., CVPR 2020)"
     applies_seed_weights = True
+    #: Score targets are log-friction scores, up to ln(10): a `value` term.
+    loss_terms: ClassVar[dict[str, str]] = {
+        "score_loss": "value",
+        "angle_loss": "class",
+        "width_loss": "value",
+        "tolerance_loss": "value",
+    }
 
     @classmethod
     def required_seed_scores(cls, options: Mapping[str, Any]) -> tuple[str, ...]:

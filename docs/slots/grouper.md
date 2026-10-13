@@ -1,0 +1,479 @@
+# Grouper: what is gathered around a seed and how it becomes the feature the head reads
+
+## 1. The task of the slot
+
+A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
+Scale-Balanced-Grasp) first picks about a thousand *seeds* on the scene and one approach
+direction per seed. The grouper then looks at the neighbourhood of every seed **in the frame
+of that approach direction** and turns it into one feature vector (or one per insertion
+depth). The head bundle predicts in-plane angle, depth, width and score from that feature
+and nothing else, so the grouper decides what the head can know about the local shape.
+
+Position in the pipeline: `backbone → proposal → view → (assigner) →` **`grouper`** `→ head`.
+
+Every published crop is the same five steps, and almost every alternative replaces exactly
+one of them:
+
+| step | what the ported methods do | what this page adds |
+|---|---|---|
+| query: which points, in which shape | a cylinder along the approach axis | ball, k nearest, oriented box, grid of balls, grid of cells |
+| geometry of a neighbour | offset in the crop frame | the same with its length |
+| encoder per neighbour | shared MLP (plus self-attention in EconomicGrasp) | DGCNN edge feature, PointNeXt InvResMLP, layers of PyTorch Geometric |
+| pooling | maximum | mean, attentive pooling, vector attention, all with a padding mask |
+| fusion, residual | attention over radii (FineGrasp), linear + gate (Scale-Balanced-Grasp) | linear / max / mean over radii (`MultiRadiusGroup`), projected seed residual |
+
+No AP is claimed for any option on this page. Each was built, trained for 20 iterations on
+8 real frames and asked to predict (`grasppanda probe`); that shows it is usable, not that it
+is good.
+
+## 2. Input and output
+
+```python
+class Grouper(nn.Module):
+    support: ClassVar[Literal["seeds", "scene"]]   # which points are grouped
+    out_axes: ClassVar[tuple[str, ...]]            # ("seed", "channel") or ("seed", "depth", "channel")
+    out_channels: int                              # width of the returned feature
+    uses_seed_features: bool = False               # forward takes the seed features as 4th argument
+
+    def forward(self, support: PointFeatures, centres: Tensor, rotation: Tensor
+                [, seed_feats: Tensor]) -> GroupFeatures: ...
+```
+
+| | |
+|---|---|
+| `support` | `PointFeatures`: points `(N, 3)` in metres, camera frame, with batch offsets, and features `(N, C)`. With `support = "seeds"` these are the `M` seeds of the batch with the encoder's features (`C = in_channels`, the width of the scene encoder, injected by the detector). With `support = "scene"` it is the whole scene cloud (20 000 points per frame in the shipped recipes): with features under a dense encoder, with **zero feature channels** under a sub-sampling encoder. |
+| `centres` | `(M, 3)` crop centre per seed, metres, camera frame. At inference the seed itself; in training the centre the assigner chose (the matched label point for some methods), so a crop may contain no point at all. |
+| `rotation` | `(M, 3, 3)` crop frame per seed. **Column 0 is the approach axis**; the head counts in-plane angles about it from column 1. In training the frame comes from the labels and may be a reflection: a grouper must not assume a right-handed frame. A neighbour `p` sits at `Rᵀ (p − c)` in the crop frame. |
+| `seed_feats` | `(M, C)` features of the seeds; passed only when the grouper sets `uses_seed_features`. |
+| returns | `GroupFeatures(feats, axes)`: `(M, out_channels)` with axes `("seed", "channel")`, or `(M, D, out_channels)` with `("seed", "depth", "channel")`, one row per seed in the order given. |
+
+All seeds of a batch are flattened: `M = batch × seeds per frame`, every frame has the same
+number of seeds, and a crop never sees points of another frame.
+
+What the neighbours require, and what the config checker does with the contract attributes
+(`stage_contract_problems` in `grasppanda/models/detectors/seed_based.py`):
+
+* **`out_axes` must equal the head's `in_axes`.** `SWADHead` (GSNet) and `EconomicHead`
+  (EconomicGrasp, FineGrasp) read `("seed", "channel")`; `OperationHead` (GraspNet-baseline,
+  Scale-Balanced-Grasp) reads `("seed", "depth", "channel")`. An axis is never added or
+  squeezed implicitly; the two adapters of section 4.6 do it explicitly.
+* **The depth axis has one entry per depth bin of the head**: the length of the grouper's
+  `hmax` list, or its `num_depth`, must equal `head.num_depth`.
+* **`out_channels`** is handed to the head as its `in_channels`; nothing to configure.
+* **The width of the seed features** (new, see section 5): a grouper that *adds* the seed
+  features to its crops states the width it needs (`required_seed_channels`), and the check
+  compares it with what the encoder returns.
+* `support` must be `seeds` or `scene`. A scene-support grouper works under both kinds of
+  encoder; whether it reads scene features is its own option.
+
+Conventions of the queries (`grasppanda.ops.ball_query`, `box_query`, `cylinder_query`,
+`knn`): the first `nsample` hits in index order; missing slots repeat the first hit; a query
+without any hit returns point 0 of its frame. A maximum does not notice the copies; a mean or
+an attention does, which is why the groupers below mask them.
+
+## 3. Options at a glance
+
+"Name" is what you write after `--set grouper=`; "class" is what you write as `type:`.
+Route: **own** = written here on `grasppanda.ops` from the paper (a few lines per part),
+**A** = adapted source, **L** = bridge to a library. All weights are random init: no released
+checkpoint contains any of these crops for grasping. Venues are those of the arXiv record or
+the proceedings page, opened on 2026-10-13.
+
+### Crops among the seeds, for heads that read `(seed, channel)`
+
+| name | class | what it is | paper (first author, venue, year) | code and licence | extra |
+|---|---|---|---|---|---|
+| `CylinderGroup` | `CylinderGroup` | GSNet's crop: cylinder, shared MLP, max | GSNet | ported method | – |
+| `CylinderInteractionGroup` | `CylinderInteractionGroup` | the same with self-attention among the neighbours | EconomicGrasp | ported method | – |
+| `multi-scale` | `MultiScaleGroup` | four radii, attention over the scales | FineGrasp | ported method | – |
+| `multi-scale-linear` | `MultiRadiusGroup` | four radii of GSNet's cylinder, concatenated, one linear layer (`fusion: linear`; also `max`, `mean`) | multi-scale grouping of PointNet++ (Qi, NeurIPS 2017) | own | – |
+| `ball` | `LocalGroup` | ball around the seed, shared MLP, max | PointNet++ (Qi, NeurIPS 2017) | own | – |
+| `knn` | `LocalGroup` | the 16 nearest seeds, whatever their distance | DGCNN (Wang, ACM TOG 2019) | own | – |
+| `box` | `LocalGroup` | gripper-aligned box, canonical frame, cyclic padding (RoI point pooling) | PointRCNN (Shi, CVPR 2019) | own | – |
+| `cylinder-edgeconv` | `LocalGroup` | cylinder; neighbour encoded from `[offset, f_j − f_i, f_i]` (offset variant) | DGCNN (Wang, ACM TOG 2019) | own | – |
+| `cylinder-attentive` | `LocalGroup` | cylinder; offset with its length; attentive pooling | RandLA-Net (Hu, CVPR 2020 oral) | own (the official code is CC BY-NC-SA and was not used) | – |
+| `cylinder-vector-attention` | `LocalGroup` | cylinder; pooled by vector attention, the seed as query | Point Transformer (Zhao, ICCV 2021) | own | – |
+| `cylinder-invres` | `LocalGroup` | cylinder; max, then inverted residual MLP with the seed as identity | PointNeXt (Qian, NeurIPS 2022) | own | – |
+| `roi-grid` | `RoIGridGroup` | 3×3×3 grid points in the box, each pooling a small ball; flattened in order | PV-RCNN (Shi, CVPR 2020) | **A**: OpenPCDet@233f849, Apache-2.0 | – |
+| `roi-aware` | `RoIAwareGroup` | 4×4×4 cells of the box: max feature and mean position per cell, empty cells zero | Part-A² (Shi, TPAMI 2020) | **A**: OpenPCDet@233f849, Apache-2.0 | – |
+| `voxel-set-abstraction` | `VoxelSetAbstractionGroup` | **scene** points in balls of 3 and 6 cm, fused with the seed feature | PV-RCNN (Shi, CVPR 2020) | **A**: OpenPCDet@233f849, Apache-2.0 | – |
+| `pyg-pointnet-conv` | `PyGConvGroup` | `PointNetConv` on the crop graph | PyTorch Geometric (Fey, ICLR 2019 RLGM workshop) | **L**: `torch_geometric`, MIT | `torch_geometric` |
+| `pyg-point-transformer-conv` | `PyGConvGroup` | `PointTransformerConv` | Point Transformer (Zhao, ICCV 2021) | **L**: `torch_geometric`, MIT | `torch_geometric` |
+| `pyg-edge-conv` | `PyGConvGroup` | `EdgeConv` | DGCNN (Wang, ACM TOG 2019) | **L**: `torch_geometric`, MIT | `torch_geometric` |
+| `pyg-gatv2-conv` | `PyGConvGroup` | `GATv2Conv`, offset as edge attribute | GATv2 (Brody, ICLR 2022) | **L**: `torch_geometric`, MIT | `torch_geometric` |
+| `pyg-transformer-conv` | `PyGConvGroup` | `TransformerConv`, offset as edge attribute | UniMP (Shi, IJCAI 2021) | **L**: `torch_geometric`, MIT | `torch_geometric` |
+| `depth-pool` | `DepthPoolGroup` | adapter: any depth-sliced scene crop, max over the depth bins | – (axis adapter) | own | – |
+
+### Crops of the scene, for heads that read `(seed, depth, channel)`
+
+| name | class | what it is | paper | code and licence | extra |
+|---|---|---|---|---|---|
+| `DepthCylinderGroup` | `DepthCylinderGroup` | the baseline's crop: one cylinder of scene points per depth bin | GraspNet-baseline | ported method | – |
+| `depth-cylinder-multi-scale` | `DepthCylinderGroup` | four radii, linear fusion, gated seed residual | Scale-Balanced-Grasp | ported method | – |
+| `depth-cylinder-projection` | `DepthCylinderProjectionGroup` | the baseline's cylinder with a gated residual of the *projected* seed feature: any encoder width (section 5) | GraspNet-baseline crop, Scale-Balanced-Grasp residual | own (subclass of the ported crop) | – |
+| `depth-ball` | `DepthLocalGroup` | one ball of 64 scene points, pooled once per depth bin | PointNet++ (Qi, NeurIPS 2017) | own | – |
+| `depth-box` | `DepthLocalGroup` | gripper-aligned box, cyclic padding, projected seed residual | PointRCNN (Shi, CVPR 2019) | own | – |
+| `depth-knn` | `DepthLocalGroup` | the 64 nearest scene points, sliced per depth bin | DGCNN (Wang, ACM TOG 2019) | own | – |
+| `depth-cylinder-attentive` | `DepthLocalGroup` | cylinder, attentive pooling, projected seed residual | RandLA-Net (Hu, CVPR 2020 oral) | own | – |
+| `depth-embed` | `DepthEmbedGroup` | adapter: any `(seed, channel)` crop, repeated per depth bin with a learned embedding | – (axis adapter) | own | – |
+
+### Measured fit per method
+
+From the measured records
+([measured combinations](../advanced_guides/measured_combinations.md), cells
+`stage/<method>/grouper/<name>`), probe runs of 2026-10-13: composed with
+`grasppanda compose <method config> --set grouper=<name>` and probed with
+`grasppanda probe <file> --iters 20 --frames 8` on GraspNet-1Billion (RealSense).
+**runs** = trained 20 iterations with finite losses and predicted grasps; **refused** = the
+config check refuses the combination and says why (for a grouper: its axes do not fit the
+head; take the option of the other table, or wrap it, section 4.6).
+Every option was probed under all five methods.
+
+<!-- FIT TABLE -->
+| name | GSNet | EconomicGrasp | FineGrasp | GraspNet-baseline | Scale-Balanced-Grasp |
+|---|---|---|---|---|---|
+| `CylinderGroup` | **runs** | **runs** | **runs** | refused | refused |
+| `CylinderInteractionGroup` | **runs** | **runs** | **runs** | refused | refused |
+| `multi-scale` | **runs** | **runs** | **runs** | refused | refused |
+| `multi-scale-linear` | **runs** | **runs** | **runs** | refused | refused |
+| `ball` | **runs** | **runs** | **runs** | refused | refused |
+| `knn` | **runs** | **runs** | **runs** | refused | refused |
+| `box` | **runs** | **runs** | **runs** | refused | refused |
+| `cylinder-edgeconv` | **runs** | **runs** | **runs** | refused | refused |
+| `cylinder-attentive` | **runs** | **runs** | **runs** | refused | refused |
+| `cylinder-vector-attention` | **runs** | **runs** | **runs** | refused | refused |
+| `cylinder-invres` | **runs** | **runs** | **runs** | refused | refused |
+| `roi-grid` | **runs** | **runs** | **runs** | refused | refused |
+| `roi-aware` | **runs** | **runs** | **runs** | refused | refused |
+| `voxel-set-abstraction` | **runs** | **runs** | **runs** | refused | refused |
+| `pyg-pointnet-conv` | **runs** | **runs** | **runs** | refused | refused |
+| `pyg-point-transformer-conv` | **runs** | **runs** | **runs** | refused | refused |
+| `pyg-edge-conv` | **runs** | **runs** | **runs** | refused | refused |
+| `pyg-gatv2-conv` | **runs** | **runs** | **runs** | refused | refused |
+| `pyg-transformer-conv` | **runs** | **runs** | **runs** | refused | refused |
+| `depth-pool` | **runs** | **runs** | **runs** | refused | refused |
+| `DepthCylinderGroup` | refused | refused | refused | **runs** | **runs** |
+| `depth-cylinder-multi-scale` | refused | refused | refused | **runs** | **runs** |
+| `depth-cylinder-projection` | refused | refused | refused | **runs** | **runs** |
+| `depth-ball` | refused | refused | refused | **runs** | **runs** |
+| `depth-box` | refused | refused | refused | **runs** | **runs** |
+| `depth-knn` | refused | refused | refused | **runs** | **runs** |
+| `depth-cylinder-attentive` | refused | refused | refused | **runs** | **runs** |
+| `depth-embed` | refused | refused | refused | **runs** | **runs** |
+<!-- /FIT TABLE -->
+
+Universal or method-specific: every `(seed, channel)` option fits GSNet, EconomicGrasp and
+FineGrasp, because their heads read the same axes and the crop is the only thing that
+changes; every `(seed, depth, channel)` option fits GraspNet-baseline and
+Scale-Balanced-Grasp for the same reason. Through `depth-embed` and `depth-pool` each crop
+reaches the other family as well. `voxel-set-abstraction`, `depth-*` and `depth-pool` gather
+from the scene cloud and therefore do not depend on how densely the proposal places seeds.
+
+## 4. How to use each option
+
+One command composes a child config of a method with the grouper replaced, checks it, and
+says what it did; one more probes it on real frames:
+
+```bash
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=roi-grid -o my.yaml
+grasppanda probe my.yaml --iters 20 --frames 8
+grasppanda train my.yaml
+```
+
+```text
+slot      component             from
+────────  ────────────────────  ─────────────────
+backbone  SparseUNet14          base config
+proposal  GraspnessFPS          base config
+view      TemplateViewStage     base config
+assigner  NearestLabelAssigner  base config
+grouper   RoIGridGroup          preset `roi-grid`
+head      SWADHead              base config
+
+contracts
+  ✓ backbone · proposal
+  ✓ backbone · grouper
+  ...
+  ✓ grouper · head
+
+config check
+  ✓ valid  (hash d99e1d7a282f)
+```
+
+An option of the grouper is changed on the same command line
+(`--opts model.grouper.nsample=32`) or in the file. Every preset is a file under
+`grasppanda/presets/grouper/` whose header says what must be re-tuned. There are no
+pretrained weights to load for any grouper. To start the other stages from a checkpoint of
+the method with its own grouper, the options are `runtime.load_from=<file>` with
+`runtime.allow_weight_mismatch=true` (the keys that did not match are printed); this was not
+run for this page.
+
+### 4.1 `LocalGroup`: shape, encoder and pooling as options
+
+```yaml
+model:
+  grouper:
+    type: LocalGroup
+    shape: cylinder          # ball | knn | box | cylinder
+    radius: 0.05             # ball / cylinder radius, half side of the box section (m)
+    hmin: -0.02              # box and cylinder: near and far end along the approach axis (m)
+    hmax: 0.04
+    nsample: 16              # neighbours per crop (k of knn)
+    padding: first           # first: repeat the first member, masked | cyclic: repeat in turn
+    geometry: offset         # offset | offset+distance
+    encoder: mlp             # mlp | edge | invres
+    pool: max                # max | mean | attentive | vector_attention
+    mlp_channels: [256, 256] # the last width goes to the head
+```
+
+All 48 combinations of shape × encoder × pool are legal and unit-tested. How to choose:
+
+* `shape`: `cylinder` is what every grasp method uses (long along the approach axis).
+  `ball` has no preferred axis. `box` is the cylinder with a square section, the shape of
+  detection RoIs. `knn` has no radius: the reach follows the seed density, which helps on
+  sparse regions and hurts when the 16 nearest seeds are all on the table.
+* `encoder`: `edge` tells the MLP how a neighbour differs from the seed (DOGraspNet reports
+  this offset-driven aggregation for grasping; its code is non-commercial and was not
+  used). `invres` adds capacity after the pooling and a residual path from the seed.
+* `pool`: `max` is robust to padding. `mean`, `attentive` and `vector_attention` use the
+  padding mask. `vector_attention` is the only pooling that reads the seed's own feature.
+* The crop gathers among the **seeds** (1024 per frame): sizes and `nsample` belong to the
+  seed density of the proposal as much as to the objects.
+
+### 4.2 `DepthLocalGroup`: the same, over the scene, one feature per depth bin
+
+```yaml
+model:
+  grouper:
+    type: DepthLocalGroup
+    shape: ball                        # ball | knn | box | cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]     # one far end per depth bin of the head
+    nsample: 64
+    pool: max                          # max | mean | attentive
+    mlp_channels: [64, 128, 256]
+    seed_residual: none                # none | projected (adds W·f of the seed feature)
+```
+
+The crop is gathered once, to the farthest reach, and bin `d` pools the members with
+`hmin < x < hmax[d]`. This differs from `DepthCylinderGroup`, which queries `nsample` points
+per depth: here the near bins hold fewer members than `nsample`. `seed_residual: projected`
+works with any encoder width; the gated residual of Scale-Balanced-Grasp does not (section 5).
+
+### 4.3 RoI pooling of 3-D detectors: `RoIGridGroup`, `RoIAwareGroup`, `VoxelSetAbstractionGroup`
+
+```bash
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=roi-grid
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=roi-aware
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=voxel-set-abstraction
+```
+
+```yaml
+model:
+  grouper:
+    type: RoIGridGroup
+    radius: 0.05          # the box: 2 * radius across the approach axis,
+    hmin: -0.02           # hmin .. hmax along it
+    hmax: 0.04
+    grid_size: 3          # 27 grid points
+    pool_radius: 0.03     # ball around every grid point; >= box side / grid_size
+    nsample: 8
+    mlp_channels: [64, 64]
+    fc_channels: [256, 256]
+```
+
+The region of a detection RoI is a box with a yaw angle; here it is the box of a seed in its
+approach frame. Unlike a max over the crop, both RoI poolings keep *where* in the box a
+feature was found. `roi-aware` leaves empty cells at zero, so with 1024 seeds per frame most
+of its 64 cells are empty: try `grid_size: 2` or `3`. `voxel-set-abstraction` is the one
+option that reads the scene and returns `(seed, channel)`; `scene_features: true` adds the
+dense features of the scene points and needs a dense encoder (otherwise the grouper stops
+with a message that says so).
+
+### 4.4 `PyGConvGroup`: layers of PyTorch Geometric
+
+```bash
+pip install "grasppanda[torch_geometric]"        # torch_geometric, a pure Python wheel
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=pyg-gatv2-conv \
+    --opts 'model.grouper.conv_args={heads: 8}'
+```
+
+```yaml
+model:
+  grouper:
+    type: PyGConvGroup
+    conv: PointTransformerConv   # PointNetConv | PointTransformerConv | EdgeConv | GATv2Conv | TransformerConv
+    conv_args: {}                # further keyword arguments of the layer
+    shape: cylinder              # the same shapes as LocalGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    out_channels: 256
+```
+
+The crop is handed to the layer as a bipartite graph in the crop frame: every member is a
+source node at its offset `Rᵀ (p − c) / radius`, the seed is the target node at the origin.
+Nothing is padded: a crop with five members has five edges. The five layers above are the
+ones that were run; adding another needs three lines in `PYG_CONVS`
+(`grasppanda/models/groupers/pyg.py`).
+
+### 4.5 Several radii: `MultiRadiusGroup` (linear, max, mean) and `MultiScaleGroup` (attention)
+
+```bash
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=multi-scale-linear
+```
+
+```yaml
+model:
+  grouper:
+    type: MultiRadiusGroup
+    radius: 0.07                       # largest crop
+    radius_scales: [0.25, 0.5, 0.75, 1.0]
+    fusion: linear                     # linear | max | mean
+    branch:                            # one copy per radius; its radius is set above
+      type: CylinderGroup
+      nsample: 16
+      mlp_channels: [256, 256]
+```
+
+`branch` is any seeds-support grouper with a `radius`, `LocalGroup` and `PyGConvGroup`
+included. `MultiScaleGroup` (preset `multi-scale`) is the same with FineGrasp's attention
+over the scales.
+
+### 4.6 The other family's crops: `depth-embed` and `depth-pool`
+
+```bash
+# a (seed, channel) crop under GraspNet-baseline or Scale-Balanced-Grasp
+grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
+    --set grouper=depth-embed
+# a depth-sliced scene crop under GSNet, EconomicGrasp or FineGrasp
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=depth-pool
+```
+
+```yaml
+model:
+  grouper:
+    type: DepthEmbedGroup
+    num_depth: 4                 # = model.head.num_depth
+    grouper: {type: RoIGridGroup}   # any seeds-support (seed, channel) grouper
+```
+
+`depth-embed` computes the crop once and tells the depth bins apart only by a learned
+embedding, which is weaker than a crop per depth; `depth-pool` throws the depth resolution
+away. They exist so that a swap is possible, not because a paper proposes them.
+
+## 5. The width of the seed features (a fixed contract gap)
+
+Scale-Balanced-Grasp's crop adds `sigmoid(W f) · f` of the seed feature `f` to its
+256-channel crop features, so the encoder had to return 256 channels. An encoder with an
+`out_channels` option was fitted by `compose`; one without (LitePT, PTv3 and its pretrained
+variants, PointNeXt, PointNet2Dense) passed the config check and failed when the model was
+built. Now:
+
+* `DepthCylinderGroup.required_seed_channels(options)` states the width, and the config
+  check compares it with the encoder's (read from `out_channels`, or by building the encoder
+  once when its config does not say). `grasppanda compose ... --set backbone=PointNeXt
+  --no-adapter` under Scale-Balanced-Grasp now ends with:
+
+  ```text
+  ✗ backbone · grouper: DepthCylinderGroup as configured adds the seed features to its
+    256-channel crop features, but PointNeXt returns 32-channel features. Use
+    `type: DepthCylinderProjectionGroup` for the grouper (the same crop with a linear layer
+    in front of the residual; `grasppanda compose` does that), or give the encoder 256
+    output channels where it has that option, or end the grouper's `mlp_channels` on 32, or
+    set `seed_residual: none`.
+  ```
+
+* `DepthCylinderProjectionGroup` is the same crop with a linear layer
+  `in_channels → out_channels` in front of the gate. Without `--no-adapter`, compose puts it
+  in place of `DepthCylinderGroup`, with the options of the crop it replaces, and says so:
+
+  ```text
+  grouper   DepthCylinderProjectionGroup         base config, projected
+  ...
+  • grouper: DepthCylinderProjectionGroup in place of DepthCylinderGroup. DepthCylinderGroup as
+    configured adds the seed features to its 256-channel crop features, but FurthestPointSubsample
+    returns 32-channel features. DepthCylinderProjectionGroup is the same crop with a linear layer
+    in front of its seed residual; it changes the model (the base method has none). `--no-adapter`
+    leaves the pair refused.
+  ```
+
+  The reference model has no such layer, so the composed model is a variant of
+  Scale-Balanced-Grasp, not the paper's.
+
+* The fix is a class of its own, not an option of `DepthCylinderGroup`, on purpose: the
+  config hash of a shipped config covers the constructor defaults of its components, so a
+  new option on a ported class would change the hash of every config that uses it (and
+  orphan their measured records and checkpoints). The same holds for `MultiRadiusGroup`
+  beside `MultiScaleGroup`.
+
+The same holds for every encoder preset without a 256-channel output, including those
+that start from released weights (the check learns the width from the architecture, so its
+verdict does not depend on which weight files are on the machine). The twenty encoder
+cells under Scale-Balanced-Grasp that used to fail at build were probed again; in each,
+compose put `DepthCylinderProjectionGroup` in place of `DepthCylinderGroup`:
+
+<!-- WIDTH TABLE -->
+| cell | before | now |
+|---|---|---|
+| `encoder/Scale-Balanced-Grasp/LitePT@litept-structured3d` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/LitePT@litept` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-encoder` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-ppt` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3-scannet200` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3@ptv3` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata-small` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PTv3Utonia` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase-xl` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-b` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-l` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-xl` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointNeXt@pointnext` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointVector@pointvector-xl` | fails at build | **runs with adapter** |
+| `encoder/Scale-Balanced-Grasp/PointVector@pointvector` | fails at build | **runs with adapter** |
+<!-- /WIDTH TABLE -->
+
+## 6. Pitfalls met while building this
+
+* **Padding and non-max pooling.** The queries repeat the first hit in empty slots. With a
+  mean or an attention those copies would outvote the real members; `LocalGroup`,
+  `DepthLocalGroup` and `VoxelSetAbstractionGroup` mask them, and `PyGConvGroup` does not
+  create them. If you write a pooling of your own, use the mask `crop_members` returns.
+* **Empty crops in training.** The crop centre comes from the assigner and need not be a
+  seed, so a seed-support box or cylinder may be empty. The queries then return point 0 of
+  the frame; here its first slot counts as the only member, so no pooling reduces an empty
+  set (a soft-max over nothing is NaN).
+* **Do not add an option to a component that shipped configs use.** The first version of
+  this work added `fusion` to `MultiScaleGroup` and `seed_projection` to
+  `DepthCylinderGroup`; 130 measured cells stopped matching what compose writes, because
+  the config hash had changed. New behaviour goes into a new class or a subclass.
+* **A bridge passes the config check without its library.** The check compares contracts and
+  does not build; `PyGConvGroup` without `torch_geometric` stops when the model is built,
+  with the `pip install` line.
+* **Scale-Balanced-Grasp needs its width histogram to be probed on real frames**
+  (`data.train.dataset.scale_statistic`); without it `grasppanda probe` falls back to a
+  synthetic scene and reports `wired`. `tools/probe_grid.py` takes
+  `--scale-statistic-sha` for that.
+* **`knn` over the scene is short-sighted.** With 20 000 points the 64 nearest lie within
+  about a centimetre, so the far depth bins of `depth-knn` see the same members as the near
+  ones. Raise `nsample` or prefer a radius.
+* **Memory.** A scene-support crop holds `seeds × nsample × width` activations per MLP layer
+  (and per depth for `DepthCylinderGroup`); two probes side by side on a shared GPU can run
+  out of memory where one alone runs.
+
+## 7. Not wrapped
+
+| candidate | link opened | why not |
+|---|---|---|
+| DOGraspNet's offset crop (code) | [huamo555/DOGraspNet `LICENSE`](https://github.com/huamo555/DOGraspNet/blob/a619808a802492c7f5a3b9468815cab508818eca/LICENSE) | graspnet-baseline non-commercial licence. The idea (feature offsets to the seed) is `encoder: edge`, written here. |
+| RandLA-Net official code | [QingyongHu/RandLA-Net `LICENSE`](https://github.com/QingyongHu/RandLA-Net/blob/master/LICENSE) | CC BY-NC-SA 4.0 and TensorFlow. The pooling is five lines and was written here. |
+| CUDA extensions of OpenPCDet / MMDetection3D (`roiaware_pool3d`, `roipoint_pool3d`, stacked ball query, voxel query) | [OpenPCDet@233f849](https://github.com/open-mmlab/OpenPCDet/tree/233f849829b6ac19afb8af8837a0246890908755) | compiled extensions that are not installed here and rotate about one axis only. The pooling rules were adapted onto `grasppanda.ops`; `mmcv` was not made a dependency. |
+| Voxel RoI pooling (Voxel R-CNN) and the multi-stride voxel sources of PV-RCNN's set abstraction | same repository, `pcdet/ops/pointnet2/pointnet2_stack/voxel_query_utils.py` | they read intermediate levels of a sparse encoder; the slot contract hands the grouper the final features only. |
+| Closing-region crops ([GPD](https://github.com/atenpas/gpd), BSD-2-Clause; [PointNetGPD](https://github.com/lianghongzhuo/PointNetGPD), MIT; the refine stage of [REGNet](https://github.com/zhaobinglei/REGNet_for_3D_Grasping), MIT) | the three repositories and their licence files | the licences would allow it, the contract does not: these crops need the complete grasp pose (in-plane angle, depth, width), and the grouper runs before the head, when only the approach axis is known. They belong to a re-scoring stage after the head, which the skeleton does not have. |
+| Region patches of the image-to-region family ([RegionNormalizedGrasp](https://github.com/THU-VCLab/RegionNormalizedGrasp)) | the repository page (no licence file found on `master` or `main`) | no licence file; and `model.grouper` is a slot of the seed-based family, whose seeds are points, not image patches. |
+| KPConv ([HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch), MIT), PosPool, point-pair features, Set-Transformer pooling as crop encoders | the KPConv repository and its licence file only | not reached in this wave; each would be one more `encoder` or `pool` value of `LocalGroup`. `PPFConv` of PyTorch Geometric needs normals, which the seeds do not carry. |
+| Cylindrical coordinate embedding of "A Cross-view Fusion Framework for Robust 6-DoF Grasp Pose Estimation" | [arXiv 2606.06878](https://arxiv.org/abs/2606.06878) | no code was looked for beyond the arXiv record; nothing to wrap in this wave. |

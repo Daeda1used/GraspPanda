@@ -1,0 +1,23 @@
+# DepthLocalGroup with its defaults: a ball of scene points, pooled once per depth bin.
+#
+# The scene-support counterpart of `ball` for head bundles that read a depth axis
+# (GraspNet-baseline, Scale-Balanced-Grasp): one crop of 64 scene points, sliced by the
+# far end of every depth bin. Geometry only, like the baseline's crop.
+#
+# What must be re-tuned, and why:
+# * radius / nsample: the crop gathers raw SCENE points (20 000 per frame in the reference
+#   recipes); both belong to the point density of the input cloud.
+# * hmax: one far end per depth bin of the head (0.01 to 0.04 m for `num_depth: 4`).
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthLocalGroup
+    shape: ball
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]# one far end per depth bin of the head
+    nsample: 64
+    pool: max
+    mlp_channels: [64, 128, 256]
+    seed_residual: none

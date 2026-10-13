@@ -1,0 +1,21 @@
+# Sigmoid focal loss (RetinaNet) through torchvision: cross-entropy that turns down elements the
+# network already gets right.
+#
+# For `class` terms with few positives among many easy negatives: the objectness of scene points
+# (`proposal.objectness_loss`) or of seeds (`view.objectness_loss`). Every class is a binary
+# problem of its own (one-vs-all). It also fits `unit` terms with binary-like targets. Needs the
+# extra `torchvision`.
+#
+# What must be re-tuned, and why:
+# * alpha: 0.25 weights positives by 0.25 and negatives by 0.75, the detection default for a rare
+#   foreground. Table-top objectness is far less imbalanced than anchors: try -1 (no balance)
+#   first.
+# * gamma: 2.0. 0 is the plain sigmoid cross-entropy; larger values focus harder.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy (it is a sum over classes of small values), so
+#   compare the logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: FocalLoss
+    alpha: 0.25                   # positives x alpha, negatives x (1 - alpha); -1: off
+    gamma: 2.0                    # exponent of (1 - p_t)

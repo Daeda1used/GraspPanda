@@ -1,0 +1,18 @@
+# Balanced L1 (Libra R-CNN): a Smooth-L1 whose small errors keep a larger gradient.
+#
+# For `value` and `unit` terms: widths, tolerances, regressed scores.
+#
+# What must be re-tuned, and why:
+# * beta: 1.0 is the error where the penalty turns linear, in the units of the target. Width
+#   targets are below 1.2 (metres x 10), so the linear part is never reached; 0.1 puts the knee at
+#   one centimetre.
+# * alpha: 0.5 and gamma: 1.5 are the detection defaults.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: BalancedL1
+    beta: 1.0                     # knee, in the units of the target
+    alpha: 0.5
+    gamma: 1.5

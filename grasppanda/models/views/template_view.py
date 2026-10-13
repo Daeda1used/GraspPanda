@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import replace
-from typing import Literal
+from typing import ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
@@ -55,6 +55,9 @@ class TemplateViewStage(ViewStage):
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
     label_formats = ("dense", "compact")
+    #: The view scores are only ranked and min-max normalised, so a loss that trains them
+    #: as logits needs no activation here.
+    loss_terms: ClassVar[dict[str, str]] = {"loss": "unit"}
 
     def __init__(
         self,

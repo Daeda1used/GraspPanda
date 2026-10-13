@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import pairwise
-from typing import Literal
+from typing import ClassVar, Literal
 
 import torch
 from torch import Tensor, nn
@@ -91,6 +91,7 @@ class GraspnessFPS(Proposal):
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
     seed_scores = ("graspness", "objectness")
+    loss_terms: ClassVar[dict[str, str]] = {"objectness_loss": "class", "graspness_loss": "unit"}
 
     def __init__(
         self,
@@ -162,7 +163,7 @@ class GraspnessFPS(Proposal):
             points=points.subset(flat, offsets),
             feats=feats.feats[flat],
             scores={
-                "graspness": scores.graspness.detach()[flat],
+                "graspness": self.graspness_loss.as_value(scores.graspness.detach())[flat],
                 "objectness": scores.objectness.detach().softmax(dim=-1)[flat, 1],
             },
             valid=valid.reshape(-1),
@@ -173,7 +174,9 @@ class GraspnessFPS(Proposal):
     def candidates(self, scores: PointScores) -> Tensor:
         """``(N,)`` mask of the scene points that may become seeds."""
         is_object = scores.objectness.argmax(dim=-1) == 1
-        return is_object & (scores.graspness > self.graspness_threshold)
+        # A loss that trains the output as a logit hands it on through its sigmoid.
+        graspness = self.graspness_loss.as_value(scores.graspness)
+        return is_object & (graspness > self.graspness_threshold)
 
     @torch.no_grad()
     def _select(self, scores: PointScores) -> tuple[Tensor, Tensor, Tensor]:

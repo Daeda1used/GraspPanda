@@ -1,0 +1,17 @@
+# Cross-entropy with label smoothing: a tenth of the target mass is spread over all classes.
+#
+# For `class` terms. Keeps the logits of confident classifiers from growing without bound;
+# neighbouring angle or depth bins are not favoured over distant ones.
+#
+# What must be re-tuned, and why:
+# * label_smoothing: 0.1, the usual value for image classification.
+# * EconomicHead with `unmatched_class: true` has one never-supervised output per classifier;
+#   smoothing gives it target mass. Use `decode_argmax: supervised` or `unmatched_class: false`
+#   with this loss.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than the plain CrossEntropy (slightly larger at the optimum), so
+#   compare the logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: LabelSmoothingCrossEntropy
+    label_smoothing: 0.1          # mass spread evenly over all classes

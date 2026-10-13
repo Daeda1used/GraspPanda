@@ -1,0 +1,18 @@
+# Softmax focal loss through kornia: (1 - p_t)^gamma times the cross-entropy over classes that
+# exclude each other.
+#
+# The drop-in choice for the angle, depth and quality classes of EconomicHead and the angle
+# classes of OperationHead, where the classes compete in one softmax as under CrossEntropy. Needs
+# the extra `kornia`.
+#
+# What must be re-tuned, and why:
+# * gamma: 2.0. 0 is the plain cross-entropy.
+# * EconomicHead keeps one never-supervised extra output per classifier (`unmatched_class: true`);
+#   it stays untouched by this loss, as under CrossEntropy.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than CrossEntropy (smaller by the modulating factor), so compare the
+#   logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: SoftmaxFocalLoss
+    gamma: 2.0                    # exponent of (1 - p_t)

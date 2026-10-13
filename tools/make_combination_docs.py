@@ -65,6 +65,8 @@ GROUP_TITLES = {
     "family": "other detector families, as shipped",
     "family-slot": "one component of another detector family replaced",
     "post": "one post-processing step as the variant `post`",
+    "loss": "one loss of one stage replaced",
+    "recipe": "one recipe preset applied (optimizer, schedule, hooks, augmentation)",
 }
 
 
@@ -467,6 +469,54 @@ def post_section(records: list[dict[str, Any]]) -> list[str]:
     ]
 
 
+def loss_section(records: list[dict[str, Any]]) -> list[str]:
+    """Loss presets in the loss terms they were probed in: the verdict of the cell and the
+    first and last value of every replaced term."""
+    members = [record for record in records if record["group"] == "loss"]
+    if not members:
+        return []
+    by_id = {record["id"]: record for record in records}
+    notes = Notes()
+    rows = []
+    for record in members:
+        losses = by_id.get(record.get("probed_as", ""), record).get("losses") or {}
+        verdict = verdict_text(record, False, notes)
+        for item in record["sets"]:
+            target, _, preset = item.partition("=")
+            stage, _, option = target.partition(".")
+            term = "loss/" + (option.removesuffix("_loss") if option != "loss" else stage)
+            values = losses.get(term)
+            rows.append(
+                [
+                    f"`{preset}`",
+                    record["method"],
+                    f"`{target}`",
+                    verdict,
+                    f"{values[0]:.4g} → {values[1]:.4g}" if values else "—",
+                ]
+            )
+        rows.append(["", "", "", "", ""])
+    return [
+        "## Losses",
+        "",
+        "Every loss preset in a loss term it is meant for, under GSNet and under one more "
+        "method (`grasppanda compose <config> --set <stage>.<loss option>=<preset>`). A probe "
+        "replaces several loss terms of a method at once: the rows between two empty lines "
+        "are one probed config and share its verdict. The last column is the weighted value "
+        "of the replaced term at the first and at the last of the 20 iterations: it shows "
+        "that the term is finite and moves, nothing about accuracy, and values of different "
+        "losses are not comparable. The last rows are pairings the config check refuses. "
+        "Which loss fits which term is a contract "
+        "([Heads and losses](../slots/head_loss.md)); the unit tests run every loss in every "
+        "term of its kind on tiny models.",
+        "",
+        *_table(["preset", "method", "term", "verdict", "term value, first → last"], rows[:-1]),
+        "",
+        *notes.lines(),
+        *([""] if notes.items else []),
+    ]
+
+
 def findings_section(records: list[dict[str, Any]]) -> list[str]:
     """Cells that passed the config check and failed afterwards, grouped by reason."""
     failed = [record for record in records if record["verdict"] == "fails"]
@@ -520,6 +570,53 @@ def family_slots_section(records: Records) -> list[str]:
         headers = [f"`{slot}=`", "Component", method, *NUMBER_HEADERS[1:]]
         lines += [f"### {method}: `{slot}`", "", *_table(headers, rows), ""]
     return [*lines, *([*notes.lines(), ""] if notes.items else [])]
+
+
+def recipes_section(records: Records) -> list[str]:
+    """Recipe presets: one row per preset, one column per method it is probed under."""
+    by_id = records.by_id
+    members = grid("recipe")
+    if not members:
+        return []
+    methods = list(dict.fromkeys(cell.method for cell in members))
+    rows: dict[tuple[str, str], dict[str, str]] = {}
+    sets: dict[tuple[str, str], str] = {}
+    for cell in members:
+        record = by_id.get(cell.id)
+        rows.setdefault((cell.slot, cell.variant), {})[cell.method] = (
+            f"`{record['verdict']}`" if record else "not probed"
+        )
+        sets[(cell.slot, cell.variant)] = " ".join(f"`--set {item}`" for item in cell.sets)
+    lines = [
+        "A recipe preset changes what is around the model: the optimizer, the schedule, the "
+        "hooks of the training loop, the point augmentation. Each is applied alone to a "
+        "method as shipped and probed like a stage. `—`: the preset names the scene encoder "
+        "of the seed-based skeleton and is probed under a second seed-based method instead "
+        "of HGGD. What each preset is and how to use it: [the recipe slot](../slots/recipe.md).",
+        "",
+    ]
+    table = [
+        [slot, sets[(slot, name)], cell_.component, *(found.get(m, "—") for m in methods)]
+        for (slot, name), found in rows.items()
+        for cell_ in [next(c for c in members if (c.slot, c.variant) == (slot, name))]
+    ]
+    lines += _table(["Slot", "Request", "Sets", *methods], table)
+    failed = [
+        by_id[cell.id]
+        for cell in members
+        if cell.id in by_id and by_id[cell.id]["verdict"] not in ("runs", "wired")
+    ]
+    if failed:
+        lines += ["", "What did not run, in the words of the tool:", ""]
+        for record in failed:
+            text = _one_line(record.get("unstable") or reason(record) or "no message recorded")
+            lines.append(f"- `{record['id']}` (`{record['verdict']}`): {text}")
+    return [*lines, ""]
+
+
+def _one_line(text: str, limit: int = 400) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + " …"
 
 
 def counts_section(records: list[dict[str, Any]]) -> list[str]:
@@ -687,9 +784,13 @@ def page() -> str:
     ]
     for slot in STAGE_SLOTS:
         lines += slot_section(slot, records, "stage")
+    recipe = recipes_section(records)
+    if recipe:
+        lines += ["## The training recipe", "", *recipe]
     lines += ["## Sets of stages", "", *stage_sets_section(records)]
     lines += family_slots_section(records)
     lines += post_section(cells_)
+    lines += loss_section(cells_)
     lines += ["## Passed the check, failed afterwards", "", *findings_section(cells_)]
     missing = about.get("not_probed") or []
     lines += [

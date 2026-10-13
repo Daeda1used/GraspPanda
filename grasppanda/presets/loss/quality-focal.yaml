@@ -1,0 +1,22 @@
+# Quality focal loss (Generalized Focal Loss): sigmoid cross-entropy to a soft target, focused on
+# the cells whose prediction is far off.
+#
+# For `unit` terms, where the target is a quality in [0, 1]: the score grid of SWADHead
+# (`head.score_loss`), the graspness of GraspnessFPS (`proposal.graspness_loss`), the view scores
+# of TemplateViewStage (`view.loss`). Refused for the scores of the GraspNet-baseline family,
+# whose targets reach ln 10.
+#
+# What must be re-tuned, and why:
+# * beta: 2.0, the exponent of |target - sigmoid|. 0 is the soft-target cross-entropy.
+# * the output becomes a logit. SWADHead decodes its score and GraspnessFPS compares its graspness
+#   with the threshold through the sigmoid; a value you read from the raw output yourself is a
+#   logit.
+# * SWADHead: `score_target: log_friction_batch_norm` normalises targets with the extrema of the
+#   batch; `log_friction_fixed_range` gives the loss a target that means the same in every batch.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: QualityFocal
+    beta: 2.0                     # exponent of |target - sigmoid(prediction)|

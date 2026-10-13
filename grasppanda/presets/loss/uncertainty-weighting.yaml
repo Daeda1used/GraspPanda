@@ -1,0 +1,20 @@
+# Uncertainty weighting (Kendall et al., CVPR 2018) of one loss term: a learned factor on the
+# term, which pays for being small.
+#
+# A wrapper without a loss of its own: `grasppanda compose` wraps the loss that is in the term,
+# with its weight. Set it on every term that should take part in the balance, e.g. for GSNet
+#   --set proposal.objectness_loss=uncertainty-weighting
+#   --set proposal.graspness_loss=uncertainty-weighting --set view.loss=uncertainty-weighting
+#   --set head.score_loss=uncertainty-weighting --set head.width_loss=uncertainty-weighting
+# A term that is not wrapped keeps its fixed weight. Fits every kind of term.
+#
+# What must be re-tuned, and why:
+# * initial_log_variance: -0.6931 (-ln 2) starts every factor at 1, i.e. from the weights of the
+#   config. The learned value is the parameter `<stage>.<term>.log_variance` of the checkpoint.
+# * weight decay: the log-variances are parameters of the model; an optimizer that decays all
+#   parameters pulls them towards 0 (a factor of 0.5). Exclude them, or decay nothing.
+# * the wrapped terms can be negative, and so can the total loss; "lower is better" still holds.
+model:
+  loss:
+    type: UncertaintyWeighted
+    initial_log_variance: -0.6931   # -ln 2: the factor starts at 1

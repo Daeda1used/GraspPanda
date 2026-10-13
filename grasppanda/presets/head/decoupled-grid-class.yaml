@@ -1,0 +1,36 @@
+# DecoupledGridHead with everything but the score classified: angle, depth and the width, the
+# latter into 16 bins of the gripper opening.
+#
+# It expects crop features without a depth axis (CylinderGroup, CylinderInteractionGroup,
+# MultiScaleGroup) and is supervised with the dense label grids (NearestLabelAssigner), so it
+# swaps with `swad` under GSNet. Written for this toolbox after the grasp head of FGC-GraspNet
+# (ICRA 2022); no AP is claimed for it. The classification end of the comparison with `decoupled-
+# grid-regression`.
+#
+# What must be re-tuned, and why:
+# * width_bins: 16. The decoded width is a bin centre, so the resolution is 6.7 mm for a 0.1 m
+#   gripper; `decoupled-grid-bins` decodes between bins.
+# * width_loss weight: 1, a cross-entropy of order ln 16 at the start.
+# * score_target: log_friction_fixed_range with friction_range [0.1, 1.0], the range of the
+#   GraspNet-1Billion labels. Another label set has another range.
+# * width_decode_gain: 1.2 opens the gripper 20 % wider than learned, as the reference
+#   implementations of this family do; 1.0 decodes what was learned.
+# * score_kind. The decoded score is the regressed quality of the chosen cell, not comparable with
+#   the score of another head bundle.
+model:
+  head:
+    type: DecoupledGridHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    depth: class                  # class | regression
+    width: class                  # nearest of width_bins; decoded: the bin centre
+    width_bins: 16
+    width_decode_gain: 1.2
+    score_target: log_friction_fixed_range
+    friction_range: [0.1, 1.0]
+    score_loss: {type: SmoothL1, weight: 15.0, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 1.0}
+    depth_loss: {type: CrossEntropy, weight: 1.0}
+    width_loss: {type: CrossEntropy, weight: 1.0}

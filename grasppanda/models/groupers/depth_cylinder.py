@@ -21,9 +21,9 @@ geometry of a crop and the output axes are unchanged.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
-from typing import Literal
+from typing import Any, ClassVar, Literal
 
 import torch
 from torch import Tensor, nn
@@ -35,7 +35,7 @@ from grasppanda.structures import ContractError, GroupFeatures, PointFeatures
 
 from .cylinder import _LinearNormAct
 
-__all__ = ["DepthCylinderGroup"]
+__all__ = ["DepthCylinderGroup", "DepthCylinderProjectionGroup"]
 
 
 @GROUPERS.register()
@@ -77,6 +77,9 @@ class DepthCylinderGroup(Grouper):
     out_axes = ("seed", "depth", "channel")
     status = "tested"
     source = "GraspNet-baseline (Fang et al., CVPR 2020)"
+    #: The grouper to use instead when the encoder returns another width than the gated
+    #: seed residual needs; named by the seed-width rule and applied by ``compose``.
+    projected_variant: ClassVar[str | None] = "DepthCylinderProjectionGroup"
 
     def __init__(
         self,
@@ -124,7 +127,8 @@ class DepthCylinderGroup(Grouper):
                 f"DepthCylinderGroup: the gated seed residual adds {in_channels}-channel seed "
                 f"features to {self.out_channels}-channel crop features; the two must be equal "
                 "(in_channels is injected by the detector: it is the width of the scene "
-                f"encoder). End mlp_channels on {in_channels}, or use an encoder that returns "
+                f"encoder). Use DepthCylinderProjectionGroup (a linear layer in front of the "
+                f"gate), or end mlp_channels on {in_channels}, or use an encoder that returns "
                 f"{self.out_channels} channels, or set seed_residual: none."
             )
         widths = [3, *mlp_channels]
@@ -139,6 +143,19 @@ class DepthCylinderGroup(Grouper):
         self.gate = (
             nn.Linear(self.out_channels, self.out_channels) if self.uses_seed_features else None
         )
+
+    @classmethod
+    def required_seed_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """Width the seed features must have under ``options``, or ``None`` for any.
+
+        The gated seed residual adds the seed features to the crop features, so the
+        encoder has to return the last width of ``mlp_channels``. The contract rules
+        compare this with the width of the encoder.
+        """
+        if options.get("seed_residual") != "gated":
+            return None
+        widths = options.get("mlp_channels") or ()
+        return int(widths[-1]) if widths else None
 
     @property
     def num_depth(self) -> int:
@@ -275,3 +292,79 @@ class DepthCylinderGroup(Grouper):
             f"radius={self.radius}, radius_scales={list(self.radius_scales)}, hmin={self.hmin}, "
             f"hmax={list(self.hmax)}, nsample={self.nsample}, seed_residual={self.seed_residual!r}"
         )
+
+
+@GROUPERS.register()
+class DepthCylinderProjectionGroup(DepthCylinderGroup):
+    """:class:`DepthCylinderGroup` with a gated seed residual for an encoder of any width.
+
+    The crop of Scale-Balanced-Grasp adds ``sigmoid(W f) * f`` of the seed feature ``f`` to
+    its crop features, so its encoder must return the width of the crops. Here a linear
+    layer ``in_channels -> out_channels`` maps the seed feature first: ``g = P f``, then
+    ``sigmoid(W g) * g`` is added. The reference model has no such layer; this grouper is
+    what ``grasppanda compose`` puts in its place under an encoder of another width.
+
+    Args:
+        radius: Cylinder radius in metres.
+        hmin: Near end of every cylinder along the approach axis, metres.
+        hmax: Far end of the cylinder of each depth bin, metres, increasing.
+        nsample: Neighbours per cylinder.
+        mlp_channels: Widths of the shared MLP; the last one is ``out_channels``.
+        normalize_offsets: Divide the offsets by the radius of their crop.
+        radius_scales: One crop per entry, with radius ``radius * scale``.
+        in_channels: Channels of the seed features; injected by the detector. Any width.
+    """
+
+    status = "tested"
+    source = (
+        "Scale-Balanced-Grasp (Ma and Huang, CoRL 2022) crop with a projection of the seed "
+        "feature added here"
+    )
+    projected_variant = None
+
+    def __init__(
+        self,
+        radius: float = 0.05,
+        hmin: float = -0.02,
+        hmax: Sequence[float] = (0.01, 0.02, 0.03, 0.04),
+        nsample: int = 64,
+        mlp_channels: Sequence[int] = (64, 128, 256),
+        normalize_offsets: bool = False,
+        radius_scales: Sequence[float] = (1.0,),
+        in_channels: int = INJECTED,
+    ) -> None:
+        super().__init__(
+            radius,
+            hmin,
+            hmax,
+            nsample,
+            mlp_channels,
+            normalize_offsets,
+            radius_scales,
+            "gated",
+            int(mlp_channels[-1]) if mlp_channels else in_channels,
+        )
+        self.in_channels = in_channels
+        self.project = nn.Linear(in_channels, self.out_channels)
+
+    @classmethod
+    def required_seed_channels(cls, options: Mapping[str, Any]) -> int | None:
+        """Any width: the projection maps it."""
+        return None
+
+    def forward(
+        self,
+        support: PointFeatures,
+        centres: Tensor,
+        rotation: Tensor,
+        seed_feats: Tensor | None = None,
+        neighbours: Tensor | None = None,
+    ) -> GroupFeatures:
+        """Crop features ``(M, num_depth, out_channels)`` with axes ``(seed, depth, channel)``."""
+        if seed_feats is None or seed_feats.ndim != 2 or seed_feats.shape[1] != self.in_channels:
+            got = None if seed_feats is None else tuple(seed_feats.shape)
+            raise ContractError(
+                f"{type(self).__name__} needs the (M, {self.in_channels}) features of the "
+                f"seeds, got {got}"
+            )
+        return super().forward(support, centres, rotation, self.project(seed_feats), neighbours)

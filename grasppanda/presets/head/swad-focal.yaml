@@ -1,0 +1,27 @@
+# SWADHead with a quality focal loss on its score grid: the focal loss for graded targets, with
+# score targets normalised by a fixed friction range.
+#
+# The score output is trained as a logit and decoded through its sigmoid, so the emitted score is
+# a quality in [0, 1]. Everything else is preset `swad`. One loss of any head can be replaced
+# without a preset: `--set head.score_loss=<loss preset>` (`grasppanda compose --list loss`).
+#
+# What must be re-tuned, and why:
+# * score_loss weight: 15 is the weight of the Smooth-L1 it replaces. The focal term starts near
+#   15 x 0.17 and falls faster; compare `loss/score` with the other terms.
+# * score_target: log_friction_fixed_range, so that a target means the same in every batch.
+#   `log_friction_batch_norm`, the reference quirk of GSNet, also runs.
+# * beta: 2.0, the focusing exponent. 0 is the soft-target cross-entropy.
+# * score_kind. The decoded score is sigmoid(output), a quality in [0, 1]: a threshold fitted on
+#   the unbounded score of `swad` does not carry over.
+model:
+  head:
+    type: SWADHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    width_target_scale: 10.0
+    width_decode_gain: 1.2        # reference quirk
+    score_target: log_friction_fixed_range
+    friction_range: [0.1, 1.0]
+    score_loss: {type: QualityFocal, weight: 15.0, beta: 2.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}

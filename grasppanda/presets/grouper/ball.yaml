@@ -1,0 +1,24 @@
+# LocalGroup with its defaults: a PointNet++ ball among the seeds, shared MLP and max.
+#
+# The unrotated neighbourhood of PointNet++ (Qi et al., NeurIPS 2017), with the offsets
+# written in the crop frame so that the head keeps its angular reference. Against GSNet's
+# cylinder it has no preferred axis: it sees as far behind the seed as in front.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: ball                   # points within `radius` of the seed
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    encoder: mlp
+    pool: max
+    mlp_channels: [256, 256]

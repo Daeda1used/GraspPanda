@@ -1,0 +1,33 @@
+# GSNet's selection, but a frame with too few graspable points is filled with the best-scored other
+# points as real seeds instead of padding.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * too_few: best_rest. With `pad` (GSNet) a frame without candidates trains the proposal only; here
+#   every frame trains every stage, at the price of seeds below the threshold early in training.
+# * graspness_threshold: 0.1 belongs to graspness normalised to [0, 1] per frame; a frame without
+#   any candidate has no real seed (`metric/real_seeds` in the log), which is the first number to
+#   watch after a swap.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    too_few: best_rest
+    sampler:
+      type: FPS
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

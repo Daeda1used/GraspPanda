@@ -7,8 +7,10 @@
 # What must be re-tuned, and why:
 # * seed_residual: gated adds sigmoid(W f) * f of the seed feature f to the crop feature,
 #   so the encoder's output width must equal the last entry of `mlp_channels` (256). An
-#   encoder with another width is refused when the model is built, with both numbers:
-#   end `mlp_channels` on the encoder's width, or set `seed_residual: none`.
+#   encoder with another width is refused by the config check, with both numbers. The
+#   ways out: `type: DepthCylinderProjectionGroup` (the same crop with a linear layer in
+#   front of the gate, which `grasppanda compose` puts in by itself), `mlp_channels`
+#   ending on the encoder's width, or `seed_residual: none`.
 # * radius: 0.08 m with scales 0.25 to 1 (0.02, 0.04, 0.06 and 0.08 m). The crops gather
 #   raw scene points, 64 per cylinder: the radii belong to the point density of the input
 #   cloud (20 000 points per frame in the reference recipe).

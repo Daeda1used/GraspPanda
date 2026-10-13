@@ -13,7 +13,7 @@ from . import backends
 if TYPE_CHECKING:
     from grasppanda._ops.library import Kernels
 
-__all__ = ["furthest_point_sample"]
+__all__ = ["furthest_point_sample", "generalized_furthest_point_sample"]
 
 #: Squared-norm threshold below which the PointNet++ CUDA kernel ignores a point.
 _NEAR_ORIGIN = 1e-3
@@ -205,3 +205,94 @@ def _sample_compiled(
         tie_break=tie_break,
         priority_threads=_kernel_threads(points.shape[1]),
     )
+
+
+@torch.no_grad()
+def generalized_furthest_point_sample(
+    coords: Tensor,
+    num_samples: int,
+    *,
+    feats: Tensor | None = None,
+    metric: Literal["concat", "sum"] = "concat",
+    coord_weight: float = 1.0,
+    weights: Tensor | None = None,
+    start: int | None = None,
+) -> Tensor:
+    """Furthest point sampling of one cloud under a feature distance and with point weights.
+
+    The generalisation the detection literature uses to make the sampler *choose* instead
+    of only *spread*: a distance that includes features (F-FPS of 3DSSD) and a weight on
+    the running distance of every point (S-FPS of SASA). Without features and weights it
+    is :func:`furthest_point_sample` with ``tie_break="lowest_index"``. A picked point is
+    never picked again, so the indices are distinct even on duplicated coordinates.
+
+    Args:
+        coords: ``(N, 3)`` coordinates.
+        num_samples: Points to pick, at most ``N``.
+        feats: ``(N, C)`` features that enter the distance; ``None`` for coordinates only.
+        metric: With features. ``concat``: squared L2 distance of the concatenation
+            ``[coord_weight * xyz, feats]`` (what the released 3DSSD code computes).
+            ``sum``: ``coord_weight * |Δxyz| + |Δfeats|`` with L2 norms (Eq. 1 of the
+            3DSSD paper, its λ being ``coord_weight``).
+        coord_weight: Weight of the coordinates against the features.
+        weights: ``(N,)`` non-negative weights; the next pick maximises
+            ``weight × running distance``. The running distance is the *squared* one
+            unless ``metric="sum"`` (the convention of the released SASA kernel).
+        start: Index of the first pick. ``None``: the heaviest point when weights are
+            given (SASA), otherwise index 0.
+
+    Returns:
+        ``(num_samples,)`` distinct indices into ``coords``, in the order they were picked.
+    """
+    if coords.ndim != 2 or coords.shape[-1] != 3:
+        raise ValueError(f"expected (N, 3) coordinates, got {tuple(coords.shape)}")
+    count = coords.shape[0]
+    if not 0 < num_samples <= count:
+        raise ValueError(
+            f"cannot sample {num_samples} points from {count}; pad or mask explicitly in the caller"
+        )
+    if metric not in ("concat", "sum"):
+        raise ValueError(f"unknown metric '{metric}'")
+    if feats is not None and (feats.ndim != 2 or feats.shape[0] != count):
+        raise ValueError(f"expected ({count}, C) features, got {tuple(feats.shape)}")
+    if weights is not None and tuple(weights.shape) != (count,):
+        raise ValueError(f"expected ({count},) weights, got {tuple(weights.shape)}")
+    spaces = [coords * coord_weight]
+    if feats is not None:
+        if metric == "concat":
+            spaces = [torch.cat([coords * coord_weight, feats.to(coords.dtype)], dim=1)]
+        else:
+            spaces.append(feats.to(coords.dtype))
+    squared = feats is None or metric == "concat"
+    if start is None:
+        start = int(weights.argmax()) if weights is not None else 0
+    if not 0 <= start < count:
+        raise ValueError(f"start index {start} is outside the cloud of {count} points")
+    # No value leaves the device inside the loop: a pick stays a tensor. Reading it as a
+    # Python number would wait for the GPU once per pick, which costs more than the
+    # arithmetic of the step (and far more on a GPU that is shared).
+    index = torch.empty(num_samples, dtype=torch.long, device=coords.device)
+    distance = coords.new_full((count,), float("inf"))
+    pick = torch.tensor(start, dtype=torch.long, device=coords.device)
+    norms = [space.square().sum(dim=1) if space.shape[1] > 3 else None for space in spaces]
+    for step in range(num_samples):
+        index[step] = pick
+        if step + 1 == num_samples:
+            break
+        current = None
+        for space, norm in zip(spaces, norms):
+            if norm is None:  # three columns: subtract and square, exactly
+                part = (space - space[pick]).square_().sum(dim=1)
+            else:  # many columns: |a - b|^2 = |a|^2 + |b|^2 - 2 a.b, one product per pick
+                part = torch.mv(space, space[pick]).mul_(-2.0).add_(norm).add_(norm[pick])
+                part.clamp_(min=0.0)
+            if not squared:
+                part = part.sqrt_()
+            current = part if current is None else current.add_(part)
+        distance = torch.minimum(distance, current)
+        distance[pick] = -1.0  # taken: below every remaining point, whatever its weight
+        gain = distance
+        if weights is not None:
+            gain = torch.where(distance < 0, distance, distance * weights)
+        pick = gain.argmax()
+    return index

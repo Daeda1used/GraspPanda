@@ -1,0 +1,17 @@
+# Online hard example mining on a Smooth-L1: only the hardest quarter of the supervised cells
+# counts.
+#
+# For `value` and `unit` terms: score grids, widths, tolerances, view scores.
+#
+# What must be re-tuned, and why:
+# * fraction: 0.25 of the supervised cells is kept; with wrong labels among the hardest cells a
+#   larger share is safer.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than the unmined loss (a mean over the hardest cells only), so
+#   compare the logged `loss/...` values of both runs and re-tune.
+model:
+  loss:
+    type: TopK
+    fraction: 0.25                # share of the supervised cells that is kept
+    min_kept: 1
+    loss: {type: SmoothL1, beta: 1.0}

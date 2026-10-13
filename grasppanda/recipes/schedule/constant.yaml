@@ -1,0 +1,7 @@
+# No schedule: the optimizer's learning rate for the whole run.
+#
+# For optimizers that set their own step size (Prodigy) and for controlled comparisons.
+#
+# What must be re-tuned, and why:
+# * nothing to tune; the base config's scheduler is removed.
+scheduler: null

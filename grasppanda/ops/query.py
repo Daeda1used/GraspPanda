@@ -19,7 +19,7 @@ from . import backends
 if TYPE_CHECKING:
     from grasppanda._ops.library import Kernels
 
-__all__ = ["ball_query", "cylinder_query", "gather_points", "group_points", "knn"]
+__all__ = ["ball_query", "box_query", "cylinder_query", "gather_points", "group_points", "knn"]
 
 #: Largest ``k`` the compiled kNN kernel is used for. It keeps the neighbours of a query
 #: in a sorted list (linear insertion), which beats sorting the whole row only for few.
@@ -199,6 +199,54 @@ def _cylinder_query(
         axial = local[..., 0]
         radial = local[..., 1].pow(2) + local[..., 2].pow(2)
         inside = (radial < radius * radius) & (axial > hmin) & (axial < hmax)
+        index, hits = _first_hits(inside, nsample)
+        indices.append(index)
+        counts.append(hits)
+    return torch.cat(indices, dim=1), torch.cat(counts, dim=1)
+
+
+def box_query(
+    query: Tensor,
+    support: Tensor,
+    rotation: Tensor,
+    lower: tuple[float, float, float],
+    upper: tuple[float, float, float],
+    nsample: int,
+    *,
+    chunk: int = 256,
+) -> tuple[Tensor, Tensor]:
+    """Support points inside an oriented box at every query point.
+
+    The box is axis-aligned in the frame of its query: a support point ``p`` is inside
+    when ``d = Rᵀ (p - q)`` satisfies ``lower < d < upper`` on all three axes (strict).
+    Column 0 of ``rotation`` is the approach axis, as for :func:`cylinder_query`, and
+    the conventions for the returned members are the same (first hits in index order,
+    missing slots repeat the first, no hit returns index 0).
+
+    Args:
+        query: ``(B, M, 3)`` box origins.
+        support: ``(B, N, 3)`` points to search.
+        rotation: ``(B, M, 3, 3)`` frame per query.
+        lower: Lower corner of the box in its frame, metres.
+        upper: Upper corner of the box in its frame, metres.
+
+    Returns:
+        ``(index, hits)``: ``(B, M, nsample)`` indices and ``(B, M)`` hit counts
+        (capped at ``nsample``).
+    """
+    _check(query, support)
+    if tuple(rotation.shape) != (*query.shape[:2], 3, 3):
+        raise ValueError(
+            f"rotation must be {(*query.shape[:2], 3, 3)}, got {tuple(rotation.shape)}"
+        )
+    low = support.new_tensor(lower)
+    high = support.new_tensor(upper)
+    indices, counts = [], []
+    for start in range(0, query.shape[1], chunk):
+        block = query[:, start : start + chunk]
+        offset = support[:, None, :, :] - block[:, :, None, :]
+        local = torch.einsum("bmnj,bmjk->bmnk", offset, rotation[:, start : start + chunk])
+        inside = ((local > low) & (local < high)).all(-1)
         index, hits = _first_hits(inside, nsample)
         indices.append(index)
         counts.append(hits)

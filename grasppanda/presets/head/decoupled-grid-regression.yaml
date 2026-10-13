@@ -1,0 +1,39 @@
+# DecoupledGridHead with depth and width regressed: a continuous insertion depth and one width per
+# depth bin; only the in-plane angle is classified.
+#
+# It expects crop features without a depth axis (CylinderGroup, CylinderInteractionGroup,
+# MultiScaleGroup) and is supervised with the dense label grids (NearestLabelAssigner), so it
+# swaps with `swad` under GSNet. Written for this toolbox after the grasp head of FGC-GraspNet
+# (ICRA 2022); no AP is claimed for it. The regression end of the comparison with `decoupled-grid-
+# class`.
+#
+# What must be re-tuned, and why:
+# * depth_loss: the depth is regressed in units of depth_step (targets 1 to 4), so an error of one
+#   bin costs 0.5 under SmoothL1 with weight 1. The decoded depth is continuous between 0.01 and
+#   0.04 m; the benchmark labels hold four depths.
+# * loss weights: 15 for the score and 10 for a regressed width are those of `swad`; 1 for the
+#   class terms is a starting point. The class terms are cross-entropies of order ln 12 and ln 4
+#   at the start: watch `loss/angle` and `loss/depth` beside `loss/score`.
+# * score_target: log_friction_fixed_range with friction_range [0.1, 1.0], the range of the
+#   GraspNet-1Billion labels. Another label set has another range.
+# * width_decode_gain: 1.2 opens the gripper 20 % wider than learned, as the reference
+#   implementations of this family do; 1.0 decodes what was learned.
+# * score_kind. The decoded score is the regressed quality of the chosen cell, not comparable with
+#   the score of another head bundle.
+model:
+  head:
+    type: DecoupledGridHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    depth: regression             # in units of depth_step; decoded: a continuous depth
+    width: regression             # regression | class | bins
+    width_target_scale: 10.0
+    width_decode_gain: 1.2
+    score_target: log_friction_fixed_range
+    friction_range: [0.1, 1.0]
+    score_loss: {type: SmoothL1, weight: 15.0, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 1.0}
+    depth_loss: {type: SmoothL1, weight: 1.0, beta: 1.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}

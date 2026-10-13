@@ -1,0 +1,27 @@
+# LatticeViewStage that samples the training view among the 10 best-scoring views only.
+#
+# GSNet draws the training view from all 300 scores; this restricts the draw to the top 10,
+# so the crop and the head see fewer views the model would never choose at inference.
+#
+# What must be re-tuned, and why:
+# * top_k: 10 is a guess; 1 is the arg-max, 300 is GSNet's multinomial.
+# * loss weight: 100 is GSNet's, tuned against the other loss terms of GSNet; no AP has been
+#   measured for this stage under any method.
+# * label_views: 300 is the lattice the label files are indexed by. The stage ties every
+#   view of its own lattice to the nearest of those 300; it does not create finer labels.
+# * max_friction: 0.6 must equal the value compact labels were encoded with
+#   (`compact_labels.view_friction_threshold`); the first loss checks it.
+model:
+  view:
+    type: LatticeViewStage
+    num_views: 300
+    hemisphere: false
+    target: score                 # regress a score per view (GSNet)
+    selection: argmax             # evaluation mode: the best view
+    train_selection: topk         # training mode: draw among the top_k views
+    top_k: 10
+    temperature: 1.0
+    label_views: 300              # the lattice of the label files; not a free choice
+    max_friction: 0.6
+    residual: true                # add the stage's hidden features to the seed features
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}

@@ -64,10 +64,15 @@ nav:
       - Try a combination: user_guides/combinations.md
   - Slots:
       - Post-processing: slots/post.md
+      - "Grouper: local grouping and region features": slots/grouper.md
       - "Scene encoders: point-based networks": slots/scene_encoders_point.md
       - "Scene encoders: transformers and pretrained": slots/scene_encoders_transformer.md
       - "Scene encoders: sparse-voxel networks and released weights": slots/scene_encoders_sparse.md
       - Image encoders: slots/image_encoders.md
+      - Grasp heads and losses: slots/head_loss.md
+      - "View: approach direction and orientation": slots/view.md
+      - Seed proposal and samplers: slots/proposal.md
+      - "Training recipe: optimizer, schedule, hooks, augmentation": slots/recipe.md
   - Advanced Guides:
       - Add a component: advanced_guides/add_component.md
       - Swapping components: advanced_guides/swapping.md

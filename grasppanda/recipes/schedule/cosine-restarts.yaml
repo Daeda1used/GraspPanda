@@ -1,0 +1,15 @@
+# Cosine with warm restarts (SGDR, Loshchilov and Hutter, ICLR 2017): cycles of 4 epochs, each
+# peak half the one before.
+#
+# What must be re-tuned, and why:
+# * options.t_initial: epochs per cycle; with cycle_limit 3 the schedule covers 12 epochs and
+#   stays at lr_min afterwards, so fit both to `train.epochs`.
+# * options.cycle_decay: factor of the peak from one cycle to the next.
+scheduler:
+  type: TimmSchedule
+  name: cosine
+  lr_min: 1.0e-6
+  options: {t_initial: 4, cycle_limit: 3, cycle_decay: 0.5}
+
+train:
+  scheduler_unit: epoch

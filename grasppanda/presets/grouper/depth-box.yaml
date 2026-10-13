@@ -1,0 +1,23 @@
+# DepthLocalGroup over a gripper-aligned box of scene points with a projected seed
+# residual.
+#
+# PointRCNN's box crop with cyclic padding over the scene, sliced per depth bin; the seed
+# feature is added through a linear layer, so any encoder width fits.
+#
+# What must be re-tuned, and why:
+# * radius / nsample: the crop gathers raw SCENE points (20 000 per frame in the reference
+#   recipes); both belong to the point density of the input cloud.
+# * hmax: one far end per depth bin of the head (0.01 to 0.04 m for `num_depth: 4`).
+# * seed_residual: projected adds W f of the seed feature f; none is geometry only.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthLocalGroup
+    shape: box
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]# one far end per depth bin of the head
+    nsample: 64
+    padding: cyclic
+    mlp_channels: [64, 128, 256]
+    seed_residual: projected      # W f added to every depth bin

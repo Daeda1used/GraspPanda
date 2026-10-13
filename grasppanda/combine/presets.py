@@ -34,7 +34,16 @@ from typing import Any
 
 from grasppanda.config import TYPE_KEY, parse_yaml
 
-__all__ = ["PRESET_ROOT", "RETUNE_HEADING", "Preset", "PresetError", "find", "presets", "read"]
+__all__ = [
+    "LOSS_SLOT",
+    "PRESET_ROOT",
+    "RETUNE_HEADING",
+    "Preset",
+    "PresetError",
+    "find",
+    "presets",
+    "read",
+]
 
 #: Directory of the shipped presets (package data).
 PRESET_ROOT = Path(__file__).resolve().parents[1] / "presets"
@@ -43,6 +52,10 @@ RETUNE_HEADING = "What must be re-tuned, and why:"
 #: The slot of post-processing presets. Their files hold a config fragment,
 #: ``evaluation.variants.post: [<one node>]``, instead of ``model.<slot>``.
 POST_SLOT = "post"
+#: The slot of loss presets. Their files hold one loss node, ``model.loss``, which
+#: ``grasppanda compose --set <stage>.<loss option>=<name>`` puts into a loss option of a
+#: stage (``head.score_loss``, ``proposal.objectness_loss``).
+LOSS_SLOT = "loss"
 
 _KEY = re.compile(r"^(?P<indent> *)(?P<key>[A-Za-z_][\w-]*):(?P<rest>.*)$")
 

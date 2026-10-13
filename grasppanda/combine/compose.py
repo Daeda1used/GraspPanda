@@ -18,6 +18,10 @@ What happens, in this order, and what is reported for each step:
 5. the child config is written to a scratch file and loaded, so the contract verdicts
    and the config check are those of the file the user gets.
 
+A loss is set inside a stage: ``head.score_loss=quality-focal`` puts a preset of
+``grasppanda/presets/loss/`` (or a registered loss, by its type) into that loss option of
+the head bundle and keeps the weight of the loss it replaces.
+
 No rule about what fits what lives here: every verdict is
 :func:`~grasppanda.models.detectors.seed_based.stage_contract_problems` or the config
 checker, quoted.
@@ -45,15 +49,17 @@ from grasppanda.config.loader import LoadedTree, apply_overrides
 from grasppanda.registry import (
     BACKBONES,
     DETECTORS,
+    LOSSES,
     Registry,
     RegistryError,
     component_parameters,
     slot_registry,
 )
 
+from . import recipes as recipe_presets
 from . import yamltext
 from .post import POST_SLOT, POST_VARIANT, PostSpecError, chain_nodes
-from .presets import Preset, PresetError, find, presets
+from .presets import LOSS_SLOT, Preset, PresetError, find, presets
 
 __all__ = [
     "CONTRACT_GROUPS",
@@ -72,6 +78,7 @@ __all__ = [
 #: set is reported group by group; a problem no group shows is listed for the whole set.
 CONTRACT_GROUPS: tuple[tuple[str, ...], ...] = (
     ("backbone", "proposal"),
+    ("backbone", "grouper"),
     ("proposal", "view"),
     ("view", "assigner"),
     ("assigner", "head"),
@@ -141,6 +148,8 @@ class Composition:
         config_hash: Hash of the composed config; ``None`` when the check refuses it.
         post: The post-processing chain of ``--set post=...`` as it was typed; it
             becomes the evaluation variant ``post``.
+        recipes: Recipe presets of the request (optimizer, schedule, hooks, augment,
+            recipe), in the order given: ``(slot, names as requested, presets)``.
     """
 
     base: str
@@ -161,6 +170,7 @@ class Composition:
     issues: list[Issue] = field(default_factory=list)
     config_hash: str | None = None
     post: tuple[str, ...] = ()
+    recipes: list[tuple[str, str, list[Any]]] = field(default_factory=list)
 
     @property
     def accepted(self) -> bool:
@@ -173,6 +183,7 @@ class Composition:
         parts = [_COMMAND, self.base]
         parts += [f"--set {choice.slot}={choice.request}" for choice in self.choices]
         parts += ["--set " + shlex.quote(f"{POST_SLOT}={text}") for text in self.post]
+        parts += [f"--set {slot}={request}" for slot, request, _ in self.recipes]
         if self.overrides:
             parts.append("--opts " + " ".join(shlex.quote(item) for item in self.overrides))
         if not self.adapters:
@@ -213,7 +224,10 @@ class Composition:
                 break_on_hyphens=False,
             )
 
-        changed = ", ".join(f"{choice.slot} `{choice.request}`" for choice in self.choices)
+        changed = ", ".join(
+            [f"{choice.slot} `{choice.request}`" for choice in self.choices]
+            + [f"{slot} `{request}`" for slot, request, _ in self.recipes]
+        )
         lines = [
             "EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes",
             "the config check; it has not been trained to convergence or evaluated.",
@@ -237,6 +251,9 @@ class Composition:
         shown += [preset for preset in self._adapter_presets() if preset not in shown]
         lines += ["", "What must be re-tuned, and why"]
         lines[-1] += " (from grasppanda/presets/<slot>/<preset>.yaml):" if shown else ":"
+        if self.recipes:
+            lines.append("(recipe presets: grasppanda/recipes/<slot>/<preset>.yaml)")
+            shown = shown + [preset for _, _, members in self.recipes for preset in members]
         for preset in shown:
             lines.append(f"{preset.slot} `{preset.name}`")
             for bullet in preset.retune:
@@ -379,6 +396,132 @@ def _parse_sets(sets: Sequence[str], slots: Mapping[str, Registry], detector: st
     return choices
 
 
+def _loss_options(stage: type) -> list[str]:
+    """Names of the loss options of a stage class."""
+    return [name for name, registry in component_slots(stage).items() if registry is LOSSES]
+
+
+def _parse_terms(
+    sets: Sequence[str], slots: Mapping[str, Registry], stages: Mapping[str, Any], detector: str
+) -> list[Choice]:
+    """Resolve every ``slot.option=choice``: a loss for one loss option of a stage.
+
+    ``stages`` holds the node of every slot as it will be in the composed model. The
+    returned choices carry ``slot.option`` as their slot.
+    """
+    found: list[Choice] = []
+    for item in sets:
+        target, separator, request = item.partition("=")
+        target, request = target.strip(), request.strip()
+        slot, _, option = target.partition(".")
+        if not separator or not slot or not option or not request:
+            raise ComposeError(
+                f"--set {item!r} must look like `slot.loss_option=preset` or "
+                "`slot.loss_option=Loss`, e.g. `head.score_loss=quality-focal`"
+            )
+        node = stages.get(slot)
+        if slot not in slots or not isinstance(node, Mapping) or "type" not in node:
+            listed = ", ".join(slots) or "none"
+            raise ComposeError(
+                f"`{item}` sets a loss of the stage '{slot}', but {detector} has no such "
+                f"slot. Its slots: {listed}."
+            )
+        stage = slots[slot].get(node["type"])
+        options = _loss_options(stage)
+        if option not in options:
+            close = difflib.get_close_matches(option, options, n=1, cutoff=0.4)
+            hint = f" Did you mean '{slot}.{close[0]}'?" if close else ""
+            raise ComposeError(
+                f"{stage.__name__} has no loss option '{option}'.{hint} Its loss options: "
+                f"{', '.join(options) or 'none'}."
+            )
+        if any(choice.slot == target for choice in found):
+            raise ComposeError(f"'{target}' is set twice")
+        choice = _choice(LOSS_SLOT, LOSSES, request)
+        choice.slot = target
+        found.append(choice)
+    return found
+
+
+def _weighted_node(node: dict[str, Any]) -> dict[str, Any] | None:
+    """The node of a loss that carries the weight of the term: the loss itself, or the
+    innermost loss of a wrapper (``TopK``, ``ClassBalanced``)."""
+    while isinstance(node.get("loss"), dict) and "type" in node["loss"]:
+        node = node["loss"]
+    try:
+        params, _ = component_parameters(LOSSES.get(node["type"]))
+    except RegistryError:
+        return None
+    return node if "weight" in params else None
+
+
+def _set_terms(
+    result: Composition,
+    terms: Sequence[Choice],
+    addressed: Mapping[str, list[str]],
+    stages: Mapping[str, Any],
+    nodes: dict[str, dict[str, Any]],
+    notes: dict[str, dict[tuple[str, ...], str]],
+) -> dict[str, dict[str, Any]]:
+    """Put every loss of ``terms`` into its stage; returns the options of the stages that
+    are not replaced as a whole, to be written as overrides of the base config's node."""
+    partial: dict[str, dict[str, Any]] = {}
+    for term in terms:
+        slot, option = term.slot.split(".", 1)
+        mine = addressed.get(term.slot, [])
+        if mine:
+            apply_overrides(LoadedTree(data=term.node), mine)
+            for item in mine:
+                term.comments.pop(tuple(item.partition("=")[0].strip().split(".")), None)
+        replaced = stages[slot].get(option)
+        was = replaced.get("type") if isinstance(replaced, Mapping) else None
+        said = f"preset `{term.request}` ({term.node['type']})" if term.preset else term.request
+        action = f"{term.slot}: {said} in place of {was or 'the loss the stage builds itself'}."
+        if term.preset is not None:
+            action += " " + term.preset.summary
+        try:
+            takes_inner = "loss" in component_parameters(LOSSES.get(term.node["type"]))[0]
+        except RegistryError:
+            takes_inner = False
+        if takes_inner and "loss" not in term.node and was:
+            # A wrapper without a loss of its own wraps the loss that was there.
+            term.node["loss"] = copy.deepcopy(dict(replaced))
+            action += f" It wraps the {was} that was there, with its weight."
+        carrier = _weighted_node(term.node)
+        kept = _weighted_node(copy.deepcopy(dict(replaced))) if was else None
+        if carrier is not None and "weight" not in carrier and kept and "weight" in kept:
+            carrier["weight"] = kept["weight"]
+            path = ("loss",) * _depth(term.node, carrier)
+            term.comments[(*path, "weight")] = (
+                f"kept from the {kept['type']} it replaces; the penalties differ in scale: re-tune"
+            )
+            action += f" The weight {kept['weight']} of the replaced loss is kept."
+        if mine:
+            action += f" Overrides as given: {' '.join(mine)}."
+        result.actions.append(action)
+        node = dict(term.node)
+        comments = {(option, *path): text for path, text in term.comments.items()}
+        if slot in nodes:  # the stage is replaced as a whole: the loss goes into its node
+            nodes[slot][option] = node
+            notes[slot].update(comments)
+            continue
+        if was == node["type"]:
+            node = {"_delete_": True, **node}
+            comments[(option, "_delete_")] = (
+                f"replace the base config's {was}: none of its options is inherited"
+            )
+        partial.setdefault(slot, {})[option] = node
+        notes.setdefault(slot, {}).update(comments)
+    return partial
+
+
+def _depth(node: Mapping[str, Any], inner: Mapping[str, Any]) -> int:
+    depth = 0
+    while node is not inner:
+        node, depth = node["loss"], depth + 1
+    return depth
+
+
 # ------------------------------------------------------------------- fitting an encoder
 
 
@@ -453,6 +596,51 @@ def _fit_encoder(
             f"({_describe(replaced)}), so that the other stages keep the width they have in "
             "the base model and the encoder is the only stage that differs."
         )
+
+
+_PROJECTION_NOTE = "the same crop with a linear layer in front of its seed residual"
+
+
+def _project_seed_features(
+    result: Composition,
+    nodes: dict[str, dict[str, Any]],
+    notes: dict[str, dict[tuple[str, ...], str]],
+    written: Mapping[str, Any],
+    model: Mapping[str, Any],
+) -> bool:
+    """Replace the grouper by its projected variant when the seed-width rule asks for it.
+
+    A grouper that adds the seed features to its crops names the variant that takes an
+    encoder of any width (``projected_variant``). The variant gets the options of the
+    grouper it replaces, as far as it has them. Returns whether it was put in.
+    """
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, stage_contract_problems
+
+    registry = STAGE_REGISTRIES["grouper"]
+    backbone = nodes.get("backbone", written.get("backbone"))
+    grouper = nodes.get("grouper", written.get("grouper"))
+    if not all(isinstance(node, Mapping) and "type" in node for node in (backbone, grouper)):
+        return False
+    try:
+        refused = stage_contract_problems(backbone=backbone, grouper=grouper)
+        variant = getattr(registry.get(grouper["type"]), "projected_variant", None)
+        if not refused or not variant:
+            return False
+        params, _ = component_parameters(registry.get(variant))
+        fixed = {"type": variant, **{k: v for k, v in grouper.items() if k in params}}
+        if stage_contract_problems(backbone=backbone, grouper=fixed):
+            return False
+    except RegistryError:
+        return False
+    nodes["grouper"] = copy.deepcopy(fixed)
+    notes["grouper"] = {("type",): _PROJECTION_NOTE}
+    result.actions.append(
+        f"grouper: {variant} in place of {grouper['type']}. {refused[0].split('. ')[0]}. "
+        f"{variant} is the same crop with a linear layer in front of its seed residual; it "
+        "changes the model (the base method has none). `--no-adapter` leaves the pair refused."
+    )
+    result.origins["grouper"] = f"{result.origins.get('grouper', 'base config')}, projected"
+    return True
 
 
 def _adapters_for(backbone: Mapping[str, Any], proposal: Mapping[str, Any]) -> list[str]:
@@ -615,6 +803,13 @@ def compose(
 
     base_path = resolve_config_path(base)
     config = Config.load(base_path)
+    try:
+        sets, recipe_sets = recipe_presets.split(sets)
+        chosen = [
+            (slot, request, recipe_presets.resolve(slot, request)) for slot, request in recipe_sets
+        ]
+    except PresetError as error:
+        raise ComposeError(str(error)) from None
     written, model = config.to_dict().get("model"), config.resolved().get("model")
     if not isinstance(model, Mapping):
         raise ComposeError(f"{base} has no `model` section to compose into")
@@ -623,6 +818,9 @@ def compose(
     # Post-processing is no part of the model: every detector has this slot.
     post_sets = [item for item in sets if item.partition("=")[0].strip() == POST_SLOT]
     sets = [item for item in sets if item not in post_sets]
+    # A loss sits inside a stage: `head.score_loss=quality-focal`.
+    term_sets = [item for item in sets if "." in item.partition("=")[0]]
+    sets = [item for item in sets if item not in term_sets]
     seed_based = issubclass(detector, SeedGraspDetector)
     result = Composition(
         base=_shipped_name(base_path) or str(base),
@@ -632,9 +830,14 @@ def compose(
         choices=_parse_sets(sets, slots, model["type"]),
         overrides=tuple(overrides),
         adapters=adapters,
+        recipes=chosen,
     )
     by_slot = {choice.slot: choice for choice in result.choices}
-    addressed, rest = _split_overrides(overrides, result.choices)
+    stages = {slot: model.get(slot) for slot in slots}
+    stages.update({slot: choice.node for slot, choice in by_slot.items()})
+    terms = _parse_terms(term_sets, slots, stages, model["type"])
+    # The more specific owner first: `model.head.score_loss.beta` belongs to the loss.
+    addressed, rest = _split_overrides(overrides, [*terms, *result.choices])
     for choice in result.choices:
         cls = slots[choice.slot].get(choice.node["type"])
         if slots[choice.slot] is BACKBONES and is_adapter(cls):
@@ -674,6 +877,14 @@ def compose(
             origin = result.origins.get("backbone", "base config")
             result.origins["backbone"] = f"{origin}, in the adapter {fitting[0]}"
 
+    partial = _set_terms(result, terms, addressed, stages, nodes, notes)
+    result.choices += terms
+
+    # The width of the seed features: an encoder that returns another width than a grouper
+    # adds to its crops gets the grouper's own projection, where the grouper has one.
+    if seed_based and adapters:
+        _project_seed_features(result, nodes, notes, written, model)
+
     # A node of the same type as the base config's would be merged with it by the loader,
     # and options of the base would leak into what was asked for. `--set` replaces.
     for slot, node in list(nodes.items()):
@@ -684,6 +895,7 @@ def compose(
                 f"replace the base config's {node['type']}: none of its options is inherited"
             )
 
+    nodes.update({slot: options for slot, options in partial.items() if slot not in nodes})
     order = [slot for slot in (STAGE_REGISTRIES if seed_based else slots) if slot in nodes]
     body: dict[str, Any] = {"model": {slot: nodes[slot] for slot in order}} if order else {}
     comments = {
@@ -714,6 +926,12 @@ def compose(
         body["data"] = {"train": {"dataset": added}}
     if post_sets:
         _set_post(result, body, post_sets)
+    if chosen:
+        members = [preset for _, _, group in chosen for preset in group]
+        try:
+            result.actions += recipe_presets.apply(members, config.to_dict(), body, comments)
+        except PresetError as error:
+            raise ComposeError(str(error)) from None
     if rest:
         tree = LoadedTree(data=body)
         apply_overrides(tree, rest)
@@ -795,7 +1013,8 @@ def command_parser(parser: argparse.ArgumentParser | None = None) -> argparse.Ar
         default=[],
         metavar="SLOT=CHOICE",
         help="put a preset or a component into a slot, e.g. backbone=ptv3 (repeatable); "
-        "post=collision+nms+top-k=50 defines a post-processing variant",
+        "post=collision+nms+top-k=50 defines a post-processing variant; "
+        "the recipe has slots too: optimizer, schedule, hooks, augment, recipe",
     )
     parser.add_argument(
         "--opts",

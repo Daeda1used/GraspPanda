@@ -1,0 +1,23 @@
+# DepthEmbedGroup around GSNet's cylinder: a seeds crop under a head with a depth axis.
+#
+# The crop is computed once per seed and repeated for every depth bin with a learned
+# embedding of the bin. It lets any (seed, channel) grouper feed the head bundle of
+# GraspNet-baseline and Scale-Balanced-Grasp. The crop does not depend on the depth: only
+# the embedding tells the bins apart, which is weaker than a crop per depth.
+#
+# What must be re-tuned, and why:
+# * num_depth: the `num_depth` of the head bundle (4).
+# * grouper: any seeds-support grouper that emits (seed, channel); its last width is the
+#   width the head bundle is built for.
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthEmbedGroup
+    num_depth: 4                  # = model.head.num_depth
+    grouper:   # the wrapped crop
+      type: CylinderGroup
+      radius: 0.05
+      hmin: -0.02
+      hmax: 0.04
+      nsample: 16
+      mlp_channels: [256, 256]

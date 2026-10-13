@@ -165,29 +165,40 @@ table, which is the first sentence of the error the config check prints.
 <!-- generated:pairs:begin -->
 #### Encoder output and proposal
 
-| backbone ↓ · proposal → | `GraspnessFPS` | `SubsampledSeeds` |
-|---|---|---|
-| `dense` | ✓ | ✗ (1) |
-| `subsampled` | ✗ (2) | ✓ |
+| backbone ↓ · proposal → | `GraspnessFPS` | `SampledSeeds` | `ScoredSeeds` | `SubsampledSeeds` |
+|---|---|---|---|---|
+| `dense` | ✓ | ✓ | ✓ | ✗ (1) |
+| `subsampled` | ✗ (2) | ✗ (3) | ✗ (4) | ✓ |
 
 1. SubsampledSeeds requires 'subsampled' scene features, but a dense encoder returns 'dense' ones (one feature per scene point).
 2. GraspnessFPS requires 'dense' scene features, but a subsampled encoder returns 'subsampled' ones (features on a sub-sampled point set).
+3. SampledSeeds requires 'dense' scene features, but a subsampled encoder returns 'subsampled' ones (features on a sub-sampled point set).
+4. ScoredSeeds requires 'dense' scene features, but a subsampled encoder returns 'subsampled' ones (features on a sub-sampled point set).
 
 #### Proposal and view stage
 
-| proposal ↓ · view → | `ObjectnessViewStage` | `TemplateViewStage` |
-|---|---|---|
-| `GraspnessFPS` | ✗ (1) | ✓ |
-| `SubsampledSeeds` | ✓ | ✓ |
+| proposal ↓ · view → | `DirectionViewStage` | `HealpixViewStage` | `IcosphereViewStage` | `LatticeViewStage` | `ObjectnessViewStage` | `RomaRotationViewStage` | `TemplateViewStage` | `TwoVectorViewStage` |
+|---|---|---|---|---|---|---|---|---|
+| `GraspnessFPS` | ✓ | ✓ | ✓ | ✓ | ✗ (1) | ✓ | ✓ | ✓ |
+| `SampledSeeds` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `ScoredSeeds` | ✓ | ✓ | ✓ | ✓ | ✗ (2) | ✓ | ✓ | ✓ |
+| `SubsampledSeeds` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 1. GraspnessFPS and ObjectnessViewStage both predict and supervise the 'objectness' of a seed; a detector needs exactly one owner for it.
+2. ScoredSeeds and ObjectnessViewStage both predict and supervise the 'objectness' of a seed; a detector needs exactly one owner for it.
 
 #### View stage and assigner
 
 | view ↓ · assigner → | `CompactLabelAssigner` | `NearestLabelAssigner` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `ScaleBalancedAssigner` |
 |---|---|---|---|---|
+| `DirectionViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `HealpixViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `IcosphereViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `LatticeViewStage` | ✓ | ✓ | ✓ | ✓ |
 | `ObjectnessViewStage` | ✗ (1) | ✗ (2) | ✓ | ✓ |
+| `RomaRotationViewStage` | ✓ | ✓ | ✓ | ✓ |
 | `TemplateViewStage` | ✓ | ✓ | ✓ | ✗ (3) |
+| `TwoVectorViewStage` | ✓ | ✓ | ✓ | ✓ |
 
 1. ObjectnessViewStage computes its targets from 'dense' matched labels, but CompactLabelAssigner returns 'compact' ones.
 2. ObjectnessViewStage reads 'on_object' and 'view_width' of the matched labels, which NearestLabelAssigner returns only with `supervise: object_seeds` and `view_widths: true`.
@@ -195,40 +206,75 @@ table, which is the first sentence of the error the config check prints.
 
 #### Assigner and head bundle
 
-| assigner ↓ · head → | `EconomicHead` | `OperationHead` | `SWADHead` |
-|---|---|---|---|
-| `CompactLabelAssigner` | ✓ | ✗ (1) | ✗ (2) |
-| `NearestLabelAssigner` | ✗ (3) | ✓ | ✓ |
-| `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | ✗ (3) | ✓ | ✓ |
-| `ScaleBalancedAssigner` | ✗ (4) | ✓ | ✗ (5) |
+| assigner ↓ · head → | `DecoupledGridHead` | `EconomicHead` | `OperationHead` | `SWADHead` |
+|---|---|---|---|---|
+| `CompactLabelAssigner` | ✗ (1) | ✓ | ✗ (2) | ✗ (3) |
+| `NearestLabelAssigner` | ✓ | ✗ (4) | ✓ | ✓ |
+| `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | ✓ | ✗ (4) | ✓ | ✓ |
+| `ScaleBalancedAssigner` | ✗ (5) | ✗ (6) | ✓ | ✗ (7) |
 
-1. CompactLabelAssigner returns 'compact' matched labels, but OperationHead is supervised with 'dense' ones.
-2. CompactLabelAssigner returns 'compact' matched labels, but SWADHead is supervised with 'dense' ones.
-3. NearestLabelAssigner returns 'dense' matched labels, but EconomicHead is supervised with 'compact' ones.
-4. ScaleBalancedAssigner returns 'dense' matched labels, but EconomicHead is supervised with 'compact' ones. ScaleBalancedAssigner returns a loss weight per seed, but EconomicHead does not apply seed weights, so the weighting would silently do nothing there.
-5. ScaleBalancedAssigner returns a loss weight per seed, but SWADHead does not apply seed weights, so the weighting would silently do nothing there.
+1. CompactLabelAssigner returns 'compact' matched labels, but DecoupledGridHead is supervised with 'dense' ones.
+2. CompactLabelAssigner returns 'compact' matched labels, but OperationHead is supervised with 'dense' ones.
+3. CompactLabelAssigner returns 'compact' matched labels, but SWADHead is supervised with 'dense' ones.
+4. NearestLabelAssigner returns 'dense' matched labels, but EconomicHead is supervised with 'compact' ones.
+5. ScaleBalancedAssigner returns a loss weight per seed, but DecoupledGridHead does not apply seed weights, so the weighting would silently do nothing there.
+6. ScaleBalancedAssigner returns 'dense' matched labels, but EconomicHead is supervised with 'compact' ones. ScaleBalancedAssigner returns a loss weight per seed, but EconomicHead does not apply seed weights, so the weighting would silently do nothing there.
+7. ScaleBalancedAssigner returns a loss weight per seed, but SWADHead does not apply seed weights, so the weighting would silently do nothing there.
 
 #### Grouper and head bundle
 
-| grouper ↓ · head → | `EconomicHead` | `OperationHead` | `SWADHead` |
-|---|---|---|---|
-| `CylinderGroup` | ✓ | ✗ (1) | ✓ |
-| `CylinderInteractionGroup` | ✓ | ✗ (2) | ✓ |
-| `DepthCylinderGroup` | ✗ (3) | ✓ | ✗ (4) |
-| `MultiScaleGroup` | ✓ | ✗ (5) | ✓ |
+| grouper ↓ · head → | `DecoupledGridHead` | `EconomicHead` | `OperationHead` | `SWADHead` |
+|---|---|---|---|---|
+| `CylinderGroup` | ✓ | ✓ | ✗ (1) | ✓ |
+| `CylinderInteractionGroup` | ✓ | ✓ | ✗ (2) | ✓ |
+| `DepthCylinderGroup` | ✗ (3) | ✗ (4) | ✓ | ✗ (5) |
+| `DepthCylinderProjectionGroup` | ✗ (6) | ✗ (7) | ✓ | ✗ (8) |
+| `DepthEmbedGroup` | ✗ (9) | ✗ (10) | ✓ | ✗ (11) |
+| `DepthLocalGroup` | ✗ (12) | ✗ (13) | ✓ | ✗ (14) |
+| `DepthPoolGroup` | ✓ | ✓ | ✗ (15) | ✓ |
+| `LocalGroup` | ✓ | ✓ | ✗ (16) | ✓ |
+| `MultiRadiusGroup` | ✓ | ✓ | ✗ (17) | ✓ |
+| `MultiScaleGroup` | ✓ | ✓ | ✗ (18) | ✓ |
+| `PyGConvGroup` | ✓ | ✓ | ✗ (19) | ✓ |
+| `RoIAwareGroup` | ✓ | ✓ | ✗ (20) | ✓ |
+| `RoIGridGroup` | ✓ | ✓ | ✗ (21) | ✓ |
+| `VoxelSetAbstractionGroup` | ✓ | ✓ | ✗ (22) | ✓ |
 
 1. CylinderGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
 2. CylinderInteractionGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
-3. DepthCylinderGroup emits features with axes ('seed', 'depth', 'channel'), but EconomicHead expects ('seed', 'channel').
-4. DepthCylinderGroup emits features with axes ('seed', 'depth', 'channel'), but SWADHead expects ('seed', 'channel').
-5. MultiScaleGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+3. DepthCylinderGroup emits features with axes ('seed', 'depth', 'channel'), but DecoupledGridHead expects ('seed', 'channel').
+4. DepthCylinderGroup emits features with axes ('seed', 'depth', 'channel'), but EconomicHead expects ('seed', 'channel').
+5. DepthCylinderGroup emits features with axes ('seed', 'depth', 'channel'), but SWADHead expects ('seed', 'channel').
+6. DepthCylinderProjectionGroup emits features with axes ('seed', 'depth', 'channel'), but DecoupledGridHead expects ('seed', 'channel').
+7. DepthCylinderProjectionGroup emits features with axes ('seed', 'depth', 'channel'), but EconomicHead expects ('seed', 'channel').
+8. DepthCylinderProjectionGroup emits features with axes ('seed', 'depth', 'channel'), but SWADHead expects ('seed', 'channel').
+9. DepthEmbedGroup emits features with axes ('seed', 'depth', 'channel'), but DecoupledGridHead expects ('seed', 'channel').
+10. DepthEmbedGroup emits features with axes ('seed', 'depth', 'channel'), but EconomicHead expects ('seed', 'channel').
+11. DepthEmbedGroup emits features with axes ('seed', 'depth', 'channel'), but SWADHead expects ('seed', 'channel').
+12. DepthLocalGroup emits features with axes ('seed', 'depth', 'channel'), but DecoupledGridHead expects ('seed', 'channel').
+13. DepthLocalGroup emits features with axes ('seed', 'depth', 'channel'), but EconomicHead expects ('seed', 'channel').
+14. DepthLocalGroup emits features with axes ('seed', 'depth', 'channel'), but SWADHead expects ('seed', 'channel').
+15. DepthPoolGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+16. LocalGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+17. MultiRadiusGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+18. MultiScaleGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+19. PyGConvGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+20. RoIAwareGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+21. RoIGridGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
+22. VoxelSetAbstractionGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').
 
 #### View stage and head bundle
 
-| view ↓ · head → | `EconomicHead` | `OperationHead` | `SWADHead` |
-|---|---|---|---|
-| `ObjectnessViewStage` | ✓ | ✓ | ✓ |
-| `TemplateViewStage` | ✓ | ✓ | ✓ |
+| view ↓ · head → | `DecoupledGridHead` | `EconomicHead` | `OperationHead` | `SWADHead` |
+|---|---|---|---|---|
+| `DirectionViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `HealpixViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `IcosphereViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `LatticeViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `ObjectnessViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `RomaRotationViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `TemplateViewStage` | ✓ | ✓ | ✓ | ✓ |
+| `TwoVectorViewStage` | ✓ | ✓ | ✓ | ✓ |
 <!-- generated:pairs:end -->
 
 Reading the tables:
@@ -255,37 +301,1786 @@ Reading the tables:
 ## Every legal set of stages
 
 <!-- generated:stage-sets:begin -->
-The contracts accept **27 of 384** combinations of the registered stages (an assigner counts twice when it has options that switch optional fields on). The last column names the reference model that is this set.
+The contracts accept **1776 of 14336** combinations of the registered stages (an assigner counts twice when it has options that switch optional fields on). The last column names the reference model that is this set.
 
 | Encoder output | Proposal | View stage | Assigner | Grouper | Head bundle | Reference model of |
 |---|---|---|---|---|---|---|
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | `EconomicGrasp` |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | `GSNet` |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
 | `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `GraspnessFPS` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `SampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `dense` | `ScoredSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `DirectionViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `HealpixViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `IcosphereViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `LatticeViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
 | `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | `GraspNetBaseline` |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
 | `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | `ScaleBalancedGrasp` |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `ObjectnessViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `RomaRotationViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
 | `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TemplateViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `CylinderInteractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `DepthPoolGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `LocalGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiRadiusGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `MultiScaleGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `PyGConvGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIAwareGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `RoIGridGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `CompactLabelAssigner` | `VoxelSetAbstractionGroup` | `EconomicHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `CylinderInteractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthLocalGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `DepthPoolGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `LocalGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiRadiusGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `MultiScaleGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `PyGConvGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIAwareGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `RoIGridGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `DecoupledGridHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `NearestLabelAssigner (supervise: object_seeds, view_widths: true)` | `VoxelSetAbstractionGroup` | `SWADHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthCylinderProjectionGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthEmbedGroup` | `OperationHead` | — |
+| `subsampled` | `SubsampledSeeds` | `TwoVectorViewStage` | `ScaleBalancedAssigner` | `DepthLocalGroup` | `OperationHead` | — |
 <!-- generated:stage-sets:end -->
 
 The detector `type` does not change which sets are legal. It names the method whose

@@ -1,0 +1,18 @@
+# 1024 uniformly random scene points as seeds (random sampling as in RandLA-Net, CVPR 2020): the
+# cheapest proposal, most seeds on the table.
+#
+# Nothing is scored and nothing is supervised here, so it fits every seed-based method: under
+# GraspNet-baseline and Scale-Balanced-Grasp the view stage keeps objectness, under the graspness
+# family the seeds are no longer filtered by graspness. It needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation). No AP has been measured with this option.
+#
+# What must be re-tuned, and why:
+# * sampler.seed: 0 for repeatable seeds, null for PyTorch's global generator.
+# * Most scene points lie on the table, so most seeds do too.
+model:
+  proposal:
+    type: SampledSeeds
+    num_seeds: 1024
+    sampler:
+      type: RandomSampler
+      seed: 0

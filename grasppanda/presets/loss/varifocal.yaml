@@ -1,0 +1,22 @@
+# Varifocal loss (VarifocalNet): cells with a grasp are weighted by their target quality, empty
+# cells are focused.
+#
+# For `unit` terms with many empty cells: the score grid of SWADHead (`head.score_loss`), the view
+# scores of TemplateViewStage (`view.loss`). Good grasps dominate the term, a poor but usable
+# grasp counts little.
+#
+# What must be re-tuned, and why:
+# * alpha: 0.75 and gamma: 2.0 weight the cells with target 0.
+# * quality_weighted: true weights a positive cell by its target; false by 1.
+# * the output becomes a logit. SWADHead decodes its score and GraspnessFPS compares its graspness
+#   with the threshold through the sigmoid; a value you read from the raw output yourself is a
+#   logit.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: Varifocal
+    alpha: 0.75                   # factor on the cells with target 0
+    gamma: 2.0                    # exponent of their modulating factor
+    quality_weighted: true        # positives weighted by their target

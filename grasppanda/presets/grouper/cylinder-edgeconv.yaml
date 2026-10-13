@@ -1,0 +1,24 @@
+# LocalGroup as GSNet's cylinder with the edge feature of DGCNN: offsets of the features.
+#
+# Every neighbour is encoded from `[offset, f_j - f_i, f_i]` (EdgeConv, Wang et al., TOG
+# 2019) instead of `[offset, f_j]`: the crop sees how the neighbours differ from the seed.
+# Offset-driven aggregation of this kind is what DOGraspNet reports for grasping; its code
+# is under non-commercial terms and was not used.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped
+#   recipes), at most `nsample` of them: how many neighbours a size holds depends on how
+#   densely the proposal places seeds, so re-tune it with the proposal and the object
+#   size.
+# * mlp_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: LocalGroup
+    shape: cylinder
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    encoder: edge                 # [offset, f_j - f_i, f_i] per neighbour
+    mlp_channels: [256, 256]

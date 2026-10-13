@@ -1,0 +1,22 @@
+# DepthLocalGroup over the 64 nearest scene points of a seed, sliced per depth bin.
+#
+# A k-nearest-neighbour crop of the scene: the reach follows the point density instead of
+# a radius. Members behind `hmin` or beyond the far end of a bin are left out of it.
+#
+# What must be re-tuned, and why:
+# * nsample: k; with 20 000 scene points 64 neighbours lie within about a centimetre, so
+#   the far depth bins may hold the same members as the near ones. Raise it for sparser
+#   clouds or deeper bins.
+# * hmax: one far end per depth bin of the head (0.01 to 0.04 m for `num_depth: 4`).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: DepthLocalGroup
+    shape: knn
+    radius: 0.05
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]# one far end per depth bin of the head
+    nsample: 64
+    normalize_offsets: true
+    mlp_channels: [64, 128, 256]
+    seed_residual: projected

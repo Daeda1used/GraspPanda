@@ -66,19 +66,38 @@ def _stage_slots() -> dict[str, Any]:
 
 
 def _list(which: str) -> int:
-    from grasppanda.combine.presets import POST_SLOT, presets
-    from grasppanda.registry import POSTPROCESSORS
+    from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
+    from grasppanda.combine.recipes import RECIPE_SLOTS, recipes
+    from grasppanda.registry import LOSSES, POSTPROCESSORS
 
-    registries = {**_stage_slots(), POST_SLOT: POSTPROCESSORS}
+    registries = {**_stage_slots(), LOSS_SLOT: LOSSES, POST_SLOT: POSTPROCESSORS}
     found = presets()
     slots = [slot for slot in registries if which in ("all", slot)]
-    if not slots:
-        print(f"unknown slot '{which}'. Slots: {', '.join(registries)}", file=sys.stderr)
+    around = [slot for slot in RECIPE_SLOTS if which in ("all", slot)]
+    if not slots and not around:
+        known = ", ".join([*registries, *RECIPE_SLOTS])
+        print(f"unknown slot '{which}'. Slots: {known}", file=sys.stderr)
         return 2
     color = sys.stdout.isatty()
+    for slot in around:
+        several = " (several: a+b)" if slot in ("hooks", "augment") else ""
+        print(style(slot, "bold", "cyan", enabled=color) + f"  --set {slot}=<preset>{several}")
+        rows = [
+            [name, preset.type, _short(preset.summary)]
+            for name, preset in recipes().get(slot, {}).items()
+        ]
+        if rows:
+            print(table(["preset", "sets", "what it is"], rows, enabled=color))
+        print()
+    if not slots:
+        print("One preset with its notes: grasppanda compose --show <slot>=<preset>.")
+        return 0
     for slot in slots:
         members = found.get(slot, {})
-        print(style(slot, "bold", "cyan", enabled=color) + f"  --set {slot}=<preset or component>")
+        target = "<stage>.<loss option>" if slot == LOSS_SLOT else slot
+        print(
+            style(slot, "bold", "cyan", enabled=color) + f"  --set {target}=<preset or component>"
+        )
         rows = [[name, preset.type, _short(preset.summary)] for name, preset in members.items()]
         if rows:
             print(table(["preset", "component", "what it is"], rows, enabled=color))
@@ -87,6 +106,13 @@ def _list(which: str) -> int:
         if bare:
             print(f"  components without a preset: {', '.join(bare)}")
         print()
+    if LOSS_SLOT in slots:
+        print(
+            "a loss goes into a loss option of a stage and keeps the weight of the loss it\n"
+            "replaces, e.g.\n"
+            "  --set head.score_loss=quality-focal --set proposal.objectness_loss=focal\n"
+            "The config check refuses a loss in a term of another kind and names those that fit.\n"
+        )
     if POST_SLOT in slots:
         print(
             "post is a chain: join steps with `+` and set a main option with `=`, e.g.\n"
@@ -108,11 +134,15 @@ def _short(summary: str, limit: int = 96) -> str:
 
 
 def _show(text: str) -> int:
+    from grasppanda.combine import recipes
     from grasppanda.combine.presets import PresetError, find
 
     slot, _, name = text.partition("=")
     try:
-        preset = find(slot.strip(), name.strip())
+        if slot.strip() in recipes.RECIPE_SLOTS:
+            preset = recipes.find(slot.strip(), name.strip())
+        else:
+            preset = find(slot.strip(), name.strip())
     except PresetError as error:
         print(str(error), file=sys.stderr)
         return 2

@@ -1,0 +1,18 @@
+# Sigmoid cross-entropy between a logit and a soft or binary target in [0, 1].
+#
+# For `unit` terms: graspness (`proposal.graspness_loss`), view scores (`view.loss` of
+# TemplateViewStage), the score grid of SWADHead. The plain member of the family of quality-focal
+# and varifocal.
+#
+# What must be re-tuned, and why:
+# * positive_weight: 1.0. Above 1 the loss favours recall of high targets.
+# * the output becomes a logit. SWADHead decodes its score and GraspnessFPS compares its graspness
+#   with the threshold through the sigmoid; a value you read from the raw output yourself is a
+#   logit.
+# * weight: not set here. `grasppanda compose` keeps the weight of the loss it replaces; this
+#   penalty has another scale than SmoothL1, so compare the logged `loss/...` values of both runs
+#   and re-tune.
+model:
+  loss:
+    type: BinaryCrossEntropy
+    positive_weight: 1.0          # factor on the target x log(sigmoid) part

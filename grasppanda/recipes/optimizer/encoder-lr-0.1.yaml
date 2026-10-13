@@ -1,0 +1,15 @@
+# The base method's Adam with the scene encoder at a tenth of the learning rate.
+#
+# For an encoder that starts from pretrained weights (`runtime.load_from` or the encoder's own
+# `pretrained` option) under freshly initialised stages. Seed-based detectors only: the pattern
+# names their `backbone`.
+#
+# What must be re-tuned, and why:
+# * lr_multipliers: 0.1 is Pointcept's factor for the blocks of PTv3; a pattern is a dotted
+#   prefix of the parameter name or `re:<regular expression>`.
+# * optimizer: written out as Adam at 1e-3, the rate of the seed-based references; put the base
+#   config's own optimizer node there if it differs.
+optimizer:
+  type: ParamGroups
+  optimizer: {type: Adam, lr: 1.0e-3, weight_decay: 0.0}
+  lr_multipliers: {backbone: 0.1}

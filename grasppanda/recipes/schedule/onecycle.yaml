@@ -1,0 +1,23 @@
+# One-cycle schedule of PyTorch: a short warm-up to the peak rate, then a cosine to near zero.
+#
+# The shape Pointcept trains PTv3 with (pct_start 0.05, div_factor 10, final_div_factor 1000). The
+# engine fills in the length of the run.
+#
+# What must be re-tuned, and why:
+# * max_lr: OneCycleLR replaces the optimizer's `lr` by this peak; keep the two equal. With
+#   ParamGroups it is scaled per group.
+# * cycle_momentum: off, because it would overwrite the optimizer's betas or momentum and fails
+#   for optimizers that have neither.
+# * train.scheduler_unit: the schedule steps after every optimizer step; with `train.accumulate`
+#   that is every accumulated batch.
+scheduler:
+  type: OneCycleLR
+  max_lr: 1.0e-3                  # the peak; replaces optimizer.lr
+  pct_start: 0.05
+  anneal_strategy: cos
+  div_factor: 10.0                # start at max_lr / 10
+  final_div_factor: 1000.0        # end at max_lr / 10000
+  cycle_momentum: false
+
+train:
+  scheduler_unit: iteration

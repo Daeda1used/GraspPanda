@@ -1,0 +1,29 @@
+# RomaRotationViewStage with its defaults: regress a full rotation per seed as the 6-D
+# representation of Zhou et al. (Gram-Schmidt on two columns) (needs roma).
+#
+# The first column of the rotation is the approach.
+#
+# What must be re-tuned, and why:
+# * representation: 6d. The choices are 6d, 9d, quaternion and rotvec. A quaternion and
+#   a rotation vector are discontinuous parameterisations of SO(3) (Zhou et al., CVPR 2019);
+#   6d and 9d are not.
+# * frame_weight: 1.0 is untuned (squared Frobenius distance, at most 8). The frame loss
+#   supervises the in-plane rotation as an auxiliary output; the head bundle still decides
+#   the in-plane angle of the grasp.
+# * num_angle: 12 is the angle grid of the labels and must equal the head bundle's.
+# * label_views: 300 is the lattice the label files are indexed by: the regressed direction
+#   is snapped to it for the label lookup. Training crops use the label frame of the snapped
+#   view, inference crops the frame of the regressed direction (up to 9 degrees apart).
+# * direction_weight: 1.0 is untuned (the loss is 1 - cos, at most 2); no AP has been
+#   measured for this stage under any method.
+# * max_friction: 0.6 must equal the value compact labels were encoded with.
+model:
+  view:
+    type: RomaRotationViewStage
+    representation: 6d
+    label_views: 300              # the lattice of the label files; not a free choice
+    max_friction: 0.6
+    direction_weight: 1.0
+    frame_weight: 1.0
+    num_angle: 12                 # must equal the head bundle's
+    residual: true                # add the stage's hidden features to the seed features

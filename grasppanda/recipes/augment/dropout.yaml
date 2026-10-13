@@ -1,0 +1,11 @@
+# Remove 20 % of the points of every second sample, before the cloud is sampled.
+#
+# Adapted from Pointcept's RandomDropout. It is put first, so that the sampling step of the base
+# config still returns its fixed number of points.
+#
+# What must be re-tuned, and why:
+# * ratio and prob: Pointcept's defaults; the sampling step draws 15000 points from what is
+#   left, so the effect is a sparser scene, not fewer input points.
+transforms:
+  prepend:
+    - {type: RandomDropout, ratio: 0.2, prob: 0.5}

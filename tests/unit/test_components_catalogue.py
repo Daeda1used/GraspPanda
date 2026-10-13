@@ -263,10 +263,14 @@ def test_the_swapping_page_states_what_the_matrix_test_proves():
             if not direct:
                 assert verdict == matrix.ADAPTERS[wanted]({})["type"], (name, detector)
     # Stage sets: the same sets the matrix found legal and ran, by component type.
+    # (Sets with a bridge to an optional library are documented from the contracts; the
+    # matrix runs them where the library is installed, outside its counted product.)
+    bridges = {name for members in matrix.BRIDGE_STAGES.values() for name in members}
     documented = {
         tuple(chosen[slot].split(" (")[0] for slot in tool.SLOT_ORDER)
         for chosen in tool.legal_stage_sets()
     }
+    documented = {chosen for chosen in documented if not bridges & set(chosen)}
     ran = {
         (
             chosen["kind"],

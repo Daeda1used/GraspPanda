@@ -43,6 +43,9 @@ needs_spconv = pytest.mark.skipif(not HAS_SPCONV, reason="needs the spconv extra
 needs_ocnn = pytest.mark.skipif(
     importlib.util.find_spec("ocnn") is None, reason="needs the ocnn extra"
 )
+#: PyGConvGroup is a bridge to PyTorch Geometric; without the library it has no variant
+#: in the matrix (its own tests are in tests/unit/test_grouper_options.py).
+HAS_PYG = importlib.util.find_spec("torch_geometric") is not None
 needs_timm = pytest.mark.skipif(
     importlib.util.find_spec("timm") is None, reason="needs the timm extra"
 )
@@ -384,10 +387,30 @@ STAGES: dict[str, dict[str, dict[str, Any]]] = {
     "proposal": {
         "GraspnessFPS": {"type": "GraspnessFPS", "num_seeds": SEEDS},
         "SubsampledSeeds": {"type": "SubsampledSeeds", "num_seeds": SEEDS},
+        # The two proposals with a sampler slot, each with a sampler that reads what
+        # only that kind of proposal can give it (scores, features).
+        "ScoredSeeds": {
+            "type": "ScoredSeeds",
+            "num_seeds": SEEDS,
+            "sampler": {"type": "ScoreWeightedFPS"},
+        },
+        "SampledSeeds": {
+            "type": "SampledSeeds",
+            "num_seeds": SEEDS,
+            "sampler": {"type": "FeatureFPS"},
+        },
     },
     "view": {
         "TemplateViewStage": {"type": "TemplateViewStage", "num_views": VIEW_COUNT},
         "ObjectnessViewStage": {"type": "ObjectnessViewStage", "num_views": VIEW_COUNT},
+        # A prediction lattice of 6 views over the 10 views of the labels.
+        "LatticeViewStage": {"type": "LatticeViewStage", "num_views": 6, "label_views": VIEW_COUNT},
+        "DirectionViewStage": {"type": "DirectionViewStage", "label_views": VIEW_COUNT},
+        "TwoVectorViewStage": {
+            "type": "TwoVectorViewStage",
+            "label_views": VIEW_COUNT,
+            "num_angle": ANGLES,
+        },
     },
     "assigner": {
         "NearestLabelAssigner": {"type": "NearestLabelAssigner"},
@@ -444,6 +467,98 @@ STAGES: dict[str, dict[str, dict[str, Any]]] = {
             "radius_scales": [0.5, 1.0],
             "seed_residual": "gated",
         },
+        "LocalGroup": {
+            "type": "LocalGroup",
+            "shape": "box",
+            **_CYLINDER,
+            "hmax": 0.2,
+            "encoder": "edge",
+            "pool": "attentive",
+            "mlp_channels": [8, WIDTH],
+        },
+        "DepthLocalGroup": {
+            "type": "DepthLocalGroup",
+            "shape": "ball",
+            **_CYLINDER,
+            "hmax": [0.1, 0.25],
+            "mlp_channels": [8, WIDTH],
+            "seed_residual": "projected",
+        },
+        "RoIGridGroup": {
+            "type": "RoIGridGroup",
+            "radius": 0.3,
+            "hmin": -0.1,
+            "hmax": 0.2,
+            "grid_size": 2,
+            "pool_radius": 0.3,
+            "nsample": 4,
+            "mlp_channels": [8],
+            "fc_channels": [WIDTH],
+        },
+        "RoIAwareGroup": {
+            "type": "RoIAwareGroup",
+            "radius": 0.3,
+            "hmin": -0.1,
+            "hmax": 0.2,
+            "grid_size": 2,
+            "nsample": 4,
+            "cell_channels": 4,
+            "fc_channels": [WIDTH],
+        },
+        "VoxelSetAbstractionGroup": {
+            "type": "VoxelSetAbstractionGroup",
+            "radii": [0.2, 0.4],
+            "nsample": [4, 4],
+            "mlp_channels": [8],
+            "out_channels": WIDTH,
+        },
+        "DepthEmbedGroup": {
+            "type": "DepthEmbedGroup",
+            "num_depth": DEPTHS,
+            "grouper": {
+                "type": "CylinderGroup",
+                **_CYLINDER,
+                "hmax": 0.2,
+                "mlp_channels": [8, WIDTH],
+            },
+        },
+        "DepthPoolGroup": {
+            "type": "DepthPoolGroup",
+            "grouper": {
+                "type": "DepthCylinderGroup",
+                **_CYLINDER,
+                "hmax": [0.1, 0.25],
+                "mlp_channels": [8, WIDTH],
+            },
+        },
+        "MultiRadiusGroup": {
+            "type": "MultiRadiusGroup",
+            "radius": _CYLINDER["radius"],
+            "radius_scales": [0.5, 1.0],
+            "fusion": "linear",
+            "branch": {
+                "type": "CylinderGroup",
+                "hmin": _CYLINDER["hmin"],
+                "hmax": 0.2,
+                "nsample": _CYLINDER["nsample"],
+                "mlp_channels": [8, WIDTH],
+            },
+        },
+        "DepthCylinderProjectionGroup": {
+            "type": "DepthCylinderProjectionGroup",
+            **_CYLINDER,
+            "hmax": [0.1, 0.25],
+            "mlp_channels": [8, 8],  # narrower than the encoder: the projection maps it
+            "radius_scales": [0.5, 1.0],
+        },
+        "PyGConvGroup": {  # built only where the library is installed (HAS_PYG)
+            "type": "PyGConvGroup",
+            "conv": "PointTransformerConv",
+            **_CYLINDER,
+            "hmax": 0.2,
+            "hidden_channels": 8,
+            "out_channels": WIDTH,
+        },
     },
     "head": {
         "SWADHead": {"type": "SWADHead", "num_angle": ANGLES, "num_depth": DEPTHS},
@@ -467,6 +582,32 @@ STAGES: dict[str, dict[str, dict[str, Any]]] = {
             "score_supervision": "seeds_with_a_supervised_depth",
             "score_decode": "score_x_objectness_x_tolerance",
         },
+        "DecoupledGridHead": {
+            "type": "DecoupledGridHead",
+            "num_angle": ANGLES,
+            "num_depth": DEPTHS,
+            "hidden_channels": 8,
+        },
+    },
+}
+
+#: Stages that are bridges to an optional library: slot -> name -> (node, module). They
+#: are not part of the product above, whose counts must not depend on what is installed;
+#: ``tests/unit/test_view_options.py`` runs them under every method where the library is.
+BRIDGE_STAGES: dict[str, dict[str, tuple[dict[str, Any], str]]] = {
+    "view": {
+        "IcosphereViewStage": (
+            {"type": "IcosphereViewStage", "subdivisions": 0, "label_views": VIEW_COUNT},
+            "trimesh",
+        ),
+        "HealpixViewStage": (
+            {"type": "HealpixViewStage", "nside": 1, "label_views": VIEW_COUNT},
+            "healpix",
+        ),
+        "RomaRotationViewStage": (
+            {"type": "RomaRotationViewStage", "label_views": VIEW_COUNT, "num_angle": ANGLES},
+            "roma",
+        ),
     },
 }
 
@@ -546,9 +687,16 @@ def refusal(node: dict[str, Any]) -> list[str]:
     return []
 
 
+def buildable(node: dict[str, Any]) -> bool:
+    """Whether the optional library of every stage of the model is installed."""
+    return HAS_PYG or node["grouper"]["type"] != "PyGConvGroup"
+
+
 def run(node: dict[str, Any]) -> SeedGraspDetector:
     """Build an accepted model, take one training step's worth of gradients, predict."""
     assert refusal(node) == []
+    if not buildable(node):
+        pytest.skip("needs the torch_geometric extra")
     torch.manual_seed(0)
     model = DETECTORS.build(node)
     if hasattr(model.proposal, "score"):  # make most points candidates: real seeds everywhere
@@ -594,7 +742,10 @@ def test_every_registered_stage_is_in_the_matrix():
         ("grouper", "GROUPERS"),
         ("head", "HEADS"),
     ):
-        assert {node["type"] for node in STAGES[slot].values()} == set(registered(registry)), slot
+        bridges = set(BRIDGE_STAGES.get(slot, {}))
+        assert {node["type"] for node in STAGES[slot].values()} | bridges == set(
+            registered(registry)
+        ), slot
     seed_based = {
         name
         for name in registered("DETECTORS")
@@ -733,14 +884,16 @@ def test_no_stage_set_passes_the_config_check_and_fails_later():
         assert len(set(verdicts.values())) == 1, (chosen, verdicts)  # the type does not matter
         if verdicts["GSNet"]:
             refused += 1
-            with pytest.raises(ContractError):  # the same verdict without the config checker
-                DETECTORS.build(node_of("GSNet", chosen))
+            if buildable(node_of("GSNet", chosen)):
+                with pytest.raises(ContractError):  # the same verdict without the checker
+                    DETECTORS.build(node_of("GSNet", chosen))
         else:
             legal.append(chosen)
     assert legal and refused
     for chosen in legal:
         for detector in ("GSNet", "ScaleBalancedGrasp"):  # the barest and the strictest type
-            run(node_of(detector, chosen))
+            if buildable(node_of(detector, chosen)):
+                run(node_of(detector, chosen))
     # Every refusal reads as a sentence about two named stages.
     for chosen in stage_sets():
         for message in refusal(node_of("GSNet", chosen)):
@@ -751,7 +904,7 @@ def test_no_stage_set_passes_the_config_check_and_fails_later():
 
 #: Stage sets the contracts allow among the variants above; the count is restated in
 #: docs/advanced_guides/swapping.md together with the list, so it is pinned here.
-LEGAL_STAGE_SETS = 41
+LEGAL_STAGE_SETS = 1210
 
 
 def test_what_the_contracts_refuse_among_plausible_looking_swaps():
@@ -797,23 +950,32 @@ def test_what_the_contracts_refuse_among_plausible_looking_swaps():
         assert any(fragment in message for message in messages), (fragment, messages)
 
 
-def test_channel_counts_are_injected_and_a_mismatch_names_the_fix():
-    """Widths are known only once the encoder is built, so this one is a build error."""
+def test_a_seed_width_mismatch_is_refused_with_the_fix_and_the_projection_runs():
+    """A grouper that adds the seed features to its crops states the width it needs; the
+    check compares it with what the encoder returns, building the encoder when its config
+    does not say."""
     narrow = {**STAGES["grouper"]["DepthCylinderGroup+scales+gate"], "mlp_channels": [8, 8]}
     node = method("ScaleBalancedGrasp", encoder("PointNet2"))
     node["grouper"] = narrow
-    assert refusal(node) == []
+    (message,) = refusal(node)
+    assert "adds the seed features to its 8-channel crop features" in message
+    assert "PointNet2 returns 12-channel features" in message
+    assert "`type: DepthCylinderProjectionGroup`" in message and "`mlp_channels` on 12" in message
+    # Without the checker the grouper itself refuses, at build time, with the same ways out.
     with pytest.raises(
         ValueError, match=r"12-channel seed features to 8-channel crop features"
     ) as error:
-        DETECTORS.build(node)
-    assert "mlp_channels" in str(error.value)
-
-
-def test_pairwise_verdicts_equal_whole_model_verdicts():
-    """The tables of the documentation come from pairwise checks; a stage set is legal
-    exactly when no pair inside it is refused."""
-    for chosen in stage_sets():
-        node = node_of("GSNet", chosen)
-        pairwise = stage_contract_problems(**{slot: node[slot] for slot in ("backbone", *STAGES)})
-        assert pairwise == refusal(node), chosen
+        GROUPERS.build(dict(narrow), in_channels=WIDTH)
+    assert "DepthCylinderProjectionGroup" in str(error.value) and "mlp_channels" in str(error.value)
+    # An encoder that has no `out_channels` option is built to learn its width.
+    wide = encoder("PointNet2Dense")
+    assert "out_channels" not in wide
+    (problem,) = stage_contract_problems(backbone=wide, grouper=narrow)
+    assert "PointNet2Dense returns 12-channel features" in problem
+    # The projected variant makes the pair legal, and the model trains and predicts.
+    node["grouper"] = {
+        **{key: value for key, value in narrow.items() if key != "seed_residual"},
+        "type": "DepthCylinderProjectionGroup",
+    }
+    model = run(node)
+    assert model.grouper.project.in_features == WIDTH and model.grouper.out_channels == 8

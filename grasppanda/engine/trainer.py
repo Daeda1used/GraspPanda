@@ -176,6 +176,10 @@ class Trainer:
         """Apply the accumulated gradients: clip, update, average, schedule."""
         state = self.state
         optimizers = list(state.optimizers.values())
+        for hook in self.hooks:  # optional: an object with the other callbacks is a hook too
+            before_step = getattr(hook, "before_step", None)
+            if before_step is not None:
+                before_step(state)
         if self.grad_clip is not None:
             for optimizer in optimizers:
                 state.scaler.unscale_(optimizer)  # clip real gradients, not scaled ones

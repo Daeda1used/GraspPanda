@@ -1,0 +1,36 @@
+# ScoredSeeds with its defaults: GSNet's selection (object by arg-max, graspness above 0.1) and
+# plain furthest point sampling, without the two quirks of the reference sampling kernel. The file
+# to copy when you write a proposal of your own.
+#
+# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
+# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
+# `graspness` section of the training dataset, built with
+#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
+# baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
+# option; a checkpoint trained with another sampler does not transfer its numbers.
+#
+# What must be re-tuned, and why:
+# * graspness_threshold: 0.1 belongs to graspness normalised to [0, 1] per frame; a frame without
+#   any candidate has no real seed (`metric/real_seeds` in the log), which is the first number to
+#   watch after a swap.
+# * num_seeds: 1024; the groupers of the seed-based methods gather among these seeds.
+model:
+  proposal:
+    type: ScoredSeeds
+    num_seeds: 1024
+    select_by: graspness_and_objectness
+    graspness_threshold: 0.1
+    objectness_threshold: 0.5
+    too_few: pad
+    sampler:
+      type: FPS
+      start: first
+data:
+  train:
+    dataset:
+      graspness:                  # the point-wise labels the proposal is supervised with
+        source: native
+        friction_threshold: 0.8
+        poses: annotations
+        dtype: float16

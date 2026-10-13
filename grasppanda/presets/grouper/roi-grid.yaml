@@ -1,0 +1,24 @@
+# RoIGridGroup with its defaults: PV-RCNN's RoI-grid pooling on a gripper-aligned box.
+#
+# 27 grid points in the box of every seed, each pooling the seeds within 3 cm (Shi et al.,
+# CVPR 2020; adapted from OpenPCDet, Apache-2.0). The layout of the crop survives the
+# pooling: the head sees what lies where in the box.
+#
+# What must be re-tuned, and why:
+# * radius / hmin / hmax: the box (`2 * radius` across the approach axis).
+# * grid_size / pool_radius: the balls should overlap, pool_radius >= box side /
+#   grid_size; 3 and 0.03 m for a 0.1 x 0.1 x 0.06 m box. Cost grows with grid_size cubed
+#   (27 ball queries per seed).
+# * fc_channels: the last width is the width the head bundle is built for (256).
+# * No grasp model with this crop has been trained here: it is probed, not benchmarked.
+model:
+  grouper:
+    type: RoIGridGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    grid_size: 3                  # grid points per side: 27 in the box
+    pool_radius: 0.03             # ball around every grid point
+    nsample: 8
+    mlp_channels: [64, 64]
+    fc_channels: [256, 256]

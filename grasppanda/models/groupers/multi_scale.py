@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterator, Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from torch import Tensor, nn
@@ -35,7 +35,7 @@ from grasppanda.models.interaction import TokenInteraction
 from grasppanda.registry import GROUPERS, INJECTED, Cfg, component_parameters
 from grasppanda.structures import ContractError, GroupFeatures, PointFeatures
 
-__all__ = ["MultiScaleGroup", "ScaleAttentionFusion"]
+__all__ = ["MultiRadiusGroup", "MultiScaleGroup", "ScaleAttentionFusion"]
 
 
 def _branch_problems(branch: Any) -> Iterator[str]:
@@ -264,3 +264,63 @@ class MultiScaleGroup(Grouper):
 
     def extra_repr(self) -> str:
         return f"radius={self.radius}, radius_scales={list(self.radius_scales)}"
+
+
+@GROUPERS.register()
+class MultiRadiusGroup(MultiScaleGroup):
+    """One crop per radius among the seeds, fused without attention.
+
+    The branches are those of :class:`MultiScaleGroup`; the scale vectors of a seed are
+    concatenated and reduced by one linear layer (``linear``, the multi-scale grouping of
+    PointNet++), or reduced by a maximum or a mean over the scales.
+
+    Args:
+        branch: The grouper that crops at one radius; one copy with its own weights is
+            built per scale. It must crop among the seeds, emit ``(seed, channel)``
+            features and take a ``radius``, which is set here.
+        radius: Largest crop radius in metres.
+        radius_scales: One crop per entry, with radius ``radius * scale``.
+        fusion: ``linear``, ``max`` or ``mean``.
+        in_channels: Channels of the seed features; injected by the detector.
+    """
+
+    status = "tested"
+    source = (
+        "Multi-scale grouping of PointNet++ (Qi et al., NeurIPS 2017) on the seed crops of "
+        "the grasp methods, written here"
+    )
+
+    def __init__(
+        self,
+        branch: Cfg[Grouper],
+        radius: float = 0.07,
+        radius_scales: Sequence[float] = (0.25, 0.5, 0.75, 1.0),
+        fusion: Literal["linear", "max", "mean"] = "linear",
+        in_channels: int = INJECTED,
+    ) -> None:
+        if fusion not in ("linear", "max", "mean"):
+            raise ValueError(
+                f"MultiRadiusGroup: unknown fusion '{fusion}'; choose linear, max or mean "
+                "(attention over the scales is MultiScaleGroup)"
+            )
+        super().__init__(branch, radius, radius_scales, fusion_layers=0, in_channels=in_channels)
+        self.fusion_kind = fusion
+        self.fusion = (
+            nn.Linear(len(self.radius_scales) * self.out_channels, self.out_channels)
+            if fusion == "linear"
+            else None
+        )
+
+    def forward(self, support: PointFeatures, centres: Tensor, rotation: Tensor) -> GroupFeatures:
+        """Crop features ``(M, out_channels)`` with axes ``(seed, channel)``."""
+        scales = self.scale_features(support, centres, rotation)
+        if self.fusion is not None:
+            fused = self.fusion(scales.flatten(1))
+        elif self.fusion_kind == "max":
+            fused = scales.amax(dim=1)
+        else:
+            fused = scales.mean(dim=1)
+        return GroupFeatures(fused, self.out_axes)
+
+    def extra_repr(self) -> str:
+        return f"{super().extra_repr()}, fusion={self.fusion_kind!r}"
