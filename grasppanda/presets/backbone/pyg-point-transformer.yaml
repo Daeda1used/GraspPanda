@@ -3,7 +3,7 @@
 # A bridge: the layer is `torch_geometric.nn.PointTransformerConv`
 # (Point Transformer, ICCV 2021). The stack around it (stem, three layers with batch
 # norm and residuals, 256-channel output) is GraspPanda's and is not a published
-# network. Needs `pip install "grasppanda[torch_geometric]"`. No AP is claimed.
+# network. Needs `pip install -e ".[torch_geometric]"`. No AP is claimed.
 #
 # What must be re-tuned, and why:
 # * k: 16 neighbours on one spatial graph per frame. There is no subsampling, so three

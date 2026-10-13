@@ -76,6 +76,18 @@ def _cell(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ")
 
 
+def _needs(extras: tuple[str, ...]) -> str:
+    """Extras as they are named in `pip install -e ".[<extra>]"`; a library with one
+    extra per build shows the first and says that there are others."""
+    from grasppanda.utils.imports import EXTRA_BUILDS
+
+    cells = []
+    for extra in extras:
+        builds = EXTRA_BUILDS.get(extra)
+        cells.append(f"`{builds[0]}` (or another `{extra}-*` build)" if builds else f"`{extra}`")
+    return ", ".join(cells) or "—"
+
+
 def _table(headers: list[str], rows: list[list[str]]) -> list[str]:
     lines = ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
     lines += ["| " + " | ".join(_cell(cell) for cell in row) + " |" for row in rows]
@@ -139,7 +151,7 @@ def components_page() -> str:
         "  reference code (the ported grasp methods; licences and commits of the references",
         "  are in the method READMEs), a bridge to a library, or adapted from permissively",
         "  licensed code (listed in `THIRD_PARTY_NOTICES.md`).",
-        '- **Needs** lists optional dependencies (`pip install "grasppanda[...]"`).',
+        '- **Needs** lists optional dependencies (`pip install -e ".[...]"`).',
         "- **Shipped configs** are the runnable configs under `configs/` whose resolved tree",
         "  names the component.",
         "",
@@ -172,7 +184,7 @@ def components_page() -> str:
             row += [f"`{entry.status}`" if entry.status else "—", entry.source or "—"]
             row += [entry.summary]
             if with_needs:
-                row += [", ".join(f"`{extra}`" for extra in entry.extras) or "—"]
+                row += [_needs(entry.extras)]
             row += ["<br>".join(f"`{config}`" for config in entry.used_by) or "—"]
             rows.append(row)
         lines += [*_table(headers, rows), ""]
@@ -375,7 +387,7 @@ def _encoders_region() -> str:
             " (`out_channels`)" if settable else ""
         )
         row = [f"`{name}`", f"`{entry.contract['output']}`", width, f"`{entry.status}`"]
-        row += [", ".join(f"`{extra}`" for extra in entry.extras) or "—"]
+        row += [_needs(entry.extras)]
         for detector in models:
             verdict = per_method[detector]
             row.append(YES if not verdict else NO if verdict == "refused" else f"in `{verdict}`")

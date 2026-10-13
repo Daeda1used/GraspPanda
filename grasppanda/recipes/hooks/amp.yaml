@@ -1,9 +1,11 @@
-# Mixed precision: the forward pass under autocast with a gradient scaler.
+# Mixed precision (NOT USABLE YET: the config check refuses it for every shipped detector).
 #
-# A train option of the engine, no hook. Autocast wraps the whole loss computation, the geometric
-# stages included. As probed on CUDA it does NOT work with the shipped detectors yet: GSNet
-# stops at a half/float mismatch in its loss, and HGGD's first loss is not finite
-# (docs/slots/recipe.md, pitfalls). The preset is here for detectors that are autocast-safe.
+# A train option of the engine, no hook: the forward pass under autocast with a gradient scaler.
+# Autocast wraps the whole loss computation, the geometric stages included, and no shipped
+# detector is written for that: as probed on CUDA, GSNet stops at a half/float mismatch in its
+# label matching and HGGD's first loss is not finite (docs/slots/recipe.md, pitfalls). The config
+# check therefore refuses `train.amp: true` unless the detector declares `amp_ready = True`; the
+# preset is the switch for a detector of your own that does.
 #
 # What must be re-tuned, and why:
 # * precision: crop membership and label matching are then computed in half precision on CUDA;

@@ -125,7 +125,7 @@ def test_modules_below_the_location_are_imported_lazily(tmp_path, monkeypatch):
 
 
 def test_missing_optional_dependency_says_how_to_install_it():
-    with pytest.raises(MissingDependencyError, match=r'pip install "grasppanda\[spconv-cu118\]"'):
+    with pytest.raises(MissingDependencyError, match=r'pip install -e "\.\[spconv-cu118\]"'):
         require("a_module_that_does_not_exist", extra="spconv-cu118", purpose="SparseUNet14")
     assert require("math", extra="x", purpose="y").pi > 3
 

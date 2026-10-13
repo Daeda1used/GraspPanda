@@ -174,7 +174,7 @@ def test_augmentation_goes_around_the_transforms_of_the_base(tmp_path):
 def test_a_whole_recipe_and_stage_presets_combine_and_overrides_win(tmp_path):
     result = compose(
         GSNET,
-        ["backbone=ptv3", "recipe=ptv3-adamw-onecycle", "hooks=amp"],
+        ["backbone=ptv3", "recipe=ptv3-adamw-onecycle", "hooks=ema"],
         ["optimizer.optimizer.lr=2e-3", "scheduler.max_lr=2e-3"],
     )
     assert result.accepted, result.refusal()
@@ -182,7 +182,24 @@ def test_a_whole_recipe_and_stage_presets_combine_and_overrides_win(tmp_path):
     assert config["model"]["backbone"]["type"] == "PTv3"
     assert config["optimizer"]["optimizer"]["lr"] == 2e-3
     assert config["optimizer"]["lr_multipliers"] == {"re:\\.block": 0.1}
-    assert config["scheduler"]["max_lr"] == 2e-3 and config["train"]["amp"] is True
+    assert config["scheduler"]["max_lr"] == 2e-3
+    assert "EMAHook" in [hook["type"] for hook in config["hooks"]]
+
+
+def test_a_recipe_that_is_known_to_fail_later_is_refused_with_the_fix():
+    """What used to pass the check and fail in the first iteration: point-space
+    augmentation beside images, and mixed precision under a detector not written for it."""
+    for name, mover in (("jitter", "RandomJitter"), ("shift", "RandomShift")):
+        result = compose(HGGD, [f"augment={name}"])
+        (message,) = result.refusal()
+        assert message.startswith(f"data.train.dataset.transforms: {mover} moves the points")
+        assert "(`rgb`, `depth`, `view_grasps`)" in message
+        assert "leave it out of `--set augment=`" in message
+    assert compose(HGGD, ["augment=dropout"]).accepted  # drops points, moves none
+    for base, detector in ((GSNET, "GSNet"), (HGGD, "HGGD")):
+        (message,) = compose(base, ["hooks=amp"]).refusal()
+        assert message.startswith(f"train.amp: mixed precision is not supported by {detector}")
+        assert "amp_ready = True" in message and "leave `amp` out" in message
 
 
 def test_requests_that_cannot_be_composed_say_why():
@@ -211,9 +228,16 @@ def test_every_recipe_preset_composes_under_the_methods_it_is_probed_under():
     assert set(RECIPE_ENCODER_PRESETS) | set(RECIPE_REQUIRES) <= {
         f"{preset.slot}/{preset.name}" for preset in every_recipe()
     }
+    # Refused by a rule of the config check, which is their recorded outcome.
+    refused = {
+        "recipe/GSNet/hooks/amp",
+        "recipe/HGGD/hooks/amp",
+        "recipe/HGGD/augment/jitter",
+        "recipe/HGGD/augment/shift",
+    }
     for cell in members:
         result = compose(cell.base, list(cell.sets))
-        assert result.accepted, (cell.id, result.refusal())
+        assert result.accepted == (cell.id not in refused), (cell.id, result.refusal())
 
 
 @pytest.mark.parametrize(

@@ -417,7 +417,7 @@ def test_kornia_losses_run_the_library_functions():
 def test_a_missing_library_is_reported_with_the_extra_to_install(name, library):
     if HAS[library]:
         pytest.skip(f"{library} is installed")
-    with pytest.raises(MissingDependencyError, match=rf"grasppanda\[{library}\]"):
+    with pytest.raises(MissingDependencyError, match=rf"\.\[{library}\]"):
         LOSSES.build({"type": name})
 
 

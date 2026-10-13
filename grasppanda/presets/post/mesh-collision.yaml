@@ -1,6 +1,6 @@
 # Remove grasps at which the open gripper, as a mesh, would contain scene points.
 #
-# Needs trimesh: pip install "grasppanda[trimesh]". Without a mesh file the gripper is the
+# Needs trimesh: pip install -e ".[trimesh]". Without a mesh file the gripper is the
 # benchmark gripper built from boxes, fully open. There is no approach sweep: use it after
 # `collision`, not instead of it.
 #

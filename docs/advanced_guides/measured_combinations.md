@@ -27,10 +27,10 @@ that takes a full training run and an evaluation on a benchmark split.
 
 ## What was run
 
-- **Grid**: 980 cells (770 `runs`, 11 `runs-unstable`, 193 `refused`, 6 `fails`): every shipped method config as it is, every registered scene encoder under every seed-based method, every variant of every other stage with one stage replaced at a time, a sample of the legal sets of stage variants, HGGD as it is, every image-encoder preset under HGGD, every post-processing, loss and recipe preset under two or three methods, and a few requests that replace several slots at once. The variants of a stage are its presets plus every component whose constructor defaults no preset states.
+- **Grid**: 980 cells (770 `runs`, 11 `runs-unstable`, 198 `refused`, 1 `fails`): every shipped method config as it is, every registered scene encoder under every seed-based method, every variant of every other stage with one stage replaced at a time, a sample of the legal sets of stage variants, HGGD as it is, every image-encoder preset under HGGD, every post-processing, loss and recipe preset under two or three methods, and a few requests that replace several slots at once. The variants of a stage are its presets plus every component whose constructor defaults no preset states.
 - **A cell**: `grasppanda compose <method config> --set <slot>=<choice>`, so that an encoder is fitted and adapters are inserted exactly as a user gets them, then `grasppanda probe <composed config> --iters 20 --frames 8`: the real trainer with the method's own recipe on the split `sample` of GraspNet-1Billion (RealSense; scene 0, frames 0, 32, …, 224), then prediction on two of those frames. Both commands of every cell are in the [measured file](measured_combinations.json).
 - **One exception to "as a user gets them"**: configs that read the width histogram of Scale-Balanced-Grasp were probed with the reference's own file (`scale_statistic.source: legacy_import`), because the native histogram is a statistic of the whole training split and a probe reads eight frames. The override is part of the recorded command.
-- **When and where**: 53 cells on 2026-10-13 with GraspPanda at commit `0634455`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 14 cells on 2026-10-13 with GraspPanda at commit `131fcb8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 52 cells on 2026-10-13 with GraspPanda at commit `231d94e`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 24 cells on 2026-10-13 with GraspPanda at commit `274c338`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 85 cells on 2026-10-13 with GraspPanda at commit `381b932`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 66 cells on 2026-10-13 with GraspPanda at commit `466721f`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 2 cells on 2026-10-13 with GraspPanda at commit `47c15cd+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 38 cells on 2026-10-13 with GraspPanda at commit `48907ae`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 2 cells on 2026-10-13 with GraspPanda at commit `617e604+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 19 cells on 2026-10-13 with GraspPanda at commit `7060d90`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 1 cells on 2026-10-13 with GraspPanda at commit `7238f00`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 110 cells on 2026-10-13 with GraspPanda at commit `819acf4`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 18 cells on 2026-10-13 with GraspPanda at commit `8316c29`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 44 cells on 2026-10-13 with GraspPanda at commit `8c7105f`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 12 cells on 2026-10-13 with GraspPanda at commit `9b777e8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 47 cells on 2026-10-13 with GraspPanda at commit `a6ff159`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 35 cells on 2026-10-13 with GraspPanda at commit `ade1b10`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 39 cells on 2026-10-13 with GraspPanda at commit `c3e5827`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 13 cells on 2026-10-13 with GraspPanda at commit `c47cdc6`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 48 cells on 2026-10-13 with GraspPanda at commit `c47cdc6+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 17 cells on 2026-10-13 with GraspPanda at commit `d4ae6aa`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 73 cells on 2026-10-13 with GraspPanda at commit `e2afe40`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 152 cells on 2026-10-13 with GraspPanda at commit `e849e98`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 16 cells on 2026-10-13 with GraspPanda at commit `f5ebe25`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time.
+- **When and where**: 53 cells on 2026-10-13 with GraspPanda at commit `0634455`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 13 cells on 2026-10-13 with GraspPanda at commit `131fcb8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 52 cells on 2026-10-13 with GraspPanda at commit `231d94e`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 21 cells on 2026-10-13 with GraspPanda at commit `274c338`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 85 cells on 2026-10-13 with GraspPanda at commit `381b932`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 66 cells on 2026-10-13 with GraspPanda at commit `466721f`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 1 cells on 2026-10-13 with GraspPanda at commit `47c15cd+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 38 cells on 2026-10-13 with GraspPanda at commit `48907ae`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 2 cells on 2026-10-13 with GraspPanda at commit `617e604+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 19 cells on 2026-10-13 with GraspPanda at commit `7060d90`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 110 cells on 2026-10-13 with GraspPanda at commit `819acf4`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 18 cells on 2026-10-13 with GraspPanda at commit `8316c29`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 44 cells on 2026-10-13 with GraspPanda at commit `8c7105f`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 12 cells on 2026-10-13 with GraspPanda at commit `9b777e8`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 47 cells on 2026-10-13 with GraspPanda at commit `a6ff159`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 35 cells on 2026-10-13 with GraspPanda at commit `ade1b10`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 29 cells on 2026-10-13 with GraspPanda at commit `c3e5827`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 12 cells on 2026-10-13 with GraspPanda at commit `c47cdc6`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 48 cells on 2026-10-13 with GraspPanda at commit `c47cdc6+dirty`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 15 cells on 2026-10-13 with GraspPanda at commit `d4ae6aa`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 1 probes at a time. 70 cells on 2026-10-13 with GraspPanda at commit `e2afe40`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 152 cells on 2026-10-13 with GraspPanda at commit `e849e98`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 16 cells on 2026-10-13 with GraspPanda at commit `f5ebe25`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time. 22 cells on 2026-10-13 with GraspPanda at commit `fe058f6`, PyTorch 2.7.1+cu118, Python 3.12.7, on one NVIDIA RTX A6000 shared with other jobs, 2 probes at a time.
 - **Two cells with one config are one experiment.** A cell that composes to the very config of another cell (the same config hash) shares its probe; one that composes to its method's shipped config is marked *own*. 42 of the 980 cells share a probe.
 
 | Group | Cells probed | `runs` | `runs-unstable` | `refused` | `fails` |
@@ -40,12 +40,12 @@ that takes a full training run and an evaluation on a benchmark split.
 | `stage`: one other stage replaced | 455 of 455 | 266 | — | 189 | — |
 | `stage-set`: sets of stages | 95 of 7456 | 95 | — | — | — |
 | `family`: other detector families, as shipped | 1 of 1 | 1 | — | — | — |
-| `family-slot`: one component of another detector family replaced | 38 of 38 | 38 | — | — | — |
-| `post`: one post-processing step as the variant `post` | 42 of 42 | 41 | — | — | 1 |
+| `family-slot`: one component of another detector family replaced | 38 of 38 | 37 | — | 1 | — |
+| `post`: one post-processing step as the variant `post` | 42 of 42 | 42 | — | — | — |
 | `loss`: one loss of one stage replaced | 17 of 17 | 14 | — | 3 | — |
-| `recipe`: one recipe preset applied (optimizer, schedule, hooks, augmentation) | 74 of 74 | 68 | 1 | — | 5 |
+| `recipe`: one recipe preset applied (optimizer, schedule, hooks, augmentation) | 74 of 74 | 68 | 1 | 4 | 1 |
 | `cross`: options of several slots replaced together | 18 of 18 | 17 | — | 1 | — |
-| **all** | **980 of 8341** | **770** | **11** | **193** | **6** |
+| **all** | **980 of 8341** | **770** | **11** | **198** | **1** |
 
 ## Verdicts
 
@@ -53,7 +53,7 @@ that takes a full training run and an evaluation on a benchmark split.
 |---|---|---|
 | `runs` | ✓ · ✓ own · ✓ in `Adapter` | On real frames: the detector was built, every requested training iteration ran with finite losses and at least one real seed, the weights stayed finite, and prediction returned one valid grasp group for every probed frame. A group may be empty: a model trained for a few iterations often predicts no grasp. |
 | `runs-unstable` | ≈ (n) | On real frames: the detector was built, trained and predicted, but a loss or a weight became non-finite (a non-finite loss ends the training there), or an iteration had no real seed (no scene point passed the proposal, so only the proposal was trained), or no iteration supervised a seed, or fewer iterations ran or fewer frames were predicted than were asked for. |
-| `refused` | ✗ (n) | The config check refused the config (the same check as `grasppanda print-config --check --for train`). Nothing was built; the report carries the messages. On this page all 193 refusals come from `grasppanda compose`, which runs that check on the composed config and writes nothing when it fails. |
+| `refused` | ✗ (n) | The config check refused the config (the same check as `grasppanda print-config --check --for train`). Nothing was built; the report carries the messages. On this page all 198 refusals come from `grasppanda compose`, which runs that check on the composed config and writes nothing when it fails. |
 | `fails` | **fails** (n) | An exception was raised after the config check had passed. The report names the phase (build, data, optimizer, loss, backward, step, hook, predict), the component it came from and the message. |
 | `wired` | — | No real frame was read. On a synthetic table-top scene with random labels the detector was built, back-propagated a loss through every stage and predicted. This shows that the stages connect; it says nothing about real data. Not used on this page. |
 
@@ -157,11 +157,11 @@ A component **works** under a method when its cell is `runs` or `runs-unstable`:
 
     | Combination | Parameters | Total loss, first → last | Real seeds, min | Supervised seeds, mean | Grasps per frame | s / iteration ‡ | GPU GiB ‡ |
     |---|---|---|---|---|---|---|---|
-    | `ASSANet`, preset `assanet` under GSNet | 2 877 085 | 6.699 → 1.496 | 1.00 | 1.00 | 0, 0 | 0.44 | 1.6 |
-    | `ASSANet`, preset `assanet` under EconomicGrasp | 3 273 548 | 12.4 → 4.453 | 1.00 | 0.17 | 0, 0 | 0.58 | 1.9 |
-    | `ASSANet`, preset `assanet` under FineGrasp | 6 460 191 | 13.28 → 5.113 | 0.85 | 0.16 | 0, 0 | 0.61 | 11.0 |
-    | `ASSANet`, preset `assanet` under GraspNet-baseline | 2 894 202 | 0.7294 → 1.806 | 1.00 | 0.49 | 0, 0 | 0.34 | 3.3 |
-    | `ASSANet`, preset `assanet` under Scale-Balanced-Grasp | 3 348 538 | 0.8202 → 2.024 | 1.00 | 0.49 | 0, 0 | 0.40 | 8.6 |
+    | `ASSANet`, preset `assanet` under GSNet | 2 877 133 | 8.221 → 1.543 | 0.59 | 1.00 | 0, 0 | 0.15 | 1.6 |
+    | `ASSANet`, preset `assanet` under EconomicGrasp | 3 273 596 | 13.42 → 4.484 | 0.87 | 0.15 | 0, 0 | 0.19 | 1.9 |
+    | `ASSANet`, preset `assanet` under FineGrasp | 6 460 239 | 11.64 → 4.534 | 1.00 | 0.17 | 0, 0 | 0.72 | 11.0 |
+    | `ASSANet`, preset `assanet` under GraspNet-baseline | 2 894 250 | 2.808 → 1.212 | 1.00 | 0.49 | 478, 465 | 0.21 | 3.3 |
+    | `ASSANet`, preset `assanet` under Scale-Balanced-Grasp | 3 348 586 | 3.11 → 1.232 | 1.00 | 0.49 | 36, 74 | 0.34 | 8.6 |
     | `DGCNN`, preset `dgcnn-static` under GSNet | 1 095 439 | 6.452 → 1.495 | 0.99 | 1.00 | 1024, 1024 | 0.75 | 10.7 |
     | `DGCNN`, preset `dgcnn-static` under EconomicGrasp | 1 491 902 | 11.73 → 4.632 | 1.00 | 0.18 | 0, 0 | 0.77 | 14.1 |
     | `DGCNN`, preset `dgcnn-static` under FineGrasp | 4 875 489 | 11.17 → 4.571 | 1.00 | 0.12 | 0, 0 | 1.64 | 35.8 |
@@ -872,14 +872,14 @@ A recipe preset changes what is around the model: the optimizer, the schedule, t
 | schedule | `--set schedule=warmup-cosine` | TimmSchedule | `runs` | `runs` | — |
 | hooks | `--set hooks=accumulate-2` | train options | `runs` | `runs` | — |
 | hooks | `--set hooks=agc` | AdaptiveGradClipHook | `runs` | `runs` | — |
-| hooks | `--set hooks=amp` | train options | `fails` | `fails` | — |
+| hooks | `--set hooks=amp` | train options | `refused` | `refused` | — |
 | hooks | `--set hooks=ema` | EMAHook | `runs` | `runs` | — |
 | hooks | `--set hooks=freeze-encoder` | FreezeHook | `runs` | — | `runs` |
 | hooks | `--set hooks=grad-clip` | train options | `runs` | `runs` | — |
 | hooks | `--set hooks=swa` | SWAHook | `runs` | `runs` | — |
 | augment | `--set augment=dropout` | RandomDropout | `runs` | `runs` | — |
-| augment | `--set augment=jitter` | RandomJitter | `runs` | `fails` | — |
-| augment | `--set augment=shift` | RandomShift | `runs` | `fails` | — |
+| augment | `--set augment=jitter` | RandomJitter | `runs` | `refused` | — |
+| augment | `--set augment=shift` | RandomShift | `runs` | `refused` | — |
 | recipe | `--set recipe=adamw-onecycle` | AdamW, OneCycleLR | `runs` | `runs` | — |
 | recipe | `--set recipe=finetune-encoder` | ParamGroups, TimmSchedule, FreezeHook, EMAHook | `runs` | — | `runs` |
 | recipe | `--set backbone=ptv3` `--set recipe=ptv3-adamw-onecycle` | ParamGroups, OneCycleLR | `runs` | — | `runs` |
@@ -888,10 +888,10 @@ What did not run, in the words of the tool:
 
 - `recipe/GSNet/optimizer/schedulefree-sgd` (`runs-unstable`): 1 of 20 iterations had no real seed (iteration 3).
 - `recipe/HGGD/optimizer/soap` (`fails`): at step: RuntimeError: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-- `recipe/GSNet/hooks/amp` (`fails`): at loss, in the assigner NearestLabelAssigner: RuntimeError: Index put requires the source and destination dtypes match, got Float for the destination and Half for the source.
-- `recipe/HGGD/hooks/amp` (`fails`): at loss: NonFiniteLossError: non-finite loss at epoch 1, iteration 1: loss/heatmap = nan, loss/angle = inf.
-- `recipe/HGGD/augment/jitter` (`fails`): at data, in the transform RandomJitter: ContractError: graspnet1b/scene_0000/realsense/0128: RandomJitter moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps).
-- `recipe/HGGD/augment/shift` (`fails`): at data, in the transform RandomShift: ContractError: graspnet1b/scene_0000/realsense/0128: RandomShift moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps).
+- `recipe/GSNet/hooks/amp` (`refused`): train.amp: mixed precision is not supported by GSNet yet: its loss is not written for half-precision tensors (the detector does not declare `amp_ready = True`).
+- `recipe/HGGD/hooks/amp` (`refused`): train.amp: mixed precision is not supported by HGGD yet: its loss is not written for half-precision tensors (the detector does not declare `amp_ready = True`).
+- `recipe/HGGD/augment/jitter` (`refused`): data.train.dataset.transforms: RandomJitter moves the points, but this dataset section also serves image-space data (`rgb`, `depth`, `view_grasps`), which would stay where it was.
+- `recipe/HGGD/augment/shift` (`refused`): data.train.dataset.transforms: RandomShift moves the points, but this dataset section also serves image-space data (`rgb`, `depth`, `view_grasps`), which would stay where it was.
 
 ## Sets of stages
 
@@ -1102,8 +1102,8 @@ A detector that is not built on the seed-based skeleton has slots of its own; HG
 
 | `image_encoder=` | Component | HGGD | Parameters | Total loss, first → last | Real seeds, min | Supervised seeds, mean | Grasps per frame | s / iteration ‡ | GPU GiB ‡ |
 |---|---|---|---|---|---|---|---|---|---|
-| `convnextv2-atto` | `TimmImageEncoder` | ✓ | 5 677 022 | 6417 → 149.5 | — | — | 270, 90 | 0.96 | 8.9 |
-| `convnextv2-tiny` | `TimmImageEncoder` | ✓ | 30 208 982 | 1.403e+04 → 591.8 | — | — | 31, 42 | 1.20 | 10.4 |
+| `convnextv2-atto` | `TimmImageEncoder` | ✓ | 5 677 022 | 7857 → 219 | — | — | 480, 480 | 0.43 | 9.0 |
+| `convnextv2-tiny` | `TimmImageEncoder` | ✓ | 30 208 982 | 1.482e+04 → 519.7 | — | — | 322, 278 | 0.65 | 10.6 |
 | `dinov2-small-reg-depth-stem` | `TimmImageEncoder` | ✓ | 24 278 841 | 1.013e+04 → 675.4 | — | — | 450, 480 | 0.82 | 9.0 |
 | `dinov2-small-reg` | `TimmImageEncoder` | ✓ | 24 278 614 | 1.502e+04 → 716.5 | — | — | 400, 330 | 1.78 | 9.2 |
 | `dinov3-convnext-tiny` | `TimmImageEncoder` | ✓ | 30 162 614 | 9801 → 559.4 | — | — | 362, 309 | 1.13 | 10.3 |
@@ -1113,14 +1113,14 @@ A detector that is not built on the seed-based skeleton has slots of its own; HG
 | `eva02-tiny` | `TimmImageEncoder` | ✓ | 7 933 846 | 1.738e+04 → 1401 | — | — | 36, 72 | 1.25 | 8.8 |
 | `fastvit-sa12` | `TimmImageEncoder` | ✓ | 12 722 774 | 1.202e+04 → 369.1 | — | — | 480, 400 | 0.63 | 9.6 |
 | `fastvit-t8` | `TimmImageEncoder` | ✓ | 5 469 878 | 1.198e+04 → 607.2 | — | — | 215, 197 | 1.06 | 9.0 |
-| `hf-convnextv2-tiny` | `HFImageEncoder` | ✓ | 30 211 862 | 8662 → 129.6 | — | — | 0, 0 | 0.80 | 11.4 |
-| `hf-depth-anything-v2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 1.069e+04 → 202 | — | — | 374, 350 | 1.58 | 9.9 |
-| `hf-dinov2-small-reg` | `HFImageEncoder` | ✓ | 24 223 190 | 1.739e+04 → 989.1 | — | — | 336, 336 | 0.77 | 9.6 |
-| `hf-dinov2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 8158 → 255.4 | — | — | 328, 335 | 0.94 | 9.9 |
-| `hf-hiera-tiny` | `HFImageEncoder` | ✓ | 29 486 582 | 5560 → 189.3 | — | — | 74, 74 | 0.70 | 7.4 |
-| `hf-radio-v3-base` | `HFImageEncoder` | ✓ | 100 444 502 | 5615 → 262.6 | — | — | 255, 272 | 1.51 | 11.1 |
-| `hf-siglip2-base` | `HFImageEncoder` | ✓ | 95 119 958 | 5303 → 216.8 | — | — | 43, 130 | 1.17 | 11.1 |
-| `hf-swinv2-tiny` | `HFImageEncoder` | ✓ | 29 920 640 | 5975 → 150.2 | — | — | 256, 200 | 0.98 | 10.2 |
+| `hf-convnextv2-tiny` | `HFImageEncoder` | ✓ | 30 211 862 | 8662 → 117.8 | — | — | 0, 0 | 0.58 | 11.4 |
+| `hf-depth-anything-v2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 1.069e+04 → 197.2 | — | — | 384, 375 | 0.64 | 9.9 |
+| `hf-dinov2-small-reg` | `HFImageEncoder` | ✓ | 24 223 190 | 1.739e+04 → 972.6 | — | — | 382, 384 | 0.53 | 9.7 |
+| `hf-dinov2-small` | `HFImageEncoder` | ✓ | 24 406 742 | 8158 → 252.5 | — | — | 357, 351 | 0.57 | 9.9 |
+| `hf-hiera-tiny` | `HFImageEncoder` | ✓ | 29 330 870 | 1.229e+04 → 837.3 | — | — | 8, 0 | 0.53 | 8.7 |
+| `hf-radio-v3-base` | `HFImageEncoder` | ✗ (1) | — | — | — | — | — | — | — |
+| `hf-siglip2-base` | `HFImageEncoder` | ✓ | 95 119 958 | 5303 → 212.9 | — | — | 39, 26 | 0.67 | 10.9 |
+| `hf-swinv2-tiny` | `HFImageEncoder` | ✓ | 29 920 640 | 5975 → 123.8 | — | — | 0, 0 | 0.66 | 10.0 |
 | `hggd-residual` | `HGGDResidualEncoder` | ✓ | 3 425 590 | 7459 → 263.4 | — | — | 383, 350 | 1.36 | 8.0 |
 | `hiera-small-abswin` | `TimmImageEncoder` | ✓ | 35 935 286 | 6536 → 137.2 | — | — | 432, 423 | 0.99 | 10.7 |
 | `maxvit-tiny` | `TimmImageEncoder` | ✓ | 32 603 566 | 1.335e+04 → 493.6 | — | — | 337, 340 | 1.36 | 13.7 |
@@ -1141,6 +1141,8 @@ A detector that is not built on the seed-based skeleton has slots of its own; HG
 | `tv-regnet-y-800mf` | `TorchvisionImageEncoder` | ✓ | 8 022 510 | 9280 → 462 | — | — | 311, 372 | 0.74 | 9.1 |
 | `tv-resnet34` | `TorchvisionImageEncoder` | ✓ | 23 597 974 | 1.723e+04 → 815.2 | — | — | 212, 182 | 1.19 | 8.4 |
 
+1. model.image_encoder: HFImageEncoder: `model_args.trust_remote_code: true` runs Python code downloaded from the hub repository 'nvidia/C-RADIOv3-B' on this machine.
+
 ## Post-processing
 
 Every post-processing preset as the evaluation variant `post` of a method (`grasppanda compose <config> --set post=<preset>`), applied by the probe to the predictions of its two frames: grasps predicted → grasps left. A post-processor reads grasps and the observation, never a network, so three methods stand for the three kinds of input: seeds on a dense cloud with the full cloud kept, seeds of a sub-sampling encoder, and HGGD. The grasps are those of a detector trained for the iterations of the probe; [the page of the slot](../slots/post.md) has the same steps on the predictions of released weights.
@@ -1150,7 +1152,7 @@ Every post-processing preset as the evaluation variant `post` of a method (`gras
 | `approach-cone` (ApproachAngleFilter) | runs: 319 → 267; 362 → 310 | runs: 92 → 46; 360 → 129 | runs: 433 → 99; 396 → 130 |
 | `center-gripper` (GripperCentering) | runs: 382 → 382; 385 → 385 | runs: 864 → 864; 740 → 740 | runs: 386 → 386; 378 → 378 |
 | `collision-strict` (ModelFreeCollisionFilter) | runs: 436 → 58; 524 → 75 | runs: 155 → 16; 128 → 2 | runs: 391 → 25; 373 → 24 |
-| `collision` (ModelFreeCollisionFilter) | runs: 335 → 22; 456 → 30 | runs: 382 → 15; 316 → 23 | fails. at predict, in the post-processor ModelFreeCollisionFilter: ContractError: ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide. |
+| `collision` (ModelFreeCollisionFilter) | runs: 335 → 22; 456 → 30 | runs: 382 → 15; 316 → 23 | runs: 384 → 88; 375 → 130 |
 | `furthest-sampling` (FurthestGraspSampling) | runs: 311 → 50; 328 → 50 | runs: 755 → 50; 511 → 50 | runs: 411 → 50; 360 → 50 |
 | `gripper-limits` (GripperLimits) | runs: 216 → 216; 308 → 308 | runs: 425 → 243; 345 → 189 | runs: 384 → 283; 360 → 216 |
 | `mesh-collision` (GripperMeshCollisionFilter) | runs: 337 → 54; 386 → 54 | runs: 430 → 26; 583 → 79 | runs: 385 → 85; 361 → 100 |
@@ -1284,39 +1286,19 @@ The tables above replace one thing at a time, and the stage sets keep the encode
     | FineGrasp: `backbone=randlanet` `view=lattice-soft-argmax` `hooks=ema` | 5 760 513 | 13.04 → 4.77 | 1.00 | 0.13 | 0, 0 | 1.09 | 14.9 |
     | FineGrasp: `backbone=point-transformer-v1` `grouper=cylinder-invres` | 6 229 372 | 14.34 → 5.748 | 1.00 | 0.11 | 1024, 1024 | 0.65 | 7.7 |
     | GraspNet-baseline: `backbone=pointnet2-msg` `grouper=depth-ball` `post=nms` | 1 491 660 | 3.018 → 1.631 | 1.00 | 0.49 | 822, 915 | 0.17 | 3.0 |
-    | GraspNet-baseline: `backbone=assanet` `view=two-vector-baseline` `grouper=depth-knn` `optimizer=timm-lamb` | 2 791 300 | 2.772 → 1.983 | 1.00 | 0.49 | 1024, 1024 | 0.23 | 1.8 |
+    | GraspNet-baseline: `backbone=assanet` `view=two-vector-baseline` `grouper=depth-knn` `optimizer=timm-lamb` | 2 791 348 | 6.381 → 2.029 | 1.00 | 0.49 | 1024, 1024 | 0.25 | 1.8 |
     | Scale-Balanced-Grasp: `backbone=pointmetabase` `grouper=depth-cylinder-attentive` | 3 061 452 | 3.228 → 2.018 | 1.00 | 0.49 | 0, 0 | 0.28 | 4.0 |
     | Scale-Balanced-Grasp: `backbone=dgcnn` `grouper=depth-box` `post=gripper-limits` | 1 429 740 | 3.117 → 1.771 | 1.00 | 0.49 | 0, 0 | 0.72 | 6.4 |
-    | HGGD: `image_encoder=convnextv2-atto` `post=nms` `optimizer=adamw` `schedule=cosine` | 5 677 022 | 6417 → 585.7 | — | — | 288, 327 | 0.76 | 8.3 |
+    | HGGD: `image_encoder=convnextv2-atto` `post=nms` `optimizer=adamw` `schedule=cosine` | 5 677 022 | 7857 → 1015 | — | — | 287, 315 | 0.42 | 8.1 |
     | HGGD: `image_encoder=tv-mobilenetv3-large` `post=top-k` `hooks=ema` | 5 334 662 | 1.276e+04 → 636.4 | — | — | 387, 407 | 0.81 | 9.2 |
 
 ## Passed the check, failed afterwards
 
-6 cell(s) passed the config check and failed afterwards. A combination should be refused with the conflict and the fix, or run; each group below is a gap between what the config check knows and what the components need. (*N* stands for a number that differs from cell to cell.)
-
-- **at predict, in the post-processor ModelFreeCollisionFilter: ContractError: ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide.** 1 cell(s): `post/HGGD/collision`.
-
-    The message of the first, whole: *ModelFreeCollisionFilter reads observation.full_points (the cloud before sub-sampling), which this observation does not provide. Keep it with `keep_full_points: true` in the dataset section of the config (`--opts data.test.dataset.keep_full_points=true`), or test the cloud the network saw with `cloud: points`*
+1 cell(s) passed the config check and failed afterwards. A combination should be refused with the conflict and the fix, or run; each group below is a gap between what the config check knows and what the components need. (*N* stands for a number that differs from cell to cell.)
 
 - **at step: RuntimeError: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.** 1 cell(s): `recipe/HGGD/optimizer/soap`.
 
     The message of the first, whole: *CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect. For debugging consider passing CUDA_LAUNCH_BLOCKING=1 Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.*
-
-- **at loss, in the assigner NearestLabelAssigner: RuntimeError: Index put requires the source and destination dtypes match, got Float for the destination and Half for the source.** 1 cell(s): `recipe/GSNet/hooks/amp`.
-
-    The message of the first, whole: *Index put requires the source and destination dtypes match, got Float for the destination and Half for the source.*
-
-- **at loss: NonFiniteLossError: non-finite loss at epoch N, iteration N: loss/heatmap = nan, loss/angle = inf.** 1 cell(s): `recipe/HGGD/hooks/amp`.
-
-    The message of the first, whole: *non-finite loss at epoch 1, iteration 1: loss/heatmap = nan, loss/angle = inf. Frames in the batch: graspnet1b/scene_0000/realsense/0128, graspnet1b/scene_0000/realsense/0000, graspnet1b/scene_0000/realsense/0224, graspnet1b/scene_0000/realsense/0096*
-
-- **at data, in the transform RandomJitter: ContractError: graspnetNb/scene_N/realsense/N: RandomJitter moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps).** 1 cell(s): `recipe/HGGD/augment/jitter`.
-
-    The message of the first, whole: *graspnet1b/scene_0000/realsense/0128: RandomJitter moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.*
-
-- **at data, in the transform RandomShift: ContractError: graspnetNb/scene_N/realsense/N: RandomShift moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps).** 1 cell(s): `recipe/HGGD/augment/shift`.
-
-    The message of the first, whole: *graspnet1b/scene_0000/realsense/0128: RandomShift moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.*
 
 ## Not on this page
 

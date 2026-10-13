@@ -23,8 +23,9 @@ Targets (reference behaviour, each a named option):
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 import torch
 import torch.nn.functional as F
@@ -110,6 +111,23 @@ class SWADHead(HeadBundle):
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
     loss_terms: ClassVar[dict[str, str]] = {"score_loss": "unit", "width_loss": "value"}
+
+    @classmethod
+    def option_problems(cls, options: Mapping[str, Any]) -> list[str]:
+        """Option values the constructor would refuse, told without building."""
+        limits = options.get("friction_range")
+        try:
+            low, high = limits
+            fine = 0 < low < high
+        except (TypeError, ValueError):
+            fine = False
+        if fine:
+            return []
+        return [
+            f"{cls.__name__} has friction_range = {list(limits) if limits else limits}; it "
+            "must be [min, max] with 0 < min < max (the friction coefficients the score "
+            "target is scaled between), e.g. [0.1, 1.0]."
+        ]
 
     def __init__(
         self,

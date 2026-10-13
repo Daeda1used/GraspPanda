@@ -1,5 +1,7 @@
 # Grasp heads and losses: what is predicted per seed and how it is penalised
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 ## 1. The task of the slot
 
 A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
@@ -162,6 +164,36 @@ stages it depends on, e.g. under GraspNet-baseline
 `compose`; not probed);
 which stage sets are legal is in [swapping components](../advanced_guides/swapping.md).
 
+### Assigners
+
+The assigner matches every seed to a grasp label during training and hands the matched
+labels to the view stage and the head bundle, so it is chosen with the head and the label
+set, not on its own. "Fit" is the verdict of the measured records (group `stage`, the
+assigner alone replaced) for GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline /
+Scale-Balanced-Grasp; "shipped" marks the method that ships it.
+
+| Name | Component | What it is | Label set | Fit | Why |
+|---|---|---|---|---|---|
+| `NearestLabelAssigner` (constructor defaults; no preset) | `NearestLabelAssigner` | every seed takes the labels of the nearest label point of its object; every seed is supervised | dense | runs (shipped) / refused / refused / refused / refused | compact-label heads read another label set; `ObjectnessViewStage` reads `on_object` and `view_width`, which the defaults do not return |
+| `nearest-label-object-seeds` | `NearestLabelAssigner` | the same matching, only seeds on an object supervised, crops at the matched label point (GraspNet-baseline) | dense | runs / refused / refused / runs (shipped) / runs | `EconomicHead` is supervised with compact labels |
+| `compact-label` | `CompactLabelAssigner` | one labelled grasp per seed at its chosen view, only within 5 mm of a label point (EconomicGrasp, FineGrasp); brings the dataset section `compact_labels` | compact | refused / runs (shipped) / runs (shipped) / refused / refused | `SWADHead` and `OperationHead` are supervised with dense labels |
+| `scale-balanced` | `ScaleBalancedAssigner` | the matching of GraspNet-baseline plus a loss weight per seed, larger for rare grasp widths; brings the dataset section `scale_statistic` | dense | refused / refused / refused / runs / runs (shipped) | its seed weights are applied by `ObjectnessViewStage` and `OperationHead` only; the others would ignore them silently |
+
+```bash
+grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
+    --set assigner=scale-balanced -o baseline_scale-balanced.yaml
+grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \
+    --set assigner=nearest-label-object-seeds -o gsnet_object-seeds.yaml
+grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
+    --set assigner=compact-label          # what the method ships; composes to the same config
+grasppanda compose --show assigner=scale-balanced   # the preset with what must be re-tuned
+```
+
+`scale-balanced` needs the width histogram (`grasppanda prepare graspnet1b --scale-statistic`;
+`configs/scale_balanced_grasp/README.md`), and a probe of it needs the reference's file (see the
+[slot index](index.md#how-to-try-one)). A refusal names the head or the label set that does not
+fit and, where another shipped config serves it, that config.
+
 ## 4. How to use each option
 
 ### One loss term
@@ -221,7 +253,7 @@ An override of `type` alone keeps the other keys of the node, so it works only w
 loss has the options of the old one (here: `weight`). Otherwise replace the whole node in a
 YAML file.
 
-Libraries: `pip install "grasppanda[torchvision]"` for `focal`, `pip install "grasppanda[kornia]"`
+Libraries: `pip install -e ".[torchvision]"` for `focal`, `pip install -e ".[kornia]"`
 for `softmax-focal`, `dice`, `lovasz-softmax`, `charbonnier`, `cauchy` and the head preset
 `economic-focal`. Without the library the config still loads; building the model raises an
 error that names the extra.

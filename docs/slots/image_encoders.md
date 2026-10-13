@@ -1,5 +1,7 @@
 # Image encoders
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 The slot `model.image_encoder`: the network that turns the colour (or RGB-D) image into
 feature maps. Registry `IMAGE_ENCODERS`, base class
 `grasppanda.models.image_encoders.ImageEncoder`.
@@ -72,7 +74,7 @@ the colour filters. So depth is an explicit option of every bridge, `depth:`
 
 Columns: the name to write after `--set image_encoder=`; what it is; the paper; the class that
 runs it; the weights and their licence; the extra to install
-(`pip install "grasppanda[timm]"`, `[transformers]`, `[torchvision]`); and what the probe
+(`pip install -e ".[timm]"`, `[transformers]`, `[torchvision]`); and what the probe
 measured under HGGD on this machine (parameters of the whole detector and peak GPU memory of
 the probe at batch size 4; no timings, the GPU was shared with other jobs).
 Measured here: 38 `runs`. The records are the `family-slot/HGGD/image_encoder/*` cells of
@@ -91,8 +93,8 @@ supported, never shipped; you download them under their own terms.
 | `resnet34` | ResNet-34 from timm with ImageNet-1k weights, colour only | ResNet (He et al., CVPR 2016); weights arXiv 2110.00476 | `TimmImageEncoder` | `resnet34.a1_in1k`, Apache-2.0 (timm). | `timm` | runs (23.6 M, 9.1 GiB) |
 | `resnet34-rgbd` | ResNet-34 from timm with ImageNet-1k weights and a fourth input channel for depth | as `resnet34`; the fourth channel is this bridge's | `TimmImageEncoder` | `resnet34.a1_in1k`, Apache-2.0 (timm). | `timm` | runs (23.6 M, 9.0 GiB) |
 | `resnet50` | ResNet-50 from timm with ImageNet-1k weights, colour only | ResNet (He et al., CVPR 2016); weights arXiv 2110.00476 | `TimmImageEncoder` | `resnet50.a1_in1k`, Apache-2.0 (timm). | `timm` | runs (26.0 M, 10.1 GiB) |
-| `convnextv2-tiny` | ConvNeXt V2-Tiny from timm (FCMAE, fine-tuned on ImageNet-22k and 1k), colour only | ConvNeXt V2 (Woo et al., CVPR 2023, arXiv 2301.00808), facebookresearch | `TimmImageEncoder` | `convnextv2_tiny.fcmae_ft_in22k_in1k`, CC BY-NC 4.0: NON-COMMERCIAL weights. **NC** | `timm` | runs (30.2 M, 10.4 GiB) |
-| `convnextv2-atto` | ConvNeXt V2-Atto from timm (FCMAE, fine-tuned on ImageNet-1k), colour only | ConvNeXt V2 (Woo et al., CVPR 2023, arXiv 2301.00808), facebookresearch | `TimmImageEncoder` | `convnextv2_atto.fcmae_ft_in1k`, CC BY-NC 4.0: NON-COMMERCIAL weights. **NC** | `timm` | runs (5.7 M, 8.9 GiB) |
+| `convnextv2-tiny` | ConvNeXt V2-Tiny from timm (FCMAE, fine-tuned on ImageNet-22k and 1k), colour only | ConvNeXt V2 (Woo et al., CVPR 2023, arXiv 2301.00808), facebookresearch | `TimmImageEncoder` | `convnextv2_tiny.fcmae_ft_in22k_in1k`, CC BY-NC 4.0: NON-COMMERCIAL weights, **off in the preset** (`pretrained: false`; `--opts model.image_encoder.pretrained=true` fetches them). **NC** | `timm` | runs on random weights (30.2 M, 10.6 GiB) |
+| `convnextv2-atto` | ConvNeXt V2-Atto from timm (FCMAE, fine-tuned on ImageNet-1k), colour only | ConvNeXt V2 (Woo et al., CVPR 2023, arXiv 2301.00808), facebookresearch | `TimmImageEncoder` | `convnextv2_atto.fcmae_ft_in1k`, CC BY-NC 4.0: NON-COMMERCIAL weights, **off in the preset** (`pretrained: false`; `--opts model.image_encoder.pretrained=true` fetches them). **NC** | `timm` | runs on random weights (5.7 M, 9.0 GiB) |
 | `efficientnetv2-s` | EfficientNetV2-S from timm (ImageNet-21k, fine-tuned on 1k), colour only | EfficientNetV2 (Tan et al., ICML 2021, arXiv 2104.00298), Google | `TimmImageEncoder` | `tf_efficientnetv2_s.in21k_ft_in1k`, Apache-2.0 (timm). | `timm` | runs (22.2 M, 10.0 GiB) |
 | `mobilenetv4-conv-small` | MobileNetV4-Conv-Small from timm with ImageNet-1k weights, colour only | MobileNetV4 (Qin et al., arXiv 2404.10518; venue not checked) | `TimmImageEncoder` | `mobilenetv4_conv_small.e2400_r224_in1k`, Apache-2.0 (timm). | `timm` | runs (3.6 M, 8.5 GiB) |
 | `mobilenetv4-hybrid-medium` | MobileNetV4-Hybrid-Medium from timm with ImageNet-1k weights, colour only | MobileNetV4 (Qin et al., arXiv 2404.10518; venue not checked) | `TimmImageEncoder` | `mobilenetv4_hybrid_medium.e500_r224_in1k`, Apache-2.0 (timm). | `timm` | runs (10.9 M, 9.5 GiB) |
@@ -113,12 +115,12 @@ supported, never shipped; you download them under their own terms.
 | `pe-spatial-tiny` | Perception Encoder Spatial Tiny/16 from timm, colour only | Perception Encoder (Bolya et al., arXiv 2504.13181; venue not checked), Meta FAIR | `TimmImageEncoder` | `vit_pe_spatial_tiny_patch16_512.fb`, Apache-2.0 (timm). | `timm` | runs (7.9 M, 8.4 GiB) |
 | `hf-dinov2-small` | DINOv2 ViT-S/14 through transformers `AutoBackbone`, four layers, colour only | DINOv2 (Oquab et al., arXiv 2304.07193), Meta FAIR | `HFImageEncoder` | `facebook/dinov2-small`, Apache-2.0 (hub card). | `transformers` | runs (24.4 M, 9.9 GiB) |
 | `hf-dinov2-small-reg` | DINOv2 ViT-S/14 with registers through transformers `AutoBackbone`, colour only | DINOv2 with registers (arXiv 2309.16588), Meta FAIR | `HFImageEncoder` | `facebook/dinov2-with-registers-small`, Apache-2.0 (hub card). | `transformers` | runs (24.2 M, 9.6 GiB) |
-| `hf-hiera-tiny` | Hiera-Tiny through transformers `AutoBackbone`, colour only, at its fixed 224 x 224 | Hiera (Ryali et al., ICML 2023, arXiv 2306.00989), Meta FAIR | `HFImageEncoder` | `facebook/hiera-tiny-224-hf`, CC BY-NC 4.0: NON-COMMERCIAL weights. **NC** | `transformers` | runs (29.5 M, 7.4 GiB) |
+| `hf-hiera-tiny` | Hiera-Tiny through transformers `AutoBackbone`, colour only, at its fixed 224 x 224 | Hiera (Ryali et al., ICML 2023, arXiv 2306.00989), Meta FAIR | `HFImageEncoder` | `facebook/hiera-tiny-224-hf`, CC BY-NC 4.0: NON-COMMERCIAL weights, **off in the preset** (`pretrained: false`; `--opts model.image_encoder.pretrained=true` fetches them). **NC** | `transformers` | runs on random weights (29.3 M, 8.7 GiB) |
 | `hf-depth-anything-v2-small` | The encoder of Depth Anything V2 Small (a DINOv2 ViT-S/14) through transformers | Depth Anything V2 (Yang et al., arXiv 2406.09414; venue not checked) | `HFImageEncoder` | `depth-anything/Depth-Anything-V2-Small-hf`, Apache-2.0 (hub card). The Base and Large checkpoints are CC BY-NC 4.0. | `transformers` | runs (24.4 M, 9.9 GiB) |
 | `hf-siglip2-base` | The image tower of SigLIP 2 Base/16 through transformers `AutoModel`, colour only | SigLIP 2 (Tschannen et al., arXiv 2502.14786), Google | `HFImageEncoder` | `google/siglip2-base-patch16-256`, Apache-2.0 (hub card). | `transformers` | runs (95.1 M, 11.1 GiB) |
 | `hf-convnextv2-tiny` | ConvNeXt V2-Tiny through transformers `AutoBackbone` (ImageNet-22k), colour only | ConvNeXt V2 (Woo et al., CVPR 2023), facebookresearch | `HFImageEncoder` | `facebook/convnextv2-tiny-22k-224`, Apache-2.0 according to its hub card (timm lists the same family as CC BY-NC 4.0; check before commercial use). | `transformers` | runs (30.2 M, 11.4 GiB) |
 | `hf-swinv2-tiny` | Swin Transformer V2-Tiny through transformers `AutoBackbone`, colour only | Swin Transformer V2 (Liu et al., CVPR 2022), Microsoft | `HFImageEncoder` | `microsoft/swinv2-tiny-patch4-window8-256`, Apache-2.0 (hub card). | `transformers` | runs (29.9 M, 10.2 GiB) |
-| `hf-radio-v3-base` | C-RADIOv3-B (NVIDIA's agglomerative ViT-B/16) through transformers and its hub code, colour only | RADIO (Ranzinger et al., CVPR 2024, arXiv 2312.06709; RADIOv2.5, arXiv 2412.07679), NVIDIA | `HFImageEncoder` | `nvidia/C-RADIOv3-B`, NVIDIA Open Model License (hub card: `nvidia-open-model-license`; read it before any use beyond research). | `transformers` + `open_clip_torch` | runs (100.4 M, 11.1 GiB) |
+| `hf-radio-v3-base` | C-RADIOv3-B (NVIDIA's agglomerative ViT-B/16) through transformers and its hub code, colour only | RADIO (Ranzinger et al., CVPR 2024, arXiv 2312.06709; RADIOv2.5, arXiv 2412.07679), NVIDIA | `HFImageEncoder` | `nvidia/C-RADIOv3-B` (runs hub code: **refused until** `--opts model.image_encoder.accept_remote_code=true`), NVIDIA Open Model License (hub card: `nvidia-open-model-license`; read it before any use beyond research). | `transformers` + `open_clip_torch` | refused as shipped (hub code not accepted); with `accept_remote_code=true` and `open_clip_torch` it ran in an earlier probe (100.4 M, 11.1 GiB), which is no longer in the records |
 | `tv-resnet34` | ResNet-34 from torchvision with its ImageNet-1k weights, colour only | ResNet (He et al., CVPR 2016) | `TorchvisionImageEncoder` | `ResNet34_Weights.IMAGENET1K_V1` from download.pytorch.org (torchvision, BSD-3-Clause code; the weights carry no separate licence statement). | `torchvision` | runs (23.6 M, 8.4 GiB) |
 | `tv-convnext-tiny` | ConvNeXt-Tiny from torchvision with its ImageNet-1k weights, colour only | ConvNeXt (Liu et al., CVPR 2022, arXiv 2201.03545) | `TorchvisionImageEncoder` | `ConvNeXt_Tiny_Weights.IMAGENET1K_V1` from download.pytorch.org (torchvision). | `torchvision` | runs (30.2 M, 10.0 GiB) |
 | `tv-efficientnetv2-s` | EfficientNetV2-S from torchvision with its ImageNet-1k weights, colour only | EfficientNetV2 (Tan et al., ICML 2021) | `TorchvisionImageEncoder` | `EfficientNet_V2_S_Weights.IMAGENET1K_V1` from download.pytorch.org (torchvision). | `torchvision` | runs (22.6 M, 11.4 GiB) |
@@ -137,6 +139,9 @@ The three bridge classes expose far more than the presets:
 `TorchvisionImageEncoder(name=<resnet*, regnet*, or a model with .features>)`.
 
 ## 4. How to use an option (HGGD)
+
+`grasppanda compose --list image_encoder` prints every preset of this slot with its one-line
+summary; `grasppanda compose --show image_encoder=<name>` prints one in full.
 
 One command writes a config, a second one tries it on real frames:
 
@@ -220,7 +225,16 @@ Pretrained weights:
 - **torchvision**: `weights: DEFAULT` (or the name of a weight enum entry), `weights: null` for
   random weights, `checkpoint:` for a local state dict.
 - Every probe on this page ran with the **pretrained weights named in the table**, downloaded
-  in this session. Random weights were used only by the unit tests.
+  in this session, except the three presets whose weights are non-commercial
+  (`convnextv2-tiny`, `convnextv2-atto`, `hf-hiera-tiny`): their presets keep the weights off
+  and were probed on random weights. Random weights were otherwise used only by the unit tests.
+- **What is fetched, and when.** A bridge with `pretrained: true` (or `weights:` for
+  torchvision) lets its library download the weights on first use and prints one line to
+  standard error with the name and the licence the library states (`NON-COMMERCIAL` where it
+  says so). Nothing else in the toolbox downloads weights. A preset never switches
+  non-commercial weights on by itself, and a model that runs code from its hub repository
+  (`model_args: {trust_remote_code: true}`, here `hf-radio-v3-base`) is refused by the config
+  check until the config also says `accept_remote_code: true`.
 
 ## 5. Point painting: image features for the seed-based methods
 
@@ -293,9 +307,13 @@ data:
   test: {dataset: {images: [rgb]}}
 ```
 
-Measured: one such config per method (the method's own encoder wrapped, ResNet-18 with
-ImageNet weights, written by a script from the shipped configs), `grasppanda probe <config>
---iters 20 --frames 8` on real GraspNet-1Billion frames:
+Measured **once, by hand, and not part of the measured records**: one such config per
+method (the method's own encoder wrapped, ResNet-18 with ImageNet weights, written from the
+shipped configs with the fragment above), `grasppanda probe <config> --iters 20 --frames 8`
+on real GraspNet-1Billion frames. `compose` does not write the wrapper (`--set
+backbone=image-painted` is refused and points here), so the grid of the
+[measured combinations](../advanced_guides/measured_combinations.md) has no cell for it and
+the numbers below cannot be regenerated from the repository:
 
 | Method | Adapter, wrapped encoder | Verdict | Parameters | Loss first → last | Grasps on 2 frames | Peak GPU |
 |---|---|---|---|---|---|---|
@@ -374,6 +392,5 @@ does not write painted configs).
 - **torchvision's transformers** (Swin, ViT, MaxViT): `TorchvisionImageEncoder` cuts chains of
   stages only and says so; timm has the same architectures.
 - **Decoder injection for point painting** (image features added at every level of the 3-D
-  decoder; DITR in the same report, section 5.G, which records its code as AGPL-3.0; not
-  opened in this session): it needs the wrapped encoder to expose its levels. Input and
+  decoder, as DITR does; its code was not opened in this session): it needs the wrapped encoder to expose its levels. Input and
   output fusion are what is offered.

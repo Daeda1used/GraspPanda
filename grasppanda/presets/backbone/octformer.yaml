@@ -1,6 +1,6 @@
 # OctFormer (ScanNet segmentation layout) on an octree with 5 mm leaves.
 #
-# Needs the `ocnn` library (pip install "grasppanda[ocnn]"). A room-scale encoder whose
+# Needs the `ocnn` library (pip install -e ".[ocnn]"). A room-scale encoder whose
 # unit of length has to be changed. No published GraspNet-1Billion result uses it. The
 # released ScanNet weights were not tried: random init.
 #

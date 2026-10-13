@@ -7,6 +7,9 @@
 # License (hub card: `nvidia-open-model-license`; read it before any use beyond research).
 #
 # What must be re-tuned, and why:
+# * accept_remote_code: not set here, so the config check refuses this preset as it is. The model
+#   is Python code of the hub repository that runs on your machine; after reading it, compose with
+#   `--opts model.image_encoder.accept_remote_code=true`.
 # * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
 #   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
 #   filter to the first convolution (zero at the start, always trained here: no library ships

@@ -1,5 +1,7 @@
 # Slot: seed proposal (`model.proposal`)
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 Options for the stage that decides **where grasps are predicted**. Every option on this page was
 composed under all five seed-based methods and, where the contract rules accept it, probed on
 real GraspNet-1Billion frames on 2026-10-13; the verdicts are copied from the
@@ -91,8 +93,8 @@ a sampler has no parameters, and the scorer of `ScoredSeeds` is trained with the
 | `VoxelGridSampler` | one point per occupied voxel (the best-scored one when scores exist) | regular subsampling as in [KPConv](https://arxiv.org/abs/1904.08889), Thomas et al., ICCV 2019 | `grasppanda.ops.voxelize` | coordinates (scores optional) | none |
 | `FPSThenTopK` | FPS for coverage, then the best-scored of the rest | selection rule of [Contact-GraspNet](https://arxiv.org/abs/2103.14127), Sundermeyer et al., ICRA 2021 | written from the description (the reference code is under the NVIDIA Source Code License and was not copied) | scores | none |
 | `ScoreNMS` | best score first, no two seeds closer than a radius | Algorithm 1 of [S4G](https://arxiv.org/abs/1910.14218), Qin et al., CoRL 2019 | written from the paper (the repository has no licence file) | scores | none |
-| `FpsampleFPS` | CPU furthest point sampling, bucket-based QuickFPS and four other methods | QuickFPS, Han et al., IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, 2023 (as cited by the library) | bridge to [`fpsample`](https://github.com/leonardodalinky/fpsample) 1.0.2 (MIT) | coordinates | `pip install "grasppanda[fpsample]"` |
-| `TorchClusterFPS` | the furthest point sampling kernel of PyTorch Geometric (CPU and CUDA) | PointNet++, NeurIPS 2017 | bridge to [`torch_cluster.fps`](https://github.com/rusty1s/pytorch_cluster) 1.6.3 (MIT) | coordinates | `pip install "grasppanda[torch-cluster]"` |
+| `FpsampleFPS` | CPU furthest point sampling, bucket-based QuickFPS and four other methods | QuickFPS, Han et al., IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, 2023 (as cited by the library) | bridge to [`fpsample`](https://github.com/leonardodalinky/fpsample) 1.0.2 (MIT) | coordinates | `pip install -e ".[fpsample]"` |
+| `TorchClusterFPS` | the furthest point sampling kernel of PyTorch Geometric (CPU and CUDA) | PointNet++, NeurIPS 2017 | bridge to [`torch_cluster.fps`](https://github.com/rusty1s/pytorch_cluster) 1.6.3 (MIT) | coordinates | `pip install -e ".[torch-cluster]"` |
 
 **Ready-made options** (presets: the name to write after `--set proposal=`). "Fit" is the verdict
 of the probe under GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline / Scale-Balanced-Grasp,

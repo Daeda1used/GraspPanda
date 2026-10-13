@@ -1,6 +1,6 @@
 # AdamW, linear warm-up over the first 5 % of the run, then one cosine to 1e-6, 10 epochs.
 # The schedule is timm's CosineLRScheduler through TimmSchedule, so it needs the optional
-# libraries: pip install "grasppanda[optim]". A method-neutral base: no shipped method was
+# libraries: pip install -e ".[optim]". A method-neutral base: no shipped method was
 # tuned with it and no AP is claimed. As recipe presets:
 # `grasppanda compose <config> --set optimizer=adamw --set schedule=warmup-cosine`.
 optimizer:

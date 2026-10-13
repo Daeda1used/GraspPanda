@@ -621,3 +621,58 @@ def test_the_command_does_not_overwrite_a_file_or_its_own_base(tmp_path, capsys)
     # A refused request never touches the output, existing or not.
     assert main(["compose", GSNET, "--set", "head=economic", "-o", str(target), "--force"]) == 1
     assert "LitePT" in target.read_text(encoding="utf-8")
+
+
+# ------------------------------------------------- label grids, seed counts, ranges
+
+
+def _refusal(base, sets=(), opts=()):
+    result = compose(base, list(sets), list(opts))
+    assert not result.accepted
+    return " ".join(result.refusal())
+
+
+def test_a_stage_on_another_grid_than_the_labels_is_refused_at_the_config_check():
+    """These composed to `valid` and stopped in the first iteration on real frames."""
+    text = _refusal(GSNET, opts=["model.head.num_angle=6"])
+    assert "SWADHead has num_angle = 6" in text and "set `num_angle: 12`" in text
+    text = _refusal(ECONOMIC, opts=["model.head.num_depth=5"])
+    assert "EconomicHead has num_depth = 5" in text and "set `num_depth: 4`" in text
+    text = _refusal(GSNET, opts=["model.view.num_views=120"])
+    assert "TemplateViewStage has num_views = 120" in text and "lattice of 300 views" in text
+    assert "--set view=lattice-view" in text
+    # A stage that keeps its own lattice apart from the labels' may score 120 views ...
+    assert compose(GSNET, ["view=lattice-fibonacci-120"]).accepted
+    # ... but not read labels on another lattice than the dataset's.
+    text = _refusal(GSNET, ["view=lattice-fibonacci-120"], ["model.view.label_views=120"])
+    assert "label_views = 120" in text and "Set `label_views: 300`" in text
+
+
+def test_seeds_taken_from_the_encoder_must_be_as_many_as_it_returns():
+    text = _refusal(BASELINE, opts=["model.proposal.num_seeds=512"])
+    assert "SubsampledSeeds is configured for num_seeds = 512" in text
+    assert "PointNet2 as configured returns 1024 points per cloud" in text
+    text = _refusal(
+        BASELINE, ["backbone=pointnet2-msg"], ["model.backbone.npoints=[2048,512,256,128]"]
+    )
+    assert "PointNet2MSG as configured returns 512 points per cloud" in text
+    assert stage_contract_problems(
+        backbone={"type": "PointViT", "num_group": 256}, proposal={"type": "SubsampledSeeds"}
+    )
+    assert not stage_contract_problems(
+        backbone={"type": "PointViT", "num_group": 1024}, proposal={"type": "SubsampledSeeds"}
+    )
+
+
+def test_option_values_out_of_range_are_refusals_not_build_failures():
+    text = _refusal(GSNET, ["view=lattice-topk"], ["model.view.top_k=400"])
+    assert "LatticeViewStage has top_k = 400, but its lattice has 300 views" in text
+    text = _refusal(GSNET, ["head=swad-focal"], ["model.head.friction_range=[0.5,0.2]"])
+    assert "friction_range = [0.5, 0.2]" in text and "0 < min < max" in text
+
+
+def test_an_adapter_that_compose_does_not_write_points_to_its_fragment():
+    with pytest.raises(ComposeError, match="Compose does not write this wrapper.*section 5"):
+        compose(GSNET, ["backbone=image-painted"])
+    with pytest.raises(ComposeError, match="compose inserts the adapter"):
+        compose(GSNET, ["backbone=feature-propagation"])

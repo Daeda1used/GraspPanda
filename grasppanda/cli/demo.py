@@ -17,7 +17,7 @@ writes, into ``--out``:
 * ``grasps.gif``: the same, swinging around the scene.
 
 ``--show`` also opens an interactive window; it needs Open3D
-(``pip install "grasppanda[vis]"``) and a display.
+(``pip install -e ".[vis]"``) and a display.
 """
 
 from __future__ import annotations

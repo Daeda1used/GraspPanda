@@ -1,5 +1,7 @@
 # Scene encoders: point-based networks
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 Options for the slot `model.backbone` of the seed-based methods that work on the raw
 point cloud: set abstraction (PointNet++ and its descendants), residual MLPs, graph
 convolutions, random-sampling networks and point-wise networks on a grid pyramid.
@@ -286,6 +288,13 @@ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=assanet 
   the two scales of a level run one after the other. `reduction`: `mean` (published),
   `max` or `sum`. `fp_mlps` lists the propagation widths finest first; the first entry
   is the output width (the preset uses 256, the published network 64).
+- `use_xyz: true` (set by the preset) appends the coordinates to the input features.
+  Without it the stem batch-normalises features that are the same on every point (the
+  constant ones GSNet, EconomicGrasp, GraspNet-baseline and Scale-Balanced-Grasp feed), and
+  the normalised value of a constant is zero: the encoder returned zeros and learned
+  nothing, which a 20-iteration probe did not show (the first records of this option were
+  made that way and have been replaced). The class now refuses constant features without
+  `use_xyz` in training, and the probe reports a part that received no gradient.
 - The unit suite pins the default network to the published size (2.425 M with the
   segmentation head).
 
@@ -360,7 +369,7 @@ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=randlane
 ### PyTorch Geometric layers: `pyg-pointnet`, `pyg-edgeconv`, `pyg-point-transformer`, `pyg-pointgnn`
 
 ```bash
-pip install "grasppanda[torch_geometric]"
+pip install -e ".[torch_geometric]"
 grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \
     --set backbone=pyg-point-transformer -o gsnet_pyg-pt.yaml
 ```
@@ -389,7 +398,7 @@ built by GraspPanda, so `torch_geometric` alone is enough (no `pyg-lib`,
 `torch_cluster`). Without the library the class says how to install it:
 
 ```text
-The backbone PyGPointEncoder needs 'torch_geometric.nn', which is not installed. Install it with: pip install "grasppanda[torch_geometric]"
+The backbone PyGPointEncoder needs 'torch_geometric.nn', which is not installed. Install it with: pip install -e ".[torch_geometric]"
 ```
 
 ## 5. Released weights that fit existing classes
@@ -416,7 +425,10 @@ into a full detector through the engine (`matched 96, unexpected 0, mismatched 0
 66 missing tensors are the stages after the encoder). The B / L / XL formats use the
 same code path with the options the unit suite pins to the published sizes; their files
 (46 to 500 MB) were not downloaded. **Activations were not compared with the upstream
-implementations**, so the classes keep their status (`PointNeXt`: `tested`).
+implementations**, so the classes keep their status (`PointNeXt`: `tested`). The
+integration tests of strict loading skip when a file is absent, and the files are not
+kept on the machine the suites run on: the check above is that of the day it was made,
+not one that is repeated.
 
 ```bash
 python -m tools.convert_backbone_weights --list

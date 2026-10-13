@@ -288,6 +288,8 @@ class RandomFlip(PointTransform):
     reflection, not a rotation. Graspness and EconomicGrasp flip ``x`` with ``prob`` 0.5.
     """
 
+    moves_points = True  # refused beside image-space data by the config check
+
     source = "GraspNet-1Billion reference pipelines"
 
     def __init__(self, axis: Literal["x", "y", "z"], prob: float) -> None:
@@ -321,6 +323,8 @@ class RandomRotation(PointTransform):
             comment says z; the matrix in the code is an x-rotation).
         max_angle: Bound of the angle in degrees (Graspness: 30).
     """
+
+    moves_points = True  # refused beside image-space data by the config check
 
     source = "GraspNet-1Billion reference pipelines"
 

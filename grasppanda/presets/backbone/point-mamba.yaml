@@ -1,6 +1,6 @@
 # PointMamba: Mamba blocks over 1024 point-patch tokens in Hilbert order.
 #
-# Needs the `mamba-ssm` library and a GPU (pip install "grasppanda[mamba-ssm]"; its
+# Needs the `mamba-ssm` library and a GPU (pip install -e ".[mamba-ssm]"; its
 # selective scan is a CUDA kernel). The tokeniser is PointViT's; the sequence model is
 # linear in the number of tokens. Features live on the 1024 centres; under a method
 # whose proposal scores every scene point compose wraps it in FeaturePropagation. No

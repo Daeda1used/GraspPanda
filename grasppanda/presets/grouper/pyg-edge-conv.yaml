@@ -2,7 +2,7 @@
 #
 # `max_j MLP([x_i, x_j - x_i])` (Wang et al., TOG 2019); the crop-frame offset is appended
 # to the node features, the seed sits at the origin. Needs the optional library: pip
-# install "grasppanda[torch_geometric]".
+# install -e ".[torch_geometric]".
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

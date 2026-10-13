@@ -288,7 +288,9 @@ button.gx-lane-head:hover { background: var(--gx-soft); }
   font: inherit;
 }
 
-.gx-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.4rem 0; padding: 2px; }
+.gx-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.4rem 0; padding: 2px; min-width: 0; }
+.gx-chips > * { max-width: 100%; min-width: 0; }
+.gx-lanes, .gx-lane, .gx-lane-body { min-width: 0; max-width: 100%; }
 .gx-more {
   padding: 0.16rem 0.7rem;
   border: 1px dashed var(--gx-muted);
@@ -545,6 +547,11 @@ button.gx-cell:hover { filter: brightness(0.95); box-shadow: 0 0 0 2px var(--k);
   .gx-lane-head { gap: 0.4rem; padding: 0.4rem 0.5rem; }
   .gx-lane .gx-tag { display: none; }
   .gx-chip .gx-tag { display: inline; }
+  /* On a phone a long name wraps inside its chip instead of widening the page. */
+  .gx-chip { flex-wrap: wrap; }
+  .gx-chip-name { white-space: normal; overflow-wrap: anywhere; }
+  .gx-lane-name, .gx-code .gx-pre { overflow-wrap: anywhere; }
+  .gx-code .gx-pre.is-pre { white-space: pre-wrap; }
   .gx-lanes { margin-left: 0.5rem !important; padding-left: 0.8rem !important; }
   .gx-lane::before { left: calc(-0.8rem - 7px); }
   .gx-grid .gx-grid-option { min-width: 8.5rem; max-width: 9.5rem; }

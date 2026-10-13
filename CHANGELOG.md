@@ -138,6 +138,27 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
 - Every record names the run that measured it; a probe that runs out of GPU memory is
   retried alone and, if memory stays short, not recorded.
 
+### Added: authors' checkpoints on whole test splits
+
+- The model-zoo page (`docs/model_zoo.md`) has two tables of `author-ckpt` numbers, the
+  authors' released weights scored by this toolbox, with and without collision filter and
+  with the reported number beside each. "Authors' checkpoints scored by this toolbox":
+  GraspNet-1Billion, the whole test split (23,040 frames), for GraspNet-baseline,
+  Scale-Balanced-Grasp, HGGD, EconomicGrasp and FineGrasp on RealSense and for HGGD and
+  EconomicGrasp on Kinect. "GraspClutter6D transfers": the whole test split (3,055
+  frames) for GraspNet-baseline, Scale-Balanced-Grasp, EconomicGrasp and HGGD. They are
+  not reproductions. Each method's README states every difference from the reported
+  number and what is and is not known about it.
+- `python -m tools.record_result <run directory> --method <configs directory>` puts a
+  whole-split evaluation into the zoo: it checks the run (every frame scored, clean code,
+  hashed weights that are the file the metafile lists), copies its result records to
+  `configs/<method>/records/` without the paths of the machine, and prints the metafile
+  rows with the numbers computed from the per-scene values.
+- A metafile row names the splits of its protocol (`seen` / `similar` / `novel`, or `test`
+  for GraspClutter6D) and may state `AP0.8` and `AP0.4`; a measured row whose record file
+  is missing is a validation error. One test holds every measured row of every method to
+  its record: whole split, clean code, and exactly the numbers of the row.
+
 ### Fixed
 
 - A model on a data recipe that does not serve its labels is refused by the config check
@@ -161,6 +182,40 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   status 2), not verdicts; a loss that is not finite in the very first iteration is
   `fails`, not `runs-unstable`.
 
+- Combinations that passed the config check and failed in the first iteration are now
+  refused with the conflict and the fix: a head bundle or a view stage on another grid
+  than the labels of the dataset (`num_angle`, `num_depth`, `num_views`, `label_views`);
+  `SubsampledSeeds.num_seeds` against the points a sub-sampling encoder returns
+  (`output_points`); `top_k` and `friction_range` out of range (`option_problems`); a
+  point transform that moves points on a dataset section that serves images
+  (`moves_points`); a post-processor that needs the cloud before sub-sampling on a
+  section that drops it (`reads_full_points`; `compose --set post=collision...` switches
+  `keep_full_points` on and says so); `train.amp: true` for a detector that does not
+  declare `amp_ready`.
+- `ASSANet` returned zeros for the constant input features most methods feed (its stem
+  batch-normalises them) and was recorded as `runs`. It has the option `use_xyz` (on in
+  the preset) and refuses constant features without it; a unit test runs every encoder
+  preset on constant features.
+- `grasppanda probe` on real frames records the parts of the model that received no
+  gradient (`no_gradient`) and reports `runs-unstable` for one; it prints what every step
+  of a post-processing chain left; a CUDA launch failure gets the note that out-of-memory
+  has. The synthetic wiring check labels its scene on the grid of the dataset and reads
+  the image size of a GraspClutter6D camera.
+- Image-encoder bridges print one line when their library fetches pretrained weights,
+  with the licence it states. The presets with non-commercial weights (`convnextv2-tiny`,
+  `convnextv2-atto`, `hf-hiera-tiny`) ship with `pretrained: false`; a model that runs
+  code from its hub repository (`hf-radio-v3-base`) is refused until the config says
+  `accept_remote_code: true`.
+- `compose --list image_encoder` lists the image encoders; a head refused for its label
+  set names the shipped configs that serve it at once; `--set image_encoder=` under a
+  seed-based method points to point painting.
+- Install hints name `pip install -e ".[<extra>]"` from the repository root (the package
+  is not on PyPI yet), and `spconv` is translated to its per-build extras.
+- `tools/probe_grid.py` refuses to record from a working tree with uncommitted changes
+  (`--allow-dirty` overrides) and records the versions of the optional libraries of a run.
+- `approach_to_rotation` was rewritten independently (cross products and a turn about the
+  approach axis); the convention and its tests are unchanged.
+
 ### Changed
 
 - `compose --help` and `probe --help` name the slots, the base, examples, the verdicts
@@ -176,17 +231,37 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
 ### Known limits
 
 - The model zoo is empty: no method has been trained and evaluated here to the admission
-  rule yet. One author checkpoint has been scored on a whole test split (EconomicGrasp,
-  Kinect); its result record is in `configs/economicgrasp/records/`.
+  rule yet. The numbers that exist are `author-ckpt` (see above): GSNet has none yet, each
+  is one run with seed 0, and where a number differs from the reported one the cause is
+  not known.
 - No option added beside the six ported methods has been trained and evaluated: a
   measured verdict says that a combination builds, trains for 20 iterations and predicts.
 - Mixed precision (`train.amp`, preset `hooks=amp`) does not work with the shipped
-  detectors: GSNet stops at a half/float mismatch in the label assigner, HGGD's first
-  loss is not finite. `optimizer=soap` fails under HGGD with a CUDA error at the second
-  step (it runs under GSNet). The collision filter that reads the full cloud fails under
-  HGGD as shipped, whose dataset section keeps none; the message says how to supply it.
-- A point augmentation that moves points stops at the first sample of a detector that
-  reads images (HGGD); the config check does not see it.
+  detectors and is refused by the config check: GSNet stopped at a half/float mismatch in
+  the label assigner, HGGD's first loss was not finite. `optimizer=soap` fails under HGGD
+  with a CUDA error at the second step (it runs under GSNet).
+- No shipped augmentation moves image and cloud together, so a detector that reads images
+  (HGGD) has no geometric augmentation; point transforms that move points are refused there.
+- The point-painting wrappers (`image-painted`, `image-painted-subsampled`) are not written
+  by `compose` and have no cell in the measured records; the table of their probes in
+  `docs/slots/image_encoders.md` was measured once by hand.
+- `grasppanda probe --synthetic` (also the fallback when a dataset is missing) can report
+  `fails` for FineGrasp with the encoders `spunet` and `minkunet34c-pointcontrast`, whose
+  record on real frames is `runs`: after the second optimizer step on the random labels of
+  the synthetic scene the attention of the grouper returns a value that is not finite. The
+  cause is not found.
+- 51 measured cells (48 sets of stages and 3 others) were probed from a working tree with
+  uncommitted changes (`run` ends in `+dirty`): the commit they name does not identify the
+  probed code exactly. The runner refuses that from now on.
+- The unit tests of `OctFormer`, `PointMamba`, the HEALPix view stages and
+  `hf-radio-v3-base` need `ocnn`, `mamba-ssm`, `healpix` and `open_clip_torch`, which the
+  shared test environments do not hold: those tests skip there, and the measured cells of
+  those options were probed with the libraries in a private environment. Runs recorded
+  before this change do not name the versions of the optional libraries.
+- The strict-loading checks of released third-party weights (integration tests) skip when
+  the files are absent; they were run once with the files and are not repeated by CI.
+- The slot pages differ in how they lay out their tables (method names as columns on
+  some, abbreviations or one slash-separated cell on others).
 - Most combinations of two or more replaced options have no measured record.
 - The CPU-only wheel of spconv 2.3.8 miscomputes with more than one OpenMP thread; sparse
   layers detect this and stop with an explanation (see the installation guide).

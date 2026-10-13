@@ -29,6 +29,7 @@ from typing import Any
 from grasppanda.config import Config, available_configs
 from grasppanda.registry import INJECTED, Registry, all_registries, component_parameters
 from grasppanda.utils.console import style, table
+from grasppanda.utils.imports import installable
 
 __all__ = [
     "CONTRACT_FIELDS",
@@ -459,7 +460,11 @@ def _print_detail(entry: Entry, color: bool) -> None:
         ["source", entry.source or "—"],
         ["status", entry.status or "—"],
         ["module", entry.module],
-        ["needs", ", ".join(entry.extras) or "nothing beyond the core install"],
+        [
+            "needs",
+            ", ".join(f"the extra {installable(extra)}" for extra in entry.extras)
+            or "nothing beyond the core install",
+        ],
     ]
     rows += [[field, render_value(value)] for field, value in entry.contract.items()]
     width = max(len(key) for key, _ in rows)

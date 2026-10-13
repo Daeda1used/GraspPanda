@@ -147,7 +147,7 @@ def test_a_bridge_names_the_extra_when_its_library_is_missing(monkeypatch):
 
     monkeypatch.setattr(imports.importlib, "import_module", missing)
     for kind, extra in NEEDS.items():
-        with pytest.raises(MissingDependencyError, match=rf"grasppanda\[{extra}\]"):
+        with pytest.raises(MissingDependencyError, match=rf"\.\[{extra}\]"):
             VIEWS.build({"type": kind}, in_channels=CHANNELS)
 
 

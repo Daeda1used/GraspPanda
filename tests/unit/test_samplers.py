@@ -71,12 +71,10 @@ def test_a_bridge_without_its_library_names_the_install_command(name, monkeypatc
     import grasppanda.models.samplers.bridges as module
 
     def missing(library, *, extra, purpose):
-        raise MissingDependencyError(
-            f'{purpose} needs {library}: pip install "grasppanda[{extra}]"'
-        )
+        raise MissingDependencyError(f'{purpose} needs {library}: pip install -e ".[{extra}]"')
 
     monkeypatch.setattr(module, "require", missing)
-    with pytest.raises(Exception, match=r"pip install \"grasppanda\["):
+    with pytest.raises(Exception, match=r"pip install -e \"\.\["):
         SAMPLERS.build({"type": name})
     assert SAMPLERS.get(name).status == "bridge" and SAMPLERS.get(name).extras
 

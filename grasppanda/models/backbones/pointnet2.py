@@ -307,6 +307,12 @@ class PointNet2(_PointNet2):
     status = "weights-verified"
     source = "PointNet++ (Qi et al., NeurIPS 2017), GraspNet-baseline layout"
 
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """Points per cloud of the level the last propagation ends on."""
+        npoints, levels = options["npoints"], len(options["fp_mlps"])
+        return int(npoints[len(npoints) - levels - 1])
+
     def __init__(
         self,
         in_channels: int = 0,

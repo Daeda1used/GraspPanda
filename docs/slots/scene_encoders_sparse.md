@@ -1,5 +1,7 @@
 # Scene encoders: sparse-voxel networks and released weights
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 This page is about one config line, `model.backbone`, for the encoders that run on a
 voxel grid (sparse convolutions, and the point transformers that serialise voxels), and
 about starting them from **published checkpoints**. Point-based encoders (PointNet++,
@@ -82,17 +84,17 @@ seed-based methods.
 | `minkunet34c` | `MinkUNet` | same | same | A | random init | spconv | free |
 | `minkunet34c-pointcontrast` | `MinkUNet` | PointContrast, Xie et al., ECCV 2020 ([arXiv 2007.10985](https://arxiv.org/abs/2007.10985)) | weights of [facebookresearch/PointContrast](https://github.com/facebookresearch/PointContrast) (code MIT) | W | `pointcontrast-nce`, licence unstated | spconv | free |
 | `minkunet18a-openscene` | `MinkUNet` | OpenScene, Peng et al., CVPR 2023 ([arXiv 2211.15654](https://arxiv.org/abs/2211.15654)) | weights of [pengsongyou/openscene](https://github.com/pengsongyou/openscene) @ `0f369bc` (code Apache-2.0) | W | `openscene-scannet-openseg`, licence unstated | spconv | free |
-| `spunet` | `SpUNet` | Pointcept `SpUNet-v1m1`, in the 34C sizes of Choy et al. | written here | own | random init | spconv | free |
+| `spunet` | `SpUNet` | Pointcept `SpUNet-v1m1`, in the 34C sizes of Choy et al. | written here after Pointcept (MIT) | own | random init | spconv | free |
 | `spunet-gaussiancross` | `SpUNet` | GaussianCross, Yao et al., ACM MM 2025 ([arXiv 2508.02172](https://arxiv.org/abs/2508.02172)) | weights on [RayYoh/GaussianCross](https://huggingface.co/RayYoh/GaussianCross) | W | `gaussiancross-scannet-lin`, MIT | spconv | free |
-| `ptv3` | `PTv3` | Point Transformer V3, Wu et al., CVPR 2024 ([arXiv 2312.10035](https://arxiv.org/abs/2312.10035)) | written here | own | random init | spconv | 64 |
+| `ptv3` | `PTv3` | Point Transformer V3, Wu et al., CVPR 2024 ([arXiv 2312.10035](https://arxiv.org/abs/2312.10035)) | written here after Pointcept (MIT) | own | random init | spconv | 64 |
 | `ptv3-scannet200` | `PTv3` | same | weights on [Pointcept/PointTransformerV3](https://huggingface.co/Pointcept/PointTransformerV3) | W | `ptv3-scannet200`, MIT | spconv | 64 |
 | `ptv3-ppt` | `PTv3` | Point Prompt Training, Wu et al., CVPR 2024 ([arXiv 2308.09718](https://arxiv.org/abs/2308.09718)) | same hub repository | W | `ptv3-ppt-s3dis`, MIT | spconv | 64 |
 | `ptv3-encoder` | `PTv3` with `enc_mode` | Point Transformer V3 | option of the class | own | random init (or the encoder half of any PTv3 file) | spconv | 992 |
-| `ptv3-sonata` | `PTv3Sonata` | Sonata, Wu et al., CVPR 2025 | written here | own | random init | spconv | 1232 |
+| `ptv3-sonata` | `PTv3Sonata` | Sonata, Wu et al., CVPR 2025 | written here after Pointcept (MIT) | own | random init | spconv | 1232 |
 | `ptv3-sonata-small` | `PTv3Sonata` | Sonata ([arXiv 2503.16429](https://arxiv.org/abs/2503.16429)) | weights on [facebook/sonata](https://huggingface.co/facebook/sonata) | W | `sonata-small`, **CC BY-NC 4.0 (NC)** | spconv | 992 |
-| `litept` | `LitePT` | LitePT, Yue et al., CVPR 2026 ([arXiv 2512.13689](https://arxiv.org/abs/2512.13689)) | written here | own | random init | spconv | 72 |
+| `litept` | `LitePT` | LitePT, Yue et al., CVPR 2026 ([arXiv 2512.13689](https://arxiv.org/abs/2512.13689)) | written here after Pointcept (MIT) | own | random init | spconv | 72 |
 | `litept-structured3d` | `LitePT` | same | weights on [prs-eth/LitePT](https://huggingface.co/prs-eth/LitePT) | W | `litept-small-structured3d`, MIT | spconv | 72 |
-| `oacnns` | `OACNNs` | OA-CNNs, Peng et al., CVPR 2024 | written here | own | random init (no checkpoint is released) | spconv | free |
+| `oacnns` | `OACNNs` | OA-CNNs, Peng et al., CVPR 2024 | written here after Pointcept (MIT) | own | random init (no checkpoint is released) | spconv | free |
 
 Venues are those printed on the arXiv records linked (opened on 2026-10-13).
 

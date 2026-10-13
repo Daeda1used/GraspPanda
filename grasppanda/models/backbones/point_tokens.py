@@ -1,5 +1,9 @@
 # Copyright (c) 2022 PANG-Yatian, YUAN-Li
 # Adapted for GraspPanda from https://github.com/Pang-Yatian/Point-MAE @ 7445a68 (MIT)
+# Copyright (c) 2023 BAAI-Vision
+# Adapted for GraspPanda from https://github.com/baaivision/Uni3D @ 64e03c3 (MIT)
+# Adapted for GraspPanda from https://github.com/LMD0311/PointMamba @ 80858e0 (Apache-2.0;
+# its licence file names no copyright holder)
 """Encoders over point-patch tokens: a plain ViT, a Mamba state-space model, Uni3D.
 
 Papers: Yu et al., "Point-BERT", CVPR 2022; Pang et al., "Masked Autoencoders for Point
@@ -153,6 +157,11 @@ class _PointTokenEncoder(Backbone):
     """Tokeniser, position embedding and output projection shared by the family."""
 
     output = "subsampled"
+
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """``num_group``: one returned point per token."""
+        return int(options["num_group"])
 
     def __init__(
         self,

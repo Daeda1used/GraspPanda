@@ -46,7 +46,7 @@
 
 *真实输出，只删行，不编造。一个组合就是一条命令；错误的组合在构建之前就被拒绝并给出改法；probe 告诉你它能不能训练。probe 不代表任何精度。*
 
-**[在浏览器里动手试组合 →](https://daeda1used.github.io/GraspPanda/explorer/)** 每个槽位、每个选项：980 条已记录组合的实测结论（其中 745 条由各自的 probe 在真实帧上训练过），任意两处替换还附带真实 `compose` 的回答。也可以在本地运行 `grasppanda explore`，由你自己的安装实时检查任意组合。
+**[在浏览器里动手试组合 →](https://daeda1used.github.io/GraspPanda/explorer/)** 每个槽位、每个选项：980 条已记录组合的实测结论（其中 740 条由各自的 probe 在真实帧上实际试跑），任意两处替换还附带真实 `compose` 的回答。也可以在本地运行 `grasppanda explore`，由你自己的安装实时检查任意组合。
 
 <img src="resources/demo.webp" alt="GraspPanda 在 GraspNet-1Billion 杂乱测试场景上渲染的抓取预测" width="720">
 
@@ -56,9 +56,10 @@
 ## 📰 News
 
 - **2026-10** — 重建后的第一个公开版本。六个方法拆成可互换组件，各自与参考实现逐阶段一致；十一个场景编码器；`grasppanda components`、`demo`、`analyze`；GraspClutter6D 端到端可用。v0.56 及以前的版本是更早的、无关的代码库，仍可通过原有 tag 和 `legacy` 分支获取。
-- **2026-10** — `grasppanda compose` 用一个方法配置加一个预设拼出组合，`grasppanda probe` 在真实帧上训练几步试跑；另有一页自动生成的实测结果，覆盖 208 个组合（哪个组件能在哪个方法下工作，哪些被契约规则拒绝）。
+- **2026-10** — `grasppanda compose` 用一个方法配置加一个预设拼出组合，`grasppanda probe` 在真实帧上训练几步试跑；另有一页自动生成的实测结果，覆盖全部已记录的组合（当时为 208 个）（哪个组件能在哪个方法下工作，哪些被契约规则拒绝）。
 - **2026-10** — [每个槽位都有了可选项](docs/slots/index.md)，共 248 个，来自已发表的代码和模型库（图像与场景编码器、seed 提议、朝向、局部分组、head 与损失、后处理、训练配方）。每个选项在所属槽位的页面上有一行说明和一条命令，并有逐方法的实测结论；它们都还没有完整训练和评测过，所以都不带精度数字。
 - **2026-10** — [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：选一个方法，换一个槽位，就能看到实测结论、对应命令和被拒绝的原因；没有记录的两处替换给出 `compose` 的存档回答；`grasppanda explore` 在本地打开同一页面，并用真实的 `compose` 检查任意选择。
+- **2026-10** — 更多“通过检查、第一步训练才报错”的组合现在会在配置检查时被拒绝并给出改法：head 或朝向阶段的网格与标签不一致、seed 数与编码器输出点数不一致、带图像的数据上移动点云的增强、缺少完整点云的碰撞过滤、检测器尚未支持的混合精度。真实帧上的 probe 现在会报告没有收到梯度的模块。
 - **2026-10** — 又有两类错误组合在配置检查时就被拒绝，而不是到后面才报错：数据配方不提供某个阶段所需标签的组合，以及编码器输出宽度与分组器不匹配的组合（此时 `compose` 会调整编码器宽度或换上带投影的分组器，并明确说明）。
 
 ## 🤔 为什么做 GraspPanda
@@ -131,7 +132,7 @@ universal（五个方法通用）、most、some 或 specific（只适用于一�
 | [Head bundle 与标签分配](docs/slots/head_loss.md) | 10 + 4 | 已移植方法的 head、一个解耦的网格 head，以及与之配套的标签分配器 |
 | [损失](docs/slots/head_loss.md) | 20 | focal、质量、鲁棒、集合类损失，难例挖掘、类别平衡、不确定性加权，按损失项替换 |
 | [后处理](docs/slots/post.md) | 15 | 碰撞、桌面、工作空间、夹爪限位等过滤，NMS，筛选，坐标系变换 |
-| [训练配方](docs/slots/recipe.md) | 37 | 优化器、学习率调度、hook、数据增强 |
+| [训练配方](docs/slots/recipe.md) | 37 | 优化器、学习率调度、hook、数据增强（其中混合精度目前对所有自带检测器都会被配置检查拒绝） |
 
 ## 🗺️ 总览
 
@@ -152,6 +153,11 @@ universal（五个方法通用）、most、some 或 specific（只适用于一�
 
 目前还没有任何方法通过认证，所以这张表列的是**目标**：原作者在 GraspNet-1Billion
 上报告的数字（RealSense，seen / similar / novel 的 AP）。最后一列会在方法通过准入门槛后填上。
+
+已经测过的是作者发布的权重在本工具箱里的得分：五个方法跑完了 GraspNet-1Billion 的整个测试集，
+其中四个还跑了 GraspClutter6D，开、关碰撞过滤各一行，旁边列出作者报告的数字。这些 `author-ckpt`
+数字见 [docs/model_zoo.md](docs/model_zoo.md) 里的两张表，每个数字都有提交在仓库里的结果记录可查；
+它们是作者权重的评测结果，不是复现，所以上表最后一列仍然空着。
 
 | 方法 | 发表 | 碰撞过滤 | 作者报告的 AP（seen / similar / novel） | 本工具箱复现 |
 |---|---|:---:|---|:---:|
@@ -191,7 +197,7 @@ grasppanda print-config projects/example_project/configs/toy_detector.yaml \
 
 ### 五分钟得到第一批抓取
 
-第一张图不需要任何数据集。Model zoo 目前还没有权重，原作者的权重各有其许可证，因此本工具不会替你下载任何东西。
+第一张图不需要任何数据集。Model zoo 目前还没有权重，原作者的权重各有其许可证，因此本工具不会替你下载任何抓取权重。（唯一的例外：`pretrained: true` 的图像编码器预设会让 `timm`、`transformers` 或 `torchvision` 在首次使用时下载预训练权重，并打印一行说明其许可证；见 [image encoders](docs/slots/image_encoders.md)。）
 
 **1. 检查安装**（无需下载，CPU，几秒钟）：现场训练一个玩具检测器。
 

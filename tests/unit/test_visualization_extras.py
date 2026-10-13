@@ -82,7 +82,7 @@ def test_wireframe_holds_four_lines_per_shown_grasp_best_first():
 
 def test_show_needs_open3d_and_says_how_to_install_it(monkeypatch):
     monkeypatch.setitem(sys.modules, "open3d", None)  # as if it were not installed
-    with pytest.raises(MissingDependencyError, match='pip install "grasppanda\\[vis\\]"'):
+    with pytest.raises(MissingDependencyError, match='pip install -e "\\.\\[vis\\]"'):
         show(np.zeros((3, 3)))
 
 

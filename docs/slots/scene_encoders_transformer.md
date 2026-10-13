@@ -1,5 +1,7 @@
 # Scene encoders: transformers, state-space models, pretrained 3-D encoders
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 Slot `model.backbone` of the seed-based detectors (GSNet, EconomicGrasp, FineGrasp,
 GraspNet-baseline, Scale-Balanced-Grasp). This page covers the attention-based and
 sequence-model encoders added from existing code: Point Transformer V1 and V2, Volt,
@@ -227,7 +229,7 @@ recipe is not part of this toolbox.
 ### OctFormer
 
 ```console
-$ pip install "grasppanda[ocnn]"
+$ pip install -e ".[ocnn]"
 ```
 
 ```yaml
@@ -245,8 +247,8 @@ model:
 ### PointViT, PointMamba, Uni3D (point-patch tokens)
 
 ```console
-$ pip install "grasppanda[timm]"         # Uni3D
-$ pip install "grasppanda[mamba-ssm]"    # PointMamba; or a wheel from the mamba releases page
+$ pip install -e ".[timm]"         # Uni3D
+$ pip install -e ".[mamba-ssm]"    # PointMamba; or a wheel from the mamba releases page
 ```
 
 ```yaml
@@ -268,7 +270,7 @@ Scale-Balanced-Grasp (1024 in the shipped configs). `PointViT` attends globally
 
 ## 5. Released weights
 
-Weights are never downloaded by the toolbox. Download a file, convert it for the config
+Weights of scene encoders are never downloaded by the toolbox. Download a file, convert it for the config
 you composed, and start training from it:
 
 ```console

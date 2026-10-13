@@ -316,7 +316,7 @@ def test_gripper_mesh_collision_filter_names_the_extra_when_trimesh_is_absent():
     try:
         import trimesh  # noqa: F401
     except ImportError:
-        with pytest.raises(ImportError, match=r'pip install "grasppanda\[trimesh\]"'):
+        with pytest.raises(ImportError, match=r'pip install -e "\.\[trimesh\]"'):
             build("GripperMeshCollisionFilter")(grasps_at([[0, 0, 0.5]]), observe(table_scene()))
 
 

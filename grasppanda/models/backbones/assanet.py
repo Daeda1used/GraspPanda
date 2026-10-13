@@ -151,6 +151,11 @@ class ASSANet(Backbone):
 
     Args:
         in_channels: Feature channels per point, at least one.
+        use_xyz: Append the point coordinates to the input features of the first layer.
+            Needed when the features are the same on every point (the constant ones of
+            most grasp methods): batch normalisation of a constant is zero, so without
+            coordinates the stem returns zeros and no gradient reaches the encoder.
+            ``False`` is the published layout (colour and height as features).
         width: Channels of the stem.
         stem_layers: Layers of the aggregation at full resolution that follows the
             stem; 0 leaves it out.
@@ -180,6 +185,7 @@ class ASSANet(Backbone):
     def __init__(
         self,
         in_channels: int = 4,
+        use_xyz: bool = False,
         width: int = 16,
         stem_layers: int = 3,
         strides: Sequence[int] = (4, 4, 4, 4),
@@ -211,7 +217,8 @@ class ASSANet(Backbone):
         if reduction not in ("mean", "max", "sum"):
             raise ValueError(f"ASSANet: unknown reduction '{reduction}'")
         self.in_channels, self.strides = in_channels, tuple(strides)
-        self.conv1 = _block1d(in_channels, width, norm=False, act=False)
+        self.use_xyz = use_xyz
+        self.conv1 = _block1d(in_channels + 3 * use_xyz, width, norm=False, act=False)
         self.stem = (
             _ASSA([width] * (stem_layers + 1), radii[0][0], nsamples[0][0], normalize_dp, reduction)
             if stem_layers
@@ -250,6 +257,15 @@ class ASSANet(Backbone):
                 f"points; cloud {sizes.index(min(sizes))} of the batch has {min(sizes)}."
             )
         coords = points.coords
+        if self.use_xyz:
+            feats = torch.cat([feats, coords.to(feats.dtype)], dim=-1)
+        elif self.training and len(feats) > 1 and bool((feats == feats[:1]).all()):
+            raise ContractError(
+                "ASSANet received the same features on every point. Its stem batch-normalises "
+                "them, and the normalised value of a constant is zero: the encoder would "
+                "return zeros and receive no gradient. Set use_xyz: true (the coordinates "
+                "join the input features), or feed features that differ between points."
+            )
         x = _rows(self.conv1, feats)
         if self.stem is not None:
             x = self.stem(coords, sizes, coords, x, sizes, None)

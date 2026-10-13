@@ -1,5 +1,7 @@
 # Post-processing: what happens to predicted grasps before a robot or an evaluator gets them
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 ## 1. The task of the slot
 
 A detector returns up to a thousand grasps per frame, ranked by a score. A robot wants a
@@ -71,7 +73,7 @@ under GSNet / GraspNet-baseline / HGGD. Weights: none anywhere (nothing is train
 | `gripper-limits` | `GripperLimits` | opening (and depth) within what a real gripper does; remove or clip | AnyGrasp SDK `max_gripper_width`, GPD apertures | written here | — | runs / runs / runs | nothing |
 | `center-gripper` | `GripperCentering` | shift along the closing axis to the middle of the contacts | AnyGrasp §IV-D | written here | — | runs / runs / runs | a cloud |
 | `width-from-cloud` | `WidthFromCloud` | opening = extent between the fingers + clearance | ZeroGrasp's width refinement, single-view form | written here | — | runs / runs / runs | a cloud |
-| `collision` | `ModelFreeCollisionFilter` | four gripper boxes against the voxelised **full** cloud (GSNet test script) | GraspNet-1Billion collision detector | existed | — | runs / runs / fails (clear message: no full cloud) | `full_points`: **fails under HGGD as shipped** (its dataset keeps no full cloud; the message says how to supply one) |
+| `collision` | `ModelFreeCollisionFilter` | four gripper boxes against the voxelised **full** cloud (GSNet test script) | GraspNet-1Billion collision detector | existed | — | runs / runs / runs | `full_points`: HGGD's dataset sections drop that cloud, so `compose` switches `keep_full_points` on for `data.val` and `data.test` and says so |
 | `collision-strict` | `ModelFreeCollisionFilter` | HGGD's parameters: one point rejects, on the network's cloud | HGGD test script | existed | — | runs / runs / runs | `points` |
 | `mesh-collision` | `GripperMeshCollisionFilter` | scene points inside a gripper **mesh** (STL/OBJ/PLY of your gripper, or built-in boxes) | GraspGen's cloud-against-gripper-mesh check (Murali et al., arXiv 2507.13097), as containment | **route L**: [trimesh](https://github.com/mikedh/trimesh) (MIT) loads, splits, hulls; placement and containment in PyTorch | `trimesh` | runs / runs / runs | a cloud |
 | `to-base-frame` | `ToFrame` | grasps into the robot base frame; optionally the grasp point at the fingertips | — | written here on `GraspGroup.transform` | — | runs / runs / runs | nothing; must be last |
@@ -153,6 +155,15 @@ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set post=collision+nm
 grasppanda probe my.yaml                             # builds, trains 20 iterations, predicts, runs the chain
 ```
 
+The probe prints one `post` line per predicted frame, the number of grasps predicted and
+what every step left (here from `hggd/hggd_r34w8_g1b-realsense_15e` with the same chain):
+
+```text
+  predicted   2 frame(s) · 384, 353 grasps
+  post        384 → ModelFreeCollisionFilter 115 → GraspNMS 48 → TopK 20
+  post        353 → ModelFreeCollisionFilter 131 → GraspNMS 94 → TopK 20
+```
+
 ```text
 what compose did
   • post: evaluation variant `post` = ModelFreeCollisionFilter → GraspNMS → TopK, applied in
@@ -217,7 +228,7 @@ grasps = inferencer.predict(observation, post="target-mask+collision+top-k=10")
 ### A mesh of your own gripper
 
 ```bash
-pip install "grasppanda[trimesh]"
+pip install -e ".[trimesh]"
 ```
 
 ```yaml
@@ -249,9 +260,14 @@ points in gripper frames, a rigid transform from a config and a plane fit are in
 
 ## 5. Pitfalls met while building this
 
-* **`collision` under HGGD stops when it runs** (verdict `fails`, not a refusal of the config check): HGGD's dataset section keeps no full
-  cloud. The message names both remedies: `--opts data.test.dataset.keep_full_points=true`,
-  or `cloud: points` (`collision-strict` already reads the network's cloud). The newer steps
+* **`collision` needs the cloud before sub-sampling, which HGGD's dataset sections drop.**
+  It used to pass the config check and stop when the chain ran. Now `compose --set
+  post=collision...` writes `keep_full_points: true` into `data.val` and `data.test` of the
+  composed config and says so, and a config written by hand without it is refused by the
+  config check, naming the section the command reads: `data.val` for `grasppanda probe` and
+  for evaluation during training (`--opts data.val.dataset.keep_full_points=true`),
+  `data.test` for `grasppanda test`. To test the cloud the network saw instead, write the
+  step as `collision:cloud=points` (`collision-strict` already does). The newer steps
   (`center-gripper`, `width-from-cloud`, `table-plane`, `approach-cone`,
   `mesh-collision`) read the full cloud when it is there and the network's cloud otherwise.
 * **A full cloud is half a million points.** Centring 1024 grasps against 519 612 points took

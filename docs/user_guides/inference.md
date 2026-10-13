@@ -14,7 +14,9 @@ machine (one RTX A6000, shared). Paths are as printed.
 !!! warning "You bring the weights"
     The model zoo holds no weights yet: nothing has been trained with GraspPanda so far,
     and the checkpoints the authors of the methods released are under their own,
-    mostly non-commercial, licences. Nothing is downloaded for you. You download an
+    mostly non-commercial, licences. No grasp checkpoint is downloaded for you (only an
+    image-encoder preset with `pretrained: true` fetches backbone weights, through its
+    library, and says so). You download an
     author checkpoint yourself, convert it once with `tools/convert_checkpoint.py`, and
     pass the result with `--weights`. Each method's page says where its checkpoint is:
     `configs/<method>/README.md`.
@@ -92,7 +94,7 @@ What the lines say:
   faster. On the CPU of the same machine (`--device cpu`) this call took 1.0 s.
 - The picture draws the 30 best grasps (`--top-k`) as wire-frame grippers, coloured by
   score rank. `--show` opens the same scene in an interactive Open3D window if you have
-  a display and `pip install "grasppanda[vis]"`.
+  a display and `pip install -e ".[vis]"`.
 
 What the result does **not** say: how good the method is. The scene is synthetic and
 outside the training distribution of every model here; whether a grasp would hold is

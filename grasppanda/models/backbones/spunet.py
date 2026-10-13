@@ -1,3 +1,6 @@
+# Copyright (c) 2023 Pointcept
+# Structure and parameter names follow https://github.com/Pointcept/Pointcept @ 1342eda (MIT),
+# `pointcept/models/sparse_unet`, so that its released weights load; see THIRD_PARTY_NOTICES.md.
 """SpUNet: the deep sparse residual U-Net of Pointcept, in the MinkUNet-34C layout.
 
 Paper of the layout: Choy et al., "4D Spatio-Temporal ConvNets: Minkowski Convolutional

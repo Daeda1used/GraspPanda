@@ -491,6 +491,41 @@ def _angle_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         )
 
 
+def _seed_count_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """Number of seeds: a proposal that takes the encoder's sub-sampled points as its
+    seeds (``seeds_from_backbone``) against the points the encoder returns per cloud."""
+    backbone, proposal = stages.get("backbone"), stages.get("proposal")
+    if backbone is None or proposal is None or not proposal.contract("seeds_from_backbone"):
+        return
+    wanted = proposal.option("num_seeds")
+    declare = backbone.contract("output_points")
+    if not isinstance(wanted, int) or not callable(declare):
+        return
+    try:
+        returned = declare(backbone.options)
+    except (LookupError, TypeError, ValueError):
+        return
+    if isinstance(returned, int) and returned != wanted:
+        yield (
+            f"{proposal.name} is configured for num_seeds = {wanted}, but {backbone.name} as "
+            f"configured returns {returned} points per cloud, and those points are the "
+            f"seeds. Set the proposal's `num_seeds` to {returned}, or change the encoder's "
+            "output level (`npoints`, `npoint` or `num_group`) to match."
+        )
+
+
+def _option_range_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """Option values a stage can judge without being built: its ``option_problems``."""
+    for stage in stages.values():
+        declare = stage.contract("option_problems")
+        if stage.built is not None or not callable(declare):
+            continue
+        try:
+            yield from declare(stage.options)
+        except (LookupError, TypeError, ValueError):
+            continue  # options the signature check will report
+
+
 def _loss_terms_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Loss terms: the kind of term a stage hands to a primitive against the kinds the
     primitive fits, and a weight per seed against a primitive that cannot apply one.
@@ -560,6 +595,8 @@ _RULES: tuple[Callable[[Mapping[str, _Stage]], Iterator[str]], ...] = (
     _depth_bins_rule,
     _shared_score_rule,
     _angle_bins_rule,
+    _seed_count_rule,
+    _option_range_rule,
     _loss_terms_rule,
 )
 

@@ -223,8 +223,12 @@ def test_every_preset_passes_the_signature_check_under_a_method_that_fits():
         if preset.slot == "loss":
             continue  # a loss goes into a term of a stage: the test below
         accepted = 0
+        # A model that runs code of its hub repository is refused until the config
+        # accepts it; the preset leaves that to the person who composes.
+        remote = (preset.node.get("model_args") or {}).get("trust_remote_code")
+        accept = [f"model.{preset.slot}.accept_remote_code=true"] if remote else []
         for base in bases:
-            result = compose(base, [f"{preset.slot}={preset.name}"])
+            result = compose(base, [f"{preset.slot}={preset.name}"], accept)
             accepted += result.accepted
             for issue in result.issues:
                 assert not issue.path.startswith(f"model.{preset.slot}."), (preset.name, issue)
@@ -342,6 +346,56 @@ def test_an_encoder_preset_returns_the_width_it_declares(preset):
         assert BACKBONES.get(preset.type).output_channels({"out_channels": None}) is None
     else:
         assert declared == built.out_channels
+
+
+@pytest.mark.parametrize("preset", encoder_preset_cases())
+def test_an_encoder_preset_is_alive_on_constant_features(preset):
+    """Four of the five seed-based methods feed every point the same feature (ones).
+    An encoder that normalises that constant away returns zeros and learns nothing,
+    and a short training run does not show it: the loss of the heads still moves a
+    little. So every preset is run once in training mode on such input."""
+    import torch
+
+    from grasppanda.combine.synthetic import scene_batch
+    from grasppanda.utils.imports import MissingDependencyError
+
+    node = dict(preset.node)
+    if "pretrained" in node:
+        node["pretrained"] = None
+    torch.manual_seed(0)
+    try:
+        encoder = BACKBONES.build(node).train()
+    except MissingDependencyError as error:
+        pytest.skip(str(error).split(". ")[0])
+    observation, _ = scene_batch(points=2048)
+    points = observation.points
+    width = getattr(encoder, "in_channels", 3)
+    feats = torch.ones(len(points), width) if width else None
+    try:
+        out = encoder(points, feats).feats
+    except MissingDependencyError as error:
+        pytest.skip(str(error).split(". ")[0])
+    assert torch.isfinite(out).all()
+    assert float(out.abs().sum()) > 0, "the encoder returns zeros for constant input features"
+    assert float(out.std(dim=0).sum()) > 0, "every point received the same feature"
+    out.abs().sum().backward()
+    grads = [p.grad for p in encoder.parameters() if p.grad is not None]
+    total = sum(float(g.abs().sum()) for g in grads)
+    assert grads and 0 < total < float("inf"), "no gradient reached the encoder"
+
+
+def test_assanet_refuses_constant_features_without_coordinates():
+    import torch
+
+    from grasppanda.combine.synthetic import scene_batch
+    from grasppanda.structures import ContractError
+
+    observation, _ = scene_batch(points=1024)
+    points = observation.points
+    encoder = BACKBONES.build({"type": "ASSANet", "in_channels": 3}).train()
+    with pytest.raises(ContractError, match="same features on every point.*use_xyz: true"):
+        encoder(points, torch.ones(len(points), 3))
+    encoder.eval()(points, torch.ones(len(points), 3))  # evaluation uses running statistics
 
 
 # ------------------------------------------------------------------------- the tripwire

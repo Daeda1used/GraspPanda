@@ -102,17 +102,36 @@ Both evaluation variants are always reported: `raw` (predictions as emitted) and
 
 ## Results
 
-GraspNet-1Billion, RealSense, AP on seen / similar / novel.
+GraspNet-1Billion, RealSense, protocol `graspnet1b-sv-v1`: the whole test split (90
+scenes, 23,040 frames, all scored). AP on seen / similar / novel.
 
 | Provenance | Collision filter | AP | Source |
 |---|---|---|---|
 | `reported` | not stated | 27.56 / 26.11 / 10.55 | paper, as quoted in the reference README ("In paper") |
+| `author-ckpt` | off | 32.64 / 27.48 / 10.42 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json) |
 | `reported` | on | 47.47 / 42.27 / 16.61 | reference README, "In repo" |
-| `author-ckpt` | — | not measured on full splits yet | see below |
+| `author-ckpt` | on | 47.90 / 42.70 / 16.98 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json) |
 | `reproduced` | — | not trained here yet | |
 
-What was measured with the authors' checkpoint is a **20-frame subset**, not a split:
-scenes 100–104, frames 0 / 64 / 128 / 192, scored by `GraspNet1BEvaluator`.
+`author-ckpt` is the authors' `checkpoint-rs.tar`, converted with
+`tools/convert_checkpoint.py` and run through `grasppanda test` at commit `4bc5333`, one
+run with seed 0. The workspace crop uses the ground-truth segmentation, as in the
+reference (`gt_assisted: workspace`).
+
+**Measured minus reported, with the collision filter**: +0.43 / +0.43 / +0.37 AP against
+the "In repo" row, which the reference README describes as the model with collision
+detection at threshold 0.01, the setting of the `cd` variant. The released checkpoint
+scores slightly above its repository's table on every split. Why was not investigated;
+each number is one run with seed 0, and the spread over the seed of the point sampling
+was not measured.
+
+**Without the collision filter there is no like-for-like reported number.** The "In
+paper" row does not state the filter, and the reference README does not say whether it
+belongs to the released checkpoint. The unfiltered run lies +5.08 / +1.37 / −0.13 AP from
+it; that difference was not investigated.
+
+What was measured with the pristine reference code is a **20-frame subset**, not a
+split: scenes 100–104, frames 0 / 64 / 128 / 192, scored by `GraspNet1BEvaluator`.
 
 | Predictions from | Collision filter | AP on the 20 frames |
 |---|---|---|
@@ -120,9 +139,36 @@ scenes 100–104, frames 0 / 64 / 128 / 192, scored by `GraspNet1BEvaluator`.
 | pristine reference code | on (reference filter) | 46.37 |
 | GraspPanda, converted weights, same input points | off | 30.69 |
 
-The subset number with the filter (46.37) is in line with the repository's 47.47 for the
-whole seen split, so the checkpoint is healthy. The subset is not a benchmark number and
-must not be quoted as one.
+Fed the same points, the reference and this implementation score the same on these
+frames. The subset is not a benchmark number and must not be quoted as one.
+
+### On GraspClutter6D
+
+The same checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames of
+the RealSense D435, all scored), protocol `graspclutter6d-sv-v1`, config
+[graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e](graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e.yaml). Percent.
+
+| Collision filter | AP | AP0.8 | AP0.4 | Provenance |
+|---|---|---|---|---|
+| not stated | 17.95 | 21.54 | 13.53 | reported |
+| off | 8.69 | 10.35 | 6.96 | author-ckpt ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json)) |
+| on | 17.14 | 20.60 | 12.86 | author-ckpt ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json)) |
+
+`reported` is Table IX of the GraspClutter6D paper (arXiv 2504.06866 v3), which states
+neither the collision filter nor which checkpoint was scored. Measured minus reported
+(AP / AP0.8 / AP0.4): −9.26 / −11.19 / −6.57 without the filter, −0.81 / −0.94 / −0.67 with
+it. The collision filter is worth 8.45 AP for this method on this dataset, and only the
+filtered run comes near the reported row: the evidence says that row was produced with a
+collision filter. The remaining 0.81 AP was not investigated. One observation, also not
+investigated: the same table gives 23.43 / 27.81 / 19.56 for this method on
+GraspNet-1Billion, and the GraspNet-1Billion records above, taken over all 90 test
+scenes, give 23.51 / 27.92 / 19.59 without the filter and 35.86 / 43.09 / 28.68 with it.
+The paper's number is thus matched by the unfiltered run on GraspNet-1Billion and
+approached only by the filtered run on GraspClutter6D.
+
+The input is cropped to the image rectangle around the ground-truth segmentation, as the
+official tool does (`gt_assisted: workspace`); this is not the crop the weights were
+trained with (`docs/user_guides/cross_dataset.md`).
 
 ## Verification
 

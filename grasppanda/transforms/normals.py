@@ -19,7 +19,8 @@ the weights expect camera-facing normals in the value range of an 8-bit normal i
 
 from __future__ import annotations
 
-from typing import Literal
+from collections.abc import Mapping
+from typing import Any, Literal
 
 import numpy as np
 
@@ -89,6 +90,11 @@ class DepthNormals(PointTransform):
 
     status = "tested"
     source = "FineGrasp (arXiv 2507.05978)"
+
+    @staticmethod
+    def released_images(node: Mapping[str, Any]) -> tuple[str, ...]:
+        """The images this step takes off the sample, for the config check."""
+        return () if node.get("keep_depth", False) else ("depth",)
 
     def __init__(
         self,

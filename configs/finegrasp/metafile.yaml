@@ -1,10 +1,9 @@
 # Machine-readable source of the FineGrasp zoo entry; validated by grasppanda.hub.load_metafile.
 #
-# Only author-reported numbers so far. The authors' weights have been compared with the
-# reference implementation stage by stage and scored on a 120-frame sample of the seen
-# split (README.md); they have not been evaluated on the full protocol with this toolbox,
-# and nothing has been trained here, so there is no `author-ckpt` and no `reproduced`
-# result. The sample numbers are not split APs and are deliberately not listed.
+# Reported numbers, and the authors' weights scored by this toolbox on the whole test
+# split (`author-ckpt`, each row with its result record). Nothing has been trained here,
+# so there is no `reproduced` result. The 120-frame sample of README.md is not a split AP
+# and is not listed.
 method: FineGrasp
 title: "FineGrasp: Towards Robust Grasping for Delicate Objects"
 venue: arXiv 2025
@@ -41,3 +40,18 @@ models:
         collision_filter: true
         source: "paper (arXiv 2507.05978), Table I, 'FineGrasp + CD'; the same row is in the README of the upstream project and on the model card, which names this weight file"
         AP: {seen: 73.71, similar: 64.56, novel: 28.14}
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      # Every split is within 0.11 AP of the reported value, with and without the filter.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 71.56, similar: 62.80, novel: 27.42}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 73.69, similar: 64.62, novel: 28.18}

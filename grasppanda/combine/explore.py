@@ -33,6 +33,7 @@ STATIC = {
     "explorer.js": "text/javascript; charset=utf-8",
     "explorer_logic.js": "text/javascript; charset=utf-8",
     "explorer.json": "application/json; charset=utf-8",
+    "explorer_contracts.json": "application/json; charset=utf-8",
 }
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+@-]{0,120}\.yaml$")
 _LOCK = threading.Lock()
@@ -232,10 +233,12 @@ def serve(port: int = 8765, directory: Path | None = None, open_browser: bool = 
     """Serve the live explorer until interrupted; returns the exit status."""
     httpd = server(port, directory)
     url = f"http://{HOST}:{httpd.server_address[1]}/"
-    print(f"GraspPanda combination explorer (live): {url}")
-    print("  the contract check of every selection is run by this installation;")
-    print(f"  composed configs are saved into {Path(httpd.RequestHandlerClass.directory)}")
-    print("  nothing is trained. Stop with Ctrl+C.")
+    print(f"GraspPanda combination explorer (live): {url}", flush=True)
+    print("  the contract check of every selection is run by this installation;", flush=True)
+    print(
+        f"  composed configs are saved into {Path(httpd.RequestHandlerClass.directory)}", flush=True
+    )
+    print("  nothing is trained. Stop with Ctrl+C.", flush=True)
     if open_browser:
         import webbrowser
 
@@ -243,7 +246,7 @@ def serve(port: int = 8765, directory: Path | None = None, open_browser: bool = 
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print()
+        print(flush=True)
     finally:
         httpd.server_close()
     return 0

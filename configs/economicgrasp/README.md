@@ -31,39 +31,67 @@ upstream code, with no upstream source in it.
 
 ## Results
 
-GraspNet-1Billion, single view, protocol `graspnet1b-sv-v1`. AP in percent.
+GraspNet-1Billion, single view, protocol `graspnet1b-sv-v1`: the whole test split (90
+scenes, 23,040 frames, all scored). AP in percent.
 
 | Config | Camera | Collision filter | Seen | Similar | Novel | Provenance |
 |---|---|---|---|---|---|---|
-| [economicgrasp_sunet14_g1b-kinect_10e](economicgrasp_sunet14_g1b-kinect_10e.yaml) | Kinect | off | 62.59 | 51.73 | 19.54 | reported |
-| | Kinect | off | 63.71 | 52.28 | 19.73 | author-ckpt ([record](records/economicgrasp_author_kinect_g1b-test_raw.json)) |
-| | Kinect | on | 65.47 | 53.64 | 20.36 | author-ckpt ([record](records/economicgrasp_author_kinect_g1b-test_cd.json)) |
 | [economicgrasp_sunet14_g1b-realsense_10e](economicgrasp_sunet14_g1b-realsense_10e.yaml) | RealSense | off | 68.21 | 61.19 | 25.48 | reported |
+| | RealSense | off | 69.28 | 61.50 | 25.17 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) |
+| | RealSense | on | 70.83 | 62.56 | 25.80 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) |
+| [economicgrasp_sunet14_g1b-kinect_10e](economicgrasp_sunet14_g1b-kinect_10e.yaml) | Kinect | off | 62.59 | 51.73 | 19.54 | reported |
+| | Kinect | off | 63.71 | 52.28 | 19.73 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_raw.json)) |
+| | Kinect | on | 65.47 | 53.64 | 20.36 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_cd.json)) |
 
 `reported` numbers are those of the upstream README. Neither it nor the paper says
 whether a collision filter was applied; the shipped test command leaves it off, and the
-table above takes that reading.
+table above takes that reading. No number with the filter is reported.
 
-`author-ckpt` numbers are the authors' Kinect checkpoint, converted with
-`tools/convert_checkpoint.py` and run through `grasppanda test` on the whole test split
-(90 scenes, 23,040 frames, all scored) at commit `ccb8704`; the linked result records
+`author-ckpt` numbers are the authors' checkpoints of upstream release `v1`, converted
+with `tools/convert_checkpoint.py` and run through `grasppanda test` (Kinect at commit
+`ccb8704`, RealSense at `4bc5333`), one run each with seed 0; the linked result records
 hold the per-scene values, the config hash and the hashes of code and weights. The
-workspace crop uses the ground-truth segmentation, as in the reference.
+workspace crop uses the ground-truth segmentation, as in the reference (`gt_assisted:
+workspace`).
 
-The seen split comes out 1.12 AP above the reported value, similar 0.55 and novel 0.19
-above. The gap is not explained. What is known:
+**Measured minus reported, filter off**, on seen / similar / novel: Kinect +1.12 / +0.55 /
++0.19 AP, RealSense +1.07 / +0.31 / −0.31 AP. Both checkpoints score about 1.1 AP above
+the published table on the seen split. The gap is not explained. What is known:
 
-- It is not the port: on the frame sample below, the upstream code at `7361bb6` and
-  GraspPanda agree with the same checkpoint (64.30 and 64.24 on seen when fed the same
-  points), and both lie above the published 62.59.
+- It is not the port, as far as the Kinect checkpoint shows: on the frame sample below,
+  the upstream code at `7361bb6` and GraspPanda agree with the same checkpoint (64.30 and
+  64.24 on seen when fed the same points), and both lie above the published 62.59. The
+  upstream code has not been run with the RealSense checkpoint.
 - It is not the friction levels: the paper describes AP as an average over µ from 0.2 to
   1.0, but averaging the five levels up to 1.0 instead of the benchmark's six gives
-  60.90 / 49.34 / 17.23 from the same record, further from the reported values, not
-  closer.
-- Not checked: whether the released checkpoint is the one behind the published table.
+  60.90 / 49.34 / 17.23 (Kinect) and 66.57 / 58.50 / 21.81 (RealSense) from the same
+  records, further from the reported values, not closer.
+- Not investigated: whether the released checkpoints are the ones behind the published
+  table, and how much a number moves with the seed of the point sampling.
 
-**No `reproduced` number exists yet**: nothing has been trained here. The RealSense
-checkpoint has not been evaluated on the full protocol.
+**No `reproduced` number exists yet**: nothing has been trained here.
+
+### On GraspClutter6D
+
+The RealSense checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames
+of the RealSense D435, all scored), protocol `graspclutter6d-sv-v1`, config
+[economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e](economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml).
+Percent.
+
+| Collision filter | AP | AP0.8 | AP0.4 | Provenance |
+|---|---|---|---|---|
+| not stated | 21.67 | 26.62 | 15.90 | reported |
+| off | 21.69 | 26.64 | 15.79 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json)) |
+| on | 22.25 | 27.30 | 16.06 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json)) |
+
+`reported` is Table IX of the GraspClutter6D paper (arXiv 2504.06866 v3), which states
+neither the collision filter nor which checkpoint was scored. Measured minus reported
+(AP / AP0.8 / AP0.4): +0.02 / +0.02 / −0.11 without the filter, +0.58 / +0.68 / +0.16
+with it. The reported row is therefore matched by the unfiltered run to 0.11; whether the
+paper ran without a filter was not investigated and cannot be read from it. The input is
+cropped to the image rectangle around the ground-truth segmentation, as the official tool
+does (`gt_assisted: workspace`); this is not the crop the weights were trained with. What
+else changes with the dataset is described in `docs/user_guides/cross_dataset.md`.
 
 ## Status of the verification
 
@@ -108,8 +136,8 @@ change the verdict on a top-ranked grasp. Parity is therefore established on act
 and grasps; an AP comparison can only confirm it up to that noise.
 
 Not verified: any complete training run (two epochs on eight frames ran through
-`grasppanda train` as a smoke test) and AP of the RealSense checkpoint on the full test
-splits. For GraspClutter6D see `docs/user_guides/cross_dataset.md`.
+`grasppanda train` as a smoke test), and the upstream code with the RealSense checkpoint
+(the comparisons of this section use the Kinect one).
 
 ## Usage
 

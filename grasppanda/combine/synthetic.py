@@ -317,17 +317,31 @@ def _sizes(cfg: Mapping[str, Any]) -> dict[str, Any]:
     )
     sampled = _find(transforms, "num_points")
     sizes: dict[str, Any] = {"points": int(sampled) if sampled else 4096}
-    for key, option in (("views", "num_views"), ("angles", "num_angle"), ("depths", "num_depth")):
-        value = _find(model, option)
-        if isinstance(value, int):
-            sizes[key] = value
+    dataset = ((cfg.get("data") or {}).get("train") or {}).get("dataset") or {}
+    reader = DATASETS.get(dataset["type"]) if dataset.get("type") in DATASETS else None
+    grid = getattr(reader, "label_grid", None)
+    if grid is not None:
+        # The grid of the labels the dataset serves, not of the model: a stage laid out
+        # on another grid must fail here as it would on real frames.
+        sizes.update(views=grid.num_view, angles=grid.num_angle, depths=grid.num_depth)
+    else:
+        view = model.get("view") if isinstance(model.get("view"), Mapping) else {}
+        lattice = view.get("label_views") or _find(model, "num_views")
+        for key, value in (
+            ("views", lattice),
+            ("angles", _find(model, "num_angle")),
+            ("depths", _find(model, "num_depth")),
+        ):
+            if isinstance(value, int):
+                sizes[key] = value
     friction = (model.get("view") or {}).get("max_friction") if "view" in model else None
     if isinstance(friction, (int, float)):
         sizes["view_max_friction"] = float(friction)
     # Images as the dataset of the config delivers them; without one, twice the network
     # image of the model, which is how the shipped image-based configs relate the two.
-    kind = (((cfg.get("data") or {}).get("train") or {}).get("dataset") or {}).get("type")
-    sensor = getattr(DATASETS.get(kind), "image_size", None) if kind in DATASETS else None
+    sensor = getattr(reader, "image_size", None)
+    if not isinstance(sensor, (tuple, list)):  # a property: the size depends on the camera
+        sensor = (getattr(reader, "image_sizes", None) or {}).get(dataset.get("camera"))
     network = (
         (model.get("image") or {}).get("size") if isinstance(model.get("image"), Mapping) else None
     )
@@ -400,7 +414,6 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
             if callable(signal):  # what EpochSignalHook does for a detector that listens
                 signal(0, 1)
             model.train()
-            reached: set[str] = set()
             for index in range(iters):
                 phase, when = "loss", f"iteration {index + 1}"
                 recorder.begin(observation)
@@ -408,11 +421,7 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
                 total = total_loss(outputs, when, observation.keys)
                 phase = "backward"
                 total.backward()
-                reached |= {
-                    name.split(".")[0]
-                    for name, parameter in model.named_parameters()
-                    if parameter.grad is not None and bool(parameter.grad.abs().sum() > 0)
-                }
+                recorder.note_gradients(model)
                 phase = "step"
                 for optimizer in optimizers:
                     optimizer.step()
@@ -423,14 +432,12 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
                 except _Enough:
                     break
             _summarise(report, recorder)
-            parts = {name.split(".")[0] for name, p in model.named_parameters() if p.requires_grad}
-            missed = sorted(parts - reached)
-            if missed:
+            if report.no_gradient:
                 phase = "backward"
                 raise RuntimeError(
-                    f"no gradient reached {', '.join(missed)} in {report.iterations} "
-                    "iteration(s) on the synthetic scene: a stage before it produced nothing "
-                    "to learn from (for example no seed)"
+                    f"no gradient reached {', '.join(report.no_gradient)} in "
+                    f"{report.iterations} iteration(s) on the synthetic scene: a stage before "
+                    "it produced nothing to learn from (for example no seed)"
                 )
             phase = "predict"
             model.eval()

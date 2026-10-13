@@ -339,6 +339,21 @@ def test_a_probe_that_runs_out_of_memory_is_not_recorded(tmp_path, monkeypatch, 
     outcomes[:] = [{**broken, "seconds": 1.0}]
     assert runner.main(["run", "--name", "other", *arguments[3:]]) == 0
     assert runner.load("other")["reference/GSNet"]["verdict"] == "fails"
+    # Uncommitted changes: no commit names the code, so nothing is probed unless asked.
+    import argparse
+
+    dirty = {"available": True, "commit": "a" * 40, "dirty": True}
+    monkeypatch.setattr(runner, "git_info", lambda: dirty)
+    asked = argparse.Namespace(
+        commit=None, allow_dirty=False, iters=2, frames=8, jobs=2, scale_statistic_sha=None
+    )
+    with pytest.raises(SystemExit, match="uncommitted changes"):
+        runner._environment(asked)
+    asked.allow_dirty = True
+    environment = runner._environment(asked)
+    assert environment["commit"] == "a" * 40 + "+dirty"
+    assert runner._measured(environment)["commit"] == "aaaaaaa+dirty"
+    assert isinstance(environment["libraries"], dict)
 
 
 def test_the_methods_as_shipped_run(by_id):

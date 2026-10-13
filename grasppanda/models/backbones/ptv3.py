@@ -1,3 +1,6 @@
+# Copyright (c) 2023 Pointcept
+# Structure and parameter names follow https://github.com/Pointcept/Pointcept @ 1342eda (MIT),
+# `pointcept/models/point_transformer_v3` and its descendants, so that its released weights load; see THIRD_PARTY_NOTICES.md.
 """Point Transformer V3 and its self-supervised descendants.
 
 Papers:

@@ -180,7 +180,7 @@ class SparseThing(Backbone):
         spconv = require("spconv.pytorch", extra="spconv-cu118", purpose="SparseThing")
 ```
 
-A user without the extra gets `SparseThing needs 'spconv.pytorch' … pip install "grasppanda[spconv-cu118]"`.
+A user without the extra gets `SparseThing needs 'spconv.pytorch' … pip install -e ".[spconv-cu118]"`.
 
 ## Sharing it
 

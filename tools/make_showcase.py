@@ -125,7 +125,16 @@ def capture() -> dict[str, Any]:
 
     env = {**os.environ, "NO_COLOR": "1", "COLUMNS": "100", "PYTHONPATH": str(REPO)}
     env.pop("FORCE_COLOR", None)
-    found: dict[str, Any] = {"grasppanda": grasppanda.__version__, "commands": {}}
+    from grasppanda.config import git_info
+
+    git = git_info()
+    commit = (git.get("commit") or "")[:7] + ("+dirty" if git.get("dirty") else "")
+    # The version string is whatever the last build wrote; the commit names the code.
+    found: dict[str, Any] = {
+        "grasppanda": grasppanda.__version__,
+        "commit": commit or None,
+        "commands": {},
+    }
     with tempfile.TemporaryDirectory() as directory:
         for name, args in COMMANDS.items():
             done = subprocess.run(
@@ -174,7 +183,12 @@ def paragraphs(name: str, record: dict[str, Any]) -> list[list[str]]:
     previous = -2
     for line in shown(name, record):
         position = output.index(line, max(previous, 0))
-        if groups and position == previous + 1 and line.startswith("    ") and line[4] != " ":
+        # A continuation hangs under a head that is indented less. A row of an aligned
+        # table (the losses of a probe) starts at the same column as the row above it
+        # and is never joined to it.
+        head = groups[-1][0] if groups else ""
+        hangs = len(head) - len(head.lstrip()) < 4
+        if hangs and position == previous + 1 and line.startswith("    ") and line[4] != " ":
             groups[-1].append(line)
         else:
             groups.append([line])

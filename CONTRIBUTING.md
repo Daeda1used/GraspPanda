@@ -28,6 +28,10 @@ pytest                      # the whole suite runs on CPU in seconds
    - *adapted*: source taken from a repository under the MIT, BSD or Apache-2.0 licence and
      fitted to a slot contract. The file keeps the upstream copyright notice and names the
      repository, the commit and the licence; `THIRD_PARTY_NOTICES.md` lists it.
+     A file that follows an upstream in structure and parameter names (to load its
+     weights) without taking its text keeps the copyright line too and says so. An e-mail
+     address inside such a copyright line stays as the licence requires; no other e-mail
+     address belongs in a public file.
 
    Never copy from a repository without a licence file or under non-commercial or
    research-only terms. Released weights are never committed; their licences are stated

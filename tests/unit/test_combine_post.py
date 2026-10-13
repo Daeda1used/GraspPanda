@@ -79,6 +79,29 @@ def test_compose_refuses_a_wrong_chain_with_the_reason():
     assert any("evaluation.variants.post" in line for line in refused.refusal())
 
 
+def test_a_step_that_needs_the_full_cloud_gets_it_or_is_refused(tmp_path):
+    """HGGD's dataset sections drop the cloud before sub-sampling. Compose switches it
+    back on for a chain that cannot run without it; a config written by hand that
+    leaves it off is refused by the config check, with the section and the fix."""
+    result = compose(FAMILIES["HGGD"], ["post=collision+nms"])
+    assert result.accepted, result.refusal()
+    assert any("data.val.dataset.keep_full_points" in action for action in result.actions)
+    path = tmp_path / "composed.yaml"
+    path.write_text(result.text(path), encoding="utf-8")
+    data = Config.load(path).to_dict()["data"]
+    assert data["val"]["dataset"]["keep_full_points"] is True
+    assert data["test"]["dataset"]["keep_full_points"] is True
+    # The cloud the network saw needs nothing kept.
+    other = compose(FAMILIES["HGGD"], ["post=collision:cloud=points"])
+    assert other.accepted and not any("keep_full_points" in a for a in other.actions)
+    # By hand, without the switch: refused per command, naming the section it reads.
+    chain = chain_override("collision")
+    with pytest.raises(ConfigError, match=r"data\.val\.dataset\.keep_full_points=true"):
+        Config.load(FAMILIES["HGGD"], [chain], command="train")
+    with pytest.raises(ConfigError, match=r"data\.test\.dataset\.keep_full_points=true"):
+        Config.load(FAMILIES["HGGD"], [chain], command="test")
+
+
 def test_the_post_option_of_test_and_infer_is_an_override_of_the_variant_post():
     args = argparse.Namespace(
         opts=[], weights=None, split=None, work_dir=None, post=["nms", "top-k=20"]

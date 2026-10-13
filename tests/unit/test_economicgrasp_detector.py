@@ -4,7 +4,6 @@ the recipe, and the checkpoint converter."""
 
 from __future__ import annotations
 
-import json
 import math
 from collections.abc import Iterator
 
@@ -278,41 +277,35 @@ def test_the_schedule_is_the_per_epoch_cosine_of_the_reference(name, epochs):
     assert reference > 0  # the last epoch still trains
 
 
-def test_the_metafile_is_valid_and_every_measured_number_has_its_record():
+def test_the_metafile_is_valid_and_states_the_reported_numbers():
     meta = load_metafile(REPO / "configs" / "economicgrasp" / "metafile.yaml")
     assert meta.method == "EconomicGrasp" and meta.implementation == "clean-room"
     assert meta.upstream["commit"] == "7361bb6"
     by_camera = {model.camera: model for model in meta.models}
-    assert set(by_camera) == {"kinect", "realsense"}
-    for camera, model in by_camera.items():
-        assert model.config == f"{RUN_CONFIGS[camera]}.yaml"
+    assert set(by_camera) == {"kinect", "realsense", "realsense-d435"}
+    for camera, name in RUN_CONFIGS.items():
+        model = by_camera[camera]
+        assert model.config == f"{name}.yaml" and model.protocol == "graspnet1b-sv-v1"
         assert model.results[0].provenance == "reported"
         assert model.results[0].collision_filter is False
+        # the authors' file; what was measured with it is held to its records, for all
+        # methods, in test_zoo_records.py
+        assert model.weights.source == "author" and len(model.weights.sha256) == 64
         assert "reproduced" not in {result.provenance for result in model.results}  # not trained
     assert by_camera["kinect"].results[0].ap == {"seen": 62.59, "similar": 51.73, "novel": 19.54}
     assert by_camera["realsense"].results[0].ap == {"seen": 68.21, "similar": 61.19, "novel": 25.48}
-    # The RealSense checkpoint has not been scored on the whole protocol.
-    assert by_camera["realsense"].weights is None and len(by_camera["realsense"].results) == 1
-    # The Kinect one has: the authors' file, and one record per post-processing variant
-    # whose per-scene values give the numbers of the metafile.
-    kinect = by_camera["kinect"]
-    assert kinect.weights.source == "author" and len(kinect.weights.sha256) == 64
-    measured = kinect.results[1:]
-    assert [(r.provenance, r.collision_filter) for r in measured] == [
-        ("author-ckpt", False),
-        ("author-ckpt", True),
-    ]
-    scenes = {"seen": range(100, 130), "similar": range(130, 160), "novel": range(160, 190)}
-    for result in measured:
-        record = json.loads((REPO / "configs" / "economicgrasp" / result.record).read_text())
-        assert record["protocol"] == "graspnet1b-sv-v1" and record["cameras"] == ["kinect"]
-        assert record["scored"] == record["requested"] == 23040 and not record["code"]["dirty"]
-        assert bool(record["postprocessing"]) is result.collision_filter
-        for split, numbers in scenes.items():
-            values = [
-                record["per_scene"][f"kinect/scene_{n:04d}"]["mean_precision"] for n in numbers
-            ]
-            assert round(100 * sum(values) / len(values), 2) == result.ap[split]
+    # the transfer config takes the RealSense weights and is scored under the other protocol
+    transfer = by_camera["realsense-d435"]
+    assert transfer.name == "economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e"
+    assert transfer.config == f"economicgrasp/{transfer.name}.yaml"
+    assert transfer.protocol == "graspclutter6d-sv-v1"
+    assert transfer.weights == by_camera["realsense"].weights
+    assert transfer.results[0].numbers() == {
+        "AP": {"test": 21.67},
+        "AP0.8": {"test": 26.62},
+        "AP0.4": {"test": 15.90},
+    }
+    assert transfer.results[0].collision_filter is None  # the paper does not say
 
 
 # ------------------------------------------------------------- the label contract

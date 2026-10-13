@@ -1,6 +1,6 @@
 # Uni3D-S: 1024 point-patch tokens through the blocks of timm's EVA-02 small.
 #
-# Needs the `timm` library (pip install "grasppanda[timm]"). An object-level foundation
+# Needs the `timm` library (pip install -e ".[timm]"). An object-level foundation
 # encoder used on a scene. Features live on the 1024 centres; under a method whose
 # proposal scores every scene point compose wraps it in FeaturePropagation. No published
 # GraspNet-1Billion result uses it.

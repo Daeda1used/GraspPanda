@@ -260,10 +260,12 @@ def methods(by_id: Mapping[str, dict[str, Any]]) -> list[dict[str, Any]]:
             # it puts there is described by the options of the config, and named from them.
             built_in = model.get("encoder") if slot == "image_encoder" and not component else None
             if isinstance(built_in, Mapping) and built_in.get("blocks"):
-                ships[slot]["label"] = (
-                    "reference encoder · blocks "
+                # The preset that states the same network, and its sizes for the tooltip.
+                ships[slot]["label"] = "hggd-residual"
+                ships[slot]["about"] = (
+                    "the reference encoder, blocks "
                     + "-".join(str(count) for count in built_in["blocks"])
-                    + f" · width {built_in.get('base_width')}"
+                    + f", width {built_in.get('base_width')}"
                 )
         # The option of a slot that composes to the config as shipped: the same config hash.
         if reference and reference.get("config_hash"):

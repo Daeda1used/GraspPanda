@@ -23,5 +23,18 @@ def require(module: str, *, extra: str, purpose: str) -> ModuleType:
     except ImportError as error:
         raise MissingDependencyError(
             f"{purpose} needs '{module}', which is not installed. "
-            f'Install it with: pip install "grasppanda[{extra}]"'
+            f'Install it from the repository root with: pip install -e ".[{extra}]"'
         ) from error
+
+
+#: Names a component may declare in ``extras`` that stand for several extras of
+#: ``pyproject.toml``: one per build of the library, of which the user installs one.
+EXTRA_BUILDS: dict[str, tuple[str, ...]] = {
+    "spconv": ("spconv-cu118", "spconv-cu121", "spconv-cu124", "spconv-cu126", "spconv-cpu"),
+}
+
+
+def installable(extra: str) -> str:
+    """The extra to name in an install line for a declared ``extra``: itself, or for a
+    library with one extra per build the choice (``spconv-cu118 | spconv-cu121 | ...``)."""
+    return " | ".join(EXTRA_BUILDS.get(extra, (extra,)))

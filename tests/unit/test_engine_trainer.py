@@ -317,6 +317,16 @@ def test_amp_and_sync_bn_switches_run_on_one_cpu_process(tmp_path):
     assert not state.scaler.is_enabled()
     assert not any(isinstance(m, nn.SyncBatchNorm) for m in state.model.modules())
     assert all(math.isfinite(loss) for loss in recorder.losses)
+    # A detector that does not declare `amp_ready` is refused before anything runs.
+    from grasppanda.registry import DETECTORS
+
+    tiny = DETECTORS.get("TinyDetector")
+    try:
+        tiny.amp_ready = False
+        with pytest.raises(ConfigError, match="mixed precision is not supported by TinyDetector"):
+            run_training(tiny_config(tmp_path / "refused", changes), Recorder())
+    finally:
+        tiny.amp_ready = True
 
 
 def test_deterministic_switch_is_applied_and_restored(tmp_path):

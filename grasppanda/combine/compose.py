@@ -415,8 +415,15 @@ def _parse_sets(sets: Sequence[str], slots: Mapping[str, Registry], detector: st
         if slot not in slots:
             close = difflib.get_close_matches(slot, list(slots), n=1, cutoff=0.5)
             hint = f" Did you mean '{close[0]}'?" if close else ""
+            painting = (
+                " A seed-based method reads image features through point painting (the "
+                "`ImagePainted` wrapper around its scene encoder): docs/slots/"
+                "image_encoders.md, section 5."
+                if slot == "image_encoder" and "backbone" in slots
+                else ""
+            )
             family = (
-                ""
+                painting
                 if "backbone" in slots
                 else f" {detector} is a detector family of its own: the stages of the "
                 "seed-based methods (backbone, proposal, view, grouper, head) do not exist in "
@@ -704,7 +711,7 @@ def _project_seed_features(
 
 def _adapters_for(backbone: Mapping[str, Any], proposal: Mapping[str, Any]) -> list[str]:
     """Registered adapters that make the contract rules accept this encoder and proposal."""
-    from grasppanda.models.detectors.seed_based import stage_contract_problems
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, stage_contract_problems
 
     fitting = []
     for name in BACKBONES.names():
@@ -712,6 +719,11 @@ def _adapters_for(backbone: Mapping[str, Any], proposal: Mapping[str, Any]) -> l
         if not is_adapter(cls):
             continue
         wrapped = {"type": name, _inner_slot(cls): backbone}
+        # An adapter that sub-samples is written with the seed count of the proposal
+        # (`_wrap`); it is judged as it will be written.
+        seeds = _option(STAGE_REGISTRIES["proposal"], proposal, "num_seeds")
+        if isinstance(seeds, int) and "npoint" in component_parameters(cls)[0]:
+            wrapped["npoint"] = seeds
         if stage_contract_problems(backbone=wrapped, proposal=proposal):
             continue
         if list(getattr(cls, "check_config", lambda node: ())(wrapped) or ()):
@@ -1043,10 +1055,17 @@ def compose(
     for choice in result.choices:
         cls = slots[choice.slot].get(choice.node["type"])
         if slots[choice.slot] is BACKBONES and is_adapter(cls):
+            how = (
+                "Compose does not write this wrapper: it joins an image encoder to a scene "
+                "encoder, and the YAML fragment to copy is in docs/slots/image_encoders.md, "
+                "section 5 (point painting)."
+                if "Painted" in choice.node["type"]
+                else "Set the encoder (`--set backbone=<encoder>`); compose inserts the "
+                "adapter when the contracts ask for it."
+            )
             raise ComposeError(
                 f"'{choice.request}' is an adapter: {choice.node['type']} wraps another "
-                "encoder and is not one itself. Set the encoder (`--set backbone=<encoder>`); "
-                "compose inserts the adapter when the contracts ask for it."
+                f"encoder and is not one itself. {how}"
             )
         if choice.slot != "backbone" and addressed.get(choice.slot):
             apply_overrides(LoadedTree(data=choice.node), addressed[choice.slot])
@@ -1135,6 +1154,7 @@ def compose(
         body["data"] = {"train": {"dataset": added}}
     if post_sets:
         _set_post(result, body, post_sets)
+        _keep_full_cloud(result, body, comments, config.resolved().get("data") or {})
     if chosen:
         members = [preset for _, _, group in chosen for preset in group]
         try:
@@ -1175,6 +1195,42 @@ def _set_post(result: Composition, body: dict[str, Any], post_sets: Sequence[str
     )
 
 
+def _keep_full_cloud(
+    result: Composition,
+    body: dict[str, Any],
+    comments: dict[tuple[str, ...], str],
+    data: Mapping[str, Any],
+) -> None:
+    """Switch ``keep_full_points`` on in the evaluation sections that drop the cloud
+    before sub-sampling, when a step of the chain cannot run without it."""
+    from grasppanda.registry import POSTPROCESSORS
+
+    chain = body["evaluation"]["variants"][POST_VARIANT]
+    needy = [
+        str(node["type"])
+        for node in chain
+        if getattr(POSTPROCESSORS.get(node["type"]), "reads_full_points", False)
+        and node.get("cloud", "full_points") == "full_points"
+    ]
+    changed = []
+    for section in ("val", "test"):
+        dataset = (data.get(section) or {}).get("dataset")
+        if needy and isinstance(dataset, Mapping) and dataset.get("keep_full_points") is False:
+            target = body.setdefault("data", {}).setdefault(section, {}).setdefault("dataset", {})
+            target["keep_full_points"] = True
+            comments[("data", section, "dataset", "keep_full_points")] = (
+                f"{needy[0]} reads the cloud before sub-sampling"
+            )
+            changed.append(f"data.{section}.dataset.keep_full_points")
+    if changed:
+        result.actions.append(
+            f"set `{'` and `'.join(changed)}` to true: {' and '.join(dict.fromkeys(needy))} "
+            "reads the cloud before sub-sampling (`observation.full_points`), which the base "
+            "config drops there. To test the cloud the network saw instead, write the step "
+            "as `<step>:cloud=points`."
+        )
+
+
 # -------------------------------------------------------------- what to type instead
 
 
@@ -1212,7 +1268,7 @@ def _hints(result: Composition) -> list[str]:
     ``served_supervision``); a request refused for another reason gets no hint.
     """
     if not any(issue.path == "data.train.dataset" for issue in result.issues):
-        return []
+        return _label_set_hints(result)
     model, dataset = result.merged.get("model") or {}, result.merged.get("dataset") or {}
     try:
         needs = DETECTORS.get(model["type"]).supervision_needs(model)
@@ -1276,6 +1332,35 @@ def _hints(result: Composition) -> list[str]:
             + ". Compose from one of them with the same `--set`."
         )
     return hints
+
+
+def _label_set_hints(result: Composition) -> list[str]:
+    """For a head bundle refused because the assigner of the base config returns the
+    other label set: the shipped configs whose assigner returns the one the head reads."""
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    if not any("must agree on the label set" in problem for problem in result.problems):
+        return []
+    head = (result.merged.get("model") or {}).get("head") or {}
+    if head.get("type") not in STAGE_REGISTRIES["head"]:
+        return []
+    wanted = getattr(STAGE_REGISTRIES["head"].get(head["type"]), "label_format", "dense")
+    fitting = []
+    for name, _ in _method_recipes():
+        try:
+            assigner = Config.load(name, validate=False).to_dict()["model"]["assigner"]["type"]
+            theirs = getattr(STAGE_REGISTRIES["assigner"].get(assigner), "label_format", "dense")
+        except (ConfigError, LookupError, TypeError):
+            continue
+        if theirs == wanted and name != result.base:
+            fitting.append(name)
+    if not fitting:
+        return []
+    return [
+        f"{head['type']} reads '{wanted}' labels; the assigner and the data recipe are the "
+        "base config's. Shipped configs whose assigner and training data serve that label "
+        f"set: {', '.join(fitting)}. Compose from one of them with the same `--set`."
+    ]
 
 
 def _check(result: Composition) -> None:
