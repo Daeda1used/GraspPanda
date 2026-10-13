@@ -137,6 +137,8 @@ class ModelFreeCollisionFilter(PostProcessor):
             products rounded to half floats.
     """
 
+    reads_full_points = True
+
     status = "tested"
     source = "Collision filter of the GSNet and HGGD test scripts"
 

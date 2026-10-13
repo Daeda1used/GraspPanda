@@ -36,7 +36,9 @@ feature maps. The three share how the input is treated, because the libraries do
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import os
+import sys
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, Literal
 
 import torch
@@ -85,6 +87,27 @@ def _widen_image_convolutions(model: nn.Module, init: str) -> None:
         config = getattr(other, "config", None)
         if getattr(config, "num_channels", None) == 3:
             config.num_channels = 4
+
+
+_ANNOUNCED: set[tuple[str, str]] = set()
+
+
+def _announce_weights(bridge: str, library: str, name: str, licence: str | None) -> None:
+    """Say once per process that pretrained weights come through a library, which
+    downloads them on first use, and under which licence; to standard error."""
+    if (library, name) in _ANNOUNCED:
+        return
+    _ANNOUNCED.add((library, name))
+    terms = str(licence) if licence else "not stated by the library; read the model card"
+    marks = ("-nc", "noncommercial", "non-commercial")
+    restricted = any(mark in terms.lower() for mark in marks)
+    print(
+        f"{bridge}: pretrained weights '{name}' come through {library}, which downloads "
+        f"them on first use. Licence: {terms}"
+        + (" (NON-COMMERCIAL)" if restricted else "")
+        + ". They are not part of GraspPanda.",
+        file=sys.stderr,
+    )
 
 
 class _LibraryEncoder(ImageEncoder):
@@ -247,6 +270,8 @@ class TimmImageEncoder(_LibraryEncoder):
             ) from error
         self.name = name
         cfg = getattr(model, "pretrained_cfg", None) or {}
+        if pretrained and checkpoint is None:
+            _announce_weights("TimmImageEncoder", "timm", name, cfg.get("license"))
         fmt = getattr(model, "output_fmt", "NCHW")  # Swin and friends: channels last
         self._channels_last = str(getattr(fmt, "value", fmt)) == "NHWC"
         self._setup(
@@ -304,11 +329,31 @@ class HFImageEncoder(_LibraryEncoder):
         size_multiple: Resample every image up to the next multiple of this (patch size,
             window size).
         probe_size: ``(H, W)`` of the forward pass that measures strides and widths.
+        accept_remote_code: Must be ``True`` when ``model_args`` sets
+            ``trust_remote_code``: the model code of the hub repository then runs on
+            this machine, and the config has to say that this is wanted.
     """
 
     status = "bridge"
     source = "Hugging Face Transformers (AutoBackbone / AutoModel), via transformers"
     extras = ("transformers",)
+
+    @staticmethod
+    def _remote_code_message(name: Any) -> str:
+        return (
+            f"HFImageEncoder: `model_args.trust_remote_code: true` runs Python code "
+            f"downloaded from the hub repository '{name}' on this machine. Read that "
+            "repository, then state that you accept it with `accept_remote_code: true` "
+            "(`--opts model.image_encoder.accept_remote_code=true`)."
+        )
+
+    @classmethod
+    def check_config(cls, node: Mapping[str, Any]) -> Iterator[str]:
+        """Model code from the hub runs only when the config accepts it in so many words."""
+        arguments = node.get("model_args")
+        asked = isinstance(arguments, Mapping) and arguments.get("trust_remote_code")
+        if asked and not node.get("accept_remote_code", False):
+            yield cls._remote_code_message(node.get("name"))
 
     def __init__(
         self,
@@ -326,6 +371,7 @@ class HFImageEncoder(_LibraryEncoder):
         input_size: Sequence[int] | None = None,
         size_multiple: int = 1,
         probe_size: Sequence[int] = (224, 224),
+        accept_remote_code: bool = False,
     ) -> None:
         super().__init__()
         transformers = require("transformers", extra="transformers", purpose="HFImageEncoder")
@@ -351,6 +397,11 @@ class HFImageEncoder(_LibraryEncoder):
                 built.out_indices, built.out_features = arguments.pop("out_indices"), None
             model = auto.from_config(built)
         elif pretrained:
+            if arguments.get("trust_remote_code") and not accept_remote_code:
+                raise ContractError(self._remote_code_message(name))
+            if not os.path.isdir(str(name)):
+                card = f"see https://huggingface.co/{name}"
+                _announce_weights("HFImageEncoder", "transformers", str(name), card)
             model = auto.from_pretrained(name, **arguments)
         else:
             built = transformers.AutoConfig.from_pretrained(name)
@@ -464,6 +515,13 @@ class TorchvisionImageEncoder(_LibraryEncoder):
         models = require(
             "torchvision.models", extra="torchvision", purpose="TorchvisionImageEncoder"
         )
+        if weights is not None and checkpoint is None:
+            _announce_weights(
+                "TorchvisionImageEncoder",
+                "torchvision",
+                f"{name} ({weights})",
+                "see the weights table of the torchvision documentation",
+            )
         net = models.get_model(name, weights=weights, **dict(model_args or {}))
         if checkpoint is not None:
             net.load_state_dict(torch.load(checkpoint, map_location="cpu", weights_only=True))

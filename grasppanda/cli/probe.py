@@ -184,6 +184,12 @@ def _print(report: Any, color: bool) -> None:
     if report.grasps_per_frame:
         counts = ", ".join(str(count) for count in report.grasps_per_frame)
         row("predicted", f"{len(report.grasps_per_frame)} frame(s) · {counts} grasps")
+    chain = report.postprocessing or {}
+    for sizes in chain.get("grasps", []):
+        steps = " → ".join(f"{name} {left}" for name, left in zip(chain["steps"], sizes[1:]))
+        row("post", f"{sizes[0]} → {steps}")
+    if report.no_gradient:
+        row("gradient", "none reached " + ", ".join(report.no_gradient))
     for item in report.nonfinite:
         row("non-finite", item)
     for message in report.refusal:

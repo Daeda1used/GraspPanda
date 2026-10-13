@@ -1373,12 +1373,20 @@
     var caption = loss
       ? "A loss sits on one term of a stage (head.width_loss), and most were probed several terms at a time. A cell shows the verdict of the sets this loss was part of under the method of its column, not of the loss alone: the same loss can run on one term and be refused on another. Hover or focus a cell to see the sets."
       : "A cell is this one slot replaced under the method of its column." + (withClass ? " The class counts the seed-based methods an option works under." : "") + " Arrow keys move between cells.";
+    /* The scene-encoder rows include the wrappers compose puts around an encoder; the
+     * option counts of the README and of the slot index leave those out. */
+    var wrappers = grid.rows.filter(function (row) {
+      return /^(feature-propagation|furthest-point-subsample|image-painted(-subsampled)?)$/.test(row.option.name);
+    }).length;
+    var adapterNote = slot === "backbone" && wrappers
+      ? (grid.rows.length - wrappers) + " are encoders; " + wrappers + " are adapters and painted wrappers around one, not counted as options elsewhere. "
+      : "";
     return h("div", { class: "gx-gridview" }, [
       slotTabs,
       h("p", { class: "gx-fine" }, [rich(entry.task)]),
       docLinks(entry.pages),
       filters,
-      h("p", { class: "gx-fine", "aria-live": "polite", text: rows.length + " of " + grid.rows.length + " options. " + caption }),
+      h("p", { class: "gx-fine", "aria-live": "polite", text: rows.length + " of " + grid.rows.length + " options. " + adapterNote + caption }),
       legend,
       menu,
       h("div", { class: "gx-scroll", role: "region", "aria-label": entry.title + ": option by method" }, [table]),

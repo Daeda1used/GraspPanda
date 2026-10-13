@@ -167,7 +167,7 @@ def test_missing_logging_backends_fail_before_training_with_the_install_command(
         if package in sys.modules or _installed(package):
             pytest.skip(f"{package} is installed here")
         config = tiny_config(tmp_path / backend, {"runtime.log.backends": ["text", backend]})
-        with pytest.raises(MissingDependencyError, match=rf'pip install "grasppanda\[{backend}\]"'):
+        with pytest.raises(MissingDependencyError, match=rf'pip install -e "\.\[{backend}\]"'):
             run_training(config)
         assert not list(
             (tmp_path / backend / "work").glob("*/checkpoints/*")

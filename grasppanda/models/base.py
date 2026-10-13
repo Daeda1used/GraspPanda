@@ -47,6 +47,7 @@ __all__ = [
     "PostProcessor",
     "Proposal",
     "ViewStage",
+    "configured_points",
     "configured_width",
 ]
 
@@ -76,6 +77,30 @@ def configured_width(node: Mapping[str, Any]) -> int | None:
     return int(width) if isinstance(width, int) and not isinstance(width, bool) else None
 
 
+def configured_points(node: Mapping[str, Any]) -> int | None:
+    """Points per cloud a sub-sampling backbone config node returns, told without
+    building it: the constructor defaults overlaid with ``node``, handed to the
+    ``output_points`` classmethod of the class. ``None`` when the class declares none
+    (a dense encoder, or one whose count depends on the cloud) or the node cannot be read.
+    """
+    try:
+        cls = BACKBONES.get(node["type"])
+        params, _ = component_parameters(cls)
+    except (LookupError, TypeError):
+        return None
+    defaults = {
+        name: param.default
+        for name, param in params.items()
+        if param.default is not param.empty and param.default is not INJECTED
+    }
+    declare = getattr(cls, "output_points", None)
+    try:
+        count = declare({**defaults, **node}) if callable(declare) else None
+    except (LookupError, TypeError, ValueError):
+        return None  # options the signature check will report
+    return int(count) if isinstance(count, int) and not isinstance(count, bool) else None
+
+
 @DETECTORS.base
 class BaseGraspDetector(nn.Module):
     """A complete grasp detection method.
@@ -89,6 +114,11 @@ class BaseGraspDetector(nn.Module):
     ``configure_optimizers(self, optimizer: dict)``; see :mod:`grasppanda.engine.optim`.
     Without it the trainer builds one optimizer over all trainable parameters.
     """
+
+    #: ``True`` when ``loss`` is written to run under ``torch.autocast`` (half-precision
+    #: activations beside float labels). The config check refuses ``train.amp: true``
+    #: for a detector that does not declare it.
+    amp_ready: ClassVar[bool] = False
 
     #: Observation fields this detector reads, e.g. ``{"points"}`` or ``{"rgb", "depth"}``.
     required_inputs: ClassVar[frozenset[str]] = frozenset({"points"})
@@ -348,6 +378,11 @@ class PostProcessor:
     May read the observation (a collision filter needs the sensor cloud) but never
     ground truth.
     """
+
+    #: ``True`` when the step cannot run without ``observation.full_points`` (while its
+    #: option ``cloud`` is ``full_points``). The config check then refuses a dataset
+    #: section that drops that cloud.
+    reads_full_points: ClassVar[bool] = False
 
     def __call__(self, grasps: GraspGroup, observation: Observation) -> GraspGroup:
         raise NotImplementedError

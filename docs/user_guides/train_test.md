@@ -76,7 +76,7 @@ id and the ground-truth-assisted inputs once an evaluation has run.
 | `data.train` / `val` / `test` | `{dataset, batch_size, num_workers, shuffle, drop_last}`. `batch_size` is per process. Training shuffles unless `shuffle: false`; prediction never shuffles. |
 | `optimizer`, `scheduler` | Any `torch.optim` optimizer and scheduler, `{type: ..., ...}`. |
 | `train.epochs` | Length of the run. |
-| `train.amp` | Mixed precision for the training forward pass. Prediction always runs in full precision. |
+| `train.amp` | Mixed precision for the training forward pass. Prediction always runs in full precision. The config check refuses it unless the detector class declares `amp_ready = True`; none of the shipped detectors does yet. |
 | `train.accumulate` | Batches whose gradients are summed before one optimizer step. |
 | `train.grad_clip`, `train.grad_clip_mode` | Limit and `norm` (global L2 norm) or `value` (element-wise clamp). |
 | `train.ema` | Decay of the moving average of the weights; `null` turns it off. |
@@ -169,7 +169,7 @@ hooks:
 | Hook | Does |
 |---|---|
 | `TextLoggerHook` | One line every `runtime.log.interval` iterations and on the last batch of an epoch, to the console and `log.txt`: running means of every loss term and metric, learning rate, gradient norm (when clipping by norm), data and iteration time, peak GPU memory, ETA. |
-| `TensorBoardLoggerHook`, `WandbLoggerHook` | The same scalars to TensorBoard (`<run>/tensorboard`) or Weights & Biases. Optional: `pip install "grasppanda[tensorboard]"` or `"grasppanda[wandb]"`. A missing package fails before training starts. |
+| `TensorBoardLoggerHook`, `WandbLoggerHook` | The same scalars to TensorBoard (`<run>/tensorboard`) or Weights & Biases. Optional: `pip install -e ".[tensorboard]"` or `".[wandb]"`. A missing package fails before training starts. |
 | `EvaluationHook` | Scores `data.val`; see [Evaluation](#evaluation). |
 | `CheckpointHook` | `epoch_NNNN.pth` every `interval` epochs and after the last one, the newest `keep_last` kept, `best.pth` by `evaluation.save_best`. |
 | `BNMomentumHook` | Sets the momentum of every batch-norm layer to `max(initial * decay ** (epoch // step), minimum)` before each epoch. |

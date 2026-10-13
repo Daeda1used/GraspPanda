@@ -73,6 +73,11 @@ class FurthestPointSubsample(Backbone):
         """The width of the wrapped backbone: its features are kept as they are."""
         return configured_width(options["backbone"])
 
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """``npoint``: the size of the furthest-point subsample."""
+        return int(options["npoint"])
+
     def __init__(
         self,
         backbone: Cfg[Backbone],

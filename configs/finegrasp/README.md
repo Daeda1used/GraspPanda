@@ -87,17 +87,32 @@ of 0.1, with instance normalisation none; the share of object points above it ri
 
 ## Results
 
-GraspNet-1Billion, single view, protocol `graspnet1b-sv-v1`. AP in percent.
+GraspNet-1Billion, single view, protocol `graspnet1b-sv-v1`: the whole test split (90
+scenes, 23,040 frames, all scored). AP in percent.
 
 | Config | Camera | Collision filter | Seen | Similar | Novel | Provenance |
 |---|---|---|---|---|---|---|
 | [finegrasp_sunet14_g1b-realsense_10e](finegrasp_sunet14_g1b-realsense_10e.yaml) | RealSense | off | 71.67 | 62.83 | 27.40 | reported |
-| [finegrasp_sunet14_g1b-realsense_10e](finegrasp_sunet14_g1b-realsense_10e.yaml) | RealSense | on | 73.71 | 64.56 | 28.14 | reported |
+| | RealSense | off | 71.56 | 62.80 | 27.42 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) |
+| | RealSense | on | 73.71 | 64.56 | 28.14 | reported |
+| | RealSense | on | 73.69 | 64.62 | 28.18 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) |
 
 `reported` numbers are those of Table I of the paper; the model card of the released
-weights repeats them and names the weight file used here. **No `author-ckpt` and no
-`reproduced` number exists yet**: nothing has been trained here, and the authors' weights
-have not been evaluated on the full protocol.
+weights repeats them and names the weight file used here. `author-ckpt` numbers are that
+file (`finegrasp_pipeline/model.safetensors`), converted with
+`tools/convert_checkpoint.py` and run through `grasppanda test` at commit `4bc5333`, one
+run with seed 0; the linked result records hold the per-scene values, the config hash
+and the hashes of code and weights. The workspace crop uses the ground-truth
+segmentation, as in the reference (`gt_assisted: workspace`).
+
+**Measured minus reported**: −0.11 / −0.03 / +0.02 AP without the collision filter and
+−0.02 / +0.06 / +0.04 AP with it. Every split is within 0.11 AP of the paper. The normal
+images the weights were trained on are not published and are reconstructed here (next
+section), so this is also the whole-split evidence for that reconstruction, which the
+120-frame sample below could only suggest. Not investigated: how much of the remaining
+tenth of an AP is the seed of the point sampling.
+
+**No `reproduced` number exists yet**: nothing has been trained here.
 
 ## The normals: what the released weights expect
 
@@ -188,8 +203,7 @@ result is the reference's on all 120 frames (73.87). The similar and novel split
 not been sampled.
 
 Not verified: any training run (two epochs on 90 frames ran through `grasppanda train`
-as a smoke test, on scene-normalised labels), AP of the converted weights on the full
-test splits, the Kinect camera (the authors publish
+as a smoke test, on scene-normalised labels), the Kinect camera (the authors publish
 RealSense only), the weights trained with simulation data (`finegrasp_pipeline_sim`,
 which take no normals), and the behaviour on GraspClutter6D.
 

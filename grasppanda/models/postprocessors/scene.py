@@ -69,9 +69,10 @@ def scene_points(
             else "observation.points"
         )
         hint = (
-            ". Keep it with `keep_full_points: true` in the dataset section of the config "
-            "(`--opts data.test.dataset.keep_full_points=true`), or test the cloud the network "
-            "saw with `cloud: points`"
+            ". Keep it with `keep_full_points: true` in the dataset section the frames come "
+            "from: `--opts data.test.dataset.keep_full_points=true` for `grasppanda test`, "
+            "`data.val` for `grasppanda probe` and for evaluation during training. Or test "
+            "the cloud the network saw with `cloud: points`"
             if cloud == "full_points"
             else ""
         )

@@ -8,7 +8,7 @@ computes ``pos_j - pos_i`` reads positions aligned with the approach direction, 
 it to one of the layers below. Members of different seeds are different source nodes,
 even when they are the same seed of the scene.
 
-The library is optional: ``pip install "grasppanda[torch_geometric]"``.
+The library is optional: ``pip install -e ".[torch_geometric]"``.
 """
 
 from __future__ import annotations

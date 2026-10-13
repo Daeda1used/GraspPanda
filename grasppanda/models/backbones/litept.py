@@ -1,3 +1,6 @@
+# Copyright (c) 2023 Pointcept
+# Structure and parameter names follow https://github.com/Pointcept/Pointcept @ 1342eda (MIT),
+# `pointcept/models/litept`, so that its released weights load; see THIRD_PARTY_NOTICES.md.
 """LitePT: sparse convolutions at fine resolution, attention at coarse resolution.
 
 Paper: Yue et al., "LitePT: Lighter Yet Stronger Point Transformer", CVPR 2026

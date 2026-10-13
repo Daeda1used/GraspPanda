@@ -201,7 +201,29 @@ def test_every_image_encoder_preset_is_a_cell_and_passes_the_config_check():
         params, _ = component_parameters(IMAGE_ENCODERS.get(preset.type))
         assert set(preset.node) - {"type"} <= set(params), name
         result = compose(HGGD_CONFIG, [f"image_encoder={name}"])
+        remote = (preset.node.get("model_args") or {}).get("trust_remote_code")
+        if remote:  # code of the hub repository: refused until the config accepts it
+            (message,) = result.refusal()
+            assert "accept_remote_code: true" in message and preset.node["name"] in message
+            accept = ["model.image_encoder.accept_remote_code=true"]
+            result = compose(HGGD_CONFIG, [f"image_encoder={name}"], accept)
         assert result.accepted, (name, result.issues)
+        # A preset never fetches weights under non-commercial terms unasked.
+        if "NON-COMMERCIAL" in preset.path.read_text(encoding="utf-8"):
+            assert preset.node.get("pretrained") is False, name
+
+
+def test_a_bridge_says_once_which_weights_its_library_fetches(capsys):
+    from grasppanda.models.image_encoders import bridges
+
+    bridges._ANNOUNCED.clear()
+    bridges._announce_weights("TimmImageEncoder", "timm", "x.tag", "cc-by-nc-4.0")
+    bridges._announce_weights("TimmImageEncoder", "timm", "x.tag", "cc-by-nc-4.0")
+    bridges._announce_weights("HFImageEncoder", "transformers", "org/model", None)
+    told = capsys.readouterr().err.splitlines()
+    assert len(told) == 2
+    assert "'x.tag' come through timm" in told[0] and "(NON-COMMERCIAL)" in told[0]
+    assert "not stated by the library" in told[1] and "NON-COMMERCIAL" not in told[1]
 
 
 # -------------------------------------------------------------------------- bridges
@@ -214,9 +236,7 @@ def test_a_bridge_without_its_library_says_what_to_install():
         ("TorchvisionImageEncoder", "torchvision", {"name": "resnet18"}),
     ):
         if importlib.util.find_spec(module) is None:
-            with pytest.raises(
-                MissingDependencyError, match=rf'pip install "grasppanda\[{module}\]"'
-            ):
+            with pytest.raises(MissingDependencyError, match=rf'pip install -e "\.\[{module}\]"'):
                 IMAGE_ENCODERS.build({"type": name, **node})
 
 

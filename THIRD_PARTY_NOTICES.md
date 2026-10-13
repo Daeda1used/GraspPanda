@@ -9,19 +9,35 @@ commit the code was taken from, the licence (SPDX identifier and the copyright l
 the upstream licence file), and the files in this repository that contain adapted code.
 
 Components whose status is `bridge` call a library that the user installs as an optional
-extra. They contain none of the library's code and are not listed here; the licence of
-each library is its own.
+extra. A bridge contains none of the library's code, and the licence of each library is
+its own. A bridge that also adapts source from a research repository (`OctFormer`,
+`PointMamba`, `Uni3D`) is listed below for that source.
+
+An e-mail address appears in this repository only where it is part of an upstream
+copyright line that the licence requires to be kept.
 
 <!-- Sections below are appended by contributions; keep them in the form shown above. -->
 
-## Pointcept (Point Transformer V1 and V2)
+## Pointcept
 
 - Repository: https://github.com/Pointcept/Pointcept
-- Commit: `1342eda`
+- Commit: `1342eda30e96cbb5fadf5374ff8eb18f6de15c71`
 - Licence: MIT. `Copyright (c) 2023 Pointcept`
-- Files: `grasppanda/models/backbones/point_transformer.py` (from
-  `pointcept/models/point_transformer/point_transformer_seg.py` and
-  `pointcept/models/point_transformer_v2/point_transformer_v2m2_base.py`)
+- Files with adapted code:
+  - `grasppanda/models/backbones/point_transformer.py` (Point Transformer V1 and V2, from
+    `pointcept/models/point_transformer/point_transformer_seg.py` and
+    `pointcept/models/point_transformer_v2/point_transformer_v2m2_base.py`)
+  - `grasppanda/transforms/pointcept.py` (`RandomJitter`, `RandomDropout`, `RandomShift`,
+    adapted from `pointcept/datasets/transform.py`)
+- Files whose structure and parameter names follow Pointcept, so that its released
+  weights load; the code is written for this repository on `grasppanda.ops.sparse`, and
+  short passages (the relative position encoding of PTv3, for one) are close to the
+  upstream statement by statement:
+  - `grasppanda/models/backbones/ptv3.py` (after `pointcept/models/point_transformer_v3`
+    and the `sonata`, `concerto` and `utonia` models beside it)
+  - `grasppanda/models/backbones/spunet.py` (after `pointcept/models/sparse_unet`)
+  - `grasppanda/models/backbones/oacnns.py` (after `pointcept/models/oacnns`)
+  - `grasppanda/models/backbones/litept.py` (after `pointcept/models/litept`)
 
 ## Point-MAE (point-patch tokeniser and transformer encoder)
 
@@ -63,6 +79,7 @@ each library is its own.
 - Licence: MIT. `Copyright (c) 2023 Peng-Shuai Wang <wangps@hotmail.com>`
 - Files: `grasppanda/models/backbones/octformer.py` (from `models/octformer.py` and
   `models/octformerseg.py`)
+
 ## facebookresearch/votenet
 
 - Repository: https://github.com/facebookresearch/votenet
@@ -124,6 +141,7 @@ each library is its own.
 - Commit: `0f427c36c5a991a28397ffdaaf8c205b80d6b30d`
 - Licence: MIT. `Copyright (c) 2023 Matrix-ASC`
 - Files: `grasppanda/models/backbones/dela.py`
+
 ## MinkowskiEngine
 
 - Repository: https://github.com/NVIDIA/MinkowskiEngine
@@ -132,11 +150,12 @@ each library is its own.
 - Files: `grasppanda/models/backbones/minkunet.py` (the layer plan of `examples/minkunet.py`, the
   blocks of `MinkowskiEngine/modules/resnet_block.py` and the initialisation of `examples/resnet.py`,
   rewritten on `grasppanda.ops.sparse`; no MinkowskiEngine code is called).
+
 ## RGB Matters
 
 - Repository: https://github.com/GouMinghao/rgb_matters
-- Commit: 2e176728f6
-- Licence: MIT. Copyright (c) 2022 Gou Minghao
+- Commit: `2e176728f6`
+- Licence: MIT. `Copyright (c) 2022 Gou Minghao`
 - Files: `grasppanda/models/views/angular_cost.py` (the angular class loss, adapted from
   `rgbd_graspnet/net/loss.py`)
 
@@ -165,10 +184,3 @@ each library is its own.
   of the file: the region is a gripper-aligned box, the CUDA extensions are replaced by
   operators of this package, and a linear layer per cell stands in for the sparse
   convolutions of Part-A².
-## Pointcept
-
-- Repository: https://github.com/Pointcept/Pointcept
-- Commit: `1342eda30e96cbb5fadf5374ff8eb18f6de15c71`
-- Licence: MIT. `Copyright (c) 2023 Pointcept`
-- Files: `grasppanda/transforms/pointcept.py` (`RandomJitter`, `RandomDropout`,
-  `RandomShift`, adapted from `pointcept/datasets/transform.py`)

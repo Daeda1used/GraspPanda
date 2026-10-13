@@ -63,6 +63,60 @@ def test_measured_results_need_evidence(write):
     assert "needs the model's weights entry" in found["models.0.results.0"]
 
 
+def test_a_result_states_its_numbers_for_the_splits_of_its_protocol(write):
+    transfer = VALID.replace("graspnet1b-sv-v1", "graspclutter6d-sv-v1")
+    numbers = "AP: {test: 21.67}, AP0.8: {test: 26.62}, AP0.4: {test: 15.9}"
+    text = transfer.replace("AP: {seen: 65.7, similar: 53.75, novel: 23.98}", numbers)
+    (model,) = load_metafile(write("demo/metafile.yaml", text)).models
+    assert model.results[0].ap == {"test": 21.67}
+    assert model.results[0].numbers() == {
+        "AP": {"test": 21.67},
+        "AP0.8": {"test": 26.62},
+        "AP0.4": {"test": 15.9},
+    }
+    (plain,) = load_metafile(write("plain/metafile.yaml", VALID)).models
+    assert plain.results[0].ap_at == {} and list(plain.results[0].numbers()) == ["AP"]
+
+    cases = [
+        # the splits of another protocol
+        (transfer, "models.0.results.0.AP", "must map splits (test) to numbers"),
+        # a friction level given for other splits than AP
+        (
+            VALID.replace("AP: {seen", "AP0.4: {seen: 50.0}, AP: {seen"),
+            "models.0.results.0.AP0.4",
+            "must be given for the same splits as AP",
+        ),
+        (
+            VALID.replace("graspnet1b-sv-v1", "demo-v0"),
+            "models.0.protocol",
+            "unknown protocol 'demo-v0'; known: graspnet1b-sv-v1, graspclutter6d-sv-v1",
+        ),
+    ]
+    for index, (broken, path, fragment) in enumerate(cases):
+        with pytest.raises(ConfigError) as error:
+            load_metafile(write(f"broken{index}/metafile.yaml", broken))
+        assert fragment in {issue.path: issue.message for issue in error.value.issues}[path]
+
+
+def test_a_measured_result_names_a_record_that_exists(write):
+    weights = "    weights: {url: 'https://example.org/w.tar', sha256: " + "a" * 64 + ", "
+    weights += "license: MIT, source: author}\n    results:"
+    text = VALID.replace("    results:", weights).replace(
+        "provenance: reported, collision_filter: false, source: paper",
+        "provenance: author-ckpt, collision_filter: false, evaluator: GraspNet1BEvaluator, "
+        "record: records/demo_raw.json",
+    )
+    path = write("demo/metafile.yaml", text)
+    with pytest.raises(ConfigError) as error:
+        load_metafile(path)
+    (issue,) = error.value.issues
+    assert issue.path == "models.0.results.0.record"
+    assert "no such result record next to the metafile: records/demo_raw.json" in issue.message
+    write("demo/records/demo_raw.json", "{}")  # the loader checks presence; tests check content
+    (model,) = load_metafile(path).models
+    assert model.results[0].record == "records/demo_raw.json"
+
+
 def test_shipped_metafiles_are_valid():
     assert isinstance(load_metafiles(), list)
 

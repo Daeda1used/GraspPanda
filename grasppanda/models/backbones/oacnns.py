@@ -1,3 +1,6 @@
+# Copyright (c) 2023 Pointcept
+# Structure and parameter names follow https://github.com/Pointcept/Pointcept @ 1342eda (MIT),
+# `pointcept/models/oacnns`, so that its released weights load; see THIRD_PARTY_NOTICES.md.
 """OA-CNNs: a sparse CNN whose receptive field adapts per voxel, without attention.
 
 Paper: Peng et al., "OA-CNNs: Omni-Adaptive Sparse CNNs for 3D Semantic Segmentation",

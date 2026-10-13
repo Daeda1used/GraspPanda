@@ -66,7 +66,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from grasppanda.combine.grid import Cell, cells
+from grasppanda.combine.grid import LOSS_NOT_PROBED, POST_NOT_PROBED, Cell, cells
 from grasppanda.combine.probe import VERDICTS
 from grasppanda.config import Config, git_info
 from grasppanda.utils.paths import cache_root
@@ -391,6 +391,12 @@ def _environment(args: argparse.Namespace) -> dict[str, Any]:
     git = git_info()
     commit = args.commit or (git.get("commit") if git.get("available") else None) or ""
     if not args.commit and git.get("dirty"):
+        if not getattr(args, "allow_dirty", False):
+            raise SystemExit(
+                "the working tree has uncommitted changes, so no commit would name the code "
+                "these probes run. Commit first; or pass --allow-dirty to record the cells "
+                "as measured at `<commit>+dirty`."
+            )
         commit += "+dirty"
     gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "none"
     return {
@@ -405,7 +411,44 @@ def _environment(args: argparse.Namespace) -> dict[str, Any]:
         "jobs": args.jobs,
         "scale_statistic_sha": args.scale_statistic_sha,
         "commit": commit,
+        "libraries": _optional_libraries(),
     }
+
+
+#: Optional libraries a probed config may run on; their versions are part of a run.
+OPTIONAL_LIBRARIES = (
+    "spconv",
+    "timm",
+    "transformers",
+    "torchvision",
+    "torch_geometric",
+    "torch_cluster",
+    "fpsample",
+    "kornia",
+    "roma",
+    "trimesh",
+    "pytorch_optimizer",
+    "schedulefree",
+    "ocnn",
+    "mamba_ssm",
+    "healpix",
+    "open_clip_torch",
+)
+
+
+def _optional_libraries() -> dict[str, str]:
+    """Installed versions of the optional libraries, by distribution name."""
+    from importlib import metadata
+
+    found = {}
+    for name in OPTIONAL_LIBRARIES:
+        for spelling in (name, name.replace("_", "-"), f"{name}-cu118", f"{name}-cu121"):
+            try:
+                found[name] = metadata.version(spelling)
+                break
+            except metadata.PackageNotFoundError:
+                continue
+    return found
 
 
 def _measured(environment: dict[str, Any], date: str | None = None) -> dict[str, Any]:
@@ -420,6 +463,7 @@ def _measured(environment: dict[str, Any], date: str | None = None) -> dict[str,
         "gpu": environment["gpu"],
         "probes_at_a_time": environment["jobs"],
         "scale_statistic_sha256": environment.get("scale_statistic_sha"),
+        **({"libraries": environment["libraries"]} if environment.get("libraries") else {}),
     }
 
 
@@ -666,6 +710,10 @@ def merge(
                 "probes at a time as the run says: an order of magnitude, not a benchmark."
             ),
             "not_probed": [cell_id for cell_id in order if cell_id not in recorded],
+            "presets_without_a_cell": {
+                **{f"post/{name}": reason for name, reason in POST_NOT_PROBED.items()},
+                **{f"loss/{name}": reason for name, reason in LOSS_NOT_PROBED.items()},
+            },
         },
         "cells": merged,
     }
@@ -775,6 +823,12 @@ def main(argv: list[str] | None = None) -> int:
                 "--wait", type=float, default=30.0, help="seconds between those (default 30)"
             )
             sub.add_argument("--redo", action="store_true", help="ignore earlier records")
+            sub.add_argument(
+                "--allow-dirty",
+                action="store_true",
+                help="probe from a working tree with uncommitted changes; the cells are then "
+                "recorded as measured at `<commit>+dirty`",
+            )
             sub.add_argument(
                 "--commit",
                 help="commit of the code that is probed, when it runs from an exported copy "

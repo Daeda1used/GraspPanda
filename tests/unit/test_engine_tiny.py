@@ -96,6 +96,8 @@ class TinyDetector(BaseGraspDetector):
         empty_frame: Frame index for which the prediction is empty; -1 for none.
     """
 
+    amp_ready = True  # a plain regression: its loss runs under autocast
+
     def __init__(
         self,
         hidden: int = 8,

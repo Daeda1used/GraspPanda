@@ -172,6 +172,23 @@ class DecoupledGridHead(HeadBundle):
             "width_loss": _WIDTH_TERMS.get(options.get("width", "regression"), "value"),
         }
 
+    @classmethod
+    def option_problems(cls, options: Mapping[str, Any]) -> list[str]:
+        """Option values the constructor would refuse, told without building."""
+        limits = options.get("friction_range")
+        try:
+            low, high = limits
+            fine = 0 < low < high
+        except (TypeError, ValueError):
+            fine = False
+        if fine:
+            return []
+        return [
+            f"{cls.__name__} has friction_range = {list(limits) if limits else limits}; it "
+            "must be [min, max] with 0 < min < max (the friction coefficients the score "
+            "target is scaled between), e.g. [0.1, 1.0]."
+        ]
+
     def __init__(
         self,
         num_angle: int = 12,

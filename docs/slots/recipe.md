@@ -1,5 +1,7 @@
 # The training recipe: optimizer, schedule, hooks, augmentation
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 Everything on this page is **around** the model: how its weights are updated, how the
 learning rate moves, what runs before and after an epoch, and how a training sample is
 perturbed. None of it changes what the detector computes, so none of it is bound to one
@@ -61,7 +63,8 @@ instance, to which the grasp labels are attached. So an augmentation may
 - remove or reorder points only through `sample.gather(index)`, which carries the labels;
 - move the scene only together with the object poses;
 - not move points at all when the sample carries images (`rgb`, `depth`) or camera-bound
-  extras, as HGGD's does: that is refused with a `ContractError` at the first sample.
+  extras, as HGGD's does: the config check refuses such a transform list (a transform
+  that moves points declares `moves_points = True`), and the sample refuses it again.
 
 Scaling the scene is therefore *not* an allowed augmentation: grasp widths, depths and
 the gripper are in metres and would not follow.
@@ -74,7 +77,7 @@ only when the optimizer is built: `probe` or `train` then names the valid ones.
 
 ## 3. Options at a glance
 
-Install the optional libraries once: `pip install "grasppanda[optim]"` (timm,
+Install the optional libraries once: `pip install -e ".[optim]"` (timm,
 pytorch_optimizer, schedulefree; all Apache-2.0). Options marked "core" need nothing.
 
 Everything is random-init: a recipe has no weights. "Measured" is the verdict of
@@ -141,14 +144,14 @@ re-tuning notes.
 | schedule | `schedule=warmup-cosine` | Linear warm-up over the first 5 % of the run, then one cosine to 1e-6 (timm's CosineLRScheduler). | TimmSchedule | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
 | hooks | `hooks=accumulate-2` | Gradient accumulation: one optimizer step per two batches, an effective batch twice as large. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | hooks | `hooks=agc` | Adaptive gradient clipping (Brock et al., arXiv 2102.06171) in place of a fixed clipping norm. | AdaptiveGradClipHook | `optim` | G runs, H runs | universal: ran under GSNet and HGGD |
-| hooks | `hooks=amp` | Mixed precision: the forward pass under autocast with a gradient scaler. | train options | core | G fails, H fails | no: fails under both, see the note below the table |
+| hooks | `hooks=amp` | Mixed precision: the forward pass under autocast with a gradient scaler. | train options | core | G refused, H refused | **not usable yet**: the config check refuses `train.amp` for every shipped detector, see the note below the table |
 | hooks | `hooks=ema` | Exponential moving average of the weights with warm-up of the decay; evaluation scores it. | EMAHook | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | hooks | `hooks=freeze-encoder` | Freeze the scene encoder for the first two epochs, then train it with the rest. | FreezeHook | core | G runs, E runs | seed-based only: it names the `backbone` module |
 | hooks | `hooks=grad-clip` | Clip the global L2 norm of the gradient at 1.0 before every optimizer step. | train options | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | hooks | `hooks=swa` | Stochastic weight averaging: the mean of the weights after each of the last epochs. | SWAHook | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | augment | `augment=dropout` | Remove 20 % of the points of every second sample, before the cloud is sampled. | RandomDropout | core | G runs, H runs | universal: ran under GSNet and HGGD |
-| augment | `augment=jitter` | Clipped Gaussian noise of 1 mm on the input points, after the other point transforms. | RandomJitter | core | G runs, H fails | point-cloud methods only: stops at the first sample with images |
-| augment | `augment=shift` | Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow. | RandomShift | core | G runs, H fails | point-cloud methods only: stops at the first sample with images |
+| augment | `augment=jitter` | Clipped Gaussian noise of 1 mm on the input points, after the other point transforms. | RandomJitter | core | G runs, H refused | point-cloud methods only: refused where the dataset serves images |
+| augment | `augment=shift` | Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow. | RandomShift | core | G runs, H refused | point-cloud methods only: refused where the dataset serves images |
 | recipe | `recipe=adamw-onecycle` | AdamW with a one-cycle schedule, the recipe Pointcept trains PTv3 with, at a rate for grasp batches. | AdamW, OneCycleLR | core | G runs, H runs | universal: ran under GSNet and HGGD |
 | recipe | `recipe=finetune-encoder` | Fine-tuning recipe for a pretrained scene encoder: layer-wise decay, warm-up and cosine, one frozen epoch, EMA. | ParamGroups, TimmSchedule, FreezeHook, EMAHook | `optim` | G runs, E runs | seed-based only: it names the `backbone` module |
 | recipe | `recipe=ptv3-adamw-onecycle` | Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks. | ParamGroups, OneCycleLR | core | G runs, E runs | PTv3 encoders only: the pattern matches its blocks |
@@ -157,10 +160,8 @@ What did not simply run, in the words of the probe:
 
 - `recipe/GSNet/optimizer/schedulefree-sgd`, `runs-unstable`: 1 of 20 iterations had no real seed (iteration 3).
 - `recipe/HGGD/optimizer/soap`, `fails`: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect. For debugging consider passing CUDA_LAUNCH_BLOCKING=1 Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
-- `recipe/GSNet/hooks/amp`, `fails`: Index put requires the source and destination dtypes match, got Float for the destination and Half for the source.
-- `recipe/HGGD/hooks/amp`, `fails`: non-finite loss at epoch 1, iteration 1: loss/heatmap = nan, loss/angle = inf. Frames in the batch: graspnet1b/scene_0000/realsense/0128, graspnet1b/scene_0000/realsense/0000, graspnet1b/scene_0000/realsense/0224, graspnet1b/scene_0000/realsense/0096.
-- `recipe/HGGD/augment/jitter`, `fails`: graspnet1b/scene_0000/realsense/0128: RandomJitter moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.
-- `recipe/HGGD/augment/shift`, `fails`: graspnet1b/scene_0000/realsense/0128: RandomShift moves points, which would leave the image-space data of this sample behind (rgb, depth, view_grasps). Remove the point-space augmentation, or do not ask the dataset for images and image-keyed labels.
+- `recipe/GSNet/hooks/amp` and `recipe/HGGD/hooks/amp`, `refused`: mixed precision is not supported by the detector yet (it does not declare `amp_ready = True`). Probed before that rule existed, GSNet stopped in the first iteration with "Index put requires the source and destination dtypes match, got Float for the destination and Half for the source", and HGGD's first loss was not finite (`loss/heatmap = nan, loss/angle = inf`).
+- `recipe/HGGD/augment/jitter` and `recipe/HGGD/augment/shift`, `refused`: RandomJitter (RandomShift) moves the points, but this dataset section also serves image-space data (`rgb`, `depth`, `view_grasps`), which would stay where it was.
 <!-- measured:end -->
 
 Under HGGD the three encoder-specific optimizer and hook presets and the two encoder
@@ -374,16 +375,21 @@ methods' own: `adamw_onecycle_10e.yaml`, `adamw_warmup-cosine_10e.yaml`,
   them (HGGD needs its `EpochSignalHook`).
 - **`SWAHook.start_epoch` must be below `train.epochs`**; the run refuses to start
   otherwise ("nothing would be averaged").
-- **Point augmentation next to images stops at the first sample (a `ContractError`), it is
-  not refused by the config check**: the config check does not know that HGGD's dataset serves images.
+- **Point augmentation next to images is refused by the config check.** `augment=jitter`,
+  `augment=shift` and the flip and rotation of the GraspNet recipes move the points; a dataset
+  section that serves `images` or `view_grasps` (HGGD's) would keep them where they were. The
+  message names the transform and the image-space data. `augment=dropout` removes points and
+  moves none, so it runs under HGGD.
 - **A wrong optimizer name passes the config check** and fails when the optimizer is
   built, with the list of valid names: the check does not import the libraries.
-- **Mixed precision is not ready for the ported methods.** `hooks=amp` (`train.amp: true`)
-  fails under GSNet in the first iteration: the label assigner writes half-precision
-  values into a single-precision tensor ("Index put requires the source and destination
-  dtypes match"). Under HGGD the loss of the first iteration is not finite
-  (`loss/heatmap = nan, loss/angle = inf`). The preset is kept because the switch exists;
-  do not train with it before those two are fixed.
+- **Mixed precision is not ready for the ported methods, and is refused.** `hooks=amp`
+  (`train.amp: true`) failed under GSNet in the first iteration: the label assigner writes
+  half-precision values into a single-precision tensor ("Index put requires the source and
+  destination dtypes match"). Under HGGD the loss of the first iteration was not finite
+  (`loss/heatmap = nan, loss/angle = inf`). The config check now refuses `train.amp: true`
+  unless the detector class declares `amp_ready = True`, and none of the shipped ones does.
+  The preset stays as the switch for a detector of your own; it is one of the 37 names on
+  this page and not a usable option today.
 - **SOAP fails under HGGD.** `optimizer=soap` runs under GSNet; under HGGD the second
   optimizer step ends in "CUDA error: an illegal memory access was encountered", three
   times out of three. The cause was not investigated.

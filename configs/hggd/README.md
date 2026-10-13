@@ -34,11 +34,39 @@ and whether a collision filter was applied.
 |---|---|---|:---:|---:|---:|---:|
 | [hggd_r34w8_g1b-realsense_15e](hggd_r34w8_g1b-realsense_15e.yaml) | RealSense | `reported` (paper; README row "In paper") | not stated | 59.36 | 51.20 | 22.17 |
 | | | `reported` (README row "In repo") | not stated | 64.45 | 53.59 | 24.59 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | off | 58.33 | 47.96 | 22.03 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.70 | 52.90 | 24.18 |
 | [hggd_r34w8_g1b-kinect_15e](hggd_r34w8_g1b-kinect_15e.yaml) | Kinect | `reported` (paper; README row "In paper") | not stated | 60.26 | 48.59 | 18.43 |
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.63 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.34 | 46.83 | 19.27 |
 
-There is no `author-ckpt` or `reproduced` row yet: neither a full-split evaluation of the
-authors' checkpoints nor a training run has been done in this toolbox.
+`author-ckpt` is the authors' checkpoint of each camera, converted with
+`tools/convert_checkpoint.py` and run through `grasppanda test` on the whole test split
+(90 scenes, 23,040 frames per camera, all scored) at commit `4bc5333`, one run each with
+seed 0. `off` is every decoded grasp (variant `raw`); `on, then NMS` is what the released
+test script dumps (variant `cd`). Nothing in HGGD's input is derived from ground truth:
+`gt_assisted` is empty in all four records, whereas the seed-based methods of this
+toolbox crop the workspace with the ground-truth segmentation.
+
+**Against the reported rows.** Neither source states the collision filter, so the
+sources give no pairing. Measured minus reported, on seen / similar / novel:
+
+| Camera | Measured | minus "In paper" | minus "In repo" |
+|---|---|---|---|
+| RealSense | `cd` | +4.34 / +1.70 / +2.01 | −0.75 / −0.69 / −0.41 |
+| RealSense | `raw` | −1.03 / −3.24 / −0.14 | −6.12 / −5.63 / −2.56 |
+| Kinect | `cd` | +0.08 / −1.76 / +0.84 | −0.83 / −0.19 / −0.10 |
+| Kinect | `raw` | −3.28 / −4.62 / +0.20 | −4.19 / −3.05 / −0.74 |
+
+For both cameras the closest pair is `cd` with "In repo": within 0.83 AP on every split,
+and below it on all six. That fits a test script that dumps filtered grasps, but it
+does not establish how that row was produced. Why `cd` lies below "In repo" was not
+investigated. The network draws random numbers at inference (see below); the spread
+over seeds was measured on 20 frames only (0.4 to 0.7 AP standard deviation), not on a
+split.
+
+There is no `reproduced` row yet: no training run has been done in this toolbox.
 
 **Is the released checkpoint healthy?** Yes. A partial check, *not* a headline number: 20
 frames per row (every 64th frame of five scenes; a benchmark split has 7 680). "Reference"
@@ -66,6 +94,24 @@ With the reference's random draws replayed, predictions made here score what the
 reference's own dump scores on the six recorded frames (35.56 against 35.48 `raw` and
 41.91 against 41.83 `cd` on four RealSense frames; 31.00 against 31.00 and 35.36 against
 35.25 on two Kinect frames; `tests/integration/test_hggd_data.py`).
+
+### On GraspClutter6D
+
+The RealSense checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames
+of the RealSense D435, all scored), protocol `graspclutter6d-sv-v1`, config
+[hggd_r34w8_g1b-realsense-to-gc6d-d435_15e](hggd_r34w8_g1b-realsense-to-gc6d-d435_15e.yaml). Percent.
+
+| Collision filter | AP | AP0.8 | AP0.4 | Provenance |
+|---|---|---|---|---|
+| off | 14.25 | 17.41 | 9.23 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json)) |
+| on, then NMS | 14.56 | 17.79 | 9.33 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json)) |
+
+No number is published for HGGD on this dataset, so there is nothing to compare these
+with. They are one run with seed 0. As on GraspNet-1Billion, nothing in the input is
+derived from ground truth, whereas the seed-based methods are scored on this dataset
+with the workspace cropped around the ground-truth segmentation: the rows of the two
+kinds are not like-for-like. What changes with the dataset is described in
+`docs/user_guides/cross_dataset.md`.
 
 ## Use
 

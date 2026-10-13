@@ -140,6 +140,9 @@ class ProbeReport:
             the number predicted, then the number left after every step) and
             ``seconds`` (per frame, per step; measured on this machine).
         predicted_frames: Their keys.
+        no_gradient: Top-level parts of the model that hold trainable parameters and
+            received no non-zero gradient in any iteration (a dead stage); empty when
+            every part learned, and when no iteration ran.
         nonfinite: Non-finite values that were met, as sentences.
         failure: Phase, component, exception type and message of a failure.
         refusal: Messages of the config check.
@@ -172,6 +175,7 @@ class ProbeReport:
     grasps_per_frame: list[int] = field(default_factory=list)
     postprocessing: dict[str, Any] = field(default_factory=dict)
     predicted_frames: list[str] = field(default_factory=list)
+    no_gradient: list[str] = field(default_factory=list)
     nonfinite: list[str] = field(default_factory=list)
     failure: dict[str, str] | None = None
     refusal: list[str] = field(default_factory=list)
@@ -260,6 +264,12 @@ def _fail(report: ProbeReport, error: BaseException, default: str, when: str = "
     where = phase + (f" ({when})" if when else "") + (f", in the {component}" if component else "")
     report.verdict = "fails"
     report.detail = f"at {where}: {type(error).__name__}: {message}"
+    if device_fault(report):
+        report.notes.append(
+            "the GPU reported a launch failure. On a shared or nearly full device that is "
+            "usually a statement about this machine at this moment, not about the "
+            "combination: probe again; if it repeats on a free device, it is a defect."
+        )
     if out_of_memory(report):
         report.notes.append(
             "the probe ran out of GPU memory. That is a statement about this machine at this "
@@ -277,6 +287,13 @@ def out_of_memory(report: ProbeReport) -> bool:
     return "out of memory" in text or "alloc_failed" in text
 
 
+def device_fault(report: ProbeReport) -> bool:
+    """Whether a probe failed with a CUDA launch failure, which a busy device produces."""
+    failure = report.failure or {}
+    text = str(failure.get("message", "")).lower()
+    return "unspecified launch failure" in text or "cuda error: an illegal" in text
+
+
 # ------------------------------------------------------------------------- recording
 
 
@@ -291,6 +308,8 @@ class _Recorder:
         self.compute: list[float] = []
         self.waiting: list[float] = []
         self.keys: list[list[str]] = []
+        self.reached: set[str] = set()
+        self.trainable: set[str] = set()
         self._mark = self._started = time.perf_counter()
 
     def _sync(self) -> None:
@@ -305,6 +324,22 @@ class _Recorder:
 
     def before_run(self, state: Any) -> None:
         self._mark = time.perf_counter()
+
+    def before_step(self, state: Any) -> None:
+        """Called with the gradients of the iteration in place: note which top-level
+        parts of the model received one that is not zero."""
+        self.note_gradients(state.model)
+
+    def note_gradients(self, model: Any) -> None:
+        for name, parameter in model.named_parameters():
+            if not parameter.requires_grad:
+                continue
+            part = name.split(".")[0]
+            self.trainable.add(part)
+            if part in self.reached or parameter.grad is None:
+                continue
+            if bool(torch.count_nonzero(parameter.grad)):
+                self.reached.add(part)
 
     def before_epoch(self, state: Any) -> None:
         pass
@@ -327,6 +362,7 @@ class _Recorder:
 def _summarise(report: ProbeReport, recorder: _Recorder) -> None:
     rows = recorder.rows
     report.iterations = len(rows)
+    report.no_gradient = sorted(recorder.trainable - recorder.reached) if rows else []
     report.frames = list(dict.fromkeys(key for keys in recorder.keys for key in keys))
     report.batch_size = max((len(keys) for keys in recorder.keys), default=None)
     if not rows:
@@ -638,6 +674,11 @@ def _judge(report: ProbeReport, good: str, what: str, predict_frames: int = 1) -
         )
     if report.supervised_seeds and max(report.supervised_seeds) == 0.0:
         unstable.append("no iteration supervised a seed")
+    if report.no_gradient:
+        unstable.append(
+            f"no gradient reached {', '.join(report.no_gradient)} in any iteration (a part "
+            "before it produced nothing to learn from, or its output is constant)"
+        )
     short = report.iterations < max(report.iterations_requested, 1)
     if short and not report.nonfinite:
         unstable.append(f"only {report.iterations} of {report.iterations_requested} iterations ran")

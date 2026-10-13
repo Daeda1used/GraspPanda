@@ -15,11 +15,14 @@
 #   belong together; where points are sparse, lower nsamples or use `reduction: max`.
 # * fp_mlps: the finest propagation level is 256 wide here (published: 64), the width
 #   Scale-Balanced-Grasp's gated crop needs; the other levels are the published ones.
-# * in_channels: 3 constant ones (the published model reads colour and height).
+# * in_channels: 3 constant ones (the published model reads colour and height), and
+#   use_xyz: true, which appends the coordinates: the stem batch-normalises its input,
+#   and a constant alone would be normalised to zero (a dead encoder).
 # * optimizer and schedule: the base method's.
 model:
   backbone:
     type: ASSANet                 # `dense`: one feature per input point, 256 channels
     in_channels: 3                # constant ones
+    use_xyz: true                 # plus the coordinates; see the header
     radii: [[0.02, 0.04], [0.04, 0.08], [0.08, 0.16], [0.16, 0.32]]
     fp_mlps: [[256, 256], [128, 128], [256, 256], [512, 512]]

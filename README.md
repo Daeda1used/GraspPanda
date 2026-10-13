@@ -50,7 +50,7 @@ stage, and where every number is produced by the same pinned evaluation.
 
 *Real output, lines dropped, none invented. A combination is one command; a wrong one is refused with the fix before anything is built; a probe says whether it trains. No accuracy is claimed by a probe.*
 
-**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 980 recorded combinations (745 trained on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
+**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 980 recorded combinations (740 probed on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
 
 <img src="resources/demo.webp" alt="Predicted grasps on a cluttered GraspNet-1Billion test scene, rendered by GraspPanda" width="720">
 
@@ -60,9 +60,10 @@ stage, and where every number is produced by the same pinned evaluation.
 ## 📰 News
 
 - **2026-10** — First public version of the rebuild. Six methods as interchangeable components, each equal to its reference implementation stage by stage; eleven scene encoders; `grasppanda components`, `demo` and `analyze`; GraspClutter6D end to end. Releases up to v0.56 are an earlier, unrelated code base and stay available under their tags and on the `legacy` branch.
-- **2026-10** — `grasppanda compose` builds a combination from a method config and a preset, `grasppanda probe` trains it for a few iterations on real frames, and a generated page shows the measured result of 208 combinations (which component works under which method, and what the contract rules refuse).
+- **2026-10** — `grasppanda compose` builds a combination from a method config and a preset, `grasppanda probe` trains it for a few iterations on real frames, and a generated page shows the measured result of every recorded combination (208 at that time; which component works under which method, and what the contract rules refuse).
 - **2026-10** — [Options for every slot](docs/slots/index.md), taken from published code and model libraries: 248 in all (image and scene encoders, seed proposal, view, grouper, heads and losses, post-processing, training recipe). Each has a row and a command on its slot page and a measured verdict per method; none has been trained and evaluated yet, so none carries an accuracy.
 - **2026-10** — The [combination explorer](https://daeda1used.github.io/GraspPanda/explorer/): pick a method, swap a slot, read the measured verdict, the command and the reason of a refusal; two swaps without a record get the stored answer of `compose`; `grasppanda explore` serves it locally and checks any selection with the real `compose`.
+- **2026-10** — More combinations that used to pass the check and fail in the first iteration are refused with the fix: a head or a view stage on another grid than the labels, a seed count the encoder does not return, a point augmentation next to images, a collision filter without the full cloud, mixed precision under a detector not written for it. A probe on real frames now reports a part of the model that received no gradient.
 - **2026-10** — Two more families of wrong combinations are refused when a config is checked instead of failing later: stages on a data recipe that does not serve their labels, and an encoder whose width a grouper cannot take (`compose` then fits the encoder or puts the projected grouper in place, and says so).
 
 ## 🤔 Why GraspPanda
@@ -136,7 +137,7 @@ every option from the measured records as universal, most, some or specific.
 | [Head bundle and assigner](docs/slots/head_loss.md) | 10 + 4 | the heads of the ported methods, a decoupled grid head, and the label assigners they go with |
 | [Loss](docs/slots/head_loss.md) | 20 | focal, quality, robust and set losses, mining, class balance, uncertainty weighting, per loss term |
 | [Post-processing](docs/slots/post.md) | 15 | collision, table, workspace and gripper filters, NMS, selection, change of frame |
-| [Training recipe](docs/slots/recipe.md) | 37 | optimizers, schedules, hooks, augmentation |
+| [Training recipe](docs/slots/recipe.md) | 37 | optimizers, schedules, hooks, augmentation (one of them, mixed precision, is refused for every shipped detector today) |
 
 ## 🗺️ Overview
 
@@ -158,6 +159,12 @@ every option from the measured records as universal, most, some or specific.
 Nothing has been certified yet, so this table lists **targets**: numbers reported by the
 original authors on GraspNet-1Billion (RealSense, AP on seen / similar / novel). The last
 column fills in as each method passes the gate.
+
+What has been measured is how the weights released by the authors score here: five
+methods on the whole GraspNet-1Billion test split and four of them on GraspClutter6D,
+with and without collision filter, the reported number beside each. Those `author-ckpt`
+numbers are in the tables of [docs/model_zoo.md](docs/model_zoo.md), each backed by a
+committed result record; they are not reproductions, so the last column stays empty.
 
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
@@ -198,7 +205,10 @@ grasppanda print-config projects/example_project/configs/toy_detector.yaml \
 ### First grasps in five minutes
 
 No dataset is needed for a first picture. The zoo holds no weights yet and the authors'
-checkpoints are under their own licences, so nothing is downloaded for you.
+checkpoints are under their own licences, so no grasp checkpoint is downloaded for you.
+(The one exception to "nothing is fetched": an image-encoder preset with `pretrained: true`
+lets `timm`, `transformers` or `torchvision` download ImageNet-style weights on first use and
+prints one line with their licence; see [image encoders](docs/slots/image_encoders.md).)
 
 **1. Check the installation** (no download, CPU, seconds): a toy detector, trained on the spot.
 

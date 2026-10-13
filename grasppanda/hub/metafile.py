@@ -3,7 +3,16 @@
 Every ``configs/<method>/metafile.yaml`` is validated here. The rules encode the
 project's reporting policy: a number never appears without its provenance and without
 saying whether a collision filter was applied, and a number produced by this toolbox
-must point at the evidence behind it.
+must point at the evidence behind it: a result record that is committed next to the
+metafile (``tools/record_result.py`` puts it there and prints the row).
+
+A result states ``AP`` for the splits of its protocol (:data:`PROTOCOL_SPLITS`), in
+percent, and may state ``AP0.8`` and ``AP0.4`` for the same splits::
+
+    AP: {seen: 65.70, similar: 53.75, novel: 23.98}      # graspnet1b-sv-v1
+    AP: {test: 21.67}                                    # graspclutter6d-sv-v1
+    AP0.8: {test: 26.62}
+    AP0.4: {test: 15.90}
 """
 
 from __future__ import annotations
@@ -15,6 +24,7 @@ from typing import Any
 from grasppanda.config import ConfigError, Issue, configs_root, parse_yaml
 
 __all__ = [
+    "PROTOCOL_SPLITS",
     "PROVENANCES",
     "Metafile",
     "ModelEntry",
@@ -28,7 +38,15 @@ __all__ = [
 #: ``author-ckpt``: the authors' weights, evaluated by this toolbox.
 #: ``reproduced``: trained and evaluated by this toolbox.
 PROVENANCES = ("reported", "author-ckpt", "reproduced")
-_SPLITS = ("seen", "similar", "novel")
+#: The splits a result of each pinned protocol is stated for. GraspNet-1Billion papers
+#: print one AP per object-novelty split of the test scenes; GraspClutter6D has one test
+#: split, for which AP, AP0.8 and AP0.4 are printed.
+PROTOCOL_SPLITS = {
+    "graspnet1b-sv-v1": ("seen", "similar", "novel"),
+    "graspclutter6d-sv-v1": ("test",),
+}
+#: Average precision at one friction level, which a result may state next to ``AP``.
+_AT_FRICTION = ("AP0.8", "AP0.4")
 
 
 @dataclass(frozen=True)
@@ -42,6 +60,12 @@ class Result:
     record: str = ""
     inputs: str = ""
     seeds: int = 1
+    #: ``{"AP0.8": {split: value}, "AP0.4": {...}}`` for the levels the row states.
+    ap_at: dict[str, dict[str, float]] = field(default_factory=dict)
+
+    def numbers(self) -> dict[str, dict[str, float]]:
+        """Every number of the row: ``{"AP": {split: value}, "AP0.8": {...}, ...}``."""
+        return {"AP": dict(self.ap), **{name: dict(values) for name, values in self.ap_at.items()}}
 
 
 @dataclass(frozen=True)
@@ -74,7 +98,27 @@ class Metafile:
     models: tuple[ModelEntry, ...] = field(default_factory=tuple)
 
 
-def _result(raw: Any, where: str, issues: list[Issue], has_weights: bool) -> Result | None:
+def _numbers(
+    raw: Any, where: str, splits: tuple[str, ...], issues: list[Issue]
+) -> dict[str, float]:
+    """A ``{split: number}`` mapping of a result, or ``{}`` with an issue."""
+    if not isinstance(raw, dict) or not raw or not set(raw) <= set(splits):
+        issues.append(Issue(where, f"must map splits ({', '.join(splits)}) to numbers"))
+        return {}
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in raw.values()):
+        issues.append(Issue(where, "values must be numbers"))
+        return {}
+    return {split: float(value) for split, value in raw.items()}
+
+
+def _result(
+    raw: Any,
+    where: str,
+    issues: list[Issue],
+    has_weights: bool,
+    splits: tuple[str, ...],
+    directory: Path,
+) -> Result | None:
     if not isinstance(raw, dict):
         issues.append(Issue(where, "a result must be a mapping"))
         return None
@@ -96,12 +140,14 @@ def _result(raw: Any, where: str, issues: list[Issue], has_weights: bool) -> Res
     collision = raw.get("collision_filter")
     if collision is not None and not isinstance(collision, bool):
         issues.append(Issue(f"{where}.collision_filter", "must be true, false or null"))
-    ap = raw.get("AP")
-    if not isinstance(ap, dict) or not ap or not set(ap) <= set(_SPLITS):
-        issues.append(Issue(f"{where}.AP", f"must map splits ({', '.join(_SPLITS)}) to numbers"))
-        ap = {}
-    elif not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in ap.values()):
-        issues.append(Issue(f"{where}.AP", "values must be numbers"))
+    ap = _numbers(raw.get("AP"), f"{where}.AP", splits, issues)
+    ap_at = {}
+    for name in _AT_FRICTION:
+        if name not in raw:
+            continue
+        ap_at[name] = _numbers(raw[name], f"{where}.{name}", splits, issues)
+        if ap and ap_at[name] and set(ap_at[name]) != set(ap):
+            issues.append(Issue(f"{where}.{name}", "must be given for the same splits as AP"))
     if provenance == "reported" and not raw.get("source"):
         issues.append(Issue(f"{where}.source", "a reported number must say where it is reported"))
     if provenance in ("author-ckpt", "reproduced"):
@@ -120,6 +166,13 @@ def _result(raw: Any, where: str, issues: list[Issue], has_weights: bool) -> Res
                         f"is required for a '{provenance}' result: it is the evidence",
                     )
                 )
+        if raw.get("record") and not (directory / str(raw["record"])).is_file():
+            issues.append(
+                Issue(
+                    f"{where}.record",
+                    f"no such result record next to the metafile: {raw['record']}",
+                )
+            )
         if not has_weights:
             issues.append(
                 Issue(
@@ -130,12 +183,13 @@ def _result(raw: Any, where: str, issues: list[Issue], has_weights: bool) -> Res
     return Result(
         provenance=str(provenance),
         collision_filter=collision,
-        ap={k: float(v) for k, v in ap.items() if isinstance(v, (int, float))},
+        ap=ap,
         source=str(raw.get("source", "")),
         evaluator=str(raw.get("evaluator", "")),
         record=str(raw.get("record", "")),
         inputs=str(raw.get("inputs", "")),
         seeds=int(raw.get("seeds", 1)),
+        ap_at=ap_at,
     )
 
 
@@ -162,6 +216,17 @@ def load_metafile(path: str | Path) -> Metafile:
         for key in ("name", "config", "protocol", "camera"):
             if not entry.get(key):
                 issues.append(Issue(f"{where}.{key}", "is required"))
+        splits = PROTOCOL_SPLITS.get(str(entry.get("protocol", "")))
+        if entry.get("protocol") and splits is None:
+            issues.append(
+                Issue(
+                    f"{where}.protocol",
+                    f"unknown protocol {entry['protocol']!r}; known: {', '.join(PROTOCOL_SPLITS)}",
+                )
+            )
+        splits = splits or tuple(
+            dict.fromkeys(s for known in PROTOCOL_SPLITS.values() for s in known)
+        )
         config = configs_root() / str(entry.get("config", ""))
         if entry.get("config") and not config.is_file():
             issues.append(Issue(f"{where}.config", f"no such shipped config: {entry['config']}"))
@@ -179,7 +244,16 @@ def load_metafile(path: str | Path) -> Metafile:
         results = [
             result
             for r_index, r in enumerate(entry.get("results") or [])
-            if (result := _result(r, f"{where}.results.{r_index}", issues, weights is not None))
+            if (
+                result := _result(
+                    r,
+                    f"{where}.results.{r_index}",
+                    issues,
+                    weights is not None,
+                    splits,
+                    path.parent,
+                )
+            )
         ]
         models.append(
             ModelEntry(

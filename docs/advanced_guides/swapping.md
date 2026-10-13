@@ -74,13 +74,13 @@ YAML file or from `DETECTORS.build(...)` in Python.
 | `ASSANet` | `dense` | 64 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `DGCNN` | `dense` | 256 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `DeLA` | `dense` | 256 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `LitePT` | `dense` | 72 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `MinkUNet` | `dense` | 96 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `OACNNs` | `dense` | 20 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `LitePT` | `dense` | 72 | `weights-verified` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `MinkUNet` | `dense` | 96 (`out_channels`) | `tested` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `OACNNs` | `dense` | 20 (`out_channels`) | `tested` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `OctFormer` | `dense` | 168 (`out_channels`) | `bridge` | `ocnn` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3` | `dense` | 64 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3Sonata` | `dense` | 1232 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `PTv3Utonia` | `dense` | 1386 | `weights-verified` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3` | `dense` | 64 | `weights-verified` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3Sonata` | `dense` | 1232 | `weights-verified` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `PTv3Utonia` | `dense` | 1386 | `weights-verified` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PointMLP` | `dense` | 128 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `PointMamba` | `subsampled` | 384 (`out_channels`) | `bridge` | `mamba-ssm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
 | `PointMetaBase` | `dense` | 32 | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
@@ -96,8 +96,8 @@ YAML file or from `DETECTORS.build(...)` in Python.
 | `PointViT` | `subsampled` | 384 (`out_channels`) | `tested` | — | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
 | `PyGPointEncoder` | `dense` | 256 (`out_channels`) | `bridge` | `torch_geometric` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `RandLANet` | `dense` | 32 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `SpUNet` | `dense` | 20 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
-| `SparseUNet14` | `dense` | 512 (`out_channels`) | `tested` | `spconv` | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `SpUNet` | `dense` | 20 (`out_channels`) | `tested` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
+| `SparseUNet14` | `dense` | 512 (`out_channels`) | `tested` | `spconv-cu118` (or another `spconv-*` build) | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 | `Uni3D` | `subsampled` | once built (`out_channels`) | `bridge` | `timm` | in `FeaturePropagation` | ✓ | in `FeaturePropagation` | ✓ |
 | `Volt` | `dense` | 256 (`out_channels`) | `tested` | — | ✓ | in `FurthestPointSubsample` | ✓ | in `FurthestPointSubsample` |
 

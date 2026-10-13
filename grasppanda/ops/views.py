@@ -51,24 +51,25 @@ def approach_to_rotation(approach: Tensor, angle: Tensor | None = None) -> Tenso
     Returns:
         ``(..., 3, 3)`` rotation matrices.
     """
-    axis_x = approach / approach.norm(dim=-1, keepdim=True)
-    zeros = torch.zeros_like(axis_x[..., 0])
-    axis_y = torch.stack([-axis_x[..., 1], axis_x[..., 0], zeros], dim=-1)
-    degenerate = axis_y.norm(dim=-1, keepdim=True) == 0
-    fallback = torch.tensor([0.0, 1.0, 0.0], dtype=axis_x.dtype, device=axis_x.device)
-    axis_y = torch.where(degenerate, fallback.expand_as(axis_y), axis_y)
-    axis_y = axis_y / axis_y.norm(dim=-1, keepdim=True)
-    axis_z = torch.cross(axis_x, axis_y, dim=-1)
-    frame = torch.stack([axis_x, axis_y, axis_z], dim=-1)
-    if angle is None:
-        return frame
-    cos, sin = torch.cos(angle), torch.sin(angle)
-    ones = torch.ones_like(cos)
-    zeros = torch.zeros_like(cos)
-    spin = torch.stack([ones, zeros, zeros, zeros, cos, -sin, zeros, sin, cos], dim=-1).reshape(
-        *angle.shape, 3, 3
+    forward = approach / torch.linalg.vector_norm(approach, dim=-1, keepdim=True)
+    # The second column lies in the horizontal plane: the world's vertical crossed with
+    # the approach, which vanishes exactly when the approach is vertical.
+    vertical = forward.new_tensor([0.0, 0.0, 1.0]).expand_as(forward)
+    side = torch.linalg.cross(vertical, forward, dim=-1)
+    length = torch.linalg.vector_norm(side, dim=-1, keepdim=True)
+    undefined = length == 0
+    side = torch.where(
+        undefined,
+        forward.new_tensor([0.0, 1.0, 0.0]).expand_as(forward),
+        side / length.masked_fill(undefined, 1.0),
     )
-    return frame @ spin.to(frame.dtype)
+    third = torch.linalg.cross(forward, side, dim=-1)
+    if angle is not None:
+        # Turning the frame about its own first column mixes the other two.
+        cosine = torch.cos(angle).to(forward.dtype).unsqueeze(-1)
+        sine = torch.sin(angle).to(forward.dtype).unsqueeze(-1)
+        side, third = cosine * side + sine * third, cosine * third - sine * side
+    return torch.stack([forward, side, third], dim=-1)
 
 
 def rotation_angle(first: Tensor, second: Tensor) -> Tensor:

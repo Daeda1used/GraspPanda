@@ -289,6 +289,7 @@ ENCODERS: dict[str, tuple[dict[str, Any], tuple[Any, ...]]] = {
     "ASSANet": (
         {
             "in_channels": 3,
+            "use_xyz": True,  # the methods feed constant ones: see the class
             "width": 6,
             "strides": [2, 2],
             "radii": [[0.2, 0.3], [0.4, 0.5]],

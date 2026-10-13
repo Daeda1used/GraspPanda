@@ -264,7 +264,7 @@ def test_the_scheduler_refuses_meaningless_lengths():
 # ----------------------------------------------------------------------- metafile
 
 
-def test_the_metafile_is_valid_and_carries_reported_numbers_only():
+def test_the_metafile_is_valid_and_states_the_reported_numbers():
     meta = load_metafile(REPO / "configs" / "finegrasp" / "metafile.yaml")
     assert meta.method == "FineGrasp" and meta.implementation == "clean-room"
     assert meta.upstream["repository"] == "HorizonRobotics/robo_orchard_lab"
@@ -273,9 +273,13 @@ def test_the_metafile_is_valid_and_carries_reported_numbers_only():
     assert model.config == f"{RUN_CONFIG}.yaml" and model.camera == "realsense"
     assert model.weights is not None and model.weights.source == "author"
     assert model.weights.sha256.startswith("30c1f335")
+    # the paper's two rows, then what the authors' weights score here (held to its
+    # records, for all methods, in test_zoo_records.py); nothing has been trained
     assert [(r.provenance, r.collision_filter) for r in model.results] == [
         ("reported", False),
         ("reported", True),
+        ("author-ckpt", False),
+        ("author-ckpt", True),
     ]
     assert model.results[0].ap == {"seen": 71.67, "similar": 62.83, "novel": 27.40}
     assert model.results[1].ap == {"seen": 73.71, "similar": 64.56, "novel": 28.14}

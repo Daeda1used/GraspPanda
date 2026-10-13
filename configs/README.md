@@ -4,6 +4,7 @@
 configs/
 ├── _base_/                 building blocks: datasets/, models/, schedules/, default_runtime.yaml
 └── <method>/               README.md, metafile.yaml and runnable configs of one method
+    └── records/            the result records behind the measured numbers of the metafile
 ```
 
 Runnable configs are named `<method>_<backbone>_<dataset>-<camera>_<schedule>.yaml`
@@ -15,3 +16,8 @@ Rules of the config language are in the
 
 Method folders are added as each method passes the model-zoo gate; see the roadmap in
 the top-level README.
+
+A number of a metafile that was measured here (`author-ckpt`, `reproduced`) names its
+result record under `records/`. `python -m tools.record_result` checks a whole-split run,
+puts its records there and prints the rows; see
+[Recording a result](../docs/model_zoo.md#recording-a-result).

@@ -520,7 +520,7 @@ def test_randlanet_sampling_is_random_in_training_and_seeded_in_evaluation():
 def test_pyg_bridge_names_the_extra_when_the_library_is_absent():
     from grasppanda.utils.imports import MissingDependencyError
 
-    with pytest.raises(MissingDependencyError, match=r"grasppanda\[torch_geometric\]"):
+    with pytest.raises(MissingDependencyError, match=r"\.\[torch_geometric\]"):
         BACKBONES.build({"type": "PyGPointEncoder"})
 
 

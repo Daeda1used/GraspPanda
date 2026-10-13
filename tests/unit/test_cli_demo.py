@@ -197,7 +197,7 @@ def test_an_image_method_and_a_point_cloud_file(setup, tmp_path, capsys):
 def test_show_needs_open3d_and_says_how_to_get_it(setup, tmp_path, capsys):
     assert main([*base(setup), "--example", "--show", "--out", str(tmp_path / "out")]) == 1
     error = capsys.readouterr().err
-    assert "needs 'open3d'" in error and 'pip install "grasppanda[vis]"' in error
+    assert "needs 'open3d'" in error and 'pip install -e ".[vis]"' in error
     assert not (tmp_path / "out").exists()  # refused before the model was built
 
 

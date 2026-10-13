@@ -1,5 +1,6 @@
 {
  "grasppanda": "0.1.0.dev10+g1c096678e",
+ "commit": "ce499ff",
  "commands": {
   "compose": {
    "command": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnet2 --set grouper=multi-scale -o gsnet_pointnet2_multi-scale.yaml",
@@ -28,6 +29,7 @@
     "",
     "contracts",
     "  ✓ backbone · proposal",
+    "  ✓ backbone · grouper",
     "  ✓ proposal · view",
     "  ✓ view · assigner",
     "  ✓ assigner · head",
@@ -66,6 +68,7 @@
     "",
     "contracts",
     "  ✓ backbone · proposal",
+    "  ✓ backbone · grouper",
     "  ✓ proposal · view",
     "  ✓ view · assigner",
     "  ✗ assigner · head: NearestLabelAssigner returns 'dense' matched labels, but EconomicHead is",
@@ -78,6 +81,11 @@
     "config check",
     "  ✗ data.train.dataset: transforms[2] (SampleGraspLabels) reads the dense label grids, which a",
     "    dataset with `compact_labels` does not serve. Remove one of the two.",
+    "  ✗ data.train.dataset: NearestLabelAssigner reads `supervision.objects`, which this training",
+    "    dataset does not serve. It serves compact labels in place of the dense label grids (its",
+    "    `compact_labels` section). A dataset serves one of the two label sets, and its transforms differ",
+    "    with it: the dense grids need a `SampleGraspLabels` transform and no `compact_labels` section,",
+    "    compact labels the section and no such transform.",
     "",
     "✗ refused: nothing was written. The messages above name the conflict and a fix."
    ]
@@ -91,21 +99,21 @@
     "  data        8 frames of the config's dataset · 4 per iteration",
     "  probe       as `grasppanda train` with data.train.dataset.split=sample data.train.num_workers=0 evaluation.interval=0 evaluation.save_best=null train.epochs=10 data.val.dataset.split=sample data.val.dataset.frame_step=4 data.val.num_workers=0",
     "  device      cuda",
-    "  trained     20 of 20 iterations · 1.21 s per iteration (median, without data; data 0.31 s), measured on this machine now",
+    "  trained     20 of 20 iterations · 0.30 s per iteration (median, without data; data 0.31 s), measured on this machine now",
     "  memory      peak 7.6 GiB on the GPU, this process",
     "  losses      first → last",
-    "    loss/objectness             0.7068 → 0.6295",
-    "    loss/graspness              0.7984 → 0.3171",
-    "    loss/view                   1.885 → 0.4012",
-    "    loss/score                  0.2622 → 0.01411",
-    "    loss/width                  2.468 → 0.1336",
-    "    loss                        6.12 → 1.496",
+    "    loss/objectness             0.7068 → 0.63",
+    "    loss/graspness              0.7984 → 0.3527",
+    "    loss/view                   1.885 → 0.3776",
+    "    loss/score                  0.2622 → 0.01308",
+    "    loss/width                  2.468 → 0.1882",
+    "    loss                        6.12 → 1.562",
     "  seeds       real: min 1.00, mean 1.00 of the seed slots per iteration",
     "              supervised: 1.00 → 1.00, min 1.00",
-    "  predicted   2 frame(s) · 310, 21 grasps",
+    "  predicted   2 frame(s) · 175, 218 grasps",
     "",
     "✓ runs: trained 20 iterations on 8 frames of the dataset and predicted on 2 frame(s), with finite losses and real seeds in every iteration.",
-    "  (49 s)"
+    "  (17 s)"
    ]
   }
  }

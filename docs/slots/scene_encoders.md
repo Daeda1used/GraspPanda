@@ -1,5 +1,7 @@
 # Scene encoders: overview
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 The slot `model.backbone` of the seed-based methods (GSNet, EconomicGrasp, FineGrasp,
 GraspNet-baseline, Scale-Balanced-Grasp). It has more options than any other slot, so its
 documentation is split by family. This page says what all of them share and where each
@@ -78,6 +80,17 @@ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointmet
     -o gsnet_pointmetabase.yaml
 grasppanda probe gsnet_pointmetabase.yaml
 ```
+
+Under Scale-Balanced-Grasp a probe ends as `wired` (a synthetic scene, exit status 3) unless
+it is given the reference's width histogram, which cannot be built from the eight frames of a
+probe; the `runs` of that method in the tables of these pages were measured with
+
+```bash
+grasppanda probe <config> --opts data.train.dataset.scale_statistic.source=legacy_import \
+    data.train.dataset.scale_statistic.reference_sha256=<SHA-256 of the reference's file>
+```
+
+(`configs/scale_balanced_grasp/README.md` says how to import the file once.)
 
 The measured verdict of every encoder under every method, with the adapter compose
 inserted and the numbers of the probe, is in

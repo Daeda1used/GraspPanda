@@ -4,6 +4,9 @@
 # Weights: `convnextv2_atto.fcmae_ft_in1k`, CC BY-NC 4.0: NON-COMMERCIAL weights.
 #
 # What must be re-tuned, and why:
+# * pretrained: false here, because the released weights are NON-COMMERCIAL (CC BY-NC 4.0) and a
+#   preset does not fetch such weights unasked. `--opts model.image_encoder.pretrained=true` lets
+#   timm download them, for non-commercial use; the probe of this preset ran on random weights.
 # * depth: rgb_only. The network sees colour only, so the heat-map loses the depth cue HGGD's own
 #   encoder has; depth still reaches the region stage as points. `fourth_channel` adds a depth
 #   filter to the first convolution (zero at the start, always trained here: no library ships
@@ -17,5 +20,5 @@ model:
   image_encoder:
     type: TimmImageEncoder
     name: convnextv2_atto.fcmae_ft_in1k
-    pretrained: true              # timm downloads the weights; or `checkpoint: <file>`
+    pretrained: false             # CC BY-NC 4.0 weights: off until you switch them on (header)
     depth: rgb_only               # rgb_only | fourth_channel | depth_stem

@@ -1,6 +1,7 @@
 # Machine-readable source of the EconomicGrasp zoo entries; validated by
-# grasppanda.hub.load_metafile. Only author-reported numbers so far: nothing has been
-# trained here, and the author checkpoint has not been scored on the full protocol.
+# grasppanda.hub.load_metafile. Reported numbers, and the authors' checkpoints scored by
+# this toolbox on whole test splits (`author-ckpt`, each row with its result record).
+# Nothing has been trained here, so there is no `reproduced` row.
 method: EconomicGrasp
 title: "An Economic Framework for 6-DoF Grasp Detection"
 venue: ECCV 2024
@@ -28,27 +29,83 @@ models:
         collision_filter: false
         source: "upstream README, Results table. Neither the table nor the paper states the collision filter; the shipped test command leaves it off."
         AP: {seen: 62.59, similar: 51.73, novel: 19.54}
-      # The whole test split (90 scenes, 23,040 frames) through `grasppanda test` at commit
-      # ccb8704, scored by GraspNet1BEvaluator. Seen is 1.12 AP above the reported value;
-      # see README.md, "Results", for what is known about the gap.
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit ccb8704, scored by GraspNet1BEvaluator.
+      # Seen is 1.12 AP above the reported value; see README.md, "Results", for what is
+      # known about the gap.
       - provenance: author-ckpt
         collision_filter: false
         evaluator: GraspNet1BEvaluator
-        record: records/economicgrasp_author_kinect_g1b-test_raw.json
+        record: records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_raw.json
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 63.71, similar: 52.28, novel: 19.73}
       - provenance: author-ckpt
         collision_filter: true
         evaluator: GraspNet1BEvaluator
-        record: records/economicgrasp_author_kinect_g1b-test_cd.json
+        record: records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_cd.json
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 65.47, similar: 53.64, novel: 20.36}
   - name: economicgrasp_sunet14_g1b-realsense_10e
     config: economicgrasp/economicgrasp_sunet14_g1b-realsense_10e.yaml
     protocol: graspnet1b-sv-v1
     camera: realsense
+    weights: &realsense_weights
+      # The authors' economicgrasp_realsense.tar of upstream release v1 (epoch 10), converted with
+      #   python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
+      #       --source-format economicgrasp --camera realsense
+      # The digest is that of the file that was converted for the records below and of a
+      # download of the link on 2026-10-13.
+      url: https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+      sha256: 33c99bf43d599bd259c53c090badd83771ca34b8bebdb4a27a9a45a80df32223
+      license: "MIT (the repository vendors operator code derived from a non-commercial project); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
     results:
       - provenance: reported
         collision_filter: false
         source: "upstream README, Results table. Neither the table nor the paper states the collision filter; the shipped test command leaves it off."
         AP: {seen: 68.21, similar: 61.19, novel: 25.48}
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 69.28, similar: 61.50, novel: 25.17}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 70.83, similar: 62.56, novel: 25.80}
+  # Cross-dataset transfer: the RealSense weights above, scored on GraspClutter6D.
+  - name: economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e
+    config: economicgrasp/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml
+    protocol: graspclutter6d-sv-v1
+    camera: realsense-d435
+    weights: *realsense_weights
+    results:
+      - provenance: reported
+        collision_filter: null    # the publication does not say
+        source: "GraspClutter6D paper (arXiv 2504.06866 v3), Table IX, row 'EconomicGrasp': trained on GraspNet-1Billion, tested on GraspClutter6D with 'workspace-cropped inputs'. The paper does not say which checkpoint was scored."
+        AP: {test: 21.67}
+        AP0.8: {test: 26.62}
+        AP0.4: {test: 15.90}
+      # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspClutter6DEvaluator.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspClutter6DEvaluator
+        record: records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 21.69}
+        AP0.8: {test: 26.64}
+        AP0.4: {test: 15.79}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspClutter6DEvaluator
+        record: records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 22.25}
+        AP0.8: {test: 27.30}
+        AP0.4: {test: 16.06}

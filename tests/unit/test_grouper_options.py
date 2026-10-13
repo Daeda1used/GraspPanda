@@ -364,7 +364,7 @@ def test_pyg_conv_group_without_the_library_says_how_to_install_it(monkeypatch):
         return real(name, *args, **kwargs)
 
     monkeypatch.setattr(importlib, "import_module", missing)
-    with pytest.raises(Exception, match=r'pip install "grasppanda\[torch_geometric\]"'):
+    with pytest.raises(Exception, match=r'pip install -e "\.\[torch_geometric\]"'):
         build({"type": "PyGConvGroup"})
 
 

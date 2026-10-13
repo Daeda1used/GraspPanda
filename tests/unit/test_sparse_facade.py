@@ -266,7 +266,7 @@ def test_importing_the_facade_does_not_import_the_backend_and_a_missing_one_is_e
         monkeypatch.setitem(sys.modules, name, None)  # makes `import spconv` fail
     monkeypatch.delitem(sys.modules, "grasppanda.ops.sparse._spconv", raising=False)
     assert sparse.BatchNorm(4).num_features == 4  # backend-independent parts still work
-    with pytest.raises(MissingDependencyError, match=r'pip install "grasppanda\[spconv-cu118\]"'):
+    with pytest.raises(MissingDependencyError, match=r'pip install -e "\.\[spconv-cu118\]"'):
         sparse.SubMConv3d(3, 4, 3)
     with pytest.raises(MissingDependencyError, match="spconv"):
         sparse.make_tensor(torch.zeros(1, 2), torch.zeros(1, 4, dtype=torch.long), 1)

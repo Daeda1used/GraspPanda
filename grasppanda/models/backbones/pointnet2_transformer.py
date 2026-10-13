@@ -123,6 +123,11 @@ class PointNet2Transformer(Backbone):
     def output_channels(cls, options: Mapping[str, Any]) -> int:
         return options["sa_mlps"][-1][-1]
 
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """Points per cloud of the last abstraction level."""
+        return int(options["npoints"][-1])
+
     def __init__(
         self,
         in_channels: int = 0,

@@ -81,7 +81,7 @@ def test_a_bridge_without_its_library_says_what_to_install(monkeypatch):
         {"type": "PytorchOptimizer", "name": "prodigy", "lr": 1.0},
         {"type": "ScheduleFree"},
     ):
-        with pytest.raises(MissingDependencyError, match=r"grasppanda\[optim\]"):
+        with pytest.raises(MissingDependencyError, match=r"\.\[optim\]"):
             build_optimizers(model, node)
 
 

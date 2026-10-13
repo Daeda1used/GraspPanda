@@ -137,3 +137,190 @@ def save_best_names_a_variant(data: Mapping[str, Any], command: str | None) -> I
             f"must look like '<variant>/<metric>' with a variant from evaluation.variants "
             f"({', '.join(names)}), e.g. '{names[0]}/AP'; got '{target}'.",
         )
+
+
+def _dataset_sections(data: Mapping[str, Any], names: Iterable[str]) -> Iterator[tuple[str, Any]]:
+    for name in names:
+        node = _select(data, ("data", name, "dataset"))
+        if isinstance(node, Mapping):
+            yield name, node
+
+
+def _component_class(registry: Any, node: Any) -> Any:
+    if isinstance(node, Mapping) and node.get("type") in registry:
+        return registry.get(node["type"])
+    return None
+
+
+@rule
+def image_data_is_not_moved_in_point_space(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """A dataset section that serves images, or labels keyed to the image, must not
+    list a point transform that moves the points: the images would stay behind.
+
+    A transform declares it with ``moves_points = True``; a section serves image-space
+    data when it sets ``images`` or ``view_grasps``. A step that uses an image up
+    before the mover names it in ``released_images(node)``.
+    """
+    from grasppanda.registry import TRANSFORMS
+
+    for name, dataset in _dataset_sections(data, ("train", "val", "test")):
+        images = dataset.get("images")
+        carried = [str(item) for item in images] if isinstance(images, (list, tuple)) else []
+        if dataset.get("view_grasps"):
+            carried.append("view_grasps")
+        steps = dataset.get("transforms")
+        if not carried or not isinstance(steps, list):
+            continue
+        movers: list[str] = []
+        left: list[str] = []
+        for node in steps:
+            cls = _component_class(TRANSFORMS, node)
+            released = getattr(cls, "released_images", None)
+            if callable(released):  # a step that uses an image up, e.g. DepthNormals
+                carried = [item for item in carried if item not in released(node)]
+            if getattr(cls, "moves_points", False) and carried:
+                movers.append(str(node["type"]))
+                left = left or list(carried)
+        if movers:
+            verb = "moves" if len(movers) == 1 else "move"
+            yield (
+                ("data", name, "dataset", "transforms"),
+                f"{' and '.join(dict.fromkeys(movers))} {verb} the points, but this dataset "
+                f"section also serves image-space data (`{'`, `'.join(left)}`), which would "
+                "stay where it was. Remove the point-space augmentation (with `grasppanda "
+                "compose`: leave it out of `--set augment=`); a detector that reads images "
+                "needs an augmentation that moves image and cloud together, and none is "
+                "shipped.",
+            )
+
+
+@rule
+def post_processors_find_the_cloud_they_read(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """A post-processor that needs the cloud before sub-sampling (``reads_full_points``,
+    with ``cloud: full_points``) must be evaluated on a dataset section that keeps it.
+
+    ``train`` evaluates on ``data.val`` (as does ``grasppanda probe``), ``test`` on
+    ``data.test``; without a command both are compared.
+    """
+    from grasppanda.registry import POSTPROCESSORS
+
+    variants = _select(data, ("evaluation", "variants"))
+    if not isinstance(variants, Mapping):
+        return
+    sections = {"train": ("val",), "test": ("test",), None: ("val", "test")}.get(command, ())
+    for variant, chain in variants.items():
+        for node in chain if isinstance(chain, list) else ():
+            cls = _component_class(POSTPROCESSORS, node)
+            if not getattr(cls, "reads_full_points", False):
+                continue
+            if node.get("cloud", "full_points") != "full_points":
+                continue
+            for name, dataset in _dataset_sections(data, sections):
+                if dataset.get("keep_full_points", True) is False:
+                    yield (
+                        ("evaluation", "variants", str(variant)),
+                        f"{node['type']} reads the cloud before sub-sampling "
+                        "(`observation.full_points`), but `data."
+                        f"{name}.dataset.keep_full_points` is false, so the frames of "
+                        f"`data.{name}` do not carry it. Set `data.{name}.dataset."
+                        f"keep_full_points: true` (`--opts data.{name}.dataset."
+                        "keep_full_points=true`), or let the step test the cloud the network "
+                        "saw with `cloud: points`.",
+                    )
+
+
+@rule
+def mixed_precision_needs_a_detector_that_is_ready(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """``train.amp: true`` is refused unless the detector declares ``amp_ready = True``.
+
+    Autocast wraps the whole loss computation, label matching and geometry included; a
+    detector that was not written for it stops at a half/float mismatch or returns a
+    loss that is not finite. No shipped detector declares it yet.
+    """
+    from grasppanda.registry import DETECTORS
+
+    if command not in (None, "train") or _select(data, ("train", "amp")) is not True:
+        return
+    cls = _component_class(DETECTORS, data.get("model"))
+    if cls is None or getattr(cls, "amp_ready", False):
+        return
+    yield (
+        ("train", "amp"),
+        f"mixed precision is not supported by {cls.__name__} yet: its loss is not written "
+        "for half-precision tensors (the detector does not declare `amp_ready = True`). "
+        "Set `train.amp: false` (with `grasppanda compose`: leave `amp` out of "
+        "`--set hooks=`).",
+    )
+
+
+def _stage_option(registry: Any, node: Any, name: str) -> Any:
+    """An option of a component node, or its constructor default; ``None`` when the
+    component is unknown or has no such option."""
+    import inspect
+
+    from grasppanda.registry import component_parameters
+
+    cls = _component_class(registry, node)
+    if cls is None:
+        return None
+    if name in node:
+        return node[name]
+    param = component_parameters(cls)[0].get(name)
+    if param is None or param.default is inspect.Parameter.empty:
+        return None
+    return param.default
+
+
+@rule
+def stages_use_the_grid_of_the_labels(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """The head bundle and the view stage must be laid out on the grid of the grasp
+    labels the training dataset serves: its reader's ``label_grid`` (views × in-plane
+    angles × depths).
+
+    The head states its grid in ``num_angle`` and ``num_depth``; a view stage states the
+    lattice its labels are indexed by in ``label_views``, or in ``num_views`` when it
+    scores the label lattice itself.
+    """
+    from grasppanda.registry import DATASETS, HEADS, VIEWS
+
+    if command not in (None, "train"):
+        return
+    model = _select(data, ("model",))
+    reader = _component_class(DATASETS, _select(data, ("data", "train", "dataset")))
+    grid = getattr(reader, "label_grid", None)
+    if not isinstance(model, Mapping) or grid is None:
+        return
+    head, view = model.get("head"), model.get("view")
+    for name, served in (("num_angle", grid.num_angle), ("num_depth", grid.num_depth)):
+        mine = _stage_option(HEADS, head, name)
+        if isinstance(mine, int) and not isinstance(mine, bool) and mine != served:
+            yield (
+                ("model", "head", name),
+                f"{head['type']} has {name} = {mine}, but the grasp labels of "
+                f"{reader.__name__} are laid out on {grid.num_angle} in-plane angles × "
+                f"{grid.num_depth} depths. The head bundle reads the labels cell by cell, so "
+                f"set `{name}: {served}`.",
+            )
+    option = "label_views" if _stage_option(VIEWS, view, "label_views") is not None else "num_views"
+    mine = _stage_option(VIEWS, view, option)
+    if isinstance(mine, int) and not isinstance(mine, bool) and mine != grid.num_view:
+        other = (
+            ""
+            if option == "label_views"
+            else " To score another number of views, use a stage that keeps its own lattice "
+            "apart from the labels' (`--set view=lattice-view --opts model.view.num_views=...`)."
+        )
+        yield (
+            ("model", "view", option),
+            f"{view['type']} has {option} = {mine}, but the grasp labels of {reader.__name__} "
+            f"are indexed by a lattice of {grid.num_view} views. Set `{option}: "
+            f"{grid.num_view}`.{other}",
+        )

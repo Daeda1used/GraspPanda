@@ -43,6 +43,9 @@ class SubsampledSeeds(Proposal):
     """
 
     requires = "subsampled"
+    #: The seeds are the points the encoder returns: the config check compares
+    #: ``num_seeds`` with the encoder's ``output_points``.
+    seeds_from_backbone = True
     status = "tested"
     source = "GraspNet-baseline (Fang et al., CVPR 2020)"
 

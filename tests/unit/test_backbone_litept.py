@@ -21,11 +21,11 @@ def test_missing_spconv_names_the_extra_to_install(monkeypatch):
     def unavailable(module, *, extra, purpose):
         raise MissingDependencyError(
             f"{purpose} needs '{module}', which is not installed. "
-            f'Install it with: pip install "grasppanda[{extra}]"'
+            f'Install it with: pip install -e ".[{extra}]"'
         )
 
     monkeypatch.setattr(litept, "require", unavailable)
-    with pytest.raises(MissingDependencyError, match=r"LitePT needs .*grasppanda\[spconv-cu118\]"):
+    with pytest.raises(MissingDependencyError, match=r"LitePT needs .*\.\[spconv-cu118\]"):
         litept.LitePT()
 
 

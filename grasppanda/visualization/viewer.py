@@ -2,7 +2,7 @@
 
 The pictures of this package come from :mod:`.render`, which needs nothing but NumPy
 and Pillow. This module adds a viewer one can turn with the mouse. It uses Open3D, an
-optional dependency (``pip install "grasppanda[vis]"``) that is imported only when a
+optional dependency (``pip install -e ".[vis]"``) that is imported only when a
 window is actually opened.
 """
 

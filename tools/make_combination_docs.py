@@ -1204,6 +1204,24 @@ def slots_index(records: Records) -> str:
         "[combination explorer](../explorer/index.md): pick a method, change a slot, read "
         "the measured verdict and the command.",
         "",
+        "## Words used on these pages",
+        "",
+        "- **seed**: a point of the scene at which a grasp is predicted; the proposal picks "
+        "the seeds (1024 per frame in the ported methods).",
+        "- **contract**: what a component declares about its input and output (where its "
+        "features live, which axes a tensor has, which labels it reads). The config check "
+        "compares contracts before anything is built and refuses a mismatch with the fix.",
+        "- **preset**: a small YAML file with a component and settings for table-top depth "
+        "clouds; the name after `--set <slot>=`.",
+        "- **adapter**: a wrapper `compose` puts around a scene encoder so that it fits the "
+        "next stage (features propagated back to every point, or kept on a subsample).",
+        "- **dense / compact label set**: the grasp labels a head is trained on. *Dense* is "
+        "the full grid of GraspNet-1Billion (300 views × 12 in-plane angles × 4 depths per "
+        "labelled point); *compact* keeps the best grasp per view (EconomicGrasp, FineGrasp). "
+        "A head, its assigner and the dataset section must use the same one.",
+        "- **point painting**: giving every point the image feature at its pixel, which is "
+        "how a seed-based method reads an image encoder.",
+        "",
         "## The pipeline",
         "",
         *_pipeline(),
@@ -1295,7 +1313,20 @@ def slots_index(records: Records) -> str:
         "the `compose` of your installation.",
         "- `probe` needs GraspNet-1Billion and the label assets of the method "
         "([Try a combination](../user_guides/combinations.md) lists the `prepare` commands). "
-        "An option that is a bridge to a library names the extra to install on its slot page.",
+        "An option that is a bridge to a library names the extra to install on its slot page. "
+        "Until the first release on PyPI, install an extra from the repository root with "
+        '`pip install -e ".[<extra>]"`: the form `pip install "grasppanda[<extra>]"` resolves '
+        "against the metadata of the copy that is already installed and may install nothing.",
+        "- Under **Scale-Balanced-Grasp** a probe ends as `wired` (a synthetic scene, exit "
+        "status 3) unless it is given the reference's width histogram: `grasppanda probe "
+        "<config> --opts data.train.dataset.scale_statistic.source=legacy_import "
+        "data.train.dataset.scale_statistic.reference_sha256=<SHA-256>`. The histogram is a "
+        "statistic of a whole training split and cannot be built from the eight frames of a "
+        "probe (`configs/scale_balanced_grasp/README.md` says how to import the file); the "
+        "recorded `runs` "
+        "of that method were measured this way.",
+        "- `grasppanda compose --list image_encoder` lists the image encoders (the slot of "
+        "HGGD); the seed-based methods read one through point painting.",
     ]
     return "\n".join(lines).rstrip() + "\n"
 

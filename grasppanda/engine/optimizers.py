@@ -9,7 +9,7 @@ registered next to them, so a config names them the same way::
 
 A bridge takes the options every optimizer has (``lr``, ``weight_decay``) as arguments of
 its own and everything else as one mapping, ``options``, handed to the library unchanged.
-The libraries are optional: ``pip install "grasppanda[optim]"``.
+The libraries are optional: ``pip install -e ".[optim]"``.
 
 :func:`ParamGroups` wraps any of them (or a class of ``torch.optim``) and splits the
 parameters into groups with their own learning rate: a multiplier per sub-module (a

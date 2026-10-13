@@ -341,6 +341,22 @@ class LatticeViewStage(_LatticeStage):
         "GouMinghao/rgb_matters@2e176728f6, MIT"
     )
 
+    @classmethod
+    def option_problems(cls, options: Mapping[str, Any]) -> list[str]:
+        """Option values the constructor would refuse, told without building."""
+        top_k, count = options.get("top_k"), options.get("num_views")
+        if not isinstance(top_k, int) or not isinstance(count, int) or count < 1:
+            return []
+        views = fibonacci_views(count)
+        if options.get("hemisphere"):
+            views = views[views[:, 2] < 0]
+        if 1 <= top_k <= len(views):
+            return []
+        return [
+            f"{cls.__name__} has top_k = {top_k}, but its lattice has {len(views)} views. Set "
+            f"`top_k` to a value between 1 and {len(views)}, or to null (all views)."
+        ]
+
     def __init__(
         self,
         num_views: int = 300,

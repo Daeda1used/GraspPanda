@@ -217,7 +217,7 @@ Every `train`, `test` and `sweep` run writes into `work_dir/<run_id>/`:
 
 - **One flat `Registry` class.** No scopes, no parent/child hierarchy.
 - **Lazy auto-import.** Each registry declares the package it owns (`BACKBONES → grasppanda.models.backbones`). On first lookup every module below that package is imported. Adding a file is enough; nobody edits `__init__.py`. `import grasppanda` stays cheap.
-- **Optional dependencies never break import.** A module that needs `spconv` imports it lazily. If the extra is missing, building the component raises `SparseUNet14 needs spconv: pip install "grasppanda[spconv-cu118]"`.
+- **Optional dependencies never break import.** A module that needs `spconv` imports it lazily. If the extra is missing, building the component raises `SparseUNet14 needs spconv: pip install -e ".[spconv-cu118]"`.
 - **Out-of-tree code.** `custom_imports: [my_pkg.my_heads]` or `custom_imports: [../my_components.py]` in a config, or a `grasppanda.plugins` entry point for pip-installed plugins. A `.py` path is loaded as a standalone module, so a single-file plugin next to its config needs neither installation nor a `sys.path` edit. `projects/` uses the same mechanism; no fork is needed.
 - **Duplicate names raise.** Overriding requires an explicit `force=True`.
 - **Helpful failures.** A failed lookup lists the registered names, the closest matches by edit distance, and whether the name exists in a *different* registry (`'SWADHead' is registered in HEADS, not in GROUPERS`).
@@ -759,7 +759,7 @@ When a user feeds their own frames, the inferencer compares the input conditions
 ### 12.4 First result in five commands
 
 ```bash
-pip install "grasppanda[spconv-cu118,vis]"            # torch matching your CUDA must already be installed
+pip install -e ".[spconv-cu118,vis]"            # torch matching your CUDA must already be installed
 grasppanda prepare sample                             # small GraspNet-1B subset with labels and object models
 grasppanda demo gsnet_sunet14_g1b-realsense_10e           # downloads weights, shows predicted grasps on a cluttered scene
 grasppanda train gsnet/gsnet_sunet14_g1b-sample_smoke # minutes-long run that proves the training loop end to end

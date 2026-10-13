@@ -217,8 +217,24 @@ frame of the rig:
 
 ## The whole test split
 
-Not run here: a full run is about ten times a subset run, 30 to 45 minutes per method
-on the development machine while it was shared.
+Run so far for four methods with the authors' converted checkpoints: GraspNet-baseline,
+Scale-Balanced-Grasp, EconomicGrasp and HGGD, 3 055 of 3 055 frames scored each. Their
+numbers are `author-ckpt` rows of the transfer configs and stand in the
+[model zoo](../model_zoo.md#graspclutter6d-transfers), the reported ones beside them; the
+result records are in `configs/<method>/records/`. GSNet has no row: no checkpoint of its
+authors has been scored, and the model trained here enters the zoo with its
+GraspNet-1Billion result.
+
+What the whole split adds to the subset: the reported value lies 0.81 AP above `cd` and
+9.26 above `raw` for GraspNet-baseline, 0.02 AP below `cd` and 0.92 above `raw` for
+Scale-Balanced-Grasp, and 0.02 AP below `raw` and 0.58 below `cd` for EconomicGrasp. So
+the reported table is closest to the filtered run for two methods and to the unfiltered
+run for the third. The paper does not state the collision filter, and whether it was
+applied to some methods and not to others was not investigated. The controlled variants
+above (crops, cameras, Kinect weights, gripper width) exist for the subset only.
+
+A run took 8 to 12 minutes per method on the development machine (one GPU, four
+evaluator processes, shared with other jobs):
 
 ```bash
 for CONFIG in \
@@ -234,7 +250,15 @@ done
 ```
 
 A result of such a run is an `author-ckpt` number of the transfer config, stamped with
-the protocol, the split, the camera, the variant and `gt_assisted`.
+the protocol, the split, the camera, the variant and `gt_assisted`. It enters the zoo
+with its result records:
+
+```bash
+python -m tools.record_result <work directory of the run> --method <directory below configs/>
+```
+
+checks that every frame was scored by clean code with hashed weights, copies the records
+to `configs/<method>/records/` and prints the rows for the method's `metafile.yaml`.
 
 ## Checking a run against the official tool
 

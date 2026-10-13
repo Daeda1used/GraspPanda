@@ -130,7 +130,7 @@ def test_pointmamba_names_its_extra_when_the_library_is_missing(monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", refuse)
     monkeypatch.setitem(__import__("sys").modules, "mamba_ssm", None)
-    with pytest.raises(MissingDependencyError, match=r"grasppanda\[mamba-ssm\]"):
+    with pytest.raises(MissingDependencyError, match=r"\.\[mamba-ssm\]"):
         BACKBONES.build({"type": "PointMamba", **TINY})
 
 

@@ -35,7 +35,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from grasppanda.models.base import Backbone, configured_width
+from grasppanda.models.base import Backbone, configured_points, configured_width
 from grasppanda.models.image_encoders import ImageEncoder
 from grasppanda.registry import BACKBONES, IMAGE_ENCODERS, Cfg
 from grasppanda.structures import ContractError, Observation, PointFeatures, PointSet
@@ -260,6 +260,11 @@ class ImagePaintedSubsampled(_Painted):
         "PointPainting (Vora et al., CVPR 2020), PointAugmenting (Wang et al., CVPR 2021); "
         "written here"
     )
+
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """The count of the wrapped encoder."""
+        return configured_points(options["backbone"])
 
     def __init__(
         self,

@@ -216,6 +216,12 @@ class PointNet2MSG(_PointNet2MSG):
         "facebookresearch/votenet@2f6d6d3, MIT"
     )
 
+    @classmethod
+    def output_points(cls, options: Mapping[str, Any]) -> int | None:
+        """Points per cloud of the level the last propagation ends on."""
+        npoints, levels = options["npoints"], len(options["fp_mlps"])
+        return int(npoints[len(npoints) - levels - 1])
+
     def __init__(
         self,
         in_channels: int = 0,

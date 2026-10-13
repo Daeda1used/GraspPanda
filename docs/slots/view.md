@@ -1,5 +1,7 @@
 # Slot `view`: approach direction and orientation
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 Nothing on this page carries an AP. "Runs" means: the combination passes the contract
 check, builds, trains 20 iterations on real GraspNet-1Billion frames with finite losses
 and predicts. How good a choice is takes a full training and an evaluation.
@@ -19,6 +21,8 @@ The head bundle then predicts the third one, the in-plane rotation about that
 direction, together with depth and width, from a crop of the scene that the grouper
 cuts *in the frame the view stage chose*. So the view stage decides what the head gets
 to look at.
+
+### Input and output
 
 | | |
 |---|---|
@@ -116,11 +120,11 @@ Sources, as opened for this page:
 |---|---|---|---|---|
 | `TemplateViewStage`, `ObjectnessViewStage` | GSNet (ICCV 2021), GraspNet-1Billion (CVPR 2020) | ported earlier, written for GraspPanda | Apache-2.0 | none |
 | `LatticeViewStage` | the same view scoring on a free lattice; hemisphere template of RGB Matters ([arXiv 2103.02184](https://arxiv.org/abs/2103.02184), "Accepted by ICRA 2021") | written for GraspPanda; the angular class loss is adapted from [GouMinghao/rgb_matters@2e176728f6](https://github.com/GouMinghao/rgb_matters/blob/2e176728f6/rgbd_graspnet/net/loss.py) (`Class_Loss`) | MIT (Copyright (c) 2022 Gou Minghao), see `THIRD_PARTY_NOTICES.md` | none |
-| `IcosphereViewStage` | subdivided icosahedron | bridge to [trimesh](https://github.com/mikedh/trimesh) `trimesh.creation.icosphere` (5.1.1 here) | MIT | `pip install "grasppanda[trimesh]"` |
-| `HealpixViewStage` | HEALPix (Gorski et al., 2005, ApJ 622, 759, as cited by the library) | bridge to [healpix](https://github.com/ntessore/healpix) `healpix.pix2vec` (2025.1 here) | BSD-3-Clause | `pip install "grasppanda[healpix]"` |
+| `IcosphereViewStage` | subdivided icosahedron | bridge to [trimesh](https://github.com/mikedh/trimesh) `trimesh.creation.icosphere` (5.1.1 here) | MIT | `pip install -e ".[trimesh]"` |
+| `HealpixViewStage` | HEALPix (Gorski et al., 2005, ApJ 622, 759, as cited by the library) | bridge to [healpix](https://github.com/ntessore/healpix) `healpix.pix2vec` (2025.1 here) | BSD-3-Clause | `pip install -e ".[healpix]"` |
 | `DirectionViewStage` | regression of the approach vector: the approach network of Generalizing-Grasp ([arXiv 2404.01727](https://arxiv.org/abs/2404.01727), "Accepted at CVPR 2024"); with `concentration`, the von Mises-Fisher direction likelihood of vMF-Contact ([arXiv 2411.03591](https://arxiv.org/abs/2411.03591), "Accepted to ICRA 2025") | written for GraspPanda (both upstream repositories have no licence file) | Apache-2.0 | none |
 | `TwoVectorViewStage` | 6-D rotation representation (Zhou et al., [arXiv 1812.07035](https://arxiv.org/abs/1812.07035), CVPR 2019); baseline/approach order of Contact-GraspNet ([arXiv 2103.14127](https://arxiv.org/abs/2103.14127), ICRA 2021) | written for GraspPanda (the idea only) | Apache-2.0 | none |
-| `RomaRotationViewStage` | 6-D (Zhou et al.), 9-D + SVD (Levinson et al., [arXiv 2006.14616](https://arxiv.org/abs/2006.14616)), quaternion, rotation vector | bridge to [RoMa](https://github.com/naver/roma) (Brégier, "Oral presentation at 3DV 2021"; 1.6.1 here): `special_gramschmidt`, `special_procrustes`, `unitquat_to_rotmat`, `rotvec_to_rotmat` | BSD-3-Clause (Copyright (c) 2020 NAVER Corp.) | `pip install "grasppanda[roma]"` |
+| `RomaRotationViewStage` | 6-D (Zhou et al.), 9-D + SVD (Levinson et al., [arXiv 2006.14616](https://arxiv.org/abs/2006.14616)), quaternion, rotation vector | bridge to [RoMa](https://github.com/naver/roma) (Brégier, "Oral presentation at 3DV 2021"; 1.6.1 here): `special_gramschmidt`, `special_procrustes`, `unitquat_to_rotmat`, `rotvec_to_rotmat` | BSD-3-Clause (Copyright (c) 2020 NAVER Corp.) | `pip install -e ".[roma]"` |
 
 There are no pretrained weights for any of the new stages: all start from random
 initialisation. Released checkpoints of the six ported methods contain
@@ -253,8 +257,8 @@ model:
 $ grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --set view=lattice-view
   ✗ proposal · view · head: OperationHead as configured reads the seed score 'objectness' when it
     decodes, but neither SubsampledSeeds nor LatticeViewStage predicts it. Use a stage that does
-    (proposals: GraspnessFPS; view stages: ObjectnessViewStage) or another decode option of the
-    head.
+    (proposals: GraspnessFPS, ScoredSeeds; view stages: ObjectnessViewStage) or another decode
+    option of the head.
 ```
 
 The scale-balanced weights themselves are not the obstacle (the new stages apply them;

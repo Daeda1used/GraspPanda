@@ -1,9 +1,8 @@
 # HGGD: machine-readable source of the model-zoo rows of this method.
 #
-# Only numbers that have been published are listed. The authors' checkpoints convert and
-# reproduce the reference implementation stage by stage (see README.md), but a full-split
-# evaluation in this toolbox has not been run yet, so there is no `author-ckpt` row and
-# no weights entry: both arrive together with the result record that is their evidence.
+# Reported numbers, and the authors' two checkpoints scored by this toolbox on whole test
+# splits (`author-ckpt`, each row with its result record). Nothing has been trained here,
+# so there is no `reproduced` row.
 method: HGGD
 title: "Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes"
 venue: RA-L 2023
@@ -15,6 +14,17 @@ models:
     config: hggd/hggd_r34w8_g1b-realsense_15e.yaml
     protocol: graspnet1b-sv-v1
     camera: realsense
+    weights: &realsense_weights
+      # The file HGGD_realsense_checkpoint of the folder below, the link of the upstream
+      # README, converted with
+      #   python -m tools.convert_checkpoint checkpoint-realsense.tar hggd_realsense.pth \
+      #       --source-format hggd --camera realsense
+      # The digest is that of the file that was converted for the records below and of a
+      # download from the folder on 2026-10-13.
+      url: https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/
+      sha256: b95da06d8723298ad28e4c720c3a6a8af73dfe6f2e8126f43de8845bf62ad6df
+      license: "MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
     results:
       # Neither source says whether the collision filter of the released test script
       # (which dumps filtered grasps) was applied.
@@ -26,10 +36,64 @@ models:
         collision_filter: null
         AP: {seen: 64.45, similar: 53.59, novel: 24.59}
         source: "repository README, row 'In repo' (also the arXiv version)"
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      # The network draws random numbers at inference; these rows are one run with seed 0.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 58.33, similar: 47.96, novel: 22.03}
+      # Post-processing of 'cd': ModelFreeCollisionFilter, then GraspNMS, as the released
+      # test script dumps its grasps.
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 63.70, similar: 52.90, novel: 24.18}
+  # Cross-dataset transfer: the RealSense weights above, scored on GraspClutter6D. No
+  # number is published for HGGD on that dataset.
+  - name: hggd_r34w8_g1b-realsense-to-gc6d-d435_15e
+    config: hggd/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e.yaml
+    protocol: graspclutter6d-sv-v1
+    camera: realsense-d435
+    weights: *realsense_weights
+    results:
+      # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspClutter6DEvaluator.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspClutter6DEvaluator
+        record: records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {test: 14.25}
+        AP0.8: {test: 17.41}
+        AP0.4: {test: 9.23}
+      # Post-processing of 'cd': ModelFreeCollisionFilter, then GraspNMS.
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspClutter6DEvaluator
+        record: records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {test: 14.56}
+        AP0.8: {test: 17.79}
+        AP0.4: {test: 9.33}
   - name: hggd_r34w8_g1b-kinect_15e
     config: hggd/hggd_r34w8_g1b-kinect_15e.yaml
     protocol: graspnet1b-sv-v1
     camera: kinect
+    weights:
+      # The file HGGD_kinect_checkpoint of the same folder, to be converted with
+      #   python -m tools.convert_checkpoint checkpoint-kinect.tar hggd_kinect.pth \
+      #       --source-format hggd --camera kinect
+      # The digest is that of the file that was converted for the records below and of a
+      # download from the folder on 2026-10-13.
+      url: https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/
+      sha256: 721d0cccad7cf80a9910bfba95d9aaf164a5117f731cd1a0ba5e21a04e4cad49
+      license: "MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
     results:
       - provenance: reported
         collision_filter: null
@@ -39,3 +103,19 @@ models:
         collision_filter: null
         AP: {seen: 61.17, similar: 47.02, novel: 19.37}
         source: "repository README, row 'In repo'"
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      # One run with seed 0, as for the RealSense rows.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 56.98, similar: 43.97, novel: 18.63}
+      # Post-processing of 'cd': ModelFreeCollisionFilter, then GraspNMS.
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 60.34, similar: 46.83, novel: 19.27}

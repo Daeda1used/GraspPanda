@@ -143,6 +143,10 @@ def test_the_verdict_follows_from_what_was_recorded():
     # A detector that reports no seed metrics is judged on what it does report.
     plain = judged(real_seeds=[], supervised_seeds=[])
     assert plain.verdict == "runs" and plain.detail.endswith("with finite losses.")
+    # A part with trainable weights that never received a gradient is a dead stage.
+    dead = judged(no_gradient=["backbone"])
+    assert dead.verdict == "runs-unstable"
+    assert "no gradient reached backbone in any iteration" in dead.detail
     # The wiring check has no unstable verdict: what would be unstable there fails.
     assert judged("wired").verdict == "wired"
     assert (
@@ -193,6 +197,34 @@ def test_a_request_that_cannot_be_run_is_an_error_not_a_verdict(monkeypatch, cap
 # ---------------------------------------------------------------------------- real path
 
 
+def test_a_launch_failure_of_the_device_is_told_apart_too():
+    report = ProbeReport()
+    try:
+        raise RuntimeError("cuda failed with error 719 unspecified launch failure")
+    except RuntimeError as error:
+        _fail(report, error, "backward", "iteration 1")
+    assert report.verdict == "fails"
+    assert any("probe again" in note and "launch failure" in note for note in report.notes)
+
+
+def test_the_real_probe_notes_a_part_that_received_no_gradient(monkeypatch):
+    """A stage whose output does not depend on its weights trains "without error";
+    the probe on real frames says which part learned nothing."""
+    from grasppanda.registry import DETECTORS
+
+    toy = DETECTORS.get("ToyDetector")
+    original = toy.__init__
+
+    def with_idle_part(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        self.idle = torch.nn.Linear(2, 2)  # trainable, and never used
+
+    monkeypatch.setattr(toy, "__init__", with_idle_part)
+    report = probe(TOY, iters=3, predict_frames=1)
+    assert report.no_gradient == ["idle"]
+    assert report.verdict == "runs-unstable" and "no gradient reached idle" in report.detail
+
+
 def test_a_config_that_trains_is_probed_with_the_real_trainer(capsys):
     report = probe(TOY, iters=6, predict_frames=3)
     assert report.verdict == "runs" and report.data == "real" and report.fallback is None
@@ -207,6 +239,7 @@ def test_a_config_that_trains_is_probed_with_the_real_trainer(capsys):
     assert len(report.frames) == 24 and report.frames[0].startswith("toy/")
     assert len(report.grasps_per_frame) == len(report.predicted_frames) == 3
     assert report.nonfinite == [] and report.failure is None and report.refusal == []
+    assert report.no_gradient == []  # every part of the toy received a gradient
     assert report.seconds_per_iteration is not None and report.seconds_per_iteration >= 0
     # What the probe changed is spelled as overrides of `grasppanda train` ...
     assert report.probe_overrides == [
@@ -336,6 +369,9 @@ def test_phase_and_component_are_read_from_the_traceback():
 
 def test_without_the_dataset_the_probe_says_so_and_only_claims_wired(tmp_path, capsys):
     config = tiny("GSNet", "PointNet2Dense")
+    # The grid of the labels GraspNet-1Billion serves; a model on another one is refused.
+    config["model"]["view"]["num_views"] = 300
+    config["model"]["head"].update(num_angle=12, num_depth=4)
     config["data"] = {
         "train": {
             "dataset": {

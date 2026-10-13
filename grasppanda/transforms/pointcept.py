@@ -58,6 +58,8 @@ class RandomJitter(PointTransform):
         clip: Largest absolute noise per coordinate, in metres.
     """
 
+    moves_points = True  # refused beside image-space data by the config check
+
     status = "tested"
     source = (
         "Qi et al., PointNet++ (arXiv 1706.02413); adapted from Pointcept/Pointcept@1342eda, MIT"
@@ -128,6 +130,8 @@ class RandomShift(PointTransform):
         shift: ``[[x_min, x_max], [y_min, y_max], [z_min, z_max]]`` in metres, in the
             camera frame (z is the viewing direction).
     """
+
+    moves_points = True  # refused beside image-space data by the config check
 
     status = "tested"
     source = "Pointcept (Wu et al.), RandomShift; adapted from Pointcept/Pointcept@1342eda, MIT"

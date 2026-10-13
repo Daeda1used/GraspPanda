@@ -2,7 +2,7 @@
 #
 # The PointNet++ layer of the library (`max_j MLP([f_j, p_j - p_i])`), on the crop as a
 # bipartite graph in the crop frame. Needs the optional library: pip install
-# "grasppanda[torch_geometric]".
+# -e ".[torch_geometric]".
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

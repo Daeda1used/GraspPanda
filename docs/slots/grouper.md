@@ -1,5 +1,7 @@
 # Grouper: what is gathered around a seed and how it becomes the feature the head reads
 
+*Words such as seed, contract, preset, adapter, label set and point painting are explained in the [slot index](index.md#words-used-on-these-pages).*
+
 ## 1. The task of the slot
 
 A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
@@ -294,7 +296,7 @@ with a message that says so).
 ### 4.4 `PyGConvGroup`: layers of PyTorch Geometric
 
 ```bash
-pip install "grasppanda[torch_geometric]"        # torch_geometric, a pure Python wheel
+pip install -e ".[torch_geometric]"        # torch_geometric, a pure Python wheel
 grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=pyg-gatv2-conv \
     --opts 'model.grouper.conv_args={heads: 8}'
 ```

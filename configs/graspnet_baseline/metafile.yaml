@@ -1,10 +1,9 @@
 # Machine-readable description of GraspNet-baseline; validated by grasppanda.hub.load_metafile.
 #
-# Only numbers with a stated provenance appear here. The authors' checkpoint has been
-# verified stage by stage against the reference implementation, but it has not been
-# evaluated on the full test splits with this toolbox yet, and no model has been trained
-# here, so there is no `author-ckpt` and no `reproduced` result. The 20-frame subset
-# measurement reported in README.md is not a split AP and is deliberately not listed.
+# Only numbers with a stated provenance appear here: reported numbers, and the authors'
+# checkpoint scored by this toolbox on whole test splits (`author-ckpt`, each row with its
+# result record). No model has been trained here, so there is no `reproduced` result. The
+# 20-frame subset measurement reported in README.md is not a split AP and is not listed.
 method: GraspNet-baseline
 title: "GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping"
 venue: CVPR 2020
@@ -20,7 +19,7 @@ models:
     config: graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml
     protocol: graspnet1b-sv-v1
     camera: realsense
-    weights:
+    weights: &realsense_weights
       # The authors' checkpoint-rs.tar, to be converted with
       #   python -m tools.convert_checkpoint ... --source-format graspnet-baseline
       # The digest is that of the copy the parity tests ran on (dated 2020-12-22); it has
@@ -38,3 +37,49 @@ models:
         collision_filter: null    # the publication does not say
         source: paper, as quoted in the reference repository README ("In paper")
         AP: {seen: 27.56, similar: 26.11, novel: 10.55}
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      # With the collision filter the checkpoint is 0.37 to 0.43 AP above the "In repo" row.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 32.64, similar: 27.48, novel: 10.42}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 47.90, similar: 42.70, novel: 16.98}
+  # Cross-dataset transfer: the RealSense weights above, scored on GraspClutter6D.
+  - name: graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e
+    config: graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e.yaml
+    protocol: graspclutter6d-sv-v1
+    camera: realsense-d435
+    weights: *realsense_weights
+    results:
+      - provenance: reported
+        collision_filter: null    # the publication does not say
+        source: "GraspClutter6D paper (arXiv 2504.06866 v3), Table IX, row 'GraspNet-Baseline': trained on GraspNet-1Billion, tested on GraspClutter6D with 'workspace-cropped inputs'. The paper does not say which checkpoint was scored."
+        AP: {test: 17.95}
+        AP0.8: {test: 21.54}
+        AP0.4: {test: 13.53}
+      # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspClutter6DEvaluator.
+      - provenance: author-ckpt
+        collision_filter: false
+        evaluator: GraspClutter6DEvaluator
+        record: records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 8.69}
+        AP0.8: {test: 10.35}
+        AP0.4: {test: 6.96}
+      - provenance: author-ckpt
+        collision_filter: true
+        evaluator: GraspClutter6DEvaluator
+        record: records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 17.14}
+        AP0.8: {test: 20.60}
+        AP0.4: {test: 12.86}

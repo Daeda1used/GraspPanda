@@ -29,6 +29,9 @@ theme:
     - content.action.edit
     - search.suggest
 
+extra_css:
+  - stylesheets/extra.css
+
 plugins:
   - search
   - mkdocstrings:

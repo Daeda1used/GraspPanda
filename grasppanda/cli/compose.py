@@ -104,12 +104,21 @@ def _slot(name: str) -> str | None:
     return name if name in registries else plural.get(name)
 
 
+#: The component slot of the image-based family (HGGD).
+IMAGE_SLOT = "image_encoder"
+
+
 def _list(which: str) -> int:
     from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
     from grasppanda.combine.recipes import RECIPE_SLOTS, recipes
-    from grasppanda.registry import LOSSES, POSTPROCESSORS
+    from grasppanda.registry import IMAGE_ENCODERS, LOSSES, POSTPROCESSORS
 
-    registries = {**_stage_slots(), LOSS_SLOT: LOSSES, POST_SLOT: POSTPROCESSORS}
+    registries = {
+        **_stage_slots(),
+        IMAGE_SLOT: IMAGE_ENCODERS,  # the slot of HGGD, a detector family of its own
+        LOSS_SLOT: LOSSES,
+        POST_SLOT: POSTPROCESSORS,
+    }
     found = presets()
     wanted = _slot(which) or which.strip()
     slots = [slot for slot in registries if which == "all" or slot == wanted]
@@ -135,8 +144,10 @@ def _list(which: str) -> int:
     for slot in slots:
         members = found.get(slot, {})
         target = "<stage>.<loss option>" if slot == LOSS_SLOT else slot
+        only = "  (HGGD; seed-based methods: point painting)" if slot == IMAGE_SLOT else ""
         print(
-            style(slot, "bold", "cyan", enabled=color) + f"  --set {target}=<preset or component>"
+            style(slot, "bold", "cyan", enabled=color)
+            + f"  --set {target}=<preset or component>{only}"
         )
         rows = [[name, preset.type, _short(preset.summary)] for name, preset in members.items()]
         if rows:

@@ -69,6 +69,19 @@ def test_every_component_states_its_source_summary_and_status():
         assert all(isinstance(extra, str) for extra in entry.extras), where
         assert inspect.getdoc(cls), where
     by_name = {entry.name: entry for entry in entries}
+    # Every declared extra can be installed: it is an extra of pyproject.toml, or a
+    # name that stands for the per-build extras of a library.
+    import re
+
+    from grasppanda.utils.imports import EXTRA_BUILDS, installable
+
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    section = text.split("[project.optional-dependencies]")[1].split("\n[")[0]
+    defined = set(re.findall(r"^([\w-]+) = \[", section, flags=re.M))
+    assert all(set(builds) <= defined for builds in EXTRA_BUILDS.values())
+    declared = {extra for entry in entries for extra in entry.extras}
+    assert declared - set(EXTRA_BUILDS) <= defined, sorted(declared - set(EXTRA_BUILDS) - defined)
+    assert installable("spconv").startswith("spconv-cu118 | ") and installable("timm") == "timm"
     assert by_name["SparseUNet14"].extras == ("spconv",)
     assert by_name["PointNet2"].extras == ()
     assert "Wang et al., ICCV 2021" in by_name["GSNet"].source
