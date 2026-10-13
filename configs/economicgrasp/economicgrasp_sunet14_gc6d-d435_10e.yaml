@@ -1,0 +1,63 @@
+# EconomicGrasp trained on GraspClutter6D (RealSense D435) with the schedule and the data
+# recipe of the GraspNet-1Billion reference (10 epochs).
+#
+#   grasppanda prepare graspclutter6d --labels
+#   grasppanda prepare graspclutter6d --graspness --camera realsense-d435
+#   grasppanda prepare graspclutter6d --compact-labels \
+#       --config economicgrasp/economicgrasp_sunet14_gc6d-d435_10e
+#   grasppanda train economicgrasp/economicgrasp_sunet14_gc6d-d435_10e
+#   grasppanda test  economicgrasp/economicgrasp_sunet14_gc6d-d435_10e --weights <checkpoint>
+#
+# No EconomicGrasp recipe for GraspClutter6D has been published, so this is this toolbox's
+# choice, not a reproduction: everything is the GraspNet-1Billion recipe except what the
+# dataset fixes. Besides the frames and the workspace crop (see the dataset base) that is
+# one value, the gripper opening, which appears twice: in the model and in the compact
+# labels. No model has been trained with this config yet.
+_base_:
+  - ../_base_/models/economicgrasp.yaml
+  - ../_base_/datasets/graspclutter6d_d435.yaml
+  - ../_base_/schedules/economicgrasp_10e.yaml
+  - ../_base_/default_runtime.yaml
+
+model:
+  gripper:
+    name: graspclutter6d-parallel-jaw
+    max_width: 0.14               # the benchmark gripper opens to 0.14 m (GraspNet-1Billion: 0.1)
+
+# The EconomicGrasp data recipe, as in economicgrasp_sunet14_g1b-realsense_10e.yaml:
+# compact labels instead of dense grids, 20 000 points, every object and every kept label
+# point, the flip as the only augmentation. The compact labels do not depend on the
+# camera: one asset serves all four.
+data:
+  train:
+    dataset:
+      compact_labels:                 # the asset of `prepare --compact-labels`
+        point_friction_threshold: 0.4 # a label point needs one collision-free grasp at least this good
+        view_friction_threshold: 0.6  # = model.view.max_friction (checked when the loss is computed)
+        max_width: 0.14               # = the gripper opening
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        - {type: ConstantFeatures, channels: 3}
+  val:
+    dataset:
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: true          # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      transforms:
+        - {type: RandomSample, num_points: 20000}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspClutter6DEvaluator}
+  variants:
+    raw: []                           # predictions as the model emits them
+    cd:                               # the collision filter of the EconomicGrasp reference test script
+      - type: ModelFreeCollisionFilter
+        voxel_size: 0.005
+        approach_distance: 0.05
+        collision_threshold: 0.01

@@ -1,0 +1,37 @@
+# Cross-dataset transfer: GraspNet-baseline trained on GraspNet-1Billion (RealSense), tested on
+# GraspClutter6D (RealSense D435, the camera of the GraspClutter6D paper's benchmark).
+#
+#   grasppanda test graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e --weights <checkpoint>
+#   ... --opts data.test.dataset.split=test_mini      # 24 scenes, a quick check only
+#
+# This file inherits the GraspNet-1Billion config and replaces two things: the frames
+# that are scored (`data.test`) and the evaluator. Model, point count, input features and
+# both post-processing variants are the inherited ones, so the weights see what they were
+# trained for wherever the dataset allows it. See docs/user_guides/cross_dataset.md for
+# what changes with the dataset and what must not. To train, use the config this one
+# inherits from.
+#
+# The GraspClutter6D paper reports this pairing (17.95 AP, Table IX of arXiv 2504.06866 v3).
+_base_:
+  - graspnet-baseline_pointnet2_g1b-realsense_18e.yaml
+
+data:
+  test:
+    dataset:
+      type: GraspClutter6D        # a changed type replaces the inherited node
+      camera: realsense-d435
+      split: test                 # 235 scenes x 13 views
+      load_labels: false
+      preprocess:
+        - {type: DepthToCloud}
+        # The crop of the official GraspClutter6D tool, from the GROUND-TRUTH segmentation
+        # (gt_assisted: workspace). The training crop was GraspNet-1Billion's 3-D box.
+        - {type: SegmentationRectWorkspace, margin: 0.1}
+      transforms: ${data.val.dataset.transforms}    # the point count and features of the recipe
+      keep_full_points: true      # the collision filter reads the cloud before sub-sampling
+      seed: 0
+
+evaluation:
+  evaluator: {type: GraspClutter6DEvaluator}
+  interval: 0                   # a test config: this evaluator cannot score the inherited
+                                # GraspNet-1Billion val loader, so `train` would not validate

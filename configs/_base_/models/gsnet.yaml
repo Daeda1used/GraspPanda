@@ -1,0 +1,70 @@
+# GSNet (Graspness Discovery in Clutters, ICCV 2021): the full reference model.
+#
+# Every value below is the default of its component and reproduces
+# graspnet/graspness_unofficial @ b5abf5a. Options marked "reference quirk" change
+# numbers; their alternatives are controlled variants, not corrections to apply silently.
+#
+# Injected by the detector, so not repeated here: channel counts between stages, the view
+# template handed to the assigner, the gripper handed to the head.
+model:
+  type: GSNet
+  point_features: ones            # geometry only: a constant 1 in every input channel
+  gripper:                        # GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1                # labels wider than this are unusable; decoded widths are clamped
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  backbone:
+    type: SparseUNet14
+    in_channels: 3
+    out_channels: 512
+    voxel_size: 0.005             # owned here; the collision filter has its own voxel size
+    stem_channels: 32
+    stem_kernel: 5
+    encoder_channels: [32, 64, 128, 256]
+    decoder_channels: [192, 192, 192, 192]
+    voxel_features: first
+
+  proposal:
+    type: GraspnessFPS
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    fps_skip_near_origin: true    # reference quirk: the sampling kernel never picks points with |p|² <= 1e-3
+    fps_tie_break: pointnet2_cuda # reference quirk: equally distant candidates in the order of that kernel
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
+
+  view:
+    type: TemplateViewStage
+    num_views: 300
+    train_selection: multinomial  # reference quirk: the training view is sampled, not the arg-max
+    max_friction: 0.6             # grasps with friction in (0, 0.6] count towards a view's graspness
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
+
+  assigner:
+    type: NearestLabelAssigner
+    max_match_distance: null      # reference quirk: no limit, a seed on the table still gets labels
+    crop_centre: seed
+    padded_seeds: count           # reference quirk: repeated padding seeds are counted in loss means
+
+  grouper:
+    type: CylinderGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    mlp_channels: [256, 256]
+
+  head:
+    type: SWADHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    width_target_scale: 10.0
+    width_decode_gain: 1.2        # reference quirk: applied by the decoder only, not by the loss target
+    score_target: log_friction_batch_norm   # reference quirk: extrema over the current batch
+    friction_range: [0.1, 1.0]    # used by score_target: log_friction_fixed_range only
+    score_loss: {type: SmoothL1, weight: 15.0, beta: 1.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}

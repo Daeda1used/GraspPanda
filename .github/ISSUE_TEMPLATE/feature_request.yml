@@ -1,0 +1,17 @@
+name: Feature or method request
+description: Propose a feature, a method to reproduce, or a dataset to support
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+      description: What you would like and which problem it solves. For a method, link the paper and the reference code, and state its licence.
+    validations:
+      required: true
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I can work on this.

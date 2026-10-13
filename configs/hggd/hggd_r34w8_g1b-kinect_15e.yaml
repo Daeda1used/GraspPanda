@@ -1,0 +1,47 @@
+# HGGD (RA-L 2023), GraspNet-1Billion, Azure Kinect, the reference recipe (15 epochs).
+# "r34w8": the image encoder has the block layout of ResNet-34 at base width 8; it is not
+# an ImageNet ResNet-34 and is trained from scratch.
+#
+#   grasppanda prepare graspnet1b --view-grasps --camera kinect \
+#       --config _base_/datasets/graspnet1b_kinect_hggd.yaml
+#   grasppanda train hggd/hggd_r34w8_g1b-kinect_15e
+#   grasppanda test  hggd/hggd_r34w8_g1b-kinect_15e --weights <checkpoint>
+#
+# The authors' checkpoint, converted with
+#   python -m tools.convert_checkpoint checkpoint-kinect.tar hggd_kinect.pth \
+#       --source-format hggd --camera kinect
+# loads into this config unchanged.
+#
+# Results are always reported for both post-processing variants below. The published
+# numbers of this method do not say which one they are; the released test script dumps
+# `cd`.
+_base_:
+  - ../_base_/models/hggd.yaml
+  - ../_base_/datasets/graspnet1b_kinect_hggd.yaml
+  - ../_base_/schedules/hggd_15e.yaml
+  - ../_base_/default_runtime.yaml
+
+train:
+  accumulate: 2                   # two batches of 4 per optimizer step, part of the recipe
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                       # every decoded grasp, as the model emits them
+    cd:                           # what the released test script dumps
+      # Its collision filter (detector mode "graspnet"): tested on the 25 600 points the
+      # network saw, one gripper for every grasp, a single point is a collision, and a
+      # grasp with at most two points between the fingers is dropped as well.
+      - type: ModelFreeCollisionFilter
+        cloud: points
+        voxel_size: 0.01
+        approach_distance: 0.05
+        finger_length: 0.04
+        height: 0.01
+        depth: 0.02
+        collision_threshold: 0.0
+        min_points_between: 2
+        precision: float16
+      # ... followed by its NMS. The evaluator applies the same rule again, so this step
+      # does not change the score; it makes the dump the one the script writes.
+      - {type: GraspNMS, translation_threshold: 0.03, rotation_threshold: 30.0}

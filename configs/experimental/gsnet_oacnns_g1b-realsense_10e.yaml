@@ -1,0 +1,39 @@
+# EXPERIMENTAL. GSNet with OA-CNNs in place of the sparse U-Net. No AP is claimed:
+# this config passes the checker and trains for a few iterations on GraspNet-1Billion
+# (configs/experimental/README.md); it has not been trained to convergence or
+# evaluated. No published GraspNet-1Billion result uses OA-CNNs.
+#
+#   grasppanda print-config experimental/gsnet_oacnns_g1b-realsense_10e --check
+#   grasppanda train experimental/gsnet_oacnns_g1b-realsense_10e
+#
+# A sparse CNN for a sparse CNN: the closest relative of the reference encoder among the
+# alternatives, without attention and on the same dependency (spconv).
+#
+# What must be re-tuned, and why:
+# * grid_size. The OA-CNNs default, 0.02 m, is for ScanNet rooms; 0.005 m keeps GSNet's
+#   grid.
+# * point_grid_size. The adaptive pooling grids are counted in cells, so they shrink
+#   with the grid: the published 8 to 16 cells of the first stage cover 0.32 to 0.64 m
+#   at 2 cm and 0.08 to 0.16 m at 5 mm. Left at the published values here; scaling them
+#   by four would restore the published extent in metres, which for a tabletop is the
+#   whole scene.
+# * out_channels: 512, the width GSNet's proposal, view stage and grouper have in the
+#   reference. The published model ends on 20 class scores.
+# * in_channels: 3, GSNet's constant ones (the published model reads coordinates,
+#   colour and normal). No checkpoint has been released for OA-CNNs, so there is
+#   nothing to initialise from in any case.
+# * crop_odd_extent: true, the behaviour of the official model, which leaves the voxels
+#   in the last cell of an odd-sized axis out of every down-sampling (they get zeros
+#   from the decoder). `false` keeps every voxel and is the variant to compare.
+# * size, optimizer and schedule: 51.5 M parameters (the paper's largest model) against
+#   14.6 M, trained here with GSNet's recipe (Adam 1e-3, x0.95 per epoch). `enc_depth`
+#   and `enc_channels` give the smaller published variants.
+_base_:
+  - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: OACNNs                  # `dense`: features on every input point
+    in_channels: 3
+    out_channels: 512
+    grid_size: 0.005

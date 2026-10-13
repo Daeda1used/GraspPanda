@@ -1,0 +1,16 @@
+method: GSNet
+title: "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection"
+venue: ICCV 2021
+upstream:
+  repository: graspnet/graspness_unofficial
+  commit: b5abf5a
+  license: "academic, non-commercial (SJTU); a third-party implementation, there is no official training code"
+implementation: clean-room
+models:
+  - name: gsnet_sunet14_g1b-realsense_10e
+    config: gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    results:
+      - {provenance: reported, collision_filter: false, source: "paper", AP: {seen: 65.70, similar: 53.75, novel: 23.98}}
+      - {provenance: reported, collision_filter: true, source: "paper", AP: {seen: 67.12, similar: 54.81, novel: 24.31}}

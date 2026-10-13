@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Generated at build time by hatch-vcs
+grasppanda/_version.py
+
+# Runs, data and caches never belong in the repository
+work_dirs/
+data/
+*.pth
+*.pt
+*.tar
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+!tests/**/fixtures/**/*.npy
+!tests/**/fixtures/**/*.npz
+
+# Docs build
+site/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+.env.local
+
+# Local tooling state (agent worktrees, editor assistants)
+.claude/

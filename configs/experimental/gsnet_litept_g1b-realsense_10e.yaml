@@ -1,0 +1,35 @@
+# EXPERIMENTAL. GSNet with LitePT-S in place of the sparse U-Net. No AP is claimed:
+# this config passes the checker and trains for a few iterations on GraspNet-1Billion
+# (configs/experimental/README.md); it has not been trained to convergence or
+# evaluated. No published GraspNet-1Billion result uses LitePT.
+#
+#   grasppanda print-config experimental/gsnet_litept_g1b-realsense_10e --check
+#   grasppanda train experimental/gsnet_litept_g1b-realsense_10e
+#
+# What must be re-tuned, and why:
+# * grid_size. The LitePT default, 0.02 m, is for ScanNet rooms; 0.005 m keeps GSNet's
+#   grid. LitePT convolves in its three finest stages (voxels of 5, 10 and 20 mm here)
+#   and attends only in the two coarsest (4 and 8 cm). A tabletop frame is a few hundred
+#   voxels there, fewer than one attention patch of 1024, so attention is global over
+#   the scene and `enc_patch_size` has no effect at this scale.
+# * in_channels: 3, GSNet's constant ones. The released checkpoints read six channels
+#   (colour and normal) on a 2 cm grid and do not fit this stem: the model trains from
+#   scratch.
+# * output width. LitePT-S returns 72 channels (`dec_channels[0]`), the sparse U-Net
+#   512; proposal, view stage and grouper are built 72 wide. Widening it leaves the
+#   published model.
+# * optimizer and schedule: GSNet's (Adam 1e-3, x0.95 per epoch). The authors train
+#   with AdamW, lr 6e-3 (6e-4 for the blocks), weight decay 0.05 and a one-cycle
+#   schedule, on much longer schedules.
+# * drop_path stays at the published 0.3 (the class default). That is a regulariser for
+#   those long schedules and probably too strong for 10 epochs.
+# * batch size. Batch norm with momentum 0.01 sits in the stem and in every pooling and
+#   unpooling step, so a batch of 4 frames matters more than under layer norm alone.
+_base_:
+  - ../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: LitePT                  # `dense`: features on every input point
+    in_channels: 3
+    grid_size: 0.005

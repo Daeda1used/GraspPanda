@@ -1,0 +1,84 @@
+# Scale-Balanced-Grasp (CoRL 2022): the full reference model, i.e. the GraspNet_MSCQ
+# network of mahaoxiang822/Scale-Balanced-Grasp @ 995d6f8 with its scale-balanced loss.
+# Object-balanced sampling and noisy-clean mixing are not part of it.
+#
+# Lines marked [SBG] are what differs from configs/_base_/models/graspnet_baseline.yaml;
+# everything else is that model. Options marked "reference quirk" change numbers; their
+# alternatives are controlled variants, not corrections to apply silently.
+#
+# Injected by the detector, so not repeated here: channel counts between stages, the view
+# template handed to the assigner, the gripper handed to the view stage, the assigner and
+# the head.
+model:
+  type: ScaleBalancedGrasp
+  point_features: ones            # the backbone takes coordinates only (in_channels: 0)
+  gripper:                        # GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1                # labels wider than this are unusable; decoded widths are clamped
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  backbone:
+    type: PointNet2Transformer    # [SBG] two abstraction levels with attention; `subsampled`
+    in_channels: 0
+    npoints: [2048, 1024]
+    radii: [0.04, 0.1]
+    nsamples: [64, 32]
+    sa_mlps: [[64, 64, 128], [128, 128, 256]]
+    attention_neighbours: 16
+    normalize_xyz: true
+    fps_skip_near_origin: true    # reference quirk: the sampling kernel never picks points with |p|² <= 1e-3
+    fps_tie_break: pointnet2_cuda # reference quirk: equally distant candidates in the order of that kernel
+
+  proposal:
+    type: SubsampledSeeds         # every point the backbone kept is a seed; nothing is selected
+    num_seeds: 1024
+
+  view:
+    type: ObjectnessViewStage     # objectness and view scores from one head; arg-max view in both modes
+    num_views: 300
+    reject_background: true       # evaluation mode: no grasp for a seed classified as background
+    score_target: log_friction_batch_max   # reference quirk: scaled by the worst friction in the batch
+    max_friction: 1.0             # used by score_target: log_friction_fixed_max only
+    good_view_score: 0.7          # logging only
+    min_graspable_views: 10       # [SBG] a positive seed needs more than 10 graspable views
+    graspable_score: 0.1          # a view is graspable when its target exceeds this
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    view_loss: {type: MSE, weight: 1.0}
+
+  assigner:
+    type: ScaleBalancedAssigner   # [SBG] also returns a loss weight per seed: 1 - ln(count / max count) of its width bin; the dataset serves the histogram (scale_statistic)
+    max_match_distance: null      # no limit, as in the reference
+    crop_centre: label_point      # reference quirk: training crops sit at the matched label point, inference crops at the seed
+    padded_seeds: count           # every seed is real here
+    supervise: object_seeds       # view and grasp losses only for seeds on an object
+
+  grouper:
+    type: DepthCylinderGroup      # scene-cloud cylinders: `scene` support, a depth axis
+    radius: 0.08                  # [SBG]
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]   # one far end per depth bin of the head
+    nsample: 64
+    mlp_channels: [64, 128, 256]
+    normalize_offsets: false
+    radius_scales: [0.25, 0.5, 0.75, 1.0]   # [SBG] four crops per (seed, depth), fused by a linear layer
+    seed_residual: gated          # [SBG] adds sigmoid(W f) * f of the seed feature f
+
+  head:
+    type: OperationHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    hidden_channels: 128
+    width_decode_gain: 1.2        # reference quirk: applied by the decoder only, not by the loss target
+    max_tolerance: 0.05
+    score_target: log_friction_batch_max   # must equal view.score_target
+    max_friction: 1.0
+    min_score_target: 0.1         # a (seed, depth) is supervised only above this score target
+    score_supervision: seeds_with_a_supervised_depth   # [SBG] reference quirk: the score is supervised on all depth bins of such a seed
+    score_decode: score_x_objectness_x_tolerance       # [SBG] emitted score = score × P(object) × tolerance / max_tolerance
+    score_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    angle_loss: {type: CrossEntropy, weight: 0.2}
+    width_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}
+    tolerance_loss: {type: SmoothL1, weight: 0.2, beta: 1.0}

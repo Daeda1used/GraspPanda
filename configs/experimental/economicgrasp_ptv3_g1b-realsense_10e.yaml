@@ -1,0 +1,31 @@
+# EXPERIMENTAL. EconomicGrasp with Point Transformer V3 (encoder + decoder) in place
+# of the sparse U-Net. No AP is claimed: this config passes the checker and trains for
+# a few iterations on GraspNet-1Billion (configs/experimental/README.md); it has not
+# been trained to convergence or evaluated.
+#
+#   grasppanda print-config experimental/economicgrasp_ptv3_g1b-realsense_10e --check
+#   grasppanda train experimental/economicgrasp_ptv3_g1b-realsense_10e
+#
+# Needs the same assets as the reference config (graspness and compact labels):
+#   grasppanda prepare graspnet1b --graspness --camera realsense
+#   grasppanda prepare graspnet1b --compact-labels \
+#       --config economicgrasp/economicgrasp_sunet14_g1b-realsense_10e
+#
+# What must be re-tuned, and why (see also gsnet_ptv3_g1b-realsense_10e.yaml):
+# * grid_size: 0.005 m keeps the grid of the reference encoder; the PTv3 default is
+#   0.02 m. EconomicGrasp feeds 20 000 points per frame, so a frame holds more voxels
+#   than under GSNet and more attention patches of 1024.
+# * the 5 mm matching rule. A seed is supervised only within 5 mm of a label point
+#   (`assigner.max_match_distance`). Which seeds the proposal selects depends on the
+#   encoder, so the fraction of supervised seeds (`metric/supervised_seeds` in the log)
+#   is the first number to compare with the reference run.
+# * optimizer and schedule: EconomicGrasp's (Adam 1e-3, cosine, 10 epochs), tuned for
+#   the sparse U-Net. A starting point only.
+_base_:
+  - ../economicgrasp/economicgrasp_sunet14_g1b-realsense_10e.yaml
+
+model:
+  backbone:
+    type: PTv3
+    in_channels: 3
+    grid_size: 0.005

@@ -1,0 +1,81 @@
+site_name: GraspPanda
+site_description: A toolbox for 6-DoF grasp detection in cluttered scenes
+site_url: https://daeda1used.github.io/GraspPanda
+repo_url: https://github.com/Daeda1used/GraspPanda
+repo_name: Daeda1used/GraspPanda
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 The GraspPanda Contributors
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: green
+      toggle: {icon: material/weather-night, name: Switch to dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: green
+      toggle: {icon: material/weather-sunny, name: Switch to light mode}
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_source: false
+            members_order: source
+            docstring_style: google
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.snippets: {base_path: ["."], check_paths: true}
+
+nav:
+  - Home: index.md
+  - Get Started:
+      - Installation: get_started/installation.md
+      - Quick start: get_started/quickstart.md
+  - User Guides:
+      - Configuration: user_guides/config.md
+      - Dataset preparation: user_guides/datasets.md
+      - Cross-dataset evaluation: user_guides/cross_dataset.md
+      - Training and testing: user_guides/train_test.md
+      - Inference and visualisation: user_guides/inference.md
+  - Advanced Guides:
+      - Add a component: advanced_guides/add_component.md
+      - Swapping components: advanced_guides/swapping.md
+      - Data contracts: advanced_guides/data_flow.md
+      - Data loading: advanced_guides/data_loading.md
+      - Operators and backends: advanced_guides/operators.md
+      - Architecture: design/ARCHITECTURE.md
+  - Model Zoo:
+      - Methods: model_zoo.md
+      - Components: components.md
+      - Scene encoders: model_zoo_backbones.md
+  - API:
+      - Config: api/config.md
+      - Registry: api/registry.md
+      - Structures: api/structures.md
+      - Operators: api/ops.md
+  - FAQ: faq.md
+  - Changelog: changelog.md

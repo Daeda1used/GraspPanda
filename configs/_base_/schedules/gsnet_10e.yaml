@@ -1,0 +1,14 @@
+# Training recipe of the Graspness reference implementation
+# (graspnet/graspness_unofficial @ b5abf5a, train.py): Adam, lr 1e-3, no weight decay,
+# learning rate multiplied by 0.95 after every epoch, 10 epochs.
+optimizer:
+  type: Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+scheduler:
+  type: ExponentialLR
+  gamma: 0.95
+
+train:
+  epochs: 10

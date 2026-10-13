@@ -1,0 +1,65 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: py${{ matrix.python }} · numpy ${{ matrix.numpy }} · torch ${{ matrix.torch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # oldest supported stack
+          - {python: "3.10", numpy: "1.26.*", torch: "2.1.*"}
+          # current stack
+          - {python: "3.12", numpy: "2.*", torch: "2.*"}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # hatch-vcs derives the version from git history
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install "torch==${{ matrix.torch }}" --index-url https://download.pytorch.org/whl/cpu
+          pip install "numpy==${{ matrix.numpy }}"
+          pip install -e ".[dev,spconv-cpu]"   # the CPU wheel, so sparse components are tested too
+      - name: Test
+        # The CPU-only spconv wheel miscomputes with more than one OpenMP thread; the sparse
+        # facade refuses to run in that state (grasppanda/ops/sparse/_spconv.py).
+        env:
+          OMP_NUM_THREADS: "1"
+        run: pytest --cov=grasppanda --cov-report=term-missing
+
+  package:
+    name: build and install the wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Install the wheel outside the checkout and use a shipped config
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          grasppanda --version
+          grasppanda print-config _base_/default_runtime.yaml --check

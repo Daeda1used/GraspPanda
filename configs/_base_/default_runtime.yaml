@@ -1,0 +1,17 @@
+# Runtime defaults shared by every config. Everything here can be overridden in a
+# child config or with `--opts runtime.seed=1`.
+train:
+  amp: false
+  accumulate: 1
+
+evaluation:
+  interval: 1
+  variants:
+    raw: []          # predictions exactly as the model emits them
+
+runtime:
+  work_dir: work_dirs/${config_name}
+  seed: 0
+  deterministic: false
+  checkpoint: {interval: 1, keep_last: 3}
+  log: {interval: 50, backends: [text]}

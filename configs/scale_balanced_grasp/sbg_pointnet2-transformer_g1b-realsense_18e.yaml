@@ -1,0 +1,52 @@
+# Scale-Balanced-Grasp (CoRL 2022): the GraspNet_MSCQ network with the scale-balanced
+# loss, GraspNet-1Billion, RealSense, the reference recipe (18 epochs). Object-balanced
+# sampling and noisy-clean mixing are not part of this config.
+#
+#   grasppanda prepare graspnet1b --labels
+#   grasppanda prepare graspnet1b --tolerance       --config scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e
+#   grasppanda prepare graspnet1b --scale-statistic --config scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e
+#   grasppanda train scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e
+#   grasppanda test  scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --weights <checkpoint>
+#
+# Results are always reported for both post-processing variants below. The shipped test
+# command of the reference turns its collision filter off (`raw`); the paper reports
+# both.
+_base_:
+  - ../_base_/models/scale_balanced_grasp.yaml
+  - ../_base_/datasets/graspnet1b_realsense_tolerance.yaml
+  - ../_base_/schedules/scale_balanced_grasp_18e.yaml
+  - ../_base_/default_runtime.yaml
+
+data:
+  train:
+    dataset:
+      # The histogram of grasp widths behind the scale-balanced loss weights, a derived
+      # asset. `native` is generated here from every 8th training frame; the counts of
+      # the reference's own file are not reproduced by it (see README.md). To train with
+      # exactly the reference's weights, set
+      #   source: legacy_import
+      #   reference_sha256: 909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd
+      # and import its statistic/scale_distribution.npy with
+      #   grasppanda prepare graspnet1b --scale-statistic --import-legacy --scale-statistic-file <file> --config <this config>
+      scale_statistic:
+        source: native
+        bins: 32
+        frame_step: 8
+        num_seeds: 1024
+        min_graspable_views: 10
+        graspable_score: 0.1
+        max_width: 0.1
+        seed: 0
+  val:
+    dataset:
+      keep_full_points: true      # the collision filter reads the cloud before sub-sampling
+  test:
+    dataset:
+      keep_full_points: true
+
+evaluation:
+  evaluator: {type: GraspNet1BEvaluator}
+  variants:
+    raw: []                       # predictions as the model emits them
+    cd:                           # the reference's model-free collision filter
+      - {type: ModelFreeCollisionFilter}

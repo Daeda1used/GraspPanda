@@ -1,0 +1,41 @@
+# HGGD: machine-readable source of the model-zoo rows of this method.
+#
+# Only numbers that have been published are listed. The authors' checkpoints convert and
+# reproduce the reference implementation stage by stage (see README.md), but a full-split
+# evaluation in this toolbox has not been run yet, so there is no `author-ckpt` row and
+# no weights entry: both arrive together with the result record that is their evidence.
+method: HGGD
+title: "Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes"
+venue: RA-L 2023
+paper: https://arxiv.org/abs/2403.18546
+upstream: {repository: THU-VCLab/HGGD, commit: 69580ff, license: MIT}
+implementation: clean-room
+models:
+  - name: hggd_r34w8_g1b-realsense_15e
+    config: hggd/hggd_r34w8_g1b-realsense_15e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    results:
+      # Neither source says whether the collision filter of the released test script
+      # (which dumps filtered grasps) was applied.
+      - provenance: reported
+        collision_filter: null
+        AP: {seen: 59.36, similar: 51.20, novel: 22.17}
+        source: "paper; row 'In paper' of the repository README"
+      - provenance: reported
+        collision_filter: null
+        AP: {seen: 64.45, similar: 53.59, novel: 24.59}
+        source: "repository README, row 'In repo' (also the arXiv version)"
+  - name: hggd_r34w8_g1b-kinect_15e
+    config: hggd/hggd_r34w8_g1b-kinect_15e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: kinect
+    results:
+      - provenance: reported
+        collision_filter: null
+        AP: {seen: 60.26, similar: 48.59, novel: 18.43}
+        source: "paper; row 'In paper' of the repository README"
+      - provenance: reported
+        collision_filter: null
+        AP: {seen: 61.17, similar: 47.02, novel: 19.37}
+        source: "repository README, row 'In repo'"

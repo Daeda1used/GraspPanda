@@ -1,0 +1,22 @@
+# Training recipe of the EconomicGrasp reference implementation
+# (iSEE-Laboratory/EconomicGrasp @ 7361bb6, train.py): Adam, lr 1e-3, no weight decay,
+# and a cosine that is evaluated once per epoch,
+#     lr(epoch) = lr * (1 + cos(pi * epoch / epochs)) / 2      (epoch counted from 0),
+# so the last epoch still trains at a small positive rate.
+#
+# 10 epochs is what the command of the upstream README trains with, and the published
+# Kinect checkpoint is stored as epoch 10. The argparse default of train.py is 20, see
+# economicgrasp_20e.yaml; because the cosine spans the run, the two are different
+# schedules and not a longer and a shorter version of the same one.
+optimizer:
+  type: Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+scheduler:
+  type: CosineAnnealingLR       # T_max is the length of the run, filled in by the engine
+  eta_min: 0.0
+
+train:
+  epochs: 10
+  scheduler_unit: epoch

@@ -1,0 +1,16 @@
+# EconomicGrasp with the argparse defaults of its train.py
+# (iSEE-Laboratory/EconomicGrasp @ 7361bb6): as economicgrasp_10e.yaml, but the cosine
+# spans 20 epochs. The command of the upstream README uses 10 epochs, and so do the
+# shipped runnable configs; this file exists so that the other setting has a name.
+optimizer:
+  type: Adam
+  lr: 1e-3
+  weight_decay: 0.0
+
+scheduler:
+  type: CosineAnnealingLR       # T_max is the length of the run, filled in by the engine
+  eta_min: 0.0
+
+train:
+  epochs: 20
+  scheduler_unit: epoch

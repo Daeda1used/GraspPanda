@@ -1,0 +1,86 @@
+# HGGD (Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes, RA-L 2023):
+# the full reference model.
+#
+# Every value below is the default of its option and reproduces THU-VCLab/HGGD @ 69580ff
+# with the options of its shipped train_graspnet.sh / test_graspnet.sh. Where that script
+# and the argument defaults of the code disagree, the script wins; those lines say so.
+# Options marked "reference quirk" change numbers; their alternatives are controlled
+# variants, not corrections to apply silently.
+#
+# HGGD is a detector family of its own: none of the stages below is a registered slot,
+# and none of the seed-based slots (backbone / proposal / view / grouper / head) applies.
+# Injected by the detector, so not repeated here: the angle classes and the stride handed
+# to the image network, its feature channels handed to the region network, the number of
+# anchor classes, the gripper handed to the anchor head.
+model:
+  type: HGGD
+  gripper:                        # GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1                # not applied to predictions; the evaluator clips widths
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  image:
+    size: [640, 360]              # (width, height) of the network image; half the sensor image
+    resize: pil_bicubic           # reference quirk: Pillow's resize, colour rounded to 8 bits per pass
+    depth_clip: 1.0               # metres around the mean of the resized depth image
+
+  encoder:                        # ResNet-34 block layout at an eighth of its width, from scratch
+    base_width: 8
+    blocks: [3, 4, 6, 3]
+    head_channels: 32
+    detach_features: true         # reference recipe: the region loss does not train this network
+
+  proposal:
+    num_angles: 6                 # in-plane angle classes of 30 degrees
+    stride: 8                     # angle maps and region features at 80 x 45
+    anchor_width: 50.0            # pixels of the network image
+    anchor_depth: 0.02            # metres; depth offsets span +-0.02
+    blur_kernel: 9
+    blur_sigma: 10.0
+    grid_size: 8
+    max_proposals: 48             # test_graspnet.sh: --center-num 48
+    train_max_proposals: 128      # train_graspnet.sh: --center-num 128
+    candidate_factor: 10
+    score_threshold: 0.01
+    train_score_threshold: 0.0    # reference quirk: no heat threshold while training
+    min_distance: 8.0             # pixels; together with
+    min_angle: 30.0               # degrees
+    heatmap_weight: 1.0
+    offset_weight: 5.0            # script: --reg-b 5 (argument default 1)
+    angle_weight: 1.0
+    label_min_score: 0.8
+    max_labels: 5000
+    peak_radius: 10
+    peak_min_distance: 8.0
+    depth_window: 2
+    positive_count_threshold: 0.5 # reference quirk: a cell with one label is a negative angle class
+
+  region:
+    num_points: 512
+    min_points: 32
+    feature_neighbours: 8
+    jitter: 0.0005                # reference quirk: region points are jittered at inference too
+    zero_depth_window: 4
+    zero_depth_centres: append    # reference quirk: see grasppanda/models/detectors/hggd/region.py
+
+  local:
+    info_embedding: 32
+    hidden: 256
+    dropout: 0.3
+
+  anchors:
+    num_anchors: 7                # 7 x 7 (gamma, beta) anchors; positions live in the checkpoint
+    top_k: 10                     # script: --local-k 10 (argument default 3)
+    offset_scale: 0.02
+    max_gamma: 60.0
+    grasp_depth: 0.02
+    finger_pixels: 20.0
+    frame: pixel_keypoints        # reference quirk: in-plane axes orthogonal only up to |fx - fy| / f
+    match_radius: 0.02
+    max_matches: 500              # argument default; the script does not set --local-grasp-num
+    positive_similarity: 0.99
+    offset_weight: 1.0            # script: --offset-d 1 (argument default 5)
+    shift_epochs: 5               # needs `hooks: [{type: EpochSignalHook}]`
+    shift_pool: 1000000

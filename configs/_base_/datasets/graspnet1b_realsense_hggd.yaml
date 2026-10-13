@@ -1,0 +1,74 @@
+# GraspNet-1Billion, RealSense camera, with the data recipe of HGGD
+# (THU-VCLab/HGGD @ 69580ff: dataset/graspnet_dataset.py, dataset/utils.py,
+# convert_grasp.py, train_graspnet.sh, test_graspnet.sh).
+#
+# What differs from the point-cloud recipes of the GraspNet family:
+#   * the model reads the colour and depth IMAGES (`images`) beside a cloud;
+#   * the cloud is 25 600 points drawn from every pixel with depth: there is NO workspace
+#     crop, so no ground truth shapes the input and results are not `gt_assisted`;
+#   * training reads per-view grasp labels (`view_grasps`), a derived asset built with
+#         grasppanda prepare graspnet1b --view-grasps --camera realsense \
+#             --config _base_/datasets/graspnet1b_realsense_hggd.yaml
+#     instead of the dense per-object labels (`object_labels: false`);
+#   * there is no augmentation (the reference trains its two networks jointly with its
+#     image augmentations switched off).
+#
+# The dataset root resolves from `root`, then $GRASPPANDA_GRASPNET1B_ROOT, then
+# $GRASPPANDA_DATA/graspnet1b, then ./data/graspnet1b.
+data:
+  train:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: train               # all 100 training scenes, as the authors train
+      load_labels: true
+      object_labels: false       # HGGD does not read the dense grasp grids
+      images: [rgb, depth]
+      view_grasps:               # every value is the reference converter's; see
+        friction_threshold: 0.2  # grasppanda/datasets/view_grasps.py for the full list
+      preprocess:
+        - {type: DepthToCloud}
+        - {type: NoWorkspace}    # every pixel with depth; nothing derived from ground truth
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false    # HGGD's collision filter reads the sampled cloud
+    batch_size: 4
+    num_workers: 4
+    shuffle: true
+    drop_last: true              # the reference skips incomplete batches
+
+  # Progress monitor on the ten `val_dev` scenes, every 16th frame.
+  # NOTE: val_dev is a subset of `train`, so this loader measures fit, not generalisation.
+  # For model selection train on `train_dev` (`--opts data.train.dataset.split=train_dev`).
+  val:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: val_dev
+      frame_step: 16
+      load_labels: false
+      images: [rgb, depth]
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false
+      seed: 0                    # the same points every evaluation (the reference draws afresh)
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspNet1B
+      camera: realsense
+      split: test                # scenes 100-189; test_seen / test_similar / test_novel also exist
+      load_labels: false
+      images: [rgb, depth]
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 25600}
+      keep_full_points: false
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

@@ -1,0 +1,42 @@
+# The toy detector on synthetic scenes: train, test and infer on a CPU in seconds.
+#
+#   grasppanda train projects/example_project/configs/toy_train.yaml
+#   grasppanda test  projects/example_project/configs/toy_train.yaml --weights <run>/checkpoints/best.pth
+#   grasppanda infer projects/example_project/configs/toy_train.yaml --weights <...> --input test --output out/toy
+_base_:
+  - toy_detector.yaml
+
+custom_imports:                   # lists replace wholesale, so the detector is listed again
+  - ../toy_components.py
+  - ../toy_data.py
+
+data:
+  train:
+    dataset: {type: ToyScenes, first_scene: 0, num_scenes: 4, frames_per_scene: 8}
+    batch_size: 4
+    num_workers: 0
+  val:                            # scenes the training set does not contain
+    dataset: {type: ToyScenes, first_scene: 100, num_scenes: 1, frames_per_scene: 8}
+    batch_size: 4
+    num_workers: 0
+  test:
+    dataset: {type: ToyScenes, first_scene: 200, num_scenes: 2, frames_per_scene: 8}
+    batch_size: 4
+    num_workers: 0
+
+optimizer:
+  lr: 5e-3
+
+train:
+  epochs: 5
+
+evaluation:
+  evaluator: {type: ToyEvaluator}
+  variants:
+    raw: []                                         # predictions as the model emits them
+    centre: [{type: ToyCentreFilter, radius: 0.15}] # the same predictions after a filter
+  save_best: raw/AP
+
+runtime:
+  device: cpu
+  log: {interval: 4}

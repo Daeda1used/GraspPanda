@@ -1,0 +1,91 @@
+# GraspNet-1Billion, Azure Kinect camera, with the data recipe of the Graspness reference
+# implementation (graspnet/graspness_unofficial @ b5abf5a: dataset/graspnet_dataset.py,
+# dataset/generate_graspness.py, train.py, test.py).
+#
+# The dataset root is not written here. It resolves from `root` (if a child config sets
+# it), then $GRASPPANDA_GRASPNET1B_ROOT, then $GRASPPANDA_DATA/graspnet1b, then
+# ./data/graspnet1b. Derived labels live under $GRASPPANDA_CACHE and are built with
+#     grasppanda prepare graspnet1b --labels
+#     grasppanda prepare graspnet1b --graspness --camera kinect
+#
+# `preprocess` fixes which pixels become points. Its configuration is fingerprinted and
+# the graspness asset is tied to it: change a value here and the dataset asks for a
+# different asset instead of reading misaligned labels.
+data:
+  train:
+    dataset:
+      type: GraspNet1B
+      camera: kinect
+      split: train               # all 100 training scenes, as the authors train
+      load_labels: true
+      preprocess:
+        - {type: DepthToCloud}
+        # The reference crops to the bounding box of the GROUND-TRUTH segmentation, at
+        # test time too; results are therefore stamped gt_assisted: [workspace].
+        # `include` keeps its treatment of foreground pixels without depth. For input
+        # without ground truth use TableBoxWorkspace or NoWorkspace (other fingerprint).
+        - {type: SegmentationBoxWorkspace, margin: 0.02, invalid_depth_foreground: include}
+      graspness:
+        source: native           # generated here; `legacy` reads upstream-format files
+        friction_threshold: 0.8
+        poses: annotations       # the reference generator reads the annotation XMLs
+        dtype: float16
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: FilterObjects, min_visible_points: 50}
+        # `grids: deferred` leaves the (P, 300, 12, 4) label grids in the label store; label
+        # matching reads the rows of the label points it matched. Same labels and same
+        # random draws as `dense`, which copies about 1.4 GiB per batch of four frames
+        # into the sample (docs/advanced_guides/data_loading.md).
+        - type: SampleGraspLabels
+          point_fraction: 0.25
+          min_points: 300
+          collision: zero_scores
+          grids: deferred
+        - {type: RandomFlip, axis: x, prob: 0.5}
+        # The reference comment says z; its matrix rotates about the camera x-axis.
+        - {type: RandomRotation, axis: x, max_angle: 30.0}
+        - {type: ConstantFeatures, channels: 3}
+      keep_full_points: false    # only post-processors need the unsampled cloud
+    batch_size: 4
+    # With deferred label grids a batch is about 3 MiB and a worker spends about 0.1 s on
+    # a frame; four workers keep up with the model.
+    num_workers: 4
+    shuffle: true
+    drop_last: false
+
+  # Progress monitor on the ten `val_dev` scenes, every 16th frame.
+  # NOTE: val_dev is a subset of `train`, so this loader measures fit, not generalisation.
+  # For model selection train on `train_dev` (`--opts data.train.dataset.split=train_dev`);
+  # the two then partition the training scenes. Reproduction recipes use the final
+  # checkpoint and do not select on this loader.
+  val:
+    dataset:
+      type: GraspNet1B
+      camera: kinect
+      split: val_dev
+      frame_step: 16
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: ConstantFeatures, channels: 3}
+      seed: 0                    # the same points every evaluation (the reference draws afresh)
+    batch_size: 1
+    num_workers: 4
+    shuffle: false
+
+  test:
+    dataset:
+      type: GraspNet1B
+      camera: kinect
+      split: test                # scenes 100-189; test_seen / test_similar / test_novel also exist
+      load_labels: false
+      preprocess: ${data.train.dataset.preprocess}
+      transforms:
+        - {type: RandomSample, num_points: 15000}
+        - {type: ConstantFeatures, channels: 3}
+      seed: 0
+    batch_size: 1
+    num_workers: 4
+    shuffle: false

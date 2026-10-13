@@ -1,0 +1,34 @@
+# Subsets of the GraspClutter6D grasp splits.
+#
+# The splits themselves are NOT stated here: `train` (413 scenes) and `test` (235 scenes)
+# are read from the dataset's own split_info/grasp_{train,test}_scene_ids.json, which is
+# authoritative; `all` is their union and `sample` the first training scene. Every scene
+# has 13 views per camera, and every subset below holds all 13.
+#
+# A subset names scenes of one of those splits. The reader refuses a dataset tree whose
+# split files do not contain them, so a subset can never silently mean other frames.
+#
+# test_mini: every tenth test scene by rank (sorted(test)[0::10]): 24 scenes, 312 frames
+#   per camera, 66 of the 68 test objects. It exists for quick checks that finish in
+#   minutes. A number measured on it is a subset number and is never a benchmark result.
+#
+# val_dev / train_dev partition the training scenes at scene level: val_dev is every
+#   tenth training scene by rank (sorted(train)[5::10], 41 scenes), train_dev the other
+#   372. All objects of val_dev also occur in train_dev (the training scenes share 123
+#   object models), so val_dev measures fit to new arrangements of known objects. The
+#   test split holds 68 other objects; no test scene is ever used for model selection.
+dataset: graspclutter6d
+version: 1
+subsets:
+  test_mini:
+    of: test
+    scenes: [2, 18, 35, 54, 71, 91, 108, 127, 142, 158, 178, 200, 217, 235, 252, 272,
+             291, 304, 316, 333, 343, 354, 367, 378]
+  val_dev:
+    of: train
+    scenes: [25, 77, 129, 176, 238, 278, 326, 383, 393, 403, 413, 423, 433, 443, 453, 463,
+             473, 483, 506, 538, 576, 614, 675, 685, 695, 705, 715, 773, 783, 793, 803, 813,
+             823, 833, 843, 853, 863, 873, 883, 893, 903]
+  train_dev:
+    of: train
+    exclude: val_dev

@@ -1,0 +1,17 @@
+GraspPanda
+Copyright 2026 The GraspPanda Contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Method implementations in this repository are written from the cited papers and from
+behavioural study of the reference implementations. No third-party source file is
+copied. Licences of upstream repositories, datasets and released weights are recorded
+per method in configs/<method>/metafile.yaml.
+
+GraspNet-1Billion (CC BY-NC-SA 4.0) and GraspClutter6D (CC BY-SA 4.0) are datasets of
+their respective authors and are not distributed with this software.
+
+resources/demo.webp shows one frame of GraspNet-1Billion with grasps predicted by this
+software. The underlying image and depth data are (c) the GraspNet-1Billion authors and
+licensed CC BY-NC-SA 4.0; that file is not covered by the Apache License and is not
+part of the distributed packages.

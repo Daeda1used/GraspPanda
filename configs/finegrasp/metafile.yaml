@@ -1,0 +1,43 @@
+# Machine-readable source of the FineGrasp zoo entry; validated by grasppanda.hub.load_metafile.
+#
+# Only author-reported numbers so far. The authors' weights have been compared with the
+# reference implementation stage by stage and scored on a 120-frame sample of the seen
+# split (README.md); they have not been evaluated on the full protocol with this toolbox,
+# and nothing has been trained here, so there is no `author-ckpt` and no `reproduced`
+# result. The sample numbers are not split APs and are deliberately not listed.
+method: FineGrasp
+title: "FineGrasp: Towards Robust Grasping for Delicate Objects"
+venue: arXiv 2025
+paper: https://arxiv.org/abs/2507.05978
+upstream:
+  repository: HorizonRobotics/robo_orchard_lab
+  commit: 221ec0e1030b1fa0a57a3d92c22e8603f4419c93
+  release: "robo_orchard_lab 0.4.0 (PyPI): the package the parity fixtures were recorded with; its FineGrasp model, loss, label-matching, dataset and metric files are those of the commit"
+  license: "Apache-2.0 (LICENSE file); the FineGrasp sources derive from EconomicGrasp and, through it, from graspnet-baseline, which is under a non-commercial research licence"
+implementation: clean-room
+
+models:
+  - name: finegrasp_sunet14_g1b-realsense_10e
+    config: finegrasp/finegrasp_sunet14_g1b-realsense_10e.yaml
+    protocol: graspnet1b-sv-v1
+    camera: realsense
+    weights:
+      # finegrasp_pipeline/model.safetensors of the authors' model repository, to be
+      # converted with
+      #   python -m tools.convert_checkpoint model.safetensors finegrasp_realsense.pth \
+      #       --source-format finegrasp --camera realsense
+      # The digest is the one the model hub lists for the file and the one of the copy
+      # the parity tests ran on.
+      url: https://huggingface.co/HorizonRobotics/FineGrasp/blob/main/finegrasp_pipeline/model.safetensors
+      sha256: 30c1f335567dcd726c11fb60249da65e26cc92c2f82928a4e4123ac235b38f79
+      license: "apache-2.0 on the model card; trained on GraspNet-1Billion, whose data and labels are CC BY-NC-SA 4.0"
+      source: author
+    results:
+      - provenance: reported
+        collision_filter: false
+        source: "paper (arXiv 2507.05978), Table I, 'FineGrasp'; the same row is in the README of the upstream project and on the model card, which names this weight file"
+        AP: {seen: 71.67, similar: 62.83, novel: 27.40}
+      - provenance: reported
+        collision_filter: true
+        source: "paper (arXiv 2507.05978), Table I, 'FineGrasp + CD'; the same row is in the README of the upstream project and on the model card, which names this weight file"
+        AP: {seen: 73.71, similar: 64.56, novel: 28.14}

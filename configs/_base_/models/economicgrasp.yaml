@@ -1,0 +1,92 @@
+# EconomicGrasp (An Economic Framework for 6-DoF Grasp Detection, ECCV 2024): the full
+# reference model.
+#
+# Every value below is the default of its component and reproduces
+# iSEE-Laboratory/EconomicGrasp @ 7361bb6, the pinned reference; the published numbers
+# predate the one later upstream change (4119bdc, see head.decode_argmax). Options
+# marked "reference quirk" change numbers; their alternatives are controlled variants,
+# not corrections to apply silently. Backbone, proposal and view stage are GSNet's, with
+# the same values.
+#
+# Injected by the detector, so not repeated here: channel counts between stages, the view
+# template handed to the assigner, the gripper handed to the head.
+model:
+  type: EconomicGrasp
+  point_features: ones            # geometry only: a constant 1 in every input channel
+  gripper:                        # GraspNet-1Billion benchmark gripper
+    name: graspnet-parallel-jaw
+    max_width: 0.1                # decoded widths are clamped to it
+    finger_width: 0.01
+    finger_height: 0.02
+    depth_base: 0.02
+
+  backbone:
+    type: SparseUNet14            # upstream calls this network TDUnet
+    in_channels: 3
+    out_channels: 512
+    voxel_size: 0.005             # owned here; the collision filter has its own voxel size
+    stem_channels: 32
+    stem_kernel: 5
+    encoder_channels: [32, 64, 128, 256]
+    decoder_channels: [192, 192, 192, 192]
+    voxel_features: first
+
+  proposal:
+    type: GraspnessFPS
+    num_seeds: 1024
+    graspness_threshold: 0.1
+    fps_skip_near_origin: true    # reference quirk: the sampling kernel never picks points with |p|² <= 1e-3
+    fps_tie_break: pointnet2_cuda # reference quirk: equally distant candidates in the order of that kernel
+    objectness_loss: {type: CrossEntropy, weight: 1.0}
+    graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
+
+  view:
+    type: TemplateViewStage
+    num_views: 300
+    train_selection: multinomial  # reference quirk: the training view is sampled, not the arg-max
+    max_friction: 0.6             # must equal the label asset's view_friction_threshold (checked)
+    loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
+
+  assigner:
+    type: CompactLabelAssigner
+    max_match_distance: 0.005     # reference quirk: a seed further than 5 mm from its label point is not
+                                  # supervised (a matching tolerance; unrelated to the voxel size)
+    shared_views: lowest          # reference quirk: of the template views that map to one labelled view
+                                  # only one is supervised. Upstream leaves the choice to an indexed
+                                  # assignment with repeated indices (undefined on a GPU); `lowest` is
+                                  # what that yields in about 95 % of the cases, `all` removes the quirk
+    padded_seeds: count           # reference quirk: repeated padding seeds are counted in loss means
+
+  grouper:
+    type: CylinderInteractionGroup
+    radius: 0.05
+    hmin: -0.02
+    hmax: 0.04
+    nsample: 16
+    mlp_channels: [256, 256]
+    centre_coordinates: true      # the crop feature also sees where the seed is in the camera frame
+    attention_heads: 1
+    attention_dropout: 0.05
+    post_mlp_channels: [256, 256]
+
+  head:
+    type: EconomicHead
+    num_angle: 12
+    num_depth: 4
+    depth_step: 0.01
+    num_score: 6                  # quality classes; two label levels (steps of 0.1) share a class
+    width_target_scale: 10.0
+    width_decode_gain: 1.2        # reference quirk: applied by the decoder only, not by the loss target
+    unmatched_class: true         # reference quirk: 13 angle and 5 depth outputs; the extra class is
+                                  # never a target
+    decode_argmax: all_logits     # reference quirk: the extra class takes part in the decoder's arg-max
+                                  # (upstream 7361bb6). `supervised` replicates upstream 4119bdc
+                                  # (2026-04-12), which restricts the arg-max to the real bins
+    score_decode: logit_weighted  # reference quirk: score = Σ class value × raw logit, no softmax
+    token_channels: 64
+    attention_heads: 1
+    attention_dropout: 0.05
+    angle_loss: {type: CrossEntropy, weight: 1.0}
+    depth_loss: {type: CrossEntropy, weight: 1.0}
+    score_loss: {type: CrossEntropy, weight: 1.0}
+    width_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}

@@ -1,0 +1,26 @@
+name: Reproduction gap
+description: A number produced by GraspPanda differs from a paper or from the model zoo
+labels: [reproduction]
+body:
+  - type: input
+    id: config
+    attributes:
+      label: Config
+      description: Config name or path, plus any --opts.
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Numbers
+      description: Expected and obtained AP per split, the camera, and whether a collision filter was applied. Say where the expected number comes from.
+    validations:
+      required: true
+  - type: textarea
+    id: record
+    attributes:
+      label: Result record and environment
+      description: Attach the result record of the run, or paste `run.json`, and the output of `grasppanda env`.
+      render: text
+    validations:
+      required: true
