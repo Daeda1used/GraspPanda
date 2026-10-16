@@ -115,7 +115,8 @@ Two things follow for runs:
   (the scale statistic) are shared by both storages.
 * It *is* part of the resolved config, so the config hash of a run changes with it, and
   resuming a run started with dense grids under a config that says `deferred` needs
-  `runtime.allow_config_mismatch=true`. The resumed run draws the same batches.
+  `runtime.allow_config_mismatch=true`. The resumed run draws the same batches, in a run
+  directory of its own.
 
 ## Measurements
 
@@ -209,7 +210,9 @@ times faster than it delivers scattered rows.
 
 So the first time a deferred reader opens a label file, the file is also read once,
 front to back, on one of two background threads (two sequential streams fill the
-link). The threads end when their queue is empty.
+link). The threads end when their queue is empty. A dataloader worker forked while they
+are still reading starts without them and without the memory maps of the training
+process.
 
 Measured on a private copy of the label files of four scenes (18 objects, 2.67 GiB) on
 the same network store, dropped from the page cache before every run; 30 batches of four

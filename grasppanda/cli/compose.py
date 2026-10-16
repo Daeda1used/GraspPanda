@@ -1,6 +1,9 @@
 """``grasppanda compose``: turn "this method with that component" into a checked config.
 
     grasppanda compose --list                          # presets, slot by slot
+    grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list view
+                                                       # the options of GSNet's view slot,
+                                                       # with what was measured for each
     grasppanda compose --show backbone=ptv3            # one preset, with its notes
     grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \\
         --set backbone=pointnet2 --set grouper=multi-scale -o my_config.yaml
@@ -36,8 +39,18 @@ Scale-Balanced-Grasp), in the order data flows:
   backbone  proposal  view  assigner  grouper  head
 A choice is a preset (`grasppanda compose --list`) or a registered component by its type
 (`grasppanda components --slot groupers`), which is then built with its own defaults.
+`--set labels=dense|compact` sets the label set of the training data (by default the
+head bundle's), `--unset key.path` puts an option back to the default of its component.
+
+compose inserts what lifts a refusal and says so: an encoder adapter, an axis adapter
+between grouper and head, the projected grouper, the assigner options a stage reads,
+graspness only for a proposal next to a view stage that owns objectness, the decode
+option of a head, the label set of the head in the data recipe. `--no-adapter` does none
+of these. Every refusal says why in brackets: structural, not-implemented,
+fixed-by-compose, not-a-combination or policy (`refusal_kinds` in --json).
 
 examples:
+  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list view    # options that fit
   grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
   grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnet2 \\
       --set grouper=multi-scale --opts train.epochs=20 -o mine.yaml
@@ -80,7 +93,8 @@ def register(commands: Any) -> None:
         nargs="?",
         const="all",
         metavar="SLOT",
-        help="list the presets (of one slot, or all) and the components without one",
+        help="list the presets (of one slot, or all) and the components without one; after "
+        "a method config: the options of its slots, with what was measured for each",
     )
     parser.add_argument("--show", metavar="SLOT=PRESET", help="print one preset file")
     parser.add_argument("--json", action="store_true", help="machine-readable report")
@@ -177,6 +191,24 @@ def _list(which: str) -> int:
     return 0
 
 
+def _method_list(base: str, which: str, as_json: bool) -> int:
+    """``compose <method config> --list [<slot>]``: the options of the method's slots."""
+    from grasppanda.combine import options
+
+    try:
+        method, note = options.method_of(base)
+        slot = None if which == "all" else (_slot(which) or which.strip())
+        found = options.report(method, slot, note) if as_json else options.listing(method, slot)
+    except KeyError as error:
+        print(error.args[0], file=sys.stderr)
+        return 2
+    if as_json:
+        print(json.dumps(found, indent=2, ensure_ascii=False))
+    else:
+        print(options.render(found, color=sys.stdout.isatty(), note=note))
+    return 0
+
+
 def _short(summary: str, limit: int = 96) -> str:
     """A summary cut at a word boundary, for a table in a terminal."""
     if len(summary) <= limit:
@@ -222,6 +254,11 @@ def _paragraph(mark: str, text: str) -> None:
         print(f"    {line}")
 
 
+def _kind(refusal: Any) -> str:
+    """The kind of a refusal (a contract problem or an issue of the config check)."""
+    return getattr(refusal, "kind", None) or "unclassified"
+
+
 def _report(composition: Any, written: Path | None, color: bool) -> None:
     ok = style("✓", "bold", "green", enabled=color)
     bad = style("✗", "bold", "red", enabled=color)
@@ -248,13 +285,15 @@ def _report(composition: Any, written: Path | None, color: bool) -> None:
                 print(f"  {ok} {label}")
             elif new:
                 for problem in new:
-                    _paragraph(bad, f"{label}: {problem}")
+                    _paragraph(bad, f"{label} [{_kind(problem)}]: {problem}")
             else:
                 print(f"  {bad} {label}: as above")
             shown.update(verdict.problems)
         for problem in composition.problems:
             if problem not in shown:
-                _paragraph(bad, f"whole stage set: {problem}")
+                _paragraph(bad, f"whole stage set [{_kind(problem)}]: {problem}")
+        for warning in composition.warnings:
+            _paragraph(style("!", "bold", "yellow", enabled=color), f"warning: {warning}")
     else:
         _paragraph(
             "-",
@@ -267,7 +306,7 @@ def _report(composition: Any, written: Path | None, color: bool) -> None:
         print(f"  {ok} valid  (hash {composition.config_hash[:12]})")
     else:
         for issue in composition.issues:
-            _paragraph(bad, f"{issue.path or '<file>'}: {issue.message}")
+            _paragraph(bad, f"{issue.path or '<file>'} [{_kind(issue)}]: {issue.message}")
         if not composition.issues:
             print(f"  {bad} refused by the contracts above")
     print()
@@ -295,11 +334,24 @@ def _json(composition: Any, written: Path | None, text: str) -> dict[str, Any]:
         "origins": composition.origins,
         "actions": composition.actions,
         "contracts": [
-            {"slots": list(verdict.slots), "problems": list(verdict.problems)}
+            {
+                "slots": list(verdict.slots),
+                "problems": list(verdict.problems),
+                "kinds": [getattr(problem, "kind", None) for problem in verdict.problems],
+            }
             for verdict in composition.verdicts
         ],
         "problems": composition.problems,
-        "issues": [{"path": issue.path, "message": issue.message} for issue in composition.issues],
+        "issues": [
+            {"path": issue.path, "message": issue.message, "kind": issue.kind}
+            for issue in composition.issues
+        ],
+        # Every reason the config is refused (problems, then issues as `path: message`),
+        # and the kind of each: structural, not-implemented, fixed-by-compose,
+        # not-a-combination or policy (grasppanda.config.errors.REFUSAL_KINDS).
+        "refusal": composition.refusal(),
+        "refusal_kinds": composition.refusal_kinds(),
+        "warnings": composition.warnings,
         "hints": composition.hints,
         "config_hash": composition.config_hash,
         "output": None if written is None else str(written),
@@ -327,6 +379,8 @@ def run(args: argparse.Namespace) -> int:
     from grasppanda.config import Config
 
     if args.list_presets:
+        if args.base:
+            return _method_list(args.base, args.list_presets, args.json)
         return _list(args.list_presets)
     if args.show:
         return _show(args.show)
@@ -345,7 +399,9 @@ def run(args: argparse.Namespace) -> int:
         return 2
 
     try:
-        composition = compose(args.base, args.sets, args.opts, adapters=args.adapters)
+        composition = compose(
+            args.base, args.sets, args.opts, adapters=args.adapters, unsets=args.unsets
+        )
     except ComposeError as error:
         return wrong(str(error))
     written = None

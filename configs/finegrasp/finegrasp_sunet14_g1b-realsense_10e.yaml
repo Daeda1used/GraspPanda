@@ -10,6 +10,22 @@
 #   grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkpoint>
 #
 # Results are always reported for both post-processing variants below.
+#
+# Every slot of this config and the command that lists the options that fit it, with
+# what was measured for each (also docs/methods/finegrasp.md):
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list backbone   # model.backbone
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list proposal   # model.proposal
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list view       # model.view
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list assigner   # model.assigner
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list grouper    # model.grouper
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list head       # model.head
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list loss       # model.<stage>.<term>_loss
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list post       # evaluation.variants.post
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list optimizer  # optimizer
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list schedule   # scheduler
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list hooks      # hooks
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list augment    # data.train.dataset.transforms
+#   grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list recipe     # optimizer, scheduler, hooks, transforms
 _base_:
   - ../_base_/models/finegrasp.yaml
   - ../_base_/datasets/graspnet1b_realsense.yaml
@@ -62,6 +78,7 @@ data:
         - {type: CoordinateFeatures}
       keep_full_points: true
 
+# Slot post (a variant `post` beside these): grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list post
 evaluation:
   evaluator: {type: GraspNet1BEvaluator}
   variants:

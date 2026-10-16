@@ -209,20 +209,39 @@ grasppanda train <config> --resume              # runtime.resume=true: newest ch
 grasppanda train <config> --resume path/to/epoch_0004.pth
 ```
 
-The run continues in the directory that owns the checkpoint (a checkpoint file that
-lies outside a run directory starts a new run). A checkpoint written under a different
-config hash is refused:
+One directory is one run. The run continues in the directory that owns the checkpoint
+when it is the same run: the checkpoint was written under the current config hash, and
+`runtime.work_dir` (and `runtime.run_id`, when set) point at that directory. The new
+invocation's snapshot is kept beside the original one, in `resumes/<time>/`.
+
+Otherwise the resumed run starts a new directory below `runtime.work_dir` and writes
+nothing into the checkpoint's directory: a checkpoint resumed with another `--work-dir`
+or `runtime.run_id`, a checkpoint file outside a run directory, and a config continued
+with `runtime.allow_config_mismatch=true`. Its `run.json` records `resumed_from`, and the
+log says why:
+
+```text
+resuming work_dirs/toy/one/checkpoints/epoch_0002.pth in a new run directory, because
+runtime.work_dir and runtime.run_id ask for elsewhere; the run that owns the checkpoint,
+work_dirs/toy/one, is left as it is
+```
+
+The new directory starts with the best metric stored in the checkpoint, so its `best.pth`
+appears when one of its own epochs beats that value; the earlier best stays in the
+original run. A checkpoint written under a different config hash is refused before
+anything is written:
 
 ```text
 ✗ ResumeError: …/epoch_0001.pth was written under config hash f77ba11a0ed6, but the current
   config hashes to 590caa0a40d9: this is a different experiment. Resume with the original
   config (config.resolved.yaml in the run directory), or set
-  runtime.allow_config_mismatch=true to continue anyway.
+  runtime.allow_config_mismatch=true to continue it as a new run.
 ```
 
 `runtime.work_dir`, `runtime.run_id`, `runtime.resume` and
 `runtime.allow_config_mismatch` are not part of the hash. Anything else is, including
-`train.epochs`: training longer than planned needs `runtime.allow_config_mismatch=true`.
+`train.epochs`: training longer than planned needs `runtime.allow_config_mismatch=true`,
+and the longer run lives in a directory of its own.
 
 ### Loading weights
 
@@ -330,7 +349,21 @@ the run directory (`runtime.work_dir` and `runtime.run_id`), so the grasps land 
 !!! warning "Limits of `infer` today"
     Grasps are written as GraspNet `(G, 17)` arrays; a native `.npz` format does not
     exist yet. Reading a plain folder of RGB-D frames needs a dataset reader with a
-    `root` parameter, and none is shipped yet.
+    `root` parameter, and none is shipped yet. `infer` checks the directory before
+    anything runs (the reader must have `root` and read the first frame) and otherwise
+    stops with what to do instead:
+
+    ```text
+    ✗ InputError: --input mydata: the reader of data.test, GraspNet1B, reads a directory as
+      the root of a GraspNet-1Billion tree and cannot read this one: [Errno 2] No such file or
+      directory: 'mydata/scenes/scene_0100/realsense/meta/0000.mat'. No reader for a plain
+      folder of frames (depth images and intrinsics) is shipped yet. For frames of your own
+      camera, run `grasppanda demo <config> --weights <file> --depth FILE --intrinsics
+      fx,fy,cx,cy` on one frame, or loop over your files in Python with GraspInferencer ...
+    ```
+
+    See [Your own camera](inference.md#your-own-camera) and
+    [From Python](inference.md#from-python).
 
 ## Distributed training
 

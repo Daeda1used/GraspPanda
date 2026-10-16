@@ -20,6 +20,7 @@ Run it after changing a preset, ``grasppanda compose`` or the measured file::
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -29,9 +30,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from grasppanda.combine import options as option_lists
 from grasppanda.combine.compose import recompose
 from grasppanda.combine.grid import (
     FAMILIES,
+    LOSS_CELLS,
     LOSS_NOT_PROBED,
     METHODS,
     POST_METHODS,
@@ -40,9 +43,24 @@ from grasppanda.combine.grid import (
     Cell,
     cells,
     encoder_presets,
+    loss_terms,
+    needs_an_option,
     stage_variants,
 )
+from grasppanda.combine.levels import (
+    CAVEAT,
+    CLASS_WORDS,
+    LEVELS,
+    NO,
+    UNDECIDED,
+    YES,
+    CellLevels,
+    OptionClass,
+    cell_levels,
+    refusal_kind,
+)
 from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
+from grasppanda.combine.probe import JUDGE, SCHEDULES, TREND_FLAGS, VERDICTS
 from grasppanda.combine.recipes import recipes
 
 REPO = Path(__file__).resolve().parents[1]
@@ -51,17 +69,16 @@ PAGE = REPO / "docs" / "advanced_guides" / "measured_combinations.md"
 EXPERIMENTAL = REPO / "configs" / "experimental"
 SLOTS_INDEX = REPO / "docs" / "slots" / "index.md"
 
-#: The measured classes: name → (number of methods a component works under, definition).
-CLASSES: dict[str, tuple[range, str]] = {
-    "universal": (range(5, 6), "it works under all five seed-based methods"),
-    "most": (range(3, 5), "it works under three or four of them"),
-    "some": (range(2, 3), "it works under two"),
-    "specific": (range(1, 2), "it works under exactly one"),
-    "none": (range(0, 1), "it works under none of them as it was probed"),
-}
-#: Verdicts that count as "works" for a class.
-WORKS = ("runs", "runs-unstable")
-VERDICT_ORDER = ("runs", "runs-unstable", "refused", "fails")
+#: The class words of a stage decided under all five seed-based methods (levels.py),
+#: then the columns of a relative class and of an undecided one.
+CLASSES = tuple(CLASS_WORDS)
+RELATIVE = "N of M probed"
+UNDECIDED_COLUMN = "undecided"
+#: Verdicts of a probe that ran and has numbers: built, trained and predicted.
+WORKS = ("runs", "runs-empty", "runs-unstable")
+VERDICT_ORDER = ("runs", "runs-empty", "runs-unstable", "refused", "fails")
+#: The sentence every place that shows a class carries next to it.
+CAVEAT_SENTENCE = f"*Class: {CAVEAT}.*"
 SLOT_TITLES = {
     "backbone": "Scene encoders",
     "proposal": "Seed proposals",
@@ -87,6 +104,19 @@ GROUP_TITLES = {
 @lru_cache(maxsize=1)
 def _grid() -> tuple[Cell, ...]:
     return tuple(cells())
+
+
+def _runner() -> Any:
+    """``tools/probe_grid.py``: the fields of a record are defined there, once."""
+    name = "probe_grid"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(f"{name}.py"))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def grid(group: str | None = None) -> list[Cell]:
@@ -122,6 +152,7 @@ class Records:
 
     def __init__(self, records: Iterable[dict[str, Any]]) -> None:
         self.by_id = {record["id"]: record for record in records}
+        self.measured = option_lists.Measured({"cells": list(self.by_id.values())})
 
     def get(self, cell_id: str) -> dict[str, Any] | None:
         return self.by_id.get(cell_id)
@@ -129,6 +160,14 @@ class Records:
     def probed(self, record: dict[str, Any]) -> dict[str, Any]:
         """The record that holds the numbers of ``record``: itself, or the cell it names."""
         return self.by_id.get(record.get("probed_as", ""), record)
+
+    def levels(self, record: dict[str, Any]) -> CellLevels:
+        """The four levels of a cell (grasppanda.combine.levels)."""
+        return self.measured.levels(record)
+
+    def classes(self, slot: str, name: str) -> dict[str, OptionClass]:
+        """Level → the class of an option (a loss preset for ``slot == "loss"``)."""
+        return option_lists.classes(slot, name, self.measured)
 
     def own(self, record: dict[str, Any] | None) -> bool:
         """Whether a cell is the method's own configuration: the config as shipped."""
@@ -167,31 +206,102 @@ class Notes:
         return [f"{index}. {text}" for index, text in enumerate(self.items, start=1)]
 
 
-def verdict_text(record: dict[str, Any] | None, own: bool, notes: Notes) -> str:
-    """One table cell: what was measured for this component under this method."""
+#: The mark of a verdict in a table cell.
+MARKS = {"runs": "✓", "runs-empty": "∅", "runs-unstable": "≈"}
+
+
+def no_grasp(record: dict[str, Any]) -> bool:
+    """Whether a probe predicted no grasp on any of its frames."""
+    grasps = record.get("grasps_per_frame") or []
+    return bool(grasps) and not any(grasps)
+
+
+def grey(text: str) -> str:
+    """A cell of a probe that predicted no grasp: greyed on the page (extra.css)."""
+    return f'<span class="gp-nograsp">{text}</span>'
+
+
+def fall_text(record: dict[str, Any]) -> str:
+    """The fall of every loss term of a record of judge 2, in a few words; empty for one
+    of the first judge, which has no trend."""
+    trend = record.get("trend") or {}
+    falls = [
+        values[2]
+        for term, values in trend.items()
+        if term.startswith("loss/") and values[2] is not None
+    ]
+    if record.get("judge", 1) < JUDGE or not falls:
+        return ""
+    low, high = min(falls), max(falls)
+    return (
+        f"fall {low * 100:.0f} to {high * 100:.0f} %" if low != high else f"fall {low * 100:.0f} %"
+    )
+
+
+def _level_notes(levels: CellLevels, notes: Notes) -> list[str]:
+    """``learns ✗ (n)`` for every level a probed cell did not reach, with the reason below."""
+    return [
+        f"{level} ✗ ({notes.number(f'{level}: ' + '; '.join(levels.why[level]))})"
+        for level in ("learns", "predicts")
+        if levels.states.get(level) == NO and levels.why.get(level)
+    ]
+
+
+def verdict_text(
+    record: dict[str, Any] | None, own: bool, notes: Notes, records: Records | None = None
+) -> str:
+    """One table cell: what was measured for this component under this method; for a
+    probe, the grasps per frame and (judge 2) the fall of the loss terms below the mark.
+    A probe that predicted no grasp is greyed."""
     if record is None:
         return "not probed"
     verdict = record["verdict"]
     adapter = f" in `{record['adapter']}`" if record.get("adapter") else ""
     fitted = "†" if any("_channels" in item for item in record.get("fitted", [])) else ""
-    if verdict == "runs":
-        return "✓ own" if own else f"✓{adapter}{fitted}"
-    if verdict == "runs-unstable":
-        return f"≈{adapter}{fitted} ({notes.number(record.get('unstable', ''))})"
+    if verdict in MARKS:
+        text = MARKS[verdict] + (" own" if own else f"{adapter}{fitted}")
+        if verdict == "runs-unstable":
+            text += f" ({notes.number(record.get('unstable', ''))})"
+        if records is None:
+            return text
+        numbers = records.probed(record)
+        grasps = numbers.get("grasps_per_frame") or []
+        lines = [text]
+        if grasps:
+            lines.append(" · ".join(map(str, grasps)))
+        lines += [part for part in [fall_text(numbers)] if part]
+        lines += _level_notes(records.levels(record), notes)
+        text = "<br>".join(lines)
+        return grey(text) if no_grasp(numbers) else text
     if verdict == "refused":
-        return f"✗ ({notes.number(reason(record))})"
+        kind = refusal_kind(record)
+        return f"✗ ({notes.number(reason(record))})" + (f"<br>{kind}" if kind else "")
     if verdict == "fails":
         return f"**fails** ({notes.number(reason(record))})"
     return verdict
 
 
-def classify(records: Iterable[dict[str, Any] | None]) -> tuple[str, int, int]:
-    """``(class, methods it works under, of which unstable)`` of one component."""
-    found = [record for record in records if record is not None]
-    works = sum(record["verdict"] in WORKS for record in found)
-    unstable = sum(record["verdict"] == "runs-unstable" for record in found)
-    name = next(label for label, (count, _) in CLASSES.items() if works in count)
-    return name, works, unstable
+def class_text(found: dict[str, OptionClass]) -> str:
+    """The classes of an option at the four levels, levels of the same class said once:
+    ``**universal** (composes, runs) · not checked (learns, predicts)``."""
+    groups: list[tuple[str, list[str]]] = []
+    for level in LEVELS:
+        text = found[level].text
+        if groups and groups[-1][0] == text:
+            groups[-1][1].append(level)
+        else:
+            groups.append((text, [level]))
+    return " · ".join(
+        (f"**{text}**" if text in CLASS_WORDS else text) + f" ({', '.join(levels)})"
+        for text, levels in groups
+    )
+
+
+def column_of(found: OptionClass) -> str:
+    """The column of a class table an option goes into at one level."""
+    if found.name in CLASS_WORDS:
+        return found.name
+    return RELATIVE if found.decided else UNDECIDED_COLUMN
 
 
 # ---------------------------------------------------------------------------- tables
@@ -213,35 +323,138 @@ def _label(component: str, variant: str, slot: str, *, short: bool = False) -> s
     return f"`{component}`<br>" + (f"preset `{variant}`" if preset else "constructor defaults")
 
 
-def _class_text(name: str, unstable: int) -> str:
-    if name not in CLASSES:
-        return name
-    return f"**{name}**" + (f" ≈{unstable}" if unstable else "")
+def bare_components() -> list[tuple[str, str]]:
+    """``(slot, component)`` of every stage variant that is a component named by its type
+    and lacks an option only a preset supplies: it has no cell (``needs_an_option``)."""
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    return [
+        (slot, component)
+        for slot in STAGE_SLOTS
+        for choice, component in stage_variants(slot)
+        if _in_tree_module(STAGE_REGISTRIES[slot].get(component))
+        and needs_an_option(slot, choice, component)
+    ]
 
 
-#: Shown instead of a class for a component that has a cell without a record.
-INCOMPLETE = "not probed in full"
+def _bare_sentence() -> str:
+    bare = bare_components()
+    if not bare:
+        return ""
+    named = ", ".join(f"`{component}`" for _, component in bare)
+    return (
+        f"A component that needs an option only a preset supplies ({named}) has no cell "
+        "under its type name: that request is refused for the missing option before any "
+        "contract is compared, which says nothing about a combination. Its presets have cells."
+    )
 
 
-def slot_classes(slot: str, records: Records, group: str) -> list[tuple[str, str, str, int, int]]:
-    """``(component, variant, class, works, unstable)`` of every row of a slot.
+def _schedule_sentence(records: list[dict[str, Any]]) -> str:
+    """How many probes of the page ran which schedule."""
+    probed = [record for record in records if "probe" in record and "refusal" not in record]
+    held = sum(record.get("schedule") == "constant" for record in probed)
+    recipe = sum(record.get("schedule") == "recipe" for record in probed)
+    before = len(probed) - held - recipe
+    parts = [
+        f"{held} held the peak rate (`schedule: constant` in the record)" if held else "",
+        f"{recipe} ran the recipe's schedule (`schedule: recipe`)" if recipe else "",
+        f"{before} were made before the probe had the option and ran the recipe's schedule "
+        "over the probe's epochs (no `schedule` in the record)"
+        if before
+        else "",
+    ]
+    if before == len(probed):
+        return (
+            f"All {before} probes on this page were made before the probe had the option and "
+            "ran the recipe's schedule over the probe's epochs (no `schedule` in their records)."
+        )
+    return f"Of the {len(probed)} probes on this page, " + "; ".join(p for p in parts if p) + "."
 
-    A component has a class only when all of its cells were probed: a class is a count
-    over the methods, and a missing cell would be counted as "does not work".
+
+def slot_classes(
+    slot: str, records: Records, group: str
+) -> list[tuple[str, str, dict[str, OptionClass]]]:
+    """``(component, variant, level → class)`` of every row of a slot. A cell without a
+    record is ``not probed``: it is named after the class, never counted as a failure."""
+    return [
+        (component, variant, records.classes(slot, variant))
+        for component, variant in _rows(slot, group)
+    ]
+
+
+def _drop_empty_columns(
+    headers: list[str], rows: list[list[str]], keep: int
+) -> tuple[list[str], list[list[str]]]:
+    """A class table without the class columns no row uses (the first ``keep`` stay)."""
+    used = [
+        index
+        for index in range(len(headers))
+        if index < keep or any(row[index] != "—" for row in rows)
+    ]
+    return [headers[i] for i in used], [[row[i] for i in used] for row in rows]
+
+
+def _undecided_sentence(level: str, options: int, reasons: Counter[str]) -> str:
+    """A level no option of a table is decided at, in one sentence with the reasons."""
+    return (
+        f"No option of the {options} below is decided at the level **{level}**. Of their "
+        "cells where the level before it was reached or undecided, "
+        + ", ".join(
+            f"{count} {'is' if count == 1 else 'are'} *{reason}*"
+            for reason, count in reasons.most_common()
+        )
+        + ". "
+        + " ".join(
+            f"*{reason[0].upper() + reason[1:]}*: {UNDECIDED[reason]}."
+            for reason in reasons
+            if reason in UNDECIDED
+        )
+    )
+
+
+def class_tables(
+    rows_by_slot: list[tuple[list[str], list[tuple[str, dict[str, OptionClass]]]]],
+    first: list[str],
+) -> list[str]:
+    """One table per level: every option of every slot under its class at that level.
+
+    ``rows_by_slot`` holds ``(the first cells of a row, [(option label, level → class)])``;
+    ``first`` the headers of those cells. A level no option is decided at is one sentence.
     """
-    found = []
-    for (component, variant), members in _rows(slot, group).items():
-        measured_ = [records.get(cell.id) for cell in members]
-        name, works, unstable = classify(measured_)
-        if any(record is None for record in measured_):
-            name = INCOMPLETE
-        found.append((component, variant, name, works, unstable))
-    return found
+    lines: list[str] = []
+    columns = [*CLASSES, RELATIVE, UNDECIDED_COLUMN]
+    for level in LEVELS:
+        rows = []
+        undecided: Counter[str] = Counter()
+        options = 0
+        decided = False
+        for head, members in rows_by_slot:
+            row = list(head)
+            for column in columns:
+                found = []
+                for label, classes in members:
+                    item = classes[level]
+                    if column_of(item) != column:
+                        continue
+                    decided = decided or bool(item.checked)
+                    if column == UNDECIDED_COLUMN:
+                        options += 1
+                        undecided.update(dict(item.undecided))
+                    shown = label if column in CLASSES else f"{label} ({item.text})"
+                    found.append(shown)
+                row.append("<br>".join(found) or "—")
+            rows.append(row)
+        if not decided:
+            lines += [_undecided_sentence(level, options, undecided), ""]
+            continue
+        headers, rows = _drop_empty_columns([*first, *columns], rows, len(first))
+        lines += [f"**{level}**", "", *_table(headers, rows), ""]
+    return lines
 
 
 def glance_section(records: Records) -> list[str]:
-    """Every component of every slot under its class, in one table."""
-    rows, unclassed = [], []
+    """Every component of every slot under its class, one table per level."""
+    by_slot = []
     for slot in SLOT_TITLES:
         group = "encoder" if slot == "backbone" else "stage"
         classes = slot_classes(slot, records, group)
@@ -252,29 +465,15 @@ def glance_section(records: Records) -> list[str]:
                 return _label(component, variant, slot, short=True)
             return f"`{component}`"
 
-        row = [SLOT_TITLES[slot]]
-        for wanted in CLASSES:
-            members = [
-                name_of(component, variant) + (f" ≈{unstable}" if unstable else "")
-                for component, variant, name, _, unstable in classes
-                if name == wanted
-            ]
-            row.append("<br>".join(members) or "—")
-        rows.append(row)
-        unclassed += [name_of(c, v) for c, v, name, *_ in classes if name == INCOMPLETE]
-    lines = _table(["Slot", *CLASSES], rows)
-    if unclassed:
-        lines += ["", f"Without a class, because a cell is {INCOMPLETE}: {', '.join(unclassed)}."]
-    return lines
+        by_slot.append(([SLOT_TITLES[slot]], [(name_of(c, v), found) for c, v, found in classes]))
+    return [CAVEAT_SENTENCE, "", *class_tables(by_slot, ["Slot"])]
 
 
 def slot_section(slot: str, records: Records, group: str) -> list[str]:
     """The table, the classes and the numbers of one slot."""
     notes = Notes()
     rows, numbers = [], []
-    classes = {
-        (c, v): (name, unstable) for c, v, name, _, unstable in slot_classes(slot, records, group)
-    }
+    classes = {(c, v): found for c, v, found in slot_classes(slot, records, group)}
     for (component, variant), members in _rows(slot, group).items():
         label = _label(component, variant, slot)
         row = [label]
@@ -282,13 +481,22 @@ def slot_section(slot: str, records: Records, group: str) -> list[str]:
         for method in METHODS:
             record = per_method.get(method)
             own = records.own(record)
-            row.append(verdict_text(record, own, notes))
+            row.append(verdict_text(record, own, notes, records))
             if record is not None and record["verdict"] in WORKS and not own:
                 name = f"{label.replace('<br>', ', ')} under {method}"
-                numbers.append(_numbers_row(name, records.probed(record)))
-        rows.append([*row, _class_text(*classes[component, variant])])
+                numbers.append(_numbers_row(name, records.probed(record), records.levels(record)))
+        rows.append([*row, class_text(classes[component, variant])])
     lines = [f"### {SLOT_TITLES[slot]}", ""]
     lines += _table(["Component", *METHODS, "Class"], rows)
+    lines += ["", CAVEAT_SENTENCE]
+    bare = [component for where, component in bare_components() if where == slot]
+    if bare:
+        lines += [
+            "",
+            "No row for " + ", ".join(f"`{name}`" for name in bare) + " named by its type: "
+            "it needs an option only a preset supplies, so the bare request is refused for the "
+            "missing option and is not a combination. Its presets have rows.",
+        ]
     if notes.items:
         lines += ["", *notes.lines()]
     if numbers:
@@ -304,24 +512,69 @@ NUMBER_HEADERS = [
     "Real seeds, min",
     "Supervised seeds, mean",
     "Grasps per frame",
+    "Fall per loss term §",
+    "Learns, predicts §",
     "s / iteration ‡",
     "GPU GiB ‡",
 ]
+#: The judge-2 columns of a record of the first judge, which recorded none of it.
+NOT_CHECKED = "not checked"
 
 
-def _numbers_row(label: str, record: dict[str, Any]) -> list[str]:
+def term_falls(record: dict[str, Any]) -> str:
+    """The fall of every loss term of a record of judge 2 (`loss/` left out), with the
+    number of iterations it was active in where that is fewer than ran; :data:`NOT_CHECKED`
+    for a record of the first judge."""
+    if record.get("judge", 1) < JUDGE:
+        return NOT_CHECKED
+    active = record.get("active") or {}
+    found = []
+    for term, values in (record.get("trend") or {}).items():
+        if not term.startswith("loss/"):
+            continue
+        name = term.removeprefix("loss/")
+        fall = values[2]
+        text = f"{name} " + ("never active" if fall is None else f"{fall * 100:.0f} %")
+        if term in active:
+            text += f" (active {active[term]})"
+        found.append(text)
+    return ", ".join(found) or "—"
+
+
+def learning_text(record: dict[str, Any], levels: CellLevels | None = None) -> str:
+    """Whether a probe learns and predicts (grasppanda.combine.levels), with what kept it
+    from either; :data:`NOT_CHECKED` for a record of the first judge."""
+    if record.get("judge", 1) < JUDGE:
+        return NOT_CHECKED
+    levels = levels or cell_levels(record)
+    parts = []
+    for level in ("learns", "predicts"):
+        state = levels.states.get(level, "")
+        if state == YES:
+            parts.append(f"{level} ✓")
+        elif state == NO:
+            parts.append(f"{level} ✗: " + "; ".join(levels.why.get(level, [])))
+        else:
+            parts.append(f"{level}: {state}")
+    return "; ".join(parts + levels.notes)
+
+
+def _numbers_row(label: str, record: dict[str, Any], levels: CellLevels | None = None) -> list[str]:
     loss = record.get("losses", {}).get("loss")
     real, supervised = record.get("real_seeds"), record.get("supervised_seeds")
     shared = record.get("shared_machine", {})
     seconds = shared.get("seconds_per_iteration")
     memory = shared.get("peak_gpu_mib")
+    grasps = ", ".join(str(count) for count in record.get("grasps_per_frame", [])) or "—"
     return [
         label,
         f"{record['parameters']:,}".replace(",", " ") if record.get("parameters") else "—",
         f"{loss[0]:.4g} → {loss[1]:.4g}" if loss else "—",
         f"{real['min']:.2f}" if real else "—",
         f"{supervised['mean']:.2f}" if supervised else "—",
-        ", ".join(str(count) for count in record.get("grasps_per_frame", [])) or "—",
+        grey(grasps) if no_grasp(record) else grasps,
+        term_falls(record),
+        learning_text(record, levels),
         f"{seconds:.2f}" if seconds is not None else "—",
         f"{memory / 1024:.1f}" if memory is not None else "—",
     ]
@@ -371,9 +624,12 @@ def references_section(records: Records) -> list[str]:
     for method, config in [*METHODS.items(), *FAMILIES.items()]:
         group = "reference" if method in METHODS else "family"
         record = records.get(f"{group}/{method}")
-        verdict = verdict_text(record, False, notes)
-        numbers = _numbers_row("", record)[1:] if record and record["verdict"] in WORKS else []
-        rows.append([method, f"`{config}`", verdict, *(numbers or ["—"] * 7)])
+        verdict = verdict_text(record, False, notes, records)
+        works = record is not None and record["verdict"] in WORKS
+        numbers = _numbers_row("", record, records.levels(record))[1:] if works else []
+        rows.append(
+            [method, f"`{config}`", verdict, *(numbers or ["—"] * (len(NUMBER_HEADERS) - 1))]
+        )
     lines = _table(["Method", "Config", "Verdict", *NUMBER_HEADERS[1:]], rows)
     return [*lines, *(["", *notes.lines()] if notes.items else []), ""]
 
@@ -399,12 +655,12 @@ def stage_sets_section(records: Records) -> list[str]:
                 cell.variant,
                 *(f"`{chosen[slot]}`" for slot in ("backbone", *STAGE_SLOTS)),
                 cell.method,
-                verdict_text(record, own, notes),
+                verdict_text(record, own, notes, records),
             ]
         )
         if record["verdict"] in WORKS and not own:
             name = " + ".join(f"`{chosen[slot]}`" for slot in ("backbone", *STAGE_SLOTS))
-            numbers.append(_numbers_row(name, records.probed(record)))
+            numbers.append(_numbers_row(name, records.probed(record), records.levels(record)))
     counts = Counter(records.get(cell.id)["verdict"] for cell in recorded)
     summary = ", ".join(f"{counts[v]} `{v}`" for v in VERDICT_ORDER if counts[v])
 
@@ -422,8 +678,9 @@ def stage_sets_section(records: Records) -> list[str]:
         "under a sub-sampling encoder: "
         f"{len(seen)} of the {len(listed)} pairs of variant and kind of encoder are in a "
         "probed set. That a set runs says nothing about another set with the same parts. The "
-        "sets that were not probed are named in `about.not_probed` of the "
-        "[measured file](measured_combinations.json); "
+        'sets that were not probed are the sets of `grasppanda.combine.grid.cells(("stage-set",))` '
+        "without a record (`about.stage_sets_not_probed` of the "
+        "[measured file](measured_combinations.json) counts them); "
         "`python -m tools.probe_grid run --only '<id>'` probes one.",
         "",
         "A set states all five stages and the encoder: the preset named, under which the set "
@@ -449,62 +706,99 @@ gaps probing found (the width a grouper fixes, the labels a data recipe serves) 
 contract rules now, and a cell that meets one is `refused`."""
 
 
-def post_section(records: list[dict[str, Any]]) -> list[str]:
-    """Post-processing presets as the variant ``post``: verdict and grasps left, per method."""
-    members = [record for record in records if record["group"] == "post"]
-    if not members:
+#: What a cell of the grid without a record says in the tables of post, loss and recipe.
+NOT_YET = "not probed yet"
+
+
+def _waiting(group: str, records: Records) -> list[str]:
+    """One sentence on the cells of a group that have no record yet; none when all have."""
+    wanted = grid(group)
+    missing = sum(records.get(cell.id) is None for cell in wanted)
+    if not missing:
         return []
-    methods = list(dict.fromkeys(record["method"] for record in members))
-    by_variant: dict[str, dict[str, dict[str, Any]]] = {}
-    for record in members:
-        by_variant.setdefault(record["variant"], {})[record["method"]] = record
-    rows = []
-    for variant, found in by_variant.items():
-        component = next(iter(found.values()))["component"]
-        row = [f"`{variant}` ({component})"]
-        for method in methods:
-            record = found.get(method)
-            if record is None:
-                row.append("—")
-                continue
-            counts = (record.get("postprocessing") or {}).get("grasps") or []
-            left = "; ".join(f"{frame[0]} → {frame[-1]}" for frame in counts)
-            text = record["verdict"] + (f": {left}" if left else "")
-            if record["verdict"] in ("fails", "refused"):
-                text += f". {reason(record)}"
-            row.append(text)
-        rows.append(row)
     return [
-        "## Post-processing",
-        "",
-        "Every post-processing preset as the evaluation variant `post` of a method "
-        "(`grasppanda compose <config> --set post=<preset>`), applied by the probe to the "
-        "predictions of its two frames: grasps predicted → grasps left. A post-processor "
-        "reads grasps and the observation, never a network, so three methods stand for the "
-        "three kinds of input: seeds on a dense cloud with the full cloud kept, seeds of a "
-        "sub-sampling encoder, and HGGD. The grasps are those of a detector trained for the "
-        "iterations of the probe; "
-        "[the page of the slot](../slots/post.md) has the same steps on the predictions of "
-        "released weights.",
-        "",
-        *_table(["preset", *methods], rows),
+        f"{missing} of the {len(wanted)} cells of this group are {NOT_YET}: the grid gained "
+        "them after the run that measured the others. They are listed in `about.not_probed` "
+        "of the [measured file](measured_combinations.json); `python -m tools.probe_grid run "
+        f"--groups {group}` probes them.",
         "",
     ]
 
 
-def loss_section(records: list[dict[str, Any]]) -> list[str]:
-    """Loss presets in the loss terms they were probed in: the verdict of the cell and the
-    first and last value of every replaced term."""
-    members = [record for record in records if record["group"] == "loss"]
-    if not members:
+def post_section(records: Records) -> list[str]:
+    """Post-processing presets as the variant ``post``: verdict and grasps left, per method."""
+    members = grid("post")
+    if not any(records.get(cell.id) is not None for cell in members):
         return []
-    by_id = {record["id"]: record for record in records}
+    rows: dict[str, list[str]] = {}
+    for cell in members:
+        row = rows.setdefault(cell.variant, [f"`{cell.variant}` ({cell.component})"])
+        record = records.get(cell.id)
+        if record is None:
+            row.append(NOT_YET)
+            continue
+        counts = (records.probed(record).get("postprocessing") or {}).get("grasps") or []
+        left = "; ".join(f"{frame[0]} → {frame[-1]}" for frame in counts)
+        text = record["verdict"] + (f": {left}" if left else "")
+        if record["verdict"] in ("fails", "refused"):
+            text += f". {reason(record)}"
+        row.append(text)
+    return [
+        "## Post-processing",
+        "",
+        "Every post-processing preset as the evaluation variant `post` of every method "
+        "(`grasppanda compose <config> --set post=<preset>`), applied by the probe to the "
+        "predictions of its two frames: grasps predicted → grasps left. A post-processor "
+        "reads grasps and the observation, never a network, so it needs no training of its "
+        "own: a cell is the method's prediction plus the chain. The grasps are those of a "
+        "detector trained for the iterations of the probe; "
+        "[the page of the slot](../slots/post.md) has the same steps on the predictions of "
+        "released weights.",
+        "",
+        *_waiting("post", records),
+        *_table(["preset", *POST_METHODS], list(rows.values())),
+        "",
+    ]
+
+
+def loss_section(records: Records) -> list[str]:
+    """Loss presets in the loss terms they were probed in: one term of every kind a preset
+    accepts under every method, then the hand-picked cells with the value of every term."""
+    from grasppanda.models.losses.terms import TERM_KINDS
+
+    members = grid("loss")
+    if not any(records.get(cell.id) is not None for cell in members):
+        return []
     notes = Notes()
+    terms = {method: loss_terms(method) for method in METHODS}
+    kinds = [kind for kind in TERM_KINDS if any(kind in found for found in terms.values())]
+    listed = {cell.id for cell in members}
+    shown: set[str] = set()
+    one_term = []
+    for preset in presets().get(LOSS_SLOT, {}):
+        if preset in LOSS_NOT_PROBED:
+            continue
+        row = [f"`{preset}`"]
+        for method in METHODS:
+            found = []
+            for kind in kinds:
+                cell_id = f"loss/{method}/{preset}@{terms[method].get(kind)}"
+                if kind in terms[method] and cell_id in listed:
+                    record = records.get(cell_id)
+                    text = verdict_text(record, False, notes, records) if record else NOT_YET
+                    found.append(f"{kind} {text}")
+                    shown.add(cell_id)
+            row.append("<br>".join(found) or "—")
+        one_term.append(row)
+    picked = {(method, tuple(sets)) for method, sets in LOSS_CELLS}
     rows = []
-    for record in members:
-        losses = by_id.get(record.get("probed_as", ""), record).get("losses") or {}
-        verdict = verdict_text(record, False, notes)
-        for item in record["sets"]:
+    for cell in members:
+        record = records.get(cell.id)
+        if (cell.method, cell.sets) not in picked or cell.id in shown or record is None:
+            continue
+        losses = records.probed(record).get("losses") or {}
+        verdict = verdict_text(record, False, notes, records)
+        for item in cell.sets:
             target, _, preset = item.partition("=")
             stage, _, option = target.partition(".")
             term = "loss/" + (option.removesuffix("_loss") if option != "loss" else stage)
@@ -512,32 +806,47 @@ def loss_section(records: list[dict[str, Any]]) -> list[str]:
             rows.append(
                 [
                     f"`{preset}`",
-                    record["method"],
+                    cell.method,
                     f"`{target}`",
                     verdict,
                     f"{values[0]:.4g} → {values[1]:.4g}" if values else "—",
                 ]
             )
         rows.append(["", "", "", "", ""])
-    return [
+    rule = [
+        [method, *(f"`{terms[method][kind]}`" if kind in terms[method] else "—" for kind in kinds)]
+        for method in METHODS
+    ]
+    lines = [
         "## Losses",
         "",
-        "Every loss preset in a loss term it is meant for, under GSNet and under one more "
-        "method (`grasppanda compose <config> --set <stage>.<loss option>=<preset>`). A probe "
-        "replaces several loss terms of a method at once: the rows between two empty lines "
-        "are one probed config and share its verdict. The last column is the weighted value "
-        "of the replaced term at the first and at the last of the 20 iterations: it shows "
-        "that the term is finite and moves, nothing about accuracy, and values of different "
-        "losses are not comparable. The last rows are pairings the config check refuses. "
-        "Which loss fits which term is a contract "
+        "Every loss preset in every kind of loss term it accepts, under every seed-based method "
+        "that has a term of that kind (`grasppanda compose <config> --set <stage>.<loss "
+        "option>=<preset>`). Which loss fits which kind of term is a contract "
         "([Heads and losses](../slots/head_loss.md)); the unit tests run every loss in every "
-        "term of its kind on tiny models.",
+        "term of its kind on tiny models. A method has several terms of some kinds, so a cell "
+        "replaces **one representative term per kind and method: the last term of that kind "
+        "in the order of the pipeline** (proposal, view, head; within a stage, the order the "
+        "stage declares its terms in). That is the term nearest the grasp, where the methods "
+        "differ; GSNet, EconomicGrasp and FineGrasp share their proposal. The representative "
+        "terms:",
+        "",
+        *_table(["Method", *(f"`{kind}` term" for kind in kinds)], rule),
+        "",
+        *_waiting("loss", records),
+        *_table(["preset", *METHODS], one_term),
+        "",
+        "The hand-picked cells below replace several terms of a method at once, or pair a "
+        "loss with a term the config check refuses (the last rows): the rows between two empty "
+        "lines are one probed config and share its verdict. The last column is the weighted "
+        "value of the replaced term at the first and at the last of the 20 iterations: it "
+        "shows that the term is finite and moves, nothing about accuracy, and values of "
+        "different losses are not comparable.",
         "",
         *_table(["preset", "method", "term", "verdict", "term value, first → last"], rows[:-1]),
         "",
-        *notes.lines(),
-        *([""] if notes.items else []),
     ]
+    return [*lines, *notes.lines(), *([""] if notes.items else [])]
 
 
 def cross_section(records: Records) -> list[str]:
@@ -550,9 +859,12 @@ def cross_section(records: Records) -> list[str]:
     for cell in wanted:
         record = records.get(cell.id)
         request = " ".join(f"`{item}`" for item in cell.sets)
-        rows.append([cell.method, request, verdict_text(record, False, notes)])
+        rows.append([cell.method, request, verdict_text(record, False, notes, records)])
         if record is not None and record["verdict"] in WORKS:
-            numbers.append(_numbers_row(f"{cell.method}: {request}", records.probed(record)))
+            levels = records.levels(record)
+            numbers.append(
+                _numbers_row(f"{cell.method}: {request}", records.probed(record), levels)
+            )
     lines = [
         "## Several slots at once",
         "",
@@ -621,9 +933,13 @@ def family_slots_section(records: Records) -> list[str]:
             if (cell.method, cell.slot) != (method, slot):
                 continue
             record = records.get(cell.id)
-            verdict = verdict_text(record, False, notes)
+            verdict = verdict_text(record, False, notes, records)
             works = record is not None and record["verdict"] in WORKS
-            numbers = _numbers_row("", record)[1:] if works else ["—"] * 7
+            numbers = (
+                _numbers_row("", records.probed(record), records.levels(record))[1:]
+                if works
+                else ["—"] * (len(NUMBER_HEADERS) - 1)
+            )
             rows.append([f"`{cell.variant}`", f"`{cell.component}`", verdict, *numbers])
         headers = [f"`{slot}=`", "Component", method, *NUMBER_HEADERS[1:]]
         lines += [f"### {method}: `{slot}`", "", *_table(headers, rows), ""]
@@ -642,16 +958,21 @@ def recipes_section(records: Records) -> list[str]:
     for cell in members:
         record = by_id.get(cell.id)
         rows.setdefault((cell.slot, cell.variant), {})[cell.method] = (
-            f"`{record['verdict']}`" if record else "not probed"
+            f"`{record['verdict']}`" if record else NOT_YET
         )
         sets[(cell.slot, cell.variant)] = " ".join(f"`--set {item}`" for item in cell.sets)
     lines = [
         "A recipe preset changes what is around the model: the optimizer, the schedule, the "
-        "hooks of the training loop, the point augmentation. Each is applied alone to a "
-        "method as shipped and probed like a stage. `—`: the preset names the scene encoder "
-        "of the seed-based skeleton and is probed under a second seed-based method instead "
-        "of HGGD. What each preset is and how to use it: [the recipe slot](../slots/recipe.md).",
+        "hooks of the training loop, the point augmentation. Each is applied alone to every "
+        "method as shipped and probed like a stage; an augmentation a method's data contract "
+        "does not accept is refused there. `—`: the preset names the scene encoder of the "
+        "seed-based skeleton, which HGGD does not have. A preset that sets the schedule (the "
+        "schedule presets, the schedule-free optimizers, the recipes) is probed with that "
+        "schedule, `schedule: recipe` in its record, since the schedule is what its cell "
+        "measures; the others with the schedule of the grid (*A cell* above). What each "
+        "preset is and how to use it: [the recipe slot](../slots/recipe.md).",
         "",
+        *_waiting("recipe", records),
     ]
     table = [
         [slot, sets[(slot, name)], cell_.component, *(found.get(m, "—") for m in methods)]
@@ -662,7 +983,7 @@ def recipes_section(records: Records) -> list[str]:
     failed = [
         by_id[cell.id]
         for cell in members
-        if cell.id in by_id and by_id[cell.id]["verdict"] not in ("runs", "wired")
+        if cell.id in by_id and by_id[cell.id]["verdict"] not in ("runs", "runs-empty", "wired")
     ]
     if failed:
         lines += ["", "What did not run, in the words of the tool:", ""]
@@ -734,6 +1055,125 @@ def _runs(about: dict[str, Any], records: list[dict[str, Any]]) -> list[str]:
     return sentences
 
 
+#: The fields judge 2 adds to a record, in the order the page lists them, and how the
+#: learning rate of the probe was set.
+JUDGE_RECORD_FIELDS = (
+    "judge",
+    "trend",
+    "active",
+    "flags",
+    "no_gradient",
+    "unchanged",
+    "checked",
+    "score_quantiles",
+    "learning_rate, lr_factor",
+    "schedule, rate",
+    "losses_per_iteration",
+)
+
+
+def judges_section(records: list[dict[str, Any]]) -> list[str]:
+    """Which judge gave the verdicts of the page, and what judge 2 records beyond them."""
+    fields = _runner().FIELDS
+    second = [record for record in records if record.get("judge", 1) >= JUDGE]
+    first = [record for record in records if record.get("judge", 1) < JUDGE]
+    empty = sum(
+        record["verdict"] == "runs"
+        and bool(record.get("grasps_per_frame"))
+        and not any(record["grasps_per_frame"])
+        for record in first
+    )
+    checked = sum("no_gradient" in record for record in first)
+    side = DATA.with_suffix("") / _runner().SERIES_NAME
+    series = f"measured_combinations/{side.name}"
+    where = f"[{series}]({series})" if side.is_file() else f"`{series}`"
+    meanings = {
+        **{name: fields[name] for name in JUDGE_RECORD_FIELDS},
+        "flags": "per loss term with a flag: the flags of the list below that hold",
+        "losses_per_iteration": (
+            f"not in the record: the side file {where} holds, for every record of judge 2 "
+            "with a probe of its own, every loss term and the total at every iteration, to "
+            "four significant digits (null where the term was not reported). It is written "
+            "with the records and holds what the trends are computed from"
+        ),
+    }
+    lines = [
+        "## Judges",
+        "",
+        "A probe is judged by `grasppanda.combine.probe`. The verdicts above and the fields "
+        f"below are those of **judge {JUDGE}**, from 2026-10-15; **{len(second)} of the "
+        f"{len(records)} records** on this page were judged by it (`judge: {JUDGE}` in the "
+        "[measured file](measured_combinations.json)). The other "
+        f"{len(first)} were judged by the first judge. It had no `runs-empty`, so a run that "
+        f"predicted no grasp on any probed frame is `runs` ({empty} probes of this page); it "
+        "recorded none of the fields below; and from 2026-10-13 on it also checked a run for "
+        "a top-level part that no gradient reached, which only a record with `no_gradient` "
+        f"shows ({checked} of them). A record keeps its judge until its cell is probed again.",
+        "",
+        "Judge 2 also records whether the parts of a model *learned*, not only whether they "
+        "ran. None of it changes a verdict, except that a top-level part no gradient reached "
+        "makes a run `runs-unstable` (as before) and an empty prediction makes it "
+        "`runs-empty`. In a record of judge 2:",
+        "",
+        *_table(["Field", "Meaning"], [[f"`{name}`", text] for name, text in meanings.items()]),
+        "",
+        "The flags of a loss term; *active* iterations are those in which the term was "
+        "reported, finite and not exactly 0:",
+        "",
+        *[f"- `{name}`: {meaning}." for name, meaning in TREND_FLAGS.items()],
+        "",
+        "The schedules of a probe (`schedule` in a record):",
+        "",
+        *[f"- `{name}`: {meaning}." for name, meaning in SCHEDULES.items()],
+        "",
+        "*Fall per loss term §*, a column of the tables of what the probes saw, gives the "
+        "fall of every term (the term without `loss/`; *active n* where it was active in "
+        "fewer iterations than ran), and *Learns, predicts §* whether the run reached those "
+        "levels ([Measured classes](#measured-classes)) and what kept it from them: the "
+        "flags, the units no gradient reached, the parts that did not change, frames without "
+        f"a grasp or with one score for all; `{NOT_CHECKED}` for a record of the first judge. "
+        "A flag is a statement about one short run, a reason to look, not a verdict. Under "
+        "`schedule: constant` every step of that run used the recipe's peak "
+        "rate, so flags compare across methods; a record without `schedule` ran the method's "
+        "own schedule over the probe's epochs, which may have lowered the rate within the "
+        "probe (`lr_factor`) by very different amounts from one method to the next.",
+        "",
+    ]
+    return lines
+
+
+def levels_section() -> list[str]:
+    """The levels a cell reaches and the classes of an option, with their definitions and
+    thresholds as :mod:`grasppanda.combine.levels` holds them. The measured page, the slot
+    index and the method pages print it."""
+    return [
+        f"**{CAVEAT[0].upper() + CAVEAT[1:]}.** A cell (one option under one method) is "
+        "decided at four levels, each from its record alone; every level needs the one "
+        "before it:",
+        "",
+        *[f"- **{level}**: {meaning}." for level, meaning in LEVELS.items()],
+        "",
+        "A level that cannot be decided from a record says why:",
+        "",
+        *[f"- *{reason}*: {meaning}." for reason, meaning in UNDECIDED.items()],
+        "",
+        "The **class** of an option at a level counts the methods under which it reached "
+        "that level. For a stage of the seed-based skeleton decided under all five "
+        "seed-based methods (" + ", ".join(METHODS) + "):",
+        "",
+        *[f"- **{name}**: {meaning}." for name, (_, meaning) in CLASS_WORDS.items()],
+        "",
+        "An option of another slot (post-processing, loss, recipe, image encoder) is "
+        "**universal** only when it reached the level under every method it applies to and "
+        "those include the five seed-based ones. Every other class reads **N of M probed**: "
+        "it reached the level under N of the M methods where the level was decided, and the "
+        "methods where it was not are named after it (*+2 not checked*). A level that no "
+        "method decided is named by the reason. A level decided only where the level before "
+        "it failed is not checked: the class says so instead of counting the failures again.",
+        "",
+    ]
+
+
 # ------------------------------------------------------------------------------ page
 
 
@@ -773,23 +1213,42 @@ def page() -> str:
         "finite,",
         "seeds reach its head, it predicts. It says nothing about how good the combination is;",
         "that takes a full training run and an evaluation on a benchmark split.",
+        "Whether a cell that runs also learns like the stage it replaces (250 iterations, term "
+        "by term): [Learns like the reference?](learns_like_reference.md).",
         "",
         "## What was run",
         "",
-        f"- **Grid**: {len(cells_)} cells ("
+        f"- **Grid**: {len(cells_)} recorded cells ("
         + ", ".join(f"{counts[v]} `{v}`" for v in VERDICT_ORDER if counts[v])
         + "): every shipped method config as it is, every registered scene encoder under every "
         "seed-based method, every variant of every other stage with one stage replaced at a "
         "time, a sample of the legal sets of stage variants, HGGD as it is, every image-encoder "
-        "preset under HGGD, every post-processing, loss and recipe preset under two or three "
-        "methods, and a few requests that replace several slots at once. The variants of a stage "
-        "are its presets plus every component whose constructor defaults no preset states.",
+        "preset under HGGD, every post-processing preset under all six methods, every recipe "
+        "preset under every method it applies to, every loss preset in one term of every kind "
+        "it accepts under every seed-based method with such a term, and a few requests that "
+        "replace several slots at once. The variants of a stage are its presets plus every "
+        "component whose constructor defaults no preset states. " + _bare_sentence(),
         "- **A cell**: `grasppanda compose <method config> --set <slot>=<choice>`, so that an "
         "encoder is fitted and adapters are inserted exactly as a user gets them, then "
-        f"`grasppanda probe <composed config> --iters {iterations} --frames {frames}`: the real "
-        "trainer with the method's own recipe on the split `sample` of GraspNet-1Billion "
-        "(RealSense; scene 0, frames 0, 32, …, 224), then prediction on two of those frames. "
-        "Both commands of every cell are in the [measured file](measured_combinations.json).",
+        f"`grasppanda probe <composed config> --iters {iterations} --frames {frames} --schedule "
+        "constant`: the real trainer with the method's own recipe on the split `sample` of "
+        "GraspNet-1Billion (RealSense; scene 0, frames 0, 32, …, 224), then prediction on two "
+        "of those frames. Both commands of every cell are in the "
+        "[measured file](measured_combinations.json).",
+        "- **The learning rate**: grid probes train at the recipe's peak rate without its "
+        "schedule (`--schedule constant`: the optimizer's rate, or `max_lr` of a one-cycle "
+        "schedule, at every step, scaled by the ratio of the batch sizes when the probe's "
+        "batches are smaller than the recipe's, so FineGrasp's 0.008 for 32 frames trains at "
+        "0.002 on 8; optimizer, weight decay, clipping and hooks as the recipe has them, "
+        "except that a batch-norm momentum the recipe decays per epoch is held at its "
+        "first-epoch value, as the rate is held at its peak: a probe's epochs are a few "
+        "iterations long). Run "
+        "over the few epochs of a probe, the schedules would decay GSNet to "
+        "0.63 and EconomicGrasp to 2.4 % of its rate and keep FineGrasp in its warm-up, and "
+        "the trends of different methods would not compare. A cell whose request sets the "
+        "schedule (a schedule preset, a schedule-free optimizer, a recipe preset) runs that "
+        "schedule. `grasppanda probe --schedule recipe` runs a recipe as shipped. "
+        + _schedule_sentence(cells_),
         '- **One exception to "as a user gets them"**: configs that read the width histogram '
         "of Scale-Balanced-Grasp were probed with the reference's own file "
         "(`scale_statistic.source: legacy_import`), because the native histogram is a statistic "
@@ -808,11 +1267,12 @@ def page() -> str:
         *_table(
             ["Verdict", "In a table", "Meaning"],
             [
-                ["`runs`", "✓ · ✓ own · ✓ in `Adapter`", about["verdicts"]["runs"]],
-                ["`runs-unstable`", "≈ (n)", about["verdicts"]["runs-unstable"]],
-                ["`refused`", "✗ (n)", about["verdicts"]["refused"] + _refused_by(cells_)],
-                ["`fails`", "**fails** (n)", about["verdicts"]["fails"]],
-                ["`wired`", "—", about["verdicts"]["wired"] + " Not used on this page."],
+                ["`runs`", "✓ · ✓ own · ✓ in `Adapter`", VERDICTS["runs"]],
+                ["`runs-empty`", "∅ · ∅ in `Adapter`", VERDICTS["runs-empty"]],
+                ["`runs-unstable`", "≈ (n)", VERDICTS["runs-unstable"]],
+                ["`refused`", "✗ (n)", VERDICTS["refused"] + _refused_by(cells_)],
+                ["`fails`", "**fails** (n)", VERDICTS["fails"]],
+                ["`wired`", "—", VERDICTS["wired"] + " Not used on this page."],
             ],
         ),
         "",
@@ -824,23 +1284,23 @@ def page() -> str:
         "for a refusal the first sentence of each message of the config check (the whole "
         "messages, with the fix they propose, are in the measured file), for a failure the "
         "phase, the component and the exception, for an unstable run what was unstable. *‡* "
-        "marks numbers that depend on the load of a shared machine.",
+        "marks numbers that depend on the load of a shared machine. *§* marks what judge 2 "
+        "flagged in a run that did not stop it from running ([Judges](#judges)). Below the "
+        "mark of a probe: the grasps it predicted on each probed frame and, for a record of "
+        "judge 2, the range of the fall of its loss terms and the levels it did not reach "
+        "(*learns ✗ (n)*); a probe that predicted no grasp on any frame is greyed. Below a "
+        "refusal, its kind when the record has one (structural, not-implemented, policy, "
+        "not-a-combination).",
         "",
+        *judges_section(cells_),
         "## Measured classes",
         "",
-        "A component **works** under a method when its cell is `runs` or `runs-unstable`: the "
-        "combination was built, trained for the probe's iterations and predicted, directly or "
-        "in the adapter compose inserted. The class of a component counts the seed-based "
-        "methods (" + ", ".join(METHODS) + ") it works under:",
-        "",
-        *[f"- **{name}**: {meaning}." for name, (_, meaning) in CLASSES.items()],
-        "",
-        "*≈n* after a class: under n of those methods the run was `runs-unstable`; the note "
-        "under the table says what was unstable. A class is a statement about this grid: "
-        "these presets, the methods' own recipes, this dataset, one stage replaced at a time. "
-        "A stage that is refused alone may work together with the stage it depends on (a head "
-        "bundle with its assigner and its labels); those are the "
-        "[sets of stages](#sets-of-stages).",
+        *levels_section(),
+        "A class is a statement about this grid: these presets, the methods' own recipes, "
+        "this dataset, one stage replaced at a time. A stage that is refused alone may work "
+        "together with the stage it depends on (a head bundle with its assigner and its "
+        "labels); those are the [sets of stages](#sets-of-stages). The classes of the scene "
+        "encoders and of the other stages, level by level:",
         "",
         *glance_section(records),
         "",
@@ -859,8 +1319,8 @@ def page() -> str:
         lines += ["## The training recipe", "", *recipe]
     lines += ["## Sets of stages", "", *stage_sets_section(records)]
     lines += family_slots_section(records)
-    lines += post_section(cells_)
-    lines += loss_section(cells_)
+    lines += post_section(records)
+    lines += loss_section(records)
     lines += cross_section(records)
     lines += ["## Passed the check, failed afterwards", "", *findings_section(cells_)]
     missing = about.get("not_probed") or []
@@ -901,7 +1361,7 @@ def page() -> str:
 # The first page of the slot documentation, docs/slots/index.md. Its text is written here;
 # its numbers are not: how many options a slot has is counted from the presets and the
 # registries, and the class of every option from the measured records with the rules of
-# the measured page (`classify`), so the two pages cannot disagree.
+# the measured page (grasppanda.combine.levels), so the two pages cannot disagree.
 
 #: Slot → (title, where it is written in a config, its page, task, input → output).
 SLOTS: dict[str, tuple[str, str, str, str, str]] = {
@@ -996,29 +1456,11 @@ SLOTS: dict[str, tuple[str, str, str, str, str]] = {
 }
 #: Seed-based slots whose class is the count over the five methods (the measured page's).
 SEED_SLOTS = ("backbone", *STAGE_SLOTS)
-CLASS_COLUMNS = tuple(CLASSES)
 
 
-def _works(records: Iterable[dict[str, Any]]) -> tuple[int, int]:
-    """``(methods it works under, methods it has a record under)`` of one option."""
-    by_method: dict[str, bool] = {}
-    for record in records:
-        works = record["verdict"] in WORKS
-        by_method[record["method"]] = by_method.get(record["method"], False) or works
-    return sum(by_method.values()), len(by_method)
-
-
-def _relative_class(works: int, probed: int) -> str:
-    """The class of an option that was probed under fewer than five methods.
-
-    The words are those of the measured page, counted over the methods the option was
-    probed under: all of them, none of them, exactly one of several, or the rest.
-    """
-    if works == probed:
-        return "universal"
-    if works == 0:
-        return "none"
-    return "specific" if works == 1 and probed > 2 else "some" if probed == 2 else "most"
+def method_page(method: str) -> str:
+    """The stem of the page of a method under ``docs/methods/``: its config directory."""
+    return {**METHODS, **FAMILIES}[method].split("/")[0]
 
 
 def option_counts() -> dict[str, tuple[int, int]]:
@@ -1104,74 +1546,72 @@ def _slot_table(counts: dict[str, tuple[int, int]]) -> list[str]:
     return _table(["Slot", "Task, and input → output", "Options"], rows)
 
 
-def _class_rows(records: Records) -> tuple[list[list[str]], list[str]]:
-    """The rows of the class table and the notes under it."""
+def _class_rows(
+    records: Records,
+) -> tuple[list[tuple[list[str], list[tuple[str, dict[str, OptionClass]]]]], list[str]]:
+    """The rows of the class tables of the slot index and the notes under them."""
     cells = list(records.by_id.values())
-    rows: list[list[str]] = []
+    rows: list[tuple[list[str], list[tuple[str, dict[str, OptionClass]]]]] = []
     notes: list[str] = []
-
-    def row(title: str, under: str, members: dict[str, list[str]]) -> None:
-        rows.append(
-            [title, under, *("<br>".join(members.get(name, [])) or "—" for name in CLASS_COLUMNS)]
-        )
-
     five = "the five seed-based methods"
     for slot in SEED_SLOTS:
         group = "encoder" if slot == "backbone" else "stage"
-        found: dict[str, list[str]] = {}
-        for component, variant, name, _, unstable in slot_classes(slot, records, group):
+        members = []
+        for _component, variant, found in slot_classes(slot, records, group):
             preset = variant in presets().get(slot, {})
-            label = f"`{variant}`" + ("" if preset else " (defaults)")
-            label += f" ≈{unstable}" if unstable else ""
-            if name == INCOMPLETE:
-                notes.append(f"`{variant}` ({SLOTS[slot][0].lower()}): {name}.")
-                continue
-            found.setdefault(name, []).append(label)
-            del component
-        row(SLOTS[slot][0], five, found)
+            members.append((f"`{variant}`" + ("" if preset else " (defaults)"), found))
+        rows.append(([SLOTS[slot][0], five], members))
 
-    def relative(slot: str, group: str, names: Iterable[str], under: str, dagger: str) -> None:
-        found: dict[str, list[str]] = {}
-        for name in names:
-            members = [
-                record
-                for record in cells
-                if record["group"] == group
-                and any(item.partition("=")[2] == name for item in record.get("sets", []))
-            ]
-            if not members:
-                continue
-            works, probed = _works(members)
-            found.setdefault(_relative_class(works, probed), []).append(f"`{name}`")
-        row(f"{SLOTS[slot][0]} {dagger}", under, found)
+    def under(group: str) -> str:
+        """The methods a group has cells under in the grid, in the order of the grid."""
+        found = {cell.method for cell in grid(group)}
+        return ", ".join(method for method in (*METHODS, *FAMILIES) if method in found)
+
+    def relative(slot: str, names: Iterable[str], title: str, where: str) -> None:
+        members = [(f"`{name}`", records.classes(slot, name)) for name in names]
+        members = [(label, found) for label, found in members if found["composes"].methods]
+        rows.append(([title, where], members))
 
     members = presets()
     relative(
         "image_encoder",
-        "family-slot",
         members.get("image_encoder", {}),
+        f"{SLOTS['image_encoder'][0]} †",
         "HGGD, the one method with this slot",
-        "†",
     )
     relative(
         LOSS_SLOT,
-        "loss",
         members.get(LOSS_SLOT, {}),
-        "loss terms under GSNet and under one or two other seed-based methods",
-        "†",
+        f"{SLOTS[LOSS_SLOT][0]} †",
+        f"loss terms of {under('loss')}",
     )
-    relative(POST_SLOT, "post", members.get(POST_SLOT, {}), ", ".join(POST_METHODS), "†")
-    found: dict[str, list[str]] = {}
+    relative(POST_SLOT, members.get(POST_SLOT, {}), f"{SLOTS[POST_SLOT][0]} †", under("post"))
+    recipe_members = []
     for slot, group in recipes().items():
         for name in group:
-            hits = [r for r in cells if r["group"] == "recipe" and f"{slot}={name}" in r["sets"]]
-            if hits:
-                works, probed = _works(hits)
-                found.setdefault(_relative_class(works, probed), []).append(f"`{slot}={name}`")
-    row(f"{SLOTS['recipe'][0]} †", "GSNet and HGGD (GSNet and EconomicGrasp for the presets "
-        "that name the scene encoder)", found)  # fmt: skip
+            found = records.classes(slot, name)
+            if found["composes"].methods:
+                recipe_members.append((f"`{slot}={name}`", found))
+    encoder = "; HGGD not for the presets that name the scene encoder"
+    rows.append(([f"{SLOTS['recipe'][0]} †", under("recipe") + encoder], recipe_members))
     for name, reason in {**POST_NOT_PROBED, **LOSS_NOT_PROBED}.items():
         notes.append(f"`{name}` has no cell of its own: {reason}.")
+    for slot, component in bare_components():
+        notes.append(
+            f"`{component}` ({SLOTS[slot][0].lower()}) has no cell under its type name: it "
+            "needs an option only a preset supplies; its presets are classified."
+        )
+    waiting = sum(
+        cell.id not in records.by_id for group in ("post", "loss", "recipe") for cell in grid(group)
+    )
+    if waiting:
+        notes.append(
+            f"{waiting} cells of these slots (†) are {NOT_YET}: the grid now has every "
+            "post-processing preset under all six methods, every recipe preset under every "
+            "method it applies to and every loss preset in one term of each kind it accepts; "
+            "a class names them after the methods it counts (*+n not probed*)."
+        )
+    del cells
     return rows, notes
 
 
@@ -1249,31 +1689,32 @@ def slots_index(records: Records) -> str:
         "",
         "## Which option fits which method",
         "",
-        "From the [measured records](../advanced_guides/measured_combinations.md), in the "
-        f"words of that page ({len(cells)} recorded cells: "
+        "From the [measured records](../advanced_guides/measured_combinations.md) "
+        f"({len(cells)} recorded cells: "
         + ", ".join(f"{verdicts[name]} `{name}`" for name in VERDICT_ORDER if verdicts[name])
-        + "). An option **works** under a method when the combination was built, trained for "
-        "the probe's iterations and predicted, directly or in the adapter compose inserted. "
-        "Its class counts the methods it works under, with **one slot replaced at a time**:",
+        + "), with **one slot replaced at a time**. Every method has a page that lists the "
+        "options of each of its slots with what was measured for each, and so does "
+        "`grasppanda compose <method config> --list <slot>`: "
+        + ", ".join(
+            f"[{name}](../methods/{method_page(name)}.md)" for name in (*METHODS, *FAMILIES)
+        )
+        + ".",
         "",
-        *[f"- **{name}**: {meaning}." for name, (_, meaning) in CLASSES.items() if name != "none"],
-        "- **none**: it works under none of them as it was probed.",
+        *levels_section(),
+        "† The slot was not probed under the five seed-based methods but under the methods "
+        "of the second column, so its classes count those. *(defaults)*: the component named "
+        "by its type and built with its constructor defaults, not a preset; a component that "
+        "needs an option only a preset supplies does not work that way. Classes, level by "
+        "level:",
         "",
-        "*≈n*: under n of those methods the run was `runs-unstable`. † The slot was not "
-        "probed under the five seed-based methods but under the methods of the second "
-        "column, so its classes count those: *universal* is all of them, *some* one of two, "
-        "*most* all but one of three, *none* none. *(defaults)*: the component named by its "
-        "type and built with its constructor defaults, not a preset; a component that needs "
-        "an option only a preset supplies does not work that way.",
-        "",
-        *_table(["Slot", "Probed under", *CLASS_COLUMNS], rows),
-        "",
+        *class_tables(rows, ["Slot", "Probed under"]),
         *[f"- {note}" for note in notes],
         *([""] if notes else []),
         "How to read it:",
         "",
-        "- **A class is not a ranking.** *universal* says that a swap needs nothing else; it "
-        "says nothing about accuracy.",
+        "- **A class is not a ranking.** *universal* at a level says that a swap reached that "
+        "level under every method without anything else changed; it says nothing about "
+        "accuracy.",
         "- **An option that is not universal is usually bound to its neighbours, not to a "
         "paper.** A head bundle goes with the assigner and the label set it is supervised "
         "with, a grouper with the axes its head reads, a scoring proposal with the stage "
@@ -1283,7 +1724,7 @@ def slots_index(records: Records) -> str:
         "[Several slots at once](../advanced_guides/measured_combinations.md#several-slots-at-once).",
         "- **A refusal comes with the fix.** `grasppanda compose` prints the contract that "
         "is violated and the option or preset that satisfies it, before anything is built.",
-        "- **A loss or a recipe preset in the column *most*, *some* or *none* did not run "
+        "- **A loss or a recipe preset with a class *N of M probed* below M did not run "
         "everywhere it was put**: the [loss](head_loss.md) and [recipe](recipe.md) pages say "
         "where and why (a term of another kind, a detector that reads images, mixed "
         "precision).",
@@ -1294,7 +1735,9 @@ def slots_index(records: Records) -> str:
         "## How to try one",
         "",
         "```bash",
-        "grasppanda compose --list grouper                                # the options of a slot",
+        "grasppanda compose --list grouper                                # the presets of a slot",
+        "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list grouper",
+        "                                                                 # ... under GSNet, measured",
         "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \\",
         "    --set grouper=roi-grid -o gsnet_roi-grid.yaml                 # a checked config",
         "grasppanda probe gsnet_roi-grid.yaml                             # 20 iterations on",

@@ -24,13 +24,18 @@ def sha256_of(path: str | Path) -> str:
     return digest.hexdigest()
 
 
-def fetch(url: str, sha256: str, *, cache_dir: str | Path | None = None) -> Path:
+def fetch(url: str | None, sha256: str, *, cache_dir: str | Path | None = None) -> Path:
     """Return a local, verified copy of ``url``.
 
     ``url`` may be ``http(s)://``, ``file://`` or a plain path. The file is stored under
     its digest, so a cached copy is reused only when its content still matches; a
     mismatch raises :class:`ChecksumError` and never returns a path.
     """
+    if not url:  # a zoo entry of weights trained here and not published yet has no url
+        raise ValueError(
+            f"there is no url to fetch the weights with sha256 {sha256} from: they are not "
+            "published"
+        )
     sha256 = sha256.lower()
     directory = Path(cache_dir) if cache_dir else cache_root() / "weights"
     directory.mkdir(parents=True, exist_ok=True)

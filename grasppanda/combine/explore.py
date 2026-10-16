@@ -7,22 +7,31 @@ so a combination nobody measured gets the verdict of the contract rules and of t
 check, the conflict and the fix when it is refused, and the composed config, which can be
 saved. Nothing is trained: the page prints the probe command and never runs it.
 
-Only the standard library is used. The server binds to the loopback address, answers
-requests addressed to it by a loopback name only, and writes nowhere but into the
-directory it was started in, one ``*.yaml`` file per explicit request.
+Its Run panel runs a ported method (or the composed selection) on one frame, with weights
+the command line named, and shows the picture ``grasppanda demo`` draws
+(:mod:`grasppanda.combine.explore_run`).
+
+Only the standard library serves it. The server binds to the loopback address, answers
+requests addressed to it by a loopback name only, takes writes from its own page only, and
+writes nowhere but into the directory it was started in, one ``*.yaml`` file per explicit
+request, and into the temporary directory of a run, which is removed when the run ends.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 __all__ = ["HOST", "check", "explorer_root", "page", "save", "serve", "server"]
+
+if TYPE_CHECKING:
+    from .explore_run import Runner
 
 #: The only address the server binds to.
 HOST = "127.0.0.1"
@@ -37,6 +46,8 @@ STATIC = {
 }
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+@-]{0,120}\.yaml$")
 _LOCK = threading.Lock()
+#: Bytes of the body of a compose or save request.
+_SMALL_BODY = 65536
 
 
 def explorer_root() -> Path:
@@ -46,23 +57,27 @@ def explorer_root() -> Path:
     return packaged if packaged.is_dir() else package.parent / "docs" / "explorer"
 
 
-def page() -> str:
-    """The page of the live explorer: the files of the documentation page, on their own."""
+def page(view: str = "") -> str:
+    """The page of the live explorer: the files of the documentation page, on their own.
+
+    ``view`` is the tab it opens on when the address names none (``run``: the Run panel).
+    """
+    opens = f' data-view="{view}"' if view in ("build", "grid", "run") else ""
     return f"""<!doctype html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GraspPanda combination explorer (live)</title>
+<title>GraspPanda explorer (live)</title>
 <link rel="stylesheet" href="explorer.css">
 </head>
 <body class="gx-standalone">
 <main>
-<h1>Combination explorer <span class="gx-live-tag">live</span></h1>
-<p>Swap any stage of a grasp detector. Marks and verdicts come from the measured records; the
-<b>contract check</b> of exactly your selection is run now, by this installation. Nothing is
-trained here.</p>
-<div id="gp-explorer" class="gpx" data-src="explorer.json" data-live="api/" data-docs="{DOCS}">
+<h1>GraspPanda explorer <span class="gx-live-tag">live</span></h1>
+<p>Run a ported method on a scene, or swap any stage of a grasp detector. Marks and verdicts
+come from the measured records; the <b>contract check</b> of exactly your selection and every
+run are done now, by this installation. Nothing is trained here.</p>
+<div id="gp-explorer" class="gpx" data-src="explorer.json" data-live="api/" data-docs="{DOCS}"{opens}>
 <noscript><p>The explorer needs JavaScript.</p></noscript>
 </div>
 </main>
@@ -117,6 +132,10 @@ def check(request: dict[str, Any]) -> dict[str, Any]:
         ],
         "problems": list(composition.problems),
         "issues": [{"path": issue.path, "message": issue.message} for issue in composition.issues],
+        # Every reason the selection is refused, and the kind of each, parallel
+        # (grasppanda.config.errors.REFUSAL_KINDS), as `grasppanda compose --json` has them.
+        "refusal": composition.refusal(),
+        "refusal_kinds": composition.refusal_kinds(),
         "config_hash": composition.config_hash,
         "config": composition.text() if composition.accepted else "",
     }
@@ -144,6 +163,7 @@ def save(request: dict[str, Any], directory: Path) -> dict[str, Any]:
 class _Handler(BaseHTTPRequestHandler):
     server_version = "GraspPandaExplorer"
     directory: Path = Path.cwd()
+    runner: Runner
 
     def log_message(self, format: str, *args: Any) -> None:  # the terminal stays quiet
         return
@@ -180,9 +200,21 @@ class _Handler(BaseHTTPRequestHandler):
             return
         name = self.path.split("?", 1)[0].lstrip("/")
         if name in ("", "index.html"):
-            self._send(HTTPStatus.OK, page().encode("utf-8"), "text/html; charset=utf-8")
+            view = "" if self.runner.weights.empty else "run"
+            self._send(HTTPStatus.OK, page(view).encode("utf-8"), "text/html; charset=utf-8")
         elif name in STATIC and (explorer_root() / name).is_file():
             self._send(HTTPStatus.OK, (explorer_root() / name).read_bytes(), STATIC[name])
+        elif name == "api/run/setup":
+            self._json(HTTPStatus.OK, self.runner.setup())
+        elif name.startswith("api/run/"):
+            status = self.runner.status(name[len("api/run/") :])
+            if status is None:
+                self._json(
+                    HTTPStatus.NOT_FOUND,
+                    {"error": "no such run: this server keeps the last run only"},
+                )
+            else:
+                self._json(HTTPStatus.OK, status)
         else:
             self._json(HTTPStatus.NOT_FOUND, {"error": f"no such file: {name}"})
 
@@ -194,10 +226,27 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "send application/json"})
             return
         name = self.path.split("?", 1)[0].strip("/")
+        from .explore_run import BODY_LIMIT, Busy, RunError
+
+        limit = BODY_LIMIT if name == "api/run" else _SMALL_BODY
         try:
             length = int(self.headers.get("Content-Length") or 0)
-            if not 0 < length <= 65536:
-                raise ValueError("the request body is missing or too large")
+        except ValueError:
+            length = 0
+        if length > limit:  # answered unread; the connection is closed after the answer
+            self.close_connection = True
+            self._json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {
+                    "error": f"the request is {length / 1024 / 1024:.1f} MB; this action takes "
+                    f"{limit / 1024 / 1024:.1f} MB at most",
+                    "kind": "too-large",
+                },
+            )
+            return
+        try:
+            if length <= 0:
+                raise ValueError("the request body is missing")
             request = json.loads(self.rfile.read(length).decode("utf-8"))
             if not isinstance(request, dict):
                 raise ValueError("the request must be a JSON object")
@@ -205,39 +254,77 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json(HTTPStatus.OK, check(request))
             elif name == "api/save":
                 self._json(HTTPStatus.OK, save(request, self.directory))
+            elif name == "api/run":
+                self._json(HTTPStatus.ACCEPTED, self.runner.start(request))
             else:
                 self._json(HTTPStatus.NOT_FOUND, {"error": f"no such action: {name}"})
+        except Busy as busy:
+            self._json(HTTPStatus.CONFLICT, {"error": str(busy), "kind": "busy"})
+        except RunError as error:
+            too_large = error.kind == "too-large"
+            status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE if too_large else HTTPStatus.BAD_REQUEST
+            self._json(status, {"error": str(error), "kind": error.kind})
         except Exception as error:  # the request is wrong, or compose says why it cannot
             self._json(HTTPStatus.BAD_REQUEST, {"error": f"{type(error).__name__}: {error}"})
 
 
-def server(port: int = 0, directory: Path | None = None) -> ThreadingHTTPServer:
+def server(
+    port: int = 0, directory: Path | None = None, runner: Runner | None = None
+) -> ThreadingHTTPServer:
     """A server of the live explorer on the loopback address; ``port`` 0 picks a free one.
 
     Args:
         port: The port to listen on.
         directory: Where composed configs are saved; the working directory by default.
+        runner: What the Run panel runs, with which weights; by default the ported methods
+            and no weights, and the panel says how to give some.
     """
+    from .explore_run import Runner
+
     if not (explorer_root() / "explorer.json").is_file():
         raise FileNotFoundError(
             f"the files of the explorer are missing from {explorer_root()}; "
             "in a checkout, run `python -m tools.make_explorer`"
         )
-    handler = type("Handler", (_Handler,), {"directory": (directory or Path.cwd()).resolve()})
-    httpd = ThreadingHTTPServer((HOST, port), handler)
+    attributes = {"directory": (directory or Path.cwd()).resolve(), "runner": runner or Runner()}
+    httpd = ThreadingHTTPServer((HOST, port), type("Handler", (_Handler,), attributes))
     httpd.daemon_threads = True
     return httpd
 
 
-def serve(port: int = 8765, directory: Path | None = None, open_browser: bool = True) -> int:
+def serve(
+    port: int = 8765,
+    directory: Path | None = None,
+    open_browser: bool = True,
+    runner: Runner | None = None,
+) -> int:
     """Serve the live explorer until interrupted; returns the exit status."""
-    httpd = server(port, directory)
+    httpd = server(port, directory, runner)
+    handler: Any = httpd.RequestHandlerClass
+    weights = handler.runner.weights
     url = f"http://{HOST}:{httpd.server_address[1]}/"
-    print(f"GraspPanda combination explorer (live): {url}", flush=True)
+    print(f"GraspPanda explorer (live): {url}", flush=True)
     print("  the contract check of every selection is run by this installation;", flush=True)
-    print(
-        f"  composed configs are saved into {Path(httpd.RequestHandlerClass.directory)}", flush=True
-    )
+    print(f"  composed configs are saved into {handler.directory}", flush=True)
+    if weights.empty:
+        print(
+            "  Run panel: no weights given; start with --weights-dir DIR (or --weights "
+            "NAME=FILE) to run a method in the browser",
+            flush=True,
+        )
+    else:
+        entries, cut = weights.entries()
+        where = [f"{name} = {path}" for name, path in weights.named.items()]
+        if weights.directory is not None:
+            listed = len(entries) - len(weights.named)
+            where.insert(0, f"{listed}{' (the first)' if cut else ''} under {weights.directory}")
+        print(f"  Run panel: weights files {'; '.join(where)}", flush=True)
+        device = handler.runner.device or "as each config says (auto: CUDA when available)"
+        print(f"  device of the runs: {device}; one run at a time", flush=True)
+        # The example scene takes a few seconds to compute: ready before the first run.
+        threading.Thread(target=handler.runner.example, daemon=True).start()
+        # A run takes every parameter from the weights file: nothing is fetched from a hub.
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
     print("  nothing is trained. Stop with Ctrl+C.", flush=True)
     if open_browser:
         import webbrowser

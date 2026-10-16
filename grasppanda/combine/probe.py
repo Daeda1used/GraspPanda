@@ -10,11 +10,23 @@ rests on. The probe never reports more than it ran: without a dataset tree, or w
 the label assets of the real frames, it says which and falls back to a wiring check on a
 synthetic scene, whose best verdict is ``wired``, not ``runs``.
 
+Beyond the verdict the report says whether the parts *learned* anything (judge 2,
+:data:`JUDGE`): every loss term at every iteration and its trend over the iterations in
+which it was active (:func:`loss_trend`, flags :data:`TREND_FLAGS`), which sub-modules
+received a gradient, which parts changed, the scores of the predicted grasps and how far
+the learning rate decayed. :data:`JUDGE_FIELDS` defines each field. They are reported,
+not judged; only an empty prediction changes the verdict (``runs-empty``).
+
 A probe is one run, and training on a GPU is not repeatable here. The config hash and
 the parameter count are the same every time and the losses of the first iteration agree
 to about six digits; everything after the first optimizer step (later losses, seed
 fractions, the number of predicted grasps) differs from run to run. A combination near
 the edge can therefore be ``runs`` in one probe and ``runs-unstable`` in the next.
+
+The learning rate follows the recipe's schedule by default, run over the few epochs of
+the probe. Schedules then treat methods unequally (one decays to 2 % within 20
+iterations, another is still in its warm-up), so ``schedule="constant"`` trains every
+step at the recipe's peak rate instead (:data:`SCHEDULES`, :func:`peak_rates`).
 
     report = probe("experimental/gsnet_ptv3_g1b-realsense_10e", iters=20, frames=8)
     report.verdict, report.detail
@@ -26,7 +38,8 @@ import math
 import statistics
 import tempfile
 import time
-from collections.abc import Sequence
+import warnings
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -38,26 +51,97 @@ from grasppanda.registry import HOOKS, all_registries
 
 __all__ = [
     "EXIT_STATUS",
+    "FLAT_BELOW",
+    "GRADIENT_THRESHOLD",
+    "JUDGE",
+    "JUDGE_FIELDS",
+    "PARAMETER_TOLERANCE",
+    "RISING_ABOVE",
+    "SCHEDULES",
+    "TREND_FLAGS",
     "VERDICTS",
     "ProbeReport",
     "ProbeRequestError",
+    "dead_parts",
+    "loss_trend",
     "out_of_memory",
+    "peak_rates",
     "probe",
 ]
+
+#: Version of the judgement. A report (and a record of the measured grid) without a
+#: ``judge`` field was judged by the first judge, which had no ``runs-empty`` and reported
+#: none of :data:`JUDGE_FIELDS` except ``no_gradient`` at the granularity of top-level parts.
+JUDGE = 2
+#: A loss term is ``flat`` when the mean of its last quarter differs from its first active
+#: value by less than this fraction of it.
+FLAT_BELOW = 0.05
+#: A loss term is ``rising`` when the mean of the last half of its active iterations exceeds
+#: the mean of the first half by more than this fraction of it.
+RISING_ABOVE = 0.10
+#: A sub-module is reached when the L2 norm of its gradient exceeds this in an iteration.
+#: Adam's default epsilon: a gradient far below it moves no weight.
+GRADIENT_THRESHOLD = 1e-8
+#: A part changed when the L2 norm of the change of its trainable parameters exceeds this
+#: times the larger of 1 and the L2 norm of the parameters before the first step.
+PARAMETER_TOLERANCE = 1e-6
+#: Significant digits of the loss values, scores and learning rates a report keeps.
+DIGITS = 4
+#: How a probe sets the learning rate (``grasppanda probe --schedule``), and what each means.
+SCHEDULES: dict[str, str] = {
+    "recipe": (
+        "the config's own scheduler, run over the probe. The probe sets `train.epochs` to "
+        "ceil(iterations / iterations per epoch), so a schedule that steps per epoch is "
+        "compressed into those few epochs (GSNet's 0.95 per epoch ends at 0.95^9 = 0.63 "
+        "after 20 iterations of 2 per epoch, EconomicGrasp's cosine at 2.4 % of its start) "
+        "and one that steps per iteration runs its first steps only (FineGrasp's warm-up "
+        "of 800 iterations keeps a probe of 20 at no more than 2.5 % of its rate)"
+    ),
+    "constant": (
+        "no scheduler: every parameter group of every optimizer trains at the recipe's "
+        "peak rate for the whole probe. The peak is the rate the optimizer gives the group "
+        "(the configured `lr`, with the multipliers of ParamGroups), except for a schedule "
+        "that sets a peak of its own: `max_lr` of OneCycleLR and CyclicLR, the larger "
+        "factor of LinearLR. Every other schedule of the toolbox starts at that rate or "
+        "reaches it at the end of its warm-up. When the probe's batches hold fewer frames "
+        "than the recipe's, the peak is scaled by their ratio (the linear scaling rule: "
+        "FineGrasp's 0.008 for 32 frames trains at 0.002 on batches of 8). A batch-norm "
+        "momentum that the recipe decays per epoch (BNMomentumHook: GraspNet-baseline, "
+        "Scale-Balanced-Grasp, HGGD) is held at its first epoch's value likewise "
+        "(`hooks.<i>.decay=1`): decayed over epochs of a few iterations it can reach its "
+        "floor of 0.001 within the probe (Scale-Balanced-Grasp's at iteration 73), and the "
+        "running statistics, which prediction normalises with, then stop following the "
+        "weights; training itself does not read them. The optimizer (its weight decay and "
+        "its momentum as configured), clipping, accumulation and every other hook are the "
+        "recipe's"
+    ),
+}
+#: Length of the run a scheduler is built with to read its peak rate (:func:`peak_rates`).
+#: The peak does not depend on it; a run of normal length avoids the adjustments a
+#: scheduler makes for a run of a few steps.
+_NOMINAL_STEPS = 10_000
 
 #: The verdicts of a probe and what each one means. Exactly one is reported.
 VERDICTS: dict[str, str] = {
     "runs": (
         "On real frames: the detector was built, every requested training iteration ran "
-        "with finite losses and at least one real seed, the weights stayed finite, and "
-        "prediction returned one valid grasp group for every probed frame. A group may be "
-        "empty: a model trained for a few iterations often predicts no grasp."
+        "with finite losses and at least one real seed, every top-level part of the model "
+        "that holds trainable parameters received a gradient in at least one iteration, the "
+        "weights stayed finite, and prediction returned one valid grasp group for every "
+        "probed frame, at least one of them with a grasp."
+    ),
+    "runs-empty": (
+        "As `runs`, except that no probed frame has a grasp: prediction returned one valid "
+        "grasp group for every probed frame and every group is empty. Every stage ran; a "
+        "model trained for a few iterations often keeps no seed. A run that is also unstable "
+        "is `runs-unstable`."
     ),
     "runs-unstable": (
         "On real frames: the detector was built, trained and predicted, but a loss or a "
         "weight became non-finite (a non-finite loss ends the training there), or an "
         "iteration had no real seed (no scene point passed the proposal, so only the "
-        "proposal was trained), or no iteration supervised a seed, or fewer iterations ran "
+        "proposal was trained), or no iteration supervised a seed, or a top-level part with "
+        "trainable parameters received no gradient in any iteration, or fewer iterations ran "
         "or fewer frames were predicted than were asked for."
     ),
     "fails": (
@@ -77,7 +161,89 @@ VERDICTS: dict[str, str] = {
 }
 #: Exit status of ``grasppanda probe`` per verdict. ``wired`` is 0 only when the synthetic
 #: check was asked for; as a fallback for missing real frames it is 3.
-EXIT_STATUS = {"runs": 0, "wired": 0, "runs-unstable": 1, "fails": 1, "refused": 2}
+EXIT_STATUS = {
+    "runs": 0,
+    "runs-empty": 0,
+    "wired": 0,
+    "runs-unstable": 1,
+    "fails": 1,
+    "refused": 2,
+}
+
+
+def _power(value: float) -> str:
+    """``1e-08`` as ``1e-8``: a threshold as the definitions print it."""
+    mantissa, exponent = f"{value:.0e}".split("e")
+    return f"{mantissa}e{int(exponent)}"
+
+
+#: The flags of the trend of a loss term (:func:`loss_trend`), in the order they are listed.
+#: "Active" iterations are those in which the term was reported, finite and not exactly 0.
+TREND_FLAGS: dict[str, str] = {
+    "flat": (
+        "the term was active in at least two iterations, and the mean of its last quarter "
+        f"differs from its first active value by less than {FLAT_BELOW * 100:g} % of that value"
+    ),
+    "rising": (
+        "the term was active in at least two iterations, and the mean of the last half of "
+        "its active iterations exceeds the mean of the first half by more than "
+        f"{RISING_ABOVE * 100:g} % of the first half's mean (with an odd count the middle "
+        "iteration is in neither half)"
+    ),
+    "zero_at_end": "the term is exactly 0.0, or not reported, at the last completed iteration",
+    "constant": (
+        "the term was reported in at least two iterations with the very same value in every "
+        "one of them, zeros included"
+    ),
+}
+#: What judge 2 adds to a report, field by field. Reported, not judged: none of these
+#: changes the verdict, except that a dead top-level part (an entry of ``no_gradient``
+#: without a dot) makes a run ``runs-unstable``, as it did for the first judge.
+JUDGE_FIELDS: dict[str, str] = {
+    "judge": f"the version of the judgement, {JUDGE}; absent from a report of the first judge",
+    "losses_per_iteration": (
+        "every loss term and the total `loss` at every completed iteration, to "
+        f"{DIGITS} significant digits; null where the detector did not report the term"
+    ),
+    "loss_trends": (
+        "per loss term and for the total: `active`, the number of iterations in which the "
+        "term was reported, finite and not exactly 0.0; `first`, its value at the first of "
+        "them; `last_quarter`, the mean of the last ceil(active / 4) of them; `fall`, "
+        "(first - last_quarter) / |first|, positive when the term fell (0.7: by 70 %); "
+        "null when the term was never active; `flags`, those of TREND_FLAGS that hold"
+    ),
+    "no_gradient": (
+        "the units of the model whose gradient never had an L2 norm above "
+        f"{_power(GRADIENT_THRESHOLD)} in an iteration, over its trainable parameters. A unit is a "
+        "registered sub-module at depth 2 (`backbone.encoder`, `head.score_net`) or a "
+        "parameter a top-level part holds itself (`head.bias`); when no unit of a top-level "
+        "part was reached, the part is listed instead of its units (`backbone`: a dead part). "
+        "Gradients are read before every optimizer step, unscaled under mixed precision"
+    ),
+    "unchanged": (
+        "the top-level parts whose trainable parameters did not change: the L2 norm of the "
+        "difference between before the first optimizer step and after the last one is at "
+        f"most {_power(PARAMETER_TOLERANCE)} times the larger of 1 and the L2 norm before"
+    ),
+    "units_checked": "the number of units with trainable parameters (see no_gradient)",
+    "parts_checked": "the number of top-level parts with trainable parameters",
+    "score_quantiles": (
+        "per predicted frame, the smallest, the median and the largest score of its "
+        f"predicted grasps, to {DIGITS} significant digits; null for a frame without a "
+        "grasp. Scores are those the detector returns (their meaning is its `score_kind`)"
+    ),
+    "learning_rate": (
+        "the learning rate of the first parameter group of the first optimizer at the first "
+        "and at the last optimizer step, as those steps used it"
+    ),
+    "lr_factor": (
+        "the last of these divided by the first: the decay the schedule applied within the "
+        "probe. A schedule that steps per epoch decays with the probe's epochs, which follow "
+        "from the batch size and the number of frames (GSNet's 0.95 per epoch: 0.95^9 after "
+        "20 iterations of 2 per epoch); 1 under the schedule `constant`; null when the "
+        "first is 0"
+    ),
+}
 #: Functions of the engine whose frame on a traceback names the phase that failed.
 _PHASES = {
     "build_model": "build",
@@ -113,8 +279,16 @@ class ProbeReport:
         config: The probed config, as it was named.
         overrides: Overrides given by the caller.
         probe_overrides: Overrides the probe added to select frames and to keep the run
-            short; with ``overrides`` they reproduce it through ``grasppanda train``.
+            short; with ``overrides`` they reproduce it through ``grasppanda train``
+            (under the schedule ``constant``: ``scheduler=null``, ``hooks.<i>.decay=1`` for
+            a batch-norm momentum the recipe decays, and a note says when the recipe's
+            peak is not the optimizer's rate).
         config_hash: Hash of the config as given (without the probe's overrides).
+        schedule: How the learning rate was set: a key of :data:`SCHEDULES`.
+        rate: Under the schedule ``constant``, the rate every step used in the first
+            parameter group of the first optimizer (the recipe's peak, scaled for batches
+            smaller than the recipe's); ``None`` otherwise and before an optimizer was
+            built.
         data: ``real``, ``synthetic`` or ``none``.
         fallback: Why real frames were not read, when they were not.
         detector: Detector type.
@@ -140,9 +314,12 @@ class ProbeReport:
             the number predicted, then the number left after every step) and
             ``seconds`` (per frame, per step; measured on this machine).
         predicted_frames: Their keys.
-        no_gradient: Top-level parts of the model that hold trainable parameters and
-            received no non-zero gradient in any iteration (a dead stage); empty when
-            every part learned, and when no iteration ran.
+        no_gradient: Units of the model that never received a gradient (see
+            :data:`JUDGE_FIELDS`); a top-level part when none of its units did (a dead
+            stage). Empty when every unit was reached, and when no iteration ran.
+        judge, losses_per_iteration, loss_trends, unchanged, units_checked,
+            parts_checked, score_quantiles, learning_rate, lr_factor: What judge 2
+            adds, defined in :data:`JUDGE_FIELDS`.
         nonfinite: Non-finite values that were met, as sentences.
         failure: Phase, component, exception type and message of a failure.
         refusal: Messages of the config check.
@@ -156,6 +333,8 @@ class ProbeReport:
     overrides: list[str] = field(default_factory=list)
     probe_overrides: list[str] = field(default_factory=list)
     config_hash: str | None = None
+    schedule: str = "recipe"
+    rate: float | None = None
     data: str = "none"
     fallback: str | None = None
     detector: str | None = None
@@ -176,6 +355,15 @@ class ProbeReport:
     postprocessing: dict[str, Any] = field(default_factory=dict)
     predicted_frames: list[str] = field(default_factory=list)
     no_gradient: list[str] = field(default_factory=list)
+    judge: int = JUDGE
+    losses_per_iteration: dict[str, list[float | None]] = field(default_factory=dict)
+    loss_trends: dict[str, dict[str, Any]] = field(default_factory=dict)
+    unchanged: list[str] = field(default_factory=list)
+    units_checked: int = 0
+    parts_checked: int = 0
+    score_quantiles: list[list[float] | None] = field(default_factory=list)
+    learning_rate: list[float] = field(default_factory=list)
+    lr_factor: float | None = None
     nonfinite: list[str] = field(default_factory=list)
     failure: dict[str, str] | None = None
     refusal: list[str] = field(default_factory=list)
@@ -297,8 +485,72 @@ def device_fault(report: ProbeReport) -> bool:
 # ------------------------------------------------------------------------- recording
 
 
+def _digits(value: float, digits: int = DIGITS) -> float:
+    """``value`` to ``digits`` significant digits."""
+    return float(f"{value:.{digits}g}")
+
+
+def _maybe(value: float | None) -> float | None:
+    return None if value is None else _digits(value)
+
+
+def _unit(name: str) -> str:
+    """The unit of gradient reach a parameter belongs to: the first two components of its
+    dotted name, a sub-module at depth 2 or a parameter a top-level part holds itself."""
+    return ".".join(name.split(".")[:2])
+
+
+def dead_parts(no_gradient: Sequence[str]) -> list[str]:
+    """The top-level parts of ``no_gradient`` (entries without a dot): parts none of whose
+    units received a gradient. The first judge listed parts only, so its entries all are."""
+    return [name for name in no_gradient if "." not in name]
+
+
+def loss_trend(series: Sequence[float | None]) -> dict[str, Any]:
+    """The trend of one loss term over the completed iterations (``None``: not reported).
+
+    Returns ``active``, ``first``, ``last_quarter``, ``fall`` and ``flags`` as
+    :data:`JUDGE_FIELDS` defines them (``loss_trends``), with the flags of
+    :data:`TREND_FLAGS` that hold. Only the iterations in which the term was active count
+    for the trend: a grasp term that is 0.0 until a seed is supervised starts there.
+    """
+    reported = [value for value in series if value is not None]
+    active = [value for value in reported if value != 0.0 and math.isfinite(value)]
+    count = len(active)
+    first = last_quarter = fall = None
+    held = set()
+    if count:
+        first = active[0]
+        tail = active[-math.ceil(count / 4) :]
+        last_quarter = sum(tail) / len(tail)
+        fall = (first - last_quarter) / abs(first)
+        if count >= 2 and abs(last_quarter - first) < FLAT_BELOW * abs(first):
+            held.add("flat")
+        half = count // 2
+        if half:
+            early, late = sum(active[:half]) / half, sum(active[-half:]) / half
+            if late - early > RISING_ABOVE * abs(early):
+                held.add("rising")
+    if reported and (series[-1] is None or series[-1] == 0.0):
+        held.add("zero_at_end")
+    if len(reported) >= 2 and all(value == reported[0] for value in reported):
+        held.add("constant")
+    return {
+        "active": count,
+        "first": _maybe(first),
+        "last_quarter": _maybe(last_quarter),
+        "fall": None if fall is None else round(fall, 3),
+        "flags": [name for name in TREND_FLAGS if name in held],
+    }
+
+
 class _Recorder:
-    """A training hook that keeps every iteration's numbers and stops after ``limit``."""
+    """A training hook that keeps every iteration's numbers and stops after ``limit``.
+
+    Before every optimizer step it notes which units of the model received a gradient and
+    the learning rate the step uses; before the first step it keeps a copy of the trainable
+    parameters, to tell afterwards which parts changed.
+    """
 
     priority = 95
 
@@ -308,8 +560,11 @@ class _Recorder:
         self.compute: list[float] = []
         self.waiting: list[float] = []
         self.keys: list[list[str]] = []
+        self.units: dict[str, str] = {}  # unit -> its top-level part, trainable ones only
         self.reached: set[str] = set()
-        self.trainable: set[str] = set()
+        self.before: dict[str, torch.Tensor] = {}  # trainable parameters before the first step
+        self.model: Any = None
+        self.learning_rates: list[float] = []
         self._mark = self._started = time.perf_counter()
 
     def _sync(self) -> None:
@@ -326,20 +581,87 @@ class _Recorder:
         self._mark = time.perf_counter()
 
     def before_step(self, state: Any) -> None:
-        """Called with the gradients of the iteration in place: note which top-level
-        parts of the model received one that is not zero."""
-        self.note_gradients(state.model)
+        """Called with the gradients of the iteration in place, before the optimizer step."""
+        scaler = getattr(state, "scaler", None)
+        enabled = scaler is not None and bool(getattr(scaler, "is_enabled", lambda: False)())
+        self.note_gradients(state.model, float(scaler.get_scale()) if enabled else 1.0)
+        self.note_learning_rate(getattr(state, "optimizers", {}).values())
 
-    def note_gradients(self, model: Any) -> None:
+    def note_gradients(self, model: Any, scale: float = 1.0) -> None:
+        """Note the units whose gradient norm exceeds :data:`GRADIENT_THRESHOLD`; ``scale``
+        is the factor of a mixed-precision scaler the gradients still carry."""
+        if self.model is None:
+            self.model = model
+            self.before = {
+                name: parameter.detach().to("cpu", copy=True)
+                for name, parameter in model.named_parameters()
+                if parameter.requires_grad
+            }
+        pending: list[str] = []
+        norms: list[torch.Tensor] = []
         for name, parameter in model.named_parameters():
             if not parameter.requires_grad:
                 continue
-            part = name.split(".")[0]
-            self.trainable.add(part)
-            if part in self.reached or parameter.grad is None:
+            unit = _unit(name)
+            self.units.setdefault(unit, name.split(".")[0])
+            if unit in self.reached or parameter.grad is None:
                 continue
-            if bool(torch.count_nonzero(parameter.grad)):
-                self.reached.add(part)
+            grad = parameter.grad.detach()
+            grad = grad.coalesce().values() if grad.is_sparse else grad
+            pending.append(unit)
+            norms.append(torch.linalg.vector_norm(grad.float()))
+        if not norms:
+            return
+        squares: dict[str, float] = {}
+        values = torch.stack([norm.to(norms[0].device) for norm in norms]).tolist()
+        for unit, value in zip(pending, values):
+            squares[unit] = squares.get(unit, 0.0) + value * value
+        for unit, total in squares.items():
+            if math.sqrt(total) / scale > GRADIENT_THRESHOLD:
+                self.reached.add(unit)
+
+    def note_learning_rate(self, optimizers: Any) -> None:
+        """The learning rate of the first parameter group of the first optimizer."""
+        for optimizer in optimizers:
+            groups = getattr(optimizer, "param_groups", None) or []
+            try:
+                self.learning_rates.append(float(groups[0]["lr"]))
+            except (IndexError, KeyError, TypeError, ValueError):
+                continue
+            return
+
+    def no_gradient(self) -> list[str]:
+        """Units without a gradient; a top-level part when none of its units had one."""
+        parts: dict[str, list[str]] = {}
+        for unit, part in self.units.items():
+            parts.setdefault(part, []).append(unit)
+        found: list[str] = []
+        for part, members in parts.items():
+            missing = [unit for unit in members if unit not in self.reached]
+            found += [part] if len(missing) == len(members) else missing
+        return sorted(found)
+
+    def unchanged(self) -> list[str]:
+        """Top-level parts whose trainable parameters did not change since the first step."""
+        if self.model is None:
+            return []
+        current = dict(self.model.named_parameters())
+        change: dict[str, float] = {}
+        size: dict[str, float] = {}
+        for name, before in self.before.items():
+            after = current.get(name)
+            if after is None:
+                continue
+            part = name.split(".")[0]
+            start = before.to(torch.float64)
+            moved = after.detach().to("cpu", torch.float64) - start
+            change[part] = change.get(part, 0.0) + float(moved.pow(2).sum())
+            size[part] = size.get(part, 0.0) + float(start.pow(2).sum())
+        return sorted(
+            part
+            for part in change
+            if math.sqrt(change[part]) <= PARAMETER_TOLERANCE * max(math.sqrt(size[part]), 1.0)
+        )
 
     def before_epoch(self, state: Any) -> None:
         pass
@@ -362,16 +684,29 @@ class _Recorder:
 def _summarise(report: ProbeReport, recorder: _Recorder) -> None:
     rows = recorder.rows
     report.iterations = len(rows)
-    report.no_gradient = sorted(recorder.trainable - recorder.reached) if rows else []
     report.frames = list(dict.fromkeys(key for keys in recorder.keys for key in keys))
     report.batch_size = max((len(keys) for keys in recorder.keys), default=None)
     if not rows:
+        report.no_gradient = []
         return
-    for name in rows[0]:
-        series = [row[name] for row in rows if name in row]
-        pair = [series[0], series[-1]]
+    report.no_gradient = recorder.no_gradient()
+    report.unchanged = recorder.unchanged()
+    report.units_checked = len(recorder.units)
+    report.parts_checked = len(set(recorder.units.values()))
+    rates = recorder.learning_rates
+    if rates:
+        report.learning_rate = [_digits(rates[0]), _digits(rates[-1])]
+        report.lr_factor = _digits(rates[-1] / rates[0]) if rates[0] else None
+    # Every name any iteration reported, in the order they first appear: a term may switch
+    # on later (a grasp term once a seed is supervised).
+    for name in dict.fromkeys(name for row in rows for name in row):
+        series = [row.get(name) for row in rows]
+        present = [value for value in series if value is not None]
+        pair = [present[0], present[-1]]
         if name == "loss" or name.startswith("loss/"):
             report.losses[name] = pair
+            report.losses_per_iteration[name] = [_maybe(value) for value in series]
+            report.loss_trends[name] = loss_trend(series)
         elif name.startswith("metric/"):
             report.metrics[name] = pair
     report.real_seeds = [row["metric/real_seeds"] for row in rows if "metric/real_seeds" in row]
@@ -381,6 +716,119 @@ def _summarise(report: ProbeReport, recorder: _Recorder) -> None:
     steady = recorder.compute[1:] or recorder.compute
     report.seconds_per_iteration = statistics.median(steady)
     report.seconds_data = statistics.median(recorder.waiting[1:] or recorder.waiting)
+
+
+# ------------------------------------------------------------------- the learning rate
+
+
+class _Groups(torch.optim.Optimizer):
+    """The parameter groups of an optimizer with a placeholder for its parameters: what a
+    scheduler reads and writes, so that a scheduler can be built on it without touching
+    the optimizer (OneCycleLR sets the rate and the momentum of every group it is given)."""
+
+    def __init__(self, optimizer: torch.optim.Optimizer) -> None:
+        groups = []
+        for group in optimizer.param_groups:
+            settings = {key: value for key, value in group.items() if key != "params"}
+            groups.append({**settings, "params": [torch.zeros(1, requires_grad=True)]})
+        super().__init__(groups, dict(optimizer.defaults))
+
+    def step(self, closure: Any = None) -> None:  # never stepped
+        return None
+
+
+def peak_rates(
+    scheduler: Mapping[str, Any] | None, optimizer: torch.optim.Optimizer
+) -> list[float]:
+    """The peak learning rate of every parameter group of ``optimizer`` under the scheduler
+    node ``scheduler`` of a config (``None``: no scheduler), as :data:`SCHEDULES` defines it.
+
+    ``optimizer`` must not have been given to a scheduler yet: its rates are those it was
+    configured with. The scheduler is built on a copy of its groups, never on it.
+    """
+    configured = [float(group["lr"]) for group in optimizer.param_groups]
+    if scheduler is None:
+        return configured
+    from grasppanda.engine.optim import build_schedulers
+
+    groups = _Groups(optimizer)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        built = build_schedulers(scheduler, {"peak": groups}, total_steps=_NOMINAL_STEPS)["peak"]
+    kind = type(built).__name__
+    if kind == "OneCycleLR":
+        return [float(group["max_lr"]) for group in groups.param_groups]
+    if kind == "CyclicLR":
+        return [float(rate) for rate in built.max_lrs]
+    if kind == "LinearLR":
+        factor = max(float(built.start_factor), float(built.end_factor))
+        return [rate * factor for rate in configured]
+    return configured
+
+
+def _hold_peak(
+    report: ProbeReport,
+    state: Any,
+    scheduler: Mapping[str, Any] | None,
+    batches: tuple[int, int] | None = None,
+) -> None:
+    """Set every parameter group of every optimizer of a trainer that runs no scheduler to
+    the peak rate of the recipe's ``scheduler``; record the rate of the first group.
+
+    ``batches`` is (frames per batch of the probe, of the recipe). When the probe's batches
+    are smaller, every peak is scaled by their ratio (the linear scaling rule)."""
+    scale = 1.0
+    if batches is not None and 0 < batches[0] < batches[1]:
+        scale = batches[0] / batches[1]
+    raised = []
+    for optimizer in state.optimizers.values():
+        for group, peak in zip(optimizer.param_groups, peak_rates(scheduler, optimizer)):
+            if not math.isclose(peak, float(group["lr"]), rel_tol=1e-9):
+                raised.append((float(group["lr"]), peak))
+            group["lr"] = peak * scale
+            if report.rate is None:
+                report.rate = _digits(peak * scale)
+    if scale != 1.0 and batches is not None and report.rate is not None:
+        report.notes.append(
+            f"schedule constant: batches hold {batches[0]} frames where the recipe's hold "
+            f"{batches[1]}, so every peak rate was scaled by {batches[0]}/{batches[1]} (the "
+            f"linear scaling rule): the probe trained at {report.rate:g}."
+        )
+    if raised:
+        kind = (scheduler or {}).get("type", "the scheduler")
+        before, after = raised[0]
+        report.notes.append(
+            f"schedule constant: {kind} of the recipe peaks at {after:g}, not at the rate of "
+            f"the optimizer ({before:g}): the probe trained at {after * scale:g} ({len(raised)} "
+            "parameter group(s) raised). With `scheduler=null`, `grasppanda train` would use "
+            "the optimizer's rate."
+        )
+
+
+def _decaying_momentum(given: Config) -> list[tuple[int, Any, int]]:
+    """The batch-norm momentum schedules of the recipe's hooks that decay: ``(position in
+    `hooks`, the built hook, the first epoch at its floor)`` for every BNMomentumHook whose
+    momentum is not the same in every epoch.
+
+    The schedule ``constant`` holds them at the momentum of the first epoch, as it holds
+    the learning rate at its peak: the recipe decays the momentum per epoch, an epoch of a
+    probe is a few iterations long, and a momentum at its floor of 0.001 leaves the running
+    statistics, which prediction normalises with, where they were while the weights train on.
+    """
+    from grasppanda.engine.hooks.bn_momentum import BNMomentumHook
+
+    far = 10_000  # epochs: further than any recipe's decay
+    found = []
+    for position, node in enumerate(given.get("hooks") or []):
+        kind = node.get("type") if isinstance(node, Mapping) else None
+        if kind not in HOOKS or HOOKS.get(kind) is not BNMomentumHook:
+            continue
+        hook = HOOKS.build(dict(node))
+        last = hook.momentum(far)
+        if last != hook.momentum(0):
+            floor = next(epoch for epoch in range(far + 1) if hook.momentum(epoch) == last)
+            found.append((position, hook, floor))
+    return found
 
 
 # ------------------------------------------------------------------------ real frames
@@ -406,16 +854,21 @@ def _plan(
     predict_frames: int,
     iters: int,
     workers: int,
-) -> tuple[Config, list[str], str | None, list[str]]:
+    schedule: str = "recipe",
+) -> tuple[Config, list[str], str | None, list[str], tuple[int, int]]:
     """The config of the miniature run: the given one plus the probe's overrides.
 
     Returns the config, the overrides the probe added, the ``data`` section to predict
-    on and notes about what had to change. Raises :class:`_NoRealFrames` when the frames
-    or their label assets are not on this machine.
+    on, notes about what had to change and the frames per batch (of the probe, of the
+    recipe). Raises :class:`_NoRealFrames` when the frames or their label assets are not
+    on this machine.
 
     Frames are selected through the options of the dataset reader: ``split`` names the
     few frames a reader ships for this purpose and ``frame_step`` thins them. A reader
-    without those options is probed on the frames the config names.
+    without those options is probed on the frames the config names. Under the schedule
+    ``constant`` the scheduler is removed (``scheduler=null``); the trainer then sets the
+    peak rate (:func:`_hold_peak`). A batch-norm momentum that the recipe decays per epoch
+    is held at its first epoch's value (``hooks.<i>.decay=1``, :func:`_decaying_momentum`).
     """
     from grasppanda.datasets.assets import AssetError
     from grasppanda.engine.builders import build_dataset
@@ -430,6 +883,10 @@ def _plan(
         )
     added += [f"data.train.num_workers={workers}", "evaluation.interval=0"]
     added.append("evaluation.save_best=null")
+    if schedule == "constant" and given.get("scheduler") is not None:
+        added.append("scheduler=null")
+    held = _decaying_momentum(given) if schedule == "constant" else []
+    added += [f"hooks.{position}.decay=1" for position, _, _ in held]
     cfg = Config.load(config, [*overrides, *added], command="train").resolved()
     try:
         dataset = build_dataset(cfg, "train")
@@ -488,6 +945,15 @@ def _plan(
             "probe has no more frames."
         )
     added.append(f"train.epochs={math.ceil(iters / per_epoch)}")
+    for position, hook, floor in held:
+        notes.append(
+            f"schedule constant: the batch-norm momentum was held at {hook.momentum(0):g}, its "
+            f"value in the recipe's first epoch (hooks.{position}.decay=1). The recipe "
+            f"(BNMomentumHook) decays it per epoch to {hook.momentum(floor):g}, which an epoch "
+            f"of {per_epoch} iteration(s) reaches at iteration {floor * per_epoch + 1}; from "
+            "there the running statistics that prediction normalises with would stay where "
+            "they were while the weights train on."
+        )
     section = next((name for name in ("val", "test") if (cfg["data"] or {}).get(name)), None)
     if section is not None:
         other = _dataset_options(given, section)
@@ -497,7 +963,14 @@ def _plan(
                 keep = max(1, math.ceil(count / max(predict_frames, 1)))
                 added.append(f"data.{section}.dataset.frame_step={keep}")
         added.append(f"data.{section}.num_workers=0")
-    return Config.load(config, [*overrides, *added], command="train"), added, section, notes
+    batches = (min(used, loader["batch_size"]), loader["batch_size"])
+    return (
+        Config.load(config, [*overrides, *added], command="train"),
+        added,
+        section,
+        notes,
+        batches,
+    )
 
 
 def _real(
@@ -508,8 +981,11 @@ def _real(
     iters: int,
     predict_frames: int,
     device: str | None,
+    hold: tuple[Mapping[str, Any] | None, tuple[int, int] | None] | None = None,
 ) -> None:
-    """Train ``iters`` iterations with the real trainer, then predict."""
+    """Train ``iters`` iterations with the real trainer, then predict. ``hold`` holds the
+    recipe's scheduler node and the frames per batch (of the probe, of the recipe) under
+    the schedule ``constant`` (``None``: the recipe's schedule)."""
     from grasppanda.engine.run import Run, resolve_device
     from grasppanda.engine.seeding import determinism_restored
     from grasppanda.ops import backends
@@ -524,7 +1000,7 @@ def _real(
         run = Run(Path(scratch), "probe", "train", planned, cfg, target)
         try:
             finished = _train_and_predict(
-                report, run, section, iters=iters, predict_frames=predict_frames
+                report, run, section, iters=iters, predict_frames=predict_frames, hold=hold
             )
         finally:
             if target.type == "cuda":
@@ -533,8 +1009,25 @@ def _real(
         _judge(report, "runs", f"{len(report.frames)} frames of the dataset", predict_frames)
 
 
+def _summarised(report: ProbeReport, recorder: Any) -> Exception | None:
+    """:func:`_summarise`, or the error that stopped it. The summary reads the model's
+    weights and gradients; after a device fault (a CUDA launch failure) that read fails
+    too, and the report must still be written."""
+    try:
+        _summarise(report, recorder)
+    except Exception as error:
+        return error
+    return None
+
+
 def _train_and_predict(
-    report: ProbeReport, run: Any, section: str | None, *, iters: int, predict_frames: int
+    report: ProbeReport,
+    run: Any,
+    section: str | None,
+    *,
+    iters: int,
+    predict_frames: int,
+    hold: tuple[Mapping[str, Any] | None, tuple[int, int] | None] | None = None,
 ) -> bool:
     """The miniature run; ``False`` when it failed (the report then says where)."""
     from grasppanda.engine.builders import build_dataset
@@ -548,6 +1041,12 @@ def _train_and_predict(
     except Exception as error:
         _fail(report, error, "build")
         return False
+    if hold is not None:
+        try:
+            _hold_peak(report, trainer.state, *hold)
+        except Exception as error:
+            _fail(report, error, "optimizer", "the peak rate of the recipe's schedule")
+            return False
     model = trainer.state.model
     report.parameters = sum(parameter.numel() for parameter in model.parameters())
     # The hooks the config lists are part of its recipe; loggers, checkpoints and
@@ -567,15 +1066,18 @@ def _train_and_predict(
         pass
     except NonFiniteLossError as error:
         if not recorder.rows:  # the very first loss: nothing was trained, so nothing "ran"
-            _summarise(report, recorder)
+            _summarised(report, recorder)
             _fail(report, error, "loss", "iteration 1")
             return False
         report.nonfinite.append(" ".join(str(error).split()))
     except Exception as error:
-        _summarise(report, recorder)
+        _summarised(report, recorder)
         _fail(report, error, "loss", f"iteration {len(recorder.rows) + 1}")
         return False
-    _summarise(report, recorder)
+    failed = _summarised(report, recorder)
+    if failed is not None:  # a device fault surfaces late, often in the first read after it
+        _fail(report, failed, "summary", "reading the model after training")
+        return False
     if not all(bool(torch.isfinite(p).all()) for p in model.parameters()):
         report.nonfinite.append(f"a weight is not finite after {report.iterations} iterations")
     try:
@@ -657,13 +1159,26 @@ def _count_grasps(report: ProbeReport, keys: Sequence[Any], groups: Any) -> None
         for name in ("translation", "rotation", "width", "depth", "score"):
             if not bool(torch.isfinite(getattr(group, name)).all()):
                 report.nonfinite.append(f"predicted {name} of {key} is not finite")
+        scores = group.score.detach().reshape(-1).float()
+        scores = scores[torch.isfinite(scores)].cpu()
+        report.score_quantiles.append(
+            [
+                _digits(float(scores.min())),
+                _digits(float(torch.quantile(scores, 0.5))),
+                _digits(float(scores.max())),
+            ]
+            if scores.numel()
+            else None
+        )
 
 
 def _judge(report: ProbeReport, good: str, what: str, predict_frames: int = 1) -> None:
     """Turn the recorded run into a verdict; ``good`` is the verdict of a clean run.
 
     ``predict_frames`` is how many frames were to be predicted: a run that trained or
-    predicted less than it was asked to is not a clean one.
+    predicted less than it was asked to is not a clean one. A clean run on real frames
+    that predicted no grasp on any frame is ``runs-empty``. What judge 2 adds beyond that
+    (trends, units without a gradient, unchanged parts, scores) is reported, not judged.
     """
     unstable = list(report.nonfinite)
     empty = [index + 1 for index, value in enumerate(report.real_seeds) if value == 0.0]
@@ -674,9 +1189,10 @@ def _judge(report: ProbeReport, good: str, what: str, predict_frames: int = 1) -
         )
     if report.supervised_seeds and max(report.supervised_seeds) == 0.0:
         unstable.append("no iteration supervised a seed")
-    if report.no_gradient:
+    dead = dead_parts(report.no_gradient)
+    if dead:
         unstable.append(
-            f"no gradient reached {', '.join(report.no_gradient)} in any iteration (a part "
+            f"no gradient reached {', '.join(dead)} in any iteration (a part "
             "before it produced nothing to learn from, or its output is constant)"
         )
     short = report.iterations < max(report.iterations_requested, 1)
@@ -691,18 +1207,23 @@ def _judge(report: ProbeReport, good: str, what: str, predict_frames: int = 1) -
         f"trained {report.iterations} iterations on {what} and predicted on "
         f"{len(report.grasps_per_frame)} frame(s)"
     )
+    nothing = bool(report.grasps_per_frame) and not any(report.grasps_per_frame)
+    seeds = " and real seeds in every iteration" if report.real_seeds else ""
     if unstable:
         report.verdict = "runs-unstable" if good == "runs" else "fails"
         report.detail = f"{done}, but " + "; ".join(unstable) + "."
+    elif nothing and good == "runs":
+        report.verdict = "runs-empty"
+        report.detail = (
+            f"{done}, with finite losses{seeds}, but no grasp was predicted on any probed "
+            "frame: every stage ran, and the model kept no seed."
+        )
+        return
     else:
         report.verdict = good
-        seeds = " and real seeds in every iteration" if report.real_seeds else ""
         report.detail = f"{done}, with finite losses{seeds}."
-    if report.grasps_per_frame and not any(report.grasps_per_frame):
-        report.detail += (
-            " No grasp was predicted on any probed frame: every stage ran, and the model "
-            "kept no seed. That is reported, not judged."
-        )
+    if nothing:
+        report.detail += " No grasp was predicted on any probed frame."
 
 
 # ---------------------------------------------------------------------------- the probe
@@ -719,6 +1240,7 @@ def probe(
     device: str | None = None,
     workers: int = 0,
     synthetic: bool = False,
+    schedule: str = "recipe",
 ) -> ProbeReport:
     """Probe ``config``: build it, train it briefly on real frames, predict.
 
@@ -733,22 +1255,32 @@ def probe(
         device: Overrides ``runtime.device`` of the config.
         workers: Loader processes; 0 loads the frames in the probing process.
         synthetic: Skip real frames and run the synthetic wiring check.
+        schedule: ``recipe`` (the config's scheduler over the probe's epochs) or
+            ``constant`` (the recipe's peak rate at every step); see :data:`SCHEDULES`.
+            The config hash is that of the config as given either way.
 
     Returns:
         The :class:`ProbeReport`. It never raises for a problem of the config: a refused
         config, a missing asset and a crash are all verdicts.
 
     Raises:
-        ProbeRequestError: The request cannot be run: a count below one, or a split the
-            dataset does not have.
+        ProbeRequestError: The request cannot be run: a count below one, a split the
+            dataset does not have, or a schedule that is not one of :data:`SCHEDULES`.
     """
     for name, value in (("iters", iters), ("frames", frames), ("predict_frames", predict_frames)):
         if value < 1:
             raise ProbeRequestError(f"{name} must be at least 1, got {value}")
     if workers < 0:
         raise ProbeRequestError(f"workers must be 0 or more, got {workers}")
+    if schedule not in SCHEDULES:
+        raise ProbeRequestError(f"schedule must be one of {', '.join(SCHEDULES)}, got '{schedule}'")
     started = time.perf_counter()
-    report = ProbeReport(config=str(config), overrides=list(overrides), iterations_requested=iters)
+    report = ProbeReport(
+        config=str(config),
+        overrides=list(overrides),
+        iterations_requested=iters,
+        schedule=schedule,
+    )
     try:
         # The wiring check needs a model only; a real probe everything `train` needs.
         given = Config.load(config, overrides, command=None if synthetic else "train")
@@ -762,7 +1294,7 @@ def probe(
     report.detector = str(given["model"]["type"])
     if not synthetic:
         try:
-            planned, added, section, notes = _plan(
+            planned, added, section, notes, batches = _plan(
                 given,
                 config,
                 overrides,
@@ -771,6 +1303,7 @@ def probe(
                 predict_frames=predict_frames,
                 iters=iters,
                 workers=workers,
+                schedule=schedule,
             )
         except _NoRealFrames as reason:
             report.fallback = str(reason)
@@ -783,7 +1316,13 @@ def probe(
         else:
             report.probe_overrides, report.notes = added, notes
             _real(
-                report, planned, section, iters=iters, predict_frames=predict_frames, device=device
+                report,
+                planned,
+                section,
+                iters=iters,
+                predict_frames=predict_frames,
+                device=device,
+                hold=(given.get("scheduler"), batches) if schedule == "constant" else None,
             )
             report.seconds = round(time.perf_counter() - started, 1)
             return report

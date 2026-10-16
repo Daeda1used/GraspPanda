@@ -25,6 +25,7 @@ model:
     finger_height: 0.02
     depth_base: 0.02
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list backbone
   backbone:
     type: SparseUNet14              # = EconomicGrasp, except for the input channels
     in_channels: 6                  # FineGrasp: x, y, z and the normal (EconomicGrasp: 3)
@@ -37,6 +38,7 @@ model:
     voxel_features: first           # points sharing a voxel: the first one's features (it matters
                                     # now that the features differ from point to point)
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list proposal
   proposal:                         # = EconomicGrasp
     type: GraspnessFPS
     num_seeds: 1024
@@ -46,6 +48,7 @@ model:
     objectness_loss: {type: CrossEntropy, weight: 1.0}
     graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list view
   view:                             # = EconomicGrasp
     type: TemplateViewStage
     num_views: 300
@@ -53,12 +56,14 @@ model:
     max_friction: 0.6
     loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list assigner
   assigner:                         # = EconomicGrasp
     type: CompactLabelAssigner
     max_match_distance: 0.005       # reference quirk
     shared_views: lowest            # reference quirk
     padded_seeds: count             # reference quirk
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list grouper
   grouper:
     type: MultiScaleGroup           # FineGrasp: "multi-range attention"
     radius: 0.07                    # largest crop (EconomicGrasp crops once, at 0.05)
@@ -78,6 +83,7 @@ model:
       attention_dropout: 0.05
       post_mlp_channels: [256, 256]
 
+  # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list head
   head:                             # = EconomicGrasp
     type: EconomicHead
     num_angle: 12

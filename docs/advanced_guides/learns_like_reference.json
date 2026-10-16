@@ -1,0 +1,569 @@
+{
+ "about": {
+  "what": "Level 2 of the measured grid (tools/learn_check.py): every cell trained for 250 iterations under the settings below and compared with the method as shipped under the same settings. One run per cell; a statement about training dynamics on 8 frames of one scene, not an accuracy measurement. See docs/advanced_guides/learns_like_reference.md.",
+  "settings": {
+   "iterations": 250,
+   "frames": 8,
+   "predict_frames": 4,
+   "split": "sample",
+   "seed": 0,
+   "schedule": "constant",
+   "window": 25
+  },
+  "tolerance": 1.25,
+  "rising_above": 0.1,
+  "step": 0.05,
+  "calibrated": {
+   "GSNet": {
+    "tolerance": 1.25,
+    "rising_above": 0.25
+   },
+   "EconomicGrasp": {
+    "tolerance": 1.35,
+    "rising_above": 0.15
+   },
+   "FineGrasp": {
+    "tolerance": 1.25,
+    "rising_above": 0.1
+   },
+   "GraspNet-baseline": {
+    "tolerance": 1.25,
+    "rising_above": 0.1
+   },
+   "Scale-Balanced-Grasp": {
+    "tolerance": 1.25,
+    "rising_above": 0.1
+   },
+   "HGGD": {
+    "tolerance": 1.6,
+    "rising_above": 0.4
+   }
+  },
+  "outcomes": {
+   "fails": "the run did not finish: an exception, a crash, a timeout, or no real frame read. A run that died of GPU memory is not recorded (it says nothing about the config) and is run again",
+   "no reference": "the method as shipped has no finished run under the same settings: nothing to compare with",
+   "diverging": "a loss term is rising over the last half of the run (see `rising`), a loss or a weight became non-finite, or no grasp was predicted on any of the 4 frames while the reference predicts some",
+   "worse": "not diverging, and a comparable loss term ends above the tolerance of the method times the reference's (mean of the last 25 iterations), or a part of the model that holds trainable parameters received no gradient in any iteration",
+   "not comparable": "not diverging, nothing worse, but the cell changes the definition of every term the reference has: there is no term to compare",
+   "on a par": "every comparable loss term ends within the tolerance of the method, at least one term is comparable, nothing rises, every value is finite and a frame has a grasp. A term far below the reference's is reported (`lower`), not judged"
+  },
+  "measures": {
+   "mean": "the mean of a loss term over the last 25 of the 250 iterations (reported, finite values; the total `loss` is not judged, it sums terms whose definitions may differ)",
+   "ratio": "the cell's mean divided by the reference's mean of the same term",
+   "rise": "over the last half of the run (iterations 126 to 250), the mean of its second half divided by the mean of its first half, minus 1 (the middle iteration of an odd count in neither half): +0.30 means the term ended 30 % higher than it was half-way",
+   "tolerance": "per method: 1.25, or the first multiple of 0.05 above the largest ratio between two seeds of its reference (any term but the total, either way round), when that is larger",
+   "rising": "a rise above the rising threshold of the method that also exceeds the reference's rise of the term by more than it (the rise alone for a term the reference does not report); the threshold is 0.1, or the first multiple of 0.05 above the largest difference between the rises of one term under two seeds of the reference, when that is larger",
+   "lower": "a comparable term below 1/tolerance of the reference's: reported, not judged"
+  },
+  "not_comparable": {
+   "loss": "a loss preset replaces the function of the term it is put in",
+   "head": "a head bundle defines the targets and the loss of every head term (score, width, angle, depth, tolerance)",
+   "assigner": "an assigner changes the labels the view stage and the head see (a view stage sees the labels through the assigner only): every view and head term",
+   "stage code": "a proposal or view stage owns its targets and its loss: one whose class computes them with other code (its own `loss` or target methods, not inherited from the reference's stage) defines every term of that stage anew; one that computes them as the reference's does, with the same loss options, keeps them (a proposal that changes only how it samples)",
+   "presence": "a term only one of the two runs reports",
+   "sign": "a term whose mean is not positive (a weighted loss can go below zero)"
+  },
+  "calibration": "A cell and its reference are two runs, so a ratio away from 1 means something only beyond what two runs of the very same config show. Every reference was therefore trained twice, under seed 0 and seed 1 (*The noise floor*). Under the five seed-based methods, a term that has settled (it rose or fell by less than 10 % over the last half) agrees within 7 % between the seeds; a term still falling steeply at the end differs more (EconomicGrasp's graspness by 1.32x), and HGGD at its peak rate differs by up to 1.55x (angle, offsets). One tolerance for all would be blind under the stable methods or trigger-happy under HGGD, so each method gets its own: 1.25 (the plan's value, more than three times the spread of a settled term) unless its references spread more, then the first multiple of 0.05 above their largest ratio. The rising threshold follows the same rule from the rises. The spread comes from one pair of runs per method: a third seed would firm it up",
+  "fields": {
+   "id, kind, method": "the cell of the grid (tools/probe_grid.py), its kind (KINDS) and method",
+   "option": "the slot=choice pairs of its compose request",
+   "level1": "its level-1 verdict (20 iterations)",
+   "outcome, reasons": "the outcome (about.outcomes) and what decided it",
+   "notes": "what is reported, not judged: lower terms, a level-2 run that is runs-unstable for another reason than a non-finite value, no grasp as for the reference",
+   "terms": "per loss term: [cell's mean, reference's mean, ratio] over the last window, or the reason it is not comparable (about.not_comparable)",
+   "rise": "per loss term: its rise over the last half of the run (about.measures)",
+   "grasps_per_frame, score_median": "grasps predicted on each of the predicted frames, and the median score of each (null for a frame without a grasp)",
+   "constant_scores": "true when every predicted grasp of a frame has the same score, on every frame with a grasp: the score head ignores its input",
+   "no_gradient, unchanged, checked": "units without a gradient, parts whose weights did not change, and [units, parts] checked (grasppanda.combine.probe.JUDGE_FIELDS)",
+   "schedule, rate": "how the probe set the learning rate: `constant` at `rate` (the recipe's peak, scaled to the batch), or `recipe` for a cell whose request sets the schedule",
+   "probe, compose, config_hash, run": "the commands, the config hash (with the seed for a seeded run) and the run that measured it (about.runs)",
+   "seconds": "wall time of the probe, measured on a shared machine"
+  },
+  "noise": {
+   "GSNet": {
+    "seed 1": {
+     "loss/objectness": [
+      0.1586,
+      0.1566,
+      0.987,
+      -0.221,
+      -0.428
+     ],
+     "loss/graspness": [
+      0.07817,
+      0.07625,
+      0.975,
+      -0.384,
+      -0.34
+     ],
+     "loss/view": [
+      0.83,
+      0.8408,
+      1.013,
+      0.226,
+      0.164
+     ],
+     "loss/score": [
+      0.03089,
+      0.02922,
+      0.946,
+      0.278,
+      0.226
+     ],
+     "loss/width": [
+      0.1019,
+      0.1026,
+      1.006,
+      -0.065,
+      -0.093
+     ],
+     "loss": [
+      1.2,
+      1.205,
+      1.005,
+      0.038,
+      -0.052
+     ]
+    }
+   },
+   "EconomicGrasp": {
+    "seed 1": {
+     "loss/objectness": [
+      0.1293,
+      0.1143,
+      0.885,
+      -0.117,
+      -0.222
+     ],
+     "loss/graspness": [
+      0.06723,
+      0.05106,
+      0.759,
+      -0.352,
+      -0.461
+     ],
+     "loss/view": [
+      0.8457,
+      0.8543,
+      1.01,
+      0.04,
+      0.05
+     ],
+     "loss/angle": [
+      1.567,
+      1.633,
+      1.042,
+      0.019,
+      0.023
+     ],
+     "loss/depth": [
+      0.7948,
+      0.8199,
+      1.032,
+      0.005,
+      0.013
+     ],
+     "loss/score": [
+      1.322,
+      1.405,
+      1.063,
+      0.016,
+      0.046
+     ],
+     "loss/width": [
+      0.5566,
+      0.5834,
+      1.048,
+      -0.128,
+      -0.092
+     ],
+     "loss": [
+      5.283,
+      5.461,
+      1.034,
+      -0.011,
+      0.001
+     ]
+    }
+   },
+   "FineGrasp": {
+    "seed 1": {
+     "loss/objectness": [
+      0.05553,
+      0.06052,
+      1.09,
+      -0.316,
+      -0.265
+     ],
+     "loss/graspness": [
+      0.02401,
+      0.02505,
+      1.044,
+      -0.329,
+      -0.405
+     ],
+     "loss/view": [
+      0.5152,
+      0.583,
+      1.132,
+      -0.187,
+      -0.15
+     ],
+     "loss/angle": [
+      1.575,
+      1.532,
+      0.973,
+      0.011,
+      -0.051
+     ],
+     "loss/depth": [
+      0.8824,
+      0.8532,
+      0.967,
+      0.031,
+      -0.031
+     ],
+     "loss/score": [
+      1.327,
+      1.294,
+      0.975,
+      0.018,
+      -0.037
+     ],
+     "loss/width": [
+      0.7052,
+      0.7099,
+      1.007,
+      -0.018,
+      0.007
+     ],
+     "loss": [
+      5.084,
+      5.058,
+      0.995,
+      -0.022,
+      -0.056
+     ]
+    }
+   },
+   "GraspNet-baseline": {
+    "seed 1": {
+     "loss/objectness": [
+      0.3784,
+      0.361,
+      0.954,
+      -0.096,
+      -0.101
+     ],
+     "loss/view": [
+      0.03001,
+      0.02991,
+      0.996,
+      -0.038,
+      -0.056
+     ],
+     "loss/score": [
+      0.02175,
+      0.02152,
+      0.989,
+      -0.008,
+      -0.032
+     ],
+     "loss/angle": [
+      0.3286,
+      0.3268,
+      0.995,
+      -0.048,
+      -0.061
+     ],
+     "loss/width": [
+      0.01309,
+      0.01475,
+      1.127,
+      -0.191,
+      -0.243
+     ],
+     "loss/tolerance": [
+      0.01868,
+      0.0198,
+      1.06,
+      -0.303,
+      -0.389
+     ],
+     "loss": [
+      0.7905,
+      0.7738,
+      0.979,
+      -0.082,
+      -0.096
+     ]
+    }
+   },
+   "Scale-Balanced-Grasp": {
+    "seed 1": {
+     "loss/objectness": [
+      0.1975,
+      0.1846,
+      0.935,
+      -0.092,
+      -0.129
+     ],
+     "loss/view": [
+      0.08244,
+      0.07993,
+      0.97,
+      -0.016,
+      -0.037
+     ],
+     "loss/score": [
+      0.01418,
+      0.01409,
+      0.994,
+      0.004,
+      -0.024
+     ],
+     "loss/angle": [
+      0.3132,
+      0.3111,
+      0.993,
+      -0.062,
+      -0.078
+     ],
+     "loss/width": [
+      0.01146,
+      0.009845,
+      0.859,
+      0.136,
+      0.191
+     ],
+     "loss/tolerance": [
+      0.007067,
+      0.008327,
+      1.178,
+      -0.228,
+      -0.247
+     ],
+     "loss": [
+      0.6258,
+      0.6078,
+      0.971,
+      -0.064,
+      -0.087
+     ]
+    }
+   },
+   "HGGD": {
+    "seed 1": {
+     "loss/heatmap": [
+      1.407,
+      1.605,
+      1.141,
+      -0.02,
+      -0.072
+     ],
+     "loss/angle": [
+      0.6569,
+      1.019,
+      1.552,
+      -0.134,
+      -0.139
+     ],
+     "loss/offsets": [
+      0.1867,
+      0.2792,
+      1.496,
+      -0.173,
+      -0.012
+     ],
+     "loss/anchor": [
+      0.766,
+      0.7909,
+      1.032,
+      -0.063,
+      -0.429
+     ],
+     "loss/anchor_offset": [
+      0.2087,
+      0.1991,
+      0.954,
+      -0.078,
+      -0.368
+     ],
+     "loss": [
+      3.225,
+      3.894,
+      1.208,
+      -0.069,
+      -0.215
+     ]
+    }
+   }
+  },
+  "kinds": {
+   "encoder": {
+    "selected": 230,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "proposal": {
+    "selected": 83,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "view": {
+    "selected": 75,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "assigner": {
+    "selected": 3,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "grouper": {
+    "selected": 71,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "head": {
+    "selected": 9,
+    "measured": 3,
+    "the reference itself": 5
+   },
+   "loss": {
+    "selected": 14,
+    "measured": 3,
+    "the reference itself": 0
+   },
+   "recipe": {
+    "selected": 68,
+    "measured": 3,
+    "the reference itself": 1
+   },
+   "image-encoder": {
+    "selected": 37,
+    "measured": 3,
+    "the reference itself": 0
+   }
+  },
+  "left_out": {
+   "post": "post-processing trains nothing, so a training run says nothing about it; its check is to compare the grasps in and out of the chain (and the evaluator) on 20 frames of a trained method, which is not part of this page yet",
+   "stage-set, cross": "several slots replaced at once: no single stage of the reference to compare with"
+  },
+  "level1": "docs/advanced_guides/measured_combinations.json",
+  "runs": {
+   "2026-10-15@a7c25d8": {
+    "date": "2026-10-15",
+    "commit": "a7c25d8",
+    "torch": "2.7.1+cu118",
+    "python": "3.12.7",
+    "gpu": "NVIDIA RTX A6000",
+    "probes_at_a_time": 1,
+    "scale_statistic_sha256": "909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd",
+    "libraries": {
+     "spconv": "2.3.8",
+     "timm": "1.0.30",
+     "transformers": "5.19.0",
+     "torchvision": "0.22.1+cu118",
+     "torch_geometric": "2.8.1",
+     "torch_cluster": "1.6.3+pt27cu118",
+     "fpsample": "1.0.2",
+     "kornia": "0.8.3",
+     "roma": "1.6.1",
+     "trimesh": "5.1.1",
+     "pytorch_optimizer": "4.0.0",
+     "schedulefree": "1.4.1"
+    }
+   },
+   "2026-10-15@b60df0a": {
+    "date": "2026-10-15",
+    "commit": "b60df0a",
+    "torch": "2.7.1+cu118",
+    "python": "3.12.7",
+    "gpu": "NVIDIA RTX A6000",
+    "probes_at_a_time": 1,
+    "scale_statistic_sha256": "909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd",
+    "libraries": {
+     "spconv": "2.3.8",
+     "timm": "1.0.30",
+     "transformers": "5.19.0",
+     "torchvision": "0.22.1+cu118",
+     "torch_geometric": "2.8.1",
+     "torch_cluster": "1.6.3+pt27cu118",
+     "fpsample": "1.0.2",
+     "kornia": "0.8.3",
+     "roma": "1.6.1",
+     "trimesh": "5.1.1",
+     "pytorch_optimizer": "4.0.0",
+     "schedulefree": "1.4.1"
+    }
+   },
+   "2026-10-15@dd7d305": {
+    "date": "2026-10-15",
+    "commit": "dd7d305",
+    "torch": "2.7.1+cu118",
+    "python": "3.12.7",
+    "gpu": "NVIDIA RTX A6000",
+    "probes_at_a_time": 1,
+    "scale_statistic_sha256": "909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd",
+    "libraries": {
+     "spconv": "2.3.8",
+     "timm": "1.0.30",
+     "transformers": "5.19.0",
+     "torchvision": "0.22.1+cu118",
+     "torch_geometric": "2.8.1",
+     "torch_cluster": "1.6.3+pt27cu118",
+     "fpsample": "1.0.2",
+     "kornia": "0.8.3",
+     "roma": "1.6.1",
+     "trimesh": "5.1.1",
+     "pytorch_optimizer": "4.0.0",
+     "schedulefree": "1.4.1"
+    }
+   }
+  }
+ },
+ "references": [
+  {"id": "reference/GSNet", "method": "GSNet", "verdict": "runs", "terms": {"loss/objectness": 0.1586, "loss/graspness": 0.07817, "loss/view": 0.83, "loss/score": 0.03089, "loss/width": 0.1019, "loss": 1.2}, "rise": {"loss/objectness": -0.221, "loss/graspness": -0.384, "loss/view": 0.226, "loss/score": 0.278, "loss/width": -0.0646, "loss": 0.0384}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06351, 0.07279, 0.0705, 0.08056], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe gsnet/gsnet_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant", "config_hash": "2aefab0823deea55", "run": "2026-10-15@a7c25d8", "seconds": 166.8},
+  {"id": "reference/GSNet@seed1", "method": "GSNet", "verdict": "runs", "terms": {"loss/objectness": 0.1566, "loss/graspness": 0.07625, "loss/view": 0.8408, "loss/score": 0.02922, "loss/width": 0.1026, "loss": 1.205}, "rise": {"loss/objectness": -0.428, "loss/graspness": -0.34, "loss/view": 0.164, "loss/score": 0.226, "loss/width": -0.0927, "loss": -0.0516}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06064, 0.07008, 0.06239, 0.06246], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe gsnet/gsnet_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts runtime.seed=1", "config_hash": "954db75a0b24946a", "run": "2026-10-15@b60df0a", "seconds": 171.8},
+  {"id": "reference/EconomicGrasp", "method": "EconomicGrasp", "verdict": "runs", "terms": {"loss/objectness": 0.1293, "loss/graspness": 0.06723, "loss/view": 0.8457, "loss/angle": 1.567, "loss/depth": 0.7948, "loss/score": 1.322, "loss/width": 0.5566, "loss": 5.283}, "rise": {"loss/objectness": -0.117, "loss/graspness": -0.352, "loss/view": 0.0402, "loss/angle": 0.0191, "loss/depth": 0.00517, "loss/score": 0.0156, "loss/width": -0.128, "loss": -0.0107}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-1.838, -1.635, -1.591, -1.524], "checked": [15, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant", "config_hash": "1c0875d35711ce77", "run": "2026-10-15@a7c25d8", "seconds": 170.5},
+  {"id": "reference/EconomicGrasp@seed1", "method": "EconomicGrasp", "verdict": "runs", "terms": {"loss/objectness": 0.1143, "loss/graspness": 0.05106, "loss/view": 0.8543, "loss/angle": 1.633, "loss/depth": 0.8199, "loss/score": 1.405, "loss/width": 0.5834, "loss": 5.461}, "rise": {"loss/objectness": -0.222, "loss/graspness": -0.461, "loss/view": 0.0498, "loss/angle": 0.0226, "loss/depth": 0.0133, "loss/score": 0.0464, "loss/width": -0.0915, "loss": 0.00102}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-1.594, -1.514, -1.615, -1.575], "checked": [15, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts runtime.seed=1", "config_hash": "b8d3f35ea7b86854", "run": "2026-10-15@b60df0a", "seconds": 199.6},
+  {"id": "reference/FineGrasp", "method": "FineGrasp", "verdict": "runs", "terms": {"loss/objectness": 0.05553, "loss/graspness": 0.02401, "loss/view": 0.5152, "loss/angle": 1.575, "loss/depth": 0.8824, "loss/score": 1.327, "loss/width": 0.7052, "loss": 5.084}, "rise": {"loss/objectness": -0.316, "loss/graspness": -0.329, "loss/view": -0.187, "loss/angle": 0.0108, "loss/depth": 0.0312, "loss/score": 0.018, "loss/width": -0.0181, "loss": -0.0215}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-0.3142, -0.3142, -0.3142, -0.3142], "constant_scores": true, "checked": [14, 5], "schedule": "constant", "rate": 0.002, "probe": "grasppanda probe finegrasp/finegrasp_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant", "config_hash": "254815dc944eef7c", "run": "2026-10-15@a7c25d8", "seconds": 621.8},
+  {"id": "reference/FineGrasp@seed1", "method": "FineGrasp", "verdict": "runs", "terms": {"loss/objectness": 0.06052, "loss/graspness": 0.02505, "loss/view": 0.583, "loss/angle": 1.532, "loss/depth": 0.8532, "loss/score": 1.294, "loss/width": 0.7099, "loss": 5.058}, "rise": {"loss/objectness": -0.265, "loss/graspness": -0.405, "loss/view": -0.15, "loss/angle": -0.0514, "loss/depth": -0.0307, "loss/score": -0.0369, "loss/width": 0.00685, "loss": -0.0565}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-1.567, -1.567, -1.567, -1.567], "constant_scores": true, "checked": [14, 5], "schedule": "constant", "rate": 0.002, "probe": "grasppanda probe finegrasp/finegrasp_sunet14_g1b-realsense_10e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts runtime.seed=1", "config_hash": "3a6391f44ee4f1b0", "run": "2026-10-15@b60df0a", "seconds": 649.7},
+  {"id": "reference/GraspNet-baseline", "method": "GraspNet-baseline", "verdict": "runs", "terms": {"loss/objectness": 0.3784, "loss/view": 0.03001, "loss/score": 0.02175, "loss/angle": 0.3286, "loss/width": 0.01309, "loss/tolerance": 0.01868, "loss": 0.7905}, "rise": {"loss/objectness": -0.0962, "loss/view": -0.0382, "loss/score": -0.00823, "loss/angle": -0.0475, "loss/width": -0.191, "loss/tolerance": -0.303, "loss": -0.0818}, "grasps_per_frame": [1023, 1020, 971, 841], "no_gradient": [], "unchanged": [], "score_median": [-0.1006, -0.3062, -0.2646, -0.2945], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --iters 250 --frames 8 --predict-frames 4 --schedule constant", "config_hash": "97137012bcdac2ca", "run": "2026-10-15@a7c25d8", "seconds": 113.0},
+  {"id": "reference/GraspNet-baseline@seed1", "method": "GraspNet-baseline", "verdict": "runs", "terms": {"loss/objectness": 0.361, "loss/view": 0.02991, "loss/score": 0.02152, "loss/angle": 0.3268, "loss/width": 0.01475, "loss/tolerance": 0.0198, "loss": 0.7738}, "rise": {"loss/objectness": -0.101, "loss/view": -0.0562, "loss/score": -0.0323, "loss/angle": -0.0614, "loss/width": -0.243, "loss/tolerance": -0.389, "loss": -0.0961}, "grasps_per_frame": [669, 452, 434, 252], "no_gradient": [], "unchanged": [], "score_median": [0.1129, 0.3741, 0.6088, 0.3827], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts runtime.seed=1", "config_hash": "aa6d2e933b9edbbe", "run": "2026-10-15@b60df0a", "seconds": 110.2},
+  {"id": "reference/Scale-Balanced-Grasp", "method": "Scale-Balanced-Grasp", "verdict": "runs-empty", "terms": {"loss/objectness": 0.1975, "loss/view": 0.08244, "loss/score": 0.01418, "loss/angle": 0.3132, "loss/width": 0.01146, "loss/tolerance": 0.007067, "loss": 0.6258}, "rise": {"loss/objectness": -0.0923, "loss/view": -0.0155, "loss/score": 0.00389, "loss/angle": -0.0625, "loss/width": 0.136, "loss/tolerance": -0.228, "loss": -0.0642}, "grasps_per_frame": [0, 0, 0, 0], "no_gradient": [], "unchanged": [], "score_median": [null, null, null, null], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd", "config_hash": "61901898cd133251", "run": "2026-10-15@a7c25d8", "seconds": 161.6},
+  {"id": "reference/Scale-Balanced-Grasp@seed1", "method": "Scale-Balanced-Grasp", "verdict": "runs-empty", "terms": {"loss/objectness": 0.1846, "loss/view": 0.07993, "loss/score": 0.01409, "loss/angle": 0.3111, "loss/width": 0.009845, "loss/tolerance": 0.008327, "loss": 0.6078}, "rise": {"loss/objectness": -0.129, "loss/view": -0.0371, "loss/score": -0.0241, "loss/angle": -0.0785, "loss/width": 0.191, "loss/tolerance": -0.247, "loss": -0.0871}, "grasps_per_frame": [0, 0, 0, 0], "no_gradient": [], "unchanged": [], "score_median": [null, null, null, null], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd runtime.seed=1", "config_hash": "30bfc3cf4c51805e", "run": "2026-10-15@b60df0a", "seconds": 170.4},
+  {"id": "family/HGGD", "method": "HGGD", "verdict": "runs", "terms": {"loss/heatmap": 1.407, "loss/angle": 0.6569, "loss/offsets": 0.1867, "loss/anchor": 0.766, "loss/anchor_offset": 0.2087, "loss": 3.225}, "rise": {"loss/heatmap": -0.0196, "loss/angle": -0.134, "loss/offsets": -0.173, "loss/anchor": -0.0629, "loss/anchor_offset": -0.0777, "loss": -0.0693}, "grasps_per_frame": [480, 480, 480, 480], "no_gradient": [], "unchanged": [], "score_median": [0.1798, 0.1499, 0.2018, 0.2153], "checked": [17, 2], "schedule": "constant", "rate": 0.01, "probe": "grasppanda probe hggd/hggd_r34w8_g1b-realsense_15e --iters 250 --frames 8 --predict-frames 4 --schedule constant", "config_hash": "d4bf1430f845e44f", "run": "2026-10-15@a7c25d8", "seconds": 225.0},
+  {"id": "family/HGGD@seed1", "method": "HGGD", "verdict": "runs", "terms": {"loss/heatmap": 1.605, "loss/angle": 1.019, "loss/offsets": 0.2792, "loss/anchor": 0.7909, "loss/anchor_offset": 0.1991, "loss": 3.894}, "rise": {"loss/heatmap": -0.0717, "loss/angle": -0.139, "loss/offsets": -0.0122, "loss/anchor": -0.429, "loss/anchor_offset": -0.368, "loss": -0.215}, "grasps_per_frame": [384, 384, 384, 384], "no_gradient": [], "unchanged": [], "score_median": [0.1538, 0.1538, 0.1538, 0.1539], "checked": [17, 2], "schedule": "constant", "rate": 0.01, "probe": "grasppanda probe hggd/hggd_r34w8_g1b-realsense_15e --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts runtime.seed=1", "config_hash": "4c532f8dc2672036", "run": "2026-10-15@b60df0a", "seconds": 209.2}
+ ],
+ "cells": [
+  {"id": "encoder/GSNet/MinkUNet@minkunet18a", "kind": "encoder", "method": "GSNet", "option": "backbone=minkunet18a", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/graspness 0.73x"], "terms": {"loss/objectness": [0.1416, 0.1586, 0.893], "loss/graspness": [0.05738, 0.07817, 0.734], "loss/view": [0.8346, 0.83, 1.006], "loss/score": [0.03528, 0.03089, 1.142], "loss/width": [0.09862, 0.1019, 0.968]}, "rise": {"loss/objectness": -0.166, "loss/graspness": -0.394, "loss/view": 0.099, "loss/score": 0.125, "loss/width": -0.077}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06909, 0.0838, 0.07963, 0.07759], "checked": [33, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe encoder__GSNet__MinkUNet@minkunet18a.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=minkunet18a -o encoder__GSNet__MinkUNet@minkunet18a.yaml", "config_hash": "10f766c2e3a2084d", "run": "2026-10-15@b60df0a", "seconds": 172.3},
+  {"id": "encoder/GSNet/PointNeXt@pointnext", "kind": "encoder", "method": "GSNet", "option": "backbone=pointnext", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/graspness 0.61x, loss/width 0.78x"], "terms": {"loss/objectness": [0.1645, 0.1586, 1.037], "loss/graspness": [0.04738, 0.07817, 0.606], "loss/view": [0.9403, 0.83, 1.133], "loss/score": [0.02709, 0.03089, 0.877], "loss/width": [0.07923, 0.1019, 0.777]}, "rise": {"loss/objectness": -0.158, "loss/graspness": -0.21, "loss/view": 0.046, "loss/score": 0.023, "loss/width": -0.09}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.07218, 0.06905, 0.07105, 0.06818], "checked": [8, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe encoder__GSNet__PointNeXt@pointnext.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnext -o encoder__GSNet__PointNeXt@pointnext.yaml", "config_hash": "93f0a8c02c78dff0", "run": "2026-10-15@b60df0a", "seconds": 174.0},
+  {"id": "encoder/EconomicGrasp/SpUNet@spunet-gaussiancross", "kind": "encoder", "method": "EconomicGrasp", "option": "backbone=spunet-gaussiancross", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/graspness 0.43x, loss/angle 0.72x, loss/depth 0.68x, loss/score 0.73x, loss/width 0.62x"], "terms": {"loss/objectness": [0.111, 0.1293, 0.859], "loss/graspness": [0.02886, 0.06723, 0.429], "loss/view": [0.8359, 0.8457, 0.988], "loss/angle": [1.129, 1.567, 0.721], "loss/depth": [0.5389, 0.7948, 0.678], "loss/score": [0.9613, 1.322, 0.727], "loss/width": [0.3431, 0.5566, 0.616]}, "rise": {"loss/objectness": -0.211, "loss/graspness": -0.282, "loss/view": -0.025, "loss/angle": -0.104, "loss/depth": -0.089, "loss/score": -0.089, "loss/width": -0.139}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-1.429, -0.6037, -0.4608, -0.9194], "checked": [15, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe encoder__EconomicGrasp__SpUNet@spunet-gaussiancross.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set backbone=spunet-gaussiancross -o encoder__EconomicGrasp__SpUNet@spunet-gaussiancross.yaml", "config_hash": "45fc4159194dec92", "run": "2026-10-15@b60df0a", "seconds": 193.2},
+  {"id": "stage/Scale-Balanced-Grasp/proposal/dense-ffps", "kind": "proposal", "method": "Scale-Balanced-Grasp", "option": "proposal=dense-ffps", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/objectness 0.69x"], "terms": {"loss/objectness": [0.1354, 0.1975, 0.686], "loss/view": [0.08102, 0.08244, 0.983], "loss/score": [0.01295, 0.01418, 0.913], "loss/angle": [0.3159, 0.3132, 1.008], "loss/width": [0.009859, 0.01146, 0.861], "loss/tolerance": [0.006669, 0.007067, 0.944]}, "rise": {"loss/objectness": -0.055, "loss/view": -0.02, "loss/score": -0.06, "loss/angle": -0.066, "loss/width": -0.109, "loss/tolerance": -0.281}, "grasps_per_frame": [62, 15, 53, 20], "no_gradient": [], "unchanged": [], "score_median": [0.6253, 1.077, 1.608, 0.1676], "checked": [12, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__Scale-Balanced-Grasp__proposal__dense-ffps.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd", "compose": "grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --set proposal=dense-ffps -o stage__Scale-Balanced-Grasp__proposal__dense-ffps.yaml", "config_hash": "dfab7e6aea67928e", "run": "2026-10-15@b60df0a", "seconds": 402.8},
+  {"id": "stage/GSNet/proposal/dense-fps", "kind": "proposal", "method": "GSNet", "option": "proposal=dense-fps", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/view 0.32x, loss/score 0.27x"], "terms": {"loss/objectness": "another proposal stage computes it (SampledSeeds for GraspnessFPS)", "loss/graspness": "another proposal stage computes it (SampledSeeds for GraspnessFPS)", "loss/view": [0.2628, 0.83, 0.317], "loss/score": [0.008279, 0.03089, 0.268], "loss/width": [0.1188, 0.1019, 1.165]}, "rise": {"loss/view": 0.008, "loss/score": -0.124, "loss/width": -0.055}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.05062, 0.05401, 0.05042, 0.05672], "checked": [11, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__proposal__dense-fps.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set proposal=dense-fps -o stage__GSNet__proposal__dense-fps.yaml", "config_hash": "f9b936b4066c293e", "run": "2026-10-15@b60df0a", "seconds": 259.5},
+  {"id": "stage/GSNet/proposal/graspness-topk", "kind": "proposal", "method": "GSNet", "option": "proposal=graspness-topk", "level1": "runs", "outcome": "worse", "reasons": ["loss/score 1.509x the reference (tolerance 1.25)"], "terms": {"loss/objectness": [0.1459, 0.1586, 0.92], "loss/graspness": [0.07872, 0.07817, 1.007], "loss/view": [0.9258, 0.83, 1.115], "loss/score": [0.04663, 0.03089, 1.509], "loss/width": [0.1178, 0.1019, 1.156]}, "rise": {"loss/objectness": -0.18, "loss/graspness": -0.301, "loss/view": 0.003, "loss/score": 0.098, "loss/width": -0.042}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.0943, 0.09076, 0.09256, 0.0845], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__proposal__graspness-topk.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set proposal=graspness-topk -o stage__GSNet__proposal__graspness-topk.yaml", "config_hash": "2aca9db161196d42", "run": "2026-10-15@b60df0a", "seconds": 246.4},
+  {"id": "stage/GSNet/view/lattice-view", "kind": "view", "method": "GSNet", "option": "view=lattice-view", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1562, 0.1586, 0.985], "loss/graspness": [0.0764, 0.07817, 0.977], "loss/view": "another view stage computes it (LatticeViewStage for TemplateViewStage)", "loss/score": [0.03075, 0.03089, 0.995], "loss/width": [0.1017, 0.1019, 0.998]}, "rise": {"loss/objectness": -0.194, "loss/graspness": -0.375, "loss/view": 0.203, "loss/score": 0.206, "loss/width": -0.096}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06801, 0.07272, 0.06457, 0.06834], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__view__lattice-view.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set view=lattice-view -o stage__GSNet__view__lattice-view.yaml", "config_hash": "f320be43398f1d72", "run": "2026-10-15@b60df0a", "seconds": 213.6},
+  {"id": "stage/GraspNet-baseline/view/template-view", "kind": "view", "method": "GraspNet-baseline", "option": "view=template-view", "level1": "runs", "outcome": "worse", "reasons": ["loss/tolerance 1.389x the reference (tolerance 1.25)"], "terms": {"loss/objectness": "another view stage computes it (TemplateViewStage for ObjectnessViewStage)", "loss/view": "another view stage computes it (TemplateViewStage for ObjectnessViewStage)", "loss/score": [0.01894, 0.02175, 0.871], "loss/angle": [0.3747, 0.3286, 1.14], "loss/width": [0.01496, 0.01309, 1.143], "loss/tolerance": [0.02594, 0.01868, 1.389]}, "rise": {"loss/view": -0.021, "loss/score": -0.051, "loss/angle": -0.033, "loss/width": -0.239, "loss/tolerance": -0.311}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-3.845, -3.533, -2.202, -1.324], "checked": [11, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GraspNet-baseline__view__template-view.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --set view=template-view -o stage__GraspNet-baseline__view__template-view.yaml", "config_hash": "d91822c87857b596", "run": "2026-10-15@b60df0a", "seconds": 109.2},
+  {"id": "stage/EconomicGrasp/view/two-vector-baseline", "kind": "view", "method": "EconomicGrasp", "option": "view=two-vector-baseline", "level1": "runs", "outcome": "worse", "reasons": ["loss/graspness 1.805x the reference (tolerance 1.35)"], "notes": ["lower than the reference: loss/width 0.55x"], "terms": {"loss/objectness": [0.1552, 0.1293, 1.2], "loss/graspness": [0.1214, 0.06723, 1.805], "loss/view": "another view stage computes it (TwoVectorViewStage for TemplateViewStage)", "loss/angle": [1.598, 1.567, 1.02], "loss/depth": [0.7718, 0.7948, 0.971], "loss/score": [1.396, 1.322, 1.056], "loss/width": [0.3073, 0.5566, 0.552], "loss/view_frame": "only the cell reports it"}, "rise": {"loss/objectness": -0.035, "loss/graspness": -0.077, "loss/view": -0.017, "loss/angle": -0.076, "loss/depth": -0.076, "loss/score": -0.066, "loss/width": -0.05, "loss/view_frame": -0.161}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.4655, 0.2484, 0.3184, -0.326], "checked": [15, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__EconomicGrasp__view__two-vector-baseline.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set view=two-vector-baseline -o stage__EconomicGrasp__view__two-vector-baseline.yaml", "config_hash": "81adb8bfcce2ec82", "run": "2026-10-15@b60df0a", "seconds": 210.8},
+  {"id": "stage/GSNet/assigner/nearest-label-object-seeds", "kind": "assigner", "method": "GSNet", "option": "assigner=nearest-label-object-seeds", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1688, 0.1586, 1.064], "loss/graspness": [0.08812, 0.07817, 1.127], "loss/view": "the assigner changes the labels the view sees", "loss/score": "the assigner changes the labels the head sees", "loss/width": "the assigner changes the labels the head sees"}, "rise": {"loss/objectness": -0.245, "loss/graspness": -0.308, "loss/view": 0.177, "loss/score": 0.213, "loss/width": -0.062}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.0698, 0.07862, 0.07653, 0.07415], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__assigner__nearest-label-object-seeds.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set assigner=nearest-label-object-seeds -o stage__GSNet__assigner__nearest-label-object-seeds.yaml", "config_hash": "8332d396c49b1161", "run": "2026-10-15@b60df0a", "seconds": 187.7},
+  {"id": "stage/Scale-Balanced-Grasp/assigner/nearest-label-object-seeds", "kind": "assigner", "method": "Scale-Balanced-Grasp", "option": "assigner=nearest-label-object-seeds", "level1": "runs", "outcome": "not comparable", "reasons": [], "notes": ["every predicted score is the same on every frame (a constant score head)"], "terms": {"loss/objectness": "the assigner changes the labels the view sees", "loss/view": "the assigner changes the labels the view sees", "loss/score": "the assigner changes the labels the head sees", "loss/angle": "the assigner changes the labels the head sees", "loss/width": "the assigner changes the labels the head sees", "loss/tolerance": "the assigner changes the labels the head sees"}, "rise": {"loss/objectness": -0.099, "loss/view": -0.015, "loss/score": -0.078, "loss/angle": -0.059, "loss/width": -0.165, "loss/tolerance": -0.405}, "grasps_per_frame": [1, 0, 0, 0], "no_gradient": [], "unchanged": [], "score_median": [0.6039, null, null, null], "constant_scores": true, "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__Scale-Balanced-Grasp__assigner__nearest-label-object-seeds.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd", "compose": "grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --set assigner=nearest-label-object-seeds -o stage__Scale-Balanced-Grasp__assigner__nearest-label-object-seeds.yaml", "config_hash": "b2ed54169692cf77", "run": "2026-10-15@b60df0a", "seconds": 150.8},
+  {"id": "stage/GraspNet-baseline/assigner/scale-balanced", "kind": "assigner", "method": "GraspNet-baseline", "option": "assigner=scale-balanced", "level1": "runs", "outcome": "not comparable", "reasons": [], "terms": {"loss/objectness": "the assigner changes the labels the view sees", "loss/view": "the assigner changes the labels the view sees", "loss/score": "the assigner changes the labels the head sees", "loss/angle": "the assigner changes the labels the head sees", "loss/width": "the assigner changes the labels the head sees", "loss/tolerance": "the assigner changes the labels the head sees"}, "rise": {"loss/objectness": -0.1, "loss/view": -0.052, "loss/score": -0.029, "loss/angle": -0.05, "loss/width": -0.145, "loss/tolerance": -0.279}, "grasps_per_frame": [192, 121, 11, 56], "no_gradient": [], "unchanged": [], "score_median": [-0.03279, -0.7258, 2.183, -1.349], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GraspNet-baseline__assigner__scale-balanced.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd", "compose": "grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --set assigner=scale-balanced -o stage__GraspNet-baseline__assigner__scale-balanced.yaml", "config_hash": "fb0296d83206c5b3", "run": "2026-10-15@b60df0a", "seconds": 110.9},
+  {"id": "stage/GSNet/grouper/ball", "kind": "grouper", "method": "GSNet", "option": "grouper=ball", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1571, 0.1586, 0.991], "loss/graspness": [0.07336, 0.07817, 0.938], "loss/view": [0.842, 0.83, 1.015], "loss/score": [0.03199, 0.03089, 1.035], "loss/width": [0.09874, 0.1019, 0.969]}, "rise": {"loss/objectness": -0.214, "loss/graspness": -0.36, "loss/view": 0.177, "loss/score": 0.233, "loss/width": -0.097}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06058, 0.06443, 0.06877, 0.06742], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__grouper__ball.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set grouper=ball -o stage__GSNet__grouper__ball.yaml", "config_hash": "bbb8d8c6fbe316d6", "run": "2026-10-15@b60df0a", "seconds": 209.3},
+  {"id": "stage/EconomicGrasp/grouper/ball", "kind": "grouper", "method": "EconomicGrasp", "option": "grouper=ball", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1351, 0.1293, 1.045], "loss/graspness": [0.07171, 0.06723, 1.067], "loss/view": [0.8539, 0.8457, 1.01], "loss/angle": [1.484, 1.567, 0.947], "loss/depth": [0.7547, 0.7948, 0.95], "loss/score": [1.258, 1.322, 0.951], "loss/width": [0.4895, 0.5566, 0.879]}, "rise": {"loss/objectness": -0.107, "loss/graspness": -0.319, "loss/view": 0.041, "loss/angle": -0.006, "loss/depth": 0.021, "loss/score": 0.012, "loss/width": -0.169}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-0.1028, 0.2605, 0.063, 0.4515], "checked": [13, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__EconomicGrasp__grouper__ball.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set grouper=ball -o stage__EconomicGrasp__grouper__ball.yaml", "config_hash": "cffb1240e6f0bdd8", "run": "2026-10-15@b60df0a", "seconds": 204.6},
+  {"id": "stage/GraspNet-baseline/grouper/depth-ball", "kind": "grouper", "method": "GraspNet-baseline", "option": "grouper=depth-ball", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.3644, 0.3784, 0.963], "loss/view": [0.02966, 0.03001, 0.988], "loss/score": [0.02317, 0.02175, 1.066], "loss/angle": [0.3291, 0.3286, 1.001], "loss/width": [0.01242, 0.01309, 0.949], "loss/tolerance": [0.02046, 0.01868, 1.095]}, "rise": {"loss/objectness": -0.087, "loss/view": -0.04, "loss/score": -0.001, "loss/angle": -0.051, "loss/width": -0.173, "loss/tolerance": -0.313}, "grasps_per_frame": [4, 0, 0, 0], "no_gradient": [], "unchanged": [], "score_median": [1.279, null, null, null], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GraspNet-baseline__grouper__depth-ball.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --set grouper=depth-ball -o stage__GraspNet-baseline__grouper__depth-ball.yaml", "config_hash": "acf54181ef9d52b6", "run": "2026-10-15@b60df0a", "seconds": 102.3},
+  {"id": "stage/GSNet/head/decoupled-grid-bins", "kind": "head", "method": "GSNet", "option": "head=decoupled-grid-bins", "level1": "runs", "outcome": "worse", "reasons": ["loss/graspness 1.250x the reference (tolerance 1.25)"], "terms": {"loss/objectness": [0.1676, 0.1586, 1.057], "loss/graspness": [0.09772, 0.07817, 1.25], "loss/view": [0.7688, 0.83, 0.926], "loss/score": "the head bundle defines its targets and its loss", "loss/width": "the head bundle defines its targets and its loss", "loss/angle": "the head bundle defines its targets and its loss", "loss/depth": "the head bundle defines its targets and its loss"}, "rise": {"loss/objectness": -0.244, "loss/graspness": -0.243, "loss/view": 0.175, "loss/score": 0.291, "loss/width": -0.041, "loss/angle": -0.028, "loss/depth": -0.021}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.0577, 0.0374, 0.05164, 0.03881], "checked": [16, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__head__decoupled-grid-bins.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=decoupled-grid-bins -o stage__GSNet__head__decoupled-grid-bins.yaml", "config_hash": "dff6576d6c2b429a", "run": "2026-10-15@dd7d305", "seconds": 169.8},
+  {"id": "stage/EconomicGrasp/head/economic-focal", "kind": "head", "method": "EconomicGrasp", "option": "head=economic-focal", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1239, 0.1293, 0.959], "loss/graspness": [0.05908, 0.06723, 0.879], "loss/view": [0.8542, 0.8457, 1.01], "loss/angle": "the head bundle defines its targets and its loss", "loss/depth": "the head bundle defines its targets and its loss", "loss/score": "the head bundle defines its targets and its loss", "loss/width": "the head bundle defines its targets and its loss"}, "rise": {"loss/objectness": -0.139, "loss/graspness": -0.443, "loss/view": 0.058, "loss/angle": 0.029, "loss/depth": 0.014, "loss/score": 0.053, "loss/width": -0.11}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [-1.509, -1.154, -1.227, -0.827], "checked": [15, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__EconomicGrasp__head__economic-focal.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set head=economic-focal -o stage__EconomicGrasp__head__economic-focal.yaml", "config_hash": "92fdbe01d270a99b", "run": "2026-10-15@b60df0a", "seconds": 202.7},
+  {"id": "stage/GSNet/head/swad-focal", "kind": "head", "method": "GSNet", "option": "head=swad-focal", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.159, 0.1586, 1.003], "loss/graspness": [0.07081, 0.07817, 0.906], "loss/view": [0.8398, 0.83, 1.012], "loss/score": "the head bundle defines its targets and its loss", "loss/width": "the head bundle defines its targets and its loss"}, "rise": {"loss/objectness": -0.216, "loss/graspness": -0.399, "loss/view": 0.212, "loss/score": 0.322, "loss/width": -0.127}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.1595, 0.1546, 0.1714, 0.1492], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe stage__GSNet__head__swad-focal.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head=swad-focal -o stage__GSNet__head__swad-focal.yaml", "config_hash": "ea6e340bc684d624", "run": "2026-10-15@b60df0a", "seconds": 177.4},
+  {"id": "loss/GSNet/dice@proposal.objectness_loss", "kind": "loss", "method": "GSNet", "option": "proposal.objectness_loss=dice", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": "its loss is replaced ({\"average\": \"micro\", \"eps\": 1e-08, \"type\": \"DiceLoss\", \"weight\": 1.0})", "loss/graspness": [0.07842, 0.07817, 1.003], "loss/view": [0.8367, 0.83, 1.008], "loss/score": [0.03168, 0.03089, 1.026], "loss/width": [0.1012, 0.1019, 0.992]}, "rise": {"loss/objectness": -0.33, "loss/graspness": -0.381, "loss/view": 0.248, "loss/score": 0.267, "loss/width": -0.065}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.0708, 0.07453, 0.07146, 0.07659], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe loss__GSNet__dice@proposal.objectness_loss.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set proposal.objectness_loss=dice -o loss__GSNet__dice@proposal.objectness_loss.yaml", "config_hash": "10b454f0220d6ab2", "run": "2026-10-15@b60df0a", "seconds": 177.1},
+  {"id": "loss/Scale-Balanced-Grasp/huber+class-balanced@view.view_loss+head.angle_loss+head.width_loss", "kind": "loss", "method": "Scale-Balanced-Grasp", "option": "view.view_loss=huber, head.angle_loss=class-balanced, head.width_loss=huber", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["no grasp on any frame, as for the reference"], "terms": {"loss/objectness": [0.1918, 0.1975, 0.971], "loss/view": "its loss is replaced (Huber)", "loss/score": [0.01348, 0.01418, 0.95], "loss/angle": "its loss is replaced (ClassBalanced)", "loss/width": "its loss is replaced (Huber)", "loss/tolerance": [0.00795, 0.007067, 1.125]}, "rise": {"loss/objectness": -0.099, "loss/view": -0.013, "loss/score": -0.067, "loss/angle": -0.094, "loss/width": 0.086, "loss/tolerance": -0.29}, "grasps_per_frame": [0, 0, 0, 0], "no_gradient": [], "unchanged": [], "score_median": [null, null, null, null], "checked": [14, 4], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe loss__Scale-Balanced-Grasp__huber+class-balanced@view.view_loss+head.angle_loss+head.width_loss.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=909357a67265e93052ea309e455215298dbb067b8f4f3c2b511e015db7329cbd", "compose": "grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --set view.view_loss=huber --set head.angle_loss=class-balanced --set head.width_loss=huber -o loss__Scale-Balanced-Grasp__huber+class-balanced@view.view_loss+head.angle_loss+head.width_loss.yaml", "config_hash": "423a456fc56d5c32", "run": "2026-10-15@b60df0a", "seconds": 158.4},
+  {"id": "loss/GSNet/uncertainty-weighting@proposal.objectness_loss+proposal.graspness_loss+view.loss+head.score_loss+head.width_loss", "kind": "loss", "method": "GSNet", "option": "proposal.objectness_loss=uncertainty-weighting, proposal.graspness_loss=uncertainty-weighting, view.loss=uncertainty-weighting, head.score_loss=uncertainty-weighting, head.width_loss=uncertainty-weighting", "level1": "runs", "outcome": "not comparable", "reasons": [], "terms": {"loss/objectness": "its loss is replaced (UncertaintyWeighted)", "loss/graspness": "its loss is replaced (UncertaintyWeighted)", "loss/view": "its loss is replaced (UncertaintyWeighted)", "loss/score": "its loss is replaced (UncertaintyWeighted)", "loss/width": "its loss is replaced (UncertaintyWeighted)"}, "rise": {"loss/view": 0.453}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06963, 0.07113, 0.06751, 0.06575], "checked": [17, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe loss__GSNet__uncertainty-weighting@proposal.objectness_loss+proposal.graspness_loss+view.loss+head.score_loss+head.width_loss.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set proposal.objectness_loss=uncertainty-weighting --set proposal.graspness_loss=uncertainty-weighting --set view.loss=uncertainty-weighting --set head.score_loss=uncertainty-weighting --set head.width_loss=uncertainty-weighting -o loss__GSNet__uncertainty-weighting@proposal.objectness_loss+proposal.graspness_loss+view.loss+head.score_loss+head.width_loss.yaml", "config_hash": "5fbe55138013572c", "run": "2026-10-15@b60df0a", "seconds": 175.8},
+  {"id": "recipe/GSNet/optimizer/adamw", "kind": "recipe", "method": "GSNet", "option": "optimizer=adamw", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1571, 0.1586, 0.991], "loss/graspness": [0.07739, 0.07817, 0.99], "loss/view": [0.8457, 0.83, 1.019], "loss/score": [0.03189, 0.03089, 1.032], "loss/width": [0.09885, 0.1019, 0.97]}, "rise": {"loss/objectness": -0.22, "loss/graspness": -0.392, "loss/view": 0.235, "loss/score": 0.28, "loss/width": -0.078}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.06167, 0.06019, 0.07113, 0.06314], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe recipe__GSNet__optimizer__adamw.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set optimizer=adamw -o recipe__GSNet__optimizer__adamw.yaml", "config_hash": "5f1621cbaaca582c", "run": "2026-10-15@b60df0a", "seconds": 172.4},
+  {"id": "recipe/GSNet/schedule/warmup-cosine", "kind": "recipe", "method": "GSNet", "option": "schedule=warmup-cosine", "level1": "runs", "outcome": "worse", "reasons": ["loss/objectness 1.508x the reference (tolerance 1.25)", "loss/graspness 2.090x the reference (tolerance 1.25)"], "notes": ["lower than the reference: loss/view 0.76x, loss/score 0.67x"], "terms": {"loss/objectness": [0.239, 0.1586, 1.508], "loss/graspness": [0.1634, 0.07817, 2.09], "loss/view": [0.6283, 0.83, 0.757], "loss/score": [0.02069, 0.03089, 0.67], "loss/width": [0.116, 0.1019, 1.138]}, "rise": {"loss/objectness": -0.142, "loss/graspness": -0.067, "loss/view": 0.053, "loss/score": -0.048, "loss/width": -0.034}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.08488, 0.09093, 0.08474, 0.09074], "checked": [12, 5], "schedule": "recipe", "probe": "grasppanda probe recipe__GSNet__schedule__warmup-cosine.yaml --iters 250 --frames 8 --predict-frames 4 --schedule recipe", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set schedule=warmup-cosine -o recipe__GSNet__schedule__warmup-cosine.yaml", "config_hash": "6da098c2bcded9d4", "run": "2026-10-15@b60df0a", "seconds": 167.4},
+  {"id": "recipe/GSNet/hooks/freeze-encoder", "kind": "recipe", "method": "GSNet", "option": "hooks=freeze-encoder", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/objectness": [0.1393, 0.1586, 0.878], "loss/graspness": [0.064, 0.07817, 0.819], "loss/view": [0.9086, 0.83, 1.095], "loss/score": [0.03525, 0.03089, 1.141], "loss/width": [0.1016, 0.1019, 0.997]}, "rise": {"loss/objectness": -0.206, "loss/graspness": -0.427, "loss/view": 0.188, "loss/score": 0.303, "loss/width": -0.077}, "grasps_per_frame": [1024, 1024, 1024, 1024], "no_gradient": [], "unchanged": [], "score_median": [0.09104, 0.08611, 0.07748, 0.0745], "checked": [12, 5], "schedule": "constant", "rate": 0.001, "probe": "grasppanda probe recipe__GSNet__hooks__freeze-encoder.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set hooks=freeze-encoder -o recipe__GSNet__hooks__freeze-encoder.yaml", "config_hash": "5bcadef61cb052ca", "run": "2026-10-15@b60df0a", "seconds": 172.5},
+  {"id": "family-slot/HGGD/image_encoder/hf-swinv2-tiny", "kind": "image-encoder", "method": "HGGD", "option": "image_encoder=hf-swinv2-tiny", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/heatmap": [1.532, 1.407, 1.089], "loss/angle": [0.8337, 0.6569, 1.269], "loss/offsets": [0.1628, 0.1867, 0.872], "loss/anchor": [0.8868, 0.766, 1.158], "loss/anchor_offset": [0.1993, 0.2087, 0.955]}, "rise": {"loss/heatmap": -0.048, "loss/angle": -0.061, "loss/offsets": -0.21, "loss/anchor": -0.227, "loss/anchor_offset": -0.236}, "grasps_per_frame": [10, 10, 10, 0], "no_gradient": [], "unchanged": [], "score_median": [0.1448, 0.1447, 0.1447, null], "checked": [16, 2], "schedule": "constant", "rate": 0.01, "probe": "grasppanda probe family-slot__HGGD__image_encoder__hf-swinv2-tiny.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=hf-swinv2-tiny -o family-slot__HGGD__image_encoder__hf-swinv2-tiny.yaml", "config_hash": "08fe3e5aca6a6378", "run": "2026-10-15@b60df0a", "seconds": 289.4},
+  {"id": "family-slot/HGGD/image_encoder/hggd-residual", "kind": "image-encoder", "method": "HGGD", "option": "image_encoder=hggd-residual", "level1": "runs", "outcome": "on a par", "reasons": [], "terms": {"loss/heatmap": [1.402, 1.407, 0.997], "loss/angle": [0.6573, 0.6569, 1.001], "loss/offsets": [0.2075, 0.1867, 1.111], "loss/anchor": [0.7847, 0.766, 1.024], "loss/anchor_offset": [0.203, 0.2087, 0.973]}, "rise": {"loss/heatmap": -0.025, "loss/angle": -0.138, "loss/offsets": -0.141, "loss/anchor": -0.081, "loss/anchor_offset": -0.106}, "grasps_per_frame": [480, 479, 480, 480], "no_gradient": [], "unchanged": [], "score_median": [0.1999, 0.1734, 0.2012, 0.2032], "checked": [17, 2], "schedule": "constant", "rate": 0.01, "probe": "grasppanda probe family-slot__HGGD__image_encoder__hggd-residual.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=hggd-residual -o family-slot__HGGD__image_encoder__hggd-residual.yaml", "config_hash": "575cc1c08e69b158", "run": "2026-10-15@b60df0a", "seconds": 251.9},
+  {"id": "family-slot/HGGD/image_encoder/resnet34", "kind": "image-encoder", "method": "HGGD", "option": "image_encoder=resnet34", "level1": "runs", "outcome": "on a par", "reasons": [], "notes": ["lower than the reference: loss/offsets 0.61x"], "terms": {"loss/heatmap": [1.589, 1.407, 1.129], "loss/angle": [0.8723, 0.6569, 1.328], "loss/offsets": [0.1148, 0.1867, 0.615], "loss/anchor": [1.107, 0.766, 1.446], "loss/anchor_offset": [0.231, 0.2087, 1.107]}, "rise": {"loss/heatmap": -0.054, "loss/angle": -0.065, "loss/offsets": -0.2, "loss/anchor": -0.202, "loss/anchor_offset": -0.086}, "grasps_per_frame": [27, 432, 0, 9], "no_gradient": [], "unchanged": [], "score_median": [0.1034, 0.1055, null, 0.1025], "checked": [16, 2], "schedule": "constant", "rate": 0.01, "probe": "grasppanda probe family-slot__HGGD__image_encoder__resnet34.yaml --iters 250 --frames 8 --predict-frames 4 --schedule constant", "compose": "grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=resnet34 -o family-slot__HGGD__image_encoder__resnet34.yaml", "config_hash": "e50c21bb7292538f", "run": "2026-10-15@b60df0a", "seconds": 239.3}
+ ]
+}

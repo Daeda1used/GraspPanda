@@ -198,6 +198,16 @@ class OperationHead(HeadBundle):
         decode = options.get("score_decode")
         return ("objectness",) if decode == "score_x_objectness_x_tolerance" else ()
 
+    @classmethod
+    def without_seed_score(
+        cls, options: Mapping[str, Any], score: str
+    ) -> Mapping[str, Any] | str | None:
+        """Without the objectness of the seeds the score is decoded as GraspNet-baseline
+        decodes it, ``score_x_tolerance``."""
+        if score != "objectness" or options.get("score_decode") != "score_x_objectness_x_tolerance":
+            return None
+        return {**options, "type": cls.__name__, "score_decode": "score_x_tolerance"}
+
     def __init__(
         self,
         num_angle: int = 12,

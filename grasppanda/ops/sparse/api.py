@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import sys
 from collections.abc import Sequence
 from types import ModuleType
 from typing import Any
@@ -22,6 +23,7 @@ __all__ = [
     "cat",
     "check_cpu_convolution",
     "convert_minkowski_kernel",
+    "cpu_thread_note",
     "features",
     "features_at",
     "get_backend",
@@ -70,6 +72,15 @@ def check_cpu_convolution() -> None:
     name) calls it before it convolves a CPU tensor. The comparison runs once per process.
     """
     _backend().check_cpu_convolution()
+
+
+def cpu_thread_note() -> str | None:
+    """A sentence for reports when the backend ran convolutions of CPU tensors on fewer
+    threads than PyTorch has (the CPU-only spconv wheel), else ``None``. Never imports the
+    backend."""
+    module = sys.modules.get(BACKENDS[_active])
+    note = getattr(module, "cpu_thread_note", None)
+    return note() if note is not None else None
 
 
 # ----------------------------------------------------------------------------- tensors

@@ -59,9 +59,24 @@ is a stage of the seed-based skeleton, and is followed by
 [Swapping components](docs/advanced_guides/swapping.md). The unit suite fails until all
 three are done.
 
+A rule that refuses a combination (a contract rule of the seed-based skeleton, a rule of
+the config checker, a `check_config` of a component) says why: its kind is one of
+`structural`, `not-implemented` (naming the lift), `fixed-by-compose`,
+`not-a-combination` or `policy` (`grasppanda.config.errors.REFUSAL_KINDS`), declared with
+`@rule(kind=...)` or carried by the message as a `Refusal`. A refusal that an adapter or
+an option lifts is taught to `grasppanda compose`, which then inserts or sets it.
+
 ## Tests
 
-- Unit tests live in `tests/unit/` and run on CPU.
+- Unit tests live in `tests/unit/` and run on CPU. The sparse components need a spconv
+  extra (`pip install -e ".[dev,spconv-cpu]"` on a machine without CUDA); no thread
+  setting is needed, because the CPU-only wheel's convolutions run on one thread by
+  themselves (see [Installation](docs/get_started/installation.md)). CI uses
+  `OMP_NUM_THREADS=1` because tiny test tensors gain nothing from threads.
+- CI also builds the wheel, installs it with the `spconv-cpu` extra and, from an empty
+  directory outside the checkout, checks a shipped config and a config that inherits one
+  by name, trains the example project and wires a composed sparse encoder
+  (`.github/workflows/test.yml`, job `package`). Anything a wheel user runs belongs there.
 - An operator is tested against a brute-force oracle written in the test.
 - A bug fix comes with a test that fails without it.
 

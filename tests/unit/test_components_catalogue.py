@@ -210,7 +210,8 @@ def test_one_component_shows_its_options_and_what_it_combines_with(capsys):
     out = capsys.readouterr().out
     assert "injected by the parent" in out  # in_channels and gripper come from the detector
     assert "✓ CylinderGroup" in out and "✗ DepthCylinderGroup" in out
-    assert "✗ ScaleBalancedAssigner" in out and "✓ NearestLabelAssigner" in out
+    assert "✓ ScaleBalancedAssigner" in out and "✓ NearestLabelAssigner" in out
+    assert "✗ CompactLabelAssigner" in out
 
 
 def test_parameters_and_compatibility_as_data():

@@ -217,13 +217,25 @@ frame of the rig:
 
 ## The whole test split
 
-Run so far for four methods with the authors' converted checkpoints: GraspNet-baseline,
-Scale-Balanced-Grasp, EconomicGrasp and HGGD, 3 055 of 3 055 frames scored each. Their
-numbers are `author-ckpt` rows of the transfer configs and stand in the
-[model zoo](../model_zoo.md#graspclutter6d-transfers), the reported ones beside them; the
-result records are in `configs/<method>/records/`. GSNet has no row: no checkpoint of its
-authors has been scored, and the model trained here enters the zoo with its
-GraspNet-1Billion result.
+Run so far for five methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
+Scale-Balanced-Grasp, EconomicGrasp and HGGD with the authors' converted checkpoints
+(`author-ckpt`), and GSNet with the model trained from scratch by this toolbox
+(`reproduced`; its weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+D435; the rows, with the reported numbers beside them, stand in the
+[model zoo](../model_zoo.md#graspclutter6d-transfers) and the result records in
+`configs/<method>/records/`.
+
+| Method | Weights | Input crop | `raw` | `cd` | Reported |
+|---|---|---|---|---|---|
+| GraspNet-baseline | `author-ckpt` | ground-truth rectangle | 8.69 / 10.35 / 6.96 | 17.14 / 20.60 / 12.86 | 17.95 / 21.54 / 13.53 |
+| Scale-Balanced-Grasp | `author-ckpt` | ground-truth rectangle | 21.77 / 26.49 / 16.46 | 22.71 / 27.61 / 17.01 | 22.69 / 27.57 / 16.95 |
+| EconomicGrasp | `author-ckpt` | ground-truth rectangle | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 / 26.62 / 15.90 |
+| GSNet | `reproduced` | ground-truth rectangle | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | none published |
+| HGGD | `author-ckpt` | none (`gt_assisted: none`) | 14.25 / 17.41 / 9.23 | 14.56 / 17.79 / 9.33 | none published |
+
+HGGD is not like-for-like with the other rows: it reads the whole image, and its `cd` is
+its own filter followed by NMS. The GSNet row is one training run with one seed; its
+weights are another model than the `local` checkpoint of the subset table above.
 
 What the whole split adds to the subset: the reported value lies 0.81 AP above `cd` and
 9.26 above `raw` for GraspNet-baseline, 0.02 AP below `cd` and 0.92 above `raw` for

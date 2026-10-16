@@ -7,11 +7,13 @@
 # batches of 4 (set in the dataset base) with two batches per optimizer step
 # (`train.accumulate: 2`, set in the runnable config: default_runtime.yaml already owns
 # that key, and a key may come from one sibling base only).
+# options of this slot, measured: grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list optimizer
 optimizer:
   type: AdamW
   lr: 1e-2
   weight_decay: 1e-2
 
+# options of this slot, measured: grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list schedule
 scheduler:
   type: StepLR
   step_size: 5
@@ -27,6 +29,7 @@ train:
   grad_clip: 0.5
   grad_clip_mode: value
 
+# options of this slot, measured: grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list hooks
 hooks:
   # The rotation anchors follow the labels during the first `model.anchors.shift_epochs`
   # epochs; the detector has to be told the epoch for that.

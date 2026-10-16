@@ -171,16 +171,81 @@ def test_allowing_a_mismatch_is_not_itself_a_mismatch(tmp_path):
     )
 
 
-def test_resume_does_not_hash_where_the_run_lives(tmp_path):
-    """Moving the work directory or naming the run is not a different experiment."""
+def files_of(directory):
+    """Every file below ``directory`` with its bytes and modification time."""
+    return {
+        path.relative_to(directory): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in sorted(directory.rglob("*"))
+        if path.is_file()
+    }
+
+
+def test_resume_into_another_work_dir_starts_a_new_run_and_leaves_the_original_alone(tmp_path):
+    """Moving the work directory is not a different experiment, but it is another directory."""
+    straight_losses, resumed_losses = Recorder(), Recorder()
+    straight = run_training(tiny_config(tmp_path / "a", STATEFUL), straight_losses)
     with pytest.raises(Stop):
-        run_training(tiny_config(tmp_path, {"runtime.run_id": "first"}), Interrupt(1))
-    checkpoint = tmp_path / "work/first/checkpoints/epoch_0001.pth"
-    moved = {"runtime.work_dir": str(tmp_path / "elsewhere"), "runtime.resume": str(checkpoint)}
-    state = run_training(tiny_config(tmp_path, moved))
-    assert (
-        state.epoch == 2 and state.run.dir == tmp_path / "work/first"
-    )  # the run that owns the file
+        run_training(
+            tiny_config(tmp_path / "b", {**STATEFUL, "runtime.run_id": "one"}), Interrupt(2)
+        )
+    original = tmp_path / "b/work/one"
+    checkpoint = original / "checkpoints/epoch_0002.pth"
+    before = files_of(original)
+
+    moved = {
+        **STATEFUL,
+        "runtime.work_dir": str(tmp_path / "elsewhere"),
+        "runtime.resume": str(checkpoint),
+    }
+    resumed = run_training(tiny_config(tmp_path / "b", moved), resumed_losses)
+
+    assert files_of(original) == before and not (original / "resumes").exists()
+    (new,) = (tmp_path / "elsewhere").iterdir()
+    assert resumed.run.dir == new and resumed.epoch == straight.epoch == 4
+    assert resumed_losses.losses == straight_losses.losses[8:]  # epochs 3 and 4, exactly
+    assert_same_state(straight, resumed)
+    facts = json.loads((new / "run.json").read_text())
+    assert facts["resumed_from"] == str(checkpoint)
+    assert facts["config_hash"] == straight.config.digest()
+    assert {"epoch_0003.pth", "epoch_0004.pth"} <= {p.name for p in (new / "checkpoints").iterdir()}
+    log = (new / "log.txt").read_text()
+    assert f"resuming {checkpoint} in a new run directory" in log and str(original) in log
+
+
+def test_resume_with_a_run_id_of_its_own_starts_that_run(tmp_path):
+    with pytest.raises(Stop):
+        run_training(tiny_config(tmp_path, {"runtime.run_id": "one"}), Interrupt(1))
+    before = files_of(tmp_path / "work/one")
+    checkpoint = tmp_path / "work/one/checkpoints/epoch_0001.pth"
+    state = run_training(
+        tiny_config(tmp_path, {"runtime.run_id": "two", "runtime.resume": str(checkpoint)})
+    )
+    assert state.epoch == 2 and state.run.dir == tmp_path / "work/two"
+    assert files_of(tmp_path / "work/one") == before
+
+
+def test_a_run_continued_under_another_config_never_writes_into_the_original(tmp_path):
+    with pytest.raises(Stop):
+        run_training(tiny_config(tmp_path, {"train.epochs": 3}), Interrupt(1))
+    (original,) = (tmp_path / "work").iterdir()
+    before = files_of(original)
+    changed = {"train.epochs": 3, "optimizer.lr": 0.05, "runtime.resume": True}
+
+    with pytest.raises(ResumeError, match="different experiment"):
+        run_training(tiny_config(tmp_path, changed))
+    assert list((tmp_path / "work").iterdir()) == [original]  # refused before writing anything
+    allowed = {**changed, "runtime.allow_config_mismatch": True}
+    with pytest.raises(ResumeError, match=f"runtime.run_id '{original.name}' names the directory"):
+        run_training(tiny_config(tmp_path, {**allowed, "runtime.run_id": original.name}))
+    state = run_training(tiny_config(tmp_path, allowed))
+
+    assert state.epoch == 3 and state.run.dir.parent == original.parent != state.run.dir
+    assert files_of(original) == before and not (original / "resumes").exists()
+    assert json.loads((state.run.dir / "run.json").read_text())["resumed_from"] == str(
+        original / "checkpoints/epoch_0001.pth"
+    )
+    log = (state.run.dir / "log.txt").read_text()
+    assert "because the config differs from the one the checkpoint was written under" in log
 
 
 def test_resume_from_a_file_outside_a_run_starts_a_new_run_directory(tmp_path):

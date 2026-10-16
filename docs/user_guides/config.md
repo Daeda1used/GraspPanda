@@ -59,6 +59,22 @@ train:
   epochs: 20        # overrides the schedule
 ```
 
+An entry of `_base_` is a path relative to the file. When there is no such file, it is
+the name of a shipped config, with or without `.yaml`: `_base_/default_runtime.yaml` for
+a building block, `gsnet/gsnet_sunet14_g1b-realsense_10e` for a whole method. This works
+from any directory and from an installed wheel, so a config of your own can start from a
+shipped one:
+
+```yaml
+_base_: [gsnet/gsnet_sunet14_g1b-realsense_10e.yaml]   # uses both levels (rule 1)
+
+train:
+  epochs: 20
+```
+
+A file next to the config comes first. A base that is neither is an error reported at the
+file that names it (`set in: <that file>`).
+
 ### Merge rules
 
 1. **At most two levels.** A config may inherit from a file that itself inherits from

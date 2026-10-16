@@ -6,10 +6,13 @@
 The probe builds the detector and the data pipeline of the config, trains a few
 iterations on real frames (the split ``sample`` of the dataset) with the config's own
 recipe, predicts on a few frames and reports what it saw: parameters, time and memory,
-every loss term first and last, the fraction of real seeds, the grasps per frame, any
-non-finite value. It ends with one verdict:
+every loss term first and last with its fall and flags, the fraction of real seeds, the
+units of the model without a gradient and the parts that did not change, the grasps per
+frame and their scores, the decay of the learning rate, any non-finite value. It ends
+with one verdict:
 
     runs            trained and predicted on real frames, all finite, seeds every iteration
+    runs-empty      as runs, but no probed frame has a grasp
     runs-unstable   trained and predicted, but with a non-finite value or iterations without seeds
     fails           an exception after the config check passed; phase and component are named
     refused         the config check refused the config; its messages are printed
@@ -17,8 +20,9 @@ non-finite value. It ends with one verdict:
 
 Without the dataset, or without the label assets of its frames, the probe says what is
 missing and how to build it, runs the synthetic wiring check and reports ``wired`` (exit
-status 3), never ``runs``. Exit status: 0 runs (or ``wired`` with ``--synthetic``),
-1 runs-unstable or fails, 2 refused or a request that cannot be run, 3 wired as a fallback.
+status 3), never ``runs``. Exit status: 0 runs or runs-empty (or ``wired`` with
+``--synthetic``), 1 runs-unstable or fails, 2 refused or a request that cannot be run,
+3 wired as a fallback.
 
 A probe is one run, and training on a GPU is not repeatable: see
 :mod:`grasppanda.combine.probe`.
@@ -39,9 +43,12 @@ __all__ = ["register"]
 EPILOG = """\
 verdicts (exactly one is reported) and exit status:
   runs           0  built, trained every iteration on real frames with finite losses and
-                    real seeds, predicted one grasp group per frame (a group may be empty)
+                    real seeds, every part got a gradient, predicted one grasp group per
+                    frame and at least one grasp
+  runs-empty     0  as runs, but every predicted group is empty: no grasp on any frame
   runs-unstable  1  built, trained and predicted, but a loss or weight became non-finite,
-                    or an iteration had no real seed, or no seed was ever supervised
+                    or an iteration had no real seed, or no seed was ever supervised, or a
+                    part received no gradient
   fails          1  an exception after the config check passed; the phase (build, data,
                     loss, backward, step, predict), the component and the message are given
   refused        2  the config check refused the config (as `print-config --check --for
@@ -55,13 +62,31 @@ for the split `sample` are small (`grasppanda prepare <dataset> --check --split 
 --config <config>` lists them). Without them the probe says what is missing and how to
 build it, runs the synthetic check and reports `wired`, never `runs`.
 
+reported, not judged (`--json` has every iteration): per loss term the fall from its
+first active value to the mean of its last quarter and the flags flat, rising,
+zero_at_end, constant; the units of the model (sub-modules at depth 2) that never got a
+gradient and the parts whose weights did not change; the score of the predicted grasps;
+the learning rate at the last step relative to the first.
+
+the learning rate (--schedule): `recipe`, the default, runs the config's scheduler over
+the few epochs of the probe (train.epochs = ceil(iterations / iterations per epoch)), so a
+per-epoch decay is compressed into the probe and a long warm-up is never over. `constant`
+removes the scheduler (scheduler=null) and trains every step at the recipe's peak rate: the
+optimizer's rate, or `max_lr` of OneCycleLR and CyclicLR, scaled by the ratio of the batch
+sizes when the probe's batches are smaller than the recipe's (the linear scaling rule).
+A batch-norm momentum the recipe decays per epoch (BNMomentumHook) is held at its first
+epoch's value (hooks.<i>.decay=1). Optimizer, weight decay, clipping and the other hooks
+stay the recipe's. Use it to compare the trends of methods whose schedules differ; the
+config hash is the same either way.
+
 a probe is one run. The config hash, the parameter count and the first losses repeat;
 later losses, seed fractions and grasp counts differ from run to run, and a combination
-near the edge can be `runs` in one probe and `runs-unstable` in the next.
+near the edge can be `runs` in one probe and `runs-unstable` (or `runs-empty`) in the next.
 
 examples:
   grasppanda probe gsnet/gsnet_sunet14_g1b-realsense_10e
   grasppanda probe my_config.yaml --iters 20 --frames 8 --json
+  grasppanda probe finegrasp/finegrasp_sunet14_g1b-realsense_10e --schedule constant
 """
 
 
@@ -84,7 +109,7 @@ def register(commands: Any) -> None:
         help="train a few iterations on real frames and predict: does this config run?",
         description=(
             "Build the detector, train a few iterations on real frames, predict, and report "
-            "one verdict: runs, runs-unstable, fails, refused or wired."
+            "one verdict: runs, runs-empty, runs-unstable, fails, refused or wired."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -121,12 +146,35 @@ def register(commands: Any) -> None:
         action="store_true",
         help="skip real frames: only the wiring check on a synthetic scene (verdict `wired`)",
     )
+    parser.add_argument(
+        "--schedule",
+        choices=("recipe", "constant"),
+        default="recipe",
+        help="recipe: the config's scheduler over the probe's epochs (default); constant: "
+        "the recipe's peak learning rate at every step, scaled down for batches smaller than "
+        "the recipe's",
+    )
     parser.add_argument("--json", action="store_true", help="print the report as JSON")
     parser.set_defaults(handler=run)
 
 
 def _pair(values: list[float]) -> str:
     return f"{values[0]:.4g} → {values[1]:.4g}"
+
+
+def _trend(trend: dict[str, Any] | None, iterations: int) -> str:
+    """The fall of a loss term and its flags, as one short phrase."""
+    if not trend:
+        return ""
+    fall = trend.get("fall")
+    if fall is None:
+        text = "never active"
+    else:
+        text = f"{'fell' if fall >= 0 else 'rose'} {abs(fall) * 100:.0f} %"
+        if trend["active"] < iterations:
+            text += f" ({trend['active']} of {iterations} active)"
+    flags = [flag.replace("_", " ") for flag in trend.get("flags", [])]
+    return " · ".join([text, *flags])
 
 
 def _print(report: Any, color: bool) -> None:
@@ -165,9 +213,18 @@ def _print(report: Any, color: bool) -> None:
         row("trained", f"{report.iterations} of {report.iterations_requested} iterations{timing}")
         if report.peak_gpu_mib is not None:
             row("memory", f"peak {report.peak_gpu_mib / 1024:.1f} GiB on the GPU, this process")
-        print(f"  {style('losses', 'gray', enabled=color)}      first → last")
+        trends = getattr(report, "loss_trends", {}) or {}
+        print(
+            f"  {style('losses', 'gray', enabled=color)}      first → last"
+            + (
+                " · fall from the first active value to the mean of the last quarter"
+                if trends
+                else ""
+            )
+        )
         for name, values in report.losses.items():
-            print(f"    {name:<28}{_pair(values)}")
+            trend = _trend(trends.get(name), report.iterations)
+            print(f"    {name:<28}{_pair(values):<22}{trend}".rstrip())
         if report.real_seeds:
             seeds = report.real_seeds
             row(
@@ -184,12 +241,35 @@ def _print(report: Any, color: bool) -> None:
     if report.grasps_per_frame:
         counts = ", ".join(str(count) for count in report.grasps_per_frame)
         row("predicted", f"{len(report.grasps_per_frame)} frame(s) · {counts} grasps")
+        quantiles = getattr(report, "score_quantiles", []) or []
+        if any(quantiles):
+            listed = "; ".join(
+                "—" if q is None else " / ".join(f"{value:.3g}" for value in q) for q in quantiles
+            )
+            row("scores", f"min / median / max per frame: {listed}")
     chain = report.postprocessing or {}
     for sizes in chain.get("grasps", []):
         steps = " → ".join(f"{name} {left}" for name, left in zip(chain["steps"], sizes[1:]))
         row("post", f"{sizes[0]} → {steps}")
+    units = getattr(report, "units_checked", 0)
     if report.no_gradient:
-        row("gradient", "none reached " + ", ".join(report.no_gradient))
+        of = f" (of {units} units)" if units else ""
+        row("gradient", "none reached " + ", ".join(report.no_gradient) + of)
+    elif units:
+        parts = report.parts_checked
+        row("gradient", f"reached every one of {units} units of {parts} part(s)")
+    if units:
+        unchanged = report.unchanged
+        row("changed", "not " + ", ".join(unchanged) if unchanged else "every part")
+    rates = getattr(report, "learning_rate", []) or []
+    constant = getattr(report, "schedule", "recipe") == "constant"
+    if constant and report.rate is not None:
+        scaled = any("linear scaling rule" in note for note in report.notes)
+        what = "the recipe's peak rate scaled to the batch" if scaled else "the recipe's peak rate"
+        row("schedule", f"constant: {report.rate:.3g}, {what}, at every step")
+    elif rates:
+        factor = f", ×{report.lr_factor:.3g} at the last step" if report.lr_factor else ""
+        row("lr", f"{rates[0]:.3g} at the first step → {rates[1]:.3g} at the last{factor}")
     for item in report.nonfinite:
         row("non-finite", item)
     for message in report.refusal:
@@ -197,6 +277,8 @@ def _print(report: Any, color: bool) -> None:
     print()
     good = report.verdict in ("runs", "wired")
     mark = style("✓" if good else "✗", "bold", "green" if good else "red", enabled=color)
+    if report.verdict == "runs-empty":
+        mark = style("∅", "bold", "yellow", enabled=color)
     print(f"{mark} {style(report.verdict, 'bold', enabled=color)}: {report.detail}")
     if report.verdict == "wired" and report.fallback:
         print("  Real frames were not probed; `wired` says only that the stages connect.")
@@ -217,11 +299,16 @@ def run(args: argparse.Namespace) -> int:
             device=args.device,
             workers=args.workers,
             synthetic=args.synthetic,
+            schedule=args.schedule,
         )
     except ProbeRequestError as error:
         mark = style("✗", "bold", "red", enabled=sys.stderr.isatty())
         print(f"{mark} {error}", file=sys.stderr)
         return 2
+    from grasppanda.ops.sparse import cpu_thread_note
+
+    if note := cpu_thread_note():
+        report.notes.append(note)
     if args.json:
         print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False))
     else:

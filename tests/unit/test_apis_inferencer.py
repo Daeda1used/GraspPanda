@@ -248,6 +248,7 @@ def test_mismatched_images_and_calibration_are_refused(image_inferencer, point_i
         point_inferencer(points=np.zeros((10, 3)), rgb=scene.rgb)
 
 
+@pytest.mark.usefixtures("point_inferencer")  # writes point.pth
 def test_differences_from_the_test_conditions_are_warned_about_once(workdir, scene):
     config = write_config(workdir, POINT_CONFIG, "warned.yaml")
     inferencer = GraspInferencer(config, workdir / "point.pth")
@@ -306,6 +307,7 @@ def test_post_processors_of_the_config_run_on_request(point_inferencer, image_in
 # --------------------------------------------------------------------------- weights
 
 
+@pytest.mark.usefixtures("point_inferencer", "image_inferencer")  # write the weights read here
 def test_weights_are_required_and_must_fit(workdir):
     config = write_config(workdir, POINT_CONFIG, "weights.yaml")
     with pytest.raises(EngineError, match="needs weights.*untrained model is never run"):

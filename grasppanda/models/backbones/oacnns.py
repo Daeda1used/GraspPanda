@@ -92,7 +92,7 @@ def _convolve(conv: nn.Module, tensor: Any) -> Any:
         return conv(tensor)
     check_cpu_convolution()
     configured = conv.algo
-    conv.algo = require("spconv.core", extra="spconv-cu118", purpose="OACNNs").ConvAlgo.Native
+    conv.algo = require("spconv.core", extra="spconv", purpose="OACNNs").ConvAlgo.Native
     try:
         return conv(tensor)
     finally:
@@ -313,7 +313,7 @@ class OACNNs(Backbone):
     ) -> None:
         super().__init__()
         name = type(self).__name__
-        spconv = require("spconv.pytorch", extra="spconv-cu118", purpose=name)
+        spconv = require("spconv.pytorch", extra="spconv", purpose=name)
         stages = len(enc_channels)
         if in_channels < 1:
             raise ValueError(f"{name} needs at least one input feature channel per point")
@@ -380,7 +380,7 @@ class OACNNs(Backbone):
         deviation of 0.02, zero bias. Batch norm: identity. The down- and up-sampling
         convolutions keep the initialisation of the sparse library.
         """
-        submanifold = require("spconv.pytorch", extra="spconv-cu118", purpose="OACNNs").SubMConv3d
+        submanifold = require("spconv.pytorch", extra="spconv", purpose="OACNNs").SubMConv3d
         for module in self.modules():
             if isinstance(module, (nn.Linear, submanifold)):
                 nn.init.trunc_normal_(module.weight, std=0.02)
@@ -393,7 +393,7 @@ class OACNNs(Backbone):
     def _encode(self, cells: Tensor, batch: Tensor, extent: Tensor, feat: Tensor) -> Tensor:
         """Run the network on voxels and return one feature vector per voxel."""
         name = type(self).__name__
-        spconv = require("spconv.pytorch", extra="spconv-cu118", purpose=name)
+        spconv = require("spconv.pytorch", extra="spconv", purpose=name)
         batch_size = len(extent)
         shape = extent.amax(dim=0)
         if not self.crop_odd_extent:

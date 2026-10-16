@@ -367,10 +367,10 @@ def test_frame_step_and_splits(tree):
 
 
 def test_loader_with_workers_matches_in_process_reading(tree):
-    from torch.utils.data import DataLoader
+    from .conftest import worker_loader
 
     dataset = build(tree)
-    loader = DataLoader(dataset, batch_size=2, num_workers=2, collate_fn=dataset.collate)
+    loader = worker_loader(dataset, "spawn", batch_size=2, collate_fn=dataset.collate)
     batches = list(loader)
     assert sum(len(batch) for batch in batches) == len(dataset)
     expected = dataset.collate([dataset[0], dataset[1]])

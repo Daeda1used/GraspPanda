@@ -16,6 +16,7 @@ model:
     finger_height: 0.02
     depth_base: 0.02
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list backbone
   backbone:
     type: SparseUNet14
     in_channels: 3
@@ -27,6 +28,7 @@ model:
     decoder_channels: [192, 192, 192, 192]
     voxel_features: first
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list proposal
   proposal:
     type: GraspnessFPS
     num_seeds: 1024
@@ -36,6 +38,7 @@ model:
     objectness_loss: {type: CrossEntropy, weight: 1.0}
     graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list view
   view:
     type: TemplateViewStage
     num_views: 300
@@ -43,12 +46,14 @@ model:
     max_friction: 0.6             # grasps with friction in (0, 0.6] count towards a view's graspness
     loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list assigner
   assigner:
     type: NearestLabelAssigner
     max_match_distance: null      # reference quirk: no limit, a seed on the table still gets labels
     crop_centre: seed
     padded_seeds: count           # reference quirk: repeated padding seeds are counted in loss means
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list grouper
   grouper:
     type: CylinderGroup
     radius: 0.05
@@ -57,6 +62,7 @@ model:
     nsample: 16
     mlp_channels: [256, 256]
 
+  # options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list head
   head:
     type: SWADHead
     num_angle: 12

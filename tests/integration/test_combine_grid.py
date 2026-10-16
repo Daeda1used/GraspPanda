@@ -37,7 +37,8 @@ def real(report):
 
 def test_a_shipped_method_runs_on_the_sample_frames(graspnet1b_root, cuda):
     report = real(probe(GSNET, iters=4))
-    assert report.verdict == "runs" and report.data == "real", report.detail
+    # Four iterations may leave no grasp above GSNet's score threshold: that ran too.
+    assert report.verdict in ("runs", "runs-empty") and report.data == "real", report.detail
     assert report.iterations == 4 and report.batch_size == 4 and len(report.frames) == 8
     assert all(frame.startswith("graspnet1b/scene_0000/realsense/") for frame in report.frames)
     assert report.parameters > 10_000_000 and report.peak_gpu_mib > 100
@@ -56,6 +57,14 @@ def test_a_shipped_method_runs_on_the_sample_frames(graspnet1b_root, cuda):
         "graspnet1b/scene_0000/realsense/0000",
         "graspnet1b/scene_0000/realsense/0128",
     ]
+    # Judge 2: every term at every iteration, every unit of GSNet reached, every part
+    # changed, and the per-epoch decay of its schedule within the probe (two epochs).
+    assert report.judge == 2 and set(report.losses_per_iteration) == set(report.losses)
+    assert all(len(values) == 4 for values in report.losses_per_iteration.values())
+    assert report.loss_trends["loss/graspness"]["active"] == 4
+    assert report.no_gradient == [] and report.unchanged == []
+    assert report.units_checked >= report.parts_checked == 5
+    assert report.lr_factor == 0.95 and len(report.score_quantiles) == 2
 
 
 def test_a_composed_swap_with_an_adapter_runs(graspnet1b_root, cuda, tmp_path):
@@ -66,7 +75,7 @@ def test_a_composed_swap_with_an_adapter_runs(graspnet1b_root, cuda, tmp_path):
     path = tmp_path / "baseline_sunet14.yaml"
     path.write_text(composed.text(path), encoding="utf-8")
     report = real(probe(path, iters=4))
-    assert report.verdict == "runs", report.detail
+    assert report.verdict in ("runs", "runs-empty"), report.detail
     assert report.batch_size == 2 and "loss/tolerance" in report.losses
     assert min(report.real_seeds) == 1.0  # a furthest-point subsample has no padding
 
@@ -92,7 +101,7 @@ def test_a_stage_set_runs_under_a_recipe_that_serves_its_labels_and_is_refused_e
     path = tmp_path / "gsnet_stages_baseline_recipe.yaml"
     path.write_text(composed.text(path), encoding="utf-8")
     report = real(probe(path, iters=4))
-    assert report.verdict in ("runs", "runs-unstable"), report.detail
+    assert report.verdict in ("runs", "runs-empty", "runs-unstable"), report.detail
     assert {"loss/graspness", "loss/view", "loss/score", "loss/width"} <= set(report.losses)
     assert report.batch_size == 2  # the recipe is GraspNet-baseline's
     refused = compose("economicgrasp/economicgrasp_sunet14_g1b-realsense_10e", stages)
@@ -154,8 +163,13 @@ def test_the_runner_records_a_cell_with_its_commands_and_resumes(graspnet1b_root
             pytest.skip(
                 f"real frames cannot be probed here: {reference['probe']['fallback'][:200]}"
             )
-        assert reference["verdict"] == "runs"
-        assert reference["probe_command"] == f"grasppanda probe {GSNET} --iters 2 --frames 8"
+        # Two iterations may leave no grasp above GSNet's score threshold: that ran too.
+        assert reference["verdict"] in ("runs", "runs-empty")
+        # The grid holds the recipe's peak rate: GSNet's Adam at 0.001, no decay.
+        command = f"grasppanda probe {GSNET} --iters 2 --frames 8 --schedule constant"
+        assert reference["probe_command"] == command
+        assert reference["probe"]["schedule"] == "constant" and reference["probe"]["rate"] == 0.001
+        assert reference["probe"]["lr_factor"] == 1.0
         # The method's own encoder composes to the method's config: one experiment.
         assert own["config_hash"] == reference["config_hash"]
         assert own["probed_as"] == "reference/GSNet" and own["probe"] == reference["probe"]
@@ -167,7 +181,9 @@ def test_the_runner_records_a_cell_with_its_commands_and_resumes(graspnet1b_root
         assert runner.main(arguments) == 0
         assert (runner.directory(name) / "results.jsonl").read_text(encoding="utf-8") == before
         compact = runner.compact(reference)
-        assert compact["verdict"] == "runs" and "shared_machine" in compact
+        assert compact["verdict"] == reference["verdict"] and "shared_machine" in compact
+        assert compact["judge"] == 2 and set(compact["trend"]) == set(compact["losses"])
+        assert compact["schedule"] == "constant" and compact["rate"] == 0.001
         assert json.dumps(compact)  # plain data
     finally:
         shutil.rmtree(cache_root() / "probe_grid" / name, ignore_errors=True)

@@ -403,6 +403,12 @@ STAGES: dict[str, dict[str, dict[str, Any]]] = {
             "num_seeds": SEEDS,
             "sampler": {"type": "ScoreWeightedFPS"},
         },
+        # Graspness only: objectness is left to a view stage that owns it (W4.6).
+        "ScoredSeeds+graspness_only": {
+            "type": "ScoredSeeds",
+            "num_seeds": SEEDS,
+            "select_by": "graspness_only",
+        },
         "SampledSeeds": {
             "type": "SampledSeeds",
             "num_seeds": SEEDS,
@@ -698,7 +704,21 @@ def refusal(node: dict[str, Any]) -> list[str]:
 
 def buildable(node: dict[str, Any]) -> bool:
     """Whether the optional library of every stage of the model is installed."""
-    return HAS_PYG or node["grouper"]["type"] != "PyGConvGroup"
+    grouper = node["grouper"]
+    inner = grouper.get("grouper") if isinstance(grouper.get("grouper"), dict) else {}
+    return HAS_PYG or "PyGConvGroup" not in (grouper["type"], inner.get("type"))
+
+
+def built(node: dict[str, Any]) -> SeedGraspDetector:
+    """The detector of a model node, seeded, with a proposal that passes most points."""
+    torch.manual_seed(0)
+    model = DETECTORS.build(node)
+    if hasattr(model.proposal, "score"):  # make most points candidates: real seeds everywhere
+        with torch.no_grad():
+            model.proposal.score.weight.mul_(0.01)
+            bias = model.proposal.score.bias  # [objectness logits,] graspness
+            bias.copy_(torch.tensor([0.0, 1.0, 1.0])[-len(bias) :])
+    return model
 
 
 def run(node: dict[str, Any]) -> SeedGraspDetector:
@@ -706,12 +726,7 @@ def run(node: dict[str, Any]) -> SeedGraspDetector:
     assert refusal(node) == []
     if not buildable(node):
         pytest.skip("needs the torch_geometric extra")
-    torch.manual_seed(0)
-    model = DETECTORS.build(node)
-    if hasattr(model.proposal, "score"):  # make most points candidates: real seeds everywhere
-        with torch.no_grad():
-            model.proposal.score.weight.mul_(0.01)
-            model.proposal.score.bias.copy_(torch.tensor([0.0, 1.0, 1.0]))
+    model = built(node)
     observation, supervision = batch()
     model.train()
     losses = model.loss(observation, supervision)
@@ -856,14 +871,15 @@ def test_grouper_under_head(grouper, head):
 @pytest.mark.parametrize("proposal", list(STAGES["proposal"]))
 def test_proposal_under_encoder_kind(proposal, backbone):
     produced = BACKBONES.get(backbone).output
-    required = PROPOSALS.get(proposal).requires
+    kind = STAGES["proposal"][proposal]["type"]
+    required = PROPOSALS.get(kind).requires
     node = method("GSNet", encoder(backbone), proposal=proposal)
     if produced == required:
         model = run(node)
         assert model.proposal.requires == model.backbone.output
         return
     (message,) = refusal(node)
-    assert f"{proposal} requires '{required}' scene features" in message
+    assert f"{kind} requires '{required}' scene features" in message
     assert f"{backbone} returns '{produced}' ones" in message
     assert ADAPTERS[required]({})["type"] in message
 
@@ -913,17 +929,17 @@ def test_no_stage_set_passes_the_config_check_and_fails_later():
 
 #: Stage sets the contracts allow among the variants above; the count is restated in
 #: docs/advanced_guides/swapping.md together with the list, so it is pinned here.
-LEGAL_STAGE_SETS = 1210
+LEGAL_STAGE_SETS = 2000
 
 
 def test_what_the_contracts_refuse_among_plausible_looking_swaps():
     """One example per rule, as a user would meet it: a single replaced line."""
     dense, sub = encoder("PointNet2Dense"), encoder("PointNet2")
     cases = [
-        # GSNet with the scale-balanced assigner: the weights would be ignored.
+        # PV-RCNN's scene crop under the baseline's head: no adapter gives it a depth axis.
         (
-            method("GSNet", dense, assigner="ScaleBalancedAssigner"),
-            "TemplateViewStage and SWADHead do not apply seed weights",
+            method("GraspNetBaseline", sub, grouper="VoxelSetAbstractionGroup"),
+            "No axis adapter turns a scene-support crop",
         ),
         # GSNet with EconomicGrasp's head only: the labels do not fit.
         (method("GSNet", dense, head="EconomicHead"), "must agree on the label set"),
@@ -957,6 +973,142 @@ def test_what_the_contracts_refuse_among_plausible_looking_swaps():
     for node, fragment in cases:
         messages = refusal(node)
         assert any(fragment in message for message in messages), (fragment, messages)
+
+
+def kinds(node: dict[str, Any]) -> list[str]:
+    """The kind of every refusal of the config check for a model node."""
+    try:
+        Config.from_dict({"model": node})
+    except ConfigError as error:
+        return [issue.kind for issue in error.issues]
+    return []
+
+
+# ------------------------------------------------------- what an adapter or an option lifts
+#
+# The refusals below were limits of the toolbox, not of the methods (dev audit of
+# 2026-10-14). `grasppanda compose` now inserts the adapter or sets the option, and says so
+# (tests/unit/test_combine_compose.py); here each lifted stage set is built, trained one
+# step and run to predictions, and what remains refused says why.
+
+
+@pytest.mark.parametrize("detector", ["GSNet", "GraspNetBaseline"])
+@pytest.mark.parametrize("grouper", list(STAGES["grouper"]))
+def test_an_axis_mismatch_runs_in_its_axis_adapter_or_says_why(grouper, detector):
+    """W4.2: a crop with another axis layout than the head reads is repeated over the depth
+    bins (DepthEmbedGroup) or pooled over them (DepthPoolGroup)."""
+    from grasppanda.models.detectors.seed_based import axis_adapters
+
+    head = HEADS.get(STAGES["head"][METHODS[detector]["head"]]["type"])
+    inner = dict(STAGES["grouper"][grouper])
+    cls = GROUPERS.get(inner["type"])
+    if cls.out_axes == head.in_axes:
+        pytest.skip("the axes agree: test_grouper_under_head")
+    backbone = encoder("PointNet2Dense" if detector == "GSNet" else "PointNet2")
+    node = method(detector, backbone)
+    node["grouper"] = inner
+    fitting = axis_adapters(cls.out_axes, head.in_axes, cls.support)
+    adapter_itself = getattr(cls, "inner_axes", None) is not None
+    if adapter_itself or not fitting:
+        assert kinds(node) == ["structural" if adapter_itself else "not-implemented"]
+        return
+    assert kinds(node) == ["fixed-by-compose"]
+    (adapter,) = fitting
+    node["grouper"] = {"type": adapter, "grouper": inner}
+    if adapter == "DepthEmbedGroup":
+        node["grouper"]["num_depth"] = DEPTHS
+    model = run(node)
+    assert type(model.grouper.grouper).__name__ == inner["type"]
+    assert model.grouper.out_axes == head.in_axes
+
+
+def _losses(model: SeedGraspDetector, matched: Any, out: Any) -> dict[str, float]:
+    terms = model.head.loss(out.raw, matched)
+    return {key: float(value) for key, value in terms.items() if key.startswith("loss/")}
+
+
+@pytest.mark.parametrize("head", ["SWADHead", "DecoupledGridHead", "OperationHead", "EconomicHead"])
+def test_every_head_applies_the_weight_of_a_seed_as_a_weighted_mean(head):
+    """W4.3: a weight per seed weights every loss of the head bundle: uniform weights give
+    the unweighted losses, other weights other losses."""
+    import dataclasses
+
+    detector = "EconomicGrasp" if head == "EconomicHead" else "GSNet"
+    grouper = "DepthCylinderGroup" if head == "OperationHead" else METHODS[detector]["grouper"]
+    node = method(detector, encoder("PointNet2Dense"), head=head, grouper=grouper)
+    if head == "OperationHead":
+        node["assigner"] = dict(STAGES["assigner"]["NearestLabelAssigner+object_seeds"])
+    model = built(node)
+    observation, supervision = batch()
+    model.train()
+    out = model.run_stages(observation, supervision)
+    matched = out.matched
+    assert matched.valid.any()
+    plain = _losses(model, dataclasses.replace(matched, weight=None), out)
+    ones = torch.ones(len(matched.valid))
+    assert _losses(model, dataclasses.replace(matched, weight=ones * 3.0), out) == pytest.approx(
+        plain
+    )
+    skewed = torch.linspace(0.1, 5.0, len(matched.valid))
+    weighted = _losses(model, dataclasses.replace(matched, weight=skewed), out)
+    assert weighted.keys() == plain.keys()
+    assert any(abs(weighted[key] - plain[key]) > 1e-6 for key in plain), (weighted, plain)
+
+
+@pytest.mark.parametrize("head", ["SWADHead", "DecoupledGridHead"])
+def test_the_scale_balanced_assigner_trains_the_flat_heads(head):
+    """W4.3/W4.7: Scale-Balanced-Grasp's weights under GSNet's view stage and a flat head,
+    through the depth pooling adapter: no refusal, no warning, and the model runs."""
+    node = method("ScaleBalancedGrasp", encoder("PointNet2"), view="TemplateViewStage", head=head)
+    node["grouper"] = {"type": "DepthPoolGroup", "grouper": node["grouper"]}
+    node["head"].pop("score_decode", None)
+    from grasppanda.models.detectors.seed_based import stage_contract_warnings
+
+    assert (
+        stage_contract_warnings(**{slot: node[slot] for slot in ("view", "assigner", "head")}) == []
+    )
+    run(node)
+
+
+def test_a_head_that_reads_a_score_nobody_predicts_decodes_without_it():
+    """W4.4: Scale-Balanced-Grasp's decoder multiplies the seeds' objectness in; under a
+    view stage that predicts none the head decodes as GraspNet-baseline does."""
+    node = method(
+        "ScaleBalancedGrasp",
+        encoder("PointNet2"),
+        view="TemplateViewStage",
+        assigner="NearestLabelAssigner",
+        grouper="DepthCylinderGroup",
+    )
+    assert kinds(node) == ["fixed-by-compose"]
+    node["head"]["score_decode"] = "score_x_tolerance"
+    model = run(node)
+    assert model.head.score_kind == "predicted_quality_x_tolerance"
+
+
+@pytest.mark.parametrize("detector", ["GSNet", "GraspNetBaseline", "ScaleBalancedGrasp"])
+def test_a_graspness_proposal_leaves_objectness_to_the_view_stage_that_owns_it(detector):
+    """W4.6: the scoring proposal predicts graspness only next to ObjectnessViewStage; the
+    view stage owns objectness, and Scale-Balanced-Grasp's decoder reads it from there."""
+    with_both = method(
+        detector,
+        encoder("PointNet2Dense"),
+        proposal="ScoredSeeds",
+        view="ObjectnessViewStage",
+        assigner="NearestLabelAssigner+object_seeds",
+    )
+    assert kinds(with_both) == ["fixed-by-compose"]
+    node = {**with_both, "proposal": dict(STAGES["proposal"]["ScoredSeeds+graspness_only"])}
+    model = run(node)
+    observation, supervision = batch()
+    model.train()
+    out = model.run_stages(observation, supervision)
+    assert out.point_scores.objectness is None and model.proposal.score.out_features == 1
+    assert set(model.proposal.loss(out.point_scores, supervision)) == {"loss/graspness"}
+    assert set(out.seeds.scores) == {"graspness", "objectness"}  # the view stage's objectness
+    # A proposal whose selection reads objectness cannot leave it: a genuine refusal.
+    by_objectness = {**with_both["proposal"], "select_by": "objectness"}
+    assert kinds({**with_both, "proposal": by_objectness}) == ["structural"]
 
 
 def test_a_seed_width_mismatch_is_refused_with_the_fix_and_the_projection_runs():

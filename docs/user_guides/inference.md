@@ -1,10 +1,11 @@
 # Inference and visualisation
 
-Three tools take a trained detector off the benchmark:
+Four tools take a trained detector off the benchmark:
 
 | Tool | What it does |
 |---|---|
 | [`grasppanda demo`](#first-grasps-in-five-minutes) | grasps on one frame, as numbers, a picture and an animation |
+| [`grasppanda explore`](#run-in-the-browser) | the same in a browser page: pick a method and a weights file, run it on the example scene or on your depth image |
 | [`GraspInferencer`](#from-python) | the same from Python: a depth image or a point cloud in, a `GraspGroup` out |
 | [`grasppanda analyze`](#reading-an-analysis) | says where the AP of an evaluation comes from, and how two evaluations differ |
 
@@ -12,14 +13,20 @@ All command output on this page was produced by the commands shown, on the devel
 machine (one RTX A6000, shared). Paths are as printed.
 
 !!! warning "You bring the weights"
-    The model zoo holds no weights yet: nothing has been trained with GraspPanda so far,
-    and the checkpoints the authors of the methods released are under their own,
-    mostly non-commercial, licences. No grasp checkpoint is downloaded for you (only an
-    image-encoder preset with `pretrained: true` fetches backbone weights, through its
-    library, and says so). You download an
-    author checkpoint yourself, convert it once with `tools/convert_checkpoint.py`, and
-    pass the result with `--weights`. Each method's page says where its checkpoint is:
-    `configs/<method>/README.md`.
+    The model zoo has no weights to download yet: the one model trained with GraspPanda
+    so far (GSNet) is not published, and the checkpoints the authors of the methods
+    released are under their own, mostly non-commercial, licences. No grasp checkpoint
+    is downloaded for you (only an image-encoder preset with `pretrained: true` fetches
+    backbone weights, through its library, and says so). You download an author
+    checkpoint yourself, convert it once with `tools/convert_checkpoint.py`, and pass the
+    result with `--weights`. Each method's page walks through it in five minutes, with the
+    file, its licence, the commands and what they printed when they were measured:
+    [GSNet](../methods/gsnet.md#run-in-five-minutes),
+    [EconomicGrasp](../methods/economicgrasp.md#run-in-five-minutes),
+    [FineGrasp](../methods/finegrasp.md#run-in-five-minutes),
+    [GraspNet-baseline](../methods/graspnet_baseline.md#run-in-five-minutes),
+    [Scale-Balanced-Grasp](../methods/scale_balanced_grasp.md#run-in-five-minutes),
+    [HGGD](../methods/hggd.md#run-in-five-minutes).
 
 ## First grasps in five minutes
 
@@ -232,6 +239,76 @@ holds for GSNet on GraspClutter6D frames. HGGD draws random numbers while it pre
 here seeds per call. HGGD therefore reproduces the first frame of a run (within 1e-5;
 two runs of the same GPU kernels differ by 2e-7) and gives another, equally valid, draw
 for later frames.
+
+## Run in the browser
+
+`grasppanda explore` serves the [combination explorer](../explorer/index.md) on your
+machine. Give it weights and its tab **Run a method** runs a ported method in the page,
+with no code:
+
+```bash
+grasppanda explore --weights-dir ~/grasppanda_weights   # every .pth, .pt, .tar, .ckpt under it
+grasppanda explore --weights gsnet=work_dirs/gsnet/<run>/checkpoints/epoch_0010.pth \
+    --weights hggd=hggd_realsense.pth                   # or files by name (repeatable)
+```
+
+![The Run panel of grasppanda explore after a run of GSNet on the example scene: the four steps on the left, the picture of the 30 best grasps and the table of the best ten on the right](../assets/explore-run.webp)
+
+The panel has four steps and a button:
+
+1. **Method**: one of the six ported methods. When you have changed slots in *Build a
+   combination*, the panel also offers *with your changes* (or press *Run this selection on
+   a scene* there): the composed config runs, so the weights must fit the composed model.
+   A change of post-processing or of the training recipe keeps the model; a new stage needs
+   weights trained with it.
+2. **Weights**: the files the server was started with. A file whose name suggests the
+   method is chosen for you (`gsnet`, `hggd_author_realsense.pth`); the run says whether it
+   fits.
+3. **Input**: the built-in example scene, or your depth image: a 16-bit PNG in millimetres
+   or a `.npy` in metres, at most 20 MB and 4096 pixels a side, with the intrinsics `fx`,
+   `fy`, `cx`, `cy` in pixels (pasting `925,925,640,360` into one box fills all four), an
+   optional colour image (HGGD needs it) and an optional workspace box in the camera frame.
+4. **Post-processing**: the collision filter, the config's `cd` variant, as
+   `--collision-filter` applies it.
+
+*Run* shows each step while it happens (building the model and loading the weights,
+reading the input, predicting, post-processing, drawing), then the picture
+`grasppanda demo` draws, the best ten grasps, the counts through the post-processing
+chain, two downloads (every grasp as the `(G, 17)` array of `grasps.npy`, and the picture),
+the lines `demo` prints under *What ran*, and the commands that do the same in a terminal.
+On the development machine (one RTX A6000, shared) the first run after the server started
+took 7.9 s for GSNet on the example scene, most of it building the model, loading 176 MB of
+weights and the first CUDA calls; switching to HGGD took 2.3 s, and GraspNet-baseline on
+the example scene uploaded as `depth.png` with the workspace box of
+[Your own camera](#your-own-camera) 1.0 s, with the same 942 predicted and 240 kept as the
+command there. Running the same method again keeps its model in memory.
+
+When a run cannot go ahead, the panel says why in the words of `grasppanda demo`: weights
+that do not fit the config (`WeightMismatchError` with its list of keys), a missing optional
+library (`MissingDependencyError` with the `pip install` line), an input the inferencer
+refuses (`InputError`: no intrinsics, a colour-mapped picture instead of a depth image, an
+empty workspace, HGGD without a colour image), a GPU without free memory, another run in
+progress.
+
+What the server allows, and nothing more:
+
+- It listens on `127.0.0.1` only, answers requests addressed to a loopback name, and takes
+  a run only from its own page (Host and Origin are checked; a run is JSON, which a page of
+  another site cannot send without the server's consent).
+- It reads weights only from the files its command line named: under `--weights-dir`
+  (resolved, so `..` and links that leave the folder are refused) and each
+  `--weights NAME=PATH`. The page picks one of those; a path it sends is never opened as it
+  is.
+- An upload is limited to 20 MB, checked against the format its name claims, and decoded
+  into a temporary directory that is removed when the run ends. A run writes nowhere else
+  and downloads nothing (a composed selection is built with `pretrained: false`, since the
+  weights file supplies every parameter). The only other file the server ever writes is a
+  composed config you ask it to save, into the working directory.
+- One run at a time: a second request is answered with "another run is in progress".
+- A run predicts on one frame. Nothing is trained.
+
+`--device cpu` runs on the CPU. On the [documentation site](../explorer/index.md) the tab is
+greyed, with the command that enables it, since a run needs your weights on your computer.
 
 ## From Python
 

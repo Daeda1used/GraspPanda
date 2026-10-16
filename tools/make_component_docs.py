@@ -44,7 +44,7 @@ from grasppanda.models.detectors.seed_based import (
     SeedGraspDetector,
     stage_contract_problems,
 )
-from grasppanda.registry import BACKBONES, DETECTORS, GROUPERS, component_parameters
+from grasppanda.registry import BACKBONES, DETECTORS, GROUPERS, INJECTED, component_parameters
 
 REPO = Path(__file__).resolve().parents[1]
 COMPONENTS_PAGE = REPO / "docs" / "components.md"
@@ -305,6 +305,30 @@ def assigner_variants() -> dict[str, dict[str, Any]]:
     return variants
 
 
+def proposal_variants() -> dict[str, dict[str, Any]]:
+    """Label -> proposal node: every proposal as is, and with the option that leaves a
+    seed score to another stage where it has one (``without_seed_score``)."""
+    variants: dict[str, dict[str, Any]] = {}
+    registry = STAGE_REGISTRIES["proposal"]
+    for name in in_tree("PROPOSALS"):
+        variants[name] = {"type": name}
+        cls = registry.get(name)
+        params, _ = component_parameters(cls)
+        defaults = {
+            key: param.default
+            for key, param in params.items()
+            if param.default is not param.empty and param.default is not INJECTED
+        }
+        for score in cls.seed_scores:
+            leave = cls.without_seed_score(defaults, score)
+            if not isinstance(leave, dict) or leave.get("type", name) != name:
+                continue
+            switches = {k: v for k, v in leave.items() if k != "type" and defaults.get(k) != v}
+            spelled = ", ".join(f"{option}: {value}" for option, value in switches.items())
+            variants[f"{name} ({spelled})"] = {"type": name, **switches}
+    return variants
+
+
 class _Kind:
     """Stand-in for "any encoder of this output kind" in a contract check."""
 
@@ -317,9 +341,9 @@ def stage_variants() -> dict[str, dict[str, Any]]:
     variants: dict[str, dict[str, Any]] = {
         "backbone": {kind: _Kind(kind).cls for kind in ("dense", "subsampled")},
         "assigner": assigner_variants(),
+        "proposal": proposal_variants(),
     }
     for slot, registry in (
-        ("proposal", "PROPOSALS"),
         ("view", "VIEWS"),
         ("grouper", "GROUPERS"),
         ("head", "HEADS"),
@@ -357,7 +381,11 @@ def pair_table(row_slot: str, column_slot: str) -> Iterator[str]:
             if not problems:
                 cells.append(YES)
                 continue
-            reason = " ".join(_first_sentence(problem) for problem in problems)
+            # Each reason is the first sentence of the error, after the kind of refusal.
+            reason = " ".join(
+                f"[{getattr(problem, 'kind', 'unclassified')}] {_first_sentence(problem)}"
+                for problem in problems
+            )
             if reason not in reasons:
                 reasons.append(reason)
             cells.append(f"{NO} ({reasons.index(reason) + 1})")
@@ -478,7 +506,8 @@ def _stage_sets_region() -> str:
         raise SystemExit(f"reference models outside the legal stage sets: {references}")
     lines = [
         f"The contracts accept **{len(legal)} of {total}** combinations of the registered "
-        "stages (an assigner counts twice when it has options that switch optional fields on). "
+        "stages (an assigner counts twice when it has options that switch optional fields on, "
+        "a proposal when it has an option that leaves a seed score to the view stage). "
         "The last column names the reference model that is this set.",
         "",
         *_table([*headers, "Reference model of"], rows),

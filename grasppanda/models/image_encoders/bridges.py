@@ -45,6 +45,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
+from grasppanda.config.errors import Refusal
 from grasppanda.registry import IMAGE_ENCODERS
 from grasppanda.structures import ContractError
 from grasppanda.utils.imports import require
@@ -353,7 +354,7 @@ class HFImageEncoder(_LibraryEncoder):
         arguments = node.get("model_args")
         asked = isinstance(arguments, Mapping) and arguments.get("trust_remote_code")
         if asked and not node.get("accept_remote_code", False):
-            yield cls._remote_code_message(node.get("name"))
+            yield Refusal(cls._remote_code_message(node.get("name")), "policy")
 
     def __init__(
         self,

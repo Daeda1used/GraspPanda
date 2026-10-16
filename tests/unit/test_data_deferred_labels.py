@@ -10,11 +10,12 @@ import os
 import pickle
 import threading
 import time
+from collections import OrderedDict
 
 import numpy as np
 import pytest
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 from grasppanda.datasets import labels as label_module
 from grasppanda.datasets.assets import AssetError
@@ -48,6 +49,7 @@ from grasppanda.structures import (
 from grasppanda.structures.observation import gather_grids
 from grasppanda.transforms.points import SampleGraspLabels
 
+from .conftest import worker_loader
 from .test_data_graspnet1b import (  # noqa: F401
     GRID,
     POINTS,
@@ -282,12 +284,22 @@ def test_a_worker_that_defers_opens_no_grid_file(tree):  # noqa: F811
     assert _mapped(file) is _mapped(file)  # one map per file and process
 
 
+def _join_read_ahead_threads() -> None:
+    """Wait for the read-ahead threads of earlier tests to end: a thread still draining
+    its queue would call a replaced ``_ReadAhead.read`` with a file of another test."""
+    for thread in threading.enumerate():
+        if thread.name == "label-read-ahead":
+            thread.join(timeout=10)
+    assert not [thread for thread in threading.enumerate() if thread.name == "label-read-ahead"]
+
+
 def test_a_file_is_read_ahead_once_when_it_is_first_opened(tree, monkeypatch):  # noqa: F811
     _, deferred = datasets(tree)
     files = deferred[0].supervision.objects[0][0].deferred.files
     assert _ReadAhead.read(files.scores) == os.path.getsize(files.scores) > 0
     assert _ReadAhead.read(files.scores + ".missing") == 0  # best effort, never an error
     read = []
+    _join_read_ahead_threads()
     monkeypatch.setattr(_ReadAhead, "read", classmethod(lambda cls, path: read.append(path)))
     fresh = _ReadAhead()
     monkeypatch.setattr(label_module, "_read_ahead", fresh)
@@ -313,10 +325,57 @@ def test_a_file_is_read_ahead_once_when_it_is_first_opened(tree, monkeypatch):  
     wait()
     assert len(read) == 2
     # the threads end with their queue: nothing of this stays alive in the process
-    for thread in threading.enumerate():
-        if thread.name == "label-read-ahead":
-            thread.join(timeout=10)
-    assert not [thread for thread in threading.enumerate() if thread.name == "label-read-ahead"]
+    _join_read_ahead_threads()
+
+
+class _WhatAWorkerFinds(Dataset):
+    """The state of the label module in a loader worker before it reads anything itself,
+    and the labels it then reads."""
+
+    def __init__(self, reader: DeferredGraspLabels) -> None:
+        self.reader = reader
+        self.found: dict | None = None  # each worker has its own copy of the dataset
+
+    def __len__(self) -> int:
+        return 4
+
+    def __getitem__(self, index: int) -> dict:
+        if self.found is None:
+            self.found = {
+                "maps": len(label_module._MAPS),
+                "reading": label_module._read_ahead._running,
+                "requested": len(label_module._read_ahead._requested),
+            }
+        rows = torch.arange(len(self.reader.rows)).flip(0)
+        scores = DeferredGraspLabels.gather([self.reader], "scores", rows * 0, rows)
+        return {**self.found, "scores": scores}
+
+
+@pytest.mark.skipif(not hasattr(os, "fork"), reason="workers are forked only where fork exists")
+@pytest.mark.filterwarnings("ignore:This process .* is multi-threaded:DeprecationWarning")
+def test_workers_forked_while_labels_are_read_ahead_start_afresh(tree, monkeypatch):  # noqa: F811
+    """How a training runs: the main process reads labels, and every epoch forks workers
+    while its read-ahead threads may still be reading. A worker starts without the maps
+    and the read-ahead of the main process, and reads labels of its own."""
+    _, deferred = datasets(tree)
+    reader = deferred[0].supervision.objects[0][0].deferred
+    release = threading.Event()  # the main process's read-ahead stays busy until the end
+    _join_read_ahead_threads()
+    monkeypatch.setattr(_ReadAhead, "read", classmethod(lambda cls, path: release.wait(60)))
+    monkeypatch.setattr(label_module, "_read_ahead", _ReadAhead())
+    monkeypatch.setattr(label_module, "_MAPS", OrderedDict())
+    try:
+        rows = torch.arange(len(reader.rows)).flip(0)
+        expected = DeferredGraspLabels.gather([reader], "scores", rows * 0, rows)
+        assert label_module._read_ahead._running == 2 and len(label_module._MAPS) == 2
+        loader = worker_loader(_WhatAWorkerFinds(reader), "fork", batch_size=None)
+        found = list(loader)
+    finally:
+        release.set()
+    assert len(found) == 4
+    for item in found:
+        assert (item["maps"], item["reading"], item["requested"]) == (0, 0, 0)
+        assert torch.equal(item["scores"], expected)
 
 
 # ------------------------------------------------------------------------- identity
@@ -349,7 +408,7 @@ def test_samples_are_the_same_with_either_storage(tree, mode, visible_within):  
 
 def test_a_loader_with_workers_delivers_deferred_labels(tree):  # noqa: F811
     dense_set, deferred_set = datasets(tree)
-    loader = DataLoader(deferred_set, batch_size=3, num_workers=2, collate_fn=collate)
+    loader = worker_loader(deferred_set, "spawn", batch_size=3, collate_fn=collate)
     batches = list(loader)
     assert sum(len(batch) for batch in batches) == len(deferred_set)
     expected = collate([dense_set[index] for index in range(3)])

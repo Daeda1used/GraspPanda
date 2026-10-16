@@ -34,7 +34,7 @@ from grasppanda.registry import (
     slot_registry,
 )
 
-from .errors import Issue
+from .errors import Issue, kind_of
 from .loader import TYPE_KEY, KeyPath, dotted
 
 __all__ = ["fill_defaults", "import_custom", "iter_components", "validate_config"]
@@ -52,11 +52,14 @@ class _Context:
     def fork(self) -> _Context:
         return _Context(self.origins)
 
-    def add(self, path: KeyPath, message: str) -> None:
+    def add(self, path: KeyPath, message: str, kind: str | None = "not-a-combination") -> None:
+        """Record a problem. A message that carries its kind (a ``Refusal``) keeps it; a
+        plain one gets ``kind``: problems of a config's own statements (a missing option,
+        an unknown key, a wrong type) are not about a combination."""
         source = self.origins.get(path)
         if source is None:
             source = next((s for p, s in self.origins.items() if p[: len(path)] == path), None)
-        self.issues.append(Issue(dotted(path), message, source))
+        self.issues.append(Issue(dotted(path), str(message), source, kind_of(message, kind)))
 
 
 def _suggest(name: str, candidates: Any) -> str:
@@ -506,5 +509,5 @@ def validate_config(
                 )
     _check_dataclass(data, RootConfig, (), ctx)
     for path, message in run_rules(data, command):
-        ctx.add(path, message)
+        ctx.add(path, message, kind=None)  # a rule of a project may not say
     return ctx.issues

@@ -1,0 +1,430 @@
+{
+  "about": "What the section 'Run <method> in five minutes' of docs/methods/<method>.md reports as measured. tools/make_method_pages.py writes that section from this file, the metafile of the method (where the weights come from, their licence, the conversion command, the whole-split rows) and the config (the pipeline, the post-processing). Each run names the weights entry of the metafile it used ('weights' or 'author_weights'), and per measurement the date, the commit, the machine and the sha256 of the weights file that was loaded; the logs and result records are kept under 'evidence' on the machine that ran them. Wall times are of the whole command, from the start of the process to the last file written. AP is in percent, seen split of GraspNet-1Billion (RealSense), every 64th frame. Written by hand from the runs; tests/unit/test_method_quickstart.py holds it to the metafiles and the configs.",
+  "machines": {
+    "rtx-a6000": {
+      "gpu": "one NVIDIA RTX A6000 shared with other jobs",
+      "details": "one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8"
+    }
+  },
+  "methods": {
+    "GSNet": {
+      "config": "gsnet/gsnet_sunet14_g1b-realsense_10e",
+      "runs": [
+        {
+          "weights": "author_weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 14.8,
+              "points": 15000,
+              "workspace_points": 316254,
+              "predicted": 1024,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  418
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/demo/demo_gsnet",
+              "weights_sha256": "3b0cea292a002880e4bad4d88753ff6e7523b42ed50252ec327b2d84d9617deb"
+            }
+          ],
+          "python": [],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 36.6,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 19.23,
+                "cd": 39.75
+              },
+              "config_hash": "988f31684533b2c779bf3fd8519c6baecc9d35099e60f26c2410ded4ce0434df",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/test_seen_step64/gsnet_released/20261015-121720-test",
+              "weights_sha256": "3b0cea292a002880e4bad4d88753ff6e7523b42ed50252ec327b2d84d9617deb"
+            }
+          ]
+        },
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 16.6,
+              "points": 15000,
+              "workspace_points": 316254,
+              "predicted": 1024,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  689
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/gsnet",
+              "weights_sha256": "829ad72d130d7bb8f5bcc28b61c5f9f32675530383b0c5be8ad6f6cb7a0d75d7"
+            }
+          ],
+          "python": [],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 40,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 67.82,
+                "cd": 70.74
+              },
+              "config_hash": "ae47e1cc6da470b3107a9fcb6e0759159386bbe9b0231d1f5bcf71d02900afbc",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/gsnet/20261015-044507-test",
+              "weights_sha256": "829ad72d130d7bb8f5bcc28b61c5f9f32675530383b0c5be8ad6f6cb7a0d75d7"
+            }
+          ]
+        }
+      ]
+    },
+    "EconomicGrasp": {
+      "config": "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e",
+      "runs": [
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 14.0,
+              "points": 20000,
+              "workspace_points": 316254,
+              "predicted": 1024,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  725
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/economicgrasp",
+              "weights_sha256": "33b57de045c7b16fa28bd77794527736ac606177f587e6f048611b88d28eccea"
+            }
+          ],
+          "python": [],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 44,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 68.75,
+                "cd": 70.11
+              },
+              "config_hash": "5f8bfd825a7b1f030b7a1f6968134b2db6fe4a7ef481acd6325ee1cfa588c8e6",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/economicgrasp/20261015-044548-test",
+              "weights_sha256": "33b57de045c7b16fa28bd77794527736ac606177f587e6f048611b88d28eccea"
+            }
+          ]
+        }
+      ]
+    },
+    "FineGrasp": {
+      "config": "finegrasp/finegrasp_sunet14_g1b-realsense_10e",
+      "runs": [
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 14.8,
+              "points": 20000,
+              "workspace_points": 316254,
+              "predicted": 1024,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  613
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/finegrasp",
+              "weights_sha256": "995a85e7d5f78a2b0b8ce06a1b5ddf993b75befce0c9e35968c73816c2fb9988"
+            },
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 15.5,
+              "points": 20000,
+              "workspace_points": 316254,
+              "predicted": 1024,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  613
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/demo/demo_finegrasp",
+              "weights_sha256": "995a85e7d5f78a2b0b8ce06a1b5ddf993b75befce0c9e35968c73816c2fb9988"
+            }
+          ],
+          "python": [
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 11.4,
+              "grasps": 613,
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/demo/python_finegrasp",
+              "weights_sha256": "995a85e7d5f78a2b0b8ce06a1b5ddf993b75befce0c9e35968c73816c2fb9988"
+            }
+          ],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 44,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 71.21,
+                "cd": 72.99
+              },
+              "config_hash": "d545ce3055017f43dc973a1e0c068662a46c81b10da015fde6c6d22b307b53ef",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/finegrasp/20261015-044632-test",
+              "weights_sha256": "995a85e7d5f78a2b0b8ce06a1b5ddf993b75befce0c9e35968c73816c2fb9988"
+            }
+          ]
+        }
+      ]
+    },
+    "GraspNet-baseline": {
+      "config": "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
+      "runs": [
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 10.5,
+              "points": 20000,
+              "workspace_points": 316254,
+              "predicted": 880,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  285
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/baseline",
+              "weights_sha256": "3f7ac907ee66e3fdb4c28ae5b9dc5b9831129fe0b209723de5702d8006c2325f"
+            }
+          ],
+          "python": [],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 35,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 32.6,
+                "cd": 48.67
+              },
+              "config_hash": "8229ed06c99f32693dae9a2cbd9ba097fe4b7bd2d2c698a4e9693b58b9249a5b",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/baseline/20261015-044716-test",
+              "weights_sha256": "3f7ac907ee66e3fdb4c28ae5b9dc5b9831129fe0b209723de5702d8006c2325f"
+            }
+          ]
+        }
+      ]
+    },
+    "Scale-Balanced-Grasp": {
+      "config": "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e",
+      "runs": [
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 10.5,
+              "points": 20000,
+              "workspace_points": 316254,
+              "predicted": 262,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  189
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/sbg",
+              "weights_sha256": "07ed7aac17ece94257c6f91041d81fd0fb49232a5915832f3b5bc1651b16500e"
+            }
+          ],
+          "python": [],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 37,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [
+                "workspace"
+              ],
+              "AP": {
+                "raw": 57.87,
+                "cd": 62.84
+              },
+              "config_hash": "b71c997d8cabd1ad35644ce4f38f8c82f767358cecd252b34b0a6b7655130e49",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/sbg/20261015-044750-test",
+              "weights_sha256": "07ed7aac17ece94257c6f91041d81fd0fb49232a5915832f3b5bc1651b16500e"
+            }
+          ]
+        }
+      ]
+    },
+    "HGGD": {
+      "config": "hggd/hggd_r34w8_g1b-realsense_15e",
+      "runs": [
+        {
+          "weights": "weights",
+          "demo": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 14.5,
+              "points": 25600,
+              "workspace_points": null,
+              "predicted": 470,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  287
+                ],
+                [
+                  "GraspNMS",
+                  72
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/demo/hggd",
+              "weights_sha256": "15bc313a628f3e83af1d663b176d4bbdaeb23e55ee516f6df8c699208e52793c"
+            },
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 16.9,
+              "points": 25600,
+              "workspace_points": null,
+              "predicted": 470,
+              "after": [
+                [
+                  "ModelFreeCollisionFilter",
+                  287
+                ],
+                [
+                  "GraspNMS",
+                  72
+                ]
+              ],
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/demo/demo_hggd",
+              "weights_sha256": "c99e34eb9727585c3e4096ef65025954a138b98e8191ed55f6470791e21daf7a"
+            }
+          ],
+          "python": [
+            {
+              "date": "2026-10-15",
+              "commit": "0ddca31",
+              "machine": "rtx-a6000",
+              "wall_s": 8.2,
+              "grasps": 72,
+              "evidence": "$GRASPPANDA_CACHE/verification/W5.4/demo/python_hggd",
+              "weights_sha256": "c99e34eb9727585c3e4096ef65025954a138b98e8191ed55f6470791e21daf7a"
+            }
+          ],
+          "test": [
+            {
+              "date": "2026-10-15",
+              "commit": "ea6268b",
+              "machine": "rtx-a6000",
+              "wall_s": 53,
+              "split": "test_seen",
+              "frame_step": 64,
+              "frames": 120,
+              "opts": [
+                "evaluation.num_workers=4"
+              ],
+              "gt_assisted": [],
+              "AP": {
+                "raw": 58.16,
+                "cd": 64.14
+              },
+              "config_hash": "b0bc6d25a8945cde60e17034a3c048560a83b535b4c443d4ce6af0ee4783eaf2",
+              "evidence": "$GRASPPANDA_CACHE/verification/W5/test_seen_step64/hggd/20261015-044828-test",
+              "weights_sha256": "15bc313a628f3e83af1d663b176d4bbdaeb23e55ee516f6df8c699208e52793c"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

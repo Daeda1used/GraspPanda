@@ -55,6 +55,8 @@ class TemplateViewStage(ViewStage):
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
     label_formats = ("dense", "compact")
+    #: A weight per seed from the assigner weights the views of that seed in the loss.
+    applies_seed_weights = True
     #: The view scores are only ranked and min-max normalised, so a loss that trains them
     #: as logits needs no activation here.
     loss_terms: ClassVar[dict[str, str]] = {"loss": "unit"}
@@ -172,9 +174,15 @@ class TemplateViewStage(ViewStage):
     def loss(
         self, approach: ApproachSet, matched: MatchedLabels | CompactMatchedLabels
     ) -> dict[str, Tensor]:
-        """View-score regression loss on the supervised seeds."""
+        """View-score regression loss on the supervised seeds.
+
+        With a weight per seed from the assigner, the loss is the weighted mean over the
+        views of the supervised seeds, every view weighted by its seed.
+        """
         if approach.logits is None:
             raise ContractError(f"{type(self).__name__}.loss needs the view scores of its forward")
         target, supervised = self.targets(matched)
         mask = None if bool(supervised.all()) else supervised[:, None].expand_as(target)
-        return {"loss/view": self.loss_fn(approach.logits, target, mask)}
+        weight = getattr(matched, "weight", None)
+        views = None if weight is None else weight[:, None].expand_as(target)
+        return {"loss/view": self.loss_fn(approach.logits, target, mask, views)}

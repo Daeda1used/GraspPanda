@@ -21,16 +21,15 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights:
-      # finegrasp_pipeline/model.safetensors of the authors' model repository, to be
-      # converted with
-      #   python -m tools.convert_checkpoint model.safetensors finegrasp_realsense.pth \
-      #       --source-format finegrasp --camera realsense
+      # finegrasp_pipeline/model.safetensors of the authors' model repository, converted
+      # with `convert` (the command of README.md).
       # The digest is the one the model hub lists for the file and the one of the copy
       # the parity tests ran on.
       url: https://huggingface.co/HorizonRobotics/FineGrasp/blob/main/finegrasp_pipeline/model.safetensors
       sha256: 30c1f335567dcd726c11fb60249da65e26cc92c2f82928a4e4123ac235b38f79
       license: "apache-2.0 on the model card; trained on GraspNet-1Billion, whose data and labels are CC BY-NC-SA 4.0"
       source: author
+      convert: "python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors finegrasp_realsense.pth --source-format finegrasp --camera realsense"
     results:
       - provenance: reported
         collision_filter: false

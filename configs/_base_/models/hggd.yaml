@@ -29,6 +29,8 @@ model:
     resize: pil_bicubic           # reference quirk: Pillow's resize, colour rounded to 8 bits per pass
     depth_clip: 1.0               # metres around the mean of the resized depth image
 
+  # The slot `model.image_encoder` replaces this encoder; its options, measured:
+  #   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list image_encoder
   encoder:                        # ResNet-34 block layout at an eighth of its width, from scratch
     base_width: 8
     blocks: [3, 4, 6, 3]

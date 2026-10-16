@@ -24,7 +24,7 @@ def test_missing_spconv_names_the_extra_to_install(monkeypatch):
         )
 
     monkeypatch.setattr(ptv3, "require", unavailable)
-    with pytest.raises(MissingDependencyError, match=r"PTv3 needs .*\.\[spconv-cu118\]"):
+    with pytest.raises(MissingDependencyError, match=r"PTv3 needs .*\.\[spconv\]"):
         ptv3.PTv3()
 
 

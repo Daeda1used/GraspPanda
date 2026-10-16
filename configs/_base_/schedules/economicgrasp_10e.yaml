@@ -8,11 +8,13 @@
 # Kinect checkpoint is stored as epoch 10. The argparse default of train.py is 20, see
 # economicgrasp_20e.yaml; because the cosine spans the run, the two are different
 # schedules and not a longer and a shorter version of the same one.
+# options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list optimizer
 optimizer:
   type: Adam
   lr: 1e-3
   weight_decay: 0.0
 
+# options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list schedule
 scheduler:
   type: CosineAnnealingLR       # T_max is the length of the run, filled in by the engine
   eta_min: 0.0

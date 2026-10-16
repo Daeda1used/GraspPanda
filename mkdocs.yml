@@ -80,10 +80,18 @@ nav:
       - Grasp heads and losses: slots/head_loss.md
       - Post-processing: slots/post.md
       - "Training recipe: optimizer, schedule, hooks, augmentation": slots/recipe.md
+      - The options of a method:
+          - GSNet: methods/gsnet.md
+          - EconomicGrasp: methods/economicgrasp.md
+          - FineGrasp: methods/finegrasp.md
+          - GraspNet-baseline: methods/graspnet_baseline.md
+          - Scale-Balanced-Grasp: methods/scale_balanced_grasp.md
+          - HGGD: methods/hggd.md
   - Advanced Guides:
       - Add a component: advanced_guides/add_component.md
       - Swapping components: advanced_guides/swapping.md
       - Measured combinations: advanced_guides/measured_combinations.md
+      - "Learns like the reference?": advanced_guides/learns_like_reference.md
       - Data contracts: advanced_guides/data_flow.md
       - Data loading: advanced_guides/data_loading.md
       - Operators and backends: advanced_guides/operators.md

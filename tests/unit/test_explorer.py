@@ -37,7 +37,15 @@ def tool(name: str):
 
 @pytest.fixture(scope="module")
 def data() -> dict:
-    return json.loads(DATA.read_text(encoding="utf-8"))
+    """The data file, with the key of every cell as the page computes it at load."""
+    loaded = json.loads(DATA.read_text(encoding="utf-8"))
+    key_of = tool("make_explorer").key_of
+    by_name = {method["name"]: method for method in loaded["methods"]}
+    for cell in loaded["cells"]:
+        assert "key" not in cell, "the key is computed by the page, not stored"
+        cell["key"] = key_of(by_name[cell["method"]], cell["sets"])
+        cell["run"] = loaded["runs"][cell["run"]]  # stored as an index
+    return loaded
 
 
 @pytest.fixture(scope="module")
@@ -176,8 +184,8 @@ def test_the_contract_answers_are_those_of_compose(data):
     # A refused record is refused by compose today, and nothing else is (the node test
     # checks the same through the page logic, for every single swap).
     gsnet = next(method for method in data["methods"] if method["name"] == "GSNet")
-    refused = generator.lookup(contracts, "GSNet", ["head=economic"])
-    assert refused and not refused["ok"] and "EconomicHead" in refused["messages"][0]
+    refused = generator.lookup(contracts, "GSNet", ["grouper=depth-embed"])
+    assert refused and not refused["ok"] and "DepthEmbedGroup" in refused["messages"][0]
     assert generator.lookup(contracts, gsnet["name"], ["backbone=ptv3"]) == {"ok": True}
     assert generator.lookup(contracts, "GSNet", ["backbone=no-such-option"]) is None
     assert generator.lookup(contracts, "GSNet", ["head=economic", "backbone=ptv3"]) == (

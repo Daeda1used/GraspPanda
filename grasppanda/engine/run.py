@@ -11,8 +11,13 @@ Layout of ``<runtime.work_dir>/<run id>/``::
 
 One directory is one run. ``train`` without ``runtime.resume`` and every ``test`` and
 ``infer`` start a new one and refuse to write into a directory that already holds a
-run; resuming continues in the directory that owns the checkpoint and keeps the
-original snapshot next to the new one.
+run. Resuming continues in the directory that owns the checkpoint, and keeps the
+original snapshot next to the new one, only when it is the same run: the checkpoint was
+written under the current config hash and ``runtime.work_dir`` (and ``runtime.run_id``,
+when set) point at that directory. Otherwise (another work directory or run id, a config
+continued with ``runtime.allow_config_mismatch``, a checkpoint outside a run directory)
+the resumed run starts a new directory below ``runtime.work_dir``, its ``run.json``
+records ``resumed_from``, and nothing is written into the checkpoint's directory.
 """
 
 from __future__ import annotations
@@ -34,6 +39,7 @@ from grasppanda.config import Config, git_info, write_snapshot
 from grasppanda.ops import backends
 
 from . import distributed as dist
+from .checkpoint import MISMATCH_ADVICE, checkpoint_config_hash, config_mismatch
 from .errors import EngineError, ResumeError
 from .seeding import determinism_restored
 
@@ -161,17 +167,27 @@ def _new_run_dir(work_dir: Path, run_id: str | None, command: str) -> Path:
     return run_dir
 
 
-def _locate(cfg: dict[str, Any], command: str) -> tuple[Path, Path | None, bool]:
-    """Return the run directory, the checkpoint to resume and whether the directory is new."""
+def _same_run(owner: Path, work_dir: Path, run_id: str | None) -> bool:
+    """Whether ``runtime.work_dir`` and ``runtime.run_id`` point at the run directory ``owner``."""
+    return owner.parent.resolve() == work_dir.resolve() and run_id in (None, owner.name)
+
+
+def _locate(
+    cfg: dict[str, Any], command: str, digest: str
+) -> tuple[Path, Path | None, bool, str | None]:
+    """Return the run directory, the checkpoint to resume, whether the directory is new and,
+    for a resumed run that starts a new directory, why it does."""
     runtime = cfg["runtime"]
     work_dir = Path(runtime["work_dir"]).expanduser()
+    run_id = runtime["run_id"]
     resume = runtime["resume"] if command == "train" else False
     checkpoint: Path | None = None
+    note = None
     if resume:
         if resume is True:
-            checkpoint = find_latest_checkpoint(work_dir, runtime["run_id"])
+            checkpoint = find_latest_checkpoint(work_dir, run_id)
             if checkpoint is None:
-                where = work_dir / runtime["run_id"] if runtime["run_id"] else work_dir
+                where = work_dir / run_id if run_id else work_dir
                 raise ResumeError(
                     f"runtime.resume is true, but there is no checkpoint below {where}. "
                     "Start without resume, or point runtime.resume at a checkpoint file."
@@ -180,10 +196,32 @@ def _locate(cfg: dict[str, Any], command: str) -> tuple[Path, Path | None, bool]
             checkpoint = Path(resume).expanduser()
             if not checkpoint.is_file():
                 raise ResumeError(f"runtime.resume: no such checkpoint: {checkpoint}")
+        theirs = checkpoint_config_hash(checkpoint)
+        other_config = theirs is not None and theirs != digest
+        if other_config and not runtime["allow_config_mismatch"]:
+            raise ResumeError(config_mismatch(checkpoint, theirs, digest) + MISMATCH_ADVICE)
         owner = checkpoint.parent.parent
         if checkpoint.parent.name == "checkpoints" and (owner / "run.json").is_file():
-            return owner, checkpoint, False
-    return _new_run_dir(work_dir, runtime["run_id"], command), checkpoint, True
+            here = _same_run(owner, work_dir, run_id)
+            if here and not other_config:
+                return owner, checkpoint, False, None
+            if here and run_id is not None:  # the run id names the checkpoint's own run
+                raise ResumeError(
+                    f"{checkpoint} was written under another config, so with "
+                    "runtime.allow_config_mismatch the run continues in a new directory, but "
+                    f"runtime.run_id '{run_id}' names the directory of the checkpoint, "
+                    f"{owner}. Choose another runtime.run_id, or leave it unset."
+                )
+            if other_config:
+                reason = "the config differs from the one the checkpoint was written under"
+            else:
+                target = work_dir / run_id if run_id else work_dir
+                reason = f"runtime.work_dir and runtime.run_id ask for {target}"
+            note = (
+                f"resuming {checkpoint} in a new run directory, because {reason}; the run "
+                f"that owns the checkpoint, {owner}, is left as it is"
+            )
+    return _new_run_dir(work_dir, run_id, command), checkpoint, True, note
 
 
 @contextmanager
@@ -230,8 +268,8 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
     joined = dist.is_distributed() and not torch.distributed.is_initialized()
     dist.init(device)
     try:
-        located = _locate(cfg, command) if dist.is_main() else None
-        run_dir, checkpoint, fresh = dist.broadcast(located)
+        located = _locate(cfg, command, config.digest()) if dist.is_main() else None
+        run_dir, checkpoint, fresh, note = dist.broadcast(located)
         run = Run(
             dir=run_dir,
             id=run_dir.name,
@@ -256,6 +294,8 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
                 run.stamp(last_resume={"time": stamp, "checkpoint": str(checkpoint)})
         dist.barrier()
         with _logging(run_dir), determinism_restored():
+            if note:
+                run.log.info(note)
             yield run
     finally:
         if joined:

@@ -2,7 +2,8 @@
 
 Rules implemented here (``docs/design/ARCHITECTURE.md`` §5.2, §5.4):
 
-1. ``_base_`` chains are at most two hops deep.
+1. ``_base_`` chains are at most two hops deep. An entry is a path relative to the file
+   or, when no such file exists, the name of a shipped config.
 2. Sibling bases may not define the same value.
 3. Dict onto dict merges deeply, unless the child changes ``type``: then the parent
    node is replaced, so kwargs of the old component never leak into the new one.
@@ -37,6 +38,7 @@ __all__ = [
     "dotted",
     "load_tree",
     "parse_yaml",
+    "resolve_base",
     "resolve_interpolations",
 ]
 
@@ -241,6 +243,38 @@ def _union(
     return out
 
 
+def resolve_base(child: Path, name: str) -> Path:
+    """The file a ``_base_`` entry of ``child`` names.
+
+    A path relative to the child comes first, as in the shipped configs
+    (``../_base_/default_runtime.yaml``). When no such file exists, ``name`` is looked up
+    among the shipped configs, with or without ``.yaml``
+    (``_base_/default_runtime.yaml``, ``gsnet/gsnet_sunet14_g1b-realsense_10e``), so a
+    config anywhere on disk can inherit from them, also from an installed wheel.
+    """
+    from .config import configs_root  # config.py imports this module
+
+    local = (child.parent / name).resolve()
+    if local.is_file():
+        return local
+    root = configs_root()
+    for candidate in (root / name, root / f"{name}.yaml"):
+        if candidate.is_file():
+            return candidate.resolve()
+    raise ConfigError(
+        [
+            Issue(
+                BASE_KEY,
+                f"cannot find the base '{name}': there is no file {local}, and no shipped "
+                f"config of that name in {root}. Give a path relative to this file, or the "
+                "name of a shipped config (`grasppanda print-config --list` lists them; "
+                "building blocks are under `_base_/`, e.g. `_base_/default_runtime.yaml`).",
+                str(child),
+            )
+        ]
+    )
+
+
 def _load_file(
     path: Path, hops: int, stack: tuple[Path, ...], tree: LoadedTree
 ) -> tuple[dict[str, Any], dict[KeyPath, str]]:
@@ -271,7 +305,7 @@ def _load_file(
     origins: dict[KeyPath, str] = {}
     for relative in bases:
         base_data, base_origins = _load_file(
-            (path.parent / relative).resolve(), hops + 1, (*stack, path), tree
+            resolve_base(path, relative), hops + 1, (*stack, path), tree
         )
         issues: list[Issue] = []
         merged = _union(merged, base_data, (), origins, base_origins, issues)

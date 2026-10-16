@@ -37,9 +37,12 @@ from typing import Any
 
 from grasppanda.cli.components import SLOTS as REGISTRY_SLOTS
 from grasppanda.cli.components import collect
+from grasppanda.combine import options as option_lists
 from grasppanda.combine.compose import component_slots, compose
 from grasppanda.combine.grid import FAMILIES, METHODS, cells
+from grasppanda.combine.levels import CAVEAT, CLASS_WORDS, LEVELS, UNDECIDED
 from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
+from grasppanda.combine.probe import VERDICTS
 from grasppanda.combine.recipes import RECIPE_SLOTS, recipes
 from grasppanda.config import Config, resolve_config_path
 from grasppanda.registry import DETECTORS
@@ -113,6 +116,18 @@ LANE_TITLES = {
 }
 #: Keys of a preset node that name released weights to load.
 WEIGHT_KEYS = ("pretrained", "weights", "checkpoint")
+#: One letter per state of a level in a cell (grasppanda.combine.levels): a record holds
+#: its four levels as a word of four letters, ``YYCC``.
+STATE_CODES = {
+    "yes": "Y",
+    "no": "N",
+    "not checked": "C",
+    "unstable, not repeated": "R",
+    "needs consent": "P",
+    "not a combination": "X",
+    "not probed": "-",
+    "not reached by the method as shipped": "S",
+}
 #: A sentence the page must carry; the test looks for it.
 NO_ACCURACY = (
     "No accuracy appears here, and none follows from a verdict: a probe trains 20 "
@@ -233,6 +248,13 @@ def options(records: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
             continue
         if all(option["name"] != variant for option in found.get(slot, [])):
             add(slot, variant, record["component"], None)
+    # Every option a method lists (grasppanda.combine.options), with a record or not.
+    for method in option_lists.methods():
+        for option in option_lists.options(method):
+            if option.slot == LOSS_SLOT:
+                continue
+            if all(entry["name"] != option.name for entry in found.get(option.slot, [])):
+                add(option.slot, option.name, option.component, None)
     return found
 
 
@@ -275,14 +297,20 @@ def methods(by_id: Mapping[str, dict[str, Any]]) -> list[dict[str, Any]]:
                     slot = record.get("slot", "")
                     if slot in ships and not ships[slot]["option"]:
                         ships[slot]["option"] = record["variant"]
-        # Post-processing is no part of the model: every detector has that slot. Losses
-        # sit inside the stages; the lane is offered where a loss set was recorded.
-        slots.append(POST_SLOT)
-        if any(r["method"] == name and r["group"] == LOSS_SLOT for r in by_id.values()):
-            slots.append(LOSS_SLOT)
-        # The training recipe is around the model: every method has its slots. What a
-        # method ships with there is what its config names.
-        slots.extend(RECIPE_LANES)
+        # The slots and their options are those of grasppanda.combine.options, the lists
+        # of `grasppanda compose <config> --list` (a test holds the two together):
+        # post-processing and the training recipe for every method, the losses of the
+        # stages for the seed-based ones.
+        slots = option_lists.method_slots(name)
+        listed: dict[str, list[Any]] = {}
+        not_probed: dict[str, dict[str, str]] = {}
+        for option in option_lists.options(name):
+            plain = option.sets == (f"{option.slot}={option.name}",)
+            listed.setdefault(option.slot, []).append(
+                option.name if plain else {"name": option.name, "sets": list(option.sets)}
+            )
+            if option.reason:
+                not_probed.setdefault(option.slot, {})[option.name] = option.reason
         for slot, key in (("optimizer", "optimizer"), ("schedule", "scheduler")):
             ships[slot] = {
                 "component": str((resolved.get(key) or {}).get("type") or ""),
@@ -303,6 +331,8 @@ def methods(by_id: Mapping[str, dict[str, Any]]) -> list[dict[str, Any]]:
                 "source": entry.source if entry else "",
                 "slots": slots,
                 "ships": ships,
+                "options": listed,
+                "not_probed": not_probed,
                 "reference": reference["id"] if reference else "",
             }
         )
@@ -329,16 +359,20 @@ def _probe_opts(record: Mapping[str, Any]) -> str:
 
 
 def cell(
-    record: Mapping[str, Any], by_id: Mapping[str, dict[str, Any]], method: Mapping[str, Any]
+    record: Mapping[str, Any],
+    by_id: Mapping[str, dict[str, Any]],
+    method: Mapping[str, Any],
+    measured: option_lists.Measured,
 ) -> dict[str, Any]:
-    """One record as the page needs it: verdict, reasons, and the numbers honest to show."""
+    """One record as the page needs it: verdict, reasons, the levels it reached
+    (grasppanda.combine.levels) and the numbers honest to show. Its key (:func:`key_of`)
+    is not written: the page computes it (``prepare`` in explorer_logic.js)."""
     numbers = by_id.get(record.get("probed_as", ""), record)
     out: dict[str, Any] = {
         "id": record["id"],
         "group": record["group"],
         "method": record["method"],
         "sets": list(record.get("sets", [])),
-        "key": key_of(method, list(record.get("sets", []))),
         "verdict": record["verdict"],
     }
     for name in ("slot", "variant", "component", "adapter", "fitted", "refusal", "unstable"):
@@ -358,25 +392,54 @@ def cell(
         total = (numbers.get("losses") or {}).get("loss")
         if total:
             out["loss"] = total
+    if numbers.get("judge", 1) >= 2 and numbers.get("trend"):
+        # What judge 2 adds, as the page needs it: the fall of every term and what was
+        # flagged. A record of the first judge has none of it (and no `judge`).
+        out["judge"] = numbers["judge"]
+        # Per loss term (without `loss/`; the total is not shown), to the percent shown.
+        out["fall"] = {
+            term[len("loss/") :]: None if values[2] is None else round(values[2], 2)
+            for term, values in numbers["trend"].items()
+            if term.startswith("loss/")
+        }
+        for name in ("flags", "no_gradient", "unchanged"):
+            if numbers.get(name) not in (None, [], {}):
+                out[name] = numbers[name]
+    levels = measured.levels(record)
+    out["levels"] = "".join(STATE_CODES[levels.states[level]] for level in LEVELS)
+    why = [f"{level}: {'; '.join(items)}" for level, items in levels.why.items()]
+    if why or levels.notes:
+        out["why"] = why + levels.notes
+    kind = option_lists.refusal_kind(record) if record["verdict"] == "refused" else ""
+    if kind:
+        out["kind"] = kind
+    lifts = [part["lift"] for part in option_lists.refusal_kinds(record) if part.get("lift")]
+    if lifts:
+        out["lifts"] = lifts
     if numbers.get("postprocessing"):
         out["post"] = numbers["postprocessing"]
     if _probe_opts(numbers):
         out["probe_opts"] = _probe_opts(numbers)
-    out["run"] = record.get("run", "")
+    out["run"] = record.get("run", "")  # replaced by its index in `runs` (data())
     return out
+
+
+def class_column(found: Any) -> str:
+    """The filter column of a class: a class word, ``relative`` or ``undecided``."""
+    if found.name in CLASS_WORDS:
+        return found.name
+    return "relative" if found.decided else "undecided"
 
 
 def grid_rows(
     slot_options: Mapping[str, list[dict[str, Any]]],
     found: list[dict[str, Any]],
-    method_list: list[dict[str, Any]],
+    measured: option_lists.Measured,
 ) -> None:
-    """Add to every option the measured class and, for the losses, the cells it sits in."""
-    docs = _docs_tool()
-    seed_based = [method["name"] for method in method_list if method["seed_based"]]
+    """Add to every option its class at every level (grasppanda.combine.levels) and, for
+    the losses, the cells it sits in."""
     for slot, members in slot_options.items():
         for option in members:
-            wanted = f"{slot}={option['name']}"
             if slot == LOSS_SLOT:
                 hits = [
                     index
@@ -385,15 +448,12 @@ def grid_rows(
                     and any(pair.endswith(f"={option['name']}") for pair in item["sets"])
                 ]
                 option["cells"] = hits
+            classes = option_lists.classes(slot, option["name"], measured)
+            if not classes["composes"].methods:
                 continue
-            singles = {
-                item["method"]: item
-                for item in found
-                if item["sets"] == [wanted] and item["method"] in seed_based
-            }
-            if len(singles) == len(seed_based):
-                name, works, unstable = docs.classify(singles.values())
-                option.update({"class": name, "works": works, "unstable": unstable})
+            option["classes"] = [
+                [classes[level].text, class_column(classes[level])] for level in LEVELS
+            ]
 
 
 # -------------------------------------------------------------------------------- data
@@ -434,34 +494,50 @@ def data() -> dict[str, Any]:
     measured = json.loads(MEASURED.read_text(encoding="utf-8"))
     records = measured["cells"]
     by_id = {record["id"]: record for record in records}
+    found_measured = option_lists.Measured(measured)
     method_list = methods(by_id)
     by_name = {method["name"]: method for method in method_list}
-    found = [cell(record, by_id, by_name[record["method"]]) for record in records]
+    found = [cell(record, by_id, by_name[record["method"]], found_measured) for record in records]
+    keys = [key_of(by_name[record["method"]], list(record.get("sets", []))) for record in records]
+    # The run of a cell, by its index in `runs`: a dozen runs measured more than a thousand
+    # cells (explorer_logic.prepare puts the name back).
+    runs = sorted({item["run"] for item in found})
+    for item in found:
+        item["run"] = runs.index(item["run"])
     slot_options = options(records)
-    grid_rows(slot_options, found, method_list)
+    grid_rows(slot_options, found, found_measured)
     # Two records with one key must be one experiment; where they are not, the single
     # swap wins and the count says so (a test asserts it is zero).
     index: dict[str, int] = {}
     conflicts = 0
-    for position, item in enumerate(found):
-        if item["key"] not in index:
-            index[item["key"]] = position
+    for position, (item, key) in enumerate(zip(found, keys)):
+        if key not in index:
+            index[key] = position
             continue
-        kept = found[index[item["key"]]]
+        kept = found[index[key]]
         hashes = {by_id[kept["id"]]["config_hash"], by_id[item["id"]]["config_hash"]}
         conflicts += len(hashes) > 1 or kept["verdict"] != item["verdict"]
         if "shares" in kept and "shares" not in item and kept["verdict"] == item["verdict"]:
-            index[item["key"]] = position
+            index[key] = position
     grid = list(cells())
     grid_ids = {entry.id for entry in grid}
     listed_sets = {entry.id for entry in grid if entry.group == "stage-set"}
     about = measured["about"]
     return {
         "generated_by": "tools/make_explorer.py; do not edit by hand",
+        "runs": runs,
         "no_accuracy": NO_ACCURACY,
+        "caveat": CAVEAT,
+        "levels": [{"key": level, "meaning": meaning} for level, meaning in LEVELS.items()],
+        "level_states": {code: state for state, code in STATE_CODES.items()},
+        "undecided": UNDECIDED,
         "probe": about["probe"],
         "verdict_order": docs_verdicts(found),
-        "verdicts": {name: about["verdicts"][name] for name in docs_verdicts(found)},
+        # The meaning the file states for a verdict, else today's (a file of the first
+        # judge does not define `runs-empty`).
+        "verdicts": {
+            name: about["verdicts"].get(name) or VERDICTS[name] for name in docs_verdicts(found)
+        },
         "counts": {
             "records": len(found),
             "by_verdict": dict(Counter(item["verdict"] for item in found)),

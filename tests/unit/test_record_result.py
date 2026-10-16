@@ -411,6 +411,35 @@ def test_the_weights_are_tied_to_the_entry_of_the_metafile(cache, tmp_path, caps
     assert "carry no note of tools/convert_checkpoint.py" in capsys.readouterr().err
 
 
+def test_weights_trained_here_are_recorded_before_they_are_published(cache, tmp_path, capsys):
+    run = make_run(cache)
+    evaluated = sha256_of(cache / "weights" / "converted" / "demo.pth")
+    block = (
+        f"    weights:\n      url: null\n      sha256: {evaluated}\n      license: null\n"
+        "      source: grasppanda\n      note: 'Not published yet.'\n"
+    )
+    configs = tmp_path / "configs"
+    path = configs / "demo" / "metafile.yaml"
+    path.parent.mkdir(parents=True)
+    reported = "{seen: 60.0, similar: 40.0, novel: 20.0}"
+    path.write_text(
+        METAFILE.format(
+            protocol="graspnet1b-sv-v1", camera="realsense", weights=block, reported=reported
+        )
+    )
+    assert record(run, configs, "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert out.count("provenance: reproduced") == 2
+    assert "the evaluated weights are the file of the metafile's entry, not published yet" in out
+    # the entry, as printed for a model that shares these weights, keeps url, licence and note
+    (model,) = load_metafile(path).models
+    entry = record_result.weights_yaml(
+        record_result.load_run(run), "reproduced", None, model.weights
+    )
+    assert "      url: null\n" in entry and "      license: null\n" in entry
+    assert '      note: "Not published yet."\n' in entry
+
+
 def test_a_record_file_with_other_content_is_not_overwritten(cache, tmp_path, capsys):
     run, configs = make_run(cache), write_metafile(tmp_path)
     assert record(run, configs) == 0

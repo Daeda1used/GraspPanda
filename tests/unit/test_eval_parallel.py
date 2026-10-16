@@ -71,10 +71,14 @@ def test_a_worker_that_dies_is_an_error_not_a_hang():
     assert caught.value.task_index == 1
 
 
+@pytest.mark.filterwarnings("ignore:This process .* is multi-threaded:DeprecationWarning")
 def test_time_limit():
+    # Forked workers start at once. Under forkserver a worker's start-up counts against the
+    # limit, and it depends on whether an earlier test started the fork server with this
+    # module preloaded: run first, task 0 took more than a second on a busy machine.
     started = time.monotonic()
-    with pytest.raises(WorkerError, match="exceeded the time limit of 1 s") as caught:
-        run(stall, [1, 0, 1], timeout=1.0)
+    with pytest.raises(WorkerError, match="exceeded the time limit of 3 s") as caught:
+        run(stall, [1, 0, 1], timeout=3.0, start_method="fork")
     assert caught.value.task_index == 1
     assert time.monotonic() - started < 15.0
 

@@ -6,9 +6,11 @@ faithful ports, one pinned evaluation.
 !!! note "Alpha"
     Working today: the config system, both benchmark readers and evaluators, six methods
     as swappable components, options for every slot of the pipeline, and the commands
-    from `train` to `compose`, `probe` and `explore`. The model zoo is still empty: a
-    method enters only after it has been trained and evaluated here, and no accuracy is
-    claimed for an option that is not part of a ported method.
+    from `train` to `compose`, `probe` and `explore`. The first model trained here, GSNet,
+    has been scored on both benchmarks; its weights are not published yet, so the model
+    zoo has nothing to download. A method enters the zoo only after it has been trained
+    and evaluated here, and no accuracy is claimed for an option that is not part of a
+    ported method.
 
 **[Try combinations in the browser](explorer/index.md)**: pick a method, swap a slot, read
 the measured verdict, the command and the reason of a refusal. `grasppanda explore` serves

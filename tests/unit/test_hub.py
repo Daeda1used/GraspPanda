@@ -117,6 +117,123 @@ def test_a_measured_result_names_a_record_that_exists(write):
     assert model.results[0].record == "records/demo_raw.json"
 
 
+UNPUBLISHED = """    weights:
+      url: null
+      sha256: {sha}
+      license: null
+      source: {source}
+{note}    results:"""
+
+
+def test_weights_trained_here_may_be_listed_before_they_are_published(write):
+    def metafile(name: str, source: str = "grasppanda", note: str | None = "Not published yet."):
+        line = f"      note: {note!r}\n" if note is not None else ""
+        block = UNPUBLISHED.format(sha="b" * 64, source=source, note=line)
+        text = VALID.replace("    results:", block).replace(
+            "provenance: reported, collision_filter: false, source: paper",
+            "provenance: reproduced, collision_filter: false, evaluator: GraspNet1BEvaluator, "
+            "record: records/demo_raw.json",
+        )
+        write(f"{name}/records/demo_raw.json", "{}")
+        return write(f"{name}/metafile.yaml", text)
+
+    (model,) = load_metafile(metafile("listed")).models
+    assert model.weights.url is None and model.weights.license is None
+    assert model.weights.published is False and model.weights.note == "Not published yet."
+    assert model.results[0].provenance == "reproduced"
+
+    cases = [
+        # without a url the entry has to say that the weights are not published
+        (metafile("silent", note=None), "models.0.weights.note", "not published yet"),
+        (metafile("vague", note="soon"), "models.0.weights.note", "not published yet"),
+        # only weights trained here may be listed without a url; the authors' need one
+        (metafile("author", source="author"), "models.0.weights.url", "is required"),
+        (metafile("author2", source="author"), "models.0.weights.license", "is required"),
+    ]
+    for path, where, fragment in cases:
+        with pytest.raises(ConfigError) as error:
+            load_metafile(path)
+        assert fragment in {issue.path: issue.message for issue in error.value.issues}[where]
+
+
+CONVERT = (
+    "python -m tools.convert_checkpoint authors.tar demo_realsense.pth "
+    "--source-format economicgrasp --camera realsense"
+)
+
+
+def _issues(path) -> dict[str, str]:
+    with pytest.raises(ConfigError) as error:
+        load_metafile(path)
+    return {issue.path: issue.message for issue in error.value.issues}
+
+
+def test_the_authors_checkpoint_says_how_it_is_converted(write):
+    def metafile(name: str, convert: str, source: str = "author") -> object:
+        block = (
+            "    weights: {url: 'https://example.org/authors.tar', sha256: " + "a" * 64 + ", "
+            f"license: MIT, source: {source}, convert: '{convert}'}}\n    results:"
+        )
+        return write(f"{name}/metafile.yaml", VALID.replace("    results:", block))
+
+    (model,) = load_metafile(metafile("ok", CONVERT)).models
+    assert model.weights.convert == CONVERT
+    assert model.weights.downloaded_name == "authors.tar"
+    assert model.weights.converted_name == "demo_realsense.pth"
+
+    where = "models.0.weights.convert"
+    trained = _issues(metafile("trained", CONVERT, source="grasppanda"))
+    assert "only the authors' checkpoint is converted" in trained[where]
+    for name, convert in (
+        ("script", "python tools/convert_checkpoint.py authors.tar demo.pth"),
+        ("one_file", "python -m tools.convert_checkpoint authors.tar"),
+        ("unknown_option", CONVERT + " --strict"),
+    ):
+        assert (
+            "must read 'python -m tools.convert_checkpoint"
+            in _issues(metafile(name, convert))[where]
+        ), name
+
+
+def test_the_authors_file_may_be_listed_beside_weights_trained_here(write):
+    def metafile(name: str, weights_source: str = "grasppanda", source: str = "author"):
+        if weights_source == "grasppanda":
+            weights = UNPUBLISHED.format(
+                sha="b" * 64, source="grasppanda", note="      note: 'Not published yet.'\n"
+            ).replace("    results:", "")
+        else:
+            weights = (
+                "    weights: {url: 'https://example.org/a.tar', sha256: " + "a" * 64 + ", "
+                "license: MIT, source: author}\n"
+            )
+        block = (
+            weights + "    author_weights: {url: 'https://example.org/released.tar', "
+            "sha256: " + "c" * 64 + f", license: non-commercial, source: {source}, "
+            f"convert: '{CONVERT}', note: 'Far below the paper.'}}\n    results:"
+        )
+        return write(f"{name}/metafile.yaml", VALID.replace("    results:", block))
+
+    (model,) = load_metafile(metafile("ok")).models
+    assert model.weights.source == "grasppanda" and model.author_weights.source == "author"
+    assert model.author_weights.converted_name == "demo_realsense.pth"
+    assert model.author_weights.note == "Far below the paper."
+    # the authors' file of a model whose weights are the authors' file is its weights entry
+    assert (
+        "is for a model whose weights are another file"
+        in (_issues(metafile("twice", weights_source="author"))["models.0.author_weights"])
+    )
+    issues = _issues(metafile("not_theirs", source="grasppanda"))
+    assert "must be 'author'" in issues["models.0.author_weights.source"]
+
+
+def test_fetch_refuses_an_entry_without_a_url_with_a_reason(tmp_path):
+    with pytest.raises(
+        ValueError, match="no url to fetch the weights with sha256 b+ from: they are not published"
+    ):
+        fetch(None, "b" * 64, cache_dir=tmp_path / "cache")
+    assert not (tmp_path / "cache").exists()
+
+
 def test_shipped_metafiles_are_valid():
     assert isinstance(load_metafiles(), list)
 

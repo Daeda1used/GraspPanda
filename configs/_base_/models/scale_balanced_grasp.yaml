@@ -19,6 +19,7 @@ model:
     finger_height: 0.02
     depth_base: 0.02
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list backbone
   backbone:
     type: PointNet2Transformer    # [SBG] two abstraction levels with attention; `subsampled`
     in_channels: 0
@@ -31,10 +32,12 @@ model:
     fps_skip_near_origin: true    # reference quirk: the sampling kernel never picks points with |p|² <= 1e-3
     fps_tie_break: pointnet2_cuda # reference quirk: equally distant candidates in the order of that kernel
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list proposal
   proposal:
     type: SubsampledSeeds         # every point the backbone kept is a seed; nothing is selected
     num_seeds: 1024
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list view
   view:
     type: ObjectnessViewStage     # objectness and view scores from one head; arg-max view in both modes
     num_views: 300
@@ -47,6 +50,7 @@ model:
     objectness_loss: {type: CrossEntropy, weight: 1.0}
     view_loss: {type: MSE, weight: 1.0}
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list assigner
   assigner:
     type: ScaleBalancedAssigner   # [SBG] also returns a loss weight per seed: 1 - ln(count / max count) of its width bin; the dataset serves the histogram (scale_statistic)
     max_match_distance: null      # no limit, as in the reference
@@ -54,6 +58,7 @@ model:
     padded_seeds: count           # every seed is real here
     supervise: object_seeds       # view and grasp losses only for seeds on an object
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list grouper
   grouper:
     type: DepthCylinderGroup      # scene-cloud cylinders: `scene` support, a depth axis
     radius: 0.08                  # [SBG]
@@ -65,6 +70,7 @@ model:
     radius_scales: [0.25, 0.5, 0.75, 1.0]   # [SBG] four crops per (seed, depth), fused by a linear layer
     seed_residual: gated          # [SBG] adds sigmoid(W f) * f of the seed feature f
 
+  # options of this slot, measured: grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list head
   head:
     type: OperationHead
     num_angle: 12

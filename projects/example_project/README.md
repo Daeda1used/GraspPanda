@@ -11,12 +11,13 @@ What it shows:
 |---|---|
 | `toy_components.py` | Registering components, declaring slot contracts (`output`, `out_axes`, `in_axes`), receiving injected arguments (`INJECTED`), a config check that compares contracts before anything is built, a `loss` that returns `loss/*` terms and a metric, and a post-processor. |
 | `toy_data.py` | A dataset addressed by `SampleKey` whose labels reach the model through `Supervision` only, and an evaluator that reads dumped predictions and returns per-frame precision tables. |
-| `configs/toy_detector.yaml` | Inheriting shipped base configs and loading out-of-tree code with `custom_imports`. |
+| `configs/toy_detector.yaml` | Inheriting shipped base configs by name (`_base_/default_runtime.yaml`, found from any directory and from an installed wheel) and loading out-of-tree code with `custom_imports`. |
 | `configs/toy_train.yaml` | Everything a run needs: data sections, evaluator, post-processing variants, the metric that selects the best checkpoint. |
 
 ## Validate
 
-From the repository root:
+From the repository root (or from the parent of a copy of this folder: nothing in it
+points into the checkout):
 
 ```bash
 grasppanda print-config projects/example_project/configs/toy_detector.yaml --check

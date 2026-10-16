@@ -9,11 +9,33 @@ from typing import Any, Literal
 
 import pytest
 from torch import nn
+from torch.utils.data import DataLoader, Dataset
 
+from grasppanda.engine.builders import worker_socket_problem
 from grasppanda.models import Backbone, BaseGraspDetector, HeadBundle
 from grasppanda.registry import BACKBONES, DETECTORS, HEADS, INJECTED, Cfg
 
 REPO = Path(__file__).resolve().parents[2]
+
+#: Seconds a test waits for one batch from loader workers before it fails.
+LOADER_TIMEOUT = 120.0
+
+
+def worker_loader(dataset: Dataset, context: str, **options: Any) -> DataLoader:
+    """A loader with two worker processes started by ``context``, for a test.
+
+    A batch that a worker fails to hand over is lost without an error in the main
+    process; the timeout turns that into a failed test instead of a suite that waits
+    forever. Where workers cannot hand over anything (a ``TMPDIR`` too deep for their
+    sockets), the test fails at once with the reason. Tests about what workers deliver
+    start them with ``spawn``; only tests about fork itself use ``fork``.
+    """
+    problem = worker_socket_problem()
+    if problem is not None:
+        pytest.fail(problem)
+    return DataLoader(
+        dataset, num_workers=2, multiprocessing_context=context, timeout=LOADER_TIMEOUT, **options
+    )
 
 
 @BACKBONES.register()

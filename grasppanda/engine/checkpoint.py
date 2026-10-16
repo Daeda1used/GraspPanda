@@ -5,7 +5,8 @@ Two different operations, kept apart on purpose:
 * **Resume** (``runtime.resume``) restores a training run exactly: model, optimizer(s),
   scheduler(s), gradient scaler, weight average, random-number states of every process,
   epoch, iteration and best metric. It refuses a checkpoint written under a different
-  config hash unless ``runtime.allow_config_mismatch`` is set.
+  config hash unless ``runtime.allow_config_mismatch`` is set; such a run then lives in a
+  new run directory (``run.py``).
 * **Load** (``runtime.load_from``) reads weights only. It always prints which keys
   matched, which are missing and which are unexpected, and raises on any difference
   unless ``runtime.allow_weight_mismatch`` is set. There is no silent ``strict=False``.
@@ -36,9 +37,12 @@ from .seeding import rng_state, set_rng_state
 from .state import TrainState
 
 __all__ = [
+    "MISMATCH_ADVICE",
     "KeyReport",
     "atomic_save",
+    "checkpoint_config_hash",
     "checkpoint_name",
+    "config_mismatch",
     "file_sha256",
     "link_or_copy",
     "load_weights",
@@ -47,6 +51,12 @@ __all__ = [
     "resume",
     "save_checkpoint",
 ]
+
+#: What to do about a checkpoint written under another config hash.
+MISMATCH_ADVICE = (
+    " Resume with the original config (config.resolved.yaml in the run directory), or set "
+    "runtime.allow_config_mismatch=true to continue it as a new run."
+)
 
 #: Keys under which other code bases store a model's weights.
 _FOREIGN_WEIGHT_KEYS = ("state_dict", "model_state_dict")
@@ -96,6 +106,28 @@ def read_checkpoint(path: str | Path) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise EngineError(f"{path} holds a {type(payload).__name__}, not a mapping of weights.")
     return dict(payload)
+
+
+def checkpoint_config_hash(path: str | Path) -> str | None:
+    """The config hash a training checkpoint was written under; ``None`` for a weights file.
+
+    Tensors are memory-mapped where PyTorch can, so this costs little more than opening the
+    file.
+    """
+    try:
+        payload = torch.load(path, map_location="cpu", weights_only=True, mmap=True)
+    except Exception:  # not a zip archive (or no mmap in this PyTorch): read it plainly
+        payload = read_checkpoint(path)
+    value = payload.get("config_hash") if isinstance(payload, Mapping) else None
+    return value if isinstance(value, str) else None
+
+
+def config_mismatch(path: str | Path, theirs: str, ours: str) -> str:
+    """The sentence that says a checkpoint belongs to another experiment."""
+    return (
+        f"{path} was written under config hash {theirs[:12]}, but the current config "
+        f"hashes to {ours[:12]}: this is a different experiment."
+    )
 
 
 def file_sha256(path: str | Path) -> str:
@@ -168,15 +200,9 @@ def resume(state: TrainState, path: str | Path, *, allow_config_mismatch: bool =
         )
     theirs, ours = payload["config_hash"], state.config.digest()
     if theirs != ours:
-        message = (
-            f"{path} was written under config hash {theirs[:12]}, but the current config "
-            f"hashes to {ours[:12]}: this is a different experiment."
-        )
+        message = config_mismatch(path, theirs, ours)
         if not allow_config_mismatch:
-            raise ResumeError(
-                message + " Resume with the original config (config.resolved.yaml in the run "
-                "directory), or set runtime.allow_config_mismatch=true to continue anyway."
-            )
+            raise ResumeError(message + MISMATCH_ADVICE)
         state.run.log.warning(
             "%s Continuing because runtime.allow_config_mismatch is set.", message
         )
