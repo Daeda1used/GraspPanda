@@ -19,6 +19,7 @@ is never turned into a grasp by the detector.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any, ClassVar, Literal
@@ -47,13 +48,14 @@ class PointScores:
 
     Attributes:
         points: The scene point set the rows refer to.
-        objectness: ``(N, 2)`` logits, class 1 = the point lies on an object.
+        objectness: ``(N, 2)`` logits, class 1 = the point lies on an object; ``None`` for
+            a proposal that predicts graspness only.
         graspness: ``(N,)`` predicted point-wise graspness.
         num_candidates: ``(B,)`` points per frame that passed the selection rule.
     """
 
     points: PointSet
-    objectness: Tensor
+    objectness: Tensor | None
     graspness: Tensor
     num_candidates: Tensor | None = None
 
@@ -96,6 +98,29 @@ class GraspnessFPS(Proposal):
         "point_labels.objectness": None,
         "point_labels.graspness": None,
     }
+    #: Whether the stage predicts objectness (the shared code of the subclasses reads it;
+    #: ``ScoredSeeds`` predicts graspness only with ``select_by: graspness_only``).
+    predicts_objectness = True
+
+    @classmethod
+    def without_seed_score(
+        cls, options: Mapping[str, Any], score: str
+    ) -> Mapping[str, Any] | str | None:
+        """Graspness only is ``ScoredSeeds`` with ``select_by: graspness_only``.
+
+        This class keeps the options of the reference (an option on a ported component
+        changes the config hash of every shipped config that uses it), so the stage that
+        leaves objectness to the view stage is its scorer with the selection as options:
+        the same layer and losses, candidates by graspness alone, and plain furthest point
+        sampling without the two quirks of the reference kernel.
+        """
+        if score != "objectness":
+            return None
+        node: dict[str, Any] = {"type": "ScoredSeeds", "select_by": "graspness_only"}
+        for name in ("num_seeds", "graspness_threshold", "graspness_loss"):
+            if options.get(name) is not None:
+                node[name] = options[name]
+        return node
 
     def __init__(
         self,
@@ -155,8 +180,7 @@ class GraspnessFPS(Proposal):
             raise ContractError(
                 f"{name} was built for {self.in_channels}-channel features, got {feats.channels}"
             )
-        prediction = self.score(feats.feats)
-        scores = PointScores(points, prediction[:, :2], prediction[:, 2])
+        scores = self._point_scores(feats, points)
         if seed_index is None:
             index, valid, scores.num_candidates = self._select(scores)
         else:
@@ -166,20 +190,36 @@ class GraspnessFPS(Proposal):
         seeds = SeedSet(
             points=points.subset(flat, offsets),
             feats=feats.feats[flat],
-            scores={
-                "graspness": self.graspness_loss.as_value(scores.graspness.detach())[flat],
-                "objectness": scores.objectness.detach().softmax(dim=-1)[flat, 1],
-            },
+            scores=self._seed_scores(
+                scores, flat, self.graspness_loss.as_value(scores.graspness.detach())
+            ),
             valid=valid.reshape(-1),
             source="graspness_fps" if seed_index is None else "replayed",
         )
         return seeds, scores
 
+    def _point_scores(self, feats: PointFeatures, points: PointSet) -> PointScores:
+        """Objectness logits (rows 0-1, where predicted) and graspness (the last row)."""
+        prediction = self.score(feats.feats)
+        objectness = prediction[:, :2] if self.predicts_objectness else None
+        return PointScores(points, objectness, prediction[:, -1])
+
+    def _seed_scores(
+        self, scores: PointScores, flat: Tensor, graspness: Tensor
+    ) -> dict[str, Tensor]:
+        """``SeedSet.scores`` of the selected rows: graspness, and objectness if predicted."""
+        found = {"graspness": graspness[flat]}
+        if scores.objectness is not None:
+            found["objectness"] = scores.objectness.detach().softmax(dim=-1)[flat, 1]
+        return found
+
     def candidates(self, scores: PointScores) -> Tensor:
         """``(N,)`` mask of the scene points that may become seeds."""
-        is_object = scores.objectness.argmax(dim=-1) == 1
         # A loss that trains the output as a logit hands it on through its sigmoid.
         graspness = self.graspness_loss.as_value(scores.graspness)
+        if scores.objectness is None:
+            return graspness > self.graspness_threshold
+        is_object = scores.objectness.argmax(dim=-1) == 1
         return is_object & (graspness > self.graspness_threshold)
 
     @torch.no_grad()
@@ -240,7 +280,9 @@ class GraspnessFPS(Proposal):
 
         Reads ``supervision.point_labels['objectness']`` (``(N,)``, non-zero = object)
         and ``['graspness']`` (``(N,)`` or ``(N, 1)``), both aligned with the scene
-        point set. Graspness is supervised on points labelled as object only.
+        point set. Graspness is supervised on points labelled as object only. A stage
+        that predicts graspness only has no objectness loss; it still reads the object
+        labels, which select the points whose graspness is supervised.
         """
         count = len(scores.points)
         labels = {}
@@ -258,14 +300,19 @@ class GraspnessFPS(Proposal):
                 )
             labels[key] = label.reshape(count)
         is_object = labels["objectness"] != 0
+        graspness = {
+            "loss/graspness": self.graspness_loss(
+                scores.graspness, labels["graspness"].to(scores.graspness.dtype), is_object
+            )
+        }
+        if scores.objectness is None:
+            return graspness
         target = is_object.long()
         predicted = scores.objectness.detach().argmax(dim=-1) == 1
         correct = predicted == is_object
         return {
             "loss/objectness": self.objectness_loss(scores.objectness, target),
-            "loss/graspness": self.graspness_loss(
-                scores.graspness, labels["graspness"].to(scores.graspness.dtype), is_object
-            ),
+            **graspness,
             "metric/objectness_accuracy": correct.float().mean(),
             "metric/objectness_precision": _ratio(correct & predicted, predicted),
             "metric/objectness_recall": _ratio(correct & is_object, is_object),

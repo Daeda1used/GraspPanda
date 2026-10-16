@@ -11,6 +11,22 @@
 # Results are always reported for both post-processing variants below. The shipped test
 # command of the reference turns its collision filter off (`raw`); the paper reports
 # both.
+#
+# Every slot of this config and the command that lists the options that fit it, with
+# what was measured for each (also docs/methods/scale_balanced_grasp.md):
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list backbone   # model.backbone
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list proposal   # model.proposal
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list view       # model.view
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list assigner   # model.assigner
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list grouper    # model.grouper
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list head       # model.head
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list loss       # model.<stage>.<term>_loss
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list post       # evaluation.variants.post
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list optimizer  # optimizer
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list schedule   # scheduler
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list hooks      # hooks
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list augment    # data.train.dataset.transforms
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list recipe     # optimizer, scheduler, hooks, transforms
 _base_:
   - ../_base_/models/scale_balanced_grasp.yaml
   - ../_base_/datasets/graspnet1b_realsense_tolerance.yaml
@@ -44,6 +60,7 @@ data:
     dataset:
       keep_full_points: true
 
+# Slot post (a variant `post` beside these): grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list post
 evaluation:
   evaluator: {type: GraspNet1BEvaluator}
   variants:

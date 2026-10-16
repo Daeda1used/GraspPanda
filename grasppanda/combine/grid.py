@@ -11,7 +11,9 @@ added to either gets its cells without anyone listing them:
 ``stage``
     every variant of every other stage, one stage replaced at a time, under every
     seed-based method. The variants of a slot are its presets plus every component whose
-    constructor defaults no preset already states;
+    constructor defaults no preset already states; a component named by its type that
+    lacks an option only a preset supplies is no combination and has no cell (its presets
+    have theirs);
 ``stage-set``
     every set of stage variants the contract rules accept, once under a dense and once
     under a sub-sampling encoder;
@@ -20,18 +22,22 @@ added to either gets its cells without anyone listing them:
 ``family-slot``
     every preset of every component slot such a detector has (HGGD: ``image_encoder``).
 ``post``
-    every post-processing preset as the evaluation variant ``post`` of three methods
-    (:data:`POST_METHODS`), seed-based or not: a post-processor reads grasps, not a network.
+    every post-processing preset as the evaluation variant ``post`` of all six methods
+    (:data:`POST_METHODS`): a post-processor reads grasps, not a network, so a cell is
+    the method's prediction plus the chain.
 ``loss``
-    every loss preset in a loss term it is meant for (:data:`LOSS_CELLS`), under GSNet
-    and under one more method, several terms of a method replaced per cell, plus a few
-    pairings the contract rules refuse. That a loss runs in *every* term of its kind is a
-    unit test on tiny models (``tests/unit/test_losses_zoo.py``); the grid shows it on
-    real frames.
+    every loss preset in every kind of loss term it accepts, under every seed-based
+    method that has a term of that kind, in one representative term per kind and method
+    (:func:`loss_terms`); and the hand-picked cells of :data:`LOSS_CELLS`, which replace
+    several terms of a method at once or pair a loss with a term the contract rules
+    refuse. That a loss runs in *every* term of its kind is a unit test on tiny models
+    (``tests/unit/test_losses_zoo.py``); the grid shows it on real frames.
 ``recipe``
-    every recipe preset (optimizer, schedule, hooks, augment, recipe) under GSNet and
-    under HGGD, a detector family of its own; the presets that name the scene encoder
-    of the seed-based skeleton under a second seed-based method instead.
+    every recipe preset (optimizer, schedule, hooks, augment, recipe) under every method
+    it can apply to: all six, except the presets that name the scene encoder of the
+    seed-based skeleton (:data:`RECIPE_ENCODER_PRESETS`), which HGGD does not have. An
+    augmentation HGGD's contract does not accept is refused there, and that refusal is
+    the cell's outcome.
 ``cross``
     options of several slots replaced together (:data:`CROSS_CELLS`): an encoder with a
     grouper, a proposal, a view stage, a recipe or a post-processing preset. The
@@ -73,6 +79,8 @@ __all__ = [
     "cells",
     "encoder_presets",
     "family_slots",
+    "loss_terms",
+    "needs_an_option",
     "stage_variants",
 ]
 
@@ -86,21 +94,19 @@ METHODS: dict[str, str] = {
 }
 #: Detector families of their own, probed as they are.
 FAMILIES: dict[str, str] = {"HGGD": "hggd/hggd_r34w8_g1b-realsense_15e"}
-#: The methods post-processing is probed under. A post-processor reads grasps and the
-#: observation, never a network, so three kinds of input cover the six methods: seeds on a
-#: dense cloud with the full cloud kept (GSNet, as EconomicGrasp and FineGrasp), seeds of a
-#: sub-sampling encoder (GraspNet-baseline, as Scale-Balanced-Grasp), and HGGD, whose grasp
-#: centres are computed and whose observation carries images.
-POST_METHODS = ("GSNet", "GraspNet-baseline", "HGGD")
+#: The methods post-processing is probed under: all six. A post-processor reads grasps and
+#: the observation, never a network, so it needs no training of its own; a cell is the
+#: method's prediction plus the chain, on the grasps each method predicts.
+POST_METHODS = (*METHODS, *FAMILIES)
 #: Post-processing presets without a cell, each with the reason.
 POST_NOT_PROBED: dict[str, str] = {
     "target-mask": "reads observation.masks, which no shipped dataset fills",
 }
-#: The loss cells: a method and the loss terms that are replaced together, as
-#: ``slot.option=preset``. A probe takes a minute or two, so a cell replaces several terms
-#: of one method at once; every loss preset sits in one cell under GSNet and in one under
-#: another method, in a term it is meant for. The last three are single pairings the
-#: config check refuses.
+#: The hand-picked loss cells: a method and the loss terms that are replaced together, as
+#: ``slot.option=preset``. Each replaces several terms of one method at once (every loss
+#: preset sits in one under GSNet and in one under another method) or pairs a loss with a
+#: term the config check refuses (the last three). Beside them every loss preset has a cell
+#: of one term per kind it accepts and per seed-based method (:func:`loss_terms`).
 LOSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "GSNet",
@@ -213,10 +219,12 @@ LOSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: Loss presets without a cell of their own, each with the reason.
 LOSS_NOT_PROBED: dict[str, str] = {
     "distribution-focal": (
-        "fits `bins` terms only; probed as the width loss of the head preset "
-        "`decoupled-grid-bins` (stage cells)"
+        "fits `bins` terms only, which no shipped method has; probed as the width loss of "
+        "the head preset `decoupled-grid-bins` (stage cells)"
     ),
 }
+#: The stages that own loss terms, in the order of the pipeline.
+LOSS_STAGES = ("proposal", "view", "head")
 #: The cross cells: a method and options of several slots replaced together, as
 #: ``slot=choice``. Each pairs a scene encoder (or, under HGGD, an image encoder) with
 #: options of other slots, so that every method and every slot appears at least once. One
@@ -286,17 +294,22 @@ STAGE_SET_SKIPPED: dict[str, str] = {
     "decoupled-grid-class": "as `decoupled-grid`",
     "decoupled-grid-regression": "as `decoupled-grid`",
 }
-#: The methods a recipe preset is probed under: one seed-based, one family of its own.
-RECIPE_METHODS = ("GSNet", "HGGD")
-#: Recipe presets that name the `backbone` of the seed-based skeleton: probed under these
+#: The methods a recipe preset is probed under: every method, seed-based or not. An
+#: optimizer, a schedule or a hook applies to any detector; an augmentation a detector's
+#: data contract does not accept is refused by the config check, which is a measurement.
+RECIPE_METHODS = (*METHODS, *FAMILIES)
+#: Recipe presets that name the `backbone` of the seed-based skeleton: probed under the
 #: seed-based methods, not under HGGD, which has no such module.
-RECIPE_ENCODER_PRESETS = {
-    "optimizer/encoder-lr-0.1": ("GSNet", "EconomicGrasp"),
-    "optimizer/layer-decay": ("GSNet", "EconomicGrasp"),
-    "hooks/freeze-encoder": ("GSNet", "EconomicGrasp"),
-    "recipe/finetune-encoder": ("GSNet", "EconomicGrasp"),
-    "recipe/ptv3-adamw-onecycle": ("GSNet", "EconomicGrasp"),
-}
+RECIPE_ENCODER_PRESETS = dict.fromkeys(
+    (
+        "optimizer/encoder-lr-0.1",
+        "optimizer/layer-decay",
+        "hooks/freeze-encoder",
+        "recipe/finetune-encoder",
+        "recipe/ptv3-adamw-onecycle",
+    ),
+    tuple(METHODS),
+)
 #: What else a recipe preset needs in the same request.
 RECIPE_REQUIRES = {"recipe/ptv3-adamw-onecycle": ("backbone=ptv3",)}
 #: Slots of the seed-based skeleton besides the encoder, in the order data flows.
@@ -379,6 +392,69 @@ def stage_variants(slot: str) -> list[tuple[str, str]]:
     return variants
 
 
+def needs_an_option(slot: str, choice: str, component: str) -> bool:
+    """Whether a stage variant is a component named by its type that lacks a required
+    option, one only a preset supplies (``MultiScaleGroup`` without its ``branch``).
+
+    Such a request is refused for the missing option before any contract is compared:
+    it is not a combination, so it has no cell; the presets of the component have theirs.
+    """
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    if choice in presets().get(slot, {}):
+        return False
+    params, _ = component_parameters(STAGE_REGISTRIES[slot].get(component))
+    return any(param.default is param.empty for param in params.values())
+
+
+def loss_terms(method: str) -> dict[str, str]:
+    """Kind of loss term → the representative term of that kind of a seed-based method,
+    as ``<stage>.<loss option>``.
+
+    The representative is the **last** term of the kind in the order of the pipeline
+    (:data:`LOSS_STAGES`: proposal, view, head; within a stage, the order the stage
+    declares its terms in): the term nearest the grasp. That is where the methods differ
+    (three head bundles), while GSNet, EconomicGrasp and FineGrasp share their proposal.
+    """
+    from grasppanda.config import Config
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    model = Config.load(METHODS[method]).resolved()["model"]
+    found: dict[str, str] = {}
+    for slot in LOSS_STAGES:
+        node = model[slot]
+        cls = STAGE_REGISTRIES[slot].get(node["type"])
+        reader = getattr(cls, "loss_terms_for", None)
+        options = {name: value for name, value in node.items() if name != "type"}
+        terms = reader(options) if reader else getattr(cls, "loss_terms", {})
+        for option, kind in terms.items():
+            found[kind] = f"{slot}.{option}"  # a later term of the kind replaces an earlier
+    return found
+
+
+def _loss_cells() -> list[tuple[str, tuple[str, ...]]]:
+    """``(method, sets)`` of every loss cell: the hand-picked ones, then one per loss
+    preset, kind of term it accepts and seed-based method with a term of that kind."""
+    from grasppanda.models.losses.terms import TERM_KINDS, accepted_terms
+
+    found = list(LOSS_CELLS)
+    seen = {(method, tuple(sets)) for method, sets in found}
+    terms = {method: loss_terms(method) for method in METHODS}
+    for preset in presets().get(LOSS_SLOT, {}).values():
+        if preset.name in LOSS_NOT_PROBED:
+            continue
+        found_terms = accepted_terms(dict(preset.node))
+        accepted = found_terms[1] if found_terms is not None else ()
+        for method in METHODS:
+            for kind in TERM_KINDS:
+                if kind in accepted and kind in terms[method]:
+                    request = (method, (f"{terms[method][kind]}={preset.name}",))
+                    if request not in seen:
+                        seen.add(request)
+                        found.append(request)
+    return found
+
+
 def family_slots(method: str) -> dict[str, Any]:
     """Slot → registry of the component slots of a detector family of :data:`FAMILIES`."""
     from grasppanda.config import Config
@@ -427,19 +503,12 @@ def _stage_sets() -> Iterator[tuple[str, dict[str, tuple[str, str]]]]:
         preset = members.get(slot, {}).get(choice)
         return dict(preset.node) if preset is not None else {"type": choice}
 
-    def complete(slot: str, choice: str, component: str) -> bool:
-        """A bare component that lacks a required option is no variant of a stage set."""
-        if choice in members.get(slot, {}):
-            return True
-        params, _ = component_parameters(STAGE_REGISTRIES[slot].get(component))
-        return all(param.default is not param.empty for param in params.values())
-
     options = {
         slot: [
             (choice, component)
             for choice, component in stage_variants(slot)
             if _in_tree(STAGE_REGISTRIES[slot], component)
-            and complete(slot, choice, component)
+            and not needs_an_option(slot, choice, component)
             and choice not in STAGE_SET_SKIPPED
             and not _replaces_an_inner_part(slot, choice)
         ]
@@ -504,6 +573,8 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
         for choice, component in stage_variants(slot):
             if not _in_tree(STAGE_REGISTRIES[slot], component):
                 continue
+            if needs_an_option(slot, choice, component):  # not a combination
+                continue
             for method, base in METHODS.items():
                 found.append(
                     Cell(
@@ -517,7 +588,10 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
                         choice,
                     )
                 )
-    for kind, picked in _stage_sets():
+    # The stage sets take seconds to enumerate (every product of the variants is checked
+    # against the contract rules): only when they are asked for.
+    stage_sets = _stage_sets() if groups is None or "stage-set" in groups else iter(())
+    for kind, picked in stage_sets:
         method = _stage_set_base(picked)
         sets = [f"backbone={STAGE_SET_ENCODERS[kind]}"]
         sets += [f"{slot}={choice}" for slot, (choice, _) in picked.items()]
@@ -566,7 +640,7 @@ def cells(groups: tuple[str, ...] | None = None) -> list[Cell]:
                     preset.name,
                 )
             )
-    for method, sets in LOSS_CELLS:
+    for method, sets in _loss_cells():
         names = [item.partition("=")[2] for item in sets]
         terms = [item.partition("=")[0] for item in sets]
         found.append(

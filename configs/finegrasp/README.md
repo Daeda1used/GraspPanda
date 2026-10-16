@@ -20,6 +20,8 @@ a label asset and two data transforms. There is no `FineGrasp` class.
 - **Normal prior.** The encoder is fed `[x, y, z | surface normal]` per point instead
   of three ones.
 
+**Run it in five minutes:** [docs/methods/finegrasp.md](../../docs/methods/finegrasp.md) gives the authors' checkpoint, its licence and the conversion command, the demo on the example scene with what it prints, the same from Python and in the browser, and a first AP on 120 frames of the benchmark, each with the date, commit and machine it was measured on.
+
 | slot | component | shared with EconomicGrasp |
 |---|---|---|
 | `backbone` | `SparseUNet14` | yes, with 6 input channels instead of 3 |
@@ -112,7 +114,7 @@ section), so this is also the whole-split evidence for that reconstruction, whic
 120-frame sample below could only suggest. Not investigated: how much of the remaining
 tenth of an AP is the seed of the point sampling.
 
-**No `reproduced` number exists yet**: nothing has been trained here.
+**No `reproduced` number exists yet**: no FineGrasp model has been trained here.
 
 ## The normals: what the released weights expect
 
@@ -206,6 +208,21 @@ Not verified: any training run (two epochs on 90 frames ran through `grasppanda 
 as a smoke test, on scene-normalised labels), the Kinect camera (the authors publish
 RealSense only), the weights trained with simulation data (`finegrasp_pipeline_sim`,
 which take no normals), and the behaviour on GraspClutter6D.
+
+## Options of every slot
+
+Every slot of this method, the options that fit it and those that do not, each with what
+was measured for it (the verdict of its probe, the levels *composes*, *runs*, *learns* and
+*predicts*, its class, the grasps per frame, the reason and kind of a refusal):
+[docs/methods/finegrasp.md](../../docs/methods/finegrasp.md), or in a terminal:
+
+```bash
+grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list            # every slot
+grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list grouper    # one slot (--json: everything)
+```
+
+A class counts verdicts of one run (seed 0, 20 iterations, 8 frames of one scene), not
+accuracy.
 
 ## Usage
 

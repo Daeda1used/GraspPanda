@@ -7,6 +7,8 @@ hide:
 # Combination explorer
 
 Swap any stage of a grasp detector and see what happened when it was built and trained.
+On your machine, `grasppanda explore --weights-dir <dir>` also runs a ported method on a
+scene, in this page.
 
 <div id="gp-explorer" class="gpx">
 <noscript><p>The explorer needs JavaScript. The same records are on the page
@@ -43,6 +45,16 @@ what the contract rules said when they refused it.
   combination trains. A stage together with an option of the training recipe (optimizer,
   schedule, hooks, augmentation) is not stored. Any other selection is *not measured*,
   and the page prints the two commands that find out.
+- **The lanes of a method are its list.** A lane offers exactly the options that
+  `grasppanda compose <method config> --list <slot>` lists for that method, and the
+  [page of the method](../methods/gsnet.md) shows (a test holds the three together). An
+  option the grid has no cell for says why.
+- **Levels and classes.** A record is decided at four levels, *composes*, *runs*, *learns*
+  and *predicts*; a record of the first judge says *not checked* for the last two. The
+  grid shows the grasps per frame under every mark and greys a probe that predicted no
+  grasp; the class of an option is given per level, and the filters use the level you
+  pick. A class is one run, seed 0, 20 iterations, 8 frames of one scene: it counts
+  verdicts, not accuracy ([Measured classes](../advanced_guides/measured_combinations.md#measured-classes)).
 - **No accuracy.** A probe trains 20 iterations on 8 frames. It shows that a combination
   works: it builds, its losses are finite, seeds reach its head, it predicts. How good it
   is takes a full training run and an evaluation on a benchmark split.
@@ -51,6 +63,12 @@ what the contract rules said when they refused it.
   selection, of any number of slots, gets the verdict of the contract rules at once, with
   the conflict and the fix when it is refused, and an accepted one can be saved as a
   config. It never trains anything; the probe stays a command you run.
+- **Run a method, on your machine.** The tab *Run a method* is greyed here, because a run
+  needs weights and a model on your computer. `grasppanda explore --weights-dir <dir>`
+  enables it: pick a ported method (or your selection) and a weights file from `<dir>`,
+  run it on the built-in example scene or on your own depth image, and read the picture,
+  the best grasps and the counts `grasppanda demo` prints
+  ([Run in the browser](../user_guides/inference.md#run-in-the-browser)).
 - **The data is generated.** `python -m tools.make_explorer` writes it from the measured
   file, the presets, the catalogue and the slot pages. The explorer itself loads nothing
   from the network: it works without a connection when the site is served

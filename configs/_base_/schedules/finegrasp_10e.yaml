@@ -16,11 +16,13 @@
 # The runnable config sets the batch size (32 in one process). Not verified here: no
 # training run has been made with this recipe.
 
+# options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list optimizer
 optimizer:
   type: Adam
   lr: 8e-3
   weight_decay: 1e-5
 
+# options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list schedule
 scheduler:
   type: WarmupCosineLR
   warmup_steps: 800               # one epoch

@@ -11,9 +11,23 @@ from __future__ import annotations
 
 import pytest
 
-from grasppanda.config import Config, ConfigError
-from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, stage_contract_problems
-from grasppanda.registry import ASSIGNERS, BACKBONES, DETECTORS, HEADS, PROPOSALS, VIEWS
+from grasppanda.config import REFUSAL_KINDS, Config, ConfigError
+from grasppanda.config.checker import RULES
+from grasppanda.models.detectors.seed_based import (
+    CONTRACT_RULES,
+    STAGE_REGISTRIES,
+    stage_contract_problems,
+    stage_contract_warnings,
+)
+from grasppanda.registry import (
+    ASSIGNERS,
+    BACKBONES,
+    DETECTORS,
+    GROUPERS,
+    HEADS,
+    PROPOSALS,
+    VIEWS,
+)
 from grasppanda.structures import ContractError, Gripper
 
 OBJECT_SEEDS = {"type": "NearestLabelAssigner", "supervise": "object_seeds", "view_widths": True}
@@ -85,6 +99,87 @@ def test_an_axis_mismatch_lists_the_components_that_would_fit():
     assert "DepthCylinderGroup" in message.split("Groupers that emit")[1]
     fitting = message.split("Head bundles that expect ('seed', 'channel'): ")[1]
     assert "SWADHead" in fitting and "EconomicHead" in fitting and "OperationHead" not in fitting
+    # The adapter that bridges the two, by preset; compose inserts it (W4.2).
+    assert message.kind == "fixed-by-compose"
+    assert "wrap the grouper in the axis adapter DepthEmbedGroup (preset `depth-embed`)" in message
+    wrapped = {"type": "DepthEmbedGroup", "grouper": {"type": "CylinderGroup"}}
+    assert stage_contract_problems(grouper=wrapped, head={"type": "OperationHead"}) == []
+    # The other direction: pooling over the depth bins.
+    message = only(
+        stage_contract_problems(grouper={"type": "DepthCylinderGroup"}, head={"type": "SWADHead"})
+    )
+    assert message.kind == "fixed-by-compose" and "DepthPoolGroup (preset `depth-pool`)" in message
+
+
+def test_an_axis_mismatch_without_an_adapter_says_why():
+    # An axis adapter under the head of the other family contradicts itself.
+    embed = {"type": "DepthEmbedGroup", "grouper": {"type": "CylinderGroup"}}
+    message = only(stage_contract_problems(grouper=embed, head={"type": "SWADHead"}))
+    assert message.kind == "structural"
+    assert "DepthEmbedGroup is itself an axis adapter" in message
+    # A scene-support crop without a depth axis: the adapter would have to repeat a crop of
+    # the scene, and DepthEmbedGroup wraps seeds-support crops only.
+    voxel = {"type": "VoxelSetAbstractionGroup"}
+    message = only(stage_contract_problems(grouper=voxel, head={"type": "OperationHead"}))
+    assert message.kind == "not-implemented"
+    assert "No axis adapter turns a scene-support crop" in message
+    assert "DepthEmbedGroup wraps seeds-support crops" in message
+    assert GROUPERS.get("VoxelSetAbstractionGroup").support == "scene"
+
+
+# --------------------------------------------------------------- why something is refused
+
+
+def _pairs():
+    """Every pair of registered stages of the contract groups, as classes."""
+    groups = [
+        ("proposal", "view"),
+        ("view", "assigner"),
+        ("assigner", "head"),
+        ("grouper", "head"),
+        ("view", "head"),
+        ("backbone", "grouper"),
+    ]
+    for left, right in groups:
+        for one in STAGE_REGISTRIES[left].names():
+            for other in STAGE_REGISTRIES[right].names():
+                yield {
+                    left: STAGE_REGISTRIES[left].get(one),
+                    right: STAGE_REGISTRIES[right].get(other),
+                }
+
+
+def test_every_rule_states_the_kind_of_what_it_refuses():
+    """W4.1: a refusal says whether it is a genuine incompatibility (structural), a lift
+    not written yet (not-implemented), something compose inserts or sets
+    (fixed-by-compose), a config that does not state its components fully
+    (not-a-combination) or a policy. Every rule declares one, and every message carries
+    the kind of its case."""
+    for rule in CONTRACT_RULES:
+        assert getattr(rule, "kind", None) in REFUSAL_KINDS, rule.__name__
+    shipped = [rule for rule in RULES if rule.__module__ == "grasppanda.config.checker"]
+    assert len(shipped) >= 7
+    for rule in shipped:
+        assert getattr(rule, "kind", None) in REFUSAL_KINDS, rule.__name__
+    seen = set()
+    for stages in _pairs():
+        for message in stage_contract_problems(**stages):
+            assert message.kind in REFUSAL_KINDS and message.rule, message
+            seen.add(message.kind)
+    assert {"structural", "fixed-by-compose", "not-implemented"} <= seen
+    # The config check carries the kind into its issues: the stage rules, a rule of the
+    # checker, the signature check.
+    kinds = {}
+    for slots in (
+        {"assigner": {"type": "CompactLabelAssigner"}},
+        {"grouper": {"type": "MultiScaleGroup"}},
+    ):
+        with pytest.raises(ConfigError) as error:
+            Config.from_dict({"model": tiny(**slots)})
+        kinds.update({issue.message.split(" ")[0]: issue.kind for issue in error.value.issues})
+        assert all(issue.kind in REFUSAL_KINDS for issue in error.value.issues)
+    assert kinds["CompactLabelAssigner"] == "structural"
+    assert kinds["MultiScaleGroup"] == "not-a-combination"  # requires 'branch'
 
 
 # ------------------------------------------------------------------ the label format
@@ -137,38 +232,36 @@ def test_a_view_stage_names_the_assigner_options_it_depends_on():
     )
 
 
-def test_seed_weights_are_never_dropped_silently():
-    """Before this rule a GSNet config with ``ScaleBalancedAssigner`` trained without any
-    scale balancing: the SWAD head and the template view stage do not read the weight."""
+def test_every_shipped_stage_applies_seed_weights():
+    """The scale-balanced weights reach every loss of every shipped view stage and head
+    bundle (W4.3), so ScaleBalancedAssigner combines with any of them."""
+    for registry in (VIEWS, HEADS):
+        for name in registry.names():
+            if registry.get(name).__module__.startswith("grasppanda."):
+                assert registry.get(name).applies_seed_weights, name
     balanced = {"type": "ScaleBalancedAssigner"}
-    message = only(
-        stage_contract_problems(
-            view={"type": "TemplateViewStage"}, assigner=balanced, head={"type": "SWADHead"}
-        )
-    )
-    assert "ScaleBalancedAssigner returns a loss weight per seed" in message
-    assert "TemplateViewStage and SWADHead do not apply seed weights" in message
-    assert "silently do nothing" in message
-    assert (
-        "ObjectnessViewStage" in message.split("view stages: ")[1].split(";")[0]
-        and "head bundles: OperationHead" in message
-    )
-    message = only(
-        stage_contract_problems(
-            view={"type": "ObjectnessViewStage"}, assigner=balanced, head={"type": "SWADHead"}
-        )
-    )
-    assert "but SWADHead does not apply seed weights" in message
-    assert (
-        stage_contract_problems(
-            view={"type": "ObjectnessViewStage"}, assigner=balanced, head={"type": "OperationHead"}
-        )
-        == []
-    )
-    assert VIEWS.get("ObjectnessViewStage").applies_seed_weights
-    assert HEADS.get("OperationHead").applies_seed_weights
-    assert not HEADS.get("SWADHead").applies_seed_weights
-    assert not HEADS.get("EconomicHead").applies_seed_weights
+    for head in ("SWADHead", "DecoupledGridHead", "OperationHead"):
+        stages = {"view": {"type": "TemplateViewStage"}, "assigner": balanced}
+        assert stage_contract_problems(**stages, head={"type": head}) == []
+        assert stage_contract_warnings(**stages, head={"type": head}) == []
+
+
+def test_a_seed_weight_a_stage_does_not_apply_is_a_warning_not_a_refusal():
+    """A stage that cannot apply a weight per seed trains unweighted next to an assigner
+    that returns one. That changes what the model is, not whether it runs (W4.7): the
+    contracts accept it and say so as a warning."""
+
+    class Unweighted(VIEWS.get("TemplateViewStage")):  # a stage of a project, never registered
+        applies_seed_weights = False
+
+    stages = {"view": Unweighted, "assigner": {"type": "ScaleBalancedAssigner"}}
+    assert stage_contract_problems(**stages, head={"type": "SWADHead"}) == []
+    (warning,) = stage_contract_warnings(**stages, head={"type": "SWADHead"})
+    assert "ScaleBalancedAssigner returns a loss weight per seed" in warning
+    assert "but Unweighted does not apply seed weights: its loss is unweighted" in warning
+    assert "TemplateViewStage" in warning.split("view stages ")[1].split(";")[0]
+    # Without weights there is nothing to warn about.
+    assert stage_contract_warnings(view=Unweighted, assigner={"type": "NearestLabelAssigner"}) == []
 
 
 # ------------------------------------------------------------------- scores of seeds
@@ -188,6 +281,21 @@ def test_a_seed_score_has_exactly_one_owner():
     assert "proposal that does not (" in message and "SubsampledSeeds" in message
     assert PROPOSALS.get("GraspnessFPS").seed_scores == ("graspness", "objectness")
     assert PROPOSALS.get("SubsampledSeeds").seed_scores == ()
+    # The way out compose takes (W4.6): the proposal predicts graspness only.
+    assert message.kind == "fixed-by-compose"
+    assert (
+        "Let ObjectnessViewStage own it and GraspnessFPS leave it: `type: ScoredSeeds` with "
+        "`select_by: graspness_only` (`grasppanda compose` does that)" in message
+    )
+    only_graspness = {"type": "ScoredSeeds", "select_by": "graspness_only"}
+    view = {"type": "ObjectnessViewStage"}
+    assert stage_contract_problems(proposal=only_graspness, view=view) == []
+    # A proposal that selects by objectness cannot leave it: a genuine incompatibility.
+    by_objectness = {"type": "ScoredSeeds", "select_by": "objectness"}
+    message = only(stage_contract_problems(proposal=by_objectness, view=view))
+    assert message.kind == "structural"
+    assert "ScoredSeeds selects its seeds by objectness (`select_by: objectness`)" in message
+    assert "Keep ScoredSeeds with a view stage that does not predict it" in message
 
 
 def test_a_score_the_decoder_reads_must_be_predicted_by_some_stage():
@@ -200,6 +308,9 @@ def test_a_score_the_decoder_reads_must_be_predicted_by_some_stage():
     )
     assert "neither SubsampledSeeds nor TemplateViewStage predicts it" in message
     assert "GraspnessFPS" in message and "ObjectnessViewStage" in message
+    # The decode option that does not read it (W4.4), which compose sets.
+    assert message.kind == "fixed-by-compose"
+    assert "Set `score_decode: score_x_tolerance`, the decode option of the head" in message
     assert stage_contract_problems(**stages, head={"type": "OperationHead"}) == []
     assert (
         stage_contract_problems(**{**stages, "view": {"type": "ObjectnessViewStage"}}, head=head)

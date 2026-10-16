@@ -20,14 +20,15 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights: &realsense_weights
-      # The authors' checkpoint-rs.tar from the folder below, to be converted with
-      #   python -m tools.convert_checkpoint ... --source-format scale-balanced-grasp
+      # The authors' checkpoint-rs.tar from the folder below, converted with `convert` (the
+      # command of README.md).
       # The digest is that of the copy the parity tests ran on (dated 2023-01-05); it has
       # not been compared with a fresh download.
       url: https://drive.google.com/drive/folders/1Y2o0uAbhS6-yZhPkKMAAnL0tCpbiJfk0?usp=share_link
       sha256: ebf63c146a7dfd8ced4543b9b9e5b9506cff320bb4b8157cab0c78b3e6ce5aef
       license: as the upstream repository (MIT file; derived from non-commercial code)
       source: author
+      convert: "python -m tools.convert_checkpoint checkpoint-rs.tar sbg_realsense.pth --source-format scale-balanced-grasp --camera realsense"
     results:
       # Quoted from Table 2 of the paper (arXiv 2212.05275); whether these rows use
       # object-balanced sampling is not stated.

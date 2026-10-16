@@ -16,15 +16,14 @@ models:
     camera: realsense
     weights: &realsense_weights
       # The file HGGD_realsense_checkpoint of the folder below, the link of the upstream
-      # README, converted with
-      #   python -m tools.convert_checkpoint checkpoint-realsense.tar hggd_realsense.pth \
-      #       --source-format hggd --camera realsense
+      # README, converted with `convert` (the command of README.md).
       # The digest is that of the file that was converted for the records below and of a
       # download from the folder on 2026-10-13.
       url: https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/
       sha256: b95da06d8723298ad28e4c720c3a6a8af73dfe6f2e8126f43de8845bf62ad6df
       license: "MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
       source: author
+      convert: "python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth --source-format hggd --camera realsense"
     results:
       # Neither source says whether the collision filter of the released test script
       # (which dumps filtered grasps) was applied.
@@ -85,15 +84,15 @@ models:
     protocol: graspnet1b-sv-v1
     camera: kinect
     weights:
-      # The file HGGD_kinect_checkpoint of the same folder, to be converted with
-      #   python -m tools.convert_checkpoint checkpoint-kinect.tar hggd_kinect.pth \
-      #       --source-format hggd --camera kinect
+      # The file HGGD_kinect_checkpoint of the same folder, converted with `convert` (the
+      # command of README.md).
       # The digest is that of the file that was converted for the records below and of a
       # download from the folder on 2026-10-13.
       url: https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/
       sha256: 721d0cccad7cf80a9910bfba95d9aaf164a5117f731cd1a0ba5e21a04e4cad49
       license: "MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
       source: author
+      convert: "python -m tools.convert_checkpoint HGGD_kinect_checkpoint hggd_kinect.pth --source-format hggd --camera kinect"
     results:
       - provenance: reported
         collision_filter: null

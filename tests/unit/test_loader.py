@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from grasppanda.config import Config, ConfigError
+from grasppanda.config import Config, ConfigError, configs_root
 from grasppanda.config.loader import CLI_SOURCE, apply_overrides, load_tree, parse_yaml
 
 
@@ -87,6 +87,48 @@ def test_sibling_bases_combine_disjoint_values(write):
     write("two.yaml", "runtime: {deterministic: true}\n")
     config = load(write("child.yaml", "_base_: [one.yaml, two.yaml]\n"))
     assert config["runtime"] == {"seed": 0, "deterministic": True}
+
+
+GSNET = "gsnet/gsnet_sunet14_g1b-realsense_10e"
+
+
+def test_a_base_may_name_a_shipped_building_block_from_any_directory(write, monkeypatch):
+    """Outside the checkout (or from a wheel) ``_base_/...`` falls back to the shipped tree."""
+    monkeypatch.chdir(write("elsewhere/keep.yaml", "").parent)
+    path = write("mine/child.yaml", "_base_: [_base_/default_runtime.yaml]\ntrain: {epochs: 3}\n")
+    config = load(path)
+    shipped = (configs_root() / "_base_" / "default_runtime.yaml").resolve()
+    assert config.sources == [path.resolve(), shipped]
+    assert config.source_of("runtime.seed") == str(shipped)
+    assert config["train"]["epochs"] == 3
+
+
+@pytest.mark.parametrize("name", [f"{GSNET}.yaml", GSNET])
+def test_a_base_may_name_a_shipped_config(write, monkeypatch, name):
+    """A child of a shipped method config is the same experiment when it changes nothing."""
+    monkeypatch.chdir(write("elsewhere/keep.yaml", "").parent)
+    child = Config.load(write("mine/child.yaml", f"_base_: [{name}]\n"))
+    shipped = Config.load(configs_root() / f"{GSNET}.yaml")
+    assert child.digest() == shipped.digest()
+    assert child.sources[1] == (configs_root() / f"{GSNET}.yaml").resolve()
+    assert len(child.sources) == 1 + len(shipped.sources)
+
+
+def test_a_file_next_to_the_child_comes_before_a_shipped_one(write):
+    local = write("mine/_base_/default_runtime.yaml", "runtime: {seed: 41}\n")
+    config = load(write("mine/child.yaml", "_base_: [_base_/default_runtime.yaml]\n"))
+    assert config.sources[1] == local.resolve() and config["runtime"] == {"seed": 41}
+
+
+def test_a_missing_base_is_reported_at_the_file_that_names_it(write):
+    write("mine/middle.yaml", "_base_: [no/such/base.yaml]\n")
+    child = write("mine/child.yaml", "_base_: [middle.yaml]\n")
+    with pytest.raises(ConfigError) as error:
+        load(child)
+    (issue,) = error.value.issues
+    assert issue.path == "_base_" and issue.source == str((child.parent / "middle.yaml").resolve())
+    assert "cannot find the base 'no/such/base.yaml'" in issue.message
+    assert str(configs_root()) in issue.message and "_base_/default_runtime.yaml" in issue.message
 
 
 def test_circular_inheritance_is_reported(write):

@@ -1,3 +1,8 @@
+# Machine-readable source of the GSNet zoo entries; validated by
+# grasppanda.hub.load_metafile. Reported numbers, and the model trained here from scratch
+# scored on whole test splits (`reproduced`, each row with its result record). No
+# checkpoint of the authors has been scored: see README.md for the files released with
+# the reference code.
 method: GSNet
 title: "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection"
 venue: ICCV 2021
@@ -11,6 +16,69 @@ models:
     config: gsnet/gsnet_sunet14_g1b-realsense_10e.yaml
     protocol: graspnet1b-sv-v1
     camera: realsense
+    weights: &realsense_weights
+      # Trained here from scratch: `grasppanda train gsnet/gsnet_sunet14_g1b-realsense_10e`
+      # at commit 0125baa, the recipe of that config unchanged (10 epochs, batch size 4,
+      # Adam at 1e-3 decayed by 0.95 per epoch, seed 0, one GPU, about 3.4 hours), on the
+      # 25,600 RealSense frames of the training scenes; the file is the checkpoint of
+      # epoch 10 (184,478,814 bytes). One training run with one seed.
+      url: null
+      sha256: 829ad72d130d7bb8f5bcc28b61c5f9f32675530383b0c5be8ad6f6cb7a0d75d7
+      license: null
+      source: grasppanda
+      note: "Not published yet: trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided."
+    author_weights:
+      # minkuresunet_realsense.tar, the RealSense file the reference repository's README
+      # links (184,429,769 bytes), converted with `convert`. No row below was measured
+      # with it: README.md, "The checkpoints released with the reference code".
+      url: https://drive.google.com/file/d/1RfdpEM2y0x98rV28d7B2Dg8LLFKnBkfL/view?usp=sharing
+      sha256: a0b9d85b300e40c76b66d092de62138d74757d6b7c2037f0d364f33960c54aa9
+      license: "academic, non-commercial (SJTU), as the reference repository; trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
+      convert: "python -m tools.convert_checkpoint minkuresunet_realsense.tar gsnet_realsense.pth --source-format graspness-unofficial --camera realsense"
+      note: "It loads strictly and runs, but it is far below the paper: its best-ranked grasps run into the scene, so use it with the collision filter."
     results:
       - {provenance: reported, collision_filter: false, source: "paper", AP: {seen: 65.70, similar: 53.75, novel: 23.98}}
       - {provenance: reported, collision_filter: true, source: "paper", AP: {seen: 67.12, similar: 54.81, novel: 24.31}}
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator.
+      # Above the paper by 3.13 / 6.60 / 1.22 AP (off) and 4.11 / 7.48 / 2.11 (on); see
+      # README.md, "Results", for what is known about the gap.
+      - provenance: reproduced
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 68.83, similar: 60.35, novel: 25.20}
+      - provenance: reproduced
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 71.23, similar: 62.29, novel: 26.42}
+  # Cross-dataset transfer: the RealSense weights above, scored on GraspClutter6D.
+  - name: gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e
+    config: gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml
+    protocol: graspclutter6d-sv-v1
+    camera: realsense-d435
+    weights: *realsense_weights
+    results:
+      # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
+      # through `grasppanda test` at commit 4bc5333, scored by GraspClutter6DEvaluator.
+      # The GraspClutter6D paper has no GSNet row, so nothing is reported to compare with.
+      - provenance: reproduced
+        collision_filter: false
+        evaluator: GraspClutter6DEvaluator
+        record: records/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_raw.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 25.58}
+        AP0.8: {test: 31.38}
+        AP0.4: {test: 19.42}
+      - provenance: reproduced
+        collision_filter: true
+        evaluator: GraspClutter6DEvaluator
+        record: records/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_cd.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 26.87}
+        AP0.8: {test: 33.00}
+        AP0.4: {test: 20.04}

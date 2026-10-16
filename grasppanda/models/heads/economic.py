@@ -141,6 +141,9 @@ class EconomicHead(HeadBundle):
     label_format = "compact"
     status = "tested"
     source = "EconomicGrasp (Wu et al., ECCV 2024)"
+    #: A weight per seed from the assigner (``CompactMatchedLabels.weight``) weights all
+    #: four losses.
+    applies_seed_weights = True
     loss_terms: ClassVar[dict[str, str]] = {
         "angle_loss": "class",
         "depth_loss": "class",
@@ -273,15 +276,20 @@ class EconomicHead(HeadBundle):
     # ------------------------------------------------------------------------ loss
 
     def loss(self, raw: EconomicPredictions, matched: CompactMatchedLabels) -> dict[str, Tensor]:
-        """Three classification losses and the width loss, all on the supervised seeds."""
+        """Three classification losses and the width loss, all on the supervised seeds.
+
+        With a weight per seed from the assigner, each is the weighted mean over the
+        supervised seeds, as in ``OperationHead``.
+        """
         targets = self.encode_targets(matched)
         mask = targets.mask
+        weight = getattr(matched, "weight", None)
         supervised = mask.sum().clamp(min=1)
         losses = {
-            "loss/angle": self.angle_loss(raw.angle, targets.angle, mask),
-            "loss/depth": self.depth_loss(raw.depth, targets.depth, mask),
-            "loss/score": self.score_loss(raw.score, targets.score, mask),
-            "loss/width": self.width_loss(raw.width, targets.width, mask),
+            "loss/angle": self.angle_loss(raw.angle, targets.angle, mask, weight),
+            "loss/depth": self.depth_loss(raw.depth, targets.depth, mask, weight),
+            "loss/score": self.score_loss(raw.score, targets.score, mask, weight),
+            "loss/width": self.width_loss(raw.width, targets.width, mask, weight),
         }
         for what in ("angle", "depth", "score"):
             hit = getattr(raw, what).detach().argmax(dim=-1) == getattr(targets, what)

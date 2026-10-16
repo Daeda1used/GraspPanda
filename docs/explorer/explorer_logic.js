@@ -32,22 +32,44 @@
     return null;
   }
 
-  /* The loss sets recorded under a method: a loss sits inside a stage, and a probe
-   * replaced several terms at once, so one recorded set is one choice of the lane. */
+  /* The name of a loss choice: its cell of the grid without group and method,
+   * `<presets>@<terms>`, which is unique under a method. */
+  function lossName(cell) {
+    return cell.id.split("/").slice(2).join("/");
+  }
+
+  /* The loss choices of a method: a loss sits inside a stage, so a choice is a set of
+   * terms (one term, or several replaced at once), the cells of the grid that the method's
+   * list names (tools/make_explorer.py, from grasppanda.combine.options); without such a
+   * list, the sets recorded under the method. */
   function lossSets(data, methodName) {
+    var m = method(data, methodName);
+    var listed = m && m.options ? m.options[LOSS] : null;
+    if (listed) {
+      return listed.map(function (item) {
+        var sets = typeof item === "string" ? [] : item.sets;
+        var name = typeof item === "string" ? item : item.name;
+        return { name: name, label: lossLabel(sets), sets: sets, reason: notProbed(m, LOSS, name) };
+      });
+    }
     return data.cells
       .filter(function (cell) {
         return cell.group === LOSS && cell.method === methodName;
       })
       .map(function (cell) {
         return {
-          name: cell.variant,
+          name: lossName(cell),
           label: lossLabel(cell.sets),
           sets: cell.sets,
           component: cell.component,
           cell: cell,
         };
       });
+  }
+
+  /* Why an option of a method has no cell of the grid, or "". */
+  function notProbed(m, slot, name) {
+    return (m && m.not_probed && m.not_probed[slot] && m.not_probed[slot][name]) || "";
   }
 
   /* How a set of loss terms is named on the page: by the terms it replaces, because one
@@ -62,19 +84,27 @@
     return sets.join(" + ");
   }
 
-  /* What a lane offers under a method: [{name, sets, option}] with the shipped one first. */
+  /* What a lane offers under a method: [{name, sets, option, reason}] with the shipped one
+   * first. The options are the method's list (the lists of `grasppanda compose <config>
+   * --list`); `reason` says why an option has no cell of the grid. */
   function choices(data, methodName, slot) {
     var m = method(data, methodName);
     if (!m || m.slots.indexOf(slot) < 0) return [];
     if (slot === LOSS) return lossSets(data, methodName);
     var ships = (m.ships[slot] || {}).option || "";
-    return (data.options[slot] || [])
-      .map(function (option) {
-        return { name: option.name, sets: [slot + "=" + option.name], option: option };
-      })
-      .sort(function (a, b) {
-        return (b.name === ships) - (a.name === ships);
-      });
+    var listed = m.options && m.options[slot];
+    var found = listed
+      ? listed.map(function (item) {
+          var name = typeof item === "string" ? item : item.name;
+          var sets = typeof item === "string" ? [slot + "=" + name] : item.sets;
+          return { name: name, sets: sets, option: option(data, slot, name), reason: notProbed(m, slot, name) };
+        })
+      : (data.options[slot] || []).map(function (entry) {
+          return { name: entry.name, sets: [slot + "=" + entry.name], option: entry, reason: "" };
+        });
+    return found.sort(function (a, b) {
+      return (b.name === ships) - (a.name === ships);
+    });
   }
 
   function option(data, slot, name) {
@@ -144,7 +174,25 @@
         if (choice.name === name) sets = sets.concat(choice.sets);
       });
     });
-    return sets;
+    /* A choice may name what another lane names too (a recipe that needs its encoder):
+     * one `--set` each. */
+    return sets.filter(function (item, index) {
+      return sets.indexOf(item) === index;
+    });
+  }
+
+  /* The data as the page uses it: every cell with its key, which the data file leaves out
+     to stay small (it follows from the method and the sets), and the name of its run, which
+     the file gives as an index into `runs`. Idempotent. */
+  function prepare(data) {
+    if (data && data.cells && data.methods && !data.keyed) {
+      data.cells.forEach(function (cell) {
+        if (cell.key === undefined) cell.key = keyOf(data, cell.method, cell.sets || []);
+        if (typeof cell.run === "number" && data.runs) cell.run = data.runs[cell.run];
+      });
+      data.keyed = true;
+    }
+    return data;
   }
 
   /* The key of a combination; tools/make_explorer.py computes the same for a record. */
@@ -238,21 +286,36 @@
     };
   }
 
-  /* How a record is shown: {kind, symbol, label}. `kind` is one of runs, adapter,
-   * unstable, refused, fails, none; it names the colour. */
+  /* Whether a probe predicted no grasp on any of its frames: such a cell is greyed. */
+  function noGrasp(cell) {
+    return Boolean(cell && cell.grasps && cell.grasps.length && !cell.grasps.some(Boolean));
+  }
+
+  /* How a record is shown: {kind, symbol, label, empty}. `kind` is one of runs, adapter,
+   * empty, unstable, refused, fails, none; it names the colour. `empty`: no grasp was
+   * predicted on any probed frame (the cell is greyed). */
   function badge(cell) {
     if (!cell) return { kind: "none", symbol: "·", label: "not measured" };
+    if (cell.verdict === "runs-empty") {
+      var where = cell.adapter ? " in the adapter " + cell.adapter : "";
+      return { kind: "empty", symbol: "∅", label: "runs" + where + ", no grasp predicted", empty: true };
+    }
     if (cell.verdict === "runs" || cell.verdict === "runs-unstable") {
       var unstable = cell.verdict === "runs-unstable";
       var label = unstable ? "runs, unstable" : "runs";
       if (cell.adapter) label += " in the adapter " + cell.adapter;
+      if (unstable && cell.levels && cell.levels.charAt(1) === "R") label += ", not repeated";
+      if (noGrasp(cell)) label += ", no grasp predicted";
       return {
         kind: unstable ? "unstable" : cell.adapter ? "adapter" : "runs",
         symbol: unstable ? "≈" : "✓",
         label: label,
+        empty: noGrasp(cell),
       };
     }
-    if (cell.verdict === "refused") return { kind: "refused", symbol: "✗", label: "refused" };
+    if (cell.verdict === "refused") {
+      return { kind: "refused", symbol: "✗", label: "refused" + (cell.kind ? " (" + cell.kind + ")" : "") };
+    }
     if (cell.verdict === "fails") {
       var phase = cell.failure && cell.failure.phase ? " at " + cell.failure.phase : "";
       return { kind: "fails", symbol: "!", label: "fails" + phase };
@@ -323,6 +386,7 @@
         name: own.name,
         sets: own.sets,
         option: own.option || null,
+        reason: own.reason || "",
         label: own.label || own.name,
         cell: alone,
         badge: alone ? badge(alone) : contractBadge(contract(data, methodName, own.sets)),
@@ -386,10 +450,31 @@
     return { columns: columns, rows: rows };
   }
 
-  /* Filters of the grid: {q, classes: [..], extra: bool, weights: bool}. */
-  function matches(entry, filter) {
+  /* The position of a level in the data's order of levels (composes, runs, ...). */
+  function levelIndex(data, level) {
+    var keys = (data.levels || []).map(function (item) {
+      return item.key;
+    });
+    var at = keys.indexOf(level || "runs");
+    return at < 0 ? 1 : at;
+  }
+
+  /* An option's class at a level: [text, column]; the column is a class word, "relative"
+   * (N of M probed) or "undecided". Null without a class. */
+  function classAt(data, entry, level) {
+    return (entry && entry.classes && entry.classes[levelIndex(data, level)]) || null;
+  }
+
+  function classColumn(data, entry, level) {
+    var found = classAt(data, entry, level);
+    return found ? found[1] : "";
+  }
+
+  /* Filters of the grid: {q, level, classes: [..], extra: bool, weights: bool}; the
+   * classes are those of the level (runs by default). */
+  function matches(entry, filter, data) {
     filter = filter || {};
-    if (filter.classes && filter.classes.length && filter.classes.indexOf(entry["class"]) < 0) {
+    if (filter.classes && filter.classes.length && filter.classes.indexOf(classColumn(data || {}, entry, filter.level)) < 0) {
       return false;
     }
     if (filter.extra && !(entry.extras && entry.extras.length)) return false;
@@ -402,16 +487,57 @@
     });
   }
 
-  /* The classes that occur among the options of a slot, in the order of the definition. */
-  function classesOf(data, slot) {
-    var order = ["universal", "most", "some", "specific", "none"];
+  /* The class columns that occur among the options of a slot at a level, in the order of
+   * the definition. */
+  function classesOf(data, slot, level) {
+    var order = ["universal", "most", "some", "specific", "none", "relative", "undecided"];
     var used = {};
     (data.options[slot] || []).forEach(function (entry) {
-      if (entry["class"]) used[entry["class"]] = true;
+      var column = classColumn(data, entry, level);
+      if (column) used[column] = true;
     });
     return order.filter(function (name) {
       return used[name];
     });
+  }
+
+  /* The classes of an option at the four levels, levels of the same class said once:
+   * "universal (composes, runs) · not checked (learns, predicts)"; "" without a class. */
+  function classText(data, entry) {
+    if (!entry || !entry.classes) return "";
+    var groups = [];
+    (data.levels || []).forEach(function (level) {
+      var found = classAt(data, entry, level.key);
+      var text = found ? found[0] : "";
+      var last = groups[groups.length - 1];
+      if (last && last.text === text) last.levels.push(level.key);
+      else groups.push({ text: text, levels: [level.key] });
+    });
+    return groups
+      .map(function (group) {
+        return group.text + " (" + group.levels.join(", ") + ")";
+      })
+      .join(" · ");
+  }
+
+  /* The state of a record at a level: "yes", "no" or why it is undecided. A record
+   * holds its four levels as a word of four letters (tools/make_explorer.py). */
+  function levelState(data, cell, level) {
+    if (!cell || !cell.levels) return "";
+    var code = cell.levels.charAt(levelIndex(data, level));
+    return (data.level_states || {})[code] || code;
+  }
+
+  /* The levels a record reached, as one line: "composes ✓ · runs ✓ · learns ? · ...". */
+  function levelsText(data, cell) {
+    if (!cell || !cell.levels) return "";
+    var marks = { yes: "✓", no: "✗" };
+    return (data.levels || [])
+      .map(function (level) {
+        var state = levelState(data, cell, level.key);
+        return level.key + " " + (marks[state] || state);
+      })
+      .join(" · ");
   }
 
   /* A selection as the fragment of a link, and back. */
@@ -423,6 +549,7 @@
         parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(picks[key]));
       });
     if (view === "grid") parts.push("grid=" + encodeURIComponent(slot || ""));
+    else if (view === "run") parts.push("run=1");
     return parts.join("&");
   }
 
@@ -442,6 +569,7 @@
           return;
         }
         if (key === "m") out.method = value;
+        else if (key === "run") out.view = "run"; /* the Run panel; "run" is no slot */
         else if (key === "grid") {
           out.view = "grid";
           out.slot = value;
@@ -463,6 +591,19 @@
     if (cell.grasps && cell.grasps.length) {
       out.push(["grasps predicted per frame", cell.grasps.join(", ")]);
     }
+    if (cell.fall) {
+      out.push([
+        "fall of every loss term",
+        Object.keys(cell.fall)
+          .map(function (term) {
+            var value = cell.fall[term];
+            return term + " " + (value === null ? "never active" : Math.round(value * 100) + " %");
+          })
+          .join(", "),
+      ]);
+    } else if (cell.levels) {
+      out.push(["fall of every loss term", "not checked (a record of the first judge)"]);
+    }
     if (cell.post && cell.post.grasps) {
       out.push([
         "grasps before → after " + cell.post.steps.join(" → "),
@@ -476,7 +617,8 @@
     return out;
   }
 
-  return {
+  var api = {
+    prepare: prepare,
     answer: answer,
     badge: badge,
     badgeOf: badgeOf,
@@ -485,8 +627,16 @@
     contractBadge: contractBadge,
     dropped: dropped,
     lossLabel: lossLabel,
+    lossName: lossName,
     mark: mark,
+    classAt: classAt,
+    classColumn: classColumn,
+    levelState: levelState,
     classesOf: classesOf,
+    classText: classText,
+    levelsText: levelsText,
+    noGrasp: noGrasp,
+    notProbed: notProbed,
     composeCommand: composeCommand,
     facts: facts,
     fromHash: fromHash,
@@ -505,4 +655,15 @@
     shipped: shipped,
     toHash: toHash,
   };
+  // Every entry point that is given the data prepares it first (a no-op after the first
+  // time, and for arguments that are not the data).
+  Object.keys(api).forEach(function (name) {
+    var plain = api[name];
+    if (name === "prepare") return;
+    api[name] = function () {
+      prepare(arguments[0]);
+      return plain.apply(null, arguments);
+    };
+  });
+  return api;
 });

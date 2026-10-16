@@ -13,10 +13,40 @@ percent, and may state ``AP0.8`` and ``AP0.4`` for the same splits::
     AP: {test: 21.67}                                    # graspclutter6d-sv-v1
     AP0.8: {test: 26.62}
     AP0.4: {test: 15.90}
+
+A model's ``weights`` entry names the file its measured rows were produced with: its
+``sha256`` always, and where it is published (``url``) under which ``license``. Weights
+trained here (``source: grasppanda``) may be listed before they are published: ``url``
+is then ``null``, ``license`` may be ``null``, and a short ``note`` says that they are
+not published yet::
+
+    weights:
+      url: null
+      sha256: <the 64 hex digits of the file>
+      license: null
+      source: grasppanda
+      note: "Not published yet: ..."
+
+The authors' checkpoint (``source: author``) is in the authors' format. ``convert`` is the
+command that turns the downloaded file into weights for the config, exactly as the
+method's README gives it; its two file arguments name the file the authors publish and
+the converted file::
+
+    weights:
+      url: https://github.com/<owner>/<repo>/releases/download/v1/authors.tar
+      sha256: <the 64 hex digits of the authors' file>
+      license: "MIT; trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
+      source: author
+      convert: "python -m tools.convert_checkpoint authors.tar method_realsense.pth --source-format <format> --camera realsense"
+
+Where ``weights`` names another file (weights trained here), ``author_weights`` lists the
+checkpoint the authors released for the same config, in the same form, with a ``note``
+on what it gives.
 """
 
 from __future__ import annotations
 
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -47,6 +77,26 @@ PROTOCOL_SPLITS = {
 }
 #: Average precision at one friction level, which a result may state next to ``AP``.
 _AT_FRICTION = ("AP0.8", "AP0.4")
+#: How a conversion command starts: the converter of the repository, run as a module.
+CONVERTER = "python -m tools.convert_checkpoint"
+#: Options of the converter; each takes a value.
+_CONVERTER_OPTIONS = ("--source-format", "--config", "--camera")
+
+
+def conversion_files(command: str) -> tuple[str, ...]:
+    """The file arguments of a conversion command: ``(downloaded, converted)`` when well formed."""
+    words = shlex.split(command)[len(CONVERTER.split()) :]
+    files: list[str] = []
+    while words:
+        word = words.pop(0)
+        if word in _CONVERTER_OPTIONS:
+            if words:
+                words.pop(0)
+        elif word.startswith("--"):
+            return ()  # an option the converter does not have
+        else:
+            files.append(word)
+    return tuple(files)
 
 
 @dataclass(frozen=True)
@@ -70,10 +120,33 @@ class Result:
 
 @dataclass(frozen=True)
 class Weights:
-    url: str
+    #: ``None`` only for weights trained here that are not published yet (see ``note``).
+    url: str | None
     sha256: str
-    license: str
+    #: ``None`` only while ``url`` is.
+    license: str | None
     source: str  # "author" or "grasppanda"
+    #: Why ``url`` is ``None``: a short sentence saying the weights are not published yet;
+    #: for ``author_weights``, what the authors' file gives.
+    note: str = ""
+    #: The command that converts the authors' file (``source: author`` only), as the
+    #: method's README gives it.
+    convert: str = ""
+
+    @property
+    def published(self) -> bool:
+        """Whether the file can be fetched from ``url``."""
+        return self.url is not None
+
+    @property
+    def downloaded_name(self) -> str:
+        """The authors' file as the conversion command names it; ``""`` without one."""
+        return conversion_files(self.convert)[0] if self.convert else ""
+
+    @property
+    def converted_name(self) -> str:
+        """The file the conversion command writes; ``""`` without one."""
+        return conversion_files(self.convert)[1] if self.convert else ""
 
 
 @dataclass(frozen=True)
@@ -84,6 +157,9 @@ class ModelEntry:
     camera: str
     weights: Weights | None = None
     results: tuple[Result, ...] = ()
+    #: The checkpoint the authors released for this config, where ``weights`` names
+    #: another file (weights trained here).
+    author_weights: Weights | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +185,55 @@ def _numbers(
         issues.append(Issue(where, "values must be numbers"))
         return {}
     return {split: float(value) for split, value in raw.items()}
+
+
+def _weights(given: Any, where: str, issues: list[Issue]) -> Weights | None:
+    """The weights entry of a model, or ``None`` with an issue."""
+    if not isinstance(given, dict):
+        issues.append(Issue(where, "must be a mapping"))
+        return None
+    unpublished = given.get("source") == "grasppanda" and given.get("url") is None
+    required = ("sha256", "source") if unpublished else ("url", "sha256", "license", "source")
+    for key in required:
+        if not given.get(key):
+            issues.append(Issue(f"{where}.{key}", "is required"))
+    if len(str(given.get("sha256", ""))) != 64:
+        issues.append(Issue(f"{where}.sha256", "must be a 64-character hex digest"))
+    note = str(given.get("note") or "")
+    if unpublished and "not published" not in note.lower():
+        issues.append(
+            Issue(
+                f"{where}.note",
+                "weights trained here without a url need a short note saying that they are "
+                "not published yet",
+            )
+        )
+    convert = str(given.get("convert") or "")
+    if convert and given.get("source") != "author":
+        issues.append(
+            Issue(
+                f"{where}.convert",
+                "only the authors' checkpoint is converted; weights trained here load as they are",
+            )
+        )
+    elif convert and (
+        not convert.startswith(CONVERTER + " ") or len(conversion_files(convert)) != 2
+    ):
+        issues.append(
+            Issue(
+                f"{where}.convert",
+                f"must read '{CONVERTER} <downloaded file> <converted file> [--source-format "
+                "F] [--config C] [--camera C]'",
+            )
+        )
+    return Weights(
+        url=None if unpublished else str(given.get("url", "")),
+        sha256=str(given.get("sha256", "")),
+        license=None if given.get("license") is None else str(given["license"]),
+        source=str(given.get("source", "")),
+        note=note,
+        convert=convert,
+    )
 
 
 def _result(
@@ -177,7 +302,8 @@ def _result(
             issues.append(
                 Issue(
                     where,
-                    f"a '{provenance}' result needs the model's weights entry (url and sha256)",
+                    f"a '{provenance}' result needs the model's weights entry: the sha256 "
+                    "of the file it was measured with",
                 )
             )
     return Result(
@@ -232,15 +358,22 @@ def load_metafile(path: str | Path) -> Metafile:
             issues.append(Issue(f"{where}.config", f"no such shipped config: {entry['config']}"))
         weights = None
         if entry.get("weights"):
-            given = entry["weights"]
-            for key in ("url", "sha256", "license", "source"):
-                if not given.get(key):
-                    issues.append(Issue(f"{where}.weights.{key}", "is required"))
-            if len(str(given.get("sha256", ""))) != 64:
-                issues.append(Issue(f"{where}.weights.sha256", "must be a 64-character hex digest"))
-            weights = Weights(
-                *(str(given.get(k, "")) for k in ("url", "sha256", "license", "source"))
-            )
+            weights = _weights(entry["weights"], f"{where}.weights", issues)
+        author_weights = None
+        if entry.get("author_weights"):
+            author_weights = _weights(entry["author_weights"], f"{where}.author_weights", issues)
+            if author_weights is not None and author_weights.source != "author":
+                issues.append(
+                    Issue(f"{where}.author_weights.source", "must be 'author': the authors' file")
+                )
+            if weights is None or weights.source == "author":
+                issues.append(
+                    Issue(
+                        f"{where}.author_weights",
+                        "is for a model whose weights are another file; the authors' "
+                        "checkpoint itself is listed as its weights",
+                    )
+                )
         results = [
             result
             for r_index, r in enumerate(entry.get("results") or [])
@@ -263,6 +396,7 @@ def load_metafile(path: str | Path) -> Metafile:
                 camera=str(entry.get("camera", "")),
                 weights=weights,
                 results=tuple(results),
+                author_weights=author_weights,
             )
         )
     if issues:

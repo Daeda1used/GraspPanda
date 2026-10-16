@@ -11,12 +11,12 @@ was predicted from the wrong crop support.
 
 from __future__ import annotations
 
-import multiprocessing
-
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 from grasppanda.structures import PointSet
+
+from .conftest import worker_loader
 
 
 class _Clouds(Dataset):
@@ -32,10 +32,7 @@ def _first(items: list[PointSet]) -> PointSet:
 
 
 def test_identities_from_loader_workers_are_unique():
-    context = multiprocessing.get_context("fork")
-    loader = DataLoader(
-        _Clouds(), batch_size=1, num_workers=2, collate_fn=_first, multiprocessing_context=context
-    )
+    loader = worker_loader(_Clouds(), "fork", batch_size=1, collate_fn=_first)
     from_workers = [points.id for points in loader]
     in_main = [PointSet(torch.zeros(4, 3)).id for _ in range(8)]
     assert len(set(from_workers)) == len(from_workers)  # two workers do not count alike

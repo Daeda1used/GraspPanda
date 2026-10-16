@@ -11,9 +11,18 @@ const path = require("path");
 
 const repo = path.resolve(process.argv[2] || path.join(__dirname, "..", ".."));
 const L = require(path.join(repo, "docs", "explorer", "explorer_logic.js"));
-const data = JSON.parse(fs.readFileSync(path.join(repo, "docs", "explorer", "explorer.json"), "utf8"));
+const data = L.prepare(
+  JSON.parse(fs.readFileSync(path.join(repo, "docs", "explorer", "explorer.json"), "utf8"))
+);
 const measured = JSON.parse(
   fs.readFileSync(path.join(repo, "docs", "advanced_guides", "measured_combinations.json"), "utf8")
+);
+
+// Refused records whose combination compose now accepts or refuses otherwise: they await
+// their probe (the same list as tests/unit/test_combine_grid.py).
+const awaitingFile = path.join(repo, "tests", "unit", "fixtures", "awaiting_probe.json");
+const awaiting = new Set(
+  fs.existsSync(awaitingFile) ? JSON.parse(fs.readFileSync(awaitingFile, "utf8")) : []
 );
 
 const contractsFile = path.join(repo, "docs", "explorer", "explorer_contracts.json");
@@ -29,7 +38,7 @@ function check(condition, message) {
 function picksOf(record) {
   const picks = {};
   if (record.group === "loss") {
-    picks.loss = record.variant;
+    picks.loss = L.lossName(record);
     return picks;
   }
   for (const item of record.sets || []) {
@@ -53,9 +62,11 @@ for (const record of measured.cells) {
         ? "fails"
         : record.verdict === "runs-unstable"
           ? "unstable"
-          : result.cell.adapter
-            ? "adapter"
-            : "runs";
+          : record.verdict === "runs-empty"
+            ? "empty"
+            : result.cell.adapter
+              ? "adapter"
+              : "runs";
   check(kind === expected, `${record.id}: badge ${kind}, expected ${expected}`);
   // The command of a selection is the recorded one, up to the name of the output file
   // and to sets that name what the method ships with.
@@ -133,9 +144,17 @@ const all = data.options.backbone || [];
 check(all.filter((o) => L.matches(o, {})).length === all.length, "empty filter");
 check(all.filter((o) => L.matches(o, { extra: true })).every((o) => o.extras.length), "extra");
 check(all.filter((o) => L.matches(o, { weights: true })).every((o) => o.weights), "weights");
-for (const name of L.classesOf(data, "backbone")) {
-  const hits = all.filter((o) => L.matches(o, { classes: [name] }));
-  check(hits.length && hits.every((o) => o.class === name), `class ${name}`);
+for (const level of data.levels.map((item) => item.key)) {
+  for (const name of L.classesOf(data, "backbone", level)) {
+    const hits = all.filter((o) => L.matches(o, { level, classes: [name] }, data));
+    check(hits.length && hits.every((o) => L.classColumn(data, o, level) === name), `class ${name} at ${level}`);
+  }
+}
+// The levels of a record are four letters; the page reads them through level_states.
+for (const cell of data.cells) {
+  check(typeof cell.levels === "string" && cell.levels.length === data.levels.length, `${cell.id}: levels`);
+  for (const level of data.levels) check(L.levelState(data, cell, level.key) in { yes: 1, no: 1, ...data.undecided }, `${cell.id}: ${level.key}`);
+  check(!L.noGrasp(cell) || (cell.grasps.length && cell.grasps.every((count) => count === 0)), `${cell.id}: grey`);
 }
 if (all.length) {
   const hits = all.filter((o) => L.matches(o, { q: all[0].name.toUpperCase() }));
@@ -214,7 +233,13 @@ if (contracts) {
         if (result.cell) {
           check(result.contract === null && result.badge.kind !== "accepted", "a record decides");
           // A record that was refused is refused by compose now as well, and the other way round.
-          check((result.cell.verdict === "refused") === !found.ok, `${m.name} ${sets}: record ${result.cell.verdict}, compose now ${found.ok}`);
+          if (!awaiting.has(result.cell.id)) {
+            check((result.cell.verdict === "refused") === !found.ok, `${m.name} ${sets}: record ${result.cell.verdict}, compose now ${found.ok}`);
+          }
+        } else if (result.sets.length > 1) {
+          // An option that needs another slot's option (a recipe for one encoder): two
+          // sets, a stage with a recipe option, which the contract answers do not store.
+          check(result.state === "unmeasured" && result.badge.kind === "none", "an option with its requirement");
         } else if (result.sets.length) {
           check(result.state === "unmeasured", "no record stays unmeasured");
           check(result.badge.kind === (found.ok ? "accepted" : "refused"), "contract badge");

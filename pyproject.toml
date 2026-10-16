@@ -99,12 +99,15 @@ packages = ["grasppanda"]
 "configs" = "grasppanda/_configs"
 # The combination explorer is a page of the docs and is served by `grasppanda explore`.
 "docs/explorer" = "grasppanda/_explorer"
+# The measured records, read by `grasppanda compose <method config> --list`.
+"docs/advanced_guides/measured_combinations.json" = "grasppanda/_measured/measured_combinations.json"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/grasppanda",
     "/configs",
     "/docs/explorer",
+    "/docs/advanced_guides/measured_combinations.json",
     "/tests",
     "/projects",
     "/README.md",
@@ -151,5 +154,5 @@ ignore = [
 known-first-party = ["grasppanda"]
 
 [tool.codespell]
-skip = "*.svg,*.png,*.lock,.venv,site,work_dirs"
+skip = "*.svg,*.png,*.lock,.venv,site,work_dirs,./*/research,*/research/*"
 ignore-words-list = "ot,nd,fpr,mor"

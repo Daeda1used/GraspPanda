@@ -16,6 +16,8 @@ template and no approach-aligned crop. It shares the outer contracts only: `loss
 `predict`, `Observation` / `Supervision`, `GraspGroup`, the dataset reader, the trainer,
 the post-processors and the evaluator.
 
+**Run it in five minutes:** [docs/methods/hggd.md](../../docs/methods/hggd.md) gives the authors' checkpoint, its licence and the conversion command, the demo on the example scene with what it prints, the same from Python and in the browser, and a first AP on 120 frames of the benchmark, each with the date, commit and machine it was measured on.
+
 | Stage | Module | Config section |
 |---|---|---|
 | network input `[depth, R, G, B]` at 640 × 360 | `image.py` | `model.image` |
@@ -113,6 +115,21 @@ with the workspace cropped around the ground-truth segmentation: the rows of the
 kinds are not like-for-like. What changes with the dataset is described in
 `docs/user_guides/cross_dataset.md`.
 
+## Options of every slot
+
+Every slot of this method, the options that fit it and those that do not, each with what
+was measured for it (the verdict of its probe, the levels *composes*, *runs*, *learns* and
+*predicts*, its class, the grasps per frame, the reason and kind of a refusal):
+[docs/methods/hggd.md](../../docs/methods/hggd.md), or in a terminal:
+
+```bash
+grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list            # every slot
+grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list image_encoder    # one slot (--json: everything)
+```
+
+A class counts verdicts of one run (seed 0, 20 iterations, 8 frames of one scene), not
+accuracy.
+
 ## Use
 
 ```bash
@@ -123,10 +140,14 @@ grasppanda prepare graspnet1b --view-grasps --camera realsense \
 grasppanda train hggd/hggd_r34w8_g1b-realsense_15e
 grasppanda test  hggd/hggd_r34w8_g1b-realsense_15e --weights <checkpoint>
 
-# The authors' checkpoint (two networks and the learned anchors) for this config:
-python -m tools.convert_checkpoint checkpoint-realsense.tar hggd_realsense.pth \
+# The authors' checkpoint (two networks and the learned anchors) for this config,
+# the file HGGD_realsense_checkpoint of their folder (HGGD_kinect_checkpoint for Kinect):
+python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth \
     --source-format hggd --camera realsense
 grasppanda test hggd/hggd_r34w8_g1b-realsense_15e --weights hggd_realsense.pth
+python -m tools.convert_checkpoint HGGD_kinect_checkpoint hggd_kinect.pth \
+    --source-format hggd --camera kinect
+grasppanda test hggd/hggd_r34w8_g1b-kinect_15e --weights hggd_kinect.pth
 ```
 
 Every run reports two variants. `raw` is every decoded grasp. `cd` is what the released

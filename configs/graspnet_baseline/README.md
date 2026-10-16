@@ -10,6 +10,8 @@ scores objectness and 300 approach views per seed, a cylinder crop of the scene 
 taken at four insertion depths along the best view, and two small networks predict score,
 in-plane angle class, width and grasp tolerance per depth.
 
+**Run it in five minutes:** [docs/methods/graspnet_baseline.md](../../docs/methods/graspnet_baseline.md) gives the authors' checkpoint, its licence and the conversion command, the demo on the example scene with what it prints, the same from Python and in the browser, and a first AP on 120 frames of the benchmark, each with the date, commit and machine it was measured on.
+
 ## Status
 
 **Support level: author weights verified, not trained here yet.** The implementation is
@@ -82,6 +84,21 @@ grasppanda prepare graspnet1b --tolerance \
 
 On the development machine 23 of the 40 objects of the training scenes took 54 s with
 four workers.
+
+## Options of every slot
+
+Every slot of this method, the options that fit it and those that do not, each with what
+was measured for it (the verdict of its probe, the levels *composes*, *runs*, *learns* and
+*predicts*, its class, the grasps per frame, the reason and kind of a refusal):
+[docs/methods/graspnet_baseline.md](../../docs/methods/graspnet_baseline.md), or in a terminal:
+
+```bash
+grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list            # every slot
+grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list grouper    # one slot (--json: everything)
+```
+
+A class counts verdicts of one run (seed 0, 20 iterations, 8 frames of one scene), not
+accuracy.
 
 ## Use
 

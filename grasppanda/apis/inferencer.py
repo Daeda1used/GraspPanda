@@ -77,6 +77,17 @@ class InputError(ContractError):
     """The input of an inference call is missing something or is not what it claims to be."""
 
 
+def plain_folder_advice(config: str = "<config>", weights: str = "<file>") -> str:
+    """What to do with a plain folder of frames, which no shipped reader reads."""
+    return (
+        "No reader for a plain folder of frames (depth images and intrinsics) is shipped yet. "
+        f"For frames of your own camera, run `grasppanda demo {config} --weights {weights} "
+        "--depth FILE --intrinsics fx,fy,cx,cy` on one frame, or loop over your files in "
+        "Python with GraspInferencer (docs/user_guides/inference.md: 'Your own camera', "
+        "'From Python')."
+    )
+
+
 class InferenceWarning(UserWarning):
     """The input differs from the conditions the config's test pipeline assumes."""
 

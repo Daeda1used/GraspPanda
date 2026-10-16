@@ -7,10 +7,12 @@ the NCCL backend and synchronised batch norm.
 from __future__ import annotations
 
 import json
+import multiprocessing.util
 import os
 import socket
 import subprocess
 import sys
+import tempfile
 import textwrap
 
 import pytest
@@ -18,7 +20,13 @@ import torch
 from torch import nn
 
 from grasppanda.engine import distributed as dist
-from grasppanda.engine.builders import build_dataset, build_train_loader, set_epoch
+from grasppanda.engine.builders import (
+    build_dataset,
+    build_predict_loader,
+    build_train_loader,
+    set_epoch,
+    worker_socket_problem,
+)
 from grasppanda.engine.errors import EngineError
 from grasppanda.engine.run import resolve_device
 
@@ -122,6 +130,80 @@ def test_an_empty_training_split_is_an_error(tmp_path):
         build_train_loader(cfg, build_dataset(cfg, "train"))
     with pytest.raises(EngineError, match="dataset is empty"):
         build_dataset(tiny_config(tmp_path, {"data.train.dataset.frames": 0}).resolved(), "train")
+
+
+def test_workers_that_could_not_hand_over_a_batch_are_refused(tmp_path, monkeypatch):
+    """Below a deep TMPDIR a worker cannot create the socket it hands batches over with;
+    it drops every batch and the run waited forever (three verification runs of this
+    suite hung for a day, the processes asleep in the data loader). Now it is an error."""
+    monkeypatch.delattr(multiprocessing.util, "_get_base_temp_dir", raising=False)
+    monkeypatch.setattr(tempfile, "tempdir", "/" + "deep/" * 16)
+    changes = {"data.train.num_workers": 2, "data.val.num_workers": 2}
+    cfg = tiny_config(tmp_path, changes).resolved()
+    dataset = build_dataset(cfg, "train")
+    with pytest.raises(EngineError, match=r"data\.train\.num_workers is 2, but .* socket") as error:
+        build_train_loader(cfg, dataset)
+    assert "TMPDIR=/tmp" in str(error.value) and "num_workers to 0" in str(error.value)
+    with pytest.raises(EngineError, match=r"data\.val\.num_workers is 2"):
+        build_predict_loader(cfg, "val", build_dataset(cfg, "val"))
+    in_process = tiny_config(tmp_path, {"data.train.num_workers": 0}).resolved()
+    assert build_train_loader(in_process, dataset).num_workers == 0
+    monkeypatch.setattr(tempfile, "tempdir", "/tmp")
+    assert worker_socket_problem() is None and build_train_loader(cfg, dataset).num_workers == 2
+    # Python releases that fall back to a short directory themselves are believed
+    monkeypatch.setattr(tempfile, "tempdir", "/" + "deep/" * 16)
+    fallback = lambda tempfile: "/tmp"  # noqa: E731
+    monkeypatch.setattr(multiprocessing.util, "_get_base_temp_dir", fallback, raising=False)
+    assert worker_socket_problem() is None
+
+
+WORKERS = """
+import json, sys
+import torch
+from torch.utils.data import DataLoader, Dataset
+from grasppanda.engine.builders import worker_socket_problem
+
+class Clouds(Dataset):
+    def __len__(self):
+        return 4
+
+    def __getitem__(self, index):
+        return torch.full((16, 3), float(index))
+
+try:
+    delivered = len(list(DataLoader(Clouds(), batch_size=2, num_workers=1, timeout=8))) == 2
+except RuntimeError:  # "DataLoader timed out": the worker dropped the batch
+    delivered = False
+print(json.dumps({"problem": worker_socket_problem() is not None, "delivered": delivered}))
+"""
+
+
+@pytest.mark.slow
+def test_the_refusal_says_what_workers_do(tmp_path):
+    """The check against what a real worker does, below a deep and a shallow TMPDIR."""
+    deep = tmp_path / ("deep-" * 16)
+    deep.mkdir()
+    outcomes = []
+    for directory in (deep, None):
+        environment = {**os.environ, "OMP_NUM_THREADS": "1", "PYTHONPATH": str(REPO)}
+        environment.pop("TMPDIR", None)
+        if directory is not None:
+            environment["TMPDIR"] = str(directory)
+        done = subprocess.run(
+            [sys.executable, "-c", WORKERS],
+            cwd=REPO,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        assert done.returncode == 0, done.stderr
+        outcomes.append(json.loads(done.stdout.splitlines()[-1]))
+    for outcome in outcomes:
+        assert outcome["problem"] != outcome["delivered"], outcomes
+    assert outcomes[1] == {"problem": False, "delivered": True}
+    if not hasattr(multiprocessing.util, "_get_base_temp_dir"):  # no fallback in this Python
+        assert outcomes[0] == {"problem": True, "delivered": False}
 
 
 CONFIG = """

@@ -25,7 +25,7 @@ def test_missing_spconv_names_the_extra_to_install(monkeypatch):
         )
 
     monkeypatch.setattr(litept, "require", unavailable)
-    with pytest.raises(MissingDependencyError, match=r"LitePT needs .*\.\[spconv-cu118\]"):
+    with pytest.raises(MissingDependencyError, match=r"LitePT needs .*\.\[spconv\]"):
         litept.LitePT()
 
 

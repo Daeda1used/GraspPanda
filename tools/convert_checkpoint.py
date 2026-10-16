@@ -79,6 +79,7 @@ from grasppanda.ops.sparse import convert_minkowski_kernel
 __all__ = [
     "SOURCE_FORMATS",
     "ConversionError",
+    "build_parser",
     "convert_economicgrasp_reference",
     "convert_finegrasp_reference",
     "convert_graspness_reference",
@@ -691,8 +692,11 @@ def convert_file(
     return converted, meta
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+def build_parser() -> argparse.ArgumentParser:
+    """The command line of the converter (also used to check the commands the docs print)."""
+    parser = argparse.ArgumentParser(
+        prog="python -m tools.convert_checkpoint", description=__doc__.split("\n\n")[0]
+    )
     parser.add_argument(
         "source", type=Path, help="upstream checkpoint (.tar / .pth / .safetensors)"
     )
@@ -711,7 +715,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--camera", help="camera the weights were trained for, recorded as metadata"
     )
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     try:
         converted, meta = convert_file(
             args.source, args.config, camera=args.camera, source_format=args.source_format

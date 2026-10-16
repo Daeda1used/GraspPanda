@@ -1,0 +1,11 @@
+# Cells of the measured grid that wait for their first probe (tests/unit/test_combine_grid.py).
+# Added to the grid on 2026-10-15: every post-processing preset under all six methods, every
+# recipe preset under every method it applies to, every loss preset in one term of every kind it
+# accepts under every seed-based method. Remove an id when its record is exported: a listed
+# cell that has a record fails the suite, so the list is empty once every cell has a record.
+
+# post: 42
+
+# recipe: 143
+
+# loss: 117

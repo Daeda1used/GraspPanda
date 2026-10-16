@@ -22,6 +22,14 @@
 [设计文档](docs/design/ARCHITECTURE.md) ·
 [参与贡献](CONTRIBUTING.md)
 
+<a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
+  <img src="resources/explorer-light.webp" alt="组合浏览器：把另一篇论文的场景编码器换进 GSNet，实测结论是能跑；换上不匹配的检测头会被拒绝，并给出冲突和改法；HGGD 换上 DINOv2 图像编码器；分组槽位的矩阵显示每个选项在哪个方法下能用" width="820">
+</picture></a>
+
+**抓取检测器的任何一个阶段都能换，换完立刻知道能不能用。** 每个结论都来自实测记录。<br>
+[**打开组合浏览器 →**](https://daeda1used.github.io/GraspPanda/explorer/) · 也可以在本地运行：`grasppanda explore`
+
 </div>
 
 **GraspPanda 之于杂乱场景 6-DoF 抓取检测，就像 MMDetection 之于目标检测：**
@@ -35,7 +43,8 @@
 > 拆成可替换组件的六个方法（GSNet、EconomicGrasp、FineGrasp、HGGD、GraspNet-baseline、Scale-Balanced-Grasp，
 > 用转换后的权重各自与参考实现逐阶段一致）、流程中每个槽位的可选组件（见[槽位总览](docs/slots/index.md)），
 > 以及 `train` / `test` / `infer` / `demo` / `analyze` / `sweep` / `compose` / `probe` / `explore` 命令。
-> Model zoo 仍然是空的，这是有意为之：方法必须先在本工具箱内训练*并*评测才能进入，第一个从零复现正在训练中。
+> 第一个在本工具箱内从零训练的模型 GSNet 已在两个基准的完整测试集上评测完毕（成绩高于论文；权重暂未发布），
+> 所以 model zoo 里仍然没有可下载的权重。方法必须先在本工具箱内训练*并*评测，才能进入 model zoo。
 > 凡不属于已移植方法的选项，一律不声明精度。
 
 <div align="center">
@@ -46,7 +55,7 @@
 
 *真实输出，只删行，不编造。一个组合就是一条命令；错误的组合在构建之前就被拒绝并给出改法；probe 告诉你它能不能训练。probe 不代表任何精度。*
 
-**[在浏览器里动手试组合 →](https://daeda1used.github.io/GraspPanda/explorer/)** 每个槽位、每个选项：980 条已记录组合的实测结论（其中 740 条由各自的 probe 在真实帧上实际试跑），任意两处替换还附带真实 `compose` 的回答。也可以在本地运行 `grasppanda explore`，由你自己的安装实时检查任意组合。
+**[在浏览器里动手试组合 →](https://daeda1used.github.io/GraspPanda/explorer/)** 每个槽位、每个选项：960 条已记录组合的实测结论（其中 740 条由各自的 probe 在真实帧上实际试跑），任意两处替换还附带真实 `compose` 的回答。也可以在本地运行 `grasppanda explore`，由你自己的安装实时检查任意组合。
 
 <img src="resources/demo.webp" alt="GraspPanda 在 GraspNet-1Billion 杂乱测试场景上渲染的抓取预测" width="720">
 
@@ -84,14 +93,14 @@ GraspPanda 的回答是：一条流程、一个评测器，外加一条规则—
 | 📦 **精简的核心** | 只依赖 `torch`、`numpy`、`pyyaml`。稀疏卷积等重型依赖是可选项；算子都有纯 PyTorch 的参考实现。 |
 | 🧾 **可复现的运行** | 每次运行都会保存展开后的配置、命令行覆盖、代码、git 状态和环境信息。 |
 
-⏳ 表示仍在进行中的部分（第一个从零复现正在训练）；其余现在就能用。
+⏳ 表示仍在进行中的部分（还没有方法通过准入门槛）；其余现在就能用。
 
 ### 一个配置就是一次完整实验
 
 ```yaml
-_base_:
-  - ../../../configs/_base_/default_runtime.yaml
-  - ../../../configs/_base_/schedules/gsnet_10e.yaml
+_base_:                                     # 随包提供的基础配置，在任何目录下都能找到
+  - _base_/default_runtime.yaml
+  - _base_/schedules/gsnet_10e.yaml
 
 custom_imports: [../toy_components.py]      # 仓库外的代码，不需要 fork
 
@@ -120,7 +129,7 @@ grasppanda print-config <config> --defaults
 
 “选项”就是写在 `--set <槽位>=` 后面的名字：一个组件，加上一套适合桌面深度点云的设置。每个槽位的页面先讲这个阶段要做什么、
 输入输出是什么，然后每个选项一行说明、一条命令。[槽位总览](docs/slots/index.md)根据实测记录把每个选项归为
-universal（五个方法通用）、most、some 或 specific（只适用于一个方法）。文档目前为英文。
+universal（五个方法通用）、most、some 或 specific（只适用于一个方法），并按“能组合、能跑、能学、能预测”四级分别给出。文档目前为英文。
 
 | 槽位 | 选项数 | 内容 |
 |---|---|---|
@@ -151,19 +160,23 @@ universal（五个方法通用）、most、some 或 specific（只适用于一�
 
 ## 🏆 Model zoo
 
-目前还没有任何方法通过认证，所以这张表列的是**目标**：原作者在 GraspNet-1Billion
-上报告的数字（RealSense，seen / similar / novel 的 AP）。最后一列会在方法通过准入门槛后填上。
+这张表列的是**目标**：原作者在 GraspNet-1Billion 上报告的数字（RealSense，seen / similar / novel
+的 AP）；最后一列是在本工具箱内训练出的模型的成绩，目前只有 GSNet。
 
-已经测过的是作者发布的权重在本工具箱里的得分：五个方法跑完了 GraspNet-1Billion 的整个测试集，
+GSNet 按其配置中的训练方案从零训练（只训练了一次，一个随机种子）。它比论文数字高出 1 AP 以上，
+超出了准入规则允许的范围，所以没有通过认证；差距从何而来目前还不知道：本实现与公开的参考实现逐阶段一致，
+用参考代码在修改过的标签集上另行训练的模型同样高于论文，而论文数字出自作者没有公开的原始代码
+（[详情](configs/gsnet/README.md#results-on-graspnet-1billion)）。它的权重暂未发布。
+除此之外，测过的都是作者发布的权重在本工具箱里的得分：五个方法跑完了 GraspNet-1Billion 的整个测试集，
 其中四个还跑了 GraspClutter6D，开、关碰撞过滤各一行，旁边列出作者报告的数字。这些 `author-ckpt`
-数字见 [docs/model_zoo.md](docs/model_zoo.md) 里的两张表，每个数字都有提交在仓库里的结果记录可查；
-它们是作者权重的评测结果，不是复现，所以上表最后一列仍然空着。
+数字和 GSNet 的数字一起列在 [docs/model_zoo.md](docs/model_zoo.md) 里，每个数字都有提交在仓库里的结果记录可查；
+`author-ckpt` 是作者权重的评测结果，不是复现。
 
 | 方法 | 发表 | 碰撞过滤 | 作者报告的 AP（seen / similar / novel） | 本工具箱复现 |
 |---|---|:---:|---|:---:|
 | GraspNet-baseline | CVPR 2020 | 开 | 47.47 / 42.27 / 16.61（其 README 的 "In repo" 行） | — |
-| GSNet | ICCV 2021 | 关 | 65.70 / 53.75 / 23.98 | — |
-| GSNet | ICCV 2021 | 开 | 67.12 / 54.81 / 24.31 | — |
+| GSNet | ICCV 2021 | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| GSNet | ICCV 2021 | 开 | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | EconomicGrasp | ECCV 2024 | 关 | 68.21 / 61.19 / 25.48 | — |
 | HGGD | RA-L 2023 | 见注 | 59.36 / 51.20 / 22.17（其 README 的 "In paper" 行）· 64.45 / 53.59 / 24.59（"In repo" 行，arXiv 版论文同此） | — |
 | Scale-Balanced-Grasp | CoRL 2022 | 关 | 58.95 / 52.97 / 22.63 | — |
@@ -197,7 +210,7 @@ grasppanda print-config projects/example_project/configs/toy_detector.yaml \
 
 ### 五分钟得到第一批抓取
 
-第一张图不需要任何数据集。Model zoo 目前还没有权重，原作者的权重各有其许可证，因此本工具不会替你下载任何抓取权重。（唯一的例外：`pretrained: true` 的图像编码器预设会让 `timm`、`transformers` 或 `torchvision` 在首次使用时下载预训练权重，并打印一行说明其许可证；见 [image encoders](docs/slots/image_encoders.md)。）
+第一张图不需要任何数据集。Model zoo 目前还没有可下载的权重，原作者的权重各有其许可证，因此本工具不会替你下载任何抓取权重。（唯一的例外：`pretrained: true` 的图像编码器预设会让 `timm`、`transformers` 或 `torchvision` 在首次使用时下载预训练权重，并打印一行说明其许可证；见 [image encoders](docs/slots/image_encoders.md)。）
 
 **1. 检查安装**（无需下载，CPU，几秒钟）：现场训练一个玩具检测器。
 
@@ -209,7 +222,7 @@ grasppanda demo  projects/example_project/configs/toy_train.yaml \
 
 `--example` 是随软件包提供的合成桌面场景。玩具模型的抓取没有实际意义，这条命令只说明整个流程可以跑通。
 
-**2. 真实方法。** 自行下载原作者的权重（链接与许可证见 `configs/<method>/README.md`），转换一次，然后运行：
+**2. 真实方法。** 自行下载原作者的权重，转换一次，然后运行。每个方法都有一页逐步说明：权重文件、许可证、转换命令、演示、Python 与浏览器中的同一流程，以及在部分基准上的第一个 AP，每一步都附有实测时的输出：[GSNet](docs/methods/gsnet.md) · [EconomicGrasp](docs/methods/economicgrasp.md) · [FineGrasp](docs/methods/finegrasp.md) · [GraspNet-baseline](docs/methods/graspnet_baseline.md) · [Scale-Balanced-Grasp](docs/methods/scale_balanced_grasp.md) · [HGGD](docs/methods/hggd.md)。以 GraspNet-baseline 为例：
 
 ```bash
 python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
@@ -243,7 +256,7 @@ grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=point-tr
 grasppanda explore                                           # 在浏览器里做同样的事，由 compose 检查
 ```
 
-`compose` 由方法配置和预设写出一份检查过的配置；阶段契约需要适配器时会自动插入并说明；被契约拒绝的组合会给出冲突原因和改法；组合出的配置还可以作为基础继续组合。`probe` 最后给出一个结论（`runs`、`runs-unstable`、`fails`、`refused`）。哪个组件能在哪个方法下工作是在真实帧上实测的，不是推断的：见[槽位总览](docs/slots/index.md)、[试一个组合](docs/user_guides/combinations.md)和[实测组合表](docs/advanced_guides/measured_combinations.md)。组合在完成训练和评测之前，不对其精度作任何声明。
+`compose` 由方法配置和预设写出一份检查过的配置；阶段契约需要适配器时会自动插入并说明；被契约拒绝的组合会给出冲突原因和改法；组合出的配置还可以作为基础继续组合。`probe` 最后给出一个结论（`runs`、`runs-empty`、`runs-unstable`、`fails`、`refused`），并指出哪些部分没有学到东西：不下降的损失项、收不到梯度的模块。哪个组件能在哪个方法下工作是在真实帧上实测的，不是推断的：见[槽位总览](docs/slots/index.md)、[试一个组合](docs/user_guides/combinations.md)和[实测组合表](docs/advanced_guides/measured_combinations.md)。组合在完成训练和评测之前，不对其精度作任何声明。
 
 ### 基准数据集
 
@@ -296,7 +309,7 @@ array = grasps.to_graspnet_array()         # (64, 17)，GraspNet 的交换格式
 ## 🧭 路线图
 
 - [x] **M0 — 核心。** 配置系统、注册表、数据契约、参考算子、命令行、CI、文档骨架、品牌素材。
-- [ ] **M1 — GraspNet-1Billion、评测器、GSNet。** ✅ 评测器与官方 API 逐值一致。✅ GSNet 用转换后的权重与参考实现逐阶段一致。🚧 从零训练。
+- [ ] **M1 — GraspNet-1Billion、评测器、GSNet。** ✅ 评测器与官方 API 逐值一致。✅ GSNet 用转换后的权重与参考实现逐阶段一致。✅ 已从零训练，并在完整测试集上评测（比论文高 1.2 到 7.5 AP）。🚧 差距的原因尚未查明；权重暂未发布。
 - [ ] **M2 — EconomicGrasp 和 HGGD。** 一个同族的第二方法，和一个刻意选来检验抽象的异类。✅ 两者用作者权重都与参考实现逐阶段一致。🚧 全量评测和训练。
 - [ ] **M3 — Scale-Balanced-Grasp、GraspNet-baseline、FineGrasp。** 第一张受控对比表：相同 backbone、相同预算、相同输入、相同评测器。✅ 三者用作者权重都与参考实现逐阶段一致。📅 对比表。
 - [ ] **M4 — GraspClutter6D 和 Contact-GraspNet。** ✅ 数据读取、评测器（在 254 个记录帧上与官方工具一致）、标签资产、五个方法的迁移配置（在 312 帧子集上检查过）。📅 全量迁移结果表、在 GraspClutter6D 上训练、Contact-GraspNet。

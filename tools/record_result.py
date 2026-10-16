@@ -29,11 +29,12 @@ A row is ``author-ckpt`` when the model's weights entry in the metafile has ``so
 author`` and ``reproduced`` when it has ``source: grasppanda``. Without a weights entry,
 say which it is with ``--provenance``; the entry to add is printed with the rows.
 
-The weights that were evaluated are tied to that entry. Weights released by this project
-are the evaluated file itself: the two hashes must be equal. The authors' file was
-converted first, so the hashes differ, and the tie is the note the converter leaves in
-the converted file (``source_sha256``); the tool therefore reads the weights file at the
-path the record names. If that file is gone, the run is refused unless
+The weights that were evaluated are tied to that entry. Weights trained by this project
+are the evaluated file itself: the two hashes must be equal. Until they are published,
+their entry has ``url: null`` and a ``note`` saying so (``grasppanda.hub.metafile``).
+The authors' file was converted first, so the hashes differ, and the tie is the note the
+converter leaves in the converted file (``source_sha256``); the tool therefore reads the
+weights file at the path the record names. If that file is gone, the run is refused unless
 ``--allow-unverified-weights`` is given, and the output then says ``NOT VERIFIED``.
 """
 
@@ -475,8 +476,12 @@ def check_weights(
                 f"the evaluated weights (sha256 {evaluated}) are not the released file of "
                 f"the metafile ({entry.sha256})"
             )
-        else:
+        elif entry.published:
             check.notes.append("the evaluated weights are the released file of the metafile")
+        else:
+            check.notes.append(
+                "the evaluated weights are the file of the metafile's entry, not published yet"
+            )
     elif check.note is not None and check.note["source_sha256"] != entry.sha256:
         check.problems.append(
             f"the evaluated weights were converted from {check.note.get('source_file')} "
@@ -552,18 +557,15 @@ def weights_yaml(
     model the weights belong to, or one to complete by hand."""
     lines = ["    weights:"]
     if entry is not None:
-        return (
-            "\n".join(
-                [
-                    *lines,
-                    f"      url: {entry.url}",
-                    f"      sha256: {entry.sha256}",
-                    f"      license: {json.dumps(entry.license, ensure_ascii=False)}",
-                    f"      source: {entry.source}",
-                ]
-            )
-            + "\n"
-        )
+        lines += [
+            f"      url: {entry.url if entry.published else 'null'}",
+            f"      sha256: {entry.sha256}",
+            f"      license: {json.dumps(entry.license, ensure_ascii=False)}",
+            f"      source: {entry.source}",
+        ]
+        if entry.note:
+            lines.append(f"      note: {json.dumps(entry.note, ensure_ascii=False)}")
+        return "\n".join(lines) + "\n"
     if provenance == "author-ckpt":
         name = note.get("source_file") if note else "<the released file>"
         digest = note["source_sha256"] if note else "<sha256 of the released file>"
@@ -575,6 +577,8 @@ def weights_yaml(
         lines += [f"      url: <where the authors publish {name}>", f"      sha256: {digest}"]
     else:
         lines += [
+            "      # Until the checkpoint is published: url: null, license: null and a note",
+            '      #   note: "Not published yet: <why>."',
             "      url: <where this project publishes the checkpoint>",
             f"      sha256: {run.first['weights']['sha256']}",
         ]

@@ -20,6 +20,7 @@ model:
     finger_height: 0.02
     depth_base: 0.02
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list backbone
   backbone:
     type: SparseUNet14            # upstream calls this network TDUnet
     in_channels: 3
@@ -31,6 +32,7 @@ model:
     decoder_channels: [192, 192, 192, 192]
     voxel_features: first
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list proposal
   proposal:
     type: GraspnessFPS
     num_seeds: 1024
@@ -40,6 +42,7 @@ model:
     objectness_loss: {type: CrossEntropy, weight: 1.0}
     graspness_loss: {type: SmoothL1, weight: 10.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list view
   view:
     type: TemplateViewStage
     num_views: 300
@@ -47,6 +50,7 @@ model:
     max_friction: 0.6             # must equal the label asset's view_friction_threshold (checked)
     loss: {type: SmoothL1, weight: 100.0, beta: 1.0}
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list assigner
   assigner:
     type: CompactLabelAssigner
     max_match_distance: 0.005     # reference quirk: a seed further than 5 mm from its label point is not
@@ -57,6 +61,7 @@ model:
                                   # what that yields in about 95 % of the cases, `all` removes the quirk
     padded_seeds: count           # reference quirk: repeated padding seeds are counted in loss means
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list grouper
   grouper:
     type: CylinderInteractionGroup
     radius: 0.05
@@ -69,6 +74,7 @@ model:
     attention_dropout: 0.05
     post_mlp_channels: [256, 256]
 
+  # options of this slot, measured: grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list head
   head:
     type: EconomicHead
     num_angle: 12

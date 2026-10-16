@@ -11,6 +11,8 @@ point-transformer layers, crops at four radii fused with a gated seed-feature re
 an objectness target that asks for graspable views, and loss weights that are larger for
 rare grasp widths.
 
+**Run it in five minutes:** [docs/methods/scale_balanced_grasp.md](../../docs/methods/scale_balanced_grasp.md) gives the authors' checkpoint, its licence and the conversion command, the demo on the example scene with what it prints, the same from Python and in the browser, and a first AP on 120 frames of the benchmark, each with the date, commit and machine it was measured on.
+
 ## Scope
 
 Implemented: the core method, i.e. the reference's `GraspNet_MSCQ` network with its
@@ -77,6 +79,21 @@ on a sample of training frames have the file's shape: correlation of the 32 bin 
 0.997 with a largest difference of 0.4 percentage points on 80 frames (0.994 and 0.55 on
 the 40 frames of the integration test), with no width outside the file's range. This is
 an inference from the shape of a distribution, not a reproduction.
+
+## Options of every slot
+
+Every slot of this method, the options that fit it and those that do not, each with what
+was measured for it (the verdict of its probe, the levels *composes*, *runs*, *learns* and
+*predicts*, its class, the grasps per frame, the reason and kind of a refusal):
+[docs/methods/scale_balanced_grasp.md](../../docs/methods/scale_balanced_grasp.md), or in a terminal:
+
+```bash
+grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list            # every slot
+grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --list grouper    # one slot (--json: everything)
+```
+
+A class counts verdicts of one run (seed 0, 20 iterations, 8 frames of one scene), not
+accuracy.
 
 ## Use
 

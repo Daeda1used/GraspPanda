@@ -426,7 +426,7 @@ class LitePT(Backbone):
         pretrained_mismatch: Literal["error", "skip"] = "error",
     ) -> None:
         super().__init__()
-        spconv = require("spconv.pytorch", extra="spconv-cu118", purpose="LitePT")
+        spconv = require("spconv.pytorch", extra="spconv", purpose="LitePT")
         stages = len(enc_depths)
         if in_channels < 1:
             raise ValueError("LitePT needs at least one input feature channel per point")
@@ -578,7 +578,7 @@ class LitePT(Backbone):
         """Run the network on voxels and return one feature vector per voxel."""
         # Looked up on use instead of stored: a module object as an attribute would make
         # the model impossible to deep-copy or pickle.
-        spconv = require("spconv.pytorch", extra="spconv-cu118", purpose="LitePT")
+        spconv = require("spconv.pytorch", extra="spconv", purpose="LitePT")
         batch_size = int(batch[-1]) + 1
         shuffle = self.shuffle_orders and self.training
         stem = self.embedding.stem

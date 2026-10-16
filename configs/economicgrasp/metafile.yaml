@@ -17,13 +17,13 @@ models:
     protocol: graspnet1b-sv-v1
     camera: kinect
     weights:
-      # The authors' economicgrasp_kinect.tar of upstream release v1 (epoch 10), converted with
-      #   python -m tools.convert_checkpoint economicgrasp_kinect.tar economicgrasp_kinect.pth \
-      #       --source-format economicgrasp --camera kinect
+      # The authors' economicgrasp_kinect.tar of upstream release v1 (epoch 10), converted
+      # with `convert` (the command of README.md).
       url: https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_kinect.tar
       sha256: a47b717ad41870e9b34e85b1487de2a3f0f134ddc1a71a98a1b55bca7fc5804a
       license: "MIT (the repository vendors operator code derived from a non-commercial project); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
       source: author
+      convert: "python -m tools.convert_checkpoint economicgrasp_kinect.tar economicgrasp_kinect.pth --source-format economicgrasp --camera kinect"
     results:
       - provenance: reported
         collision_filter: false
@@ -50,15 +50,15 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights: &realsense_weights
-      # The authors' economicgrasp_realsense.tar of upstream release v1 (epoch 10), converted with
-      #   python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
-      #       --source-format economicgrasp --camera realsense
+      # The authors' economicgrasp_realsense.tar of upstream release v1 (epoch 10), converted
+      # with `convert` (the command of README.md).
       # The digest is that of the file that was converted for the records below and of a
       # download of the link on 2026-10-13.
       url: https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
       sha256: 33c99bf43d599bd259c53c090badd83771ca34b8bebdb4a27a9a45a80df32223
       license: "MIT (the repository vendors operator code derived from a non-commercial project); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)"
       source: author
+      convert: "python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth --source-format economicgrasp --camera realsense"
     results:
       - provenance: reported
         collision_filter: false

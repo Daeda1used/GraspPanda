@@ -19,7 +19,7 @@
     view: "build",
     slot: "",
     laneQuery: "",
-    filter: { q: "", classes: [], extra: false, weights: false },
+    filter: { q: "", level: "runs", classes: [], extra: false, weights: false },
     yamlTab: "",
     expanded: {},
     folds: {},
@@ -214,6 +214,7 @@
         h("li", { class: "gx-total" }, [h("b", { text: L.number(counts.records) }), " combinations on record"]),
       ].concat(items)),
       h("p", { class: "gx-fine", text: data.no_accuracy }),
+      data.caveat ? h("p", { class: "gx-fine gx-caveat", text: "Class: " + data.caveat + "." }) : null,
     ]);
   }
 
@@ -253,7 +254,8 @@
   }
 
   function tabs() {
-    var views = [["build", "Build a combination"], ["grid", "All options of a slot"]];
+    /* A phone shows the short names, so that the three tabs fit side by side. */
+    var views = [["build", "Build a combination", "Build"], ["grid", "All options of a slot", "All options"], ["run", "Run a method", "Run"]];
     function go(view) {
       state.focusKey = "tab-" + view;
       set({ view: view }, true);
@@ -267,7 +269,7 @@
         "data-key": "tab-" + item[0],
         "aria-selected": on ? "true" : "false",
         tabindex: on ? "0" : "-1",
-        text: item[1],
+        "aria-label": item[1],
         onclick: function () {
           go(item[0]);
         },
@@ -277,7 +279,7 @@
           event.preventDefault();
           go(views[(index + step + views.length) % views.length][0]);
         },
-      });
+      }, [h("span", { class: "gx-tab-long", text: item[1] }), h("span", { class: "gx-tab-short", "aria-hidden": "true", text: item[2] })]);
     }));
   }
 
@@ -372,6 +374,12 @@
       }).concat(report.issues.map(function (issue) {
         return h("li", {}, [h("code", { text: issue.path }), " ", rich(issue.message)]);
       }))));
+      var kinds = (report.refusal_kinds || []).map(function (item) {
+        return typeof item === "string" ? item : item && item.kind;
+      }).filter(Boolean);
+      if (kinds.length) {
+        children.push(h("p", { class: "gx-fine", text: "Kind of the refusal: " + kinds.filter(function (kind, index) { return kinds.indexOf(kind) === index; }).join(", ") + "." }));
+      }
     }
     var recorded = result.cell ? result.cell.verdict !== "refused" : null;
     if (recorded !== null && recorded !== report.accepted) {
@@ -453,11 +461,14 @@
   function chip(slot, choice, current, isShipped) {
     var badge = isShipped ? L.badge(L.lookup(data, state.method, [])) : L.mark(data, state.method, choice.sets);
     var title = (choice.option && choice.option.summary) || (choice.sets || []).join("  ");
+    if (choice.reason) title += "\nNo cell of the grid: " + choice.reason;
     return h(
       "button",
       {
         type: "button",
-        class: "gx-chip k-" + badge.kind + (badge.check || badge.kind === "accepted" ? " is-check" : "") + (slot === "loss" ? " is-long" : ""),
+        class:
+          "gx-chip k-" + badge.kind + (badge.check || badge.kind === "accepted" ? " is-check" : "") +
+          (slot === "loss" ? " is-long" : "") + (badge.empty ? " is-nograsp" : ""),
         "data-key": "chip-" + slot + "-" + (isShipped ? "" : choice.name),
         "aria-pressed": current ? "true" : "false",
         title: title + (isShipped ? "" : "\n" + badge.label + " (this change alone, under " + state.method + ")"),
@@ -690,7 +701,7 @@
   function loadCell(cell) {
     var picks = {};
     if (cell.group === "loss") {
-      picks.loss = cell.variant;
+      picks.loss = L.lossName(cell);
     } else {
       cell.sets.forEach(function (item) {
         var at = item.indexOf("=");
@@ -795,6 +806,14 @@
       rows.push(h("dt", { text: fact[0] }));
       rows.push(h("dd", { text: fact[1] }));
     });
+    if (cell.levels) {
+      rows.push(h("dt", { text: "levels reached" }));
+      rows.push(h("dd", { text: L.levelsText(data, cell) }));
+    }
+    if (cell.why) {
+      rows.push(h("dt", { text: "what kept it from a level" }));
+      rows.push(h("dd", { text: cell.why.join("; ") }));
+    }
     return h("div", { class: "gx-facts" }, [
       h("dl", {}, rows),
       h("p", {
@@ -831,9 +850,10 @@
     meta.push(h("dd", {}, option.extras.length ? [h("code", { text: 'pip install "grasppanda[' + option.extras.join(",") + ']"' })] : ["nothing beyond the core install"]));
     if (!slotLane.recipe) meta.push(h("dt", { text: "weights" }));
     if (!slotLane.recipe) meta.push(h("dd", {}, option.weights ? ["the preset loads released weights (", h("code", { text: option.weights }), ")"] : [option.preset ? "random initialisation in this preset" : "random initialisation (constructor defaults)"]));
-    if (option["class"]) {
+    var classes = L.classText(data, option);
+    if (classes) {
       meta.push(h("dt", { text: "measured class" }));
-      meta.push(h("dd", { text: option["class"] + ": works under " + option.works + " of the seed-based methods" + (option.unstable ? ", unstable under " + option.unstable : "") }));
+      meta.push(h("dd", {}, [classes, h("span", { class: "gx-fine gx-caveat-inline", text: " · " + data.caveat })]));
     }
     var page = option.page || (slotLane.pages[0] || {}).stem;
     return h("div", { class: "gx-card" }, [
@@ -966,6 +986,21 @@
         h("span", { class: "gx-fine", text: caption }),
       ]),
       h("p", { class: "gx-title", id: "gx-title", tabindex: "-1", text: title }),
+      liveBase
+        ? h("p", { class: "gx-run-link" }, [
+            h("button", {
+              type: "button",
+              class: "gx-link",
+              "data-key": "go-run",
+              text: result.sets.length ? "Run this selection on a scene \u2192" : "Run " + result.method.name + " on a scene \u2192",
+              onclick: function () {
+                runForm.target = result.sets.length ? "selection" : "method";
+                state.focusKey = "tab-run";
+                set({ view: "run" }, true);
+              },
+            }),
+          ])
+        : null,
     ];
     var coverage =
       L.number(data.counts.grid - data.counts.grid_without_record) + " of the " + L.number(data.counts.grid) +
@@ -988,6 +1023,13 @@
           h("p", { class: "gx-fine", text: "None of this decides the whole selection: a stage that is refused alone may work together with the stage it depends on (a head bundle with its assigner and its labels), and changes that fit in pairs may not fit all at once." }),
         ])
       : null;
+    /* An option the grid has no cell for says why (an adapter, a recipe that names a
+     * module the method does not have, a post-processor no dataset can feed). */
+    if (result.state === "unmeasured") {
+      result.parts.forEach(function (part) {
+        if (part.reason) children.push(h("p", { class: "gx-note" }, [h("code", { text: part.sets.join(" ") || part.name }), " has no cell of the grid: ", rich(part.reason)]));
+      });
+    }
     if (result.state === "unmeasured" && liveOn) {
       children.push(liveBlock(result));
       children.push(h("p", { class: "gx-fine", text: "No record says whether this combination trains: " + coverage }));
@@ -1131,6 +1173,8 @@
     var lines = [m.name + " · " + entry.name];
     if (!found.length) {
       lines.push(badge.kind === "none" ? "not measured" : badge.label);
+      var reason = slot === "loss" ? "" : L.notProbed(m, slot, entry.name);
+      if (reason) lines.push("No cell of the grid: " + reason);
       if (badge.kind !== "none") lines.push("The answer of compose; no probe on record.");
       lines.push("Click to open it in the builder.");
       return lines;
@@ -1140,7 +1184,9 @@
       L.facts(cell).forEach(function (fact) {
         lines.push(fact[0] + ": " + fact[1]);
       });
-      if (cell.refusal) lines.push(cell.refusal[0].split(". ")[0] + ".");
+      if (cell.levels) lines.push(L.levelsText(data, cell));
+      if (cell.why) lines.push(cell.why.join("; "));
+      if (cell.refusal) lines.push(cell.refusal[0].split(". ")[0] + "." + (cell.kind ? " (" + cell.kind + ")" : ""));
       if (cell.failure) lines.push((cell.failure.error || "") + " in the " + (cell.failure.component || cell.failure.phase));
       if (cell.unstable) lines.push(cell.unstable);
     });
@@ -1159,12 +1205,13 @@
       : badge.label);
     var lines = tipLines(m, slot, entry, found, badge);
     var key = "cell-" + slot + "-" + entry.name + "-" + m.name;
+    var grasps = found.length === 1 && found[0].grasps && found[0].grasps.length ? found[0].grasps.join("·") : "";
     return h("td", {}, [
       h(
         "button",
         {
           type: "button",
-          class: "gx-cell k-" + badge.kind + (found.length ? "" : " is-check"),
+          class: "gx-cell k-" + badge.kind + (found.length ? "" : " is-check") + (badge.empty ? " is-nograsp" : "") + (grasps ? " has-grasps" : ""),
           "data-key": key,
           "data-row": String(place[0]),
           "data-col": String(place[1]),
@@ -1193,7 +1240,10 @@
             }
           },
         },
-        [h("span", { "aria-hidden": "true", text: badge.symbol + (badge.kind === "adapter" ? "ᴬ" : "") + (inSet ? "⊂" : "") })]
+        [
+          h("span", { "aria-hidden": "true", text: badge.symbol + (badge.kind === "adapter" ? "ᴬ" : "") + (inSet ? "⊂" : "") }),
+          grasps ? h("span", { class: "gx-cell-grasps", "aria-hidden": "true", text: grasps }) : null,
+        ]
       ),
     ]);
   }
@@ -1253,10 +1303,11 @@
     var grid = L.gridRows(data, slot);
     var filter = state.filter;
     var rows = grid.rows.filter(function (row) {
-      return L.matches(row.option, filter);
+      return L.matches(row.option, filter, data);
     });
+    var level = filter.level || "runs";
     function patch(change) {
-      var next = { q: filter.q, classes: filter.classes.slice(), extra: filter.extra, weights: filter.weights };
+      var next = { q: filter.q, level: level, classes: filter.classes.slice(), extra: filter.extra, weights: filter.weights };
       Object.keys(change).forEach(function (name) {
         next[name] = change[name];
       });
@@ -1269,12 +1320,21 @@
         "data-key": "slot-" + item.key,
         "aria-pressed": item.key === slot ? "true" : "false",
         onclick: function () {
-          state.filter = { q: "", classes: [], extra: false, weights: false };
+          state.filter = { q: "", level: level, classes: [], extra: false, weights: false };
           set({ slot: item.key, cellMenu: "", gridFocus: "" }, true);
         },
       }, [item.title, h("span", { class: "gx-count", text: String((data.options[item.key] || []).length) })]);
     }));
-    var classes = L.classesOf(data, slot);
+    var classes = L.classesOf(data, slot, level);
+    var levelPicker = classes.length || (data.options[slot] || []).some(function (option) { return option.classes; })
+      ? h("div", { class: "gx-filters gx-levels", role: "group", "aria-label": "Class at the level" }, [
+          h("span", { class: "gx-label", text: "Class at the level" }),
+        ].concat((data.levels || []).map(function (item) {
+          return toggle("level-" + item.key, item.key, item.key === level, function () {
+            patch({ level: item.key, classes: [] });
+          });
+        })))
+      : null;
     var filters = h("div", { class: "gx-filters" }, [
       h("input", {
         type: "search",
@@ -1290,7 +1350,8 @@
     ].concat(
       classes.map(function (name) {
         var on = filter.classes.indexOf(name) >= 0;
-        return toggle("class-" + name, name, on, function () {
+        var label = name === "relative" ? "N of M probed" : name;
+        return toggle("class-" + name, label, on, function () {
           patch({ classes: on ? filter.classes.filter(function (other) { return other !== name; }) : filter.classes.concat([name]) });
         });
       }),
@@ -1306,6 +1367,7 @@
     var kinds = [
       [L.badge({ verdict: "runs" }), "runs", ""],
       [L.badge({ verdict: "runs", adapter: "x" }), "runs in the adapter compose inserted", "ᴬ"],
+      [L.badge({ verdict: "runs-empty" }), "runs, no grasp predicted", ""],
       [L.badge({ verdict: "runs-unstable" }), "runs, unstable", ""],
       [L.badge({ verdict: "refused" }), "refused by compose", ""],
       [L.badge({ verdict: "fails", failure: {} }), "fails after the check passed", ""],
@@ -1318,10 +1380,11 @@
       kinds.push([L.contractBadge({ ok: false }), "no record: compose refuses it", "", " is-check"]);
     }
     kinds.push([L.badge(null), loss ? "not part of a record" : "no answer on this page", "", " is-check"]);
+    kinds.push([{ kind: "runs", symbol: "✓" }, "greyed: no grasp predicted on any probed frame (the grasps per frame are under the mark)", "", " is-nograsp"]);
     var legend = h("ul", { class: "gx-legend" }, kinds.map(function (kind) {
       return h("li", {}, [h("span", { class: "gx-cell is-legend k-" + kind[0].kind + (kind[3] || ""), "aria-hidden": "true", text: kind[0].symbol + kind[2] }), kind[1]]);
     }));
-    var withClass = classes.length > 0;
+    var withClass = (data.options[slot] || []).some(function (option) { return option.classes; });
     var firstKey = rows.length && grid.columns.length ? "cell-" + slot + "-" + rows[0].option.name + "-" + grid.columns[0].name : "";
     var focusKey = firstKey;
     rows.forEach(function (row) {
@@ -1347,7 +1410,7 @@
           if (key === state.cellMenu && row.cells[m.name].length > 1) menu = cellMenu(m, option, row.cells[m.name], key);
           return gridCell(m, slot, option, row.cells[m.name], [r, c], key === focusKey);
         }),
-        withClass ? [h("td", { class: "gx-grid-class", text: option["class"] || "" })] : []
+        withClass ? [h("td", { class: "gx-grid-class", text: L.classText(data, option) })] : []
       ));
     });
     if (!rows.length) {
@@ -1355,7 +1418,7 @@
         "No option of this slot matches" + (filter.q.trim() ? " “" + filter.q.trim() + "”" : " these filters") + ". ",
         h("button", { type: "button", class: "gx-link", "data-key": "grid-clear", text: "Clear the search and the filters", onclick: function () {
           state.focusKey = "grid-search";
-          set({ filter: { q: "", classes: [], extra: false, weights: false } });
+          set({ filter: { q: "", level: level, classes: [], extra: false, weights: false } });
         } }),
       ])])];
     }
@@ -1365,14 +1428,14 @@
           grid.columns.map(function (m) {
             return h("th", { scope: "col", title: m.config }, [h("span", { text: m.name })]);
           }),
-          withClass ? [h("th", { scope: "col", class: "gx-grid-class", text: "class" })] : []
+          withClass ? [h("th", { scope: "col", class: "gx-grid-class", text: "class, by level" })] : []
         )),
       ]),
       h("tbody", {}, body),
     ]);
     var caption = loss
       ? "A loss sits on one term of a stage (head.width_loss), and most were probed several terms at a time. A cell shows the verdict of the sets this loss was part of under the method of its column, not of the loss alone: the same loss can run on one term and be refused on another. Hover or focus a cell to see the sets."
-      : "A cell is this one slot replaced under the method of its column." + (withClass ? " The class counts the seed-based methods an option works under." : "") + " Arrow keys move between cells.";
+      : "A cell is this one slot replaced under the method of its column, with the grasps it predicted per frame under the mark." + (withClass ? " The class of an option counts, level by level (composes, runs, learns, predicts), the methods under which it reached the level; the filters use the level picked above. Class: " + data.caveat + "." : "") + " Arrow keys move between cells.";
     /* The scene-encoder rows include the wrappers compose puts around an encoder; the
      * option counts of the README and of the slot index leave those out. */
     var wrappers = grid.rows.filter(function (row) {
@@ -1385,12 +1448,749 @@
       slotTabs,
       h("p", { class: "gx-fine" }, [rich(entry.task)]),
       docLinks(entry.pages),
+      levelPicker,
       filters,
       h("p", { class: "gx-fine", "aria-live": "polite", text: rows.length + " of " + grid.rows.length + " options. " + adapterNote + caption }),
       legend,
       menu,
       h("div", { class: "gx-scroll", role: "region", "aria-label": entry.title + ": option by method" }, [table]),
     ]);
+  }
+
+  // ------------------------------------------------------------------------ run view
+
+  /* The Run panel: a ported method on one frame, run by `grasppanda explore` with weights
+   * its command line named. On the documentation site it is drawn greyed, with the
+   * command that enables it. */
+  var TYPE_PATH = "?type"; /* never an entry: a name starts with a letter or a digit, a file ends in .pth, .pt, .tar or .ckpt */
+  var runForm = {
+    target: "method",
+    chosen: {},
+    typing: false,
+    typed: "",
+    input: "example",
+    depth: null,
+    rgb: null,
+    intrinsics: ["", "", "", ""],
+    workspace: ["", "", "", "", "", ""],
+    collision: true,
+  };
+  var runLive = { status: "", error: "", setup: null, job: null, sending: false, problem: "", failure: null, urls: null, timer: 0 };
+  var FAILURE_TITLES = {
+    weights: "The weights cannot be used",
+    input: "The input was refused",
+    "too-large": "The file is too large",
+    busy: "Another run is in progress",
+    request: "The request was refused",
+  };
+
+  function getJson(path) {
+    return window.fetch(liveBase + path, { headers: { Accept: "application/json" } }).then(function (response) {
+      return response.json();
+    });
+  }
+
+  function loadSetup() {
+    if (!liveBase || runLive.status) return;
+    runLive.status = "loading";
+    getJson("run/setup").then(
+      function (setup) {
+        runLive.setup = setup;
+        runLive.status = "ready";
+        if (setup.running && !runLive.job) follow(setup.running);
+        render();
+      },
+      function (error) {
+        runLive.status = "error";
+        runLive.error = "the server did not answer (" + error + "). Is `grasppanda explore` still running?";
+        render();
+      }
+    );
+  }
+
+  /* The methods the panel offers: those of the server, or those of the page. */
+  function runMethods() {
+    if (liveBase && runLive.setup) return runLive.setup.methods;
+    return data.methods.map(function (m) {
+      return { name: m.name, config: m.config, needs_rgb: !m.seed_based, suggested: "" };
+    });
+  }
+
+  function runMethod() {
+    var methods = runMethods();
+    for (var i = 0; i < methods.length; i++) {
+      if (methods[i].name === state.method) return methods[i];
+    }
+    return methods[0];
+  }
+
+  function runWeights(m) {
+    if (runForm.typing) return runForm.typed.trim();
+    return Object.prototype.hasOwnProperty.call(runForm.chosen, m.name) ? runForm.chosen[m.name] : m.suggested || "";
+  }
+
+  /* The selection of the builder, when there is one, with what compose said of it. */
+  function runSelection() {
+    var result = L.answer(data, state.method, state.picks);
+    if (!result.sets.length) return null;
+    if (liveBase) ensureLive(result);
+    var done = live.status === "done" && live.report;
+    return { sets: result.sets, accepted: done ? live.report.accepted : null, checking: live.status === "loading" };
+  }
+
+  function runSets() {
+    var selection = runSelection();
+    return runForm.target === "selection" && selection && selection.accepted !== false ? selection.sets : [];
+  }
+
+  function numbers(values) {
+    var out = [];
+    values.forEach(function (text) {
+      var value = String(text).trim();
+      out.push(value === "" || !isFinite(Number(value)) ? null : Number(value));
+    });
+    return out;
+  }
+
+  function megabytes(size) {
+    if (size < 1024 * 1024) return Math.max(1, Math.round(size / 1024)) + " kB";
+    return (size / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  function seconds(value) {
+    return (value < 10 ? value.toFixed(1) : value.toFixed(0)) + " s";
+  }
+
+  /* What stops a run before anything is sent; "" when nothing does. */
+  function runProblem() {
+    var setup = runLive.setup;
+    var m = runMethod();
+    if (!setup) return "The server has not said yet which weights it reads.";
+    if (!setup.weights.length) return "This server reads no weights: start it again with --weights-dir, as said above.";
+    if (!runWeights(m)) return runForm.typing ? "Type the path of a weights file inside " + setup.weights_dir + "." : "Choose a weights file.";
+    if (runForm.input !== "depth") return "";
+    var limit = setup.limits.upload_bytes;
+    if (!runForm.depth) return "Choose a depth image: a 16-bit PNG in millimetres or a .npy in metres.";
+    var files = [runForm.depth, runForm.rgb].filter(Boolean);
+    for (var i = 0; i < files.length; i++) {
+      if (files[i].size > limit) return files[i].name + " is " + megabytes(files[i].size) + "; the server takes files up to " + megabytes(limit) + ".";
+    }
+    if (numbers(runForm.intrinsics).indexOf(null) >= 0) return "Fill in fx, fy, cx and cy: the intrinsics of the depth camera, in pixels.";
+    var box = numbers(runForm.workspace);
+    var filled = box.filter(function (value) { return value !== null; }).length;
+    var typed = runForm.workspace.filter(function (text) { return String(text).trim() !== ""; }).length;
+    if (typed && filled !== 6) return "Fill in all six numbers of the workspace box, or leave all six empty.";
+    if (m.needs_rgb && !runForm.rgb) return m.name + " reads the colour image too: choose the colour image registered to the depth image.";
+    return "";
+  }
+
+  function readBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var text = String(reader.result);
+        resolve(text.slice(text.indexOf(",") + 1));
+      };
+      reader.onerror = function () {
+        reject(reader.error);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function blobUrl(base64, type) {
+    var bytes = window.atob(base64);
+    var array = new Uint8Array(bytes.length);
+    for (var i = 0; i < bytes.length; i++) array[i] = bytes.charCodeAt(i);
+    return URL.createObjectURL(new Blob([array], { type: type }));
+  }
+
+  function startRun() {
+    var problem = runProblem();
+    runLive.problem = problem;
+    if (problem) {
+      state.focusKey = "run-go";
+      render();
+      return;
+    }
+    var m = runMethod();
+    var payload = { method: m.name, weights: runWeights(m), input: runForm.input, collision_filter: runForm.collision };
+    var sets = runSets();
+    if (sets.length) payload.sets = sets;
+    var uploads = [];
+    if (runForm.input === "depth") {
+      payload.intrinsics = numbers(runForm.intrinsics);
+      if (numbers(runForm.workspace).indexOf(null) < 0) payload.workspace = numbers(runForm.workspace);
+      uploads.push(readBase64(runForm.depth.file).then(function (text) {
+        payload.depth = { name: runForm.depth.name, data: text };
+      }));
+      if (runForm.rgb) {
+        uploads.push(readBase64(runForm.rgb.file).then(function (text) {
+          payload.rgb = { name: runForm.rgb.name, data: text };
+        }));
+      }
+    }
+    window.clearTimeout(runLive.timer);
+    runLive.sending = true;
+    runLive.failure = null;
+    runLive.job = null;
+    state.focusKey = "run-go";
+    render();
+    var out = document.getElementById("gx-run-out");
+    if (out && window.innerWidth < 1000 && out.scrollIntoView) out.scrollIntoView({ block: "start", behavior: "smooth" });
+    Promise.all(uploads)
+      .then(function () {
+        return post("run", payload);
+      })
+      .then(
+        function (answer) {
+          runLive.sending = false;
+          if (answer.error) {
+            runLive.failure = { title: FAILURE_TITLES[answer.kind] || "The request was refused", message: answer.error, kind: answer.kind || "" };
+            render();
+            return;
+          }
+          follow(answer);
+        },
+        function (error) {
+          runLive.sending = false;
+          runLive.failure = { title: "No answer from the server", message: String(error) + ". Is `grasppanda explore` still running?", kind: "server" };
+          render();
+        }
+      );
+  }
+
+  /* Show a run and ask for its state until it ends; the panel is redrawn alone meanwhile. */
+  function follow(status, quiet) {
+    runLive.job = status;
+    window.clearTimeout(runLive.timer);
+    if (status.state !== "running") {
+      if (runLive.urls) {
+        URL.revokeObjectURL(runLive.urls.png);
+        URL.revokeObjectURL(runLive.urls.npy);
+      }
+      runLive.urls = status.result
+        ? { png: blobUrl(status.result.picture, "image/png"), npy: blobUrl(status.result.array, "application/octet-stream") }
+        : null;
+      render();
+      return;
+    }
+    if (quiet) refreshRunOut();
+    else render();
+    runLive.timer = window.setTimeout(function () {
+      getJson("run/" + status.id).then(
+        function (next) {
+          if (!runLive.job || runLive.job.id !== status.id) return;
+          if (!next.id) {
+            runLive.job = null;
+            runLive.failure = { title: "The run is gone", message: next.error || "the server does not know this run", kind: "server" };
+            render();
+            return;
+          }
+          follow(next, true);
+        },
+        function (error) {
+          runLive.job = null;
+          runLive.failure = { title: "No answer from the server", message: String(error) + ". Is `grasppanda explore` still running?", kind: "server" };
+          render();
+        }
+      );
+    }, 400);
+  }
+
+  function refreshRunOut() {
+    var old = document.getElementById("gx-run-out");
+    if (old) old.parentNode.replaceChild(runOutput(), old);
+  }
+
+  function runStep(n, label, children, id) {
+    return h("div", { class: "gx-step", role: "group", "aria-labelledby": id }, [
+      h("div", { class: "gx-step-head" }, [h("span", { class: "gx-step-n", "aria-hidden": "true", text: String(n) }), h("span", { class: "gx-step-label", id: id, text: label })]),
+    ].concat(children));
+  }
+
+  function pickRunMethod(name) {
+    if (name === state.method || !L.method(data, name)) return;
+    runForm.typing = false;
+    runLive.problem = "";
+    set({ method: name, picks: {}, notice: [] }, true);
+  }
+
+  function methodStep(off) {
+    var m = runMethod();
+    var children = [
+      h("div", { class: "gx-methods" }, runMethods().map(function (item) {
+        return h("button", {
+          type: "button",
+          class: "gx-method",
+          "data-key": "run-method-" + item.name,
+          "aria-pressed": item.name === m.name ? "true" : "false",
+          disabled: off ? true : null,
+          text: item.name,
+          onclick: function () {
+            pickRunMethod(item.name);
+          },
+        });
+      })),
+    ];
+    var selection = off ? null : runSelection();
+    if (selection) {
+      var count = selection.sets.length;
+      var mine = runForm.target === "selection" && selection.accepted !== false;
+      children.push(h("div", { class: "gx-target", role: "group", "aria-label": "What to run" }, [
+        toggle("run-target-method", "as shipped", !mine, function () {
+          runForm.target = "method";
+          render();
+        }),
+        h("button", {
+          type: "button",
+          class: "gx-toggle",
+          "data-key": "run-target-selection",
+          "aria-pressed": mine ? "true" : "false",
+          disabled: selection.accepted === false ? true : null,
+          text: "with your " + count + " change" + (count > 1 ? "s" : ""),
+          onclick: function () {
+            runForm.target = "selection";
+            render();
+          },
+        }),
+      ]));
+      var said = selection.accepted === false
+        ? " compose refuses this selection, so there is nothing to run."
+        : selection.checking
+          ? " compose is checking it …"
+          : mine
+            ? " The weights must fit the composed model: a change of post-processing or of the training recipe keeps the model, a new stage needs weights trained with it."
+            : "";
+      children.push(h("p", { class: "gx-fine" }, ["Your changes in Build a combination: "].concat(
+        selection.sets.map(function (item, index) {
+          return h("span", {}, [index ? ", " : "", h("code", { text: item })]);
+        }),
+        ["."]
+      )));
+      if (said) children.push(h("p", { class: "gx-fine", text: said.trim() }));
+    }
+    children.push(h("p", { class: "gx-fine" }, [
+      h("code", { text: m.config }),
+      m.needs_rgb ? " · reads a depth image and the colour image registered to it" : " · reads the point cloud of a depth image",
+    ]));
+    if (m.problem) children.push(h("p", { class: "gx-note", text: m.problem }));
+    return runStep(1, "Method", children, "gx-run-l1");
+  }
+
+  function weightsStep(off) {
+    var setup = runLive.setup;
+    if (!off && setup && !setup.weights.length) {
+      return runStep(2, "Weights", [
+        h("div", { class: "gx-run-none" }, [
+          h("p", {}, [h("b", { text: "This server reads no weights. " }), "Stop it (Ctrl+C) and start it again with a folder of weights, or with one file:"]),
+          codeBlock("Every .pth, .pt, .tar or .ckpt file under a folder", "grasppanda explore --weights-dir <dir>", "run-dir"),
+          codeBlock("One file, under a name of your choice", "grasppanda explore --weights gsnet=<file>", "run-file"),
+        ]),
+      ], "gx-run-l2");
+    }
+    var m = runMethod();
+    var entries = !off && setup ? setup.weights : [];
+    var value = runWeights(m);
+    function option(entry) {
+      return h("option", { value: entry.id, text: entry.label + " · " + megabytes(entry.bytes) });
+    }
+    var named = entries.filter(function (entry) { return entry.origin === "command line"; });
+    var listed = entries.filter(function (entry) { return entry.origin !== "command line"; });
+    var select = h("select", {
+      class: "gx-select",
+      id: "gx-run-weights",
+      "data-key": "run-weights",
+      "aria-labelledby": "gx-run-l2",
+      disabled: off || !setup ? true : null,
+      onchange: function (event) {
+        var chosen = event.target.value;
+        runForm.typing = chosen === TYPE_PATH;
+        if (!runForm.typing) runForm.chosen[m.name] = chosen;
+        runLive.problem = "";
+        state.focusKey = runForm.typing ? "run-typed" : "run-weights";
+        render();
+      },
+    }, [h("option", { value: "", text: off ? "a weights file of your machine" : entries.length ? "Choose a weights file…" : "…" })]);
+    if (named.length) select.appendChild(h("optgroup", { label: "Named on the command line" }, named.map(option)));
+    if (listed.length) select.appendChild(h("optgroup", { label: "In " + setup.weights_dir }, listed.map(option)));
+    if (setup && setup.weights_dir) select.appendChild(h("option", { value: TYPE_PATH, text: "Another file in this folder: type its path…" }));
+    select.value = runForm.typing ? TYPE_PATH : value;
+    if (select.value !== (runForm.typing ? TYPE_PATH : value)) select.value = "";
+    var children = [select];
+    if (runForm.typing) {
+      children.push(h("input", {
+        type: "text",
+        class: "gx-field gx-mono-field",
+        "data-key": "run-typed",
+        "aria-label": "Path of a weights file inside " + setup.weights_dir,
+        placeholder: "a path inside the folder, e.g. run/checkpoints/epoch_0010.pth",
+        spellcheck: "false",
+        value: runForm.typed,
+        oninput: function (event) {
+          runForm.typed = event.target.value;
+        },
+      }));
+    }
+    var fine = [];
+    if (!off && value && value === m.suggested && !runForm.typing) fine.push("Chosen by its name for " + m.name + "; the run says whether it fits. ");
+    if (setup && setup.truncated) fine.push("The folder holds more files than are listed; type the path of another one. ");
+    if (!off && setup) fine.push("The server reads only the files listed here: the page cannot name any other path.");
+    if (fine.length) children.push(h("p", { class: "gx-fine", text: fine.join("") }));
+    return runStep(2, "Weights", children, "gx-run-l2");
+  }
+
+  /* A file of the visitor's: a button that opens the picker, then the name and the size. */
+  function fileRow(role, label, accept, hint, off) {
+    var chosen = runForm[role];
+    var id = "gx-run-file-" + role;
+    var input = h("input", {
+      type: "file",
+      class: "gx-file-input",
+      id: id,
+      accept: accept,
+      "data-key": "run-file-" + role,
+      disabled: off ? true : null,
+      onchange: function (event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        runForm[role] = { file: file, name: file.name, size: file.size };
+        runLive.problem = "";
+        state.focusKey = "run-file-" + role;
+        render();
+      },
+    });
+    return h("div", { class: "gx-file" }, [
+      h("span", { class: "gx-field-label", text: label }),
+      h("div", { class: "gx-file-row" }, [
+        input,
+        h("label", { for: id, class: "gx-file-button", text: chosen ? "Change" : "Choose a file" }),
+        chosen
+          ? h("span", { class: "gx-file-name" }, [h("code", { text: chosen.name }), " " + megabytes(chosen.size)])
+          : h("span", { class: "gx-fine", text: hint }),
+        chosen && role !== "depth"
+          ? h("button", {
+              type: "button",
+              class: "gx-link",
+              "data-key": "run-clear-" + role,
+              text: "Remove",
+              onclick: function () {
+                runForm[role] = null;
+                render();
+              },
+            })
+          : null,
+      ]),
+      chosen ? h("p", { class: "gx-fine gx-file-hint", text: hint }) : null,
+    ]);
+  }
+
+  /* Boxes for several numbers; pasting all of them into one box fills them all. */
+  function numberBoxes(key, values, labels, off) {
+    function paste(event) {
+      var text = (event.clipboardData || window.clipboardData).getData("text");
+      var found = String(text).match(/[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?/gi) || [];
+      if (found.length < values.length) return;
+      event.preventDefault();
+      for (var i = 0; i < values.length; i++) values[i] = found[i];
+      runLive.problem = "";
+      render();
+    }
+    return labels.map(function (label, index) {
+      return h("label", { class: "gx-num" }, [
+        h("span", { text: label }),
+        h("input", {
+          type: "text",
+          inputmode: "decimal",
+          class: "gx-field",
+          "data-key": key + "-" + index,
+          disabled: off ? true : null,
+          spellcheck: "false",
+          autocomplete: "off",
+          value: values[index],
+          oninput: function (event) {
+            values[index] = event.target.value;
+          },
+          onpaste: paste,
+        }),
+      ]);
+    });
+  }
+
+  function inputStep(off) {
+    var m = runMethod();
+    var choice = h("div", { class: "gx-target", role: "group", "aria-label": "Input" }, [
+      h("button", {
+        type: "button", class: "gx-toggle", "data-key": "run-input-example", disabled: off ? true : null,
+        "aria-pressed": runForm.input === "example" ? "true" : "false", text: "The example scene",
+        onclick: function () { runForm.input = "example"; runLive.problem = ""; render(); },
+      }),
+      h("button", {
+        type: "button", class: "gx-toggle", "data-key": "run-input-depth", disabled: off ? true : null,
+        "aria-pressed": runForm.input === "depth" ? "true" : "false", text: "Your depth image",
+        onclick: function () { runForm.input = "depth"; runLive.problem = ""; render(); },
+      }),
+    ]);
+    var children = [choice];
+    if (runForm.input !== "depth") {
+      children.push(h("p", { class: "gx-fine", text: "A synthetic table-top scene that ships with GraspPanda: six primitives on a table, a 1280 x 720 depth image with its colour image and intrinsics, no sensor noise. Nothing to upload." }));
+      return runStep(3, "Input", children, "gx-run-l3");
+    }
+    children.push(fileRow("depth", "Depth image", ".png,.npy,.tif,.tiff", "16-bit PNG in millimetres, or .npy in metres", off));
+    children.push(h("div", { class: "gx-field-group" }, [
+      h("span", { class: "gx-field-label", text: "Intrinsics, in pixels" }),
+      h("div", { class: "gx-nums" }, numberBoxes("run-k", runForm.intrinsics, ["fx", "fy", "cx", "cy"], off)),
+      h("p", { class: "gx-fine", text: "Of the depth camera at the resolution of the image. Pasting 925,925,640,360 into one box fills all four." }),
+    ]));
+    children.push(fileRow("rgb", m.needs_rgb ? "Colour image (" + m.name + " needs it)" : "Colour image (optional)", ".png,.jpg,.jpeg",
+      m.needs_rgb ? "registered to the depth image, pixel for pixel" : "registered to the depth image; it colours the picture", off));
+    var labels = ["x min", "y min", "z min", "x max", "y max", "z max"];
+    children.push(h("div", { class: "gx-field-group" }, [
+      h("span", { class: "gx-field-label", text: "Workspace box (optional)" }),
+      h("div", { class: "gx-nums gx-box" }, numberBoxes("run-ws", runForm.workspace, labels, off)),
+      h("p", { class: "gx-fine", text: "Metres, camera frame: x right, y down, z forward. Only points inside are kept. Empty: every pixel with depth is used, and the run says what that means for this method." }),
+    ]));
+    return runStep(3, "Input", children, "gx-run-l3");
+  }
+
+  function optionsStep(off) {
+    return runStep(4, "Post-processing", [
+      h("label", { class: "gx-check" }, [
+        h("input", {
+          type: "checkbox",
+          "data-key": "run-collision",
+          checked: runForm.collision ? true : null,
+          disabled: off ? true : null,
+          onchange: function (event) {
+            runForm.collision = event.target.checked;
+          },
+        }),
+        h("span", {}, [h("b", { text: "Collision filter" }), " · removes grasps whose gripper would hit the observed points (the config's ", h("code", { text: "cd" }), " variant)"]),
+      ]),
+    ], "gx-run-l4");
+  }
+
+  function runLabel() {
+    var m = runMethod();
+    var what = m.name + (runSets().length ? " with your changes" : "");
+    var where = runForm.input === "depth" ? (runForm.depth ? runForm.depth.name : "your depth image") : "the example scene";
+    return "Run " + what + " on " + where;
+  }
+
+  function goButton(off) {
+    var busy = Boolean(runLive.sending || (runLive.job && runLive.job.state === "running"));
+    return h("div", { class: "gx-go" }, [
+      h("button", {
+        type: "button",
+        class: "gx-run-button",
+        "data-key": "run-go",
+        disabled: off || busy || (runLive.setup && !runLive.setup.weights.length) ? true : null,
+        "aria-busy": busy ? "true" : null,
+        text: busy ? "Running …" : runLabel(),
+        onclick: startRun,
+      }),
+      runLive.problem ? h("p", { class: "gx-run-problem", role: "alert", text: runLive.problem }) : null,
+    ]);
+  }
+
+  /* Commands whose lines break between arguments, never inside a short one such as
+   * --depth; the copy button copies the text as it is. */
+  function commandBlock(label, text, key) {
+    var block = codeBlock(label, text, key, false);
+    var pre = block.querySelector(".gx-pre");
+    pre.textContent = "";
+    text.split("\n").forEach(function (line, row) {
+      if (row) pre.appendChild(document.createTextNode("\n"));
+      line.split(" ").forEach(function (word, column) {
+        if (column) pre.appendChild(document.createTextNode(" "));
+        pre.appendChild(h("span", { class: "gx-word-unit", text: word }));
+      });
+    });
+    return block;
+  }
+
+  function stageList(stages) {
+    var symbols = { done: "✓", running: "", waiting: "", failed: "✗" };
+    return h("ol", { class: "gx-run-stages" }, stages.map(function (stage) {
+      var time = stage.seconds === null || stage.seconds === undefined ? "" : seconds(stage.seconds);
+      return h("li", { class: "is-" + stage.state }, [
+        h("span", { class: "gx-run-dot", "aria-hidden": "true", text: symbols[stage.state] || "" }),
+        h("span", { class: "gx-run-stage", text: stage.name.charAt(0).toUpperCase() + stage.name.slice(1) + (stage.note ? " (" + stage.note + ")" : "") }),
+        h("span", { class: "gx-run-time", text: time }),
+      ]);
+    }));
+  }
+
+  function signed(value) {
+    return (value < 0 ? "-" : "+") + Math.abs(value).toFixed(3);
+  }
+
+  function failureCard(failure, job) {
+    var lines = String(failure.message).split("\n");
+    var long = lines.length > 6;
+    var hints = {
+      weights: "Pick another file: weights must have been trained for, or converted to, the model of this config (tools/convert_checkpoint.py converts an author checkpoint).",
+      dependency: "Install it, then start grasppanda explore again.",
+      busy: "Wait for it to finish, then press Run again.",
+    };
+    var shown = long ? [lines[0], "…", lines[lines.length - 1]].join("\n") : failure.message;
+    return h("div", { class: "gx-run-card k-refused", role: "alert" }, [
+      h("div", { class: "gx-run-title" }, [mark({ kind: "refused", symbol: "✗" }), h("span", { text: failure.title })]),
+      h("div", { class: "gx-run-message", text: shown }),
+      long ? fold("run-message", "The whole message", [h("div", { class: "gx-run-message is-long", text: failure.message })]) : null,
+      hints[failure.kind] && (job || failure.kind !== "weights") ? h("p", { class: "gx-fine", text: hints[failure.kind] }) : null,
+      job ? stageList(job.stages) : null,
+    ]);
+  }
+
+  function resultCard(result) {
+    var steps = [{ name: "predicted", count: result.predicted }].concat(result.counts.map(function (item) {
+      return { name: "after " + item.step, count: item.count };
+    }));
+    var most = Math.max.apply(null, steps.map(function (step) { return step.count; }).concat([1]));
+    var summary = [h("b", { text: L.number(result.predicted) }), " grasps predicted"];
+    if (result.counts.length) {
+      summary.push(", ", h("b", { text: L.number(result.total) }), " left after " + result.counts.map(function (item) { return item.step; }).join(" and "));
+    }
+    summary.push(" · " + seconds(result.seconds.total) + (result.reused ? ", model kept from the last run" : ""));
+    var caption = "The " + result.drawn + " best grasps as grippers, coloured by score rank from red (lowest shown) to green (highest)." +
+      (result.input === "the example scene" ? " A synthetic scene, not a camera image." : "") +
+      (result.drawn_frame !== result.frame ? " The picture shows the grasps before the step that changed their frame." : "");
+    var rows = result.grasps.map(function (grasp) {
+      return h("tr", {}, [
+        h("td", { text: String(grasp.rank) }),
+        h("td", { text: grasp.score.toFixed(3) }),
+        h("td", { text: grasp.width.toFixed(3) }),
+        h("td", { text: grasp.depth.toFixed(3) }),
+        h("td", { text: grasp.position.map(signed).join("  ") }),
+        h("td", { text: grasp.approach.map(function (value) { return (value < 0 ? "-" : "+") + Math.abs(value).toFixed(2); }).join("  ") }),
+      ]);
+    });
+    var lines = [];
+    result.lines.forEach(function (line) {
+      lines.push(h("dt", { text: line[0] }));
+      lines.push(h("dd", { text: line[1] }));
+    });
+    return h("div", { class: "gx-run-card k-runs" }, [
+      h("div", { class: "gx-run-title" }, [mark({ kind: "runs", symbol: "✓" }), h("span", { text: result.target + " on " + result.input })]),
+      h("p", { class: "gx-run-sum" }, summary),
+      h("figure", { class: "gx-run-picture" }, [
+        h("img", {
+          src: runLive.urls ? runLive.urls.png : "",
+          width: String(result.picture_size[0]),
+          height: String(result.picture_size[1]),
+          alt: "The " + result.drawn + " best grasps of " + result.target + " on " + result.input + ", drawn as grippers over the point cloud",
+        }),
+        h("figcaption", { class: "gx-fine", text: caption }),
+      ]),
+      h("div", { class: "gx-run-downloads" }, [
+        h("a", { class: "gx-download", href: runLive.urls ? runLive.urls.npy : "", download: result.array_name, "data-key": "run-npy" }, [
+          "Download the grasps ", h("span", { class: "gx-fine", text: result.array_shape[0] + " × 17 .npy" }),
+        ]),
+        h("a", { class: "gx-download", href: runLive.urls ? runLive.urls.png : "", download: result.array_name.replace(/\.npy$/, ".png"), "data-key": "run-png" }, [
+          "Download the picture ", h("span", { class: "gx-fine", text: ".png" }),
+        ]),
+      ]),
+      result.notes.length
+        ? h("div", { class: "gx-why k-unstable" }, [h("div", { class: "gx-why-title", text: "Note" })].concat(result.notes.map(function (note) {
+            return h("p", { text: note });
+          })))
+        : null,
+      result.total
+        ? h("div", {}, [
+            h("div", { class: "gx-why-title", text: "The best " + rows.length + " of " + L.number(result.total) }),
+            h("div", { class: "gx-run-table", role: "region", "aria-label": "The best grasps", tabindex: "0" }, [
+              h("table", {}, [
+                h("thead", {}, [h("tr", {}, ["rank", "score", "width m", "depth m", "position x y z, m", "approach x y z"].map(function (name) {
+                  return h("th", { scope: "col", text: name });
+                }))]),
+                h("tbody", {}, rows),
+              ]),
+            ]),
+          ])
+        : h("p", { text: "No grasp was returned. That is a valid result: the detector found nothing it would grasp in this cloud" + (result.counts.length ? " or the filter removed everything." : ".") }),
+      h("div", { class: "gx-why-title", text: "Through the post-processing" }),
+      h("ul", { class: "gx-run-counts" }, steps.map(function (step) {
+        return h("li", {}, [
+          h("span", { text: step.name }),
+          h("span", { class: "gx-run-bar", "aria-hidden": "true" }, [h("span", { style: "width:" + Math.max(1, Math.round((100 * step.count) / most)) + "%" })]),
+          h("b", { text: L.number(step.count) }),
+        ]);
+      })),
+      fold("run-ran", "What ran: config, weights, pipeline, input", [h("dl", { class: "gx-run-lines" }, lines)]),
+      commandBlock("The same in a terminal", result.command, "run-command"),
+      h("p", { class: "gx-fine", text: "Camera frame, metres: x right, y down, z forward. The approach is the first column of the rotation. The .npy holds one row per grasp, best first: score, width, height, depth, rotation (9, row-major), translation (3), object id." }),
+    ]);
+  }
+
+  function runOutput() {
+    var job = runLive.job;
+    var body;
+    if (!liveBase) {
+      body = h("div", { class: "gx-run-card is-idle" }, [h("p", { text: "Here: the picture of the predicted grasps, the best ten in a table, the counts through the post-processing, and every grasp as a (G, 17) array to download." })]);
+    } else if (runLive.failure) {
+      body = failureCard(runLive.failure, null);
+    } else if (runLive.sending) {
+      body = h("div", { class: "gx-run-card k-none" }, [h("div", { class: "gx-run-title" }, [h("span", { class: "gx-spin", "aria-hidden": "true" }), h("span", { text: "Sending the request …" })])]);
+    } else if (job && job.state === "running") {
+      body = h("div", { class: "gx-run-card k-none" }, [
+        h("div", { class: "gx-run-title" }, [h("span", { class: "gx-spin", "aria-hidden": "true" }), h("span", { text: "Running " + job.target + " on " + job.input })]),
+        h("p", { class: "gx-fine", text: seconds(job.elapsed) + " so far. The first run of a method builds it and loads its weights; a second run reuses them." }),
+        stageList(job.stages),
+      ]);
+    } else if (job && job.state === "failed") {
+      body = failureCard(job.error, job);
+    } else if (job && job.result) {
+      body = resultCard(job.result);
+    } else {
+      body = h("div", { class: "gx-run-card is-idle" }, [
+        h("p", { text: "Press Run: the picture of the predicted grasps, the best ten in a table, the counts through the post-processing and every grasp as a (G, 17) array appear here." }),
+        h("p", { class: "gx-fine", text: "The first run of a method builds it and loads its weights; running it again, on another input, reuses them. Nothing is trained." }),
+      ]);
+    }
+    return h("div", { class: "gx-run-out", id: "gx-run-out", "aria-live": "polite" }, [body]);
+  }
+
+  function runOff() {
+    var command = "grasppanda explore --weights-dir <dir>";
+    var button = h("button", {
+      type: "button",
+      class: "gx-copy",
+      "data-key": "copy-run-explore",
+      "data-label": "Copy",
+      "aria-label": "Copy " + command,
+      text: "Copy",
+      onclick: function () {
+        copyText(command, button);
+      },
+    });
+    return h("div", { class: "gx-hint gx-run-off" }, [
+      h("div", {}, [
+        h("b", { text: "Runs on your machine. " }),
+        "Start ",
+        h("code", { text: command }),
+        " with a folder of converted weights, and this panel runs the method you pick on the example scene or on your own depth image and shows the grasps. ",
+        h("a", { href: docHref("user_guides/inference") + "#run-in-the-browser", text: "How it works" }),
+      ]),
+      button,
+    ]);
+  }
+
+  function runView() {
+    var off = !liveBase;
+    if (!off) loadSetup();
+    var top = null;
+    if (off) top = runOff();
+    else if (runLive.status === "loading") top = h("p", { class: "gx-fine", text: "Asking the server which weights it reads …" });
+    else if (runLive.status === "error") top = h("div", { class: "gx-run-card k-fails", role: "alert" }, [h("p", { text: runLive.error })]);
+    var form = h("div", { class: "gx-run-form" + (off ? " is-off" : ""), "aria-disabled": off ? "true" : null }, [
+      methodStep(off),
+      weightsStep(off),
+      inputStep(off),
+      optionsStep(off),
+      goButton(off),
+    ]);
+    return h("div", { class: "gx-run" }, [top, h("div", { class: "gx-run-grid" }, [form, runOutput()])]);
   }
 
   // -------------------------------------------------------------------------- render
@@ -1402,7 +2202,8 @@
     state.focusKey = "";
     hideTip();
     if (barWatch) barWatch.disconnect();
-    var body = h("div", { class: "gx-body" }, [header(), tabs(), state.view === "grid" ? notice() : null, state.view === "grid" ? gridView() : buildView(), footer()]);
+    var view = state.view === "grid" ? gridView() : state.view === "run" ? runView() : buildView();
+    var body = h("div", { class: "gx-body" }, [header(), tabs(), state.view !== "build" ? notice() : null, view, state.view === "run" ? null : footer()]);
     var old = root.querySelector(".gx-body");
     if (old) root.replaceChild(body, old);
     else {
@@ -1453,13 +2254,17 @@
     state.method = L.method(data, from.method) ? from.method : data.methods[0].name;
     state.picks = L.normalise(data, state.method, from.picks);
     state.view = from.view;
+    /* The server says which tab a page without an address opens on (the Run panel when
+     * it was given weights). */
+    var opens = root.getAttribute("data-view");
+    if (!window.location.hash.replace(/^#/, "") && /^(build|grid|run)$/.test(opens || "")) state.view = opens;
     state.slot = L.lane(data, from.slot) ? from.slot : "";
     state.open = "";
     state.cellMenu = "";
   }
 
   function start(loaded) {
-    data = loaded;
+    data = L.prepare(loaded);
     var extra = document.getElementById("gp-explorer-contracts");
     if (extra && extra.textContent.trim()) {
       try {

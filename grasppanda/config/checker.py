@@ -12,13 +12,19 @@ A project adds its own with::
     def my_rule(data, command):
         if ...:
             yield ("train", "epochs"), "explain the problem and the fix"
+
+A rule says why it refuses with ``@rule(kind=...)``, one of
+:data:`~grasppanda.config.errors.REFUSAL_KINDS`; a message that is a
+:class:`~grasppanda.config.errors.Refusal` states its own kind instead. Every rule shipped
+here states one.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from typing import Any
+from typing import Any, overload
 
+from .errors import REFUSAL_KINDS, Refusal
 from .loader import KeyPath
 
 __all__ = ["COMMAND_REQUIREMENTS", "RULES", "rule", "run_rules"]
@@ -38,15 +44,35 @@ COMMAND_REQUIREMENTS: dict[str, tuple[KeyPath, ...]] = {
 }
 
 
-def rule(function: Rule) -> Rule:
-    """Register a cross-field rule."""
-    RULES.append(function)
-    return function
+@overload
+def rule(function: Rule) -> Rule: ...
+@overload
+def rule(*, kind: str) -> Callable[[Rule], Rule]: ...
+def rule(function: Rule | None = None, *, kind: str | None = None) -> Any:
+    """Register a cross-field rule, as ``@rule`` or ``@rule(kind="structural")``.
+
+    ``kind`` is what the rule's refusals are (:data:`REFUSAL_KINDS`). It is kept as the
+    attribute ``kind`` of the function and given to every message that does not state
+    its own.
+    """
+    if kind is not None and kind not in REFUSAL_KINDS:
+        raise ValueError(f"unknown refusal kind '{kind}'; kinds: {', '.join(REFUSAL_KINDS)}")
+
+    def register(check: Rule) -> Rule:
+        check.kind = kind  # type: ignore[attr-defined]
+        RULES.append(check)
+        return check
+
+    return register if function is None else register(function)
 
 
 def run_rules(data: Mapping[str, Any], command: str | None) -> Iterator[Finding]:
     for check in RULES:
-        yield from check(data, command) or ()
+        kind = getattr(check, "kind", None)
+        for path, message in check(data, command) or ():
+            if kind is not None and not isinstance(message, Refusal):
+                message = Refusal(message, kind, getattr(check, "__name__", ""))
+            yield path, message
 
 
 def _select(data: Mapping[str, Any], path: KeyPath) -> Any:
@@ -58,7 +84,7 @@ def _select(data: Mapping[str, Any], path: KeyPath) -> Any:
     return node
 
 
-@rule
+@rule(kind="not-a-combination")
 def command_requirements(data: Mapping[str, Any], command: str | None) -> Iterator[Finding]:
     """A command fails early, by name, when a section it needs is absent."""
     for path in COMMAND_REQUIREMENTS.get(command or "", ()):
@@ -74,7 +100,7 @@ def _spelled(field: str) -> str:
     return f"supervision.{field}"
 
 
-@rule
+@rule(kind="fixed-by-compose")
 def training_data_serves_what_the_model_reads(
     data: Mapping[str, Any], command: str | None
 ) -> Iterator[Finding]:
@@ -84,6 +110,12 @@ def training_data_serves_what_the_model_reads(
     the ``needs_supervision`` of its stages), a dataset reader what a config makes it
     serve (``served_supervision``). A side that declares nothing is not compared. Only
     ``train`` reads the training data, so other commands skip the rule.
+
+    What it refuses is a data recipe that does not serve a label set or a derived asset a
+    stage reads, which `grasppanda compose` writes into the recipe (``--set labels=``, the
+    dataset section of a preset): ``fixed-by-compose``. A dataset configured to serve no
+    labels at all is ``not-a-combination``; a reader with no option that serves the field is
+    ``structural``.
     """
     from grasppanda.registry import DATASETS, DETECTORS
 
@@ -112,14 +144,25 @@ def training_data_serves_what_the_model_reads(
         who = " and ".join(names)
         verb = "reads" if len(names) == 1 else "read"
         hint = reader.supervision_hint(field, dataset)
+        message = f"{who} {verb} `{_spelled(field)}`, which this training dataset does not serve."
+        kind = "fixed-by-compose"
+        if dataset.get("load_labels", True) is False or (
+            field.startswith("objects") and dataset.get("object_labels", True) is False
+        ):
+            kind = "not-a-combination"
+        elif not hint or hint.endswith("has no option that serves it."):
+            kind = "structural"
         yield (
             ("data", "train", "dataset"),
-            f"{who} {verb} `{_spelled(field)}`, which this training dataset does not serve."
-            + (f" {hint}" if hint else ""),
+            Refusal(
+                message + (f" {hint}" if hint else ""),
+                kind,
+                "training_data_serves_what_the_model_reads",
+            ),
         )
 
 
-@rule
+@rule(kind="not-a-combination")
 def save_best_names_a_variant(data: Mapping[str, Any], command: str | None) -> Iterator[Finding]:
     """``evaluation.save_best`` must monitor a metric of a declared variant."""
     evaluation = data.get("evaluation")
@@ -152,7 +195,7 @@ def _component_class(registry: Any, node: Any) -> Any:
     return None
 
 
-@rule
+@rule(kind="not-implemented")
 def image_data_is_not_moved_in_point_space(
     data: Mapping[str, Any], command: str | None
 ) -> Iterator[Finding]:
@@ -196,7 +239,7 @@ def image_data_is_not_moved_in_point_space(
             )
 
 
-@rule
+@rule(kind="fixed-by-compose")
 def post_processors_find_the_cloud_they_read(
     data: Mapping[str, Any], command: str | None
 ) -> Iterator[Finding]:
@@ -233,7 +276,7 @@ def post_processors_find_the_cloud_they_read(
                     )
 
 
-@rule
+@rule(kind="not-implemented")
 def mixed_precision_needs_a_detector_that_is_ready(
     data: Mapping[str, Any], command: str | None
 ) -> Iterator[Finding]:
@@ -277,7 +320,7 @@ def _stage_option(registry: Any, node: Any, name: str) -> Any:
     return param.default
 
 
-@rule
+@rule(kind="not-a-combination")
 def stages_use_the_grid_of_the_labels(
     data: Mapping[str, Any], command: str | None
 ) -> Iterator[Finding]:

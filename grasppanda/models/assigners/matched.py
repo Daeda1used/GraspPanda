@@ -91,6 +91,8 @@ class CompactMatchedLabels:
         score: ``(M,)`` quality of the labelled grasp in ``[0, 1]``; higher is better
             and 0 means the view holds no usable grasp.
         width: ``(M,)`` gripper width of the labelled grasp, metres.
+        weight: ``(M,)`` weight of every seed in the view and grasp losses, as in
+            :class:`MatchedLabels`. ``None`` means that seeds are not weighted.
     """
 
     valid: Tensor
@@ -107,3 +109,4 @@ class CompactMatchedLabels:
     depth: Tensor
     score: Tensor
     width: Tensor
+    weight: Tensor | None = None

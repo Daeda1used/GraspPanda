@@ -22,6 +22,14 @@
 [Design](docs/design/ARCHITECTURE.md) ·
 [Contributing](CONTRIBUTING.md)
 
+<a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
+  <img src="resources/explorer-light.webp" alt="The combination explorer: a scene encoder from another paper is swapped into GSNet and the measured verdict says it runs; a head that does not fit is refused with the conflict and the fix; HGGD takes a DINOv2 image encoder; the grid of the grouping slot shows which option works under which method" width="820">
+</picture></a>
+
+**Swap any stage of a grasp detector and see at once whether it works.** Every answer is a measured record.<br>
+[**Open the combination explorer →**](https://daeda1used.github.io/GraspPanda/explorer/) · or run it locally: `grasppanda explore`
+
 </div>
 
 **GraspPanda is to 6-DoF grasp detection in clutter what MMDetection is to object detection:**
@@ -37,10 +45,11 @@ stage, and where every number is produced by the same pinned evaluation.
 > (GSNet, EconomicGrasp, FineGrasp, HGGD, GraspNet-baseline, Scale-Balanced-Grasp; each equal to its
 > reference implementation stage by stage with converted weights), options for every slot
 > of the pipeline ([Slots](docs/slots/index.md)), and the `train` / `test` / `infer` / `demo` /
-> `analyze` / `sweep` / `compose` / `probe` / `explore` commands. The model zoo is still empty on
-> purpose: a method enters only after it has been trained *and* evaluated here, and the
-> first from-scratch reproduction is running. No accuracy is claimed for an option that is
-> not part of a ported method.
+> `analyze` / `sweep` / `compose` / `probe` / `explore` commands. The first model trained here
+> from scratch, GSNet, has been scored on the whole test splits of both benchmarks (above
+> the paper; its weights are not published yet), so the model zoo still has nothing to
+> download. A method enters it only after it has been trained *and* evaluated here. No
+> accuracy is claimed for an option that is not part of a ported method.
 
 <div align="center">
 <picture>
@@ -50,7 +59,7 @@ stage, and where every number is produced by the same pinned evaluation.
 
 *Real output, lines dropped, none invented. A combination is one command; a wrong one is refused with the fix before anything is built; a probe says whether it trains. No accuracy is claimed by a probe.*
 
-**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 980 recorded combinations (740 probed on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
+**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 960 recorded combinations (740 probed on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
 
 <img src="resources/demo.webp" alt="Predicted grasps on a cluttered GraspNet-1Billion test scene, rendered by GraspPanda" width="720">
 
@@ -88,14 +97,14 @@ GraspPanda answers with one pipeline, one evaluator, and a rule: **only advertis
 | 📦 **Small core** | `torch`, `numpy`, `pyyaml`. Sparse convolution and other heavy pieces are optional extras; operators have pure-PyTorch reference implementations. |
 | 🧾 **Reproducible runs** | Each run snapshots its resolved config, overrides, code, git state and environment. |
 
-⏳ marks what is still in progress (the first from-scratch reproduction is running); everything else works today.
+⏳ marks what is still in progress (no method has passed the admission gate yet); everything else works today.
 
 ### A config is the whole experiment
 
 ```yaml
-_base_:
-  - ../../../configs/_base_/default_runtime.yaml
-  - ../../../configs/_base_/schedules/gsnet_10e.yaml
+_base_:                                     # shipped building blocks, found from any directory
+  - _base_/default_runtime.yaml
+  - _base_/schedules/gsnet_10e.yaml
 
 custom_imports: [../toy_components.py]      # out-of-tree code, no fork needed
 
@@ -125,7 +134,8 @@ grasppanda print-config <config> --defaults
 An option is a name after `--set <slot>=`: a component with settings for table-top depth
 clouds. Each slot page starts with the task of the slot and its input and output, then
 gives one row and one command per option. [The index](docs/slots/index.md) classifies
-every option from the measured records as universal, most, some or specific.
+every option from the measured records, level by level (it composes, runs, learns,
+predicts), as universal, most, some or specific.
 
 | Slot | Options | What they are |
 |---|---|---|
@@ -156,21 +166,27 @@ every option from the measured records as universal, most, some or specific.
 
 ## 🏆 Model zoo
 
-Nothing has been certified yet, so this table lists **targets**: numbers reported by the
-original authors on GraspNet-1Billion (RealSense, AP on seen / similar / novel). The last
-column fills in as each method passes the gate.
+This table lists **targets**: numbers reported by the original authors on
+GraspNet-1Billion (RealSense, AP on seen / similar / novel), and in the last column the
+model trained here, where there is one.
 
-What has been measured is how the weights released by the authors score here: five
-methods on the whole GraspNet-1Billion test split and four of them on GraspClutter6D,
-with and without collision filter, the reported number beside each. Those `author-ckpt`
-numbers are in the tables of [docs/model_zoo.md](docs/model_zoo.md), each backed by a
-committed result record; they are not reproductions, so the last column stays empty.
+The first is GSNet, trained from scratch with the recipe of its config (one run, one
+seed). It scores above the paper by more than the 1 AP of the admission rule, so it is
+not certified, and why is not known: the implementation equals the public reference
+implementation stage by stage, a model trained with the reference code (on a modified
+label set) is above the paper too, and the authors' original code is not public
+([details](configs/gsnet/README.md#results-on-graspnet-1billion)). Its weights are not
+published yet. Everything else measured here is how the weights released by the authors
+score: five methods on the whole GraspNet-1Billion test split and four of them on
+GraspClutter6D, with and without collision filter, the reported number beside each. These
+`author-ckpt` numbers are in [docs/model_zoo.md](docs/model_zoo.md) with GSNet's, each
+backed by a committed result record; they are not reproductions.
 
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
 | GraspNet-baseline | CVPR 2020 | on | 47.47 / 42.27 / 16.61 ("In repo" row of its README) | — |
-| GSNet | ICCV 2021 | off | 65.70 / 53.75 / 23.98 | — |
-| GSNet | ICCV 2021 | on | 67.12 / 54.81 / 24.31 | — |
+| GSNet | ICCV 2021 | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| GSNet | ICCV 2021 | on | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | — |
 | HGGD | RA-L 2023 | see note | 59.36 / 51.20 / 22.17 ("In paper" row of its README) · 64.45 / 53.59 / 24.59 ("In repo" row; also the arXiv version) | — |
 | Scale-Balanced-Grasp | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | — |
@@ -204,8 +220,8 @@ grasppanda print-config projects/example_project/configs/toy_detector.yaml \
 
 ### First grasps in five minutes
 
-No dataset is needed for a first picture. The zoo holds no weights yet and the authors'
-checkpoints are under their own licences, so no grasp checkpoint is downloaded for you.
+No dataset is needed for a first picture. The zoo has no weights to download yet and the
+authors' checkpoints are under their own licences, so no grasp checkpoint is downloaded for you.
 (The one exception to "nothing is fetched": an image-encoder preset with `pretrained: true`
 lets `timm`, `transformers` or `torchvision` download ImageNet-style weights on first use and
 prints one line with their licence; see [image encoders](docs/slots/image_encoders.md).)
@@ -221,8 +237,14 @@ grasppanda demo  projects/example_project/configs/toy_train.yaml \
 `--example` is a synthetic table-top scene that ships with the package. The toy's grasps
 mean nothing; the command shows that everything runs.
 
-**2. A real method.** Download an author checkpoint (links and licences in
-`configs/<method>/README.md`), convert it once, run it:
+**2. A real method.** Download an author checkpoint, convert it once, run it. Every
+method has a page that walks through it: the file, its licence, the conversion, the demo,
+the same from Python and in the browser, and a first AP on part of the benchmark, each
+with what it printed when it was measured: [GSNet](docs/methods/gsnet.md) ·
+[EconomicGrasp](docs/methods/economicgrasp.md) · [FineGrasp](docs/methods/finegrasp.md) ·
+[GraspNet-baseline](docs/methods/graspnet_baseline.md) ·
+[Scale-Balanced-Grasp](docs/methods/scale_balanced_grasp.md) · [HGGD](docs/methods/hggd.md).
+GraspNet-baseline, for example:
 
 ```bash
 python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
@@ -264,7 +286,8 @@ grasppanda explore                                           # the same in a bro
 `compose` writes a checked config from a method config and presets, inserts an adapter
 where the stage contracts ask for one and says so; a combination the contracts refuse is
 reported with the conflict and the fix, and a composed config can be composed again.
-`probe` ends with one verdict (`runs`, `runs-unstable`, `fails`, `refused`). Which
+`probe` ends with one verdict (`runs`, `runs-empty`, `runs-unstable`, `fails`, `refused`)
+and says what did not learn: a flat loss term, a part no gradient reached. Which
 component works under which method has been measured on real frames, not inferred: see
 [Slots](docs/slots/index.md), [Try a combination](docs/user_guides/combinations.md) and
 [Measured combinations](docs/advanced_guides/measured_combinations.md). No accuracy is
@@ -323,7 +346,7 @@ The example detector is a wiring template: it is untrained and its grasps are ar
 ## 🧭 Roadmap
 
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs skeleton, brand.
-- [ ] **M1 — GraspNet-1Billion, evaluator, GSNet.** ✅ Evaluator agrees with the official API value for value. ✅ GSNet equals the reference implementation stage by stage with converted weights. 🚧 Training from scratch.
+- [ ] **M1 — GraspNet-1Billion, evaluator, GSNet.** ✅ Evaluator agrees with the official API value for value. ✅ GSNet equals the reference implementation stage by stage with converted weights. ✅ Trained from scratch and scored on the whole test split (1.2 to 7.5 AP above the paper). 🚧 The gap is not explained; the weights are not published.
 - [ ] **M2 — EconomicGrasp and HGGD.** A second method of the same family, and one that deliberately does not fit it. ✅ Both equal their reference stage by stage with the authors' weights. 🚧 Full-split evaluation and training.
 - [ ] **M3 — Scale-Balanced-Grasp, GraspNet-baseline, FineGrasp.** First controlled comparison table: same backbone, same budget, same inputs, same evaluator. ✅ All three equal their reference stage by stage with the authors' weights. 📅 The table.
 - [ ] **M4 — GraspClutter6D and Contact-GraspNet.** ✅ Reader, evaluator (equal to the official tool on 254 recorded frames), label assets, transfer configs for five methods (checked on a 312-frame subset). 📅 Full-split transfer table, training on GraspClutter6D, Contact-GraspNet.

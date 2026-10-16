@@ -17,6 +17,8 @@ EconomicGrasp keeps the scene encoder, the graspness proposal and the view stage
 - **Classification.** Angle, depth and quality are classified; only the width is
   regressed.
 
+**Run it in five minutes:** [docs/methods/economicgrasp.md](../../docs/methods/economicgrasp.md) gives the authors' checkpoint, its licence and the conversion command, the demo on the example scene with what it prints, the same from Python and in the browser, and a first AP on 120 frames of the benchmark, each with the date, commit and machine it was measured on.
+
 | slot | component | shared with GSNet |
 |---|---|---|
 | `backbone` | `SparseUNet14` | yes |
@@ -69,7 +71,7 @@ the published table on the seen split. The gap is not explained. What is known:
 - Not investigated: whether the released checkpoints are the ones behind the published
   table, and how much a number moves with the seed of the point sampling.
 
-**No `reproduced` number exists yet**: nothing has been trained here.
+**No `reproduced` number exists yet**: no EconomicGrasp model has been trained here.
 
 ### On GraspClutter6D
 
@@ -139,6 +141,21 @@ Not verified: any complete training run (two epochs on eight frames ran through
 `grasppanda train` as a smoke test), and the upstream code with the RealSense checkpoint
 (the comparisons of this section use the Kinect one).
 
+## Options of every slot
+
+Every slot of this method, the options that fit it and those that do not, each with what
+was measured for it (the verdict of its probe, the levels *composes*, *runs*, *learns* and
+*predicts*, its class, the grasps per frame, the reason and kind of a refusal):
+[docs/methods/economicgrasp.md](../../docs/methods/economicgrasp.md), or in a terminal:
+
+```bash
+grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list            # every slot
+grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list grouper    # one slot (--json: everything)
+```
+
+A class counts verdicts of one run (seed 0, 20 iterations, 8 frames of one scene), not
+accuracy.
+
 ## Usage
 
 ```bash
@@ -160,6 +177,8 @@ To evaluate the authors' weights, convert them first:
 ```bash
 python -m tools.convert_checkpoint economicgrasp_kinect.tar economicgrasp_kinect.pth \
     --source-format economicgrasp --camera kinect
+python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
+    --source-format economicgrasp --camera realsense
 ```
 
 ## Reference behaviour kept as named options

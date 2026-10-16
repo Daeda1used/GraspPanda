@@ -12,6 +12,7 @@ import pytest
 from grasppanda.cli.main import main
 from grasppanda.combine import explore
 from grasppanda.combine.grid import METHODS
+from grasppanda.config import REFUSAL_KINDS
 
 GSNET = next(iter(METHODS))
 
@@ -70,10 +71,13 @@ def test_a_selection_gets_the_verdict_of_the_real_compose(live):
     assert {stage["slot"] for stage in report["stages"]} >= {"backbone", "grouper", "head"}
     assert "type: MultiScaleGroup" in report["config"] and report["config_hash"]
 
-    status, _, body = call(base, "/api/compose", {"method": GSNET, "sets": ["head=economic"]})
+    status, _, body = call(base, "/api/compose", {"method": GSNET, "sets": ["grouper=depth-embed"]})
     report = json.loads(body)
     assert status == 200 and report["accepted"] is False and report["config"] == ""
-    assert any("EconomicHead" in problem for problem in report["problems"])
+    # Every reason with its kind, parallel, as `grasppanda compose --json` gives them.
+    assert report["refusal"] and len(report["refusal_kinds"]) == len(report["refusal"])
+    assert set(report["refusal_kinds"]) <= set(REFUSAL_KINDS)
+    assert any("DepthEmbedGroup" in problem for problem in report["problems"])
 
     status, _, body = call(base, "/api/compose", {"method": GSNET, "sets": ["backbone=nope"]})
     assert status == 400 and "nope" in json.loads(body)["error"]
@@ -94,7 +98,7 @@ def test_an_accepted_config_is_saved_on_request_and_never_overwritten_silently(l
     assert answer["exists"] is True and answer["written"] == ""
     assert json.loads(call(base, "/api/save", {**request, "overwrite": True})[2])["written"]
 
-    refused = {"method": GSNET, "sets": ["head=economic"], "name": "refused.yaml"}
+    refused = {"method": GSNET, "sets": ["grouper=depth-embed"], "name": "refused.yaml"}
     assert call(base, "/api/save", refused)[0] == 400 and not (directory / "refused.yaml").exists()
     for name in ("../up.yaml", "a/b.yaml", "/abs.yaml", "mine.txt", ".hidden.yaml", ""):
         status, _, _ = call(base, "/api/save", {**request, "name": name})

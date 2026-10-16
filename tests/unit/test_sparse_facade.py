@@ -4,8 +4,10 @@ MinkowskiEngine layers, plus the errors a wrong use must raise."""
 from __future__ import annotations
 
 import copy
+import importlib
 import importlib.util
 import itertools
+import logging
 import sys
 from pathlib import Path
 
@@ -186,19 +188,120 @@ def test_feature_layers_and_backward():
 
 @requires_spconv
 def test_a_wrong_cpu_convolution_is_an_error_not_a_wrong_feature_map(monkeypatch):
-    """The CPU-only spconv wheel miscomputes with several OpenMP threads; that must not pass."""
+    """Whatever makes spconv miscompute CPU tensors must not pass silently."""
     from grasppanda.ops.sparse import _spconv
 
     _spconv.check_cpu_convolution(force=True)  # this process convolves correctly
     assert _spconv._dense_mismatch() < 1e-4
     monkeypatch.setattr(_spconv, "_cpu_check", None)
     monkeypatch.setattr(_spconv, "_dense_mismatch", lambda: 0.3)
+    monkeypatch.setattr(_spconv, "ONE_THREAD", False)
     voxels = random_voxels(50)
     tensor, _ = sparse.make_tensor(torch.randn(len(voxels), 4), voxels, 2)
     with pytest.raises(sparse.SparseBackendError, match="OMP_NUM_THREADS=1.*CUDA build of spconv"):
         sparse.SubMConv3d(4, 4, 3)(tensor)
     with pytest.raises(sparse.SparseBackendError, match="differs from the dense one by 0.3"):
         _spconv.check_cpu_convolution()  # the verdict of a process is remembered
+    monkeypatch.setattr(_spconv, "ONE_THREAD", True)
+    with pytest.raises(sparse.SparseBackendError, match="already run on one thread") as error:
+        _spconv.check_cpu_convolution(force=True)
+    assert "OMP_NUM_THREADS" not in str(error.value) and "CUDA build of spconv" in str(error.value)
+
+
+@pytest.fixture
+def three_threads():
+    """PyTorch with several intra-op threads, as on a laptop with the default settings."""
+    threads = torch.get_num_threads()
+    torch.set_num_threads(3)
+    yield
+    torch.set_num_threads(threads)
+
+
+@requires_spconv
+def test_cpu_convolutions_are_exact_with_several_threads(three_threads, monkeypatch):
+    """The CPU-only wheel is wrong with several threads unless its convolutions run on one."""
+    import spconv.pytorch as spconv_library
+
+    from grasppanda.ops.sparse import _spconv
+
+    monkeypatch.setattr(_spconv, "_limited_from", _spconv._limited_from)  # the note: as before
+    assert _spconv._dense_mismatch() < 1e-4  # forward and input gradient, three trials
+    assert torch.get_num_threads() == 3  # given back after forward and backward
+    _spconv.check_cpu_convolution(force=True)
+    # Layers of the library itself (PTv3, OA-CNNs keep them) are covered too.
+    torch.manual_seed(0)
+    voxels = random_voxels(300)
+    index = (voxels - torch.tensor([0, -7, -7, -7])).int()
+    conv = spconv_library.SubMConv3d(4, 4, 3, padding=1, algo=_spconv.ConvAlgo.Native)
+    feats = torch.randn(len(voxels), 4)
+    runs = [
+        conv(spconv_library.SparseConvTensor(feats, index, [16, 16, 16], 2)).features
+        for _ in range(4)
+    ]
+    assert all(torch.equal(runs[0], run) for run in runs[1:])
+
+
+@requires_spconv
+def test_the_single_thread_mode_is_said_once(three_threads, monkeypatch, caplog):
+    from grasppanda.ops.sparse import _spconv
+
+    if not _spconv.ONE_THREAD:
+        pytest.skip("a CUDA build of spconv convolves CPU tensors on every thread")
+    monkeypatch.setattr(_spconv, "_limited_from", 0)
+    assert sparse.cpu_thread_note() is None
+    voxels = random_voxels(50)
+    tensor, _ = sparse.make_tensor(torch.randn(len(voxels), 4), voxels, 2)
+    conv = sparse.SubMConv3d(4, 4, 3)
+    with caplog.at_level(logging.INFO, logger="grasppanda"):
+        conv(tensor)
+        conv(tensor)
+    said = [record for record in caplog.records if "runs on one thread" in record.getMessage()]
+    assert len(said) == 1 and said[0].name.startswith("grasppanda.")  # reaches a run's log
+    note = sparse.cpu_thread_note()
+    assert note == said[0].getMessage() and note.endswith("the other operators use 3")
+
+
+@requires_spconv
+def test_the_cpu_check_runs_inside_inference_code():
+    """The first sparse convolution of a process may happen under ``inference_mode``."""
+    from grasppanda.ops.sparse import _spconv
+
+    with torch.inference_mode():
+        assert _spconv._dense_mismatch(trials=1) < 1e-4
+    with torch.no_grad():
+        assert _spconv._dense_mismatch(trials=1) < 1e-4
+
+
+@requires_spconv
+def test_importing_the_backend_again_wraps_spconv_once(monkeypatch):
+    import spconv.pytorch.ops as ops
+
+    from grasppanda.ops.sparse import _spconv
+
+    if not _spconv.ONE_THREAD:
+        pytest.skip("a CUDA build of spconv is not wrapped")
+    originals = {
+        name: getattr(ops, name).__wrapped__ for name in ("indice_conv", "indice_conv_backward")
+    }
+    for name in originals:  # restored when the test ends, as is the module below
+        monkeypatch.setattr(ops, name, getattr(ops, name))
+    monkeypatch.setattr(sparse, "_spconv", _spconv)
+    monkeypatch.delitem(sys.modules, "grasppanda.ops.sparse._spconv")
+    again = importlib.import_module("grasppanda.ops.sparse._spconv")
+    assert again is not _spconv and again.ONE_THREAD
+    for name, original in originals.items():  # the new module's wrapper around spconv's own
+        assert getattr(ops, name).__wrapped__ is original
+        assert getattr(ops, name).__globals__ is vars(again)
+
+
+def test_one_thread_gives_the_threads_back_on_errors(three_threads):
+    pytest.importorskip("spconv")
+    from grasppanda.ops.sparse import _spconv
+
+    with pytest.raises(KeyError), _spconv.one_thread():
+        assert torch.get_num_threads() == 1
+        raise KeyError
+    assert torch.get_num_threads() == 3
 
 
 @requires_spconv
@@ -266,7 +369,9 @@ def test_importing_the_facade_does_not_import_the_backend_and_a_missing_one_is_e
         monkeypatch.setitem(sys.modules, name, None)  # makes `import spconv` fail
     monkeypatch.delitem(sys.modules, "grasppanda.ops.sparse._spconv", raising=False)
     assert sparse.BatchNorm(4).num_features == 4  # backend-independent parts still work
-    with pytest.raises(MissingDependencyError, match=r'pip install -e "\.\[spconv-cu118\]"'):
+    with pytest.raises(
+        MissingDependencyError, match=r'pip install -e "\.\[(spconv-\w+|<build>)\]"'
+    ):
         sparse.SubMConv3d(3, 4, 3)
     with pytest.raises(MissingDependencyError, match="spconv"):
         sparse.make_tensor(torch.zeros(1, 2), torch.zeros(1, 4, dtype=torch.long), 1)

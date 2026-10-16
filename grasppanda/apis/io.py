@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .inferencer import InputError
+from .inferencer import InputError, plain_folder_advice
 
 __all__ = ["read_depth", "read_intrinsics", "read_mask", "read_points", "read_rgb"]
 
@@ -25,6 +25,8 @@ _PLY_TYPES = {
 
 def _existing(path: str | Path, what: str) -> Path:
     path = Path(path).expanduser()
+    if path.is_dir():
+        raise InputError(f"{what} {path} is a directory; give one file. {plain_folder_advice()}")
     if not path.is_file():
         raise InputError(f"{what} not found: {path}")
     return path

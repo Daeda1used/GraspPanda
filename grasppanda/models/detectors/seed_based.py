@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 import json
+import warnings
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -25,6 +26,7 @@ from typing import Any, Literal
 import torch
 from torch import Tensor
 
+from grasppanda.config.errors import REFUSAL_KINDS, Refusal
 from grasppanda.models.base import (
     Assigner,
     Backbone,
@@ -69,7 +71,15 @@ from grasppanda.structures import (
     Supervision,
 )
 
-__all__ = ["STAGE_REGISTRIES", "SeedGraspDetector", "StageOutputs", "stage_contract_problems"]
+__all__ = [
+    "CONTRACT_RULES",
+    "STAGE_REGISTRIES",
+    "SeedGraspDetector",
+    "StageOutputs",
+    "axis_adapters",
+    "stage_contract_problems",
+    "stage_contract_warnings",
+]
 
 
 @dataclass(eq=False)
@@ -176,6 +186,87 @@ def _yaml(value: Any) -> str:
     return {True: "true", False: "false", None: "null"}.get(value, str(value))
 
 
+Rule = Callable[[Mapping[str, "_Stage"]], Iterator[str]]
+
+
+def _rule(kind: str) -> Callable[[Rule], Rule]:
+    """Declare what a contract rule's refusals are (:data:`REFUSAL_KINDS`).
+
+    A message the rule yields as a plain string gets this kind; a rule whose verdict
+    depends on the case yields a :class:`Refusal` with the kind of that case.
+    """
+    if kind not in REFUSAL_KINDS:
+        raise ValueError(f"unknown refusal kind '{kind}'")
+
+    def declare(function: Rule) -> Rule:
+        function.kind = kind  # type: ignore[attr-defined]
+        return function
+
+    return declare
+
+
+def _seed_scores(stage: _Stage) -> tuple[str, ...]:
+    """The seed scores a stage predicts as configured (``seed_scores_for``, else the
+    class attribute ``seed_scores``)."""
+    reader = getattr(stage.cls, "seed_scores_for", None)
+    if callable(reader):
+        try:
+            return tuple(reader(stage.options))
+        except (LookupError, TypeError, ValueError):
+            pass
+    return tuple(stage.contract("seed_scores", ()) or ())
+
+
+def _without_score(stage: _Stage, score: str) -> Mapping[str, Any] | str | None:
+    """What the stage declares about leaving ``score`` to another stage
+    (``without_seed_score``): the node that neither predicts nor reads it, the reason it
+    cannot as configured, or ``None`` when it has no such option."""
+    reader = getattr(stage.cls, "without_seed_score", None)
+    if not callable(reader):
+        return None
+    try:
+        return reader(stage.options, score)
+    except (LookupError, TypeError, ValueError):
+        return None
+
+
+def _switch(stage: _Stage, node: Mapping[str, Any]) -> str:
+    """The change from a stage to ``node``, as the YAML a user would write."""
+    changed = [f"`type: {node['type']}`"] if node.get("type") != stage.name else []
+    changed += [
+        f"`{key}: {_yaml(value)}`"
+        for key, value in node.items()
+        if key != "type" and stage.option(key) != value
+    ]
+    return " with ".join([*changed[:1], " and ".join(changed[1:])]) if changed[1:] else changed[0]
+
+
+def axis_adapters(emitted: Any, expected: Any, support: Any) -> list[str]:
+    """Registered axis adapters that turn crops with axes ``emitted`` among ``support``
+    into crops with axes ``expected``: groupers that wrap another grouper and declare the
+    axes they read (``inner_axes``), their own (``out_axes``) and the support they share
+    with what they wrap (``support``)."""
+    return [
+        name
+        for name in GROUPERS.names()
+        if getattr(GROUPERS.get(name), "inner_axes", None) == emitted
+        and GROUPERS.get(name).out_axes == expected
+        and GROUPERS.get(name).support == support
+    ]
+
+
+def _adapter_preset(adapter: str) -> str:
+    """`` (preset `name`)`` for the grouper preset of an axis adapter, if there is one."""
+    try:
+        from grasppanda.combine.presets import presets
+
+        names = [p.name for p in presets().get("grouper", {}).values() if p.type == adapter]
+    except Exception:  # presets unreadable: the message names the component alone
+        names = []
+    return f" (preset `{names[0]}`)" if names else ""
+
+
+@_rule("fixed-by-compose")
 def _encoder_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Where the scene features live: backbone ``output`` against proposal ``requires``."""
     backbone, proposal = stages.get("backbone"), stages.get("proposal")
@@ -203,32 +294,79 @@ def _encoder_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
             "a furthest-point subsample."
         )
     else:
-        message += "."
+        yield Refusal(message + ".", "structural")
+        return
     yield message
 
 
+@_rule("fixed-by-compose")
 def _axes_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
-    """Named feature axes: grouper ``out_axes`` against head ``in_axes``."""
+    """Named feature axes: grouper ``out_axes`` against head ``in_axes``.
+
+    An axis is never added or dropped implicitly. Where a registered axis adapter bridges
+    the two (repeat a crop over the depth bins, pool over them), the refusal names it and
+    ``grasppanda compose`` inserts it. A grouper that is itself an axis adapter under the
+    head of the other family has no adapter: that pair contradicts itself.
+    """
     grouper, head = stages.get("grouper"), stages.get("head")
     if grouper is not None and head is not None:
         emitted, expected = grouper.contract("out_axes"), head.contract("in_axes")
         if emitted != expected:
-            yield (
-                f"{grouper.name} emits features with axes {emitted}, but {head.name} expects "
-                f"{expected}. Use a grouper and a head bundle that agree; an axis is never added "
-                f"or squeezed implicitly. Groupers that emit {expected}: "
+            first = f"{grouper.name} emits features with axes {emitted}, but {head.name} expects {expected}."
+            fitting = (
+                f" Groupers that emit {expected}: "
                 f"{_registered(GROUPERS, 'out_axes', lambda value: value == expected)}. Head "
                 f"bundles that expect {emitted}: "
                 f"{_registered(HEADS, 'in_axes', lambda value: value == emitted)}."
             )
+            support = grouper.contract("support")
+            adapters = axis_adapters(emitted, expected, support)
+            if grouper.contract("inner_axes") is not None:
+                yield Refusal(
+                    f"{first} {grouper.name} is itself an axis adapter, made to change the axes "
+                    f"of the crop it wraps to {emitted}: under {head.name} use that crop "
+                    f"without the adapter, or another grouper.{fitting}",
+                    "structural",
+                )
+            elif adapters:
+                adapter = adapters[0]
+                options = ", num_depth: <the head's num_depth>" if "depth" in expected else ""
+                yield (
+                    f"{first} An axis is never added or squeezed implicitly: wrap the grouper "
+                    f"in the axis adapter {adapter}{_adapter_preset(adapter)}, "
+                    f"`{{type: {adapter}{options}, grouper: {{...}}}}`, which `grasppanda "
+                    "compose` inserts, or use a grouper and a head bundle that agree."
+                    f"{fitting}"
+                )
+            else:
+                wrappers = [
+                    f"{name} wraps {GROUPERS.get(name).support}-support crops"
+                    for name in GROUPERS.names()
+                    if getattr(GROUPERS.get(name), "inner_axes", None) == emitted
+                    and GROUPERS.get(name).out_axes == expected
+                ]
+                said = f" ({'; '.join(wrappers)})" if wrappers else ""
+                yield Refusal(
+                    f"{first} No axis adapter turns a {support}-support crop with axes "
+                    f"{emitted} into {expected}{said}: such an adapter is not implemented. Use "
+                    f"a grouper and a head bundle that agree.{fitting}",
+                    "not-implemented",
+                )
     if grouper is not None:
         support = grouper.contract("support")
         if support not in ("seeds", "scene"):
-            yield f"{grouper.name} declares support = {support!r}; it must be 'seeds' or 'scene'."
+            yield Refusal(
+                f"{grouper.name} declares support = {support!r}; it must be 'seeds' or 'scene'.",
+                "structural",
+            )
 
 
+@_rule("structural")
 def _label_format_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
-    """The kind of matched labels: assigner against head bundle and view stage."""
+    """The kind of matched labels: assigner against head bundle and view stage.
+
+    Dense grids (every grasp of a point and view) and compact labels (one) are different
+    supervision; a dense grid cannot be recovered from compact labels."""
     assigner, head, view = stages.get("assigner"), stages.get("head"), stages.get("view")
     if assigner is None:
         return
@@ -252,9 +390,11 @@ def _label_format_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
             )
 
 
+@_rule("fixed-by-compose")
 def _matched_fields_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Optional fields of the matched labels: what a stage reads against what the
-    assigner returns, including the per-seed loss weight."""
+    assigner returns. A field behind an option of the assigner is ``fixed-by-compose``
+    (compose sets the option); a field the assigner never returns is ``structural``."""
     assigner = stages.get("assigner")
     if assigner is None:
         return
@@ -282,59 +422,94 @@ def _matched_fields_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
                 "optional_outputs",
                 lambda value, missing=missing: all(field in (value or {}) for field in missing),
             )
-            yield (
+            yield Refusal(
                 f"{stage.name} reads {_fields(missing)} of the matched labels, which "
-                f"{assigner.name} never returns. Assigners that can: {able}."
+                f"{assigner.name} never returns. Assigners that can: {able}.",
+                "structural",
             )
         if switches:
             fix = " and ".join(f"`{option}: {_yaml(value)}`" for _, option, value in switches)
             yield (
                 f"{stage.name} reads {_fields([field for field, _, _ in switches])} of the "
                 f"matched labels, which {assigner.name} returns only with {fix}. Set "
-                f"{'that option' if len(switches) == 1 else 'those options'} on the assigner."
+                f"{'that option' if len(switches) == 1 else 'those options'} on the assigner "
+                "(`grasppanda compose` does that)."
             )
+
+
+def _seed_weights_warning(stages: Mapping[str, _Stage]) -> Iterator[str]:
+    """A per-seed loss weight next to a stage that does not apply one: that stage trains
+    unweighted. Not a refusal: the model is sound, the weighting is partial."""
+    assigner = stages.get("assigner")
+    if assigner is None:
+        return
+    outputs = assigner.contract("optional_outputs", {})
     if "weight" not in outputs:
         return
     switch = outputs["weight"]
     if switch is not None and assigner.option(switch[0]) not in (_UNKNOWN, switch[1]):
         return
-    ignoring = [
-        stages[slot].name
-        for slot in ("view", "head")
-        if slot in stages and not stages[slot].contract("applies_seed_weights", False)
-    ]
+    produced = assigner.contract("label_format", "dense")
+    ignoring = []
+    for slot in ("view", "head"):
+        stage = stages.get(slot)
+        if stage is None or stage.contract("applies_seed_weights", False):
+            continue
+        readable = stage.contract("label_formats") or (stage.contract("label_format", "dense"),)
+        if produced in readable:  # otherwise refused by the label-format rule
+            ignoring.append(stage.name)
     if ignoring:
         yield (
             f"{assigner.name} returns a loss weight per seed, but {' and '.join(ignoring)} "
-            f"{'does' if len(ignoring) == 1 else 'do'} not apply seed weights, so the weighting "
-            "would silently do nothing there. Use stages that apply it (view stages: "
-            f"{_registered(VIEWS, 'applies_seed_weights', bool)}; head bundles: "
-            f"{_registered(HEADS, 'applies_seed_weights', bool)}) or an assigner without weights."
+            f"{'does' if len(ignoring) == 1 else 'do'} not apply seed weights: "
+            f"{'its loss is' if len(ignoring) == 1 else 'their losses are'} unweighted, so the "
+            "model is weighted only where the other stages apply the weight. Stages that apply "
+            f"it: view stages {_registered(VIEWS, 'applies_seed_weights', bool)}; head bundles "
+            f"{_registered(HEADS, 'applies_seed_weights', bool)}."
         )
 
 
+@_rule("fixed-by-compose")
 def _seed_scores_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
-    """Scores on the seeds: one owner per score, and every score the decoder reads."""
+    """Scores on the seeds: one owner per score, and every score the decoder reads.
+
+    Where the stage that would give up the score has an option to do so (a proposal that
+    predicts graspness only, a decode option of the head that does not read it), the
+    refusal names it and compose sets it; where it has none, the refusal is
+    ``structural``."""
     proposal, view, head = stages.get("proposal"), stages.get("view"), stages.get("head")
-    predicted: dict[str, str] = {}
+    predicted: dict[str, _Stage] = {}
     for stage in (proposal, view):
         if stage is None:
             continue
-        for score in stage.contract("seed_scores", ()):
+        for score in _seed_scores(stage):
             if score not in predicted:
-                predicted[score] = stage.name
+                predicted[score] = stage
                 continue
+            owner = predicted[score]
 
             def without(value: Any, score: str = score) -> bool:
                 return score not in (value or ())
 
-            yield (
-                f"{predicted[score]} and {stage.name} both predict and supervise the '{score}' "
-                "of a seed; a detector needs exactly one owner for it. Keep "
-                f"{predicted[score]} with a view stage that does not predict it "
+            first = (
+                f"{owner.name} and {stage.name} both predict and supervise the '{score}' of a "
+                "seed; a detector needs exactly one owner for it."
+            )
+            others = (
+                f"{owner.name} with a view stage that does not predict it "
                 f"({_registered(VIEWS, 'seed_scores', without)}), or keep {stage.name} with a "
                 f"proposal that does not ({_registered(PROPOSALS, 'seed_scores', without)})."
             )
+            leave = _without_score(owner, score)
+            if isinstance(leave, Mapping):
+                yield (
+                    f"{first} Let {stage.name} own it and {owner.name} leave it: "
+                    f"{_switch(owner, leave)} (`grasppanda compose` does that); or keep {others}"
+                )
+            elif isinstance(leave, str):
+                yield Refusal(f"{first} {leave} Keep {others}", "structural")
+            else:
+                yield Refusal(f"{first} Keep {others}", "structural")
     if head is None or proposal is None or view is None:
         return
     reader = getattr(head.cls, "required_seed_scores", None)
@@ -344,12 +519,26 @@ def _seed_scores_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         def predicts(value: Any) -> bool:
             return all(score in (value or ()) for score in absent)
 
-        yield (
+        first = (
             f"{head.name} as configured reads the seed score {_fields(absent)} when it decodes, "
-            f"but neither {proposal.name} nor {view.name} predicts it. Use a stage that does "
-            f"(proposals: {_registered(PROPOSALS, 'seed_scores', predicts)}; view stages: "
-            f"{_registered(VIEWS, 'seed_scores', predicts)}) or another decode option of the head."
+            f"but neither {proposal.name} nor {view.name} predicts it."
         )
+        stages_that_do = (
+            f"use a stage that does (proposals: {_registered(PROPOSALS, 'seed_scores', predicts)}; "
+            f"view stages: {_registered(VIEWS, 'seed_scores', predicts)})"
+        )
+        decode = _without_score(head, absent[0]) if len(absent) == 1 else None
+        if isinstance(decode, Mapping):
+            yield (
+                f"{first} Set {_switch(head, decode)}, the decode option of the head that does "
+                f"not read it (`grasppanda compose` does that), or {stages_that_do}."
+            )
+        else:
+            yield Refusal(
+                f"{first} {stages_that_do[0].upper()}{stages_that_do[1:]}; the head has no decode "
+                "option without it.",
+                "structural",
+            )
 
 
 @functools.lru_cache(maxsize=64)
@@ -396,6 +585,7 @@ def _encoder_width(backbone: _Stage) -> int | None:
     return _built_width(node)
 
 
+@_rule("not-a-combination")
 def _seed_width_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Width of the seed features: what the encoder returns against what a grouper that
     adds them to its crops was configured for (``Grouper.required_seed_channels``)."""
@@ -416,14 +606,17 @@ def _seed_width_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         if variant
         else "Either "
     )
-    yield (
+    message = (
         f"{grouper.name} as configured adds the seed features to its {required}-channel crop "
         f"features, but {backbone.name} returns {width}-channel features. {projection}give the "
         f"encoder {required} output channels where it has that option, or end the grouper's "
         f"`mlp_channels` on {width}, or set `seed_residual: none`."
     )
+    # With a projected variant compose puts it in; without, two options disagree.
+    yield Refusal(message, "fixed-by-compose") if variant else message
 
 
+@_rule("not-a-combination")
 def _depth_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Size of the depth axis: one crop of the grouper per depth bin of the head."""
     grouper, head = stages.get("grouper"), stages.get("head")
@@ -456,6 +649,7 @@ def _depth_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         )
 
 
+@_rule("not-a-combination")
 def _shared_score_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """One score definition for two stages: a view stage and a head bundle that both
     derive their targets from :mod:`grasppanda.models.heads.friction` must agree on it."""
@@ -474,6 +668,7 @@ def _shared_score_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
             )
 
 
+@_rule("not-a-combination")
 def _angle_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Size of the in-plane angle axis: a view stage that turns the labelled angle bin
     into a rotation target against the angle grid of the head bundle."""
@@ -491,6 +686,7 @@ def _angle_bins_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         )
 
 
+@_rule("not-a-combination")
 def _seed_count_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Number of seeds: a proposal that takes the encoder's sub-sampled points as its
     seeds (``seeds_from_backbone``) against the points the encoder returns per cloud."""
@@ -514,6 +710,7 @@ def _seed_count_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
         )
 
 
+@_rule("not-a-combination")
 def _option_range_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Option values a stage can judge without being built: its ``option_problems``."""
     for stage in stages.values():
@@ -526,6 +723,7 @@ def _option_range_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
             continue  # options the signature check will report
 
 
+@_rule("structural")
 def _loss_terms_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
     """Loss terms: the kind of term a stage hands to a primitive against the kinds the
     primitive fits, and a weight per seed against a primitive that cannot apply one.
@@ -585,7 +783,10 @@ def _loss_terms_rule(stages: Mapping[str, _Stage]) -> Iterator[str]:
                 )
 
 
-_RULES: tuple[Callable[[Mapping[str, _Stage]], Iterator[str]], ...] = (
+#: The contract rules, each with the kind of what it refuses (``rule.kind``, one of
+#: :data:`~grasppanda.config.errors.REFUSAL_KINDS`; a rule whose verdict depends on the
+#: case states the kind of each message).
+CONTRACT_RULES: tuple[Rule, ...] = (
     _encoder_rule,
     _axes_rule,
     _label_format_rule,
@@ -599,6 +800,27 @@ _RULES: tuple[Callable[[Mapping[str, _Stage]], Iterator[str]], ...] = (
     _option_range_rule,
     _loss_terms_rule,
 )
+_RULES = CONTRACT_RULES
+#: Findings that do not refuse a combination but change what it trains.
+_WARNINGS: tuple[Rule, ...] = (_seed_weights_warning,)
+
+
+def _wrapped(stages: Mapping[str, Any]) -> dict[str, _Stage]:
+    unknown = sorted(set(stages) - set(STAGE_REGISTRIES))
+    if unknown:
+        raise ValueError(f"unknown slot(s) {unknown}; slots are {sorted(STAGE_REGISTRIES)}")
+    return {slot: _Stage(slot, component) for slot, component in stages.items()}
+
+
+def stage_contract_warnings(**stages: Any) -> list[str]:
+    """What the given stages would train differently from what their names promise,
+    without being refused: a per-seed loss weight that one of them does not apply.
+
+    Arguments as for :func:`stage_contract_problems`. ``grasppanda compose`` reports these
+    beside its actions, and the detector warns when it is built.
+    """
+    wrapped = _wrapped(stages)
+    return [message for rule in _WARNINGS for message in rule(wrapped)]
 
 
 def stage_contract_problems(**stages: Any) -> list[str]:
@@ -612,16 +834,19 @@ def stage_contract_problems(**stages: Any) -> list[str]:
         stage_contract_problems(grouper={"type": "CylinderGroup"}, head={"type": "OperationHead"})
 
     Returns one message per problem, each naming the conflict and a way out; an empty
-    list means the contracts allow the combination. This is what the config checker
-    runs (:meth:`SeedGraspDetector.check_config`), what the detector runs again on its
-    built stages, and what the compatibility tables of the documentation are generated
-    from.
+    list means the contracts allow the combination. Every message is a
+    :class:`~grasppanda.config.errors.Refusal`: a string that also carries ``kind`` (why it
+    is refused) and ``rule``. This is what the config checker runs
+    (:meth:`SeedGraspDetector.check_config`), what the detector runs again on its built
+    stages, and what the compatibility tables of the documentation are generated from.
     """
-    unknown = sorted(set(stages) - set(STAGE_REGISTRIES))
-    if unknown:
-        raise ValueError(f"unknown slot(s) {unknown}; slots are {sorted(STAGE_REGISTRIES)}")
-    wrapped = {slot: _Stage(slot, component) for slot, component in stages.items()}
-    return [message for rule in _RULES for message in rule(wrapped)]
+    wrapped = _wrapped(stages)
+    found: list[str] = []
+    for rule in CONTRACT_RULES:
+        for message in rule(wrapped):
+            kind = message.kind if isinstance(message, Refusal) else rule.kind  # type: ignore[attr-defined]
+            found.append(Refusal(str(message), kind, rule.__name__.strip("_")))
+    return found
 
 
 class SeedGraspDetector(BaseGraspDetector):
@@ -709,6 +934,10 @@ class SeedGraspDetector(BaseGraspDetector):
         )
         if problems:
             raise ContractError(f"{type(self).__name__}: " + " ".join(problems))
+        for message in stage_contract_warnings(
+            view=self.view, assigner=self.assigner, head=self.head
+        ):
+            warnings.warn(f"{type(self).__name__}: {message}", UserWarning, stacklevel=2)
 
     @classmethod
     def check_config(cls, node: dict[str, Any]) -> Iterator[str]:

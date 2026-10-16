@@ -16,12 +16,12 @@ Samplers are components of their own (:mod:`grasppanda.models.samplers`).
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from itertools import pairwise
 from typing import Any, ClassVar, Literal
 
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 
 from grasppanda.models.base import Loss, Proposal
 from grasppanda.models.samplers.base import Sampler
@@ -38,7 +38,7 @@ from .graspness import GraspnessFPS, PointScores, _offsets
 
 __all__ = ["SampledSeeds", "ScoredSeeds"]
 
-_SELECT_BY = ("graspness_and_objectness", "graspness", "objectness", "product")
+_SELECT_BY = ("graspness_and_objectness", "graspness", "objectness", "product", "graspness_only")
 _TOO_FEW = ("pad", "best_rest")
 
 
@@ -103,6 +103,10 @@ class ScoredSeeds(GraspnessFPS):
             foreground, graspness is only supervised (foreground sampling).
             ``product``: ``s`` = ``P(object) × graspness > graspness_threshold``
             (MultiGraspNet's rule).
+            ``graspness_only``: ``s`` = graspness, candidates have ``s >
+            graspness_threshold``, and objectness is neither predicted nor supervised
+            here: the stage leaves it to a view stage that owns it (ObjectnessViewStage),
+            whose objectness then also rejects background seeds at inference.
         graspness_threshold: See ``select_by``. It belongs to the label definition:
             0.1 suits graspness normalised to ``[0, 1]`` per frame.
         objectness_threshold: Probability above which a point counts as object; 0.5 is
@@ -132,11 +136,53 @@ class ScoredSeeds(GraspnessFPS):
     #: What a sampler inside this proposal can be given besides coordinates.
     sampler_inputs: ClassVar[tuple[str, ...]] = ("scores", "feats")
 
+    @classmethod
+    def seed_scores_for(cls, options: Mapping[str, Any]) -> tuple[str, ...]:
+        """Graspness only with ``select_by: graspness_only``, else both scores."""
+        if options.get("select_by") == "graspness_only":
+            return ("graspness",)
+        return cls.seed_scores
+
+    @classmethod
+    def loss_terms_for(cls, options: Mapping[str, Any]) -> dict[str, str]:
+        """No objectness term when the stage predicts graspness only."""
+        if options.get("select_by") == "graspness_only":
+            return {"graspness_loss": cls.loss_terms["graspness_loss"]}
+        return dict(cls.loss_terms)
+
+    @classmethod
+    def without_seed_score(
+        cls, options: Mapping[str, Any], score: str
+    ) -> Mapping[str, Any] | str | None:
+        """``select_by: graspness_only`` where the selection does not read objectness."""
+        select_by = options.get("select_by", "graspness_and_objectness")
+        if score != "objectness" or select_by == "graspness_only":
+            return None
+        if select_by in ("objectness", "product"):
+            return (
+                f"{cls.__name__} selects its seeds by {select_by} (`select_by: {select_by}`), "
+                "which reads the objectness it predicts, so it cannot leave objectness to the "
+                "view stage."
+            )
+        kept = {key: value for key, value in options.items() if key != "objectness_loss"}
+        return {**kept, "type": cls.__name__, "select_by": "graspness_only"}
+
+    @classmethod
+    def option_problems(cls, options: Mapping[str, Any]) -> list[str]:
+        """An objectness loss on a stage that predicts no objectness would be ignored."""
+        if options.get("select_by") == "graspness_only" and options.get("objectness_loss"):
+            return [
+                f"{cls.__name__} has `select_by: graspness_only`, so it predicts no "
+                "objectness, but `objectness_loss` is set. Remove it: the view stage that owns "
+                "objectness has its own objectness loss."
+            ]
+        return []
+
     def __init__(
         self,
         num_seeds: int = 1024,
         select_by: Literal[
-            "graspness_and_objectness", "graspness", "objectness", "product"
+            "graspness_and_objectness", "graspness", "objectness", "product", "graspness_only"
         ] = "graspness_and_objectness",
         graspness_threshold: float = 0.1,
         objectness_threshold: float = 0.5,
@@ -169,6 +215,10 @@ class ScoredSeeds(GraspnessFPS):
         self.top_fraction = top_fraction
         self.too_few = too_few
         self.sampler = SAMPLERS.build(sampler if sampler is not None else {"type": "FPS"})
+        if select_by == "graspness_only":  # one output, the graspness; no objectness loss
+            self.predicts_objectness = False
+            self.score = nn.Linear(in_channels, 1)
+            self.objectness_loss = None
 
     @classmethod
     def check_config(cls, node: dict[str, Any]) -> Iterator[str]:
@@ -177,7 +227,7 @@ class ScoredSeeds(GraspnessFPS):
     def selection_score(self, scores: PointScores) -> Tensor:
         """``(N,)`` the score that decides; never negative, higher is better."""
         graspness = scores.graspness.detach().clamp(min=0.0)
-        if self.select_by in ("graspness_and_objectness", "graspness"):
+        if self.select_by in ("graspness_and_objectness", "graspness", "graspness_only"):
             return graspness
         is_object = scores.objectness.detach().softmax(dim=-1)[:, 1]
         return is_object if self.select_by == "objectness" else is_object * graspness
@@ -191,6 +241,8 @@ class ScoredSeeds(GraspnessFPS):
                 keep = max(1, round((stop - start) * self.top_fraction))
                 mask[start + decides[start:stop].topk(min(keep, stop - start)).indices] = True
             return mask
+        if scores.objectness is None:  # graspness only
+            return decides > self.graspness_threshold
         is_object = scores.objectness.detach().softmax(dim=-1)[:, 1] > self.objectness_threshold
         if self.select_by == "objectness":
             return is_object
@@ -213,8 +265,7 @@ class ScoredSeeds(GraspnessFPS):
             raise ContractError(
                 f"{name} was built for {self.in_channels}-channel features, got {feats.channels}"
             )
-        prediction = self.score(feats.feats)
-        scores = PointScores(points, prediction[:, :2], prediction[:, 2])
+        scores = self._point_scores(feats, points)
         if seed_index is None:
             index, valid, scores.num_candidates = self._pick(scores, feats.feats.detach())
         else:
@@ -224,10 +275,7 @@ class ScoredSeeds(GraspnessFPS):
         seeds = SeedSet(
             points=points.subset(flat, offsets),
             feats=feats.feats[flat],
-            scores={
-                "graspness": scores.graspness.detach()[flat],
-                "objectness": scores.objectness.detach().softmax(dim=-1)[flat, 1],
-            },
+            scores=self._seed_scores(scores, flat, scores.graspness.detach()),
             valid=valid.reshape(-1),
             source="scored_seeds" if seed_index is None else "replayed",
         )

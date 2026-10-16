@@ -156,6 +156,8 @@ class DecoupledGridHead(HeadBundle):
         "bins with the distribution focal loss of Generalized Focal Loss (Li et al., "
         "NeurIPS 2020)"
     )
+    #: A weight per seed from the assigner weights all four losses.
+    applies_seed_weights = True
     loss_terms: ClassVar[dict[str, str]] = {
         "score_loss": "unit",
         "angle_loss": "class",
@@ -338,24 +340,34 @@ class DecoupledGridHead(HeadBundle):
 
     def loss(self, raw: DecoupledPredictions, matched: MatchedLabels) -> dict[str, Tensor]:
         """Score loss on every cell of the supervised seeds; angle and depth at the best
-        cell; width per depth bin at the best angle."""
+        cell; width per depth bin at the best angle.
+
+        With a weight per seed from the assigner, every loss is the weighted mean over its
+        supervised entries, each entry weighted by its seed, as in ``OperationHead``.
+        """
         targets = self.encode_targets(matched)
         seeds = targets.seed_mask
         score_mask = None if bool(targets.score_mask.all()) else targets.score_mask
         depth_target = targets.depth if self.depth == "class" else (targets.depth + 1).float()
         width, width_target, width_mask = raw.width, targets.width, targets.width_mask
+        weight = matched.weight
+        cells = per_depth = None
+        if weight is not None:
+            cells = weight[:, None, None].expand_as(raw.score)
+            per_depth = weight[:, None].expand_as(width_mask)
         if self.width != "regression":  # one row of logits per (seed, depth bin)
             width = width.reshape(-1, self.width_bins)
             width_target, width_mask = width_target.reshape(-1), width_mask.reshape(-1)
+            per_depth = None if per_depth is None else per_depth.reshape(-1)
             if self.width == "class":
                 width_target = width_target.round().long()
         supervised = seeds.sum().clamp(min=1)
         hit = raw.angle.detach().argmax(dim=-1) == targets.angle
         return {
-            "loss/score": self.score_loss(raw.score, targets.score, score_mask),
-            "loss/angle": self.angle_loss(raw.angle, targets.angle, seeds),
-            "loss/depth": self.depth_loss(raw.depth, depth_target, seeds),
-            "loss/width": self.width_loss(width, width_target, width_mask),
+            "loss/score": self.score_loss(raw.score, targets.score, score_mask, cells),
+            "loss/angle": self.angle_loss(raw.angle, targets.angle, seeds, weight),
+            "loss/depth": self.depth_loss(raw.depth, depth_target, seeds, weight),
+            "loss/width": self.width_loss(width, width_target, width_mask, per_depth),
             "metric/angle_accuracy": (hit & seeds).sum().float() / supervised,
             "metric/graspable_seeds": seeds.float().mean(),
         }

@@ -182,39 +182,56 @@ def test_a_stage_that_reads_a_label_asset_brings_its_dataset_section():
     assert "data" not in own.body and own.config_hash == Config.load(SBG).digest()
     fine = compose(FINEGRASP, ["proposal=graspness-fps"])
     assert "data" not in fine.body  # FineGrasp's instance-normalised graspness stays
-    # Compact labels on a dataset that reads dense grids: the dataset's own check refuses.
-    refused = compose(GSNET, ["assigner=compact-label", "head=economic"])
-    assert not refused.accepted and not refused.problems
-    (issue,) = refused.issues
-    assert issue.path == "data.train.dataset" and "SampleGraspLabels" in issue.message
+    # A compact head with a compact assigner on a recipe of dense grids: the recipe is
+    # rewritten for compact labels (the compact section, without the dense label step).
+    compact = compose(GSNET, ["assigner=compact-label", "head=economic"])
+    assert compact.accepted
+    dataset = compact.body["data"]["train"]["dataset"]
+    assert dataset["compact_labels"]["view_friction_threshold"] == 0.6  # = the view's
+    assert all(step["type"] != "SampleGraspLabels" for step in dataset["transforms"])
 
 
 @pytest.mark.parametrize(
-    ("base", "sets", "fragments"),
+    ("base", "sets", "fragments", "kinds"),
     [
-        (GSNET, ["view=ObjectnessViewStage"], ["both predict and supervise the 'objectness'"]),
-        (GSNET, ["assigner=scale-balanced"], ["do not apply seed weights"]),
-        (GSNET, ["head=economic"], ["must agree on the label set"]),
-        (GSNET, ["grouper=DepthCylinderGroup"], ["SWADHead expects ('seed', 'channel')"]),
-        (BASELINE, ["assigner=NearestLabelAssigner"], ["`supervise: object_seeds`"]),
-        (BASELINE, ["proposal=graspness-fps"], ["both predict and supervise the 'objectness'"]),
-        (SBG, ["view=TemplateViewStage"], ["reads the seed score 'objectness'"]),
+        (GSNET, ["grouper=depth-embed"], ["is itself an axis adapter"], ["structural"]),
+        (
+            BASELINE,
+            ["grouper=voxel-set-abstraction"],
+            ["No axis adapter turns a scene-support crop"],
+            ["not-implemented"],
+        ),
+        (
+            BASELINE,
+            ["proposal=objectness-fps"],
+            ["selects its seeds by objectness"],
+            ["structural"],
+        ),
+        (
+            ECONOMIC,
+            ["view=objectness-view"],
+            ["computes its targets from 'dense' matched labels"],
+            ["structural"],
+        ),
+        (
+            GSNET,
+            ["assigner=compact-label"],
+            ["must agree on the label set"],
+            ["structural", "fixed-by-compose"],
+        ),
     ],
 )
 def test_a_refused_combination_quotes_the_rules_and_writes_nothing(
-    base, sets, fragments, tmp_path, capsys
+    base, sets, fragments, kinds, tmp_path, capsys
 ):
     result = compose(base, sets)
     assert not result.accepted and result.config_hash is None
     for fragment in fragments:
         assert any(fragment in problem for problem in result.problems), result.problems
+    assert result.refusal_kinds() == kinds
     # Every problem is a message of the contract rules on the composed stage set.
-    model = Config.load(base).to_dict()["model"]
+    model = result.merged["model"]
     stages = {slot: model[slot] for slot in STAGE_REGISTRIES}
-    for choice in result.choices:
-        if choice.slot != "backbone":
-            stages[choice.slot] = choice.node
-    stages["backbone"] = result.body["model"].get("backbone", stages["backbone"])
     assert result.problems == list(dict.fromkeys(stage_contract_problems(**stages)))
     target = tmp_path / "refused.yaml"
     arguments = ["compose", base, "-o", str(target)]
@@ -224,6 +241,120 @@ def test_a_refused_combination_quotes_the_rules_and_writes_nothing(
     out = " ".join(capsys.readouterr().out.split())  # the report wraps its paragraphs
     assert not target.exists() and "refused: nothing was written" in out
     assert all(fragment in out for fragment in fragments)
+    assert all(f"[{kind}]" in out for kind in kinds)  # the report says why, kind by kind
+
+
+#: Refusals compose lifts with an adapter or an option (W4.2, W4.4, W4.6): the request,
+#: what compose says it did, and what `--no-adapter` (or a config written without it)
+#: is refused with.
+LIFTED = [
+    (
+        GSNET,
+        ["grouper=depth-ball"],
+        "grouper: wrapped DepthLocalGroup in the axis adapter DepthPoolGroup (preset `depth-pool`)",
+        "wrap the grouper in the axis adapter DepthPoolGroup (preset `depth-pool`)",
+    ),
+    (
+        BASELINE,
+        ["grouper=ball"],
+        "grouper: wrapped LocalGroup in the axis adapter DepthEmbedGroup (preset `depth-embed`)",
+        "wrap the grouper in the axis adapter DepthEmbedGroup (preset `depth-embed`)",
+    ),
+    (
+        SBG,
+        ["view=lattice-view"],
+        "head: score_decode: score_x_tolerance.",
+        "Set `score_decode: score_x_tolerance`, the decode option of the head",
+    ),
+    (
+        BASELINE,
+        ["assigner=NearestLabelAssigner"],
+        "assigner: `supervise: object_seeds` and `view_widths: true`",
+        "returns only with `supervise: object_seeds` and `view_widths: true`",
+    ),
+    (
+        BASELINE,
+        ["proposal=graspness-ffps"],
+        "proposal: select_by: graspness_only.",
+        "Let ObjectnessViewStage own it and ScoredSeeds leave it: `select_by: graspness_only`",
+    ),
+    (
+        GSNET,
+        ["view=objectness-view"],
+        "proposal: ScoredSeeds with select_by: graspness_only",
+        "`type: ScoredSeeds` with `select_by: graspness_only`",
+    ),
+]
+
+
+@pytest.mark.parametrize(("base", "sets", "action", "fix"), LIFTED)
+def test_compose_lifts_what_an_adapter_or_an_option_lifts_and_says_so(base, sets, action, fix):
+    result = compose(base, sets)
+    assert result.accepted, result.refusal()
+    assert any(told.startswith(action) for told in result.actions), result.actions
+    assert result.warnings == []
+    # The composed file loads to the config that was checked; its stages agree.
+    model = result.merged["model"]
+    assert stage_contract_problems(**{slot: model[slot] for slot in STAGE_REGISTRIES}) == []
+    # Without the lift the pair is refused, and the refusal names what compose would do.
+    refused = compose(base, sets, adapters=False)
+    assert not refused.accepted and refused.config_hash is None
+    assert any(fix in problem for problem in refused.problems), refused.problems
+    assert set(refused.refusal_kinds()) == {"fixed-by-compose"}
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("base", "sets"),
+    [
+        (BASELINE, ["grouper=ball"]),  # W4.2, an axis adapter
+        (GSNET, ["assigner=scale-balanced"]),  # W4.3, seed weights in the view and the head
+        (SBG, ["view=lattice-view"]),  # W4.4, the decode option
+        (BASELINE, ["proposal=graspness-fps"]),  # W4.6, graspness only
+        (ECONOMIC, ["head=swad"]),  # W4.5, dense labels on a compact recipe
+        (GSNET, ["head=economic"]),  # W4.5, compact labels on a dense recipe
+    ],
+)
+def test_a_lifted_composition_is_wired_at_the_sizes_of_its_config(base, sets, tmp_path):
+    """The composed file of each lift, at its own sizes, builds, back-propagates and
+    predicts on a synthetic scene (`grasppanda probe --synthetic`)."""
+    import importlib.util
+
+    from grasppanda.combine.probe import probe
+
+    if base in (GSNET, ECONOMIC) and importlib.util.find_spec("spconv") is None:
+        pytest.skip("needs the spconv extra")
+    result = compose(base, sets)
+    assert result.accepted, result.refusal()
+    path = tmp_path / "lifted.yaml"
+    path.write_text(result.text(path), encoding="utf-8")
+    report = probe(path, iters=2, synthetic=True, device="cpu")
+    assert report.verdict == "wired", (report.detail, report.failure)
+
+
+def test_the_refusal_kinds_and_the_warnings_are_in_the_report(capsys, monkeypatch):
+    """W4.1 and W4.7: the JSON report carries the kind of every reason, parallel to
+    `refusal`, and the warnings of an accepted stage set."""
+    assert main(["compose", ECONOMIC, "--set", "assigner=NearestLabelAssigner", "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["refusal"] == [
+        *report["problems"],
+        *(f"{issue['path']}: {issue['message']}" for issue in report["issues"]),
+    ]
+    assert report["refusal_kinds"] == ["structural", "fixed-by-compose"]
+    assert [issue["kind"] for issue in report["issues"]] == ["fixed-by-compose"]
+    assert report["contracts"][4]["kinds"] == ["structural"]  # assigner · head
+    assert report["warnings"] == []
+    # A view stage that cannot apply a weight per seed: accepted, with a warning.
+    from grasppanda.registry import VIEWS
+
+    monkeypatch.setattr(VIEWS.get("TemplateViewStage"), "applies_seed_weights", False)
+    assert main(["compose", GSNET, "--set", "assigner=scale-balanced", "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    (warning,) = report["warnings"]
+    assert "TemplateViewStage does not apply seed weights: its loss is unweighted" in warning
+    assert "Warnings (accepted, but read them):" in report["config"]
+    assert report["refusal"] == report["refusal_kinds"] == []
 
 
 def test_the_bare_component_is_composed_with_its_defaults_and_points_at_the_preset():
@@ -362,29 +493,93 @@ def test_the_encoder_is_given_the_width_a_grouper_fixes():
     assert any("returns 128-channel features" in problem for problem in own.problems)
 
 
-def test_a_recipe_that_does_not_serve_the_labels_is_refused_with_where_to_start():
-    """GSNet's assigner and head on EconomicGrasp's data recipe: accepted by every stage
-    contract, refused by the config check at the dataset, and compose says which shipped
-    recipes serve the labels."""
-    result = compose(ECONOMIC, ["assigner=NearestLabelAssigner", "head=swad"])
-    assert not result.accepted and not result.problems
-    assert not any(verdict.problems for verdict in result.verdicts)
-    (issue,) = result.issues
-    assert issue.path == "data.train.dataset"
-    assert "NearestLabelAssigner reads `supervision.objects`" in issue.message
-    (hint,) = result.hints
-    assert "compose does not rewrite one" in hint and GSNET in hint
-    # Only recipes under which this very request is served: GSNet's has the dense grids
-    # and the graspness the base's proposal reads; GraspNet-baseline's has no graspness.
-    listed = hint.split("this request: ")[1].split(". Compose")[0].split(", ")
-    assert listed and all(name.startswith("gsnet/") for name in listed)
-    assert all(
-        compose(name, ["assigner=NearestLabelAssigner", "head=swad"]).accepted for name in listed
+@pytest.mark.parametrize(
+    ("base", "sets", "labels", "assigner"),
+    [
+        (ECONOMIC, ["head=swad"], "dense", "NearestLabelAssigner"),
+        (FINEGRASP, ["head=decoupled-grid"], "dense", "NearestLabelAssigner"),
+        (ECONOMIC, ["head=operation"], "dense", "NearestLabelAssigner"),
+        (GSNET, ["head=economic"], "compact", "CompactLabelAssigner"),
+    ],
+)
+def test_the_data_recipe_follows_the_label_set_of_the_head(base, sets, labels, assigner):
+    """W4.5: a head bundle of the other label set brings its labels: the dataset section is
+    rewritten after a shipped recipe that serves them, the assigner after a shipped config
+    whose assigner returns them, and the report says both."""
+    result = compose(base, sets)
+    assert result.accepted, result.refusal()
+    dataset = result.merged["dataset"]
+    told = " ".join(result.actions)
+    assert f"labels: {labels}." in told and f"assigner: {assigner}, the assigner of" in told
+    steps = [step["type"] for step in dataset["transforms"]]
+    if labels == "dense":
+        assert dataset.get("compact_labels") is None and "SampleGraspLabels" in steps
+        # The dense step sits before the first step that moves the points, as in GSNet.
+        assert steps.index("SampleGraspLabels") < steps.index("RandomFlip")
+        assert "grasppanda prepare <dataset> --labels" in told
+    else:
+        assert dataset["compact_labels"] and "SampleGraspLabels" not in steps
+        assert "--compact-labels" in told
+    assert result.merged["model"]["assigner"]["type"] == assigner
+    # `--no-adapter` writes nothing on its own: the label sets disagree.
+    refused = compose(base, sets, adapters=False)
+    assert not refused.accepted and "structural" in refused.refusal_kinds()
+    # `--set labels=` asks for it in so many words, also without the automatic changes.
+    asked = compose(base, [*sets, f"labels={labels}"], adapters=False)
+    assert f"--set labels={labels}" in asked.command
+    assert any(
+        action.startswith(f"labels: {labels}. `--set labels={labels}`") for action in asked.actions
     )
-    # The other direction: compact labels on a recipe with dense grids.
-    compact = compose(GSNET, ["assigner=compact-label", "head=economic"])
-    assert not compact.accepted and ECONOMIC in compact.hints[-1] and FINEGRASP in compact.hints[-1]
-    assert GSNET not in compact.hints[-1] and "hggd/" not in compact.hints[-1]
+
+
+def test_a_data_recipe_refusal_that_remains_prints_the_exact_words_that_rewrite_it():
+    """A dense assigner chosen under a compact head stays refused (the label sets differ),
+    and the hint prints the `--set labels=` and the `--unset`/`--opts` it stands for;
+    applied as printed, the data refusal is gone and only the genuine one remains."""
+    result = compose(ECONOMIC, ["assigner=NearestLabelAssigner"])
+    assert not result.accepted
+    assert result.refusal_kinds() == ["structural", "fixed-by-compose"]
+    (data,) = [hint for hint in result.hints if hint.startswith("To make the training data")]
+    assert "`--set labels=dense`" in data
+    words = data.split("which writes `")[1].split("` (the recipe of")[0]
+    assert words.startswith("--unset data.train.dataset.compact_labels --opts ")
+    import shlex
+
+    parts = shlex.split(words)
+    unsets = [parts[1]]
+    overrides = parts[3:]
+    by_hand = compose(ECONOMIC, ["assigner=NearestLabelAssigner"], overrides, unsets=unsets)
+    assert by_hand.refusal_kinds() == ["structural"]  # NearestLabelAssigner vs EconomicHead
+    assert any("the request set the assigner" in hint for hint in result.hints)
+    # The other direction, and a hint per derived asset a bare component reads.
+    compact = compose(GSNET, ["assigner=compact-label"])
+    assert any("`--set labels=compact`" in hint for hint in compact.hints)
+    bare = compose(BASELINE, ["proposal=GraspnessFPS", "view=TemplateViewStage"])
+    assert any(
+        hint.startswith("To serve `point_labels.graspness`: `--opts 'data.train.dataset.graspness=")
+        for hint in bare.hints
+    )
+
+
+def test_unset_puts_an_option_back_to_the_default_of_its_component(tmp_path):
+    result = compose(
+        ECONOMIC, ["head=economic-focal"], unsets=["data.train.dataset.compact_labels"]
+    )
+    assert result.body["data"]["train"]["dataset"]["compact_labels"] is None
+    assert "--unset data.train.dataset.compact_labels" in result.command
+    assert any(
+        action.startswith("unset `data.train.dataset.compact_labels`") for action in result.actions
+    )
+    assert not result.accepted  # the compact head then reads labels nobody serves
+    # The written file says how it was made and composes again to itself.
+    again = compose(GSNET, ["head=swad-focal"], unsets=["model.head.width_loss"])
+    path = tmp_path / "unset.yaml"
+    path.write_text(again.text(path), encoding="utf-8")
+    assert recompose(path).config_hash == again.config_hash
+    with pytest.raises(ComposeError, match="sets nothing there"):
+        compose(GSNET, [], unsets=["data.train.dataset.no_such_key"])
+    with pytest.raises(ComposeError, match="the label set is one of dense, compact"):
+        compose(GSNET, ["labels=sparse"])
 
 
 def test_a_component_named_by_its_type_is_pointed_at_the_preset_with_its_dataset_section():
@@ -393,7 +588,7 @@ def test_a_component_named_by_its_type_is_pointed_at_the_preset_with_its_dataset
     (issue,) = bare.issues
     assert "GraspnessFPS reads `supervision.point_labels['graspness']`" in issue.message
     assert any("`--set proposal=graspness-fps`" in hint for hint in bare.hints)
-    assert len(bare.hints) == 1  # the preset is the whole answer: no other recipe is named
+    assert not any(hint.startswith("Or compose from") for hint in bare.hints)  # none serves all
     # With the preset the section is added, and the same stages are accepted.
     preset = compose(BASELINE, ["proposal=graspness-fps", "view=template-view"])
     assert preset.accepted and "graspness" in preset.body["data"]["train"]["dataset"]
@@ -404,7 +599,7 @@ def test_a_component_named_by_its_type_is_pointed_at_the_preset_with_its_dataset
     histogram = compose(BASELINE, ["assigner=ScaleBalancedAssigner"])
     assert any("`--set assigner=scale-balanced`" in hint for hint in histogram.hints)
     # A request refused by a stage contract alone gets no hint about data.
-    assert compose(GSNET, ["grouper=DepthCylinderGroup"]).hints == []
+    assert compose(GSNET, ["grouper=depth-embed"]).hints == []
 
 
 # -------------------------------------------------------------------- the base config
@@ -485,7 +680,9 @@ def test_the_written_file_says_how_it_was_made_and_composes_again(tmp_path):
     )
     assert f"#   grasppanda compose {BASELINE} \\\n" in text
     assert "#       --set backbone=sparse-unet14 --opts train.epochs=3\n" in text
-    assert max(len(line) for line in text.splitlines() if not line.startswith("  - ")) <= 100
+    # lines naming the output file grow with the temporary directory the test runs in
+    lines = [line for line in text.splitlines() if str(outside) not in line]
+    assert max(len(line) for line in lines if not line.startswith("  - ")) <= 100
     # Outside the config tree the base is an absolute path, so the file works anywhere.
     base = parse_yaml(text)["_base_"]
     assert base == [str(configs_root().resolve() / f"{BASELINE}.yaml")]
@@ -558,9 +755,11 @@ def test_the_command_as_json_and_its_listings(capsys):
     assert report["config_hash"].startswith("c5b4b20c28d3") and report["output"] is None
     assert parse_yaml(report["config"])["model"]["backbone"]["type"] == "FeaturePropagation"
     assert [entry["slots"] for entry in report["contracts"]] == [list(g) for g in CONTRACT_GROUPS]
-    assert main(["compose", GSNET, "--set", "view=ObjectnessViewStage", "--json"]) == 1
+    request = ["compose", GSNET, "--set", "view=ObjectnessViewStage", "--no-adapter", "--json"]
+    assert main(request) == 1
     refused = json.loads(capsys.readouterr().out)
     assert not refused["accepted"] and len(refused["problems"]) == 2
+    assert refused["refusal_kinds"] == ["fixed-by-compose", "fixed-by-compose"]
 
     assert main(["compose", "--list"]) == 0
     listing = capsys.readouterr().out
@@ -616,10 +815,12 @@ def test_the_command_does_not_overwrite_a_file_or_its_own_base(tmp_path, capsys)
     base.write_text(shipped.replace("../_base_/", f"{configs_root()}/_base_/"), encoding="utf-8")
     before = base.read_text(encoding="utf-8")
     assert main(["compose", str(base), "--set", "backbone=ptv3", "-o", str(base), "--force"]) == 2
-    assert "inherit from itself" in capsys.readouterr().err
+    assert "inherit from itself" in " ".join(capsys.readouterr().err.split())  # wrapped
     assert base.read_text(encoding="utf-8") == before
     # A refused request never touches the output, existing or not.
-    assert main(["compose", GSNET, "--set", "head=economic", "-o", str(target), "--force"]) == 1
+    assert (
+        main(["compose", GSNET, "--set", "grouper=depth-embed", "-o", str(target), "--force"]) == 1
+    )
     assert "LitePT" in target.read_text(encoding="utf-8")
 
 
@@ -676,3 +877,14 @@ def test_an_adapter_that_compose_does_not_write_points_to_its_fragment():
         compose(GSNET, ["backbone=image-painted"])
     with pytest.raises(ComposeError, match="compose inserts the adapter"):
         compose(GSNET, ["backbone=feature-propagation"])
+
+
+def test_a_config_that_names_a_shipped_base_counts_its_levels(tmp_path):
+    """A config of one's own may inherit a shipped config by name, from any directory;
+    compose walks its chain as loading does, so it says the chain is too deep instead of
+    writing a config that loading would then refuse."""
+    mine = tmp_path / "mine.yaml"
+    mine.write_text(f"_base_: [{GSNET}.yaml]\ntrain: {{epochs: 2}}\n", encoding="utf-8")
+    Config.load(mine)  # two levels: loads
+    with pytest.raises(ComposeError, match="limited to 2 levels"):
+        compose(mine, ["grouper=multi-scale"])

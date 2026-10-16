@@ -67,8 +67,20 @@ grasps = model.predict(observation)[0]
 print(len(grasps), grasps.to_graspnet_array().shape)   # 64 (64, 17)
 ```
 
-The toy detector is untrained; its grasps are arbitrary. Training, evaluation and
-pretrained models arrive with milestone M1.
+The toy detector is untrained; its grasps are arbitrary.
+
+## 5. Run a real method
+
+Every ported method has a page that runs it in five minutes from the authors' checkpoint:
+where the file is and under which licence, the conversion command, the demo on the
+example scene, the same from Python and in the browser, and a first AP on part of the
+benchmark, each with what it printed when it was measured:
+[GSNet](../methods/gsnet.md#run-in-five-minutes) ·
+[EconomicGrasp](../methods/economicgrasp.md#run-in-five-minutes) ·
+[FineGrasp](../methods/finegrasp.md#run-in-five-minutes) ·
+[GraspNet-baseline](../methods/graspnet_baseline.md#run-in-five-minutes) ·
+[Scale-Balanced-Grasp](../methods/scale_balanced_grasp.md#run-in-five-minutes) ·
+[HGGD](../methods/hggd.md#run-in-five-minutes).
 
 ## Next
 

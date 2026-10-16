@@ -10,6 +10,22 @@
 #
 # Results are always reported for both post-processing variants below. The compact
 # labels do not depend on the camera: both EconomicGrasp configs read the same asset.
+#
+# Every slot of this config and the command that lists the options that fit it, with
+# what was measured for each (also docs/methods/economicgrasp.md):
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list backbone   # model.backbone
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list proposal   # model.proposal
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list view       # model.view
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list assigner   # model.assigner
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list grouper    # model.grouper
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list head       # model.head
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list loss       # model.<stage>.<term>_loss
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list post       # evaluation.variants.post
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list optimizer  # optimizer
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list schedule   # scheduler
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list hooks      # hooks
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list augment    # data.train.dataset.transforms
+#   grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list recipe     # optimizer, scheduler, hooks, transforms
 _base_:
   - ../_base_/models/economicgrasp.yaml
   - ../_base_/datasets/graspnet1b_realsense.yaml
@@ -46,6 +62,7 @@ data:
         - {type: ConstantFeatures, channels: 3}
       keep_full_points: true
 
+# Slot post (a variant `post` beside these): grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list post
 evaluation:
   evaluator: {type: GraspNet1BEvaluator}
   variants:

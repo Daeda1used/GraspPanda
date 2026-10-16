@@ -32,6 +32,17 @@ arbitrary keys would turn typos into silent no-ops.
 Not for the framework core: all operators have pure-PyTorch reference implementations
 and the test-suite runs on CPU. Training a grasp detector does need one.
 
+## Why is `num_workers` refused below my `TMPDIR`?
+
+A data-loader worker hands every batch to the training process through a Unix socket
+that it creates in the temporary directory, and the path of a socket may be at most 107
+bytes long (103 outside Linux). Below a deeper `TMPDIR` the worker cannot create it: it
+prints `OSError: AF_UNIX path too long`, drops the batch, and the loader waits for that
+batch forever. So the loaders of `grasppanda train` and `test` stop at once with the
+reason instead. Point `TMPDIR` to a shorter directory (`TMPDIR=/tmp grasppanda train
+...`) or set `data.train.num_workers=0`. A Python release that falls back to a short
+directory by itself is recognised and not refused.
+
 ## How do I report a bug?
 
 Open an issue and include the output of `grasppanda env` and, for config problems, of

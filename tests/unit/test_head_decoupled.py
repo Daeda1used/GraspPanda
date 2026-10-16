@@ -86,7 +86,7 @@ def test_outputs_follow_the_depth_and_width_options():
     assert raw.depth.shape == (6,) and raw.width.shape == (6, DEPTHS, BINS)
     bundle = head()
     assert bundle.in_axes == ("seed", "channel") and bundle.label_format == "dense"
-    assert bundle.score_kind == "predicted_quality" and not bundle.applies_seed_weights
+    assert bundle.score_kind == "predicted_quality" and bundle.applies_seed_weights
     assert DecoupledGridHead.loss_terms_for({}) == DecoupledGridHead.loss_terms
     assert DecoupledGridHead.loss_terms_for({"depth": "regression", "width": "bins"}) == {
         "score_loss": "unit",

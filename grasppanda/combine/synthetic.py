@@ -387,7 +387,7 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
     from grasppanda.engine.seeding import determinism_restored, seed_everything
     from grasppanda.engine.trainer import total_loss
 
-    from .probe import _count_grasps, _Enough, _fail, _judge, _Recorder, _summarise
+    from .probe import _count_grasps, _Enough, _fail, _judge, _Recorder, _summarise, dead_parts
 
     cfg = _opened(config.resolved(), report.notes)
     target = resolve_device(device or cfg["runtime"]["device"])
@@ -422,6 +422,7 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
                 phase = "backward"
                 total.backward()
                 recorder.note_gradients(model)
+                recorder.note_learning_rate(optimizers)
                 phase = "step"
                 for optimizer in optimizers:
                     optimizer.step()
@@ -432,10 +433,11 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
                 except _Enough:
                     break
             _summarise(report, recorder)
-            if report.no_gradient:
+            dead = dead_parts(report.no_gradient)
+            if dead:
                 phase = "backward"
                 raise RuntimeError(
-                    f"no gradient reached {', '.join(report.no_gradient)} in "
+                    f"no gradient reached {', '.join(dead)} in "
                     f"{report.iterations} iteration(s) on the synthetic scene: a stage before "
                     "it produced nothing to learn from (for example no seed)"
                 )

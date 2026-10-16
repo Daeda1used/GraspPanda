@@ -8,11 +8,18 @@ Loaders are built so that a run can be repeated and resumed exactly:
 * under ``torchrun`` the training sampler gives each process a disjoint share of one
   common shuffle;
 * prediction loaders never shuffle and never pad: process ``r`` of ``R`` reads frames
-  ``r, r + R, ...``, so no frame is predicted twice.
+  ``r, r + R, ...``, so no frame is predicted twice;
+* a loader with workers is refused where its workers could not deliver a batch
+  (:func:`worker_socket_problem`), instead of waiting for the first batch forever.
 """
 
 from __future__ import annotations
 
+import contextlib
+import multiprocessing.util
+import os
+import sys
+import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
@@ -38,6 +45,7 @@ __all__ = [
     "build_predict_loader",
     "build_train_loader",
     "set_epoch",
+    "worker_socket_problem",
 ]
 
 
@@ -56,6 +64,54 @@ def build_dataset(cfg: Mapping[str, Any], section: str) -> BaseDataset:
     return dataset
 
 
+# -------------------------------------------------------------------------- workers
+
+#: Bytes of the path of a Unix socket, the terminating zero included (``sun_path``).
+_SOCKET_PATH_BYTES = 108 if sys.platform.startswith("linux") else 104
+#: What multiprocessing appends to the temporary directory for the socket of a worker.
+_SOCKET_SUFFIX = len("/pymp-XXXXXXXX/listener-XXXXXXXX")
+
+
+def _socket_directory() -> str:
+    """The directory below which multiprocessing creates the sockets of this process."""
+    # Python releases that fall back to /tmp themselves when TMPDIR is too deep for a
+    # socket have this function; it returns the directory they will use.
+    base = getattr(multiprocessing.util, "_get_base_temp_dir", None)
+    if base is not None:
+        with contextlib.suppress(Exception):
+            return str(base(tempfile))
+    return tempfile.gettempdir()
+
+
+def worker_socket_problem() -> str | None:
+    """Why dataloader workers could not deliver a batch to this process, or ``None``.
+
+    A worker hands the tensors of a batch over as shared memory, announced through a Unix
+    socket that it creates below the temporary directory. The path of a socket may not
+    exceed 107 bytes (103 outside Linux). Below a deeper ``TMPDIR`` the hand-over fails in
+    the worker, which prints the error and drops the batch, while the loader goes on
+    waiting for that batch: the run hangs without an error of its own.
+    """
+    if os.name == "nt":  # workers there do not use Unix sockets
+        return None
+    directory = _socket_directory()
+    length = len(os.fsencode(directory)) + _SOCKET_SUFFIX
+    if length < _SOCKET_PATH_BYTES:
+        return None
+    return (
+        f"loader workers hand every batch over through a Unix socket below the temporary "
+        f"directory {directory!r} (TMPDIR), and its path would be {length} bytes long, more "
+        f"than the {_SOCKET_PATH_BYTES - 1} the system allows: no batch would arrive and the "
+        f"run would wait for the first one forever. Point TMPDIR to a shorter directory (for "
+        f"example TMPDIR=/tmp), or set num_workers to 0."
+    )
+
+
+def _check_workers(node: Mapping[str, Any], section: str) -> None:
+    if node["num_workers"] > 0 and (problem := worker_socket_problem()) is not None:
+        raise EngineError(f"data.{section}.num_workers is {node['num_workers']}, but {problem}")
+
+
 # ------------------------------------------------------------------------- training
 
 
@@ -68,6 +124,7 @@ def build_train_loader(
 ) -> DataLoader:
     """Loader of ``data.train``. ``batch_size`` is per process."""
     node, seed = cfg["data"]["train"], cfg["runtime"]["seed"]
+    _check_workers(node, "train")
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.world_size() if world_size is None else world_size,
@@ -143,6 +200,7 @@ def build_predict_loader(
         raise EngineError(
             f"data.{section}.shuffle is true, but prediction reads frames in order. Remove it."
         )
+    _check_workers(node, section)
     return DataLoader(
         dataset,
         batch_size=node["batch_size"],

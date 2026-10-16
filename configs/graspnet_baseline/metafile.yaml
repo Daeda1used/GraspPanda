@@ -20,14 +20,14 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights: &realsense_weights
-      # The authors' checkpoint-rs.tar, to be converted with
-      #   python -m tools.convert_checkpoint ... --source-format graspnet-baseline
+      # The authors' checkpoint-rs.tar, converted with `convert` (the command of README.md).
       # The digest is that of the copy the parity tests ran on (dated 2020-12-22); it has
       # not been compared with a fresh download of the link (the host refused it).
       url: https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view?usp=sharing
       sha256: 60680087c61cba2b6791614fef1519071e294f6dcaf99b3f581bb95f7c51a868
       license: GraspNet-Baseline Software License Agreement (non-commercial research use only)
       source: author
+      convert: "python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth --source-format graspnet-baseline --camera realsense"
     results:
       - provenance: reported
         collision_filter: true

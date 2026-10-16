@@ -15,6 +15,16 @@
 # Results are always reported for both post-processing variants below. The published
 # numbers of this method do not say which one they are; the released test script dumps
 # `cd`.
+#
+# Every slot of this config and the command that lists the options that fit it, with
+# what was measured for each (also docs/methods/hggd.md):
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list image_encoder  # model.image_encoder
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list post           # evaluation.variants.post
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list optimizer      # optimizer
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list schedule       # scheduler
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list hooks          # hooks
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list augment        # data.train.dataset.transforms
+#   grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list recipe         # optimizer, scheduler, hooks, transforms
 _base_:
   - ../_base_/models/hggd.yaml
   - ../_base_/datasets/graspnet1b_realsense_hggd.yaml
@@ -24,6 +34,7 @@ _base_:
 train:
   accumulate: 2                   # two batches of 4 per optimizer step, part of the recipe
 
+# Slot post (a variant `post` beside these): grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list post
 evaluation:
   evaluator: {type: GraspNet1BEvaluator}
   variants:

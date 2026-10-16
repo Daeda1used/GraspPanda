@@ -9,6 +9,22 @@
 # Results are always reported for both post-processing variants below. The numbers of
 # the reference repository are the `cd` variant: its test script filters collisions by
 # default (threshold 0.01 m, voxel 0.01 m).
+#
+# Every slot of this config and the command that lists the options that fit it, with
+# what was measured for each (also docs/methods/graspnet_baseline.md):
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list backbone   # model.backbone
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list proposal   # model.proposal
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list view       # model.view
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list assigner   # model.assigner
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list grouper    # model.grouper
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list head       # model.head
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list loss       # model.<stage>.<term>_loss
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list post       # evaluation.variants.post
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list optimizer  # optimizer
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list schedule   # scheduler
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list hooks      # hooks
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list augment    # data.train.dataset.transforms
+#   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list recipe     # optimizer, scheduler, hooks, transforms
 _base_:
   - ../_base_/models/graspnet_baseline.yaml
   - ../_base_/datasets/graspnet1b_realsense_tolerance.yaml
@@ -23,6 +39,7 @@ data:
     dataset:
       keep_full_points: true
 
+# Slot post (a variant `post` beside these): grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list post
 evaluation:
   evaluator: {type: GraspNet1BEvaluator}
   variants:

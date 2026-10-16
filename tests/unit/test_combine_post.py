@@ -144,6 +144,7 @@ def test_every_post_preset_has_its_cells_or_a_stated_reason():
     names = set(presets()["post"])
     assert set(POST_NOT_PROBED) <= names
     post = list(cells(("post",)))
+    assert set(POST_METHODS) == {*METHODS, *FAMILIES}  # a post-processor needs no network
     assert {(cell.variant, cell.method) for cell in post} == {
         (name, method) for name in names - set(POST_NOT_PROBED) for method in POST_METHODS
     }

@@ -51,8 +51,8 @@ def table_under(page: str, heading: str) -> list[list[str]]:
 CAMERAS = {"realsense": "RealSense", "kinect": "Kinect", "realsense-d435": "RealSense D435"}
 
 
-def expected_rows(protocol: str) -> list[list[str]]:
-    """The lines of a zoo table of author checkpoints, from the metafiles alone.
+def expected_rows(protocol: str, provenance: str = "author-ckpt") -> list[list[str]]:
+    """The lines of a zoo table of one measured provenance, from the metafiles alone.
 
     Per model with a measured row: one line per collision-filter state (off, on) with
     the measured numbers, the reported numbers of that state beside them and measured
@@ -62,15 +62,15 @@ def expected_rows(protocol: str) -> list[list[str]]:
     lines = []
     for meta in METAFILES:
         for model in meta.models:
-            rows = {"author-ckpt": {}, "reported": {}}
+            rows = {provenance: {}, "reported": {}}
             for result in model.results:
                 if result.provenance in rows:
                     rows[result.provenance].setdefault(result.collision_filter, []).append(result)
-            if model.protocol != protocol or not rows["author-ckpt"]:
+            if model.protocol != protocol or not rows[provenance]:
                 continue
             head = [meta.method, CAMERAS[model.camera]]
             for state, word in ((False, "off"), (True, "on")):
-                measured = rows["author-ckpt"].get(state, [])
+                measured = rows[provenance].get(state, [])
                 reported = rows["reported"].get(state, [])
                 assert len(measured) <= 1 and len(reported) <= 1, model.name
                 if not measured and not reported:
@@ -85,16 +85,20 @@ def expected_rows(protocol: str) -> list[list[str]]:
 
 
 @pytest.mark.parametrize(
-    ("heading", "protocol"),
+    ("heading", "protocol", "provenance"),
     [
-        ("## Authors' checkpoints scored by this toolbox", "graspnet1b-sv-v1"),
-        ("## GraspClutter6D transfers", "graspclutter6d-sv-v1"),
+        ("## Trained and evaluated here", "graspnet1b-sv-v1", "reproduced"),
+        ("## Authors' checkpoints scored by this toolbox", "graspnet1b-sv-v1", "author-ckpt"),
+        ("## GraspClutter6D transfers", "graspclutter6d-sv-v1", "author-ckpt"),
+        ("### The model trained here, on GraspClutter6D", "graspclutter6d-sv-v1", "reproduced"),
     ],
 )
-def test_the_zoo_page_shows_exactly_the_measured_rows_of_the_metafiles(heading, protocol):
+def test_the_zoo_page_shows_exactly_the_measured_rows_of_the_metafiles(
+    heading, protocol, provenance
+):
     page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
     shown = table_under(page, heading)
-    expected = expected_rows(protocol)
+    expected = expected_rows(protocol, provenance)
     missing = [line for line in expected if line not in shown]
     extra = [line for line in shown if line not in expected]
     assert not missing and not extra, (
@@ -153,17 +157,81 @@ def test_the_transfer_differences_stated_in_prose_are_those_of_the_metafiles():
                     assert distance in section, (meta.method, state, distance)
 
 
-def test_no_page_calls_an_author_checkpoint_a_reproduction():
-    reproduced = [row for row in MEASURED if row[2].provenance == "reproduced"]
+def test_the_whole_split_table_of_the_transfer_guide_is_that_of_the_metafiles():
+    guide = (REPO / "docs" / "user_guides" / "cross_dataset.md").read_text(encoding="utf-8")
+    section = guide[guide.index("## The whole test split") : guide.index("## Checking a run")]
+    transfers = {
+        numbers_text(result)
+        for meta, model, result in MEASURED
+        if model.protocol == "graspclutter6d-sv-v1"
+    }
+    reported = {
+        numbers_text(result)
+        for meta in METAFILES
+        for model in meta.models
+        for result in model.results
+        if model.protocol == "graspclutter6d-sv-v1" and result.provenance == "reported"
+    }
+    shown = set(re.findall(r"\d+\.\d\d / \d+\.\d\d / \d+\.\d\d", section))
+    assert transfers <= shown, f"measured transfers missing: {sorted(transfers - shown)}"
+    assert shown <= transfers | reported, (
+        f"not in a metafile: {sorted(shown - transfers - reported)}"
+    )
+
+
+#: How the zoo tables of the READMEs and of the "Targets" write the collision filter.
+FILTER_WORDS = {"off": False, "on": True, "关": False, "开": True}
+
+
+def reproduced_by_target() -> dict[tuple[str, bool], str]:
+    """``(method, collision filter)`` -> numbers of every GraspNet-1Billion reproduced row."""
+    return {
+        (meta.method, result.collision_filter): numbers_text(result)
+        for meta, model, result in MEASURED
+        if result.provenance == "reproduced" and model.protocol == "graspnet1b-sv-v1"
+    }
+
+
+@pytest.mark.parametrize(
+    ("page", "heading"),
+    [
+        ("docs/model_zoo.md", "## Targets"),
+        ("README.md", "## 🏆 Model zoo"),
+        ("README_zh-CN.md", "## 🏆 Model zoo"),
+    ],
+)
+def test_the_reproduced_column_of_the_targets_shows_exactly_the_reproduced_rows(page, heading):
+    """A target line shows the reproduced numbers of its method and filter, and only those."""
+    expected = reproduced_by_target()
+    shown = {}
+    for cells in table_under((REPO / page).read_text(encoding="utf-8"), heading):
+        method = cells[0].split(" (")[0]
+        state = FILTER_WORDS.get(cells[-3])  # the column before "Reported"
+        if cells[-1] != "—":
+            shown[(method, state)] = cells[-1]
+    assert shown == expected, f"{page}: the last column of the targets"
+
+
+def test_the_zoo_page_says_how_each_reproduction_stands_against_the_admission_rule():
     page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
-    readme = (REPO / "README.md").read_text(encoding="utf-8")
-    chinese = (REPO / "README_zh-CN.md").read_text(encoding="utf-8")
-    if reproduced:
-        return  # the first reproduction rewrites these sentences; nothing to pin any more
-    assert "No method has been trained and evaluated here to the admission rule yet" in page
-    assert "they are not reproductions" in page
-    assert "Nothing has been certified yet" in readme and "not reproductions" in readme
-    assert "目前还没有任何方法通过认证" in chinese and "不是复现" in chinese
-    # the "Reproduced" column of the targets stays empty until a reproduced row exists
-    for cells in table_under(page, "## Targets"):
-        assert cells[-1] == "—", cells
+    assert "Gate: `|reproduced − reported| ≤ 1.0 AP` on each of seen / similar / novel" in page
+    assert "No method has been trained and evaluated here" not in page
+    assert "provenance `author-ckpt`; they are not reproductions" in page
+    section = page[page.index("## Trained and evaluated here") : page.index("## Authors'")]
+    for meta, model, result in MEASURED:
+        if result.provenance != "reproduced" or model.protocol != "graspnet1b-sv-v1":
+            continue
+        reported = [
+            r
+            for r in model.results
+            if r.provenance == "reported" and r.collision_filter is result.collision_filter
+        ]
+        outside = reported and any(
+            abs(result.ap[split] - reported[0].ap[split]) > 1.0 for split in result.ap
+        )
+        if outside:  # the page names the gate and says what is known about the gap
+            assert "**Against the admission gate.**" in section, meta.method
+        if not model.weights.published:
+            assert "**The weights are not published yet.**" in section, meta.method
+            opening = " ".join(page[: page.index("## Admission gate")].split())
+            assert "weights are not published yet" in opening, meta.method

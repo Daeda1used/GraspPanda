@@ -98,6 +98,8 @@ def test_depth_must_be_a_depth_image(tmp_path):
         io.read_depth(tmp_path / "colour.png")
     with pytest.raises(InputError, match="depth image not found"):
         io.read_depth(tmp_path / "none.png")
+    with pytest.raises(InputError, match="is a directory; give one file. No reader for a plain"):
+        io.read_depth(tmp_path)
     np.save(tmp_path / "metres.npy", np.full((4, 5), 0.5, dtype=np.float32))
     assert io.read_depth(tmp_path / "metres.npy").dtype == np.float32
 

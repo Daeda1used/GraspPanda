@@ -1,8 +1,13 @@
 # Model zoo
 
-No method has been trained and evaluated here to the admission rule yet, so nothing is
-certified and the zoo holds no weights of its own. What has been measured so far is how
-the weights **released by the authors** score in this toolbox: see
+One method has been trained and evaluated here: **GSNet**, trained from scratch with the
+recipe of its config and scored on the whole test splits of GraspNet-1Billion and
+GraspClutter6D, provenance `reproduced` (see
+[Trained and evaluated here](#trained-and-evaluated-here)). Its weights are not published
+yet, so the zoo cannot download them. It does not meet the admission rule below: it is
+above the paper by more than 1 AP on every split; the gap and what is known about it are
+stated with its numbers. Every other measured number is how the weights
+**released by the authors** score in this toolbox: see
 [Authors' checkpoints scored by this toolbox](#authors-checkpoints-scored-by-this-toolbox)
 and [GraspClutter6D transfers](#graspclutter6d-transfers). Those numbers have the
 provenance `author-ckpt`; they are not reproductions.
@@ -50,14 +55,20 @@ values. Run again, it changes nothing and says whether the metafile states the r
 The table lines of this page and of the method's README are then written by hand; the
 tests name the lines that are missing.
 
+While the metafile has no weights entry for the model, say what the weights are with
+`--provenance author-ckpt` or `--provenance reproduced`; the tool then prints the entry to
+complete. Weights trained here may
+be listed before they are published: the entry then has `url: null`, `license: null` and a
+short `note` saying that they are not published yet, beside their sha256.
+
 ## Targets
 
 Author-reported AP on GraspNet-1Billion, RealSense, seen / similar / novel.
 
 | Method | Collision filter | Reported | Reproduced |
 |---|:---:|---|:---:|
-| GSNet (ICCV 2021) | off | 65.70 / 53.75 / 23.98 | — |
-| GSNet (ICCV 2021) | on | 67.12 / 54.81 / 24.31 | — |
+| GSNet (ICCV 2021) | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| GSNet (ICCV 2021) | on | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | EconomicGrasp (ECCV 2024) | off | 68.21 / 61.19 / 25.48 | — |
 | HGGD (RA-L 2023), "In paper" row of its README | unstated | 59.36 / 51.20 / 22.17 | — |
 | HGGD (RA-L 2023), "In repo" row and arXiv version | unstated | 64.45 / 53.59 / 24.59 | — |
@@ -65,6 +76,42 @@ Author-reported AP on GraspNet-1Billion, RealSense, seen / similar / novel.
 | Scale-Balanced-Grasp (CoRL 2022) | on | 63.83 / 58.46 / 24.63 | — |
 | FineGrasp (arXiv 2025) | off | 71.67 / 62.83 / 27.40 | — |
 | FineGrasp (arXiv 2025) | on | 73.71 / 64.56 / 28.14 | — |
+
+## Trained and evaluated here
+
+GraspNet-1Billion, protocol `graspnet1b-sv-v1`: the whole test split, 90 scenes and
+23,040 frames of the RealSense, all scored. AP in percent on seen / similar / novel.
+
+`reproduced` is a model trained from scratch by this toolbox with the recipe of its
+config and scored through `grasppanda test`: `off` is the prediction as emitted (variant
+`raw`), `on` the model-free collision filter of the reference (variant `cd`). The
+workspace crop is derived from the ground-truth segmentation, as in the reference
+(`gt_assisted: workspace`). The training run is described in `configs/gsnet/README.md`.
+
+| Method | Camera | Collision filter | `reproduced` | `reported` | `reproduced` − `reported` |
+|---|---|:---:|---|---|---|
+| GSNet | RealSense | off | 68.83 / 60.35 / 25.20 | 65.70 / 53.75 / 23.98 | +3.13 / +6.60 / +1.22 |
+| GSNet | RealSense | on | 71.23 / 62.29 / 26.42 | 67.12 / 54.81 / 24.31 | +4.11 / +7.48 / +2.11 |
+
+- **Against the admission gate.** The gate asks for at most 1.0 AP between `reproduced`
+  and `reported` on each split. GSNet is above the paper by more than that on every
+  split, most on similar, and the gap is not explained. What is known: this
+  implementation equals the public reference implementation stage by stage, including
+  every loss term of a recorded training batch, so its training step is the reference's;
+  a model trained independently with the reference code, on a modified graspness label
+  set, also scores above the paper; and the paper's numbers come from the authors'
+  original code, which is not public. No
+  `author-ckpt` number stands beside it: the file released with the reference code does
+  not reach the paper's numbers in either implementation (`configs/gsnet/README.md`).
+- **One run.** One training run with one seed, scored once. A training with the
+  unmodified reference code was not run here, and the spread over seeds was not measured.
+- **The weights are not published yet.** They were trained on GraspNet-1Billion (CC
+  BY-NC-SA 4.0), and whether and where they are published has not been decided. The
+  metafile lists them with their sha256 and no url, so the zoo, `GraspInferencer` and
+  `grasppanda demo` say that they are not published instead of downloading anything; the
+  training log and the run snapshot are not published either.
+- The same model on GraspClutter6D is in
+  [The model trained here, on GraspClutter6D](#the-model-trained-here-on-graspclutter6d).
 
 ## Authors' checkpoints scored by this toolbox
 
@@ -124,10 +171,11 @@ What to know when reading it:
 - **The differences are stated, not explained, here.** Each method's README
   (`configs/<method>/README.md`, section "Results") says for every difference what was
   investigated and what was not.
-- **Not scored.** GSNet, whose reference is a third-party implementation and for which
-  no checkpoint of the authors has been scored: its first row will be the model trained
-  here. GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp have a row for RealSense
-  only.
+- **Not scored.** GSNet: the file released with its reference, a third-party
+  implementation, is no reference for the benchmark (`configs/gsnet/README.md`), so its
+  rows are those of the model trained here, in
+  [Trained and evaluated here](#trained-and-evaluated-here). GraspNet-baseline,
+  Scale-Balanced-Grasp and FineGrasp have a row for RealSense only.
 
 ## GraspClutter6D transfers
 
@@ -166,7 +214,21 @@ has no row for HGGD.
   above; `on` is 0.58 above). Whether the paper applied a collision filter for some
   methods and not for others was not investigated and cannot be read from the paper.
 - **One run each**, with seed 0, as above.
-- **No line yet**: GSNet, for which no checkpoint of the authors has been scored; the
-  transfer of the model trained here enters with that model. Everything else on that
-  page of the user guide (other cameras, other crops, the Kinect weights) was measured
-  on the 24-scene subset and is not a benchmark number.
+- **GSNet** has no line here, because no checkpoint of its authors has been scored; the
+  model trained here has a table of its own, below. Everything else on that page of the
+  user guide (other cameras, other crops, the Kinect weights) was measured on the
+  24-scene subset and is not a benchmark number.
+
+### The model trained here, on GraspClutter6D
+
+The GSNet model of [Trained and evaluated here](#trained-and-evaluated-here), on the same
+whole test split, the same crop (`gt_assisted: workspace`) and the same two variants as
+the lines above. AP / AP0.8 / AP0.4 in percent. The GraspClutter6D paper reports no GSNet
+number, so nothing stands beside it.
+
+| Method | Camera | Collision filter | `reproduced` | `reported` | `reproduced` − `reported` |
+|---|---|:---:|---|---|---|
+| GSNet | RealSense D435 | off | 25.58 / 31.38 / 19.42 | — | — |
+| GSNet | RealSense D435 | on | 26.87 / 33.00 / 20.04 | — | — |
+
+One training run with one seed, as on GraspNet-1Billion.

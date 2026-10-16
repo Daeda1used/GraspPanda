@@ -1,11 +1,13 @@
 # Training recipe of the Graspness reference implementation
 # (graspnet/graspness_unofficial @ b5abf5a, train.py): Adam, lr 1e-3, no weight decay,
 # learning rate multiplied by 0.95 after every epoch, 10 epochs.
+# options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list optimizer
 optimizer:
   type: Adam
   lr: 1e-3
   weight_decay: 0.0
 
+# options of this slot, measured: grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list schedule
 scheduler:
   type: ExponentialLR
   gamma: 0.95

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from grasppanda.cli.main import PLANNED, main
 from grasppanda.config import parse_yaml
@@ -164,19 +165,21 @@ def test_resume_flag_continues_the_run(tmp_path, capsys):
     ]
     assert main(["train", TOY, *work, *opts, "train.epochs=1"]) == 0
     capsys.readouterr()
+    (first,) = tmp_path.iterdir()
     assert main(["train", TOY, *work, "--resume", *opts, "train.epochs=3"]) == 1  # another config
     assert "different experiment" in capsys.readouterr().err
     extended = [*opts, "train.epochs=3", "runtime.allow_config_mismatch=true"]
     assert main(["train", TOY, *work, "--resume", *extended]) == 0
     out = capsys.readouterr().out
-    assert "resumed" in out and "✓ trained epochs 2-3" in out
-    (run,) = tmp_path.iterdir()
-    assert sorted(p.name for p in (run / "checkpoints").iterdir()) == [
-        f"epoch_000{n}.pth" for n in (1, 2, 3)
+    assert "resumed" in out and "✓ trained epochs 2-3" in out and "in a new run directory" in out
+    (second,) = set(tmp_path.iterdir()) - {first}  # training longer is another experiment
+    assert [p.name for p in (first / "checkpoints").iterdir()] == ["epoch_0001.pth"]
+    assert sorted(p.name for p in (second / "checkpoints").iterdir()) == [
+        f"epoch_000{n}.pth" for n in (2, 3)
     ]
 
 
-def test_infer_points_the_reader_at_a_directory(tmp_path):
+def test_infer_points_the_reader_at_a_directory(tmp_path, capsys):
     """``--input DIR`` becomes ``data.<split>.dataset.root=DIR``; a reader without ``root`` says so."""
     from grasppanda.cli import infer
 
@@ -185,3 +188,24 @@ def test_infer_points_the_reader_at_a_directory(tmp_path):
     parser_args.config, parser_args.input = TOY, str(tmp_path)
     assert infer.overrides(parser_args) == [f'data.test.dataset.root="{tmp_path}"']
     assert main(["infer", TOY, "--input", str(tmp_path)]) == 2  # ToyScenes has no `root`
+    err = capsys.readouterr().err
+    assert "✗ InputError: --input" in err and "ToyScenes, has no `root` parameter" in err
+    assert f"grasppanda demo {TOY} --weights <file> --depth FILE --intrinsics" in err
+
+
+def test_infer_refuses_a_plain_folder_and_says_what_to_do_instead(tmp_path, capsys):
+    """A reader with `root` pointed at a folder of camera frames: an InputError, no traceback."""
+    folder = tmp_path / "mydata"
+    folder.mkdir()
+    Image.fromarray(np.zeros((4, 5), dtype=np.uint16)).save(folder / "0000.png")
+    (folder / "intrinsics.txt").write_text("925 925 640 360\n")
+    config = "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e"
+    command = ["infer", config, "--weights", "w.pth", "--input", str(folder)]
+    assert main([*command, "--output", str(tmp_path / "out")]) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("✗ InputError: --input") and "Traceback" not in err
+    assert "GraspNet1B, reads a directory as the root of a GraspNet-1Billion tree" in err
+    assert "scenes/scene_0100/realsense/meta/0000.mat" in err  # what the reader looked for
+    assert "No reader for a plain folder of frames" in err
+    assert f"grasppanda demo {config} --weights w.pth --depth FILE --intrinsics" in err
+    assert not (tmp_path / "out").exists()  # refused before a run directory was made

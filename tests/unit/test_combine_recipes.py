@@ -228,13 +228,17 @@ def test_every_recipe_preset_composes_under_the_methods_it_is_probed_under():
     assert set(RECIPE_ENCODER_PRESETS) | set(RECIPE_REQUIRES) <= {
         f"{preset.slot}/{preset.name}" for preset in every_recipe()
     }
-    # Refused by a rule of the config check, which is their recorded outcome.
-    refused = {
-        "recipe/GSNet/hooks/amp",
-        "recipe/HGGD/hooks/amp",
-        "recipe/HGGD/augment/jitter",
-        "recipe/HGGD/augment/shift",
-    }
+    # Under every method a preset applies to; HGGD has no scene encoder of the skeleton.
+    every = {cell.method for cell in members}
+    for preset in every_recipe():
+        key = f"{preset.slot}/{preset.name}"
+        under = {cell.method for cell in members if cell.id.endswith(f"/{key}")}
+        assert under == (every - {"HGGD"} if key in RECIPE_ENCODER_PRESETS else every), key
+    # Refused by a rule of the config check, which is their recorded outcome: no shipped
+    # detector declares its loss ready for mixed precision, and HGGD refuses two of the
+    # point augmentations.
+    refused = {f"recipe/{method}/hooks/amp" for method in every}
+    refused |= {"recipe/HGGD/augment/jitter", "recipe/HGGD/augment/shift"}
     for cell in members:
         result = compose(cell.base, list(cell.sets))
         assert result.accepted == (cell.id not in refused), (cell.id, result.refusal())

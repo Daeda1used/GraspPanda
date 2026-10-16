@@ -217,13 +217,33 @@ class Proposal(nn.Module):
 
     requires: ClassVar[Literal["dense", "subsampled", "any"]] = "any"
     #: Per-seed scores the stage predicts, supervises and stores in ``SeedSet.scores``.
-    #: Two stages of one detector may not predict the same score.
+    #: Two stages of one detector may not predict the same score. A stage whose scores
+    #: depend on its options says so in :meth:`seed_scores_for`.
     seed_scores: ClassVar[tuple[str, ...]] = ()
     #: Loss option → kind of term (see :class:`Loss`); an undeclared option is not checked.
     loss_terms: ClassVar[Mapping[str, str]] = {}
     #: Fields of the training supervision the stage's loss reads; see
     #: :attr:`BaseGraspDetector.needs_supervision`.
     needs_supervision: ClassVar[Mapping[str, tuple[str, Any] | None]] = {}
+
+    @classmethod
+    def seed_scores_for(cls, options: Mapping[str, Any]) -> tuple[str, ...]:
+        """The seed scores a stage configured with ``options`` predicts."""
+        return cls.seed_scores
+
+    @classmethod
+    def without_seed_score(
+        cls, options: Mapping[str, Any], score: str
+    ) -> Mapping[str, Any] | str | None:
+        """How a stage configured with ``options`` leaves ``score`` to another stage.
+
+        A config node (with its ``type``) of the stage that does not predict it, which
+        ``grasppanda compose`` puts in when the view stage owns the score; a sentence saying
+        why it cannot as configured; or ``None`` when it has no such option. The contract
+        rules name what is returned, so the default (``None``) is what a stage says that
+        has never been asked.
+        """
+        return None
 
 
 @VIEWS.base
@@ -247,6 +267,11 @@ class ViewStage(nn.Module):
     applies_seed_weights: ClassVar[bool] = False
     loss_terms: ClassVar[Mapping[str, str]] = {}
     needs_supervision: ClassVar[Mapping[str, tuple[str, Any] | None]] = {}
+
+    @classmethod
+    def seed_scores_for(cls, options: Mapping[str, Any]) -> tuple[str, ...]:
+        """The seed scores a stage configured with ``options`` predicts."""
+        return cls.seed_scores
 
 
 @GROUPERS.base
@@ -333,6 +358,15 @@ class HeadBundle(nn.Module):
         first evaluation.
         """
         return ()
+
+    @classmethod
+    def without_seed_score(
+        cls, options: Mapping[str, Any], score: str
+    ) -> Mapping[str, Any] | str | None:
+        """The config node of a bundle configured with ``options`` whose decoder does not
+        read ``score``, a sentence saying why there is none, or ``None`` when the bundle
+        has no such option; see :meth:`Proposal.without_seed_score`."""
+        return None
 
 
 @LOSSES.base

@@ -110,6 +110,8 @@ class SWADHead(HeadBundle):
     score_kind = "predicted_quality"
     status = "tested"
     source = "GSNet (Wang et al., ICCV 2021)"
+    #: A weight per seed from the assigner weights every cell of that seed in both losses.
+    applies_seed_weights = True
     loss_terms: ClassVar[dict[str, str]] = {"score_loss": "unit", "width_loss": "value"}
 
     @classmethod
@@ -217,12 +219,19 @@ class SWADHead(HeadBundle):
     # ------------------------------------------------------------------------ loss
 
     def loss(self, raw: SWADPredictions, matched: MatchedLabels) -> dict[str, Tensor]:
-        """Score loss on supervised seeds; width loss where the score target is positive."""
+        """Score loss on supervised seeds; width loss where the score target is positive.
+
+        With a weight per seed from the assigner (Scale-Balanced-Grasp's), both losses are
+        the weighted mean over their supervised cells, every cell weighted by its seed, as
+        in ``OperationHead``.
+        """
         targets = self.encode_targets(matched)
         score_mask = None if bool(targets.score_mask.all()) else targets.score_mask
+        weight = getattr(matched, "weight", None)
+        cells = None if weight is None else weight[:, None, None].expand_as(raw.score)
         return {
-            "loss/score": self.score_loss(raw.score, targets.score, score_mask),
-            "loss/width": self.width_loss(raw.width, targets.width, targets.width_mask),
+            "loss/score": self.score_loss(raw.score, targets.score, score_mask, cells),
+            "loss/width": self.width_loss(raw.width, targets.width, targets.width_mask, cells),
         }
 
     # ---------------------------------------------------------------------- decode

@@ -510,13 +510,14 @@ def _sparse_conv(conv: nn.Module, tensor: Any) -> Any:
     the bias is added afterwards. Neither changes the result.
 
     The CPU path first asks the sparse facade whether the installed spconv can be trusted
-    on the CPU at all (one comparison per process; the CPU-only wheel is wrong with more
-    than one OpenMP thread).
+    on the CPU at all (one comparison per process). Loading the facade's backend also
+    makes the CPU-only wheel, which is wrong with more than one thread, convolve CPU
+    tensors on one thread, the library's own layers included.
     """
     if tensor.features.is_cuda:
         return conv(tensor)
     check_cpu_convolution()
-    native = require("spconv.core", extra="spconv-cu118", purpose="PTv3").ConvAlgo.Native
+    native = require("spconv.core", extra="spconv", purpose="PTv3").ConvAlgo.Native
     configured = conv.algo, conv.training
     conv.algo, conv.training = native, True
     try:
@@ -573,7 +574,7 @@ class _PTv3(Backbone):
     ) -> None:
         super().__init__()
         name = type(self).__name__
-        spconv = require("spconv.pytorch", extra="spconv-cu118", purpose=name)
+        spconv = require("spconv.pytorch", extra="spconv", purpose=name)
         stages = len(enc_depths)
         if in_channels < 1:
             raise ValueError(f"{name} needs at least one input feature channel per point")
@@ -711,7 +712,7 @@ class _PTv3(Backbone):
     def _spconv(self) -> Any:
         # Looked up on use instead of stored: a module object as an attribute would make
         # the model impossible to deep-copy or pickle.
-        return require("spconv.pytorch", extra="spconv-cu118", purpose=type(self).__name__)
+        return require("spconv.pytorch", extra="spconv", purpose=type(self).__name__)
 
     def _init_weights(self, module: nn.Module) -> None:
         if isinstance(module, (nn.Linear, self._spconv.SubMConv3d)):

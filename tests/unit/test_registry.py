@@ -7,6 +7,7 @@ import sys
 
 import pytest
 
+from grasppanda import registry as registry_module
 from grasppanda.registry import (
     BACKBONES,
     HEADS,
@@ -14,6 +15,7 @@ from grasppanda.registry import (
     BuildError,
     Registry,
     RegistryError,
+    all_registries,
     registry_for,
 )
 from grasppanda.utils.imports import MissingDependencyError, require
@@ -23,8 +25,32 @@ from .conftest import TBackbone
 _counter = itertools.count()
 
 
+@pytest.fixture(autouse=True)
+def _forget_throwaway_registries():
+    """Every registry is recorded in a table of the process; the ones a test makes are
+    taken out of it again (with the base classes they declared), so that a later test
+    sees only the toolbox's own slots. Bases that the toolbox's registries learn while a
+    test imports their modules stay."""
+    before = set(registry_module._REGISTRIES)
+    yield
+    made = [r for name, r in registry_module._REGISTRIES.items() if name not in before]
+    for registry in made:
+        del registry_module._REGISTRIES[registry.name]
+    for cls, owner in list(registry_module._BASES.items()):
+        if any(owner is registry for registry in made):
+            del registry_module._BASES[cls]
+
+
 def fresh(**kwargs) -> Registry:
     return Registry(f"TEST_{next(_counter)}", **kwargs)
+
+
+def test_a_throwaway_registry_is_forgotten_after_its_test():
+    """Without the fixture above, the catalogue test fails when it runs after this file."""
+    names = [registry.name for registry in all_registries().values()]
+    assert not [name for name in names if name.startswith("TEST_")]
+    fresh()
+    assert any(name.startswith("TEST_") for name in all_registries())
 
 
 def test_register_and_get():
@@ -125,9 +151,50 @@ def test_modules_below_the_location_are_imported_lazily(tmp_path, monkeypatch):
 
 
 def test_missing_optional_dependency_says_how_to_install_it():
-    with pytest.raises(MissingDependencyError, match=r'pip install -e "\.\[spconv-cu118\]"'):
-        require("a_module_that_does_not_exist", extra="spconv-cu118", purpose="SparseUNet14")
+    with pytest.raises(MissingDependencyError) as error:
+        require("a_module_that_does_not_exist", extra="timm", purpose="Uni3D")
+    assert str(error.value) == (
+        "Uni3D needs 'a_module_that_does_not_exist', which is not installed. Install it from "
+        'the repository root with: pip install -e ".[timm]"'  # this test runs in a checkout
+    )
     assert require("math", extra="x", purpose="y").pi > 3
+
+
+def test_an_installed_wheel_is_told_the_wheel_command(monkeypatch):
+    from grasppanda.utils import imports
+
+    monkeypatch.setattr(imports, "_checkout", lambda: False)
+    assert imports.install_hint("timm") == 'Install it with: pip install "grasppanda[timm]"'
+    with pytest.raises(MissingDependencyError, match=r'pip install "grasppanda\[timm\]"$'):
+        require("a_module_that_does_not_exist", extra="timm", purpose="Uni3D")
+
+
+@pytest.mark.parametrize(
+    ("cuda", "build"),
+    [("11.8", "spconv-cu118"), ("12.4", "spconv-cu124"), (None, "spconv-cpu"), ("12.8", None)],
+)
+def test_spconv_hints_name_the_build_of_the_installed_pytorch(monkeypatch, cuda, build):
+    from grasppanda.utils import imports
+
+    monkeypatch.setattr(imports, "_checkout", lambda: False)
+    monkeypatch.setattr(imports, "_torch_cuda", lambda: cuda)
+    everything = "spconv-cu118 | spconv-cu121 | spconv-cu124 | spconv-cu126 | spconv-cpu"
+    for extra in ("spconv", "spconv-cu118"):  # a build name stands for its library
+        hint = imports.install_hint(extra)
+        if build is not None:
+            others = everything.replace(f"{build} | ", "").replace(f" | {build}", "")
+            assert imports.installable(extra, this_machine=True) == build
+            assert hint == (
+                f'Install it with: pip install "grasppanda[{build}]". That is the build for your '
+                f"PyTorch ({f'CUDA {cuda}' if cuda else 'CPU only'}); the others: {others}."
+            )
+        else:  # no build for this CUDA version: the choice, with the version to match
+            assert imports.installable(extra, this_machine=True) == everything
+            assert hint == (
+                'Install it with: pip install "grasppanda[<build>]". Choose <build> to match '
+                f"your PyTorch (CUDA 12.8): {everything}."
+            )
+    assert imports.installable("spconv") == everything  # the catalogue lists every build
 
 
 def test_a_component_without_a_constructor_takes_no_arguments():
