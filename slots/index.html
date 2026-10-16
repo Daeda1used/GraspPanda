@@ -1,0 +1,3051 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/">
+      
+      
+        <link rel="prev" href="../user_guides/combinations/">
+      
+      
+        <link rel="next" href="image_encoders/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Overview - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#slots-the-stages-of-the-pipeline-and-what-can-go-into-each" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#words-used-on-these-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Words used on these pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The slots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-option-fits-which-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which option fits which method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-try-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to try one
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#words-used-on-these-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Words used on these pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The slots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-option-fits-which-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which option fits which method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-try-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to try one
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<!-- Generated by tools/make_combination_docs.py from the presets, the registries and
+     measured_combinations.json. Do not edit by hand: the text is in the generator,
+     the counts and the classes are computed. -->
+
+<h1 id="slots-the-stages-of-the-pipeline-and-what-can-go-into-each">Slots: the stages of the pipeline and what can go into each<a class="headerlink" href="#slots-the-stages-of-the-pipeline-and-what-can-go-into-each" title="Permanent link">&para;</a></h1>
+<p>GraspPanda builds a grasp detector from stages, and every stage is a <strong>slot</strong> of the config: a place where one component can be replaced by another that keeps the same contract. This page is the map: the pipeline, the task of every slot, its 248 options in all, and which option was measured to work under which method. Every slot has a page of its own with one row and one command per option.</p>
+<p><strong>No accuracy is claimed for any option that is not one of the six ported methods.</strong> An option is listed because it was built, trained for 20 iterations on 8 real frames of GraspNet-1Billion and asked to predict (<code>grasppanda probe</code>). That shows it is usable, not that it is good; the model zoo is still empty.</p>
+<p>To try options without reading further, open the <a href="../explorer/">combination explorer</a>: pick a method, change a slot, read the measured verdict and the command.</p>
+<h2 id="words-used-on-these-pages">Words used on these pages<a class="headerlink" href="#words-used-on-these-pages" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>seed</strong>: a point of the scene at which a grasp is predicted; the proposal picks the seeds (1024 per frame in the ported methods).</li>
+<li><strong>contract</strong>: what a component declares about its input and output (where its features live, which axes a tensor has, which labels it reads). The config check compares contracts before anything is built and refuses a mismatch with the fix.</li>
+<li><strong>preset</strong>: a small YAML file with a component and settings for table-top depth clouds; the name after <code>--set &lt;slot&gt;=</code>.</li>
+<li><strong>adapter</strong>: a wrapper <code>compose</code> puts around a scene encoder so that it fits the next stage (features propagated back to every point, or kept on a subsample).</li>
+<li><strong>dense / compact label set</strong>: the grasp labels a head is trained on. <em>Dense</em> is the full grid of GraspNet-1Billion (300 views × 12 in-plane angles × 4 depths per labelled point); <em>compact</em> keeps the best grasp per view (EconomicGrasp, FineGrasp). A head, its assigner and the dataset section must use the same one.</li>
+<li><strong>point painting</strong>: giving every point the image feature at its pixel, which is how a seed-based method reads an image encoder.</li>
+</ul>
+<h2 id="the-pipeline">The pipeline<a class="headerlink" href="#the-pipeline" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>observation: a depth image as a point cloud (HGGD also reads the colour image)
+  │
+  ├─ the seed-based methods
+  │    scene encoder ─► seed proposal ─► view ─► (assigner) ─► grouper ─► head bundle ─┐
+  │    features         seeds            approach  labels,       crops                 │
+  │                                                training                            │
+  └─ HGGD: image encoder ─► heat-map and region stages (no slots of their own yet) ────┤
+  grasps for the evaluator or a robot ◄─ post-processing ◄─ GraspGroup ◄───────────────┘
+
+around the model: the loss of every stage · the training recipe
+</code></pre></div>
+<p>Six methods are ported. Five share the seed-based skeleton and therefore its six stage slots (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp); HGGD is a detector family of its own with one slot so far, the image encoder. Losses, post-processing and the training recipe are around the stages and apply to all six.</p>
+<h2 id="the-slots">The slots<a class="headerlink" href="#the-slots" title="Permanent link">&para;</a></h2>
+<p>An option is a name you can write after <code>--set &lt;slot&gt;=</code>: a preset (a component with settings for table-top depth clouds) or a component with its defaults.</p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Task, and input → output</th>
+<th>Options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><a href="image_encoders/">Image encoder</a></strong><br><code>model.image_encoder</code></td>
+<td>Turns the colour (or RGB-D) image into feature maps. HGGD predicts its grasp heat-map from them; a seed-based method can read them at the pixel of every point (point painting).<br><em>image <code>(B, C, H, W)</code> → a list of feature maps, finest first</em></td>
+<td>38 (4 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="scene_encoders/">Scene encoder</a></strong><br><code>model.backbone</code></td>
+<td>The first learned stage of a seed-based method: one feature vector per point of the depth cloud. Its receptive field is what a seed knows before any crop is taken.<br><em>points <code>(N, 3)</code> in metres, camera frame, with per-point features → features on every point (<code>dense</code>) or on a sub-sample (<code>subsampled</code>)</em></td>
+<td>47 (29 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="proposal/">Seed proposal</a></strong><br><code>model.proposal</code></td>
+<td>Decides where grasps are predicted: picks a fixed number of seeds per frame (usually 1024) among the scene points, by a predicted score, a sampler, or both.<br><em>encoder features → <code>SeedSet</code>: seed points, their features, named scores</em></td>
+<td>24 (4 component types; 11 samplers as <code>model.proposal.sampler</code>)</td>
+</tr>
+<tr>
+<td><strong><a href="view/">View</a></strong><br><code>model.view</code></td>
+<td>Chooses the approach direction of every seed: two of the three degrees of freedom of the grasp orientation, and the frame the crop is taken in.<br><em><code>SeedSet</code> → <code>ApproachSet</code>: a unit direction and a rotation per seed, and the index of the label view</em></td>
+<td>21 (8 component types)</td>
+</tr>
+<tr>
+<td><strong>Assigner</strong><br><code>model.assigner</code></td>
+<td>Training only: matches every seed with the grasp labels of the scene point it sits on, in the label set the head is supervised with.<br><em>seeds, approach, supervision → matched labels (<code>dense</code> grids or <code>compact</code> best grasps), optional seed weights</em></td>
+<td>4 (3 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="grouper/">Grouper</a></strong><br><code>model.grouper</code></td>
+<td>Gathers the neighbourhood of every seed in the frame of its approach direction and turns it into the feature the head reads.<br><em>points with features, crop centres and frames → one feature per seed, or one per seed and depth bin</em></td>
+<td>32 (14 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="head_loss/">Head bundle</a></strong><br><code>model.head</code></td>
+<td>Predicts the grasp at a seed: in-plane rotation, depth, width and score. Network head, target encoder, loss and decoder share one parameterisation, so they are swapped as a whole.<br><em>crop features → loss terms in training; <code>GraspGroup</code> (one grasp per seed) at prediction</em></td>
+<td>10 (4 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="head_loss/">Loss</a></strong><br><code>model.&lt;stage&gt;.&lt;term&gt;_loss</code></td>
+<td>One term of the loss of a stage (objectness, graspness, view score, grasp score, angle, depth, width). A stage declares the kind of each term, a loss the kinds it fits.<br><em>prediction and target of one term → a weighted scalar</em></td>
+<td>20 (18 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="post/">Post-processing</a></strong><br><code>evaluation.variants.&lt;name&gt;</code></td>
+<td>What happens to predicted grasps before an evaluator or a robot gets them: filters, selection, corrections of pose and width, a change of frame. Steps are chained.<br><em><code>GraspGroup</code> of one frame and the observation → <code>GraspGroup</code></em></td>
+<td>15 (14 component types)</td>
+</tr>
+<tr>
+<td><strong><a href="recipe/">Training recipe</a></strong><br><code>optimizer</code>, <code>scheduler</code>, <code>hooks</code>, <code>data.train.dataset.transforms</code></td>
+<td>Everything around the model: how weights are updated, how the learning rate moves, what runs around the loop, how a training sample is perturbed.<br><em>parameters and gradients → updates; a training sample → a perturbed sample</em></td>
+<td>37 (19 component types)</td>
+</tr>
+</tbody>
+</table>
+<p>The assigner has no page of its own: it goes with the head bundle and the label set (<a href="head_loss/">Heads and losses</a>, <a href="../advanced_guides/data_flow/">Data contracts</a>). The scene encoders have an <a href="scene_encoders/">overview</a> and three pages: <a href="scene_encoders_point/">point-based networks</a>, <a href="scene_encoders_sparse/">sparse-voxel networks and released weights</a>, <a href="scene_encoders_transformer/">transformers and pretrained 3-D encoders</a>. The encoders ported before these pages are in <a href="../model_zoo_backbones/">Scene encoders of the model zoo</a>.</p>
+<h2 id="which-option-fits-which-method">Which option fits which method<a class="headerlink" href="#which-option-fits-which-method" title="Permanent link">&para;</a></h2>
+<p>From the <a href="../advanced_guides/measured_combinations/">measured records</a> (1262 recorded cells: 1014 <code>runs</code>, 174 <code>runs-empty</code>, 29 <code>runs-unstable</code>, 41 <code>refused</code>, 4 <code>fails</code>), with <strong>one slot replaced at a time</strong>. Every method has a page that lists the options of each of its slots with what was measured for each, and so does <code>grasppanda compose &lt;method config&gt; --list &lt;slot&gt;</code>: <a href="../methods/gsnet/">GSNet</a>, <a href="../methods/economicgrasp/">EconomicGrasp</a>, <a href="../methods/finegrasp/">FineGrasp</a>, <a href="../methods/graspnet_baseline/">GraspNet-baseline</a>, <a href="../methods/scale_balanced_grasp/">Scale-Balanced-Grasp</a>, <a href="../methods/hggd/">HGGD</a>.</p>
+<p><strong>One run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</strong> A cell (one option under one method) is decided at four levels, each from its record alone; every level needs the one before it:</p>
+<ul>
+<li><strong>composes</strong>: the contract rules and the config check accept the composed config: <code>grasppanda compose</code> writes it (any verdict but <code>refused</code>). A refusal by policy is undecided (needs consent), and so is a request that is not a combination.</li>
+<li><strong>runs</strong>: the probe ran clean on real frames: the verdict <code>runs</code> or <code>runs-empty</code>. A <code>runs-unstable</code> probe counts as not running only when its repeat (<code>repeat</code> in the record: the same config, seed and schedule) was unstable too; without a repeat the level is undecided (unstable, not repeated); when the repeat ran clean the cell runs, and <code>learns</code> and <code>predicts</code> are read from the repeat. <code>fails</code> does not run.</li>
+<li><strong>learns</strong>: judge 2 only. Every loss term was active (reported, finite, not exactly 0) in at least 50 % of the iterations and fell by at least 5 % (fall = (first - mean of the last quarter) / |first| over its active iterations), and no term is flagged <code>flat</code>, <code>rising</code> or <code>constant</code>; a term that is 0 at the last iteration (<code>zero_at_end</code>) is judged on its active iterations. Every unit with trainable parameters received a gradient (<code>no_gradient</code> is empty) and every part changed (<code>unchanged</code> is empty).</li>
+<li><strong>predicts</strong>: judge 2 only. Every predicted frame has at least one grasp, and on every frame the smallest and the largest score differ (<code>score_quantiles</code>): a model whose scores collapsed to one value ranks nothing.</li>
+</ul>
+<p>A level that cannot be decided from a record says why:</p>
+<ul>
+<li><em>not checked</em>: the record was judged by the first judge, which recorded neither the trend of the loss terms nor the scores of the predicted grasps.</li>
+<li><em>unstable, not repeated</em>: the probe was <code>runs-unstable</code> and has not been repeated: an unstable run counts as not running only when a second probe of the same config is unstable too.</li>
+<li><em>needs consent</em>: refused by a policy that waits for the user's consent (<code>trust_remote_code</code> needs <code>accept_remote_code: true</code>): a rule about this machine, not about the combination.</li>
+<li><em>not a combination</em>: the request names a component that lacks an option only a preset supplies: it is refused before any contract is compared, and is no combination.</li>
+<li><em>not probed</em>: the grid has the cell, but no record yet.</li>
+<li><em>not reached by the method as shipped</em>: the method as shipped, probed the same way, does not reach this level either (for example FineGrasp at the constant rate, whose fusion of crop scales gives every seed one feature in a short run, so every grasp gets one score): under that method the level says nothing about the option at this budget.</li>
+</ul>
+<p>The <strong>class</strong> of an option at a level counts the methods under which it reached that level. For a stage of the seed-based skeleton decided under all five seed-based methods (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp):</p>
+<ul>
+<li><strong>universal</strong>: it reached the level under all five seed-based methods.</li>
+<li><strong>most</strong>: under three or four of them.</li>
+<li><strong>some</strong>: under two.</li>
+<li><strong>specific</strong>: under exactly one.</li>
+<li><strong>none</strong>: under none of them.</li>
+</ul>
+<p>An option of another slot (post-processing, loss, recipe, image encoder) is <strong>universal</strong> only when it reached the level under every method it applies to and those include the five seed-based ones. Every other class reads <strong>N of M probed</strong>: it reached the level under N of the M methods where the level was decided, and the methods where it was not are named after it (<em>+2 not checked</em>). A level that no method decided is named by the reason. A level decided only where the level before it failed is not checked: the class says so instead of counting the failures again.</p>
+<p>† The slot was not probed under the five seed-based methods but under the methods of the second column, so its classes count those. <em>(defaults)</em>: the component named by its type and built with its constructor defaults, not a preset; a component that needs an option only a preset supplies does not work that way. Classes, level by level:</p>
+<p><strong>composes</strong></p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Probed under</th>
+<th>universal</th>
+<th>most</th>
+<th>some</th>
+<th>N of M probed</th>
+<th>undecided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scene encoder</td>
+<td>the five seed-based methods</td>
+<td><code>assanet</code><br><code>dgcnn-static</code><br><code>dgcnn</code><br><code>dela</code><br><code>litept-structured3d</code><br><code>litept</code><br><code>minkunet18a-openscene</code><br><code>minkunet18a</code><br><code>minkunet34c-pointcontrast</code><br><code>minkunet34c</code><br><code>oacnns</code><br><code>octformer</code><br><code>ptv3-encoder</code><br><code>ptv3-ppt</code><br><code>ptv3-scannet200</code><br><code>ptv3</code><br><code>ptv3-sonata-small</code><br><code>ptv3-sonata</code><br><code>ptv3-utonia</code><br><code>pointmlp</code><br><code>point-mamba</code><br><code>pointmetabase-xl</code><br><code>pointmetabase</code><br><code>pointnext-b</code><br><code>pointnext-l</code><br><code>pointnext-xl</code><br><code>pointnext</code><br><code>pointnet2</code><br><code>pointnet2-dense</code><br><code>pointnet2-msg</code><br><code>pointnet2-msg-dense</code><br><code>pointnet2-transformer</code><br><code>point-transformer-v1</code><br><code>point-transformer-v2</code><br><code>pointvector-xl</code><br><code>pointvector</code><br><code>point-vit</code><br><code>pyg-edgeconv</code><br><code>pyg-point-transformer</code><br><code>pyg-pointgnn</code><br><code>pyg-pointnet</code><br><code>randlanet</code><br><code>spunet-gaussiancross</code><br><code>spunet</code><br><code>sparse-unet14</code><br><code>uni3d</code><br><code>volt</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Seed proposal</td>
+<td>the five seed-based methods</td>
+<td><code>dense-ffps</code><br><code>dense-fps</code><br><code>dense-fpsample</code><br><code>dense-fusion-fps</code><br><code>dense-random</code><br><code>dense-torch-cluster</code><br><code>dense-voxel</code><br><code>graspness-ffps</code><br><code>graspness-fps-fill</code><br><code>graspness-fps-topk</code><br><code>graspness-fps</code><br><code>graspness-fpsample</code><br><code>graspness-fusion-fps</code><br><code>graspness-nms</code><br><code>graspness-random</code><br><code>graspness-sfps</code><br><code>graspness-top-fraction</code><br><code>graspness-topk</code><br><code>graspness-torch-cluster</code><br><code>graspness-voxel</code><br><code>scored-fps</code><br><code>SubsampledSeeds</code> (defaults)</td>
+<td><code>objectness-fps</code><br><code>product-fps</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>View</td>
+<td>the five seed-based methods</td>
+<td><code>direction-regression</code><br><code>direction-vmf</code><br><code>healpix-192</code><br><code>healpix-768</code><br><code>icosphere-162</code><br><code>icosphere-642</code><br><code>lattice-angular-cost</code><br><code>lattice-best-view</code><br><code>lattice-fibonacci-120</code><br><code>lattice-hemisphere-60</code><br><code>lattice-soft-argmax</code><br><code>lattice-topk</code><br><code>lattice-view</code><br><code>rotation-6d</code><br><code>rotation-9d</code><br><code>rotation-quaternion</code><br><code>template-view</code><br><code>two-vector-baseline</code><br><code>two-vector</code></td>
+<td><code>objectness-view-graspable</code><br><code>objectness-view</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Assigner</td>
+<td>the five seed-based methods</td>
+<td>—</td>
+<td><code>nearest-label-object-seeds</code><br><code>scale-balanced</code><br><code>NearestLabelAssigner</code> (defaults)</td>
+<td><code>compact-label</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Grouper</td>
+<td>the five seed-based methods</td>
+<td><code>ball</code><br><code>box</code><br><code>cylinder-attentive</code><br><code>cylinder-edgeconv</code><br><code>cylinder-invres</code><br><code>cylinder-vector-attention</code><br><code>depth-ball</code><br><code>depth-box</code><br><code>depth-cylinder-attentive</code><br><code>depth-cylinder-multi-scale</code><br><code>depth-cylinder-projection</code><br><code>depth-knn</code><br><code>knn</code><br><code>multi-scale-linear</code><br><code>multi-scale</code><br><code>pyg-edge-conv</code><br><code>pyg-gatv2-conv</code><br><code>pyg-point-transformer-conv</code><br><code>pyg-pointnet-conv</code><br><code>pyg-transformer-conv</code><br><code>roi-aware</code><br><code>roi-grid</code><br><code>CylinderGroup</code> (defaults)<br><code>CylinderInteractionGroup</code> (defaults)<br><code>DepthCylinderGroup</code> (defaults)</td>
+<td><code>depth-pool</code><br><code>voxel-set-abstraction</code></td>
+<td><code>depth-embed</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Head bundle</td>
+<td>the five seed-based methods</td>
+<td><code>decoupled-grid-bins</code><br><code>decoupled-grid-class</code><br><code>decoupled-grid-regression</code><br><code>decoupled-grid</code><br><code>operation-objectness</code><br><code>operation</code><br><code>swad-focal</code><br><code>swad</code></td>
+<td><code>economic-focal</code><br><code>economic</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Image encoder †</td>
+<td>HGGD, the one method with this slot</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>convnextv2-atto</code> (1 of 1 probed)<br><code>convnextv2-tiny</code> (1 of 1 probed)<br><code>dinov2-small-reg-depth-stem</code> (1 of 1 probed)<br><code>dinov2-small-reg</code> (1 of 1 probed)<br><code>dinov3-convnext-tiny</code> (1 of 1 probed)<br><code>dinov3-vits16</code> (1 of 1 probed)<br><code>efficientnetv2-s</code> (1 of 1 probed)<br><code>efficientvit-b1</code> (1 of 1 probed)<br><code>eva02-tiny</code> (1 of 1 probed)<br><code>fastvit-sa12</code> (1 of 1 probed)<br><code>fastvit-t8</code> (1 of 1 probed)<br><code>hf-convnextv2-tiny</code> (1 of 1 probed)<br><code>hf-depth-anything-v2-small</code> (1 of 1 probed)<br><code>hf-dinov2-small-reg</code> (1 of 1 probed)<br><code>hf-dinov2-small</code> (1 of 1 probed)<br><code>hf-hiera-tiny</code> (1 of 1 probed)<br><code>hf-siglip2-base</code> (1 of 1 probed)<br><code>hf-swinv2-tiny</code> (1 of 1 probed)<br><code>hggd-residual</code> (1 of 1 probed)<br><code>hiera-small-abswin</code> (1 of 1 probed)<br><code>maxvit-tiny</code> (1 of 1 probed)<br><code>mobilenetv4-conv-small</code> (1 of 1 probed)<br><code>mobilenetv4-hybrid-medium</code> (1 of 1 probed)<br><code>pe-spatial-tiny</code> (1 of 1 probed)<br><code>repvit-m1</code> (1 of 1 probed)<br><code>resnet18</code> (1 of 1 probed)<br><code>resnet34-rgbd</code> (1 of 1 probed)<br><code>resnet34</code> (1 of 1 probed)<br><code>resnet50</code> (1 of 1 probed)<br><code>sam2-hiera-tiny</code> (1 of 1 probed)<br><code>siglip2-base</code> (1 of 1 probed)<br><code>swinv2-tiny</code> (1 of 1 probed)<br><code>tv-convnext-tiny</code> (1 of 1 probed)<br><code>tv-efficientnetv2-s</code> (1 of 1 probed)<br><code>tv-mobilenetv3-large</code> (1 of 1 probed)<br><code>tv-regnet-y-800mf</code> (1 of 1 probed)<br><code>tv-resnet34</code> (1 of 1 probed)</td>
+<td><code>hf-radio-v3-base</code> (needs consent)</td>
+</tr>
+<tr>
+<td>Loss †</td>
+<td>loss terms of GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td><code>balanced-l1</code><br><code>cauchy</code><br><code>charbonnier</code><br><code>class-balanced</code><br><code>focal</code><br><code>ghm-c</code><br><code>ghm-r</code><br><code>huber</code><br><code>label-smoothing</code><br><code>ohem-smooth-l1</code><br><code>ohem</code><br><code>poly1</code><br><code>softmax-focal</code><br><code>uncertainty-weighting</code></td>
+<td><code>dice</code><br><code>lovasz-softmax</code></td>
+<td>—</td>
+<td><code>bce</code> (3 of 3 probed)<br><code>quality-focal</code> (3 of 4 probed)<br><code>varifocal</code> (3 of 3 probed)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Post-processing †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD</td>
+<td><code>approach-cone</code><br><code>center-gripper</code><br><code>collision-strict</code><br><code>collision</code><br><code>furthest-sampling</code><br><code>gripper-limits</code><br><code>mesh-collision</code><br><code>nms</code><br><code>score-threshold</code><br><code>table-plane</code><br><code>to-base-frame</code><br><code>top-k</code><br><code>width-from-cloud</code><br><code>workspace</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>target-mask</code> (not probed)</td>
+</tr>
+<tr>
+<td>Training recipe †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD; HGGD not for the presets that name the scene encoder</td>
+<td><code>optimizer=adamw-no-decay-1d</code><br><code>optimizer=adamw</code><br><code>optimizer=ademamix</code><br><code>optimizer=encoder-lr-0.1</code><br><code>optimizer=layer-decay</code><br><code>optimizer=prodigy</code><br><code>optimizer=schedulefree-adamw</code><br><code>optimizer=schedulefree-radam</code><br><code>optimizer=schedulefree-sgd</code><br><code>optimizer=soap</code><br><code>optimizer=stableadamw</code><br><code>optimizer=timm-adan</code><br><code>optimizer=timm-adopt</code><br><code>optimizer=timm-lamb</code><br><code>optimizer=timm-lion</code><br><code>optimizer=timm-madgrad</code><br><code>optimizer=timm-mars</code><br><code>schedule=constant</code><br><code>schedule=cosine-restarts</code><br><code>schedule=cosine</code><br><code>schedule=multistep-warmup</code><br><code>schedule=onecycle</code><br><code>schedule=poly</code><br><code>schedule=warmup-cosine</code><br><code>hooks=accumulate-2</code><br><code>hooks=agc</code><br><code>hooks=ema</code><br><code>hooks=freeze-encoder</code><br><code>hooks=grad-clip</code><br><code>hooks=swa</code><br><code>augment=dropout</code><br><code>recipe=adamw-onecycle</code><br><code>recipe=finetune-encoder</code><br><code>recipe=ptv3-adamw-onecycle</code></td>
+<td>—</td>
+<td>—</td>
+<td><code>hooks=amp</code> (0 of 6 probed)<br><code>augment=jitter</code> (5 of 6 probed)<br><code>augment=shift</code> (5 of 6 probed)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>runs</strong></p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Probed under</th>
+<th>universal</th>
+<th>most</th>
+<th>some</th>
+<th>N of M probed</th>
+<th>undecided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scene encoder</td>
+<td>the five seed-based methods</td>
+<td><code>assanet</code><br><code>dgcnn-static</code><br><code>dgcnn</code><br><code>dela</code><br><code>litept-structured3d</code><br><code>litept</code><br><code>minkunet18a-openscene</code><br><code>minkunet18a</code><br><code>minkunet34c-pointcontrast</code><br><code>minkunet34c</code><br><code>octformer</code><br><code>ptv3-ppt</code><br><code>ptv3</code><br><code>pointmlp</code><br><code>point-mamba</code><br><code>pointmetabase-xl</code><br><code>pointmetabase</code><br><code>pointnext-b</code><br><code>pointnext-l</code><br><code>pointnext-xl</code><br><code>pointnext</code><br><code>pointnet2</code><br><code>pointnet2-dense</code><br><code>pointnet2-msg</code><br><code>pointnet2-msg-dense</code><br><code>pointnet2-transformer</code><br><code>point-transformer-v1</code><br><code>point-transformer-v2</code><br><code>pointvector-xl</code><br><code>pointvector</code><br><code>point-vit</code><br><code>pyg-pointnet</code><br><code>randlanet</code><br><code>spunet-gaussiancross</code><br><code>sparse-unet14</code><br><code>uni3d</code><br><code>volt</code></td>
+<td><code>ptv3-scannet200</code><br><code>ptv3-sonata</code><br><code>ptv3-utonia</code><br><code>pyg-edgeconv</code><br><code>spunet</code></td>
+<td><code>oacnns</code><br><code>ptv3-encoder</code><br><code>ptv3-sonata-small</code></td>
+<td><code>pyg-point-transformer</code> (4 of 4 probed, +1 unstable, not repeated)<br><code>pyg-pointgnn</code> (4 of 4 probed, +1 unstable, not repeated)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Seed proposal</td>
+<td>the five seed-based methods</td>
+<td><code>dense-ffps</code><br><code>dense-fps</code><br><code>dense-fpsample</code><br><code>dense-fusion-fps</code><br><code>dense-random</code><br><code>dense-torch-cluster</code><br><code>dense-voxel</code><br><code>graspness-ffps</code><br><code>graspness-fps-fill</code><br><code>graspness-fps-topk</code><br><code>graspness-fps</code><br><code>graspness-fpsample</code><br><code>graspness-fusion-fps</code><br><code>graspness-nms</code><br><code>graspness-random</code><br><code>graspness-sfps</code><br><code>graspness-top-fraction</code><br><code>graspness-topk</code><br><code>graspness-torch-cluster</code><br><code>graspness-voxel</code><br><code>scored-fps</code><br><code>SubsampledSeeds</code> (defaults)</td>
+<td><code>objectness-fps</code><br><code>product-fps</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>View</td>
+<td>the five seed-based methods</td>
+<td><code>direction-regression</code><br><code>direction-vmf</code><br><code>healpix-192</code><br><code>healpix-768</code><br><code>icosphere-162</code><br><code>icosphere-642</code><br><code>lattice-angular-cost</code><br><code>lattice-best-view</code><br><code>lattice-fibonacci-120</code><br><code>lattice-hemisphere-60</code><br><code>lattice-soft-argmax</code><br><code>lattice-topk</code><br><code>lattice-view</code><br><code>rotation-6d</code><br><code>rotation-9d</code><br><code>rotation-quaternion</code><br><code>template-view</code><br><code>two-vector-baseline</code><br><code>two-vector</code></td>
+<td><code>objectness-view-graspable</code><br><code>objectness-view</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Assigner</td>
+<td>the five seed-based methods</td>
+<td>—</td>
+<td><code>nearest-label-object-seeds</code><br><code>scale-balanced</code><br><code>NearestLabelAssigner</code> (defaults)</td>
+<td><code>compact-label</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Grouper</td>
+<td>the five seed-based methods</td>
+<td><code>ball</code><br><code>box</code><br><code>cylinder-attentive</code><br><code>cylinder-edgeconv</code><br><code>cylinder-invres</code><br><code>cylinder-vector-attention</code><br><code>depth-ball</code><br><code>depth-box</code><br><code>depth-cylinder-attentive</code><br><code>depth-cylinder-multi-scale</code><br><code>depth-cylinder-projection</code><br><code>depth-knn</code><br><code>knn</code><br><code>multi-scale-linear</code><br><code>multi-scale</code><br><code>pyg-edge-conv</code><br><code>pyg-gatv2-conv</code><br><code>pyg-point-transformer-conv</code><br><code>pyg-pointnet-conv</code><br><code>pyg-transformer-conv</code><br><code>roi-aware</code><br><code>roi-grid</code><br><code>CylinderGroup</code> (defaults)<br><code>CylinderInteractionGroup</code> (defaults)<br><code>DepthCylinderGroup</code> (defaults)</td>
+<td><code>depth-pool</code><br><code>voxel-set-abstraction</code></td>
+<td><code>depth-embed</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Head bundle</td>
+<td>the five seed-based methods</td>
+<td><code>decoupled-grid-bins</code><br><code>decoupled-grid-class</code><br><code>decoupled-grid-regression</code><br><code>decoupled-grid</code><br><code>operation-objectness</code><br><code>operation</code><br><code>swad-focal</code><br><code>swad</code></td>
+<td><code>economic-focal</code><br><code>economic</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Image encoder †</td>
+<td>HGGD, the one method with this slot</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>convnextv2-atto</code> (1 of 1 probed)<br><code>convnextv2-tiny</code> (1 of 1 probed)<br><code>dinov2-small-reg-depth-stem</code> (1 of 1 probed)<br><code>dinov2-small-reg</code> (1 of 1 probed)<br><code>dinov3-convnext-tiny</code> (1 of 1 probed)<br><code>dinov3-vits16</code> (1 of 1 probed)<br><code>efficientnetv2-s</code> (1 of 1 probed)<br><code>efficientvit-b1</code> (1 of 1 probed)<br><code>eva02-tiny</code> (1 of 1 probed)<br><code>fastvit-sa12</code> (1 of 1 probed)<br><code>fastvit-t8</code> (1 of 1 probed)<br><code>hf-convnextv2-tiny</code> (1 of 1 probed)<br><code>hf-depth-anything-v2-small</code> (1 of 1 probed)<br><code>hf-dinov2-small-reg</code> (1 of 1 probed)<br><code>hf-dinov2-small</code> (1 of 1 probed)<br><code>hf-hiera-tiny</code> (1 of 1 probed)<br><code>hf-siglip2-base</code> (1 of 1 probed)<br><code>hf-swinv2-tiny</code> (1 of 1 probed)<br><code>hggd-residual</code> (1 of 1 probed)<br><code>hiera-small-abswin</code> (1 of 1 probed)<br><code>maxvit-tiny</code> (1 of 1 probed)<br><code>mobilenetv4-conv-small</code> (1 of 1 probed)<br><code>mobilenetv4-hybrid-medium</code> (1 of 1 probed)<br><code>pe-spatial-tiny</code> (1 of 1 probed)<br><code>repvit-m1</code> (1 of 1 probed)<br><code>resnet18</code> (1 of 1 probed)<br><code>resnet34-rgbd</code> (1 of 1 probed)<br><code>resnet34</code> (1 of 1 probed)<br><code>resnet50</code> (1 of 1 probed)<br><code>sam2-hiera-tiny</code> (1 of 1 probed)<br><code>siglip2-base</code> (1 of 1 probed)<br><code>swinv2-tiny</code> (1 of 1 probed)<br><code>tv-convnext-tiny</code> (1 of 1 probed)<br><code>tv-efficientnetv2-s</code> (1 of 1 probed)<br><code>tv-mobilenetv3-large</code> (1 of 1 probed)<br><code>tv-regnet-y-800mf</code> (1 of 1 probed)<br><code>tv-resnet34</code> (1 of 1 probed)</td>
+<td><code>hf-radio-v3-base</code> (needs consent)</td>
+</tr>
+<tr>
+<td>Loss †</td>
+<td>loss terms of GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td><code>balanced-l1</code><br><code>cauchy</code><br><code>charbonnier</code><br><code>class-balanced</code><br><code>focal</code><br><code>ghm-c</code><br><code>ghm-r</code><br><code>huber</code><br><code>label-smoothing</code><br><code>ohem-smooth-l1</code><br><code>ohem</code><br><code>poly1</code><br><code>softmax-focal</code><br><code>uncertainty-weighting</code></td>
+<td><code>dice</code><br><code>lovasz-softmax</code></td>
+<td>—</td>
+<td><code>bce</code> (3 of 3 probed)<br><code>quality-focal</code> (3 of 4 probed)<br><code>varifocal</code> (3 of 3 probed)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Post-processing †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD</td>
+<td><code>approach-cone</code><br><code>center-gripper</code><br><code>collision-strict</code><br><code>collision</code><br><code>furthest-sampling</code><br><code>gripper-limits</code><br><code>mesh-collision</code><br><code>nms</code><br><code>score-threshold</code><br><code>table-plane</code><br><code>to-base-frame</code><br><code>top-k</code><br><code>width-from-cloud</code><br><code>workspace</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>target-mask</code> (not probed)</td>
+</tr>
+<tr>
+<td>Training recipe †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD; HGGD not for the presets that name the scene encoder</td>
+<td><code>optimizer=adamw-no-decay-1d</code><br><code>optimizer=adamw</code><br><code>optimizer=ademamix</code><br><code>optimizer=encoder-lr-0.1</code><br><code>optimizer=layer-decay</code><br><code>optimizer=prodigy</code><br><code>optimizer=schedulefree-adamw</code><br><code>optimizer=schedulefree-radam</code><br><code>optimizer=stableadamw</code><br><code>optimizer=timm-adan</code><br><code>optimizer=timm-adopt</code><br><code>optimizer=timm-lamb</code><br><code>optimizer=timm-lion</code><br><code>optimizer=timm-madgrad</code><br><code>optimizer=timm-mars</code><br><code>schedule=onecycle</code><br><code>hooks=accumulate-2</code><br><code>hooks=agc</code><br><code>hooks=ema</code><br><code>hooks=grad-clip</code><br><code>recipe=adamw-onecycle</code><br><code>recipe=ptv3-adamw-onecycle</code></td>
+<td><code>hooks=freeze-encoder</code><br><code>recipe=finetune-encoder</code></td>
+<td>—</td>
+<td><code>optimizer=schedulefree-sgd</code> (3 of 6 probed)<br><code>optimizer=soap</code> (5 of 6 probed)<br><code>schedule=constant</code> (5 of 6 probed)<br><code>schedule=cosine-restarts</code> (5 of 6 probed)<br><code>schedule=cosine</code> (5 of 6 probed)<br><code>schedule=multistep-warmup</code> (5 of 6 probed)<br><code>schedule=poly</code> (5 of 6 probed)<br><code>schedule=warmup-cosine</code> (5 of 6 probed)<br><code>hooks=amp</code> (0 of 6 probed)<br><code>hooks=swa</code> (4 of 6 probed)<br><code>augment=dropout</code> (5 of 6 probed)<br><code>augment=jitter</code> (5 of 6 probed)<br><code>augment=shift</code> (5 of 6 probed)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>learns</strong></p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Probed under</th>
+<th>universal</th>
+<th>most</th>
+<th>some</th>
+<th>specific</th>
+<th>N of M probed</th>
+<th>undecided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scene encoder</td>
+<td>the five seed-based methods</td>
+<td><code>dgcnn-static</code><br><code>dgcnn</code><br><code>litept-structured3d</code><br><code>litept</code><br><code>ptv3</code><br><code>pointmlp</code><br><code>point-mamba</code><br><code>pointmetabase-xl</code><br><code>pointmetabase</code><br><code>pointnext-b</code><br><code>pointnext-l</code><br><code>pointnext-xl</code><br><code>pointnext</code><br><code>pointnet2</code><br><code>pointnet2-dense</code><br><code>pointnet2-msg-dense</code><br><code>pointnet2-transformer</code><br><code>point-transformer-v2</code><br><code>pointvector-xl</code><br><code>pointvector</code><br><code>pyg-pointnet</code><br><code>randlanet</code><br><code>sparse-unet14</code><br><code>uni3d</code></td>
+<td><code>assanet</code><br><code>dela</code><br><code>minkunet18a-openscene</code><br><code>minkunet18a</code><br><code>minkunet34c-pointcontrast</code><br><code>minkunet34c</code><br><code>octformer</code><br><code>ptv3-ppt</code><br><code>ptv3-scannet200</code><br><code>pointnet2-msg</code><br><code>point-transformer-v1</code><br><code>point-vit</code><br><code>pyg-edgeconv</code><br><code>spunet</code></td>
+<td><code>oacnns</code><br><code>ptv3-encoder</code><br><code>ptv3-sonata-small</code><br><code>ptv3-sonata</code><br><code>ptv3-utonia</code><br><code>spunet-gaussiancross</code><br><code>volt</code></td>
+<td>—</td>
+<td><code>pyg-point-transformer</code> (4 of 4 probed, +1 unstable, not repeated)<br><code>pyg-pointgnn</code> (4 of 4 probed, +1 unstable, not repeated)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Seed proposal</td>
+<td>the five seed-based methods</td>
+<td><code>dense-ffps</code><br><code>dense-fps</code><br><code>dense-fpsample</code><br><code>dense-fusion-fps</code><br><code>dense-random</code><br><code>dense-torch-cluster</code><br><code>dense-voxel</code><br><code>graspness-fpsample</code><br><code>graspness-random</code><br><code>graspness-sfps</code><br><code>graspness-torch-cluster</code><br><code>graspness-voxel</code><br><code>scored-fps</code><br><code>SubsampledSeeds</code> (defaults)</td>
+<td><code>graspness-ffps</code><br><code>graspness-fps-fill</code><br><code>graspness-fps-topk</code><br><code>graspness-fps</code><br><code>graspness-fusion-fps</code><br><code>graspness-nms</code><br><code>graspness-top-fraction</code><br><code>objectness-fps</code><br><code>product-fps</code></td>
+<td><code>graspness-topk</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>View</td>
+<td>the five seed-based methods</td>
+<td><code>direction-vmf</code><br><code>healpix-192</code><br><code>healpix-768</code><br><code>icosphere-162</code><br><code>lattice-fibonacci-120</code><br><code>lattice-hemisphere-60</code><br><code>lattice-soft-argmax</code><br><code>lattice-view</code></td>
+<td><code>direction-regression</code><br><code>icosphere-642</code><br><code>lattice-angular-cost</code><br><code>lattice-best-view</code><br><code>lattice-topk</code><br><code>objectness-view-graspable</code><br><code>template-view</code></td>
+<td><code>objectness-view</code><br><code>rotation-6d</code><br><code>rotation-9d</code><br><code>two-vector-baseline</code></td>
+<td><code>rotation-quaternion</code><br><code>two-vector</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Assigner</td>
+<td>the five seed-based methods</td>
+<td>—</td>
+<td><code>nearest-label-object-seeds</code><br><code>scale-balanced</code><br><code>NearestLabelAssigner</code> (defaults)</td>
+<td><code>compact-label</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Grouper</td>
+<td>the five seed-based methods</td>
+<td><code>ball</code><br><code>box</code><br><code>cylinder-attentive</code><br><code>cylinder-edgeconv</code><br><code>cylinder-invres</code><br><code>cylinder-vector-attention</code><br><code>depth-ball</code><br><code>depth-box</code><br><code>depth-cylinder-attentive</code><br><code>depth-cylinder-projection</code><br><code>depth-knn</code><br><code>multi-scale-linear</code><br><code>multi-scale</code><br><code>pyg-edge-conv</code><br><code>pyg-gatv2-conv</code><br><code>pyg-point-transformer-conv</code><br><code>pyg-pointnet-conv</code><br><code>pyg-transformer-conv</code><br><code>roi-aware</code><br><code>roi-grid</code><br><code>CylinderGroup</code> (defaults)<br><code>CylinderInteractionGroup</code> (defaults)<br><code>DepthCylinderGroup</code> (defaults)</td>
+<td><code>depth-cylinder-multi-scale</code><br><code>depth-pool</code><br><code>knn</code><br><code>voxel-set-abstraction</code></td>
+<td><code>depth-embed</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Head bundle</td>
+<td>the five seed-based methods</td>
+<td><code>operation-objectness</code><br><code>operation</code><br><code>swad-focal</code><br><code>swad</code></td>
+<td><code>decoupled-grid-bins</code><br><code>decoupled-grid</code><br><code>economic</code></td>
+<td><code>decoupled-grid-class</code><br><code>decoupled-grid-regression</code><br><code>economic-focal</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Image encoder †</td>
+<td>HGGD, the one method with this slot</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>dinov2-small-reg-depth-stem</code> (1 of 1 probed)<br><code>hf-depth-anything-v2-small</code> (1 of 1 probed)<br><code>hf-dinov2-small</code> (1 of 1 probed)<br><code>hf-swinv2-tiny</code> (1 of 1 probed)<br><code>resnet34</code> (1 of 1 probed)<br><code>tv-regnet-y-800mf</code> (1 of 1 probed)</td>
+<td><code>convnextv2-atto</code> (not reached by the method as shipped)<br><code>convnextv2-tiny</code> (not reached by the method as shipped)<br><code>dinov2-small-reg</code> (not reached by the method as shipped)<br><code>dinov3-convnext-tiny</code> (not reached by the method as shipped)<br><code>dinov3-vits16</code> (not reached by the method as shipped)<br><code>efficientnetv2-s</code> (not reached by the method as shipped)<br><code>efficientvit-b1</code> (not reached by the method as shipped)<br><code>eva02-tiny</code> (not reached by the method as shipped)<br><code>fastvit-sa12</code> (not reached by the method as shipped)<br><code>fastvit-t8</code> (not reached by the method as shipped)<br><code>hf-convnextv2-tiny</code> (not reached by the method as shipped)<br><code>hf-dinov2-small-reg</code> (not reached by the method as shipped)<br><code>hf-hiera-tiny</code> (not reached by the method as shipped)<br><code>hf-radio-v3-base</code> (needs consent)<br><code>hf-siglip2-base</code> (not reached by the method as shipped)<br><code>hggd-residual</code> (not reached by the method as shipped)<br><code>hiera-small-abswin</code> (not reached by the method as shipped)<br><code>maxvit-tiny</code> (not reached by the method as shipped)<br><code>mobilenetv4-conv-small</code> (not reached by the method as shipped)<br><code>mobilenetv4-hybrid-medium</code> (not reached by the method as shipped)<br><code>pe-spatial-tiny</code> (not reached by the method as shipped)<br><code>repvit-m1</code> (not reached by the method as shipped)<br><code>resnet18</code> (not reached by the method as shipped)<br><code>resnet34-rgbd</code> (not reached by the method as shipped)<br><code>resnet50</code> (not reached by the method as shipped)<br><code>sam2-hiera-tiny</code> (not reached by the method as shipped)<br><code>siglip2-base</code> (not reached by the method as shipped)<br><code>swinv2-tiny</code> (not reached by the method as shipped)<br><code>tv-convnext-tiny</code> (not reached by the method as shipped)<br><code>tv-efficientnetv2-s</code> (not reached by the method as shipped)<br><code>tv-mobilenetv3-large</code> (not reached by the method as shipped)<br><code>tv-resnet34</code> (not reached by the method as shipped)</td>
+</tr>
+<tr>
+<td>Loss †</td>
+<td>loss terms of GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td><code>balanced-l1</code><br><code>cauchy</code><br><code>charbonnier</code><br><code>focal</code><br><code>huber</code><br><code>label-smoothing</code><br><code>ohem-smooth-l1</code><br><code>ohem</code><br><code>poly1</code><br><code>softmax-focal</code><br><code>uncertainty-weighting</code></td>
+<td><code>class-balanced</code><br><code>dice</code><br><code>ghm-c</code><br><code>ghm-r</code><br><code>lovasz-softmax</code></td>
+<td>—</td>
+<td>—</td>
+<td><code>bce</code> (3 of 3 probed)<br><code>quality-focal</code> (3 of 4 probed)<br><code>varifocal</code> (3 of 3 probed)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Post-processing †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD</td>
+<td><code>collision</code><br><code>furthest-sampling</code><br><code>gripper-limits</code><br><code>mesh-collision</code><br><code>nms</code><br><code>to-base-frame</code><br><code>top-k</code><br><code>width-from-cloud</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>approach-cone</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>center-gripper</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>collision-strict</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>score-threshold</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>table-plane</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>workspace</code> (5 of 5 probed, +1 not reached by the method as shipped)</td>
+<td><code>target-mask</code> (not probed)</td>
+</tr>
+<tr>
+<td>Training recipe †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD; HGGD not for the presets that name the scene encoder</td>
+<td><code>optimizer=adamw-no-decay-1d</code><br><code>optimizer=adamw</code><br><code>optimizer=ademamix</code><br><code>optimizer=encoder-lr-0.1</code><br><code>optimizer=layer-decay</code><br><code>optimizer=stableadamw</code><br><code>optimizer=timm-adan</code><br><code>optimizer=timm-madgrad</code><br><code>schedule=onecycle</code><br><code>hooks=grad-clip</code><br><code>recipe=adamw-onecycle</code><br><code>recipe=ptv3-adamw-onecycle</code></td>
+<td>—</td>
+<td><code>hooks=freeze-encoder</code><br><code>recipe=finetune-encoder</code></td>
+<td>—</td>
+<td><code>optimizer=prodigy</code> (2 of 6 probed)<br><code>optimizer=schedulefree-adamw</code> (2 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=schedulefree-radam</code> (2 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=schedulefree-sgd</code> (2 of 6 probed)<br><code>optimizer=soap</code> (4 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-adopt</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-lamb</code> (3 of 6 probed)<br><code>optimizer=timm-lion</code> (5 of 6 probed)<br><code>optimizer=timm-mars</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=constant</code> (5 of 6 probed)<br><code>schedule=cosine-restarts</code> (5 of 6 probed)<br><code>schedule=cosine</code> (5 of 6 probed)<br><code>schedule=multistep-warmup</code> (4 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=poly</code> (5 of 6 probed)<br><code>schedule=warmup-cosine</code> (4 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=accumulate-2</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=agc</code> (5 of 6 probed)<br><code>hooks=amp</code> (0 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=ema</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=swa</code> (4 of 6 probed)<br><code>augment=dropout</code> (4 of 5 probed, +1 not reached by the method as shipped)<br><code>augment=jitter</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>augment=shift</code> (5 of 5 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>predicts</strong></p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Probed under</th>
+<th>universal</th>
+<th>N of M probed</th>
+<th>undecided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scene encoder</td>
+<td>the five seed-based methods</td>
+<td><code>ptv3-ppt</code><br><code>ptv3</code><br><code>spunet-gaussiancross</code></td>
+<td><code>assanet</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>dgcnn-static</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>dgcnn</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>dela</code> (2 of 4 probed, +1 not reached by the method as shipped)<br><code>litept-structured3d</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>litept</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>minkunet18a-openscene</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>minkunet18a</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>minkunet34c-pointcontrast</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>minkunet34c</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>oacnns</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>octformer</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>ptv3-encoder</code> (2 of 4 probed, +1 not reached by the method as shipped)<br><code>ptv3-scannet200</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>ptv3-sonata-small</code> (2 of 4 probed, +1 not reached by the method as shipped)<br><code>ptv3-sonata</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>ptv3-utonia</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointmlp</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>point-mamba</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>pointmetabase-xl</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointmetabase</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnext-b</code> (0 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnext-l</code> (0 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnext-xl</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnext</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnet2</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnet2-dense</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointnet2-msg</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pointnet2-msg-dense</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pointnet2-transformer</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>point-transformer-v1</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>point-transformer-v2</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pointvector-xl</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pointvector</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>point-vit</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>pyg-edgeconv</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>pyg-point-transformer</code> (2 of 3 probed, +1 not reached by the method as shipped, 1 unstable, not repeated)<br><code>pyg-pointgnn</code> (1 of 3 probed, +1 not reached by the method as shipped, 1 unstable, not repeated)<br><code>pyg-pointnet</code> (2 of 4 probed, +1 not reached by the method as shipped)<br><code>randlanet</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>spunet</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>sparse-unet14</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>uni3d</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>volt</code> (1 of 3 probed, +2 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Seed proposal</td>
+<td>the five seed-based methods</td>
+<td><code>dense-fps</code><br><code>dense-fpsample</code><br><code>graspness-fusion-fps</code></td>
+<td><code>dense-ffps</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>dense-fusion-fps</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>dense-random</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>dense-torch-cluster</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>dense-voxel</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-ffps</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-fps-fill</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-fps-topk</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>graspness-fps</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-fpsample</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>graspness-nms</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-random</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>graspness-sfps</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-top-fraction</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-topk</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>graspness-torch-cluster</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>graspness-voxel</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>objectness-fps</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>product-fps</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>scored-fps</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>SubsampledSeeds</code> (defaults) (3 of 3 probed, +2 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>View</td>
+<td>the five seed-based methods</td>
+<td><code>direction-vmf</code><br><code>icosphere-162</code><br><code>lattice-angular-cost</code><br><code>lattice-best-view</code><br><code>lattice-soft-argmax</code><br><code>lattice-topk</code><br><code>rotation-6d</code><br><code>rotation-9d</code><br><code>rotation-quaternion</code><br><code>two-vector-baseline</code><br><code>two-vector</code></td>
+<td><code>direction-regression</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>healpix-192</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>healpix-768</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>icosphere-642</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>lattice-fibonacci-120</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>lattice-hemisphere-60</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>lattice-view</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>objectness-view-graspable</code> (0 of 3 probed, +2 not reached by the method as shipped)<br><code>objectness-view</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>template-view</code> (4 of 4 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Assigner</td>
+<td>the five seed-based methods</td>
+<td>—</td>
+<td><code>compact-label</code> (1 of 3 probed, +2 not reached by the method as shipped)<br><code>nearest-label-object-seeds</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>scale-balanced</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>NearestLabelAssigner</code> (defaults) (2 of 3 probed, +2 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Grouper</td>
+<td>the five seed-based methods</td>
+<td><code>box</code><br><code>cylinder-edgeconv</code><br><code>depth-ball</code><br><code>depth-knn</code><br><code>pyg-edge-conv</code><br><code>pyg-point-transformer-conv</code><br><code>CylinderGroup</code> (defaults)<br><code>CylinderInteractionGroup</code> (defaults)<br><code>DepthCylinderGroup</code> (defaults)</td>
+<td><code>ball</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>cylinder-attentive</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>cylinder-invres</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>cylinder-vector-attention</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-box</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-cylinder-attentive</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-cylinder-multi-scale</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-cylinder-projection</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-embed</code> (2 of 4 probed, +1 not reached by the method as shipped)<br><code>depth-pool</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>knn</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>multi-scale-linear</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>multi-scale</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pyg-gatv2-conv</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pyg-pointnet-conv</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>pyg-transformer-conv</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>roi-aware</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>roi-grid</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>voxel-set-abstraction</code> (3 of 4 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Head bundle</td>
+<td>the five seed-based methods</td>
+<td><code>decoupled-grid-bins</code><br><code>decoupled-grid-class</code><br><code>decoupled-grid-regression</code><br><code>decoupled-grid</code><br><code>swad-focal</code></td>
+<td><code>economic-focal</code> (3 of 4 probed, +1 not reached by the method as shipped)<br><code>economic</code> (2 of 3 probed, +2 not reached by the method as shipped)<br><code>operation-objectness</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>operation</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>swad</code> (4 of 4 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Image encoder †</td>
+<td>HGGD, the one method with this slot</td>
+<td>—</td>
+<td><code>convnextv2-atto</code> (0 of 1 probed)<br><code>convnextv2-tiny</code> (1 of 1 probed)<br><code>dinov2-small-reg-depth-stem</code> (1 of 1 probed)<br><code>dinov2-small-reg</code> (1 of 1 probed)<br><code>dinov3-convnext-tiny</code> (1 of 1 probed)<br><code>dinov3-vits16</code> (1 of 1 probed)<br><code>efficientnetv2-s</code> (1 of 1 probed)<br><code>efficientvit-b1</code> (1 of 1 probed)<br><code>eva02-tiny</code> (1 of 1 probed)<br><code>fastvit-sa12</code> (1 of 1 probed)<br><code>fastvit-t8</code> (1 of 1 probed)<br><code>hf-convnextv2-tiny</code> (1 of 1 probed)<br><code>hf-depth-anything-v2-small</code> (1 of 1 probed)<br><code>hf-dinov2-small-reg</code> (1 of 1 probed)<br><code>hf-dinov2-small</code> (1 of 1 probed)<br><code>hf-hiera-tiny</code> (1 of 1 probed)<br><code>hf-siglip2-base</code> (1 of 1 probed)<br><code>hf-swinv2-tiny</code> (1 of 1 probed)<br><code>hggd-residual</code> (1 of 1 probed)<br><code>hiera-small-abswin</code> (1 of 1 probed)<br><code>maxvit-tiny</code> (1 of 1 probed)<br><code>mobilenetv4-conv-small</code> (1 of 1 probed)<br><code>mobilenetv4-hybrid-medium</code> (0 of 1 probed)<br><code>pe-spatial-tiny</code> (1 of 1 probed)<br><code>repvit-m1</code> (1 of 1 probed)<br><code>resnet18</code> (1 of 1 probed)<br><code>resnet34-rgbd</code> (1 of 1 probed)<br><code>resnet34</code> (1 of 1 probed)<br><code>resnet50</code> (1 of 1 probed)<br><code>sam2-hiera-tiny</code> (1 of 1 probed)<br><code>siglip2-base</code> (1 of 1 probed)<br><code>swinv2-tiny</code> (1 of 1 probed)<br><code>tv-convnext-tiny</code> (1 of 1 probed)<br><code>tv-efficientnetv2-s</code> (1 of 1 probed)<br><code>tv-mobilenetv3-large</code> (1 of 1 probed)<br><code>tv-regnet-y-800mf</code> (1 of 1 probed)<br><code>tv-resnet34</code> (1 of 1 probed)</td>
+<td><code>hf-radio-v3-base</code> (needs consent)</td>
+</tr>
+<tr>
+<td>Loss †</td>
+<td>loss terms of GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td><code>softmax-focal</code></td>
+<td><code>balanced-l1</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>bce</code> (2 of 2 probed, +1 not reached by the method as shipped)<br><code>cauchy</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>charbonnier</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>class-balanced</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>dice</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>focal</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>ghm-c</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>ghm-r</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>huber</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>label-smoothing</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>lovasz-softmax</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>ohem-smooth-l1</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>ohem</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>poly1</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>quality-focal</code> (2 of 3 probed, +1 not reached by the method as shipped)<br><code>uncertainty-weighting</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>varifocal</code> (2 of 2 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Post-processing †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD</td>
+<td>—</td>
+<td><code>approach-cone</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>center-gripper</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>collision-strict</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>collision</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>furthest-sampling</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>gripper-limits</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>mesh-collision</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>nms</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>score-threshold</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>table-plane</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>to-base-frame</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>top-k</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>width-from-cloud</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>workspace</code> (4 of 4 probed, +2 not reached by the method as shipped)</td>
+<td><code>target-mask</code> (not probed)</td>
+</tr>
+<tr>
+<td>Training recipe †</td>
+<td>GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp, HGGD; HGGD not for the presets that name the scene encoder</td>
+<td><code>optimizer=encoder-lr-0.1</code><br><code>optimizer=prodigy</code><br><code>optimizer=schedulefree-adamw</code><br><code>optimizer=schedulefree-radam</code><br><code>optimizer=timm-lamb</code></td>
+<td><code>optimizer=adamw-no-decay-1d</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=adamw</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=ademamix</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=layer-decay</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>optimizer=schedulefree-sgd</code> (2 of 4 probed, +2 not reached by the method as shipped)<br><code>optimizer=soap</code> (5 of 6 probed)<br><code>optimizer=stableadamw</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-adan</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-adopt</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-lion</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-madgrad</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>optimizer=timm-mars</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=constant</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=cosine-restarts</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=cosine</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=multistep-warmup</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>schedule=onecycle</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=poly</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>schedule=warmup-cosine</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=accumulate-2</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=agc</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>hooks=amp</code> (0 of 4 probed, +2 not reached by the method as shipped)<br><code>hooks=ema</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>hooks=freeze-encoder</code> (4 of 4 probed, +1 not reached by the method as shipped)<br><code>hooks=grad-clip</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>hooks=swa</code> (3 of 4 probed, +2 not reached by the method as shipped)<br><code>augment=dropout</code> (4 of 4 probed, +2 not reached by the method as shipped)<br><code>augment=jitter</code> (4 of 5 probed, +1 not reached by the method as shipped)<br><code>augment=shift</code> (3 of 4 probed, +2 not reached by the method as shipped)<br><code>recipe=adamw-onecycle</code> (5 of 5 probed, +1 not reached by the method as shipped)<br><code>recipe=finetune-encoder</code> (3 of 3 probed, +2 not reached by the method as shipped)<br><code>recipe=ptv3-adamw-onecycle</code> (4 of 4 probed, +1 not reached by the method as shipped)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>target-mask</code> has no cell of its own: reads observation.masks, which no shipped dataset fills.</li>
+<li><code>distribution-focal</code> has no cell of its own: fits <code>bins</code> terms only, which no shipped method has; probed as the width loss of the head preset <code>decoupled-grid-bins</code> (stage cells).</li>
+<li><code>DepthEmbedGroup</code> (grouper) has no cell under its type name: it needs an option only a preset supplies; its presets are classified.</li>
+<li><code>DepthPoolGroup</code> (grouper) has no cell under its type name: it needs an option only a preset supplies; its presets are classified.</li>
+<li><code>MultiRadiusGroup</code> (grouper) has no cell under its type name: it needs an option only a preset supplies; its presets are classified.</li>
+<li><code>MultiScaleGroup</code> (grouper) has no cell under its type name: it needs an option only a preset supplies; its presets are classified.</li>
+</ul>
+<p>How to read it:</p>
+<ul>
+<li><strong>A class is not a ranking.</strong> <em>universal</em> at a level says that a swap reached that level under every method without anything else changed; it says nothing about accuracy.</li>
+<li><strong>An option that is not universal is usually bound to its neighbours, not to a paper.</strong> A head bundle goes with the assigner and the label set it is supervised with, a grouper with the axes its head reads, a scoring proposal with the stage that owns objectness. Replaced together with what they depend on they run under other methods too: see <a href="../advanced_guides/measured_combinations/#sets-of-stages">Sets of stages</a> and <a href="../advanced_guides/measured_combinations/#several-slots-at-once">Several slots at once</a>.</li>
+<li><strong>A refusal comes with the fix.</strong> <code>grasppanda compose</code> prints the contract that is violated and the option or preset that satisfies it, before anything is built.</li>
+<li><strong>A loss or a recipe preset with a class <em>N of M probed</em> below M did not run everywhere it was put</strong>: the <a href="head_loss/">loss</a> and <a href="recipe/">recipe</a> pages say where and why (a term of another kind, a detector that reads images, mixed precision).</li>
+<li><strong>What was not probed is not classified.</strong> Most combinations of two or more options have no record; the explorer shows for any two options what the config check answers, which is a weaker statement than a probe.</li>
+</ul>
+<h2 id="how-to-try-one">How to try one<a class="headerlink" href="#how-to-try-one" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>--list<span class="w"> </span>grouper<span class="w">                                </span><span class="c1"># the presets of a slot</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--list<span class="w"> </span>grouper
+<span class="w">                                                                 </span><span class="c1"># ... under GSNet, measured</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>roi-grid<span class="w"> </span>-o<span class="w"> </span>gsnet_roi-grid.yaml<span class="w">                 </span><span class="c1"># a checked config</span>
+grasppanda<span class="w"> </span>probe<span class="w"> </span>gsnet_roi-grid.yaml<span class="w">                             </span><span class="c1"># 20 iterations on</span>
+<span class="w">                                                                 </span><span class="c1"># real frames: runs?</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>gsnet_roi-grid.yaml<span class="w">                             </span><span class="c1"># the real run</span>
+</code></pre></div>
+<ul>
+<li>Several <code>--set</code> go into one command (<code>--set backbone=point-transformer-v2 --set grouper=cylinder-vector-attention</code>, a recorded combination); <code>compose</code> inserts the adapter the contracts ask for and says so, or refuses with the conflict and the fix.</li>
+<li><code>grasppanda compose --show grouper=roi-grid</code> prints one preset with what must be re-tuned; <code>grasppanda components --slot groupers</code> prints the contracts, sources and optional libraries of every component.</li>
+<li><code>grasppanda explore</code> serves the explorer locally and checks any selection with the <code>compose</code> of your installation.</li>
+<li><code>probe</code> needs GraspNet-1Billion and the label assets of the method (<a href="../user_guides/combinations/">Try a combination</a> lists the <code>prepare</code> commands). An option that is a bridge to a library names the extra to install on its slot page. Until the first release on PyPI, install an extra from the repository root with <code>pip install -e ".[&lt;extra&gt;]"</code>: the form <code>pip install "grasppanda[&lt;extra&gt;]"</code> resolves against the metadata of the copy that is already installed and may install nothing.</li>
+<li>Under <strong>Scale-Balanced-Grasp</strong> a probe ends as <code>wired</code> (a synthetic scene, exit status 3) unless it is given the reference's width histogram: <code>grasppanda probe &lt;config&gt; --opts data.train.dataset.scale_statistic.source=legacy_import data.train.dataset.scale_statistic.reference_sha256=&lt;SHA-256&gt;</code>. The histogram is a statistic of a whole training split and cannot be built from the eight frames of a probe (<code>configs/scale_balanced_grasp/README.md</code> says how to import the file); the recorded <code>runs</code> of that method were measured this way.</li>
+<li><code>grasppanda compose --list image_encoder</code> lists the image encoders (the slot of HGGD); the seed-based methods read one through point painting.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

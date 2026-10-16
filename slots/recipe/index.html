@@ -1,0 +1,3604 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/recipe/">
+      
+      
+        <link rel="prev" href="../post/">
+      
+      
+        <link rel="next" href="../../methods/gsnet/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Training recipe: optimizer, schedule, hooks, augmentation - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-training-recipe-optimizer-schedule-hooks-augmentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Training recipe: optimizer, schedule, hooks, augmentation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#components-name-them-as-type-in-a-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components (name them as type: in a config)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recipe-presets-name-them-after-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recipe presets (name them after --set)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-line-with-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One line with compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimizers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-groups-a-pretrained-encoder-layer-wise-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter groups: a pretrained encoder, layer-wise decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schedules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schedules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hooks-and-train-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks and train options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#augmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Augmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#without-compose-schedule-bases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without compose: schedule bases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#components-name-them-as-type-in-a-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components (name them as type: in a config)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recipe-presets-name-them-after-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recipe presets (name them after --set)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-line-with-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One line with compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimizers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-groups-a-pretrained-encoder-layer-wise-decay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter groups: a pretrained encoder, layer-wise decay
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schedules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schedules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hooks-and-train-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks and train options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#augmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Augmentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#without-compose-schedule-bases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without compose: schedule bases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/recipe.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="the-training-recipe-optimizer-schedule-hooks-augmentation">The training recipe: optimizer, schedule, hooks, augmentation<a class="headerlink" href="#the-training-recipe-optimizer-schedule-hooks-augmentation" title="Permanent link">&para;</a></h1>
+<p><em>Words such as seed, contract, preset, adapter, label set and point painting are explained in the <a href="../#words-used-on-these-pages">slot index</a>.</em></p>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="admonition note">
+<p class="admonition-title">Which of these options fit a method</p>
+<p>Every method has a page that lists the options of each of its slots with what was measured for each (the verdict, the levels <em>composes</em>, <em>runs</em>, <em>learns</em> and <em>predicts</em>, the class, the grasps, the reason of a refusal): GSNet (<a href="../../methods/gsnet/#optimizer">optimizer</a>, <a href="../../methods/gsnet/#schedule">schedule</a>, <a href="../../methods/gsnet/#hooks">hooks</a>, <a href="../../methods/gsnet/#augment">augmentation</a>, <a href="../../methods/gsnet/#recipe">whole recipe</a>); EconomicGrasp (<a href="../../methods/economicgrasp/#optimizer">optimizer</a>, <a href="../../methods/economicgrasp/#schedule">schedule</a>, <a href="../../methods/economicgrasp/#hooks">hooks</a>, <a href="../../methods/economicgrasp/#augment">augmentation</a>, <a href="../../methods/economicgrasp/#recipe">whole recipe</a>); FineGrasp (<a href="../../methods/finegrasp/#optimizer">optimizer</a>, <a href="../../methods/finegrasp/#schedule">schedule</a>, <a href="../../methods/finegrasp/#hooks">hooks</a>, <a href="../../methods/finegrasp/#augment">augmentation</a>, <a href="../../methods/finegrasp/#recipe">whole recipe</a>); GraspNet-baseline (<a href="../../methods/graspnet_baseline/#optimizer">optimizer</a>, <a href="../../methods/graspnet_baseline/#schedule">schedule</a>, <a href="../../methods/graspnet_baseline/#hooks">hooks</a>, <a href="../../methods/graspnet_baseline/#augment">augmentation</a>, <a href="../../methods/graspnet_baseline/#recipe">whole recipe</a>); Scale-Balanced-Grasp (<a href="../../methods/scale_balanced_grasp/#optimizer">optimizer</a>, <a href="../../methods/scale_balanced_grasp/#schedule">schedule</a>, <a href="../../methods/scale_balanced_grasp/#hooks">hooks</a>, <a href="../../methods/scale_balanced_grasp/#augment">augmentation</a>, <a href="../../methods/scale_balanced_grasp/#recipe">whole recipe</a>); HGGD (<a href="../../methods/hggd/#optimizer">optimizer</a>, <a href="../../methods/hggd/#schedule">schedule</a>, <a href="../../methods/hggd/#hooks">hooks</a>, <a href="../../methods/hggd/#augment">augmentation</a>, <a href="../../methods/hggd/#recipe">whole recipe</a>). In a terminal: <code>grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list optimizer</code>.</p>
+<p><em>Class: one run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</em> Where this page names a class or a measured verdict, it is one of the <a href="../../advanced_guides/measured_combinations/#measured-classes">measured classes</a>.</p>
+</div>
+<!-- method-options:end -->
+
+<p>Everything on this page is <strong>around</strong> the model: how its weights are updated, how the
+learning rate moves, what runs before and after an epoch, and how a training sample is
+perturbed. None of it changes what the detector computes, so none of it is bound to one
+method: the same line works under GSNet and under HGGD unless the page says otherwise.</p>
+<p>No AP is claimed for anything here. "Runs" means: <code>grasppanda probe</code> trained 20
+iterations on 8 real frames of GraspNet-1Billion with finite losses and predicted
+grasps. Whether a recipe is <em>better</em> takes a training run and an evaluation.</p>
+<h2 id="1-the-task-of-the-slot">1. The task of the slot<a class="headerlink" href="#1-the-task-of-the-slot" title="Permanent link">&para;</a></h2>
+<p>A config has four places that make up the recipe, and each is a slot you fill by name:</p>
+<table>
+<thead>
+<tr>
+<th>Config key</th>
+<th>Registry</th>
+<th>What it decides</th>
+<th>When it runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>optimizer</code></td>
+<td><code>OPTIMIZERS</code></td>
+<td>how gradients become weight updates</td>
+<td>once per <code>train.accumulate</code> batches</td>
+</tr>
+<tr>
+<td><code>scheduler</code></td>
+<td><code>SCHEDULERS</code></td>
+<td>the learning rate over the run</td>
+<td>after every optimizer step or every epoch (<code>train.scheduler_unit</code>)</td>
+</tr>
+<tr>
+<td><code>hooks</code></td>
+<td><code>HOOKS</code></td>
+<td>anything else around the loop: weight averages, freezing, clipping variants</td>
+<td>at <code>before_run</code>, <code>before_epoch</code>, <code>before_step</code>, <code>after_iter</code>, <code>after_epoch</code>, <code>after_run</code></td>
+</tr>
+<tr>
+<td><code>data.train.dataset.transforms</code></td>
+<td><code>TRANSFORMS</code></td>
+<td>augmentation of one training sample</td>
+<td>in the data-loader workers, per sample</td>
+</tr>
+</tbody>
+</table>
+<p>Plain options of the loop need no component: <code>train.amp</code> (mixed precision),
+<code>train.accumulate</code> (gradient accumulation), <code>train.grad_clip</code> with <code>train.grad_clip_mode</code>
+(clipping), <code>train.ema</code> (a fixed-decay weight average), <code>train.sync_bn</code>.</p>
+<p>The loop itself (<code>grasppanda/engine/trainer.py</code>) is short: forward and backward per
+batch; every <code>train.accumulate</code> batches <code>before_step</code> hooks, clipping, <code>optimizer.step()</code>,
+the weight average, the scheduler. Everything on this page plugs into those points.</p>
+<h2 id="2-input-and-output">2. Input and output<a class="headerlink" href="#2-input-and-output" title="Permanent link">&para;</a></h2>
+<p><strong>Optimizer.</strong> Built by <code>build_optimizers(model, config["optimizer"])</code>. The engine
+supplies two arguments a config never writes: <code>params</code> (every parameter with
+<code>requires_grad</code>, or what the detector's <code>configure_optimizers</code> returns) and, for
+components that ask for it, <code>model</code> (to name parameters). The result must be a
+<code>torch.optim.Optimizer</code>; the bridges on this page return the library's own optimizer
+object, so checkpoints hold its state dict unchanged. A detector may return several
+optimizers; each gets a scheduler of its own.</p>
+<p><strong>Scheduler.</strong> Built per optimizer from the <code>scheduler</code> node; it must be a
+<code>torch.optim.lr_scheduler.LRScheduler</code>. The trainer calls <code>step()</code> once per optimizer step
+(<code>train.scheduler_unit: iteration</code>) or once per epoch (<code>epoch</code>, the default). The engine
+fills in the length of the run where the schedule needs it: <code>total_steps</code> of <code>OneCycleLR</code>
+and <code>TimmSchedule</code>, <code>T_max</code> of <code>CosineAnnealingLR</code>, <code>total_iters</code> of <code>PolynomialLR</code>.
+<code>scheduler: null</code> is a constant rate.</p>
+<p><strong>Hook.</strong> A subclass of <code>grasppanda.engine.hooks.Hook</code>; every callback receives the
+<code>TrainState</code> (model, optimizers, schedulers, gradient scaler, <code>ema</code>, epoch and iteration
+counters, the resolved config). Hooks run in ascending <code>priority</code>; evaluation is 70,
+checkpointing 80, so a hook that changes the weights used for evaluation has a lower one.
+A weight average installs itself as <code>state.ema</code>, which is what <code>evaluation.weights: ema</code>
+scores and what a checkpoint stores under <code>ema</code>.</p>
+<p><strong>Transform.</strong> A <code>PointTransform</code> maps one <code>PointSample</code> to one <code>PointSample</code> <em>after</em> the
+label-alignment boundary. A sample holds <code>points</code> <code>(N, 3)</code> float64 in metres in the
+camera frame (z along the view), <code>full_points</code> (the cloud before sampling), per-point
+labels aligned with <code>points</code>, and <code>objects</code>: one 4 × 4 object-to-camera pose per
+instance, to which the grasp labels are attached. So an augmentation may</p>
+<ul>
+<li>remove or reorder points only through <code>sample.gather(index)</code>, which carries the labels;</li>
+<li>move the scene only together with the object poses;</li>
+<li>not move points at all when the sample carries images (<code>rgb</code>, <code>depth</code>) or camera-bound
+  extras, as HGGD's does: the config check refuses such a transform list (a transform
+  that moves points declares <code>moves_points = True</code>), and the sample refuses it again.</li>
+</ul>
+<p>Scaling the scene is therefore <em>not</em> an allowed augmentation: grasp widths, depths and
+the gripper are in metres and would not follow.</p>
+<p><strong>What the config checker does.</strong> <code>grasppanda print-config --check</code> (and <code>compose</code>) checks
+every key of these nodes against the constructor signature of the named class, without
+importing the optional libraries. Free-form arguments of a library go into one explicit
+mapping, <code>options</code>. Whether an optimizer <em>name</em> exists in the installed library is known
+only when the optimizer is built: <code>probe</code> or <code>train</code> then names the valid ones.</p>
+<h2 id="3-options-at-a-glance">3. Options at a glance<a class="headerlink" href="#3-options-at-a-glance" title="Permanent link">&para;</a></h2>
+<p>Install the optional libraries once: <code>pip install -e ".[optim]"</code> (timm,
+pytorch_optimizer, schedulefree; all Apache-2.0). Options marked "core" need nothing.</p>
+<p>Everything is random-init: a recipe has no weights. "Measured" is the verdict of
+<code>grasppanda probe</code> per method, from the records of
+<a href="../../advanced_guides/measured_combinations/#the-training-recipe">Measured combinations</a>;
+G = GSNet, E = EconomicGrasp, H = HGGD. The records below are of two methods, not
+five: the last column is the class of the measured page at the level <em>runs</em>, counted over
+the methods probed (<em>2 of 2 probed</em>: it ran under a seed-based method and under HGGD, a
+detector family with its own data path, hooks and clipping), followed by the methods not
+probed yet. The grid now has a cell for every preset under every method it applies to (all
+six; the five seed-based ones for a preset that names <code>backbone</code>). That column is written
+by <code>tools/make_method_pages.py</code> from the records; the other levels are on the method pages.</p>
+<h3 id="components-name-them-as-type-in-a-config">Components (name them as <code>type:</code> in a config)<a class="headerlink" href="#components-name-them-as-type-in-a-config" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Registry</th>
+<th>What it is</th>
+<th>Source</th>
+<th>Code, licence</th>
+<th>Needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TimmOptimizer</code></td>
+<td>optimizer</td>
+<td>any of timm's 98 optimizers by <code>name</code></td>
+<td>timm (R. Wightman, Hugging Face)</td>
+<td>bridge to <code>timm.optim.create_optimizer_v2</code>, Apache-2.0</td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>PytorchOptimizer</code></td>
+<td>optimizer</td>
+<td>any of pytorch_optimizer's 127 optimizers by <code>name</code></td>
+<td>pytorch_optimizer (kozistr)</td>
+<td>bridge to <code>pytorch_optimizer.load_optimizer</code>, Apache-2.0</td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>ScheduleFree</code></td>
+<td>optimizer</td>
+<td>schedule-free AdamW, RAdam or SGD</td>
+<td>Defazio et al., "The Road Less Scheduled", <a href="https://arxiv.org/abs/2405.15682">arXiv 2405.15682</a> (the authors' package, maintained at Meta)</td>
+<td>bridge to <code>schedulefree</code>, Apache-2.0</td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>ParamGroups</code></td>
+<td>optimizer</td>
+<td>wraps any optimizer: learning-rate multiplier per module, layer-wise decay, no weight decay on 1-D parameters</td>
+<td>layer-wise decay: Bao et al., BEiT, <a href="https://arxiv.org/abs/2106.08254">arXiv 2106.08254</a>; the rule <code>decay ** (L - i)</code> as in <code>timm.optim</code></td>
+<td>written here (about 80 lines)</td>
+<td>core</td>
+</tr>
+<tr>
+<td>every class of <code>torch.optim</code></td>
+<td>optimizer</td>
+<td><code>Adam</code>, <code>AdamW</code>, <code>SGD</code>, <code>RAdam</code>, <code>NAdam</code>, <code>Adafactor</code>, …</td>
+<td>PyTorch</td>
+<td>PyTorch, BSD-3</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>TimmSchedule</code></td>
+<td>scheduler</td>
+<td>timm's cosine, tanh, poly, step and multi-step schedules with built-in warm-up and restarts</td>
+<td>timm</td>
+<td>bridge to <code>timm.scheduler</code>, Apache-2.0</td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>WarmupCosineLR</code></td>
+<td>scheduler</td>
+<td>linear warm-up then cosine, in closed form (FineGrasp's schedule)</td>
+<td>existed before this page</td>
+<td>written here</td>
+<td>core</td>
+</tr>
+<tr>
+<td>every class of <code>torch.optim.lr_scheduler</code></td>
+<td>scheduler</td>
+<td><code>OneCycleLR</code>, <code>CosineAnnealingLR</code>, <code>StepLR</code>, <code>MultiStepLR</code>, <code>ExponentialLR</code>, <code>CosineAnnealingWarmRestarts</code>, … (not the five that take objects or functions)</td>
+<td>PyTorch</td>
+<td>PyTorch, BSD-3</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>EMAHook</code></td>
+<td>hook</td>
+<td>exponential moving average of the weights with warm-up of the decay</td>
+<td>Tarvainen and Valpola, NIPS 2017, <a href="https://arxiv.org/abs/1703.01780">arXiv 1703.01780</a></td>
+<td><code>torch.optim.swa_utils.AveragedModel</code></td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>SWAHook</code></td>
+<td>hook</td>
+<td>stochastic weight averaging over the last epochs</td>
+<td>Izmailov et al., UAI 2018, <a href="https://arxiv.org/abs/1803.05407">arXiv 1803.05407</a></td>
+<td><code>torch.optim.swa_utils.AveragedModel</code></td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>FreezeHook</code></td>
+<td>hook</td>
+<td>freeze sub-modules for the first epochs, then release them</td>
+<td>gradual unfreezing: Howard and Ruder, ACL 2018, <a href="https://arxiv.org/abs/1801.06146">arXiv 1801.06146</a></td>
+<td>written here (about 30 lines)</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>ScheduleFreeHook</code></td>
+<td>hook</td>
+<td>switches a schedule-free optimizer between its training point and its average</td>
+<td>as <code>ScheduleFree</code></td>
+<td>calls <code>optimizer.train()</code> / <code>.eval()</code> of <code>schedulefree</code></td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>AdaptiveGradClipHook</code></td>
+<td>hook</td>
+<td>adaptive gradient clipping before every optimizer step</td>
+<td>Brock et al., <a href="https://arxiv.org/abs/2102.06171">arXiv 2102.06171</a></td>
+<td>bridge to <code>timm.utils.adaptive_clip_grad</code>, Apache-2.0</td>
+<td><code>optim</code></td>
+</tr>
+<tr>
+<td><code>RandomJitter</code></td>
+<td>transform</td>
+<td>clipped Gaussian noise on the input points</td>
+<td>Qi et al., PointNet++, <a href="https://arxiv.org/abs/1706.02413">arXiv 1706.02413</a></td>
+<td>adapted from <a href="https://github.com/Pointcept/Pointcept">Pointcept</a> @ 1342eda, MIT</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>RandomDropout</code></td>
+<td>transform</td>
+<td>removes a fraction of the points with their labels</td>
+<td>as above</td>
+<td>adapted from Pointcept @ 1342eda, MIT</td>
+<td>core</td>
+</tr>
+<tr>
+<td><code>RandomShift</code></td>
+<td>transform</td>
+<td>translates the scene and the object poses</td>
+<td>Pointcept</td>
+<td>adapted from Pointcept @ 1342eda, MIT</td>
+<td>core</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recipe-presets-name-them-after-set">Recipe presets (name them after <code>--set</code>)<a class="headerlink" href="#recipe-presets-name-them-after-set" title="Permanent link">&para;</a></h3>
+<p><code>grasppanda compose --list optimizer</code> (or <code>schedule</code>, <code>hooks</code>, <code>augment</code>, <code>recipe</code>)
+prints them; <code>grasppanda compose --show optimizer=timm-lamb</code> prints one file with its
+re-tuning notes.</p>
+<!-- measured:begin -->
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th><code>--set</code></th>
+<th>What it is</th>
+<th>Sets</th>
+<th>Needs</th>
+<th>Measured</th>
+<th>Class at <em>runs</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=adamw-no-decay-1d</code></td>
+<td>AdamW with no weight decay on biases and normalisation weights, through ParamGroups.</td>
+<td>ParamGroups</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=adamw</code></td>
+<td>AdamW of PyTorch with decoupled weight decay, the default of the transformer encoders.</td>
+<td>AdamW</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=ademamix</code></td>
+<td>AdEMAMix (Pagliardini et al., arXiv 2409.03137): Adam with a second, slow momentum.</td>
+<td>PytorchOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=encoder-lr-0.1</code></td>
+<td>The base method's Adam with the scene encoder at a tenth of the learning rate.</td>
+<td>ParamGroups</td>
+<td>core</td>
+<td>G runs, E runs</td>
+<td>universal; seed-based only: it names the <code>backbone</code> module</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=layer-decay</code></td>
+<td>AdamW with layer-wise learning-rate decay through the scene encoder (BEiT, as in timm).</td>
+<td>ParamGroups</td>
+<td>core</td>
+<td>G runs, E runs</td>
+<td>universal; seed-based only: it names the <code>backbone</code> module</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=prodigy</code></td>
+<td>Prodigy (Mishchenko and Defazio, arXiv 2306.06101): Adam that estimates its own step size.</td>
+<td>PytorchOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=schedulefree-adamw</code></td>
+<td>Schedule-free AdamW (Defazio et al., arXiv 2405.15682): no schedule, averaged iterates.</td>
+<td>ScheduleFree, ScheduleFreeHook</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=schedulefree-radam</code></td>
+<td>Schedule-free RAdam (Defazio et al., arXiv 2405.15682): no schedule and no warm-up.</td>
+<td>ScheduleFree, ScheduleFreeHook</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=schedulefree-sgd</code></td>
+<td>Schedule-free SGD (Defazio et al., arXiv 2405.15682): no schedule, averaged iterates.</td>
+<td>ScheduleFree, ScheduleFreeHook</td>
+<td><code>optim</code></td>
+<td>G runs-unstable, H runs</td>
+<td>3 of 6 probed; unstable under GSNet (one iteration without a real seed, not repeated), runs under HGGD; see the note below the table</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=soap</code></td>
+<td>SOAP (Vyas et al., arXiv 2409.11321): Adam in the eigenbasis of Shampoo's preconditioner.</td>
+<td>PytorchOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H fails</td>
+<td>5 of 6 probed; no: fails under HGGD, see the note below the table</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=stableadamw</code></td>
+<td>StableAdamW (Wortsman et al., NeurIPS 2023): AdamW with per-parameter update clipping.</td>
+<td>PytorchOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-adan</code></td>
+<td>Adan (Xie et al., arXiv 2208.06677): Adam with a Nesterov momentum estimate.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-adopt</code></td>
+<td>ADOPT (Taniguchi et al., NeurIPS 2024): Adam that converges for any beta2.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-lamb</code></td>
+<td>LAMB (You et al., ICLR 2020): Adam with a per-layer trust ratio, for large batches.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-lion</code></td>
+<td>Lion (Chen et al., arXiv 2302.06675): sign momentum, found by program search.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-madgrad</code></td>
+<td>MADGRAD (Defazio and Jelassi, arXiv 2101.11075): dual averaging with momentum.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>optimizer</td>
+<td><code>optimizer=timm-mars</code></td>
+<td>MARS (Yuan et al., arXiv 2411.10438): variance-reduced AdamW.</td>
+<td>TimmOptimizer</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=constant</code></td>
+<td>No schedule: the optimizer's learning rate for the whole run.</td>
+<td>train options</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=cosine-restarts</code></td>
+<td>Cosine with warm restarts (SGDR, Loshchilov and Hutter, ICLR 2017): cycles of 4 epochs, each peak half the one before.</td>
+<td>TimmSchedule</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=cosine</code></td>
+<td>Cosine annealing of PyTorch over the whole run, stepped per epoch, without warm-up.</td>
+<td>CosineAnnealingLR</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=multistep-warmup</code></td>
+<td>One epoch of linear warm-up, then the rate times 0.1 after epochs 6 and 9 (timm's MultiStepLRScheduler).</td>
+<td>TimmSchedule</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=onecycle</code></td>
+<td>One-cycle schedule of PyTorch: a short warm-up to the peak rate, then a cosine to near zero.</td>
+<td>OneCycleLR</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=poly</code></td>
+<td>Polynomial decay to zero with power 0.9 after 5 % of warm-up, the schedule of segmentation models (timm's PolyLRScheduler).</td>
+<td>TimmSchedule</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td><code>schedule=warmup-cosine</code></td>
+<td>Linear warm-up over the first 5 % of the run, then one cosine to 1e-6 (timm's CosineLRScheduler).</td>
+<td>TimmSchedule</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=accumulate-2</code></td>
+<td>Gradient accumulation: one optimizer step per two batches, an effective batch twice as large.</td>
+<td>train options</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=agc</code></td>
+<td>Adaptive gradient clipping (Brock et al., arXiv 2102.06171) in place of a fixed clipping norm.</td>
+<td>AdaptiveGradClipHook</td>
+<td><code>optim</code></td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=amp</code></td>
+<td>Mixed precision: the forward pass under autocast with a gradient scaler.</td>
+<td>train options</td>
+<td>core</td>
+<td>G refused, H refused</td>
+<td>0 of 6 probed; not usable yet: the config check refuses <code>train.amp</code> for every shipped detector, see the note below the table</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=ema</code></td>
+<td>Exponential moving average of the weights with warm-up of the decay; evaluation scores it.</td>
+<td>EMAHook</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=freeze-encoder</code></td>
+<td>Freeze the scene encoder for the first two epochs, then train it with the rest.</td>
+<td>FreezeHook</td>
+<td>core</td>
+<td>G runs, E runs</td>
+<td>most; seed-based only: it names the <code>backbone</code> module</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=grad-clip</code></td>
+<td>Clip the global L2 norm of the gradient at 1.0 before every optimizer step.</td>
+<td>train options</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>hooks</td>
+<td><code>hooks=swa</code></td>
+<td>Stochastic weight averaging: the mean of the weights after each of the last epochs.</td>
+<td>SWAHook</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>4 of 6 probed</td>
+</tr>
+<tr>
+<td>augment</td>
+<td><code>augment=dropout</code></td>
+<td>Remove 20 % of the points of every second sample, before the cloud is sampled.</td>
+<td>RandomDropout</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>5 of 6 probed</td>
+</tr>
+<tr>
+<td>augment</td>
+<td><code>augment=jitter</code></td>
+<td>Clipped Gaussian noise of 1 mm on the input points, after the other point transforms.</td>
+<td>RandomJitter</td>
+<td>core</td>
+<td>G runs, H refused</td>
+<td>5 of 6 probed; point-cloud methods only: refused where the dataset serves images</td>
+</tr>
+<tr>
+<td>augment</td>
+<td><code>augment=shift</code></td>
+<td>Translate the scene by up to 10 cm sideways and -5 to 10 cm in depth; object poses follow.</td>
+<td>RandomShift</td>
+<td>core</td>
+<td>G runs, H refused</td>
+<td>5 of 6 probed; point-cloud methods only: refused where the dataset serves images</td>
+</tr>
+<tr>
+<td>recipe</td>
+<td><code>recipe=adamw-onecycle</code></td>
+<td>AdamW with a one-cycle schedule, the recipe Pointcept trains PTv3 with, at a rate for grasp batches.</td>
+<td>AdamW, OneCycleLR</td>
+<td>core</td>
+<td>G runs, H runs</td>
+<td>universal</td>
+</tr>
+<tr>
+<td>recipe</td>
+<td><code>recipe=finetune-encoder</code></td>
+<td>Fine-tuning recipe for a pretrained scene encoder: layer-wise decay, warm-up and cosine, one frozen epoch, EMA.</td>
+<td>ParamGroups, TimmSchedule, FreezeHook, EMAHook</td>
+<td><code>optim</code></td>
+<td>G runs, E runs</td>
+<td>most; seed-based only: it names the <code>backbone</code> module</td>
+</tr>
+<tr>
+<td>recipe</td>
+<td><code>recipe=ptv3-adamw-onecycle</code></td>
+<td>Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks.</td>
+<td>ParamGroups, OneCycleLR</td>
+<td>core</td>
+<td>G runs, E runs</td>
+<td>universal; PTv3 encoders only: the pattern matches its blocks</td>
+</tr>
+</tbody>
+</table>
+<p>What did not simply run, in the words of the probe:</p>
+<ul>
+<li><code>recipe/GSNet/optimizer/schedulefree-sgd</code>, <code>runs-unstable</code>: 1 of 20 iterations had no real seed (iteration 3).</li>
+<li><code>recipe/HGGD/optimizer/soap</code>, <code>fails</code>: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect. For debugging consider passing CUDA_LAUNCH_BLOCKING=1 Compile with <code>TORCH_USE_CUDA_DSA</code> to enable device-side assertions.</li>
+<li><code>recipe/GSNet/hooks/amp</code> and <code>recipe/HGGD/hooks/amp</code>, <code>refused</code>: mixed precision is not supported by the detector yet (it does not declare <code>amp_ready = True</code>). Probed before that rule existed, GSNet stopped in the first iteration with "Index put requires the source and destination dtypes match, got Float for the destination and Half for the source", and HGGD's first loss was not finite (<code>loss/heatmap = nan, loss/angle = inf</code>).</li>
+<li><code>recipe/HGGD/augment/jitter</code> and <code>recipe/HGGD/augment/shift</code>, <code>refused</code>: RandomJitter (RandomShift) moves the points, but this dataset section also serves image-space data (<code>rgb</code>, <code>depth</code>, <code>view_grasps</code>), which would stay where it was.</li>
+</ul>
+<!-- measured:end -->
+
+<p>Under HGGD the three encoder-specific optimizer and hook presets and the two encoder
+recipes have no cell: they name <code>backbone</code>, a module only the seed-based skeleton has.
+They have cells under the five seed-based methods; the records above are of GSNet and
+EconomicGrasp.</p>
+<h2 id="4-how-to-use-each-option">4. How to use each option<a class="headerlink" href="#4-how-to-use-each-option" title="Permanent link">&para;</a></h2>
+<h3 id="one-line-with-compose">One line with <code>compose</code><a class="headerlink" href="#one-line-with-compose" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-lamb<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>warmup-cosine<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>ema+grad-clip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">augment</span><span class="o">=</span>jitter<span class="w"> </span>-o<span class="w"> </span>my_recipe.yaml
+grasppanda<span class="w"> </span>probe<span class="w"> </span>my_recipe.yaml<span class="w">          </span><span class="c1"># about a minute: does it train and predict?</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>my_recipe.yaml
+</code></pre></div>
+<ul>
+<li><code>optimizer</code>, <code>schedule</code> and <code>recipe</code> take one preset; <code>hooks</code> and <code>augment</code> take
+  several joined by <code>+</code>.</li>
+<li>Recipe slots combine with stage slots (<code>--set backbone=ptv3 --set
+  recipe=ptv3-adamw-onecycle</code>) and work for HGGD, which has no stage slots.</li>
+<li><code>--opts</code> changes single values and wins over a preset:
+  <code>--opts optimizer.lr=3e-3 scheduler.warmup_steps=0.1 train.epochs=20</code>.</li>
+<li>The composed file lists what each preset says must be re-tuned.</li>
+</ul>
+<p>What <code>compose</code> writes for HGGD with <code>--set optimizer=timm-lamb --set
+schedule=warmup-cosine --set hooks=ema</code> (real output, header omitted):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">_base_</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configs/hggd/hggd_r34w8_g1b-realsense_15e.yaml</span>
+
+<span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TimmOptimizer</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lamb</span>
+<span class="w">  </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.002</span>
+<span class="w">  </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.02</span>
+
+<span class="nt">scheduler</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TimmSchedule</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cosine</span>
+<span class="w">  </span><span class="nt">warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">              </span><span class="c1"># fraction of the run</span>
+<span class="w">  </span><span class="nt">warmup_lr_init</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-06</span>
+<span class="w">  </span><span class="nt">lr_min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-06</span>
+
+<span class="nt">train</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scheduler_unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">iteration</span>
+
+<span class="nt">evaluation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">weights</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ema</span>
+
+<span class="nt">hooks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">EpochSignalHook</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">BNMomentumHook</span><span class="p p-Indicator">,</span><span class="nt"> initial</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt"> decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt"> step</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> minimum</span><span class="p">:</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="nt"> delay</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> module</span><span class="p">:</span><span class="w"> </span><span class="nv">image_net</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">EMAHook</span><span class="p p-Indicator">,</span><span class="nt"> decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.999</span><span class="p p-Indicator">,</span><span class="nt"> warmup</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> buffers</span><span class="p">:</span><span class="w"> </span><span class="nv">copy</span><span class="p p-Indicator">}]</span>
+</code></pre></div>
+<p>The two hooks of HGGD's own recipe are written out again because a list in a child
+config replaces the inherited one.</p>
+<p>And a probe of GSNet with <code>--set optimizer=schedulefree-adamw --set
+hooks=ema+freeze-encoder --set augment=jitter+dropout</code> (real output, shortened):</p>
+<div class="highlight"><pre><span></span><code>  model       GSNet · 15,353,775 parameters
+  data        8 frames of the config's dataset · 4 per iteration
+  trained     20 of 20 iterations · 0.36 s per iteration (median, without data; data 0.40 s), measured on this machine now
+  memory      peak 1.9 GiB on the GPU, this process
+  predicted   2 frame(s) · 7, 16 grasps
+
+✓ runs: trained 20 iterations on 8 frames of the dataset and predicted on 2 frame(s), with finite losses and real seeds in every iteration.
+</code></pre></div>
+<h3 id="optimizers">Optimizers<a class="headerlink" href="#optimizers" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">AdamW</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-3</span><span class="p p-Indicator">,</span><span class="nt"> weight_decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">}</span><span class="w">                    </span><span class="c1"># torch.optim, by class</span>
+<span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">TimmOptimizer</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">lamb</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0e-3</span><span class="p p-Indicator">,</span><span class="nt"> weight_decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.02</span><span class="p p-Indicator">}</span>
+<span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">TimmOptimizer</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">lookahead_adan</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-3</span><span class="p p-Indicator">,</span><span class="nt"> options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">betas</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.98</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.92</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.99</span><span class="p p-Indicator">]}}</span>
+<span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">PytorchOptimizer</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">prodigy</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">ScheduleFree</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">adamw</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">2.5e-3</span><span class="p p-Indicator">,</span><span class="nt"> warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="nv">200</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<ul>
+<li><code>lr</code> and <code>weight_decay</code> are arguments of the bridge; everything else the optimizer
+  takes (<code>betas</code>, <code>eps</code>, <code>momentum</code>, …) goes into <code>options</code>.</li>
+<li>Names: <code>python -c "import timm.optim as o; print(o.list_optimizers())"</code> and
+  <code>python -c "import pytorch_optimizer as o; print(o.get_supported_optimizers())"</code>.
+  A wrong name is reported with the list of valid ones when the optimizer is built.</li>
+<li>A <code>lookahead_</code> prefix wraps any timm optimizer in Lookahead.</li>
+<li>Learning-rate-free optimizers (<code>prodigy</code>, <code>dadaptadam</code>, …) want <code>lr: 1.0</code> and usually
+  <code>--set schedule=constant</code> or a cosine.</li>
+<li>A schedule-free optimizer needs <code>scheduler: null</code> and <code>ScheduleFreeHook</code>; the presets
+  <code>schedulefree-adamw</code>, <code>-radam</code>, <code>-sgd</code> set all three.</li>
+</ul>
+<h3 id="parameter-groups-a-pretrained-encoder-layer-wise-decay">Parameter groups: a pretrained encoder, layer-wise decay<a class="headerlink" href="#parameter-groups-a-pretrained-encoder-layer-wise-decay" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ParamGroups</span>
+<span class="w">  </span><span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">AdamW</span><span class="p p-Indicator">,</span><span class="nt"> lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-3</span><span class="p p-Indicator">,</span><span class="nt"> weight_decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">}</span><span class="w">   </span><span class="c1"># any optimizer node; must set lr</span>
+<span class="w">  </span><span class="nt">lr_multipliers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">backbone</span><span class="p">:</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># dotted prefix of the parameter name, or "re:&lt;regex&gt;"</span>
+<span class="w">  </span><span class="nt">layer_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.75</span><span class="w">                    </span><span class="c1"># null: off</span>
+<span class="w">  </span><span class="nt">layer_decay_module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backbone</span>
+<span class="w">  </span><span class="nt">layer_decay_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">no_decay_1d</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                    </span><span class="c1"># no weight decay on biases and normalisation weights</span>
+</code></pre></div>
+<p>The rate of a parameter is <code>lr</code> × the first matching multiplier × <code>layer_decay ** (L - i)</code>
+for layer <code>i</code> of the <code>L</code> layers of <code>layer_decay_module</code>. A layer is a sub-module
+<code>layer_decay_depth</code> levels below that module, in registration order:</p>
+<div class="highlight"><pre><span></span><code>sparse-unet14 depth 1: stem, down, encoder, up, decoder, project            (6 layers)
+sparse-unet14 depth 2: stem.conv, stem.norm, down.0, … decoder.3, project   (19 layers)
+ptv3 depth 2: embedding.stem, enc.enc0 … enc.enc4, dec.dec3 … dec.dec0      (10 layers)
+ptv3 depth 3: … enc.enc0.block0, enc.enc0.block1, enc.enc1.down, …          (32 layers)
+</code></pre></div>
+<p>(<code>python -c "from grasppanda.engine.optimizers import layer_names; ..."</code> on your own
+encoder.) In a U-Net the decoder is registered after the encoder and therefore counts as
+<em>later</em> layers with a higher rate. A pattern that matches nothing is an error that lists
+the top-level modules. <code>OneCycleLR</code> would overwrite all group rates with one <code>max_lr</code>;
+the engine scales a scalar <code>max_lr</code> per group.</p>
+<p>To train a pretrained encoder: load the weights (<code>runtime.load_from=&lt;checkpoint&gt;</code>, with
+<code>runtime.allow_weight_mismatch=true</code> when the checkpoint does not cover the whole
+detector; the page of the encoder slot says which released weights fit), then <code>--set recipe=finetune-encoder</code>
+or the single parts <code>optimizer=encoder-lr-0.1</code>, <code>optimizer=layer-decay</code>,
+<code>hooks=freeze-encoder</code>.</p>
+<h3 id="schedules">Schedules<a class="headerlink" href="#schedules" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">OneCycleLR</span><span class="p p-Indicator">,</span><span class="nt"> max_lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-3</span><span class="p p-Indicator">,</span><span class="nt"> pct_start</span><span class="p">:</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">,</span><span class="nt"> div_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="nt"> final_div_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="nt"> cycle_momentum</span><span class="p">:</span><span class="w"> </span><span class="nv">false</span><span class="p p-Indicator">}</span>
+<span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">TimmSchedule</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">cosine</span><span class="p p-Indicator">,</span><span class="nt"> warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">,</span><span class="nt"> warmup_lr_init</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-6</span><span class="p p-Indicator">,</span><span class="nt"> lr_min</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-6</span><span class="p p-Indicator">}</span>
+<span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">TimmSchedule</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">multistep</span><span class="p p-Indicator">,</span><span class="nt"> warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> warmup_lr_init</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0e-4</span><span class="p p-Indicator">,</span><span class="nt"> options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">decay_t</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">6</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9</span><span class="p p-Indicator">],</span><span class="nt"> decay_rate</span><span class="p">:</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">}}</span>
+<span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">TimmSchedule</span><span class="p p-Indicator">,</span><span class="nt"> name</span><span class="p">:</span><span class="w"> </span><span class="nv">cosine</span><span class="p p-Indicator">,</span><span class="nt"> options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">t_initial</span><span class="p">:</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="nt"> cycle_limit</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> cycle_decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">}}</span><span class="w">   </span><span class="c1"># restarts</span>
+<span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">scheduler_unit</span><span class="p">:</span><span class="w"> </span><span class="nv">iteration</span><span class="p p-Indicator">}</span><span class="w">     </span><span class="c1"># or epoch: the unit of every step count above</span>
+</code></pre></div>
+<ul>
+<li><code>TimmSchedule.warmup_steps</code> below 1 is a fraction of the run, from 1 on a step count.</li>
+<li><code>warmup_lr_init</code> and <code>lr_min</code> are absolute rates, not factors.</li>
+<li><code>OneCycleLR.max_lr</code> replaces <code>optimizer.lr</code>; keep <code>cycle_momentum: false</code> unless the
+  optimizer has <code>betas</code> or <code>momentum</code> you want cycled.</li>
+</ul>
+<h3 id="hooks-and-train-options">Hooks and train options<a class="headerlink" href="#hooks-and-train-options" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">EMAHook</span><span class="p p-Indicator">,</span><span class="nt"> decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.999</span><span class="p p-Indicator">,</span><span class="nt"> warmup</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> interval</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> buffers</span><span class="p">:</span><span class="w"> </span><span class="nv">copy</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">SWAHook</span><span class="p p-Indicator">,</span><span class="nt"> start_epoch</span><span class="p">:</span><span class="w"> </span><span class="nv">7</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">FreezeHook</span><span class="p p-Indicator">,</span><span class="nt"> modules</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">backbone</span><span class="p p-Indicator">],</span><span class="nt"> epochs</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> eval_mode</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">AdaptiveGradClipHook</span><span class="p p-Indicator">,</span><span class="nt"> clip_factor</span><span class="p">:</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="nt"> exclude</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">head</span><span class="p p-Indicator">]}</span>
+<span class="nt">evaluation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">weights</span><span class="p">:</span><span class="w"> </span><span class="nv">ema</span><span class="p p-Indicator">}</span><span class="w">             </span><span class="c1"># score the average (EMAHook, SWAHook or train.ema)</span>
+<span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">amp</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">,</span><span class="nt"> accumulate</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> grad_clip</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt"> grad_clip_mode</span><span class="p">:</span><span class="w"> </span><span class="nv">norm</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<ul>
+<li>One weight average per run: <code>EMAHook</code>, <code>SWAHook</code> and <code>train.ema</code> exclude each other.
+  <code>EMAHook</code> differs from <code>train.ema</code> in three ways: the decay warms up
+  (<code>min(decay, (1 + n) / (10 + n))</code>), buffers are copied rather than averaged by default
+  (batch-norm statistics and HGGD's learned anchors stay those of the trained model),
+  and <code>interval</code> can skip steps. A resumed run continues either average exactly.</li>
+<li><code>evaluation.weights: ema</code> selects the average of a checkpoint in <code>grasppanda test</code>
+  as well; <code>model</code> selects the trained weights of the same checkpoint.</li>
+<li><code>FreezeHook</code> sets <code>requires_grad</code> per epoch; an optimizer skips a parameter without a
+  gradient, weight decay included, so nothing has to be rebuilt when the modules are
+  released. With <code>eval_mode</code> the frozen modules keep their batch-norm statistics.</li>
+<li><code>AdaptiveGradClipHook</code> and <code>train.grad_clip</code> exclude each other (the preset <code>agc</code>
+  switches <code>train.grad_clip</code> off, which matters under HGGD, whose recipe clips by value).</li>
+</ul>
+<h3 id="augmentation">Augmentation<a class="headerlink" href="#augmentation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">transforms</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomDropout</span><span class="p p-Indicator">,</span><span class="nt"> ratio</span><span class="p">:</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">,</span><span class="nt"> prob</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">}</span><span class="w">     </span><span class="c1"># before the sampling step</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomSample</span><span class="p p-Indicator">,</span><span class="nt"> num_points</span><span class="p">:</span><span class="w"> </span><span class="nv">15000</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="c1"># ... the label steps, flip and rotation of the base config ...</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomShift</span><span class="p p-Indicator">,</span><span class="nt"> shift</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="nv">-0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-0.05</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]]}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomJitter</span><span class="p p-Indicator">,</span><span class="nt"> sigma</span><span class="p">:</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="nt"> clip</span><span class="p">:</span><span class="w"> </span><span class="nv">0.005</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><code>--set augment=dropout+shift+jitter</code> writes exactly this around the list of the base
+config. Units are metres in the camera frame. <code>RandomJitter</code> perturbs only the network
+input: <code>full_points</code>, poses and labels describe the clean scene.</p>
+<h3 id="without-compose-schedule-bases">Without <code>compose</code>: schedule bases<a class="headerlink" href="#without-compose-schedule-bases" title="Permanent link">&para;</a></h3>
+<p>Three method-neutral files under <code>configs/_base_/schedules/</code> can be inherited like the
+methods' own: <code>adamw_onecycle_10e.yaml</code>, <code>adamw_warmup-cosine_10e.yaml</code>,
+<code>schedulefree-adamw_10e.yaml</code>. They set <code>optimizer</code>, <code>scheduler</code> and <code>train.epochs</code>.</p>
+<h2 id="5-pitfalls">5. Pitfalls<a class="headerlink" href="#5-pitfalls" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>OneCycleLR</code> and momentum.</strong> Its default <code>cycle_momentum: true</code> rewrites <code>betas</code> or
+  <code>momentum</code> every step and raises for optimizers that have neither. The presets set
+  <code>false</code>.</li>
+<li><strong><code>OneCycleLR</code> ignores <code>optimizer.lr</code>.</strong> The peak is <code>max_lr</code>. Changing only
+  <code>optimizer.lr</code> with <code>--opts</code> changes nothing.</li>
+<li><strong>Schedule-free and batch norm.</strong> The weights that are evaluated are an average; the
+  batch-norm statistics were collected at the training point. The authors re-estimate
+  them; this toolbox does not.</li>
+<li><strong>Schedule-free in a short probe.</strong> With <code>warmup_steps: 200</code> a 20-iteration probe runs
+  entirely inside the warm-up, so its losses fall more slowly than with Adam. That says
+  nothing about a full run.</li>
+<li><strong>Per-epoch units and warm-up.</strong> With <code>train.scheduler_unit: epoch</code> a warm-up that
+  starts at 0 spends the whole first epoch at rate 0; the preset <code>multistep-warmup</code>
+  starts at 1e-4.</li>
+<li><strong>Lists replace.</strong> <code>hooks</code> and <code>transforms</code> of a child config replace the inherited
+  list. <code>compose</code> writes the base's entries out again; a hand-written child must repeat
+  them (HGGD needs its <code>EpochSignalHook</code>).</li>
+<li><strong><code>SWAHook.start_epoch</code> must be below <code>train.epochs</code></strong>; the run refuses to start
+  otherwise ("nothing would be averaged").</li>
+<li><strong>Point augmentation next to images is refused by the config check.</strong> <code>augment=jitter</code>,
+  <code>augment=shift</code> and the flip and rotation of the GraspNet recipes move the points; a dataset
+  section that serves <code>images</code> or <code>view_grasps</code> (HGGD's) would keep them where they were. The
+  message names the transform and the image-space data. <code>augment=dropout</code> removes points and
+  moves none, so it runs under HGGD.</li>
+<li><strong>A wrong optimizer name passes the config check</strong> and fails when the optimizer is
+  built, with the list of valid names: the check does not import the libraries.</li>
+<li><strong>Mixed precision is not ready for the ported methods, and is refused.</strong> <code>hooks=amp</code>
+  (<code>train.amp: true</code>) failed under GSNet in the first iteration: the label assigner writes
+  half-precision values into a single-precision tensor ("Index put requires the source and
+  destination dtypes match"). Under HGGD the loss of the first iteration was not finite
+  (<code>loss/heatmap = nan, loss/angle = inf</code>). The config check now refuses <code>train.amp: true</code>
+  unless the detector class declares <code>amp_ready = True</code>, and none of the shipped ones does.
+  The preset stays as the switch for a detector of your own; it is one of the 37 names on
+  this page and not a usable option today.</li>
+<li><strong>SOAP fails under HGGD.</strong> <code>optimizer=soap</code> runs under GSNet; under HGGD the second
+  optimizer step ends in "CUDA error: an illegal memory access was encountered", three
+  times out of three. The cause was not investigated.</li>
+<li><strong>Schedule-free SGD in a short probe.</strong> Under GSNet one of the 20 iterations of the
+  probe had no real seed (<code>runs-unstable</code>); the AdamW and RAdam variants did not show it.</li>
+</ul>
+<h2 id="6-not-wrapped">6. Not wrapped<a class="headerlink" href="#6-not-wrapped" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Link</th>
+<th>Why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normalisation and activation as config keys (GroupNorm, LayerNorm, GELU, SiLU, …)</td>
+<td><code>torch.nn</code>; timm <code>create_act.py</code></td>
+<td>No shared layer builder exists in the stages: norms and activations are literals at dozens of sites in <code>grasppanda/models/</code>, outside this package's lane. A hook that swapped modules after construction would not run at <code>grasppanda test</code>, so trained and tested models would differ. Needs one builder used by every stage first.</td>
+</tr>
+<tr>
+<td><code>RandomScale</code></td>
+<td><a href="https://github.com/Pointcept/Pointcept/blob/main/pointcept/datasets/transform.py">Pointcept <code>transform.py</code></a></td>
+<td>Grasp widths, depths and the gripper are in metres; <code>PointSample</code> has no way to scale the label grids with the scene.</td>
+</tr>
+<tr>
+<td><code>ElasticDistortion</code></td>
+<td>same file</td>
+<td>Not a rigid map: object poses, and the grasp labels attached to them, cannot follow.</td>
+</tr>
+<tr>
+<td>Chromatic transforms (auto-contrast, colour jitter)</td>
+<td>same file</td>
+<td>The ported methods feed no colour to the scene encoder; HGGD's image pipeline is not a point transform.</td>
+</tr>
+<tr>
+<td>Mix3D scene mixing</td>
+<td>Pointcept <code>pointcept/datasets/utils.py</code>, <code>point_collate_fn(mix_prob)</code></td>
+<td>Works in the collate function, which is fixed in the engine; two scenes' object poses and label sets would have to be merged.</td>
+</tr>
+<tr>
+<td>Sharpness-aware minimisation (SAM)</td>
+<td><code>pytorch_optimizer/optimizer/sam.py</code> (class <code>SAM</code>)</td>
+<td>Its <code>step()</code> needs a closure that runs a second forward and backward pass; the loop makes one pass per batch and calls <code>step()</code> without a closure.</td>
+</tr>
+<tr>
+<td><code>ReduceLROnPlateau</code>, timm <code>PlateauLRScheduler</code></td>
+<td>PyTorch, timm</td>
+<td>Step on a monitored metric, which the trainer does not hand to schedulers. Refused by name.</td>
+</tr>
+<tr>
+<td>timm's learning-rate noise</td>
+<td><code>timm.scheduler</code></td>
+<td><code>TimmSchedule</code> evaluates the closed form so that a resumed run needs no state of timm's; the noise is applied in timm's own <code>step()</code>.</td>
+</tr>
+<tr>
+<td>Batch-norm re-estimation after SWA (<code>torch.optim.swa_utils.update_bn</code>)</td>
+<td>PyTorch</td>
+<td>It iterates a loader of tensors; batches here are <code>Batch</code> objects and the detectors compute losses, not plain forwards.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

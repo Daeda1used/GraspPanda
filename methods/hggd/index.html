@@ -1,0 +1,4371 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/methods/hggd/">
+      
+      
+        <link rel="prev" href="../scale_balanced_grasp/">
+      
+      
+        <link rel="next" href="../../advanced_guides/add_component/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>HGGD - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#hggd" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              HGGD
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../slots/" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#run-in-five-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run HGGD in five minutes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run HGGD in five minutes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Grasps on the example scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The same from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. In the browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. A first number on the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options of every slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-encoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image encoder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image encoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 37
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 14
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optimizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimizer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Optimizer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schedule
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schedule">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 7
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#augment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Augmentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Augmentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Whole recipe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Whole recipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#run-in-five-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run HGGD in five minutes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run HGGD in five minutes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Grasps on the example scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The same from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. In the browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. A first number on the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options of every slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-encoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image encoder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image encoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 37
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 14
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optimizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimizer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Optimizer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 15
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schedule
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schedule">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 7
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#augment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Augmentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Augmentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#do-not-fit-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not fit: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recipe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Whole recipe
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Whole recipe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fit-1_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fit: 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-probed-2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not probed: 2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/methods/hggd.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<!-- Generated by tools/make_method_pages.py from the metafile, the config,
+     five_minutes.json, the presets, the grid and measured_combinations.json.
+     Do not edit by hand. -->
+
+<h1 id="hggd">HGGD<a class="headerlink" href="#hggd" title="Permanent link">&para;</a></h1>
+<p><a href="#run-in-five-minutes">Run HGGD in five minutes</a> from the authors' checkpoint: the weights, a first picture, the same from Python and in the browser, a first number on the benchmark. Then <a href="#the-slots">the options of every slot</a>: what fits where HGGD ships its components, and what was measured for each.</p>
+<h2 id="run-in-five-minutes">Run HGGD in five minutes<a class="headerlink" href="#run-in-five-minutes" title="Permanent link">&para;</a></h2>
+<p>From the authors' checkpoint to grasps on a scene: on the command line, from Python or in a browser, then a first number on a part of the benchmark. Every command here is run by the test suite (by parsing it, on a toy detector, or on the files it needs); what each printed when it was measured is said under it, with the date, the commit and the machine. The numbers come from the method's <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/metafile.yaml">metafile</a> and <a href="https://github.com/Daeda1used/GraspPanda/blob/main/docs/methods/five_minutes.json">five_minutes.json</a>.</p>
+<h3 id="run-weights">1. The weights<a class="headerlink" href="#run-weights" title="Permanent link">&para;</a></h3>
+<p>GraspPanda publishes no weights for HGGD: the checkpoint is the authors', under their licence, and weights converted from it are not redistributed by the project. Download the authors' file yourself:</p>
+<ul>
+<li><strong>File</strong>: <code>HGGD_realsense_checkpoint</code>, from <a href="https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/">https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/</a></li>
+<li><strong>Licence</strong>: MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)</li>
+<li><strong>SHA-256</strong>: <code>b95da06d8723298ad28e4c720c3a6a8af73dfe6f2e8126f43de8845bf62ad6df</code></li>
+</ul>
+<p>Convert it once, from the root of your GraspPanda checkout (the converter is a tool of the repository; it is not installed with the package):</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>tools.convert_checkpoint<span class="w"> </span>HGGD_realsense_checkpoint<span class="w"> </span>hggd_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--source-format<span class="w"> </span>hggd<span class="w"> </span>--camera<span class="w"> </span>realsense
+</code></pre></div>
+<p>It writes <code>hggd_realsense.pth</code>: every tensor of the authors' file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially.</p>
+<h3 id="run-demo">2. Grasps on the example scene<a class="headerlink" href="#run-demo" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>demo<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>hggd_realsense.pth<span class="w"> </span>--example<span class="w"> </span>--collision-filter
+</code></pre></div>
+<p><code>--example</code> is the synthetic table-top scene that ships with GraspPanda: no dataset and no download. The command prints the config and its hash, how the weights loaded (every tensor matched, none missing), the test pipeline, the cloud, how many grasps the model predicted and how many the collision filter left (the config's variant <code>cd</code>: <code>ModelFreeCollisionFilter</code> then <code>GraspNMS</code>), and the ten best grasps. It writes into <code>work_dirs/hggd_r34w8_g1b-realsense_15e/demo/</code>:</p>
+<ul>
+<li><code>grasps.npy</code>: the grasps that are left, <code>(G, 17)</code> float32 in the GraspNet layout, best first, camera frame, metres;</li>
+<li><code>grasps.png</code> and <code>grasps.gif</code>: the cloud with the 30 best grasps, still and swinging around the scene;</li>
+<li><code>example/</code>: the scene as files (<code>depth.png</code>, <code>rgb.png</code>, <code>mask.png</code>, <code>intrinsics.txt</code>).</li>
+</ul>
+<p>Measured with the authors' checkpoint, converted: <strong>14.5 s</strong> for the whole command; 25,600 points to the model; 470 grasps predicted, then 287 after ModelFreeCollisionFilter → 72 after GraspNMS (2026-10-15, commit <code>ea6268b</code>, one NVIDIA RTX A6000 shared with other jobs). Run again at commit <code>0ddca31</code> (2026-10-15): the same counts, 16.9 s.</p>
+<p>The scene files stand in for a camera. On your own depth image, as on these:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>demo<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>hggd_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--depth<span class="w"> </span>work_dirs/hggd_r34w8_g1b-realsense_15e/demo/example/depth.png<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--intrinsics<span class="w"> </span>work_dirs/hggd_r34w8_g1b-realsense_15e/demo/example/intrinsics.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--rgb<span class="w"> </span>work_dirs/hggd_r34w8_g1b-realsense_15e/demo/example/rgb.png<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--collision-filter<span class="w"> </span>--out<span class="w"> </span>work_dirs/camera
+</code></pre></div>
+<p>HGGD reads the colour image registered to the depth image (<code>--rgb</code>) and crops no workspace. Units and frames, the depth scale and the intrinsics: <a href="../../user_guides/inference/#your-own-camera">Your own camera</a>.</p>
+<h3 id="run-python">3. The same from Python<a class="headerlink" href="#run-python" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraspInferencer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.apis</span><span class="w"> </span><span class="kn">import</span> <span class="n">example_scene</span>
+
+<span class="n">scene</span> <span class="o">=</span> <span class="n">example_scene</span><span class="p">()</span>  <span class="c1"># the scene of --example</span>
+<span class="n">inferencer</span> <span class="o">=</span> <span class="n">GraspInferencer</span><span class="p">(</span>
+    <span class="s2">"hggd/hggd_r34w8_g1b-realsense_15e"</span><span class="p">,</span> <span class="s2">"hggd_realsense.pth"</span>
+<span class="p">)</span>
+<span class="n">grasps</span> <span class="o">=</span> <span class="n">inferencer</span><span class="p">(</span>
+    <span class="n">depth</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="n">intrinsics</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">intrinsics</span><span class="p">,</span>
+    <span class="n">depth_scale</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">depth_scale</span><span class="p">,</span> <span class="n">rgb</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">rgb</span><span class="p">,</span> <span class="n">collision_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">grasps</span><span class="p">),</span> <span class="n">grasps</span><span class="o">.</span><span class="n">sort_by_score</span><span class="p">()</span><span class="o">.</span><span class="n">to_graspnet_array</span><span class="p">()[:</span><span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+<p>It runs the demo's pipeline on the demo's input, so it returns the demo's 72 grasps. Measured: 72 grasps, 8.2 s for the script (2026-10-15, commit <code>0ddca31</code>, one NVIDIA RTX A6000 shared with other jobs). HGGD reads the colour image (<code>rgb=</code>) and takes no mask. The fields of a grasp and what else the call takes: <a href="../../user_guides/inference/#from-python">From Python</a>.</p>
+<h3 id="run-browser">4. In the browser<a class="headerlink" href="#run-browser" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># ~/grasppanda_weights: the folder that holds hggd_realsense.pth</span>
+grasppanda<span class="w"> </span>explore<span class="w"> </span>--weights-dir<span class="w"> </span>~/grasppanda_weights
+</code></pre></div>
+<p>The page opens at <a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a>. In the tab <strong>Run a method</strong> choose HGGD: <code>hggd_realsense.pth</code> is chosen for you by its name. Keep the example scene (or upload a depth image with its intrinsics), tick the collision filter and press <em>Run</em>: the page shows the picture, the best ten grasps, the counts through the post-processing and the command that does the same in a terminal. The server listens on your machine only, reads weights only from that folder and downloads nothing: <a href="../../user_guides/inference/#run-in-the-browser">Run in the browser</a>.</p>
+<h3 id="run-test">5. A first number on the benchmark<a class="headerlink" href="#run-test" title="Permanent link">&para;</a></h3>
+<p>With GraspNet-1Billion on disk (<code>export GRASPPANDA_GRASPNET1B_ROOT=...</code>, see <a href="../../user_guides/datasets/">Dataset preparation</a>), score the weights on every 64th frame of the seen test scenes, 120 frames:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span><span class="nb">test</span><span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>hggd_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>data.test.dataset.split<span class="o">=</span>test_seen<span class="w"> </span>data.test.dataset.frame_step<span class="o">=</span><span class="m">64</span><span class="w"> </span>evaluation.num_workers<span class="o">=</span><span class="m">4</span>
+</code></pre></div>
+<p>It prints AP, AP0.8 and AP0.4 for every variant of the config, <code>raw</code> (the predictions as they are) and <code>cd</code> (with the collision filter), and writes a result record per variant into the run directory under <code>work_dirs/</code>. Testing needs no derived asset; the evaluator extracts a cache from the dataset's object models the first time it runs, which the times below do not include.</p>
+<table>
+<thead>
+<tr>
+<th>Weights, provenance</th>
+<th>Collision filter</th>
+<th>AP, 120 frames of test_seen</th>
+<th>AP, whole seen split</th>
+<th>Difference</th>
+<th>Wall time, commit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the authors' checkpoint, converted, <code>author-ckpt</code></td>
+<td>off</td>
+<td>58.16</td>
+<td>58.33 (<a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json">record</a>)</td>
+<td>−0.17</td>
+<td>53 s, <code>ea6268b</code></td>
+</tr>
+<tr>
+<td></td>
+<td>on</td>
+<td>64.14</td>
+<td>63.70 (<a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json">record</a>)</td>
+<td>+0.44</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Provenance: <code>author-ckpt</code>, the authors' weights, evaluated by GraspPanda. Inputs: no input is derived from ground truth (the config crops no workspace). On these 120 frames the AP is within 0.44 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-10-15 on one NVIDIA RTX A6000 shared with other jobs.</p>
+<p>The machine: one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8.</p>
+<h2 id="the-slots">The options of every slot<a class="headerlink" href="#the-slots" title="Permanent link">&para;</a></h2>
+<p>Every slot of HGGD (<code>hggd/hggd_r34w8_g1b-realsense_15e</code>), what the method ships with there, the options that fit it and the ones that do not, each with what was measured: the cells of the <a href="../../advanced_guides/measured_combinations/">measured grid</a> that replace that one slot of HGGD. The method itself: <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/README.md">its README</a>. The same lists, with every message whole, in a terminal or as JSON:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--list<span class="w">            </span><span class="c1"># every slot</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--list<span class="w"> </span>&lt;slot&gt;<span class="w"> </span>--json
+</code></pre></div>
+<p><strong>One run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</strong> No accuracy appears on this page, and none follows from it: a probe trains 20 iterations on 8 frames and shows whether a combination works, not how good it is.</p>
+<p>How to read a row: <em>C R L P</em> are the four levels of the cell under HGGD, <strong>composes</strong>, <strong>runs</strong>, <strong>learns</strong> and <strong>predicts</strong> (✓ reached, ✗ not, ? undecided: <em>not checked</em> for a record of the first judge, <em>unstable, not repeated</em> for an unstable run nobody probed again). The <em>Class</em> of an option counts the methods under which it reached each level; levels with the same class are named together. A probe that predicted no grasp on any frame is greyed. The levels, the classes and their thresholds are defined on the measured page, <a href="../../advanced_guides/measured_combinations/#measured-classes">Measured classes</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Written as</th>
+<th>Shipped</th>
+<th>Fit</th>
+<th>Do not fit</th>
+<th>Not probed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#image-encoder">Image encoder</a></td>
+<td><code>model.image_encoder</code></td>
+<td>the reference encoder of the detector (built in)</td>
+<td>37</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td><a href="#post">Post-processing</a></td>
+<td><code>evaluation.variants.post</code></td>
+<td>no variant <code>post</code> (the config has cd, raw)</td>
+<td>14</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><a href="#optimizer">Optimizer</a></td>
+<td><code>optimizer</code></td>
+<td><code>AdamW</code></td>
+<td>15</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr>
+<td><a href="#schedule">Schedule</a></td>
+<td><code>scheduler</code></td>
+<td><code>StepLR</code></td>
+<td>7</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td><a href="#hooks">Hooks</a></td>
+<td><code>hooks</code></td>
+<td>EpochSignalHook, BNMomentumHook (option <code>accumulate-2</code>)</td>
+<td>5</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td><a href="#augment">Augmentation</a></td>
+<td><code>data.train.dataset.transforms</code></td>
+<td>the method's own</td>
+<td>1</td>
+<td>2</td>
+<td>0</td>
+</tr>
+<tr>
+<td><a href="#recipe">Whole recipe</a></td>
+<td><code>optimizer, scheduler, hooks, transforms</code></td>
+<td>the method's own</td>
+<td>1</td>
+<td>0</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="image-encoder">Image encoder<a class="headerlink" href="#image-encoder" title="Permanent link">&para;</a></h2>
+<p>Written as <code>model.image_encoder</code>; HGGD ships the reference encoder of the detector (built in). The options are explained on the slot page <a href="../../slots/image_encoders/">image encoders</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list image_encoder</code>.</p>
+<h3 id="fit-37">Fit: 37<a class="headerlink" href="#fit-37" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="gp-nograsp"><code>convnextv2-atto</code></span><br>TimmImageEncoder</td>
+<td>∅ runs-empty</td>
+<td>✓ ✓ ? ✗</td>
+<td><span class="gp-nograsp">0 · 0</span></td>
+<td>heatmap 100 %, angle 98 %, offsets 7 %, anchor 100 %, anchor_offset -14 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 0 of 1 probed (predicts)</td>
+<td>predicts: no grasp on any frame; learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>convnextv2-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>332 · 270</td>
+<td>heatmap 95 %, angle 98 %, offsets 38 %, anchor 100 %, anchor_offset -567 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 15 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>dinov2-small-reg-depth-stem</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>480 · 470</td>
+<td>heatmap 98 %, angle 97 %, offsets 48 %, anchor 99 %, anchor_offset 52 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>dinov2-small-reg</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>320 · 320</td>
+<td>heatmap 100 %, angle 96 %, offsets 37 %, anchor 100 %, anchor_offset -47 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>dinov3-convnext-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>315 · 324</td>
+<td>heatmap 100 %, angle 98 %, offsets 46 %, anchor 100 %, anchor_offset -210 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>dinov3-vits16</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>210 · 266</td>
+<td>heatmap 97 %, angle 97 %, offsets 45 %, anchor 100 %, anchor_offset -87 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 15 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>efficientnetv2-s</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>245 · 299</td>
+<td>heatmap 100 %, angle 96 %, offsets 51 %, anchor 100 %, anchor_offset -14 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 14 %</td>
+</tr>
+<tr>
+<td><code>efficientvit-b1</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>70 · 79</td>
+<td>heatmap 100 %, angle 97 %, offsets 65 %, anchor 100 %, anchor_offset 4 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 16 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>eva02-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>120 · 110</td>
+<td>heatmap 95 %, angle 97 %, offsets 30 %, anchor 99 %, anchor_offset -21 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 19 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 21 %</td>
+</tr>
+<tr>
+<td><code>fastvit-sa12</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>384 · 384</td>
+<td>heatmap 100 %, angle 98 %, offsets 48 %, anchor 100 %, anchor_offset 4 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 13 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>fastvit-t8</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>56 · 56</td>
+<td>heatmap 100 %, angle 97 %, offsets 60 %, anchor 100 %, anchor_offset -161 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>hf-convnextv2-tiny</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>56 · 32</td>
+<td>heatmap 97 %, angle 99 %, offsets 42 %, anchor 100 %, anchor_offset -21 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>hf-depth-anything-v2-small</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>415 · 426</td>
+<td>heatmap 100 %, angle 99 %, offsets 20 %, anchor 100 %, anchor_offset 48 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>hf-dinov2-small-reg</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>9 · 18</td>
+<td>heatmap 100 %, angle 96 %, offsets 22 %, anchor 99 %, anchor_offset -94 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>hf-dinov2-small</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>480 · 480</td>
+<td>heatmap 100 %, angle 99 %, offsets 30 %, anchor 99 %, anchor_offset 14 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>hf-hiera-tiny</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>414 · 413</td>
+<td>heatmap 99 %, angle 97 %, offsets 23 %, anchor 99 %, anchor_offset -113 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 113 %</td>
+</tr>
+<tr>
+<td><code>hf-siglip2-base</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>112 · 182</td>
+<td>heatmap 99 %, angle 99 %, offsets 35 %, anchor 100 %, anchor_offset -149 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>hf-swinv2-tiny</code><br>HFImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>480 · 460</td>
+<td>heatmap 96 %, angle 99 %, offsets 52 %, anchor 100 %, anchor_offset 32 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>hggd-residual</code><br>HGGDResidualEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>336 · 329</td>
+<td>heatmap 100 %, angle 98 %, offsets 49 %, anchor 96 %, anchor_offset -6 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 6 %</td>
+</tr>
+<tr>
+<td><code>hiera-small-abswin</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>432 · 432</td>
+<td>heatmap 100 %, angle 99 %, offsets 39 %, anchor 100 %, anchor_offset -237 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 237 %</td>
+</tr>
+<tr>
+<td><code>maxvit-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>432 · 431</td>
+<td>heatmap 100 %, angle 98 %, offsets 57 %, anchor 100 %, anchor_offset -82 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 82 %</td>
+</tr>
+<tr>
+<td><code>mobilenetv4-conv-small</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>450 · 470</td>
+<td>heatmap 98 %, angle 95 %, offsets 58 %, anchor 99 %, anchor_offset -81 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 81 %</td>
+</tr>
+<tr>
+<td><span class="gp-nograsp"><code>mobilenetv4-hybrid-medium</code></span><br>TimmImageEncoder</td>
+<td>∅ runs-empty</td>
+<td>✓ ✓ ? ✗</td>
+<td><span class="gp-nograsp">0 · 0</span></td>
+<td>heatmap 100 %, angle 96 %, offsets 38 %, anchor 100 %, anchor_offset 38 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 0 of 1 probed (predicts)</td>
+<td>predicts: no grasp on any frame; learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>pe-spatial-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>396 · 423</td>
+<td>heatmap 100 %, angle 98 %, offsets 41 %, anchor 100 %, anchor_offset -233 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>repvit-m1</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>99 · 81</td>
+<td>heatmap 100 %, angle 98 %, offsets 12 %, anchor 99 %, anchor_offset -6 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: offsets rising; anchor_offset rose 6 %</td>
+</tr>
+<tr>
+<td><code>resnet18</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>274 · 276</td>
+<td>heatmap 100 %, angle 99 %, offsets 64 %, anchor 100 %, anchor_offset -149 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>resnet34-rgbd</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>336 · 336</td>
+<td>heatmap 100 %, angle 97 %, offsets 52 %, anchor 100 %, anchor_offset -82 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>anchor_offset is 0 at the last iteration (active in 17 of 20); learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>resnet34</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>366 · 381</td>
+<td>heatmap 100 %, angle 97 %, offsets 41 %, anchor 100 %, anchor_offset 18 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>resnet50</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>362 · 325</td>
+<td>heatmap 100 %, angle 99 %, offsets 69 %, anchor 99 %, anchor_offset -60 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>sam2-hiera-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>325 · 306</td>
+<td>heatmap 100 %, angle 98 %, offsets 29 %, anchor 100 %, anchor_offset -13 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>siglip2-base</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>432 · 432</td>
+<td>heatmap 99 %, angle 97 %, offsets 43 %, anchor 100 %, anchor_offset -15 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 15 %</td>
+</tr>
+<tr>
+<td><code>swinv2-tiny</code><br>TimmImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>18 · 198</td>
+<td>heatmap 94 %, angle 97 %, offsets 39 %, anchor 99 %, anchor_offset -119 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>tv-convnext-tiny</code><br>TorchvisionImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>225 · 234</td>
+<td>heatmap 98 %, angle 98 %, offsets 34 %, anchor 100 %, anchor_offset -56 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>tv-efficientnetv2-s</code><br>TorchvisionImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>351 · 333</td>
+<td>heatmap 100 %, angle 96 %, offsets 63 %, anchor 99 %, anchor_offset -139 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>tv-mobilenetv3-large</code><br>TorchvisionImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>319 · 387</td>
+<td>heatmap 100 %, angle 97 %, offsets 59 %, anchor 99 %, anchor_offset -45 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>tv-regnet-y-800mf</code><br>TorchvisionImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>455 · 444</td>
+<td>heatmap 100 %, angle 97 %, offsets 45 %, anchor 99 %, anchor_offset 26 %</td>
+<td>1 of 1 probed (composes, runs, learns, predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>tv-resnet34</code><br>TorchvisionImageEncoder</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>330 · 260</td>
+<td>heatmap 98 %, angle 98 %, offsets 52 %, anchor 99 %, anchor_offset -47 %</td>
+<td>1 of 1 probed (composes, runs) · not reached by the method as shipped (learns) · 1 of 1 probed (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 37 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>convnextv2-atto<span class="w"> </span>-o<span class="w"> </span>hggd_convnextv2-atto.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>convnextv2-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_convnextv2-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>dinov2-small-reg-depth-stem<span class="w"> </span>-o<span class="w"> </span>hggd_dinov2-small-reg-depth-stem.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>dinov2-small-reg<span class="w"> </span>-o<span class="w"> </span>hggd_dinov2-small-reg.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>dinov3-convnext-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_dinov3-convnext-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>dinov3-vits16<span class="w"> </span>-o<span class="w"> </span>hggd_dinov3-vits16.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>efficientnetv2-s<span class="w"> </span>-o<span class="w"> </span>hggd_efficientnetv2-s.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>efficientvit-b1<span class="w"> </span>-o<span class="w"> </span>hggd_efficientvit-b1.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>eva02-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_eva02-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>fastvit-sa12<span class="w"> </span>-o<span class="w"> </span>hggd_fastvit-sa12.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>fastvit-t8<span class="w"> </span>-o<span class="w"> </span>hggd_fastvit-t8.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-convnextv2-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_hf-convnextv2-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-depth-anything-v2-small<span class="w"> </span>-o<span class="w"> </span>hggd_hf-depth-anything-v2-small.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-dinov2-small-reg<span class="w"> </span>-o<span class="w"> </span>hggd_hf-dinov2-small-reg.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-dinov2-small<span class="w"> </span>-o<span class="w"> </span>hggd_hf-dinov2-small.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-hiera-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_hf-hiera-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-siglip2-base<span class="w"> </span>-o<span class="w"> </span>hggd_hf-siglip2-base.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hf-swinv2-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_hf-swinv2-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hggd-residual<span class="w"> </span>-o<span class="w"> </span>hggd_hggd-residual.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>hiera-small-abswin<span class="w"> </span>-o<span class="w"> </span>hggd_hiera-small-abswin.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>maxvit-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_maxvit-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>mobilenetv4-conv-small<span class="w"> </span>-o<span class="w"> </span>hggd_mobilenetv4-conv-small.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>mobilenetv4-hybrid-medium<span class="w"> </span>-o<span class="w"> </span>hggd_mobilenetv4-hybrid-medium.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>pe-spatial-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_pe-spatial-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>repvit-m1<span class="w"> </span>-o<span class="w"> </span>hggd_repvit-m1.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>resnet18<span class="w"> </span>-o<span class="w"> </span>hggd_resnet18.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>resnet34-rgbd<span class="w"> </span>-o<span class="w"> </span>hggd_resnet34-rgbd.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>resnet34<span class="w"> </span>-o<span class="w"> </span>hggd_resnet34.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>resnet50<span class="w"> </span>-o<span class="w"> </span>hggd_resnet50.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>sam2-hiera-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_sam2-hiera-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>siglip2-base<span class="w"> </span>-o<span class="w"> </span>hggd_siglip2-base.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>swinv2-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_swinv2-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>tv-convnext-tiny<span class="w"> </span>-o<span class="w"> </span>hggd_tv-convnext-tiny.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>tv-efficientnetv2-s<span class="w"> </span>-o<span class="w"> </span>hggd_tv-efficientnetv2-s.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>tv-mobilenetv3-large<span class="w"> </span>-o<span class="w"> </span>hggd_tv-mobilenetv3-large.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>tv-regnet-y-800mf<span class="w"> </span>-o<span class="w"> </span>hggd_tv-regnet-y-800mf.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>tv-resnet34<span class="w"> </span>-o<span class="w"> </span>hggd_tv-resnet34.yaml
+</code></pre></div>
+</details>
+<h3 id="do-not-fit-1">Do not fit: 1<a class="headerlink" href="#do-not-fit-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Kind</th>
+<th>Why it does not fit</th>
+<th>Lift</th>
+<th>Class</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hf-radio-v3-base</code></td>
+<td><code>HFImageEncoder</code></td>
+<td>policy</td>
+<td>model.image_encoder: HFImageEncoder: <code>model_args.trust_remote_code: true</code> runs Python code downloaded from the hub repository 'nvidia/C-RADIOv3-B' on this machine.</td>
+<td>—</td>
+<td>needs consent (composes, runs, learns, predicts)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="post">Post-processing<a class="headerlink" href="#post" title="Permanent link">&para;</a></h2>
+<p>Written as <code>evaluation.variants.post</code>; HGGD ships no variant <code>post</code> (the config has cd, raw). The options are explained on the slot page <a href="../../slots/post/">post</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list post</code>.</p>
+<h3 id="fit-14">Fit: 14<a class="headerlink" href="#fit-14" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>approach-cone</code><br>ApproachAngleFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>329 · 322</td>
+<td>heatmap 100 %, angle 98 %, offsets 46 %, anchor 96 %, anchor_offset 2 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>center-gripper</code><br>GripperCentering</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>376 · 368</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset -0 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns, predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>collision-strict</code><br>ModelFreeCollisionFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>376 · 368</td>
+<td>heatmap 100 %, angle 98 %, offsets 49 %, anchor 96 %, anchor_offset -2 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>collision</code><br>ModelFreeCollisionFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>384 · 368</td>
+<td>heatmap 100 %, angle 98 %, offsets 46 %, anchor 96 %, anchor_offset 9 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>furthest-sampling</code><br>FurthestGraspSampling</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>329 · 329</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 10 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>gripper-limits</code><br>GripperLimits</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>288 · 282</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 15 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>mesh-collision</code><br>GripperMeshCollisionFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>329 · 322</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 11 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>nms</code><br>GraspNMS</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>374 · 367</td>
+<td>heatmap 100 %, angle 98 %, offsets 45 %, anchor 96 %, anchor_offset 20 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>score-threshold</code><br>ScoreThreshold</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>325 · 324</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset -1 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>table-plane</code><br>TablePlaneFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>349 · 345</td>
+<td>heatmap 100 %, angle 98 %, offsets 45 %, anchor 96 %, anchor_offset -9 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 9 %</td>
+</tr>
+<tr>
+<td><code>to-base-frame</code><br>ToFrame</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>322 · 322</td>
+<td>heatmap 100 %, angle 98 %, offsets 48 %, anchor 96 %, anchor_offset 28 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>top-k</code><br>TopK</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>376 · 368</td>
+<td>heatmap 100 %, angle 98 %, offsets 49 %, anchor 96 %, anchor_offset 20 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>width-from-cloud</code><br>WidthFromCloud</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>322 · 322</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 6 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>workspace</code><br>WorkspaceFilter</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>323 · 315</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 3 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 14 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>approach-cone<span class="w"> </span>-o<span class="w"> </span>hggd_approach-cone.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>center-gripper<span class="w"> </span>-o<span class="w"> </span>hggd_center-gripper.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>collision-strict<span class="w"> </span>-o<span class="w"> </span>hggd_collision-strict.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>collision<span class="w"> </span>-o<span class="w"> </span>hggd_collision.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>furthest-sampling<span class="w"> </span>-o<span class="w"> </span>hggd_furthest-sampling.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>gripper-limits<span class="w"> </span>-o<span class="w"> </span>hggd_gripper-limits.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>mesh-collision<span class="w"> </span>-o<span class="w"> </span>hggd_mesh-collision.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>nms<span class="w"> </span>-o<span class="w"> </span>hggd_nms.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>score-threshold<span class="w"> </span>-o<span class="w"> </span>hggd_score-threshold.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>table-plane<span class="w"> </span>-o<span class="w"> </span>hggd_table-plane.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>to-base-frame<span class="w"> </span>-o<span class="w"> </span>hggd_to-base-frame.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>top-k<span class="w"> </span>-o<span class="w"> </span>hggd_top-k.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>width-from-cloud<span class="w"> </span>-o<span class="w"> </span>hggd_width-from-cloud.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">post</span><span class="o">=</span>workspace<span class="w"> </span>-o<span class="w"> </span>hggd_workspace.yaml
+</code></pre></div>
+</details>
+<h3 id="not-probed-1">Not probed: 1<a class="headerlink" href="#not-probed-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Why there is no record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target-mask</code></td>
+<td><code>MaskFilter</code></td>
+<td>reads observation.masks, which no shipped dataset fills</td>
+</tr>
+</tbody>
+</table>
+<h2 id="optimizer">Optimizer<a class="headerlink" href="#optimizer" title="Permanent link">&para;</a></h2>
+<p>Written as <code>optimizer</code>; HGGD ships <code>AdamW</code>. The options are explained on the slot page <a href="../../slots/recipe/">recipe</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list optimizer</code>.</p>
+<h3 id="fit-15">Fit: 15<a class="headerlink" href="#fit-15" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adamw-no-decay-1d</code><br>ParamGroups</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>326 · 270</td>
+<td>heatmap 97 %, angle 93 %, offsets 37 %, anchor 62 %, anchor_offset 55 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>adamw</code><br>AdamW</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>311 · 288</td>
+<td>heatmap 97 %, angle 93 %, offsets 36 %, anchor 72 %, anchor_offset 61 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ademamix</code><br>PytorchOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>312 · 281</td>
+<td>heatmap 97 %, angle 93 %, offsets 34 %, anchor 70 %, anchor_offset 74 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>prodigy</code><br>PytorchOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>257 · 278</td>
+<td>heatmap 32 %, angle 71 %, offsets 13 %, anchor 20 %, anchor_offset 10 %</td>
+<td><strong>universal</strong> (composes, runs) · 2 of 6 probed (learns) · <strong>universal</strong> (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>schedulefree-adamw</code><br>ScheduleFree, ScheduleFreeHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>241 · 173</td>
+<td>heatmap 11 %, angle 60 %, offsets 6 %, anchor -2 %, anchor_offset -0 %</td>
+<td><strong>universal</strong> (composes, runs) · 2 of 5 probed, +1 not reached by the method as shipped (learns) · <strong>universal</strong> (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor flat; anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>schedulefree-radam</code><br>ScheduleFree, ScheduleFreeHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>250 · 184</td>
+<td>heatmap 5 %, angle 57 %, offsets 3 %, anchor -16 %, anchor_offset -3 %</td>
+<td><strong>universal</strong> (composes, runs) · 2 of 5 probed, +1 not reached by the method as shipped (learns) · <strong>universal</strong> (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: heatmap flat; offsets flat; anchor rose 16 %; anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>schedulefree-sgd</code><br>ScheduleFree, ScheduleFreeHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>173 · 142</td>
+<td>heatmap 96 %, angle 97 %, offsets 22 %, anchor 98 %, anchor_offset 44 %</td>
+<td><strong>universal</strong> (composes) · 3 of 6 probed (runs) · 2 of 6 probed (learns) · 2 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>soap</code><br>PytorchOptimizer</td>
+<td>! fails</td>
+<td>✓ ✗ ? ✗</td>
+<td>—</td>
+<td>—</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs) · 4 of 5 probed, +1 not reached by the method as shipped (learns) · 5 of 6 probed (predicts)</td>
+<td>at step: RuntimeError: CUDA error: an illegal memory access was encountered CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.; runs: fails; learns: not reached, as the method as shipped does not reach it (anchor_offset flat)</td>
+</tr>
+<tr>
+<td><code>stableadamw</code><br>PytorchOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>299 · 284</td>
+<td>heatmap 97 %, angle 93 %, offsets 34 %, anchor 67 %, anchor_offset 64 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>timm-adan</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>331 · 297</td>
+<td>heatmap 97 %, angle 94 %, offsets 34 %, anchor 61 %, anchor_offset 43 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>timm-adopt</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>306 · 287</td>
+<td>heatmap 64 %, angle 84 %, offsets 24 %, anchor -4 %, anchor_offset 36 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns, predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor flat</td>
+</tr>
+<tr>
+<td><code>timm-lamb</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>236 · 243</td>
+<td>heatmap 56 %, angle 78 %, offsets 20 %, anchor 48 %, anchor_offset 49 %</td>
+<td><strong>universal</strong> (composes, runs) · 3 of 6 probed (learns) · <strong>universal</strong> (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>timm-lion</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>232 · 219</td>
+<td>heatmap 33 %, angle 74 %, offsets 16 %, anchor 28 %, anchor_offset 12 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 6 probed (learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>timm-madgrad</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>287 · 313</td>
+<td>heatmap 100 %, angle 96 %, offsets 30 %, anchor 98 %, anchor_offset 42 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>timm-mars</code><br>TimmOptimizer</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>317 · 261</td>
+<td>heatmap 26 %, angle 65 %, offsets 33 %, anchor -133 %, anchor_offset 70 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns, predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor rising</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 15 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>adamw-no-decay-1d<span class="w"> </span>-o<span class="w"> </span>hggd_adamw-no-decay-1d.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>adamw<span class="w"> </span>-o<span class="w"> </span>hggd_adamw.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>ademamix<span class="w"> </span>-o<span class="w"> </span>hggd_ademamix.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>prodigy<span class="w"> </span>-o<span class="w"> </span>hggd_prodigy.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>schedulefree-adamw<span class="w"> </span>-o<span class="w"> </span>hggd_schedulefree-adamw.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>schedulefree-radam<span class="w"> </span>-o<span class="w"> </span>hggd_schedulefree-radam.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>schedulefree-sgd<span class="w"> </span>-o<span class="w"> </span>hggd_schedulefree-sgd.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>soap<span class="w"> </span>-o<span class="w"> </span>hggd_soap.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>stableadamw<span class="w"> </span>-o<span class="w"> </span>hggd_stableadamw.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-adan<span class="w"> </span>-o<span class="w"> </span>hggd_timm-adan.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-adopt<span class="w"> </span>-o<span class="w"> </span>hggd_timm-adopt.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-lamb<span class="w"> </span>-o<span class="w"> </span>hggd_timm-lamb.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-lion<span class="w"> </span>-o<span class="w"> </span>hggd_timm-lion.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-madgrad<span class="w"> </span>-o<span class="w"> </span>hggd_timm-madgrad.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">optimizer</span><span class="o">=</span>timm-mars<span class="w"> </span>-o<span class="w"> </span>hggd_timm-mars.yaml
+</code></pre></div>
+</details>
+<h3 id="not-probed-2">Not probed: 2<a class="headerlink" href="#not-probed-2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Why there is no record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>encoder-lr-0.1</code></td>
+<td><code>ParamGroups</code></td>
+<td>it names the scene encoder of the seed-based skeleton (<code>model.backbone</code>), which HGGD does not have</td>
+</tr>
+<tr>
+<td><code>layer-decay</code></td>
+<td><code>ParamGroups</code></td>
+<td>it names the scene encoder of the seed-based skeleton (<code>model.backbone</code>), which HGGD does not have</td>
+</tr>
+</tbody>
+</table>
+<h2 id="schedule">Schedule<a class="headerlink" href="#schedule" title="Permanent link">&para;</a></h2>
+<p>Written as <code>scheduler</code>; HGGD ships <code>StepLR</code>. The options are explained on the slot page <a href="../../slots/recipe/">recipe</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list schedule</code>.</p>
+<h3 id="fit-7">Fit: 7<a class="headerlink" href="#fit-7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>constant</code><br>train options</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>300 · 258</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 9 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>cosine-restarts</code><br>TimmSchedule</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>264 · 216</td>
+<td>heatmap 100 %, angle 94 %, offsets 42 %, anchor 98 %, anchor_offset 16 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>cosine</code><br>CosineAnnealingLR</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>384 · 312</td>
+<td>heatmap 100 %, angle 96 %, offsets 40 %, anchor 97 %, anchor_offset 11 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>multistep-warmup</code><br>TimmSchedule</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>360 · 380</td>
+<td>heatmap 100 %, angle 94 %, offsets 52 %, anchor 97 %, anchor_offset -20 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs) · 4 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rising</td>
+</tr>
+<tr>
+<td><code>onecycle</code><br>OneCycleLR</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>335 · 360</td>
+<td>heatmap 84 %, angle 87 %, offsets 31 %, anchor 40 %, anchor_offset 57 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>poly</code><br>TimmSchedule</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>371 · 348</td>
+<td>heatmap 100 %, angle 96 %, offsets 44 %, anchor 97 %, anchor_offset 26 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>warmup-cosine</code><br>TimmSchedule</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>384 · 279</td>
+<td>heatmap 100 %, angle 96 %, offsets 40 %, anchor 97 %, anchor_offset -9 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs) · 4 of 5 probed, +1 not reached by the method as shipped (learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset rose 9 %</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 7 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>constant<span class="w"> </span>-o<span class="w"> </span>hggd_constant.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>cosine-restarts<span class="w"> </span>-o<span class="w"> </span>hggd_cosine-restarts.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>cosine<span class="w"> </span>-o<span class="w"> </span>hggd_cosine.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>multistep-warmup<span class="w"> </span>-o<span class="w"> </span>hggd_multistep-warmup.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>onecycle<span class="w"> </span>-o<span class="w"> </span>hggd_onecycle.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>poly<span class="w"> </span>-o<span class="w"> </span>hggd_poly.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">schedule</span><span class="o">=</span>warmup-cosine<span class="w"> </span>-o<span class="w"> </span>hggd_warmup-cosine.yaml
+</code></pre></div>
+</details>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
+<p>Written as <code>hooks</code>; HGGD ships EpochSignalHook, BNMomentumHook (option <code>accumulate-2</code>). The options are explained on the slot page <a href="../../slots/recipe/">recipe</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list hooks</code>.</p>
+<h3 id="fit-5">Fit: 5<a class="headerlink" href="#fit-5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>accumulate-2</code> (shipped)<br>train options</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>336 · 329</td>
+<td>heatmap 100 %, angle 98 %, offsets 49 %, anchor 96 %, anchor_offset -1 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns, predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>agc</code><br>AdaptiveGradClipHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>349 · 350</td>
+<td>heatmap 98 %, angle 99 %, offsets 45 %, anchor 98 %, anchor_offset 40 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 6 probed (learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ema</code><br>EMAHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>329 · 329</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 2 %</td>
+<td><strong>universal</strong> (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+<tr>
+<td><code>grad-clip</code><br>train options</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>460 · 450</td>
+<td>heatmap 100 %, angle 97 %, offsets 49 %, anchor 97 %, anchor_offset 19 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>swa</code><br>SWAHook</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>329 · 322</td>
+<td>heatmap 100 %, angle 98 %, offsets 47 %, anchor 96 %, anchor_offset 10 %</td>
+<td><strong>universal</strong> (composes) · 4 of 6 probed (runs, learns) · 3 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 5 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>accumulate-2<span class="w"> </span>-o<span class="w"> </span>hggd_accumulate-2.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>agc<span class="w"> </span>-o<span class="w"> </span>hggd_agc.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>ema<span class="w"> </span>-o<span class="w"> </span>hggd_ema.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>grad-clip<span class="w"> </span>-o<span class="w"> </span>hggd_grad-clip.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">hooks</span><span class="o">=</span>swa<span class="w"> </span>-o<span class="w"> </span>hggd_swa.yaml
+</code></pre></div>
+</details>
+<h3 id="do-not-fit-1_1">Do not fit: 1<a class="headerlink" href="#do-not-fit-1_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Kind</th>
+<th>Why it does not fit</th>
+<th>Lift</th>
+<th>Class</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>amp</code></td>
+<td><code>train options</code></td>
+<td>not-implemented</td>
+<td>train.amp: mixed precision is not supported by HGGD yet: its loss is not written for half-precision tensors (the detector does not declare <code>amp_ready = True</code>).</td>
+<td>—</td>
+<td>0 of 6 probed (composes, runs) · 0 of 5 probed, +1 not reached by the method as shipped (learns) · 0 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="not-probed-1_1">Not probed: 1<a class="headerlink" href="#not-probed-1_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Why there is no record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>freeze-encoder</code></td>
+<td><code>FreezeHook</code></td>
+<td>it names the scene encoder of the seed-based skeleton (<code>model.backbone</code>), which HGGD does not have</td>
+</tr>
+</tbody>
+</table>
+<h2 id="augment">Augmentation<a class="headerlink" href="#augment" title="Permanent link">&para;</a></h2>
+<p>Written as <code>data.train.dataset.transforms</code>; HGGD ships the method's own. The options are explained on the slot page <a href="../../slots/recipe/">recipe</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list augment</code>.</p>
+<h3 id="fit-1">Fit: 1<a class="headerlink" href="#fit-1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dropout</code><br>RandomDropout</td>
+<td>✓ runs</td>
+<td>✓ ✓ ? ✓</td>
+<td>376 · 360</td>
+<td>heatmap 100 %, angle 98 %, offsets 48 %, anchor 97 %, anchor_offset 1 %</td>
+<td><strong>universal</strong> (composes) · 5 of 6 probed (runs) · 4 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+<td>learns: not reached, as the method as shipped does not reach it (anchor_offset flat); here: anchor_offset flat</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 1 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">augment</span><span class="o">=</span>dropout<span class="w"> </span>-o<span class="w"> </span>hggd_dropout.yaml
+</code></pre></div>
+</details>
+<h3 id="do-not-fit-2">Do not fit: 2<a class="headerlink" href="#do-not-fit-2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Kind</th>
+<th>Why it does not fit</th>
+<th>Lift</th>
+<th>Class</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>jitter</code></td>
+<td><code>RandomJitter</code></td>
+<td>not-implemented</td>
+<td>data.train.dataset.transforms: RandomJitter moves the points, but this dataset section also serves image-space data (<code>rgb</code>, <code>depth</code>, <code>view_grasps</code>), which would stay where it was.</td>
+<td>—</td>
+<td>5 of 6 probed (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 4 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+</tr>
+<tr>
+<td><code>shift</code></td>
+<td><code>RandomShift</code></td>
+<td>not-implemented</td>
+<td>data.train.dataset.transforms: RandomShift moves the points, but this dataset section also serves image-space data (<code>rgb</code>, <code>depth</code>, <code>view_grasps</code>), which would stay where it was.</td>
+<td>—</td>
+<td>5 of 6 probed (composes, runs) · 5 of 5 probed, +1 not reached by the method as shipped (learns) · 3 of 4 probed, +2 not reached by the method as shipped (predicts)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recipe">Whole recipe<a class="headerlink" href="#recipe" title="Permanent link">&para;</a></h2>
+<p>Written as <code>optimizer, scheduler, hooks, transforms</code>; HGGD ships the method's own. The options are explained on the slot page <a href="../../slots/recipe/">recipe</a>; the same list in a terminal: <code>grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list recipe</code>.</p>
+<h3 id="fit-1_1">Fit: 1<a class="headerlink" href="#fit-1_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+<th>C R L P</th>
+<th>Grasps per frame</th>
+<th>Fall per loss term</th>
+<th>Class</th>
+<th>What kept it from a level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adamw-onecycle</code><br>AdamW, OneCycleLR</td>
+<td>✓ runs</td>
+<td>✓ ✓ ✓ ✓</td>
+<td>334 · 363</td>
+<td>heatmap 84 %, angle 87 %, offsets 30 %, anchor 42 %, anchor_offset 57 %</td>
+<td><strong>universal</strong> (composes, runs, learns) · 5 of 5 probed, +1 not reached by the method as shipped (predicts)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<details class="note">
+<summary>The compose command of each of the 1 options that fit</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--set<span class="w"> </span><span class="nv">recipe</span><span class="o">=</span>adamw-onecycle<span class="w"> </span>-o<span class="w"> </span>hggd_adamw-onecycle.yaml
+</code></pre></div>
+</details>
+<h3 id="not-probed-2_1">Not probed: 2<a class="headerlink" href="#not-probed-2_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Component</th>
+<th>Why there is no record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>finetune-encoder</code></td>
+<td><code>ParamGroups, TimmSchedule, FreezeHook, EMAHook</code></td>
+<td>it names the scene encoder of the seed-based skeleton (<code>model.backbone</code>), which HGGD does not have</td>
+</tr>
+<tr>
+<td><code>ptv3-adamw-onecycle</code></td>
+<td><code>ParamGroups, OneCycleLR</code></td>
+<td>it names the scene encoder of the seed-based skeleton (<code>model.backbone</code>), which HGGD does not have</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

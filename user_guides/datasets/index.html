@@ -1,0 +1,3117 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/user_guides/datasets/">
+      
+      
+        <link rel="prev" href="../config/">
+      
+      
+        <link rel="next" href="../cross_dataset/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Dataset preparation - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dataset-preparation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dataset preparation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../slots/" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-things-are-looked-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where things are looked for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grasppanda-prepare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        grasppanda prepare
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graspnet-1billion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraspNet-1Billion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graspclutter6d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraspClutter6D
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GraspClutter6D">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cameras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#splits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Splits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-frame-holds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a frame holds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derived-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived assets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dataset-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dataset configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-differs-between-the-two-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What differs between the two benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-things-are-looked-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where things are looked for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grasppanda-prepare" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        grasppanda prepare
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graspnet-1billion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraspNet-1Billion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graspclutter6d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraspClutter6D
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GraspClutter6D">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cameras
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#splits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Splits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-frame-holds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a frame holds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derived-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Derived assets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dataset-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dataset configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-differs-between-the-two-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What differs between the two benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/user_guides/datasets.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="dataset-preparation">Dataset preparation<a class="headerlink" href="#dataset-preparation" title="Permanent link">&para;</a></h1>
+<p>GraspPanda reads two benchmarks: <strong>GraspNet-1Billion</strong> and <strong>GraspClutter6D</strong>. Both are
+read in place, and everything derived from them is built by one command,
+<code>grasppanda prepare</code>.</p>
+<ul>
+<li>Raw datasets are never modified. Nothing is written into a dataset tree.</li>
+<li>Derived labels (the grasp-label store, point-wise graspness and the label assets of
+  individual methods) live in a separate asset store under <code>$GRASPPANDA_CACHE</code>. Each
+  asset records its generator, its parameters and the preprocessing it assumes, and is
+  found by a hash of those. A config that asks for other parameters asks for another
+  asset; it can never read misaligned labels.</li>
+<li>Splits are explicit sets of <code>(scene, camera, frame)</code>. Validation data is a scene-level
+  hold-out from the training scenes, never a test split.</li>
+</ul>
+<h2 id="where-things-are-looked-for">Where things are looked for<a class="headerlink" href="#where-things-are-looked-for" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Resolved from, in this order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GraspNet-1Billion</td>
+<td><code>root</code> in the dataset config, <code>$GRASPPANDA_GRASPNET1B_ROOT</code>, <code>$GRASPPANDA_DATA/graspnet1b</code>, <code>./data/graspnet1b</code></td>
+</tr>
+<tr>
+<td>GraspClutter6D</td>
+<td><code>root</code> in the dataset config, <code>$GRASPPANDA_GRASPCLUTTER6D_ROOT</code>, <code>$GRASPPANDA_DATA/graspclutter6d</code>, <code>./data/graspclutter6d</code></td>
+</tr>
+<tr>
+<td>Derived assets</td>
+<td><code>$GRASPPANDA_CACHE</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="grasppanda-prepare"><code>grasppanda prepare</code><a class="headerlink" href="#grasppanda-prepare" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--check<span class="w">                 </span><span class="c1"># what the tree and the assets lack</span>
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--labels<span class="w">                </span><span class="c1"># dense grasp labels as a memory-mapped store</span>
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--graspness<span class="w"> </span>--camera<span class="w"> </span>C<span class="w">  </span><span class="c1"># point-wise graspness maps</span>
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--compact-labels<span class="w"> </span>--config<span class="w"> </span>&lt;config<span class="w"> </span>with<span class="w"> </span>compact_labels&gt;
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--tolerance<span class="w">      </span>--config<span class="w"> </span>&lt;config<span class="w"> </span>with<span class="w"> </span>tolerance&gt;
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--view-grasps<span class="w"> </span>--camera<span class="w"> </span>C<span class="w"> </span>--config<span class="w"> </span>&lt;config<span class="w"> </span>with<span class="w"> </span>view_grasps&gt;
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>&lt;dataset&gt;<span class="w"> </span>--scale-statistic<span class="w"> </span>--config<span class="w"> </span>&lt;config<span class="w"> </span>with<span class="w"> </span>scale_statistic&gt;
+</code></pre></div>
+<p>Every action reads a dataset config: the shipped base config of the dataset and camera,
+or the one named with <code>--config</code>. What is built is exactly what that config later asks
+for. <code>--split</code> and <code>--scenes 5,9,13</code> restrict the scenes; generation is resumable and
+finished shards are skipped. Evaluation needs none of these assets: a test loader reads
+depth (and, for the reference workspace crop, the segmentation) only.</p>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Flag</th>
+<th>Read by</th>
+<th>Depends on the camera</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grasp-label store</td>
+<td><code>--labels</code></td>
+<td>every training recipe, and every other generator</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Point-wise graspness</td>
+<td><code>--graspness</code></td>
+<td>GSNet, EconomicGrasp</td>
+<td>yes, and on the preprocessing</td>
+</tr>
+<tr>
+<td>Compact grasp labels</td>
+<td><code>--compact-labels</code></td>
+<td>EconomicGrasp</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Grasp tolerance</td>
+<td><code>--tolerance</code></td>
+<td>GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Per-view grasps</td>
+<td><code>--view-grasps</code></td>
+<td>HGGD</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Scale statistic</td>
+<td><code>--scale-statistic</code></td>
+<td>Scale-Balanced-Grasp</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="graspnet-1billion">GraspNet-1Billion<a class="headerlink" href="#graspnet-1billion" title="Permanent link">&para;</a></h2>
+<p>The official download, 190 scenes with 256 frames per scene and camera:</p>
+<div class="highlight"><pre><span></span><code>scenes/scene_XXXX/object_id_list.txt
+scenes/scene_XXXX/{realsense,kinect}/{rgb,depth,label}/NNNN.png
+scenes/scene_XXXX/{realsense,kinect}/meta/NNNN.mat          intrinsics, depth factor, poses
+scenes/scene_XXXX/{realsense,kinect}/annotations/NNNN.xml   poses, four decimals
+scenes/scene_XXXX/{realsense,kinect}/{camera_poses,cam0_wrt_table}.npy
+grasp_label/NNN_labels.npz
+collision_label/scene_XXXX/collision_labels.npz
+models/NNN/nontextured.ply,  dex_models/NNN.pkl
+</code></pre></div>
+<p>Splits (shipped in <code>grasppanda/datasets/splits/graspnet1b.yaml</code>): <code>train</code> (scenes 0 to
+99), <code>test_seen</code> (100 to 129), <code>test_similar</code> (130 to 159), <code>test_novel</code> (160 to 189),
+<code>test</code> (their union), <code>train_dev</code> / <code>val_dev</code> (90 and 10 training scenes) and <code>sample</code>.</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspnet1b<span class="w"> </span>--check
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspnet1b<span class="w"> </span>--labels
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspnet1b<span class="w"> </span>--graspness<span class="w"> </span>--camera<span class="w"> </span>realsense
+</code></pre></div>
+<p>The method-specific assets are listed with their commands in each method's
+<code>configs/&lt;method&gt;/README.md</code>.</p>
+<h2 id="graspclutter6d">GraspClutter6D<a class="headerlink" href="#graspclutter6d" title="Permanent link">&para;</a></h2>
+<p><a href="https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D">GraspClutter6D</a>
+(RA-L 2025, <a href="https://arxiv.org/abs/2504.06866">arXiv 2504.06866</a>, data licence
+CC BY-SA 4.0) holds 1 000 scenes in BOP layout. Its grasp labels have the format of
+GraspNet-1Billion, which is why every label generator of this toolbox runs on it
+unchanged. Download and unpack it as its README says; the reader needs</p>
+<div class="highlight"><pre><span></span><code>split_info/grasp_{train,test}_scene_ids.json    the grasp splits (authoritative)
+split_info/obj_ids_per_scene.json
+scenes/&lt;scene:06d&gt;/{rgb,depth,label}/&lt;image:06d&gt;.png
+scenes/&lt;scene:06d&gt;/{mask,mask_visib}/&lt;image:06d&gt;_&lt;instance:06d&gt;.png
+scenes/&lt;scene:06d&gt;/scene_camera.json    per image: cam_K, depth_scale, cam_{R,t}_w2c
+scenes/&lt;scene:06d&gt;/scene_gt.json        per image and instance: cam_{R,t}_m2c, obj_id
+grasp_label/obj_&lt;object:06d&gt;_labels.npz
+collision_label/&lt;scene:06d&gt;.npz         one array per instance, in scene_gt order
+models_m/obj_&lt;object:06d&gt;.ply           object models in metres
+dex_models/obj_&lt;object:06d&gt;.pkl         force-closure data of the evaluator
+</code></pre></div>
+<p><code>grasppanda prepare graspclutter6d --check</code> counts all of this for the 648 scenes of the
+grasp splits and then reports the derived assets of every camera.</p>
+<h3 id="cameras">Cameras<a class="headerlink" href="#cameras" title="Permanent link">&para;</a></h3>
+<p>A scene has 13 annotated views, and every view was taken by four cameras. All 52 images
+of a scene share the directories; the camera is encoded in the image id,
+<code>image = 4 * view + c</code>. A <code>SampleKey</code> holds the camera name and the view (0 to 12).</p>
+<table>
+<thead>
+<tr>
+<th>Camera (<code>camera:</code>)</th>
+<th><code>c</code></th>
+<th>Image</th>
+<th>Raw depth unit</th>
+<th>Focal length (px)</th>
+<th>Base config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>realsense-d415</code></td>
+<td>1</td>
+<td>1920 × 1080</td>
+<td>1 mm</td>
+<td>1404 or 1429</td>
+<td><code>graspclutter6d_d415.yaml</code></td>
+</tr>
+<tr>
+<td><code>realsense-d435</code></td>
+<td>2</td>
+<td>1920 × 1080</td>
+<td>1 mm</td>
+<td>1394 or 1415</td>
+<td><code>graspclutter6d_d435.yaml</code></td>
+</tr>
+<tr>
+<td><code>azure-kinect</code></td>
+<td>3</td>
+<td>3840 × 2160</td>
+<td>0.1 mm</td>
+<td>1996 or 2112</td>
+<td><code>graspclutter6d_kinect.yaml</code></td>
+</tr>
+<tr>
+<td><code>zivid</code></td>
+<td>4</td>
+<td>1920 × 1200</td>
+<td>0.1 mm</td>
+<td>2790</td>
+<td><code>graspclutter6d_zivid.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<p>Intrinsics and depth scale are read per image from <code>scene_camera.json</code>. Three of the
+cameras have two calibrations in the grasp splits (in the scenes inspected, view 0 has
+one and views 1 to 12 the other), so one constant camera matrix per camera, as
+GraspNet-1Billion pipelines often hard-code, would be wrong here. The depth scale was
+the same on all 8 424 images of each camera. The paper reports its benchmark on the
+RealSense D435.</p>
+<h3 id="splits">Splits<a class="headerlink" href="#splits" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Split</th>
+<th>Scenes</th>
+<th>Frames per camera</th>
+<th>Object models</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>train</code></td>
+<td>413</td>
+<td>5 369</td>
+<td>123 (ids 69 to 198)</td>
+<td><code>split_info/grasp_train_scene_ids.json</code></td>
+</tr>
+<tr>
+<td><code>test</code></td>
+<td>235</td>
+<td>3 055</td>
+<td>68 (ids 1 to 68)</td>
+<td><code>split_info/grasp_test_scene_ids.json</code></td>
+</tr>
+<tr>
+<td><code>all</code></td>
+<td>648</td>
+<td>8 424</td>
+<td>191</td>
+<td>union of the two</td>
+</tr>
+<tr>
+<td><code>sample</code></td>
+<td>1 (scene 5)</td>
+<td>13</td>
+<td>6</td>
+<td>first training scene, for smoke tests</td>
+</tr>
+<tr>
+<td><code>test_mini</code></td>
+<td>24</td>
+<td>312</td>
+<td>66 of the 68</td>
+<td>every tenth test scene by rank; shipped</td>
+</tr>
+<tr>
+<td><code>val_dev</code></td>
+<td>41</td>
+<td>533</td>
+<td>110 of the 123</td>
+<td>every tenth training scene by rank; shipped</td>
+</tr>
+<tr>
+<td><code>train_dev</code></td>
+<td>372</td>
+<td>4 836</td>
+<td>123</td>
+<td><code>train</code> without <code>val_dev</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The test objects are all unseen.</strong> No object model occurs in both splits: the
+  benchmark has no "seen" part, unlike GraspNet-1Billion.</li>
+<li>The three subsets are fixed scene lists in <code>grasppanda/datasets/splits/graspclutter6d.yaml</code>.
+  They exist only when the split files of the tree contain them. <strong><code>test_mini</code> is for
+  quick checks; a number measured on it is a subset number, not a benchmark result.</strong>
+  Per-scene AP varies widely on this dataset (from below 1 to above 60 for one model),
+  so the mean over 24 scenes carries a standard error of about 3 AP.</li>
+<li>All objects of <code>val_dev</code> are training objects, so it measures fit to new arrangements,
+  not to new objects.</li>
+<li>The other 352 scenes of the dataset are in neither grasp split and are not read.</li>
+<li>The paper states 132 training objects. The split files give 123: object ids 112 to
+  117, 191, 199 and 200 occur in no scene of either grasp split.</li>
+</ul>
+<h3 id="what-a-frame-holds">What a frame holds<a class="headerlink" href="#what-a-frame-holds" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Scenes are denser than in GraspNet-1Billion: 14.5 object instances per scene on
+  average (5 to 20), and in 84 % of the scenes at least one object model occurs more than
+  once. The <code>label</code> image stores object ids and cannot tell two copies apart, so the
+  reader builds the instance map from the per-instance visibility masks (<code>mask_visib</code>),
+  and grasp labels, collision labels and compact labels are keyed by <strong>instance</strong>
+  (position in <code>scene_gt.json</code>), not by object id.</li>
+<li>The instance list and its order are the same for all 52 images of a scene (checked on
+  all 648 scenes). The reader and the evaluator refuse a frame for which that fails.</li>
+<li>Lengths in the JSON files are millimetres; poses leave the reader in metres.</li>
+<li><code>cam_R_w2c</code> / <code>cam_t_w2c</code> hold the camera pose in the world frame (camera to world),
+  contrary to what the names say. The world frame is fixed to the rig, not to the table:
+  bounds of a <code>TableBoxWorkspace</code> are world coordinates here.</li>
+<li><code>scene_camera.json</code> also has entries <code>-4</code> to <code>0</code>; they have no image and are ignored.</li>
+</ul>
+<h3 id="derived-assets">Derived assets<a class="headerlink" href="#derived-assets" title="Permanent link">&para;</a></h3>
+<p>Built on three training scenes (5, 9 and 13; 11 object models, 49 instances) on the
+development machine while it was heavily loaded, so the times are upper bounds:</p>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Command (add <code>--scenes 5,9,13</code> for the three scenes)</th>
+<th>Three scenes</th>
+<th>Whole <code>train</code> split, extrapolated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grasp-label store</td>
+<td><code>grasppanda prepare graspclutter6d --labels</code></td>
+<td>2.8 GB</td>
+<td>about 55 GB (236 MB per object model, 62 MB per scene)</td>
+</tr>
+<tr>
+<td>Graspness, one camera</td>
+<td><code>... --graspness --camera realsense-d435</code></td>
+<td>2.2 MB, 3 min with 3 workers</td>
+<td>about 0.3 GB, 5 h with 4 workers</td>
+</tr>
+<tr>
+<td>Compact labels</td>
+<td><code>... --compact-labels --config economicgrasp/economicgrasp_sunet14_gc6d-d435_10e</code></td>
+<td>24 MB, 11 s</td>
+<td>about 3 GB, 25 min</td>
+</tr>
+<tr>
+<td>Tolerance</td>
+<td><code>... --tolerance --config _base_/datasets/graspclutter6d_d435_tolerance.yaml</code></td>
+<td>332 MB, 1 min with 4 workers</td>
+<td>about 4 GB, 10 min</td>
+</tr>
+<tr>
+<td>Per-view grasps, one camera</td>
+<td><code>... --view-grasps --camera realsense-d435 --config _base_/datasets/graspclutter6d_d435_hggd.yaml</code></td>
+<td>96 kB, 1 min with 3 workers</td>
+<td>about 15 MB, 1.5 h with 4 workers</td>
+</tr>
+</tbody>
+</table>
+<p>The whole-split figures are extrapolations from the three scenes, not measurements. The
+label store is the large one; only training reads it. The evaluator keeps a cache of its
+own, extracted from <code>dex_models/</code> and <code>models_m/</code> on first use: about 7 MB per object
+model, 0.5 GB for the test objects.</p>
+<p>Two facts measured on those scenes that matter for training:</p>
+<ul>
+<li>Only 9.6 % of the annotated grasp points keep a collision-free grasp of friction
+  ≤ 0.4 (10 401 of 108 094); on GraspNet-1Billion 39 % do. The scenes are far more
+  cluttered, so EconomicGrasp's compact labels supervise far fewer seeds per frame.</li>
+<li>The per-view labels of HGGD come to 17 to 67 per frame (GraspNet-1Billion scene 0:
+  59), from 471 to 1 964 candidate grasps per scene.</li>
+</ul>
+<h3 id="dataset-configs">Dataset configs<a class="headerlink" href="#dataset-configs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config (<code>configs/_base_/datasets/</code>)</th>
+<th>Recipe carried over from</th>
+<th>Cloud</th>
+<th>Assets it reads for training</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graspclutter6d_{d415,d435,kinect,zivid}.yaml</code></td>
+<td>Graspness (GSNet)</td>
+<td>15 000 points, official workspace crop</td>
+<td>label store, graspness</td>
+</tr>
+<tr>
+<td><code>graspclutter6d_d435_tolerance.yaml</code></td>
+<td>GraspNet-baseline, Scale-Balanced-Grasp</td>
+<td>20 000 points, official workspace crop</td>
+<td>label store, tolerance</td>
+</tr>
+<tr>
+<td><code>graspclutter6d_d435_hggd.yaml</code></td>
+<td>HGGD</td>
+<td>colour and depth images, 25 600 points, no crop</td>
+<td>per-view grasps</td>
+</tr>
+<tr>
+<td>EconomicGrasp: <code>configs/economicgrasp/economicgrasp_sunet14_gc6d-d435_10e.yaml</code></td>
+<td>EconomicGrasp</td>
+<td>20 000 points, official workspace crop</td>
+<td>compact labels, graspness</td>
+</tr>
+</tbody>
+</table>
+<p>These carry the GraspNet-1Billion recipe of each method family over and change only what
+the dataset fixes. None reproduces a published GraspClutter6D training recipe: none
+exists for the ported methods. HGGD's network image is 640 × 360, and the detector takes
+any sensor image that is an integer multiple of it: the D415, D435 (×3) and Azure Kinect
+(×6) images fit, the Zivid images (1920 × 1200) do not.</p>
+<h2 id="what-differs-between-the-two-benchmarks">What differs between the two benchmarks<a class="headerlink" href="#what-differs-between-the-two-benchmarks" title="Permanent link">&para;</a></h2>
+<p>Measured values are medians over 20 test frames of GraspNet-1Billion (two frames of
+every ninth test scene, RealSense unless a camera is named) and over 104 test frames of
+GraspClutter6D (all 13 views of every third <code>test_mini</code> scene).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>GraspNet-1Billion</th>
+<th>GraspClutter6D</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scenes, frames</td>
+<td>190 scenes × 256 frames per camera</td>
+<td>648 scenes in the grasp splits × 13 views per camera</td>
+</tr>
+<tr>
+<td>Cameras</td>
+<td><code>realsense</code> (D435), <code>kinect</code> (Azure Kinect), one directory each</td>
+<td>D415, D435, Azure Kinect, Zivid, interleaved by image id</td>
+</tr>
+<tr>
+<td>Image</td>
+<td>1280 × 720</td>
+<td>1920 × 1080, 3840 × 2160 (Kinect), 1920 × 1200 (Zivid)</td>
+</tr>
+<tr>
+<td>Intrinsics</td>
+<td>one calibration per camera</td>
+<td>per image; two calibrations for three of the cameras</td>
+</tr>
+<tr>
+<td>Raw depth unit</td>
+<td>1 mm</td>
+<td>1 mm (RealSense), 0.1 mm (Azure Kinect, Zivid); per image</td>
+</tr>
+<tr>
+<td>Camera to objects</td>
+<td>0.44 m (0.31 to 0.52)</td>
+<td>0.70 m (0.36 to 1.04) on the D435; the paper states 0.31 to 1.37 m over all cameras</td>
+</tr>
+<tr>
+<td>Size of a pixel on the objects</td>
+<td>0.47 mm (RealSense), 0.74 mm (Kinect)</td>
+<td>0.50 mm (D435), 0.47 (D415), 0.36 (Kinect), 0.26 (Zivid)</td>
+</tr>
+<tr>
+<td>Object ids</td>
+<td>0 to 87; the segmentation stores id + 1</td>
+<td>1 to 200; the segmentation stores the id</td>
+</tr>
+<tr>
+<td>Instances</td>
+<td>an object occurs once per scene</td>
+<td>repeated objects; instances from <code>mask_visib</code></td>
+</tr>
+<tr>
+<td>Label files</td>
+<td><code>grasp_label/NNN_labels.npz</code>, <code>collision_label/scene_XXXX/collision_labels.npz</code></td>
+<td><code>grasp_label/obj_NNNNNN_labels.npz</code>, <code>collision_label/NNNNNN.npz</code></td>
+</tr>
+<tr>
+<td>Label grid</td>
+<td>300 views × 12 angles × 4 depths</td>
+<td>the same</td>
+</tr>
+<tr>
+<td>Label widths</td>
+<td>gripper of 0.10 m</td>
+<td>up to 0.15 m; gripper of 0.14 m</td>
+</tr>
+<tr>
+<td>Object poses</td>
+<td><code>meta/*.mat</code> or <code>annotations/*.xml</code></td>
+<td><code>scene_gt.json</code> (millimetres)</td>
+</tr>
+<tr>
+<td>Table frame</td>
+<td><code>cam0_wrt_table.npy</code>, z up, origin on the table</td>
+<td>the rig's world frame; the table is not at z = 0</td>
+</tr>
+<tr>
+<td>Reference workspace crop</td>
+<td>3-D box around the ground-truth segmentation, 2 cm margin (<code>SegmentationBoxWorkspace</code>)</td>
+<td>image rectangle around the ground-truth segmentation, 10 % margin (<code>SegmentationRectWorkspace</code>)</td>
+</tr>
+<tr>
+<td>Cloud in that crop</td>
+<td>554 000 points, 0.48 × 0.35 × 0.26 m, 39 % on objects</td>
+<td>908 000 points, 0.91 × 0.57 × 0.81 m, 32 % on objects (D435)</td>
+</tr>
+<tr>
+<td>Splits</td>
+<td>train / seen / similar / novel</td>
+<td>train / test, disjoint objects</td>
+</tr>
+<tr>
+<td>Evaluator</td>
+<td><code>GraspNet1BEvaluator</code>, protocol <code>graspnet1b-sv-v1</code></td>
+<td><code>GraspClutter6DEvaluator</code>, protocol <code>graspclutter6d-sv-v1</code></td>
+</tr>
+<tr>
+<td>Ranks and frictions</td>
+<td>top 50; μ = 0.2, 0.4, …, 1.2</td>
+<td>the same</td>
+</tr>
+<tr>
+<td>Width clip</td>
+<td>0.10 m</td>
+<td>0.14 m</td>
+</tr>
+<tr>
+<td>Foreground filter</td>
+<td>none</td>
+<td>grasps 5 cm or more from every object model are dropped before NMS</td>
+</tr>
+<tr>
+<td>Collision scene</td>
+<td>object models and a synthetic table</td>
+<td>object models only</td>
+</tr>
+</tbody>
+</table>
+<p>Both reference crops are derived from the <strong>ground-truth</strong> segmentation, at test time
+too. Results on them are stamped <code>gt_assisted: [workspace]</code>.</p>
+<p>The evaluator constants are those of the official tools (<code>graspnetAPI</code> 1.2.x and
+<code>graspclutter6dAPI</code> at <code>ddb2ee7</code>). For GraspClutter6D the equality is checked stage by
+stage on label-derived grasps for all four cameras and on the dumps that <code>grasppanda
+test</code> wrote for several detectors (<code>tests/integration/test_eval_clutter_parity.py</code>).
+How a model trained on one benchmark is tested on the other is the subject of
+<a href="../cross_dataset/">Cross-dataset evaluation</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

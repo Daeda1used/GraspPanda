@@ -1,0 +1,8 @@
+/* The repository widget of the header asks GitHub for the latest release. Until the
+ * rebuild has a release of its own that is a tag of the earlier, unrelated code base
+ * (v0.56), so the version is hidden; stars and forks stay. */
+.md-source__fact--version { display: none; }
+
+/* A measured combination that predicted no grasp on any probed frame
+ * (tools/make_combination_docs.py, tools/make_method_pages.py). */
+.gp-nograsp { color: var(--md-default-fg-color--light); opacity: 0.75; }

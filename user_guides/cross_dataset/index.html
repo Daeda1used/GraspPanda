@@ -1,0 +1,3146 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/user_guides/cross_dataset/">
+      
+      
+        <link rel="prev" href="../datasets/">
+      
+      
+        <link rel="next" href="../train_test/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Cross-dataset evaluation - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cross-dataset-evaluation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Cross-dataset evaluation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../slots/" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-config-and-not-a-list-of-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a config and not a list of overrides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-changes-with-the-dataset-and-what-must-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changes with the dataset, and what must not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What changes with the dataset, and what must not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-gripper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gripper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subset-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subset results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subset results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#against-the-reported-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Against the reported numbers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlled-variants-on-the-same-312-frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlled variants on the same 312 frames
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-whole-test-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The whole test split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-a-run-against-the-official-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking a run against the official tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-on-graspclutter6d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training on GraspClutter6D
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-config-and-not-a-list-of-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a config and not a list of overrides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-changes-with-the-dataset-and-what-must-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changes with the dataset, and what must not
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What changes with the dataset, and what must not">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-gripper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The gripper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subset-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subset results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subset results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#against-the-reported-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Against the reported numbers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlled-variants-on-the-same-312-frames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlled variants on the same 312 frames
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-whole-test-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The whole test split
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-a-run-against-the-official-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking a run against the official tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#training-on-graspclutter6d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Training on GraspClutter6D
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/user_guides/cross_dataset.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="cross-dataset-evaluation">Cross-dataset evaluation<a class="headerlink" href="#cross-dataset-evaluation" title="Permanent link">&para;</a></h1>
+<p>How a model trained on GraspNet-1Billion is tested on GraspClutter6D, what such a
+comparison keeps fixed, and what has been measured so far. The facts about the two
+datasets are in <a href="../datasets/">Dataset preparation</a>.</p>
+<h2 id="one-command">One command<a class="headerlink" href="#one-command" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span><span class="nb">test</span><span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e<span class="w"> </span>--weights<span class="w"> </span>&lt;checkpoint&gt;
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Transfer config</th>
+<th>Weights it takes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GSNet</td>
+<td><code>gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e</code></td>
+<td><code>gsnet_sunet14_g1b-realsense_10e</code></td>
+</tr>
+<tr>
+<td>EconomicGrasp</td>
+<td><code>economicgrasp/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e</code></td>
+<td><code>economicgrasp_sunet14_g1b-realsense_10e</code></td>
+</tr>
+<tr>
+<td>EconomicGrasp</td>
+<td><code>economicgrasp/economicgrasp_sunet14_g1b-kinect-to-gc6d-d435_10e</code></td>
+<td><code>economicgrasp_sunet14_g1b-kinect_10e</code></td>
+</tr>
+<tr>
+<td>GraspNet-baseline</td>
+<td><code>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e</code></td>
+<td><code>graspnet-baseline_pointnet2_g1b-realsense_18e</code></td>
+</tr>
+<tr>
+<td>Scale-Balanced-Grasp</td>
+<td><code>scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e</code></td>
+<td><code>sbg_pointnet2-transformer_g1b-realsense_18e</code></td>
+</tr>
+<tr>
+<td>HGGD</td>
+<td><code>hggd/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e</code></td>
+<td><code>hggd_r34w8_g1b-realsense_15e</code></td>
+</tr>
+</tbody>
+</table>
+<p>Author checkpoints are converted first, exactly as for GraspNet-1Billion (the commands
+are in each <code>configs/&lt;method&gt;/README.md</code>). Useful overrides:</p>
+<div class="highlight"><pre><span></span><code>--opts<span class="w"> </span>data.test.dataset.split<span class="o">=</span>test_mini<span class="w">           </span><span class="c1"># 24 scenes, 312 frames: minutes, a check only</span>
+--opts<span class="w"> </span>data.test.dataset.camera<span class="o">=</span>zivid<span class="w">              </span><span class="c1"># realsense-d415 | realsense-d435 | azure-kinect | zivid</span>
+--opts<span class="w"> </span>evaluation.num_workers<span class="o">=</span><span class="m">8</span><span class="w">                    </span><span class="c1"># processes of the evaluator</span>
+</code></pre></div>
+<p>The whole test split is 235 scenes × 13 views = 3 055 frames per camera. No derived
+asset is needed to test.</p>
+<h2 id="why-a-config-and-not-a-list-of-overrides">Why a config and not a list of overrides<a class="headerlink" href="#why-a-config-and-not-a-list-of-overrides" title="Permanent link">&para;</a></h2>
+<p>A transfer config inherits the method's GraspNet-1Billion config and replaces two
+nodes, <code>data.test</code> and <code>evaluation.evaluator</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">_base_</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gsnet_sunet14_g1b-realsense_10e.yaml</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GraspClutter6D</span>
+<span class="w">      </span><span class="nt">camera</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realsense-d435</span>
+<span class="w">      </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<span class="w">      </span><span class="nt">load_labels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">preprocess</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">DepthToCloud</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">SegmentationRectWorkspace</span><span class="p p-Indicator">,</span><span class="nt"> margin</span><span class="p">:</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">transforms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${data.val.dataset.transforms}</span>
+<span class="w">      </span><span class="nt">keep_full_points</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+
+<span class="nt">evaluation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">evaluator</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">GraspClutter6DEvaluator</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<ul>
+<li><strong>What the weights depend on cannot drift.</strong> The model, the point count, the input
+  features and both post-processing variants are not restated; they are the inherited
+  values, and <code>transforms</code> is an interpolation of the recipe's own evaluation
+  transforms. A unit test compares every other section of each transfer config with its
+  parent.</li>
+<li>The same change as <code>--opts</code> would be about ten overrides including two lists, because a
+  changed <code>type</code> replaces a node and all its arguments must be given again. That is easy
+  to get wrong and leaves no name to quote in a result table.</li>
+<li>The config has a name, a hash in every result record, and is validated by
+  <code>grasppanda print-config --check</code> in the test suite.</li>
+</ul>
+<p>A transfer config is a test config. Its evaluator cannot score the inherited
+GraspNet-1Billion validation loader, so it sets <code>evaluation.interval: 0</code>; to train, use
+the config it inherits from.</p>
+<h2 id="what-changes-with-the-dataset-and-what-must-not">What changes with the dataset, and what must not<a class="headerlink" href="#what-changes-with-the-dataset-and-what-must-not" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>In the transfer config</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frames</td>
+<td><strong>changes</strong>: <code>GraspClutter6D</code>, <code>realsense-d435</code>, <code>test</code></td>
+<td>The benchmark. The D435 is the camera of the paper's table and the sensor model of GraspNet-1Billion's <code>realsense</code>.</td>
+</tr>
+<tr>
+<td>Intrinsics, depth scale</td>
+<td><strong>changes</strong>, read per image</td>
+<td>Nothing in a model or a transform holds a camera constant; <code>DepthToCloud</code> and HGGD read the calibration of the frame.</td>
+</tr>
+<tr>
+<td>Workspace crop</td>
+<td><strong>changes</strong> to <code>SegmentationRectWorkspace</code> (margin 0.1)</td>
+<td>The crop of the official tool, and of the authors' released baseline code. GraspNet-1Billion's crop (<code>SegmentationBoxWorkspace</code>) is a box in a table frame that this dataset does not have; see the measured effect below. HGGD has no crop on either dataset.</td>
+</tr>
+<tr>
+<td>Evaluator</td>
+<td><strong>changes</strong> to <code>GraspClutter6DEvaluator</code></td>
+<td>Width clip 0.14 m, foreground filter, no table: the protocol of the benchmark.</td>
+</tr>
+<tr>
+<td>Model, including every length</td>
+<td><strong>fixed</strong></td>
+<td>Voxel size (5 mm), ball-query and cylinder radii, depth bins and the 300 views are the units the weights were trained in.</td>
+</tr>
+<tr>
+<td>Gripper of the model (0.10 m)</td>
+<td><strong>fixed</strong></td>
+<td>It bounds the labels the model learnt from and clamps its decoded widths. See "The gripper" below.</td>
+</tr>
+<tr>
+<td>Points per cloud (15 000 / 20 000 / 25 600), input features</td>
+<td><strong>fixed</strong></td>
+<td>Part of the recipe; fewer or more points change the density the encoder was trained on.</td>
+</tr>
+<tr>
+<td>HGGD network image (640 × 360)</td>
+<td><strong>fixed</strong></td>
+<td>The 1920 × 1080 image is reduced by 3 instead of 2; the focal length of the network image comes out nearly the same (465 to 472 px against 464 px).</td>
+</tr>
+<tr>
+<td>Post-processing (<code>raw</code>, <code>cd</code>)</td>
+<td><strong>fixed</strong></td>
+<td>The collision filter of each reference, with its own voxel size, approach distance and threshold.</td>
+</tr>
+<tr>
+<td>Point-sampling seed</td>
+<td><strong>fixed</strong> (0)</td>
+<td>The same points every run.</td>
+</tr>
+</tbody>
+</table>
+<p>What shifts without being a setting, and is therefore not corrected:</p>
+<ul>
+<li><strong>Distance.</strong> Objects are 0.70 m from the D435 in the median (0.36 to 1.04 m), against
+  0.44 m (0.31 to 0.52 m) in GraspNet-1Billion. The image is larger, so a pixel covers
+  about the same length on an object (0.50 mm against 0.47 mm); how much noisier the depth
+  is at that distance was not measured. No depth range is clipped on either dataset.</li>
+<li><strong>Extent and density.</strong> The reference crop here spans 0.91 × 0.57 × 0.81 m, about twice
+  that of GraspNet-1Billion in each direction (0.48 × 0.35 × 0.26 m), and a scene holds
+  14.5 object instances instead of 9.0. With the same point budget an object gets
+  roughly half the points.</li>
+<li><strong>Objects.</strong> All 68 test objects are unseen, also by a model trained on
+  GraspClutter6D.</li>
+</ul>
+<h3 id="the-gripper">The gripper<a class="headerlink" href="#the-gripper" title="Permanent link">&para;</a></h3>
+<p>The benchmark gripper opens to 0.14 m and the evaluator clips widths there. A model
+trained on GraspNet-1Billion was supervised with grasps up to 0.10 m and clamps what it
+decodes to 0.10 m. On the 68 test objects, 38 % of the valid label grasps are wider than
+0.10 m (4 % are wider than 0.14 m); for 18 objects more than half are, for 3 objects
+more than 90 %. This part of the transfer gap is structural.
+<code>--opts model.gripper.max_width=0.14</code> only moves the clamp of the decoder (which
+multiplies the regressed width by 1.2); it is a controlled variant, measured below, not
+the default.</p>
+<h2 id="subset-results">Subset results<a class="headerlink" href="#subset-results" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Subset numbers</p>
+<p>Everything in this section was measured on <strong><code>test_mini</code></strong>: 24 of the 235 test
+scenes, 312 frames per camera. These are not benchmark results and do not enter the
+model zoo. Per-scene AP ranges from below 1 to above 60 for one model, so the mean
+over 24 scenes has a scene-clustered standard error of about 3 AP (given per row).
+The full-split commands are at the end of this page.</p>
+</div>
+<p>AP / AP0.8 / AP0.4 in percent, RealSense D435, protocol <code>graspclutter6d-sv-v1</code>, 312 of
+312 frames scored. <code>raw</code>: predictions as emitted; <code>cd</code>: with the reference's model-free
+collision filter. Provenance of the weights: <code>author</code> is the authors' released
+GraspNet-1Billion RealSense checkpoint, converted; <code>local</code> is a checkpoint the
+maintainers trained with the upstream code on their own variant of the graspness labels
+(epoch 18), used because no usable author checkpoint of GSNet is at hand.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Weights</th>
+<th>Input crop</th>
+<th><code>raw</code></th>
+<th><code>cd</code></th>
+<th>SE of AP (<code>raw</code> / <code>cd</code>)</th>
+<th>Reported, whole test split</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GraspNet-baseline</td>
+<td>author</td>
+<td>ground-truth rectangle</td>
+<td>8.71 / 10.48 / 7.01</td>
+<td>17.39 / 20.99 / 13.03</td>
+<td>1.5 / 2.7</td>
+<td>17.95 / 21.54 / 13.53</td>
+</tr>
+<tr>
+<td>Scale-Balanced-Grasp</td>
+<td>author</td>
+<td>ground-truth rectangle</td>
+<td>20.92 / 25.50 / 15.89</td>
+<td>23.03 / 27.86 / 17.61</td>
+<td>2.8 / 3.2</td>
+<td>22.69 / 27.57 / 16.95</td>
+</tr>
+<tr>
+<td>EconomicGrasp</td>
+<td>author</td>
+<td>ground-truth rectangle</td>
+<td>22.38 / 27.45 / 16.62</td>
+<td>23.10 / 28.29 / 17.00</td>
+<td>3.3 / 3.4</td>
+<td>21.67 / 26.62 / 15.90</td>
+</tr>
+<tr>
+<td>GSNet</td>
+<td>local</td>
+<td>ground-truth rectangle</td>
+<td>27.62 / 33.67 / 21.50</td>
+<td>28.74 / 35.11 / 22.12</td>
+<td>3.7 / 3.9</td>
+<td>none published</td>
+</tr>
+<tr>
+<td>HGGD</td>
+<td>author</td>
+<td>none (<code>gt_assisted: none</code>)</td>
+<td>15.40 / 19.67 / 8.84</td>
+<td>16.67 / 21.30 / 9.39</td>
+<td>2.0 / 2.2</td>
+<td>none published</td>
+</tr>
+</tbody>
+</table>
+<p><code>Reported</code> is Table IX of the GraspClutter6D paper
+(<a href="https://arxiv.org/abs/2504.06866">arXiv 2504.06866</a> v3): models trained on
+GraspNet-1Billion, tested on the 235 test scenes with the D435, "workspace-cropped
+inputs", collision filter not stated. HGGD is not like-for-like with the other rows: it
+reads the whole image and no ground truth shapes its input.</p>
+<h3 id="against-the-reported-numbers">Against the reported numbers<a class="headerlink" href="#against-the-reported-numbers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>GraspNet-baseline: the reported number is reproduced by <code>cd</code> and not by <code>raw</code>.</strong>
+  <code>cd</code> is 0.56 AP below the reported value (0.2 standard errors), and AP0.8 and AP0.4
+  agree as closely; <code>raw</code> is 9.2 AP below (6 standard errors). The reference test script
+  filters collisions by default, and the one baseline whose code the GraspClutter6D
+  authors released (Contact-GraspNet) is run with the same filter values (voxel 0.01 m,
+  approach 0.05 m, threshold 0.01 m). The evidence says that number was produced with the
+  collision filter.</li>
+<li><strong>Scale-Balanced-Grasp and EconomicGrasp: consistent, but the subset cannot say which
+  variant was reported.</strong> <code>raw</code> and <code>cd</code> differ by 0.7 to 2.1 AP, both lie within 0.6
+  standard errors of the reported value, and the subset resolves about 3 AP.</li>
+<li>What cannot be checked from here: which checkpoints the authors evaluated (the
+  GraspNet-1Billion column of their table equals the published numbers of
+  Scale-Balanced-Grasp and EconomicGrasp to two decimals, 44.85 and 51.63, which
+  suggests the public RealSense weights); their point sampling; and their input code for
+  three of the four methods, which is not public.</li>
+<li><strong>GSNet and HGGD have no published GraspClutter6D number.</strong> The GSNet row uses a local
+  checkpoint (on 120 frames of GraspNet-1Billion <code>test_seen</code> it scores 68 / 71 AP <code>raw</code> /
+  <code>cd</code>, a subset number as well), so it says how this checkpoint transfers, not how the
+  published model does.</li>
+</ul>
+<h3 id="controlled-variants-on-the-same-312-frames">Controlled variants on the same 312 frames<a class="headerlink" href="#controlled-variants-on-the-same-312-frames" title="Permanent link">&para;</a></h3>
+<p>Each row changes one thing. The last column is the change of <code>raw</code> AP against the first
+row of the method, with the standard error of the per-scene differences: rows of one
+method are scored on the same frames, so their difference is resolved far better than
+the 3 AP of a single number.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Variant</th>
+<th><code>raw</code> AP</th>
+<th><code>cd</code> AP</th>
+<th>Change of <code>raw</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GraspNet-baseline</td>
+<td>as above</td>
+<td>8.71</td>
+<td>17.39</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>GraspNet-1Billion crop</td>
+<td>8.91</td>
+<td>18.76</td>
+<td>+0.2 (<code>cd</code>: +1.4 ± 0.4)</td>
+</tr>
+<tr>
+<td>Scale-Balanced-Grasp</td>
+<td>as above</td>
+<td>20.92</td>
+<td>23.03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>GraspNet-1Billion crop</td>
+<td>24.04</td>
+<td>26.88</td>
+<td>+3.1 ± 0.9</td>
+</tr>
+<tr>
+<td>EconomicGrasp</td>
+<td>as above</td>
+<td>22.38</td>
+<td>23.10</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>GraspNet-1Billion crop</td>
+<td>23.20</td>
+<td>23.84</td>
+<td>+0.8 ± 0.6</td>
+</tr>
+<tr>
+<td></td>
+<td>camera <code>realsense-d415</code></td>
+<td>25.30</td>
+<td>25.70</td>
+<td>+2.9 ± 1.7</td>
+</tr>
+<tr>
+<td></td>
+<td>camera <code>zivid</code></td>
+<td>29.76</td>
+<td>30.81</td>
+<td>+7.4 ± 1.8</td>
+</tr>
+<tr>
+<td></td>
+<td>Kinect weights (<code>...g1b-kinect-to-gc6d-d435...</code>) on the D435</td>
+<td>21.52</td>
+<td>22.10</td>
+<td>−0.9 ± 0.9</td>
+</tr>
+<tr>
+<td></td>
+<td>Kinect weights on <code>azure-kinect</code></td>
+<td>15.72</td>
+<td>16.31</td>
+<td>−5.8 ± 2.0 against the row above</td>
+</tr>
+<tr>
+<td>GSNet</td>
+<td>as above</td>
+<td>27.62</td>
+<td>28.74</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>GraspNet-1Billion crop</td>
+<td>28.23</td>
+<td>29.29</td>
+<td>+0.6 ± 0.4</td>
+</tr>
+<tr>
+<td></td>
+<td><code>model.gripper.max_width=0.14</code></td>
+<td>28.38</td>
+<td>29.47</td>
+<td>+0.8 ± 0.2</td>
+</tr>
+</tbody>
+</table>
+<p>"GraspNet-1Billion crop" is the crop the weights were trained with, applied in the world
+frame of the rig:</p>
+<div class="highlight"><pre><span></span><code>--opts<span class="w"> </span><span class="s2">"data.test.dataset.preprocess.1={type: SegmentationBoxWorkspace, margin: 0.02, invalid_depth_foreground: include}"</span>
+</code></pre></div>
+<ul>
+<li><strong>The crop matters for some methods and not for others.</strong> The official crop keeps a
+  wide margin of table and background: on view 0 of the subset scenes 30 % of its points
+  are on objects, against 46 % for the box. Scale-Balanced-Grasp gains 3.1 AP from the
+  tighter box and GraspNet-baseline 1.4 AP with the collision filter; for EconomicGrasp
+  and GSNet the change is within its error. A table that mixes crops would rank methods
+  by their input.</li>
+<li><strong>The sensor moves the result as much as the choice of method.</strong> The same EconomicGrasp
+  weights score 22.4 AP on the D435 and 29.8 on the Zivid.</li>
+<li><strong>The sensor a model was trained on does not carry over by name.</strong> The Kinect weights
+  score 21.5 AP on the D435 and 15.7 on the Azure Kinect of this dataset, whose
+  3840 × 2160 frames give a crop of 2.4 million points of which a quarter are on objects.
+  Why that pairing is the weakest was not investigated.</li>
+<li><strong>The width clamp costs GSNet 0.8 AP.</strong> Letting the decoder open to 0.14 m raises <code>raw</code>
+  from 27.62 to 28.38. The larger part of the gripper mismatch is in what the model
+  learnt, which no test-time setting changes.</li>
+<li><strong>The collision filter is worth 8.7 ± 1.4 AP for GraspNet-baseline</strong> and 0.7 to 2.1 AP
+  for the other four methods.</li>
+<li><strong>The subset cannot rank Scale-Balanced-Grasp against EconomicGrasp</strong> (−1.5 ± 1.3 AP
+  <code>raw</code>; the paper has Scale-Balanced-Grasp 1.0 AP ahead). The GSNet checkpoint is ahead
+  of EconomicGrasp by 5.2 ± 1.4 AP, with the caveat on its provenance above.</li>
+</ul>
+<h2 id="the-whole-test-split">The whole test split<a class="headerlink" href="#the-whole-test-split" title="Permanent link">&para;</a></h2>
+<p>Run so far for five methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
+Scale-Balanced-Grasp, EconomicGrasp and HGGD with the authors' converted checkpoints
+(<code>author-ckpt</code>), and GSNet with the model trained from scratch by this toolbox
+(<code>reproduced</code>; its weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+D435; the rows, with the reported numbers beside them, stand in the
+<a href="../../model_zoo/#graspclutter6d-transfers">model zoo</a> and the result records in
+<code>configs/&lt;method&gt;/records/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Weights</th>
+<th>Input crop</th>
+<th><code>raw</code></th>
+<th><code>cd</code></th>
+<th>Reported</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GraspNet-baseline</td>
+<td><code>author-ckpt</code></td>
+<td>ground-truth rectangle</td>
+<td>8.69 / 10.35 / 6.96</td>
+<td>17.14 / 20.60 / 12.86</td>
+<td>17.95 / 21.54 / 13.53</td>
+</tr>
+<tr>
+<td>Scale-Balanced-Grasp</td>
+<td><code>author-ckpt</code></td>
+<td>ground-truth rectangle</td>
+<td>21.77 / 26.49 / 16.46</td>
+<td>22.71 / 27.61 / 17.01</td>
+<td>22.69 / 27.57 / 16.95</td>
+</tr>
+<tr>
+<td>EconomicGrasp</td>
+<td><code>author-ckpt</code></td>
+<td>ground-truth rectangle</td>
+<td>21.69 / 26.64 / 15.79</td>
+<td>22.25 / 27.30 / 16.06</td>
+<td>21.67 / 26.62 / 15.90</td>
+</tr>
+<tr>
+<td>GSNet</td>
+<td><code>reproduced</code></td>
+<td>ground-truth rectangle</td>
+<td>25.58 / 31.38 / 19.42</td>
+<td>26.87 / 33.00 / 20.04</td>
+<td>none published</td>
+</tr>
+<tr>
+<td>HGGD</td>
+<td><code>author-ckpt</code></td>
+<td>none (<code>gt_assisted: none</code>)</td>
+<td>14.25 / 17.41 / 9.23</td>
+<td>14.56 / 17.79 / 9.33</td>
+<td>none published</td>
+</tr>
+</tbody>
+</table>
+<p>HGGD is not like-for-like with the other rows: it reads the whole image, and its <code>cd</code> is
+its own filter followed by NMS. The GSNet row is one training run with one seed; its
+weights are another model than the <code>local</code> checkpoint of the subset table above.</p>
+<p>What the whole split adds to the subset: the reported value lies 0.81 AP above <code>cd</code> and
+9.26 above <code>raw</code> for GraspNet-baseline, 0.02 AP below <code>cd</code> and 0.92 above <code>raw</code> for
+Scale-Balanced-Grasp, and 0.02 AP below <code>raw</code> and 0.58 below <code>cd</code> for EconomicGrasp. So
+the reported table is closest to the filtered run for two methods and to the unfiltered
+run for the third. The paper does not state the collision filter, and whether it was
+applied to some methods and not to others was not investigated. The controlled variants
+above (crops, cameras, Kinect weights, gripper width) exist for the subset only.</p>
+<p>A run took 8 to 12 minutes per method on the development machine (one GPU, four
+evaluator processes, shared with other jobs):</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>CONFIG<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>economicgrasp/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>hggd/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e
+<span class="k">do</span>
+<span class="w">    </span>grasppanda<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="nv">$CONFIG</span><span class="w"> </span>--weights<span class="w"> </span>&lt;the<span class="w"> </span>converted<span class="w"> </span>checkpoint<span class="w"> </span>of<span class="w"> </span>that<span class="w"> </span>method&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--opts<span class="w"> </span>evaluation.num_workers<span class="o">=</span><span class="m">8</span>
+<span class="k">done</span>
+</code></pre></div>
+<p>A result of such a run is an <code>author-ckpt</code> number of the transfer config, stamped with
+the protocol, the split, the camera, the variant and <code>gt_assisted</code>. It enters the zoo
+with its result records:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>tools.record_result<span class="w"> </span>&lt;work<span class="w"> </span>directory<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>run&gt;<span class="w"> </span>--method<span class="w"> </span>&lt;directory<span class="w"> </span>below<span class="w"> </span>configs/&gt;
+</code></pre></div>
+<p>checks that every frame was scored by clean code with hashed weights, copies the records
+to <code>configs/&lt;method&gt;/records/</code> and prints the rows for the method's <code>metafile.yaml</code>.</p>
+<h2 id="checking-a-run-against-the-official-tool">Checking a run against the official tool<a class="headerlink" href="#checking-a-run-against-the-official-tool" title="Permanent link">&para;</a></h2>
+<p><code>grasppanda test</code> writes <code>predictions/&lt;variant&gt;/scene_NNNN/&lt;camera&gt;/&lt;view&gt;.npy</code>. The
+official tool names files by image id. To score a dump with <code>graspclutter6dAPI</code>, link it
+into that layout:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.datasets.graspclutter6d</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraspClutter6D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.evaluation.graspclutter6d</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_official_layout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.utils.paths</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataset_root</span>
+
+<span class="n">keys</span> <span class="o">=</span> <span class="n">GraspClutter6D</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="n">dataset_root</span><span class="p">(</span><span class="s2">"graspclutter6d"</span><span class="p">))</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="s2">"test"</span><span class="p">,</span> <span class="s2">"realsense-d435"</span><span class="p">)</span>
+<span class="n">export_official_layout</span><span class="p">(</span><span class="s2">"&lt;run&gt;/predictions/raw"</span><span class="p">,</span> <span class="s2">"official_dump"</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
+<span class="c1"># then: GraspClutter6DEval(root, "realsense-d435", split="test").eval_all("official_dump")</span>
+</code></pre></div>
+<p>The other way round, <code>evaluation.evaluator: {type: GraspClutter6DEvaluator, layout:
+official}</code> scores a dump that was written for the official tool. One difference is
+deliberate: the official tool scores a frame without a file as zero, GraspPanda reports
+it as missing and gives no headline number for an incomplete run.</p>
+<h2 id="training-on-graspclutter6d">Training on GraspClutter6D<a class="headerlink" href="#training-on-graspclutter6d" title="Permanent link">&para;</a></h2>
+<p><code>gsnet/gsnet_sunet14_gc6d-d435_10e</code> and <code>economicgrasp/economicgrasp_sunet14_gc6d-d435_10e</code>
+carry the GraspNet-1Billion recipe over and change the gripper to 0.14 m. They are this
+toolbox's choice, not a reproduction: no GSNet or EconomicGrasp recipe for this dataset
+has been published. Each has run for 20 iterations on one scene (the loss fell from 20.1
+to 1.9 and from 28.6 to 2.5); <strong>no model has been trained</strong>. The assets and their cost
+are listed in <a href="../datasets/#derived-assets">Dataset preparation</a>.</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspclutter6d<span class="w"> </span>--labels
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspclutter6d<span class="w"> </span>--graspness<span class="w"> </span>--camera<span class="w"> </span>realsense-d435
+grasppanda<span class="w"> </span>prepare<span class="w"> </span>graspclutter6d<span class="w"> </span>--compact-labels<span class="w"> </span>--config<span class="w"> </span>economicgrasp/economicgrasp_sunet14_gc6d-d435_10e
+grasppanda<span class="w"> </span>train<span class="w"> </span>gsnet/gsnet_sunet14_gc6d-d435_10e
+grasppanda<span class="w"> </span>train<span class="w"> </span>economicgrasp/economicgrasp_sunet14_gc6d-d435_10e
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

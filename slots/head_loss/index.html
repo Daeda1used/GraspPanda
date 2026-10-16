@@ -1,0 +1,3701 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/head_loss/">
+      
+      
+        <link rel="prev" href="../grouper/">
+      
+      
+        <link rel="next" href="../post/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Grasp heads and losses - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#grasp-heads-and-losses-what-is-predicted-per-seed-and-how-it-is-penalised" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Grasp heads and losses
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Input and output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-head-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The head bundle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-loss-primitive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A loss primitive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#losses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Losses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Head bundles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assigners" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assigners
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-loss-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One loss term
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-loss-for-a-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a loss for a term
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrappers-mining-class-balance-multi-task-weighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrappers: mining, class balance, multi-task weighting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-head-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A head bundle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-probe-shows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a probe shows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Input and output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-head-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The head bundle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-loss-primitive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A loss primitive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#losses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Losses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#head-bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Head bundles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assigners" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assigners
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-loss-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One loss term
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-loss-for-a-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a loss for a term
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrappers-mining-class-balance-multi-task-weighting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrappers: mining, class balance, multi-task weighting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-head-bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A head bundle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-a-probe-shows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a probe shows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/head_loss.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="grasp-heads-and-losses-what-is-predicted-per-seed-and-how-it-is-penalised">Grasp heads and losses: what is predicted per seed and how it is penalised<a class="headerlink" href="#grasp-heads-and-losses-what-is-predicted-per-seed-and-how-it-is-penalised" title="Permanent link">&para;</a></h1>
+<p><em>Words such as seed, contract, preset, adapter, label set and point painting are explained in the <a href="../#words-used-on-these-pages">slot index</a>.</em></p>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="admonition note">
+<p class="admonition-title">Which of these options fit a method</p>
+<p>Every method has a page that lists the options of each of its slots with what was measured for each (the verdict, the levels <em>composes</em>, <em>runs</em>, <em>learns</em> and <em>predicts</em>, the class, the grasps, the reason of a refusal): GSNet (<a href="../../methods/gsnet/#head">head bundle</a>, <a href="../../methods/gsnet/#assigner">assigner</a>, <a href="../../methods/gsnet/#loss">losses</a>); EconomicGrasp (<a href="../../methods/economicgrasp/#head">head bundle</a>, <a href="../../methods/economicgrasp/#assigner">assigner</a>, <a href="../../methods/economicgrasp/#loss">losses</a>); FineGrasp (<a href="../../methods/finegrasp/#head">head bundle</a>, <a href="../../methods/finegrasp/#assigner">assigner</a>, <a href="../../methods/finegrasp/#loss">losses</a>); GraspNet-baseline (<a href="../../methods/graspnet_baseline/#head">head bundle</a>, <a href="../../methods/graspnet_baseline/#assigner">assigner</a>, <a href="../../methods/graspnet_baseline/#loss">losses</a>); Scale-Balanced-Grasp (<a href="../../methods/scale_balanced_grasp/#head">head bundle</a>, <a href="../../methods/scale_balanced_grasp/#assigner">assigner</a>, <a href="../../methods/scale_balanced_grasp/#loss">losses</a>). In a terminal: <code>grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list head</code>.</p>
+<p><em>Class: one run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</em> Where this page names a class or a measured verdict, it is one of the <a href="../../advanced_guides/measured_combinations/#measured-classes">measured classes</a>.</p>
+</div>
+<!-- method-options:end -->
+
+<h2 id="1-the-task-of-the-slot">1. The task of the slot<a class="headerlink" href="#1-the-task-of-the-slot" title="Permanent link">&para;</a></h2>
+<p>A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
+Scale-Balanced-Grasp) picks seed points, chooses an approach direction per seed, crops the
+scene around the seed along that direction, and then has to say <strong>which grasp</strong> to execute
+there: the in-plane rotation, how deep the fingers go, how wide they open, and how good the
+grasp is. That last step is the <em>head bundle</em> (<code>model.head</code>). It is the last stage of the
+network: <code>grouper</code> → <strong>head</strong> → <code>GraspGroup</code>.</p>
+<p>A head bundle is four parts that cannot be mixed across bundles, because they share one
+grasp parameterisation: the network head, the target encoder (labels → what the head is
+trained on), the loss, and the decoder (outputs → grasps). So the bundle is swapped as a
+whole. <em>Inside</em> a bundle, and inside the proposal and view stages before it, every loss term
+is a small config node of its own (<code>{type: SmoothL1, weight: 10.0}</code>); those are swapped one
+by one. This page covers both: head bundles, and the loss primitives that go into the loss
+terms of any stage.</p>
+<p>No AP is claimed for any option of this page. What was checked is that each one builds,
+trains a few iterations on real frames with finite losses and predicts (the measured
+records), and a unit test of its contract.</p>
+<h2 id="2-input-and-output">2. Input and output<a class="headerlink" href="#2-input-and-output" title="Permanent link">&para;</a></h2>
+<h3 id="the-head-bundle">The head bundle<a class="headerlink" href="#the-head-bundle" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HeadBundle</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crops</span><span class="p">:</span> <span class="n">GroupFeatures</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Predictions</span><span class="p">:</span> <span class="o">...</span>        <span class="c1"># raw outputs, with gradients</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matched</span><span class="p">:</span> <span class="n">MatchedLabels</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Targets</span><span class="p">:</span> <span class="o">...</span>      <span class="c1"># labels -&gt; targets</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">]:</span>    <span class="c1"># named, weighted terms</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">approach</span><span class="p">,</span> <span class="n">gripper</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraspGroup</span><span class="p">:</span> <span class="o">...</span> <span class="c1"># one grasp per seed</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in: crop features</td>
+<td>from the grouper, one row per valid seed. Their named axes are the grouper's <code>out_axes</code>: <code>('seed', 'channel')</code> (<code>CylinderGroup</code>, <code>CylinderInteractionGroup</code>, <code>MultiScaleGroup</code>) or <code>('seed', 'depth', 'channel')</code> (<code>DepthCylinderGroup</code>, one crop per depth bin).</td>
+</tr>
+<tr>
+<td>in: matched labels</td>
+<td>from the assigner, the labels of the scene point nearest to every seed, already reduced to the chosen view: <code>dense</code> (a friction and a width per in-plane angle and depth bin) or <code>compact</code> (one best grasp per seed).</td>
+</tr>
+<tr>
+<td>out, training</td>
+<td>a dictionary of named loss terms, each already multiplied by its <code>weight</code>; the trainer sums them and logs each as <code>loss/&lt;name&gt;</code>.</td>
+</tr>
+<tr>
+<td>out, prediction</td>
+<td>a <code>GraspGroup</code> with one grasp per seed: <code>translation</code> (the seed, metres, camera frame), <code>rotation</code> (approach from the view stage, in-plane angle from the head), <code>depth</code>, <code>width</code> (metres), <code>score</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Contract attributes of a head bundle, and what the config checker does with them:</p>
+<table>
+<thead>
+<tr>
+<th>attribute</th>
+<th>meaning</th>
+<th>rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>in_axes</code></td>
+<td>axes of the crop features it expects</td>
+<td>must equal the grouper's <code>out_axes</code></td>
+</tr>
+<tr>
+<td><code>label_format</code></td>
+<td><code>dense</code> or <code>compact</code></td>
+<td>must equal the assigner's <code>label_format</code> (and the dataset must serve that label set)</td>
+</tr>
+<tr>
+<td><code>score_kind</code></td>
+<td>meaning of the decoded score</td>
+<td>scores of different kinds are not comparable; shown in the catalogue</td>
+</tr>
+<tr>
+<td><code>applies_seed_weights</code></td>
+<td>whether its loss honours a weight per seed from the assigner</td>
+<td>an assigner that returns weights needs a head that applies them</td>
+</tr>
+<tr>
+<td><code>loss_terms</code></td>
+<td>loss option → kind of term (below)</td>
+<td>every loss node is checked against it</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a-loss-primitive">A loss primitive<a class="headerlink" href="#a-loss-primitive" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Loss</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span>  <span class="c1"># weight x mean over the supervised elements</span>
+</code></pre></div>
+<p>A stage declares the <strong>kind</strong> of every loss option it has, a primitive the kinds it
+<strong>accepts</strong>. There are four kinds:</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>what the stage hands to the loss</th>
+<th>examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>class</code></td>
+<td><code>(N, C)</code> logits against <code>(N,)</code> class indices</td>
+<td>objectness of points or seeds; angle, depth and quality classes</td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>prediction and target of equal shape, the target a quality in <code>[0, 1]</code></td>
+<td>graspness, view scores of <code>TemplateViewStage</code>, the score grid of <code>SWADHead</code></td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>prediction and target of equal shape, the target unbounded</td>
+<td>widths, tolerances, the log-friction scores of the GraspNet-baseline family (up to ln 10)</td>
+</tr>
+<tr>
+<td><code>bins</code></td>
+<td><code>(N, C)</code> logits over bins against <code>(N,)</code> fractional bin positions</td>
+<td>the width of <code>DecoupledGridHead</code> with <code>width: bins</code></td>
+</tr>
+</tbody>
+</table>
+<p>Which term of which stage is which kind (the stages of the five shipped methods):</p>
+<table>
+<thead>
+<tr>
+<th>stage</th>
+<th>option (write it as <code>&lt;slot&gt;.&lt;option&gt;</code>)</th>
+<th>kind</th>
+<th>loss in the shipped configs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GraspnessFPS</code> (GSNet, EconomicGrasp, FineGrasp)</td>
+<td><code>proposal.objectness_loss</code></td>
+<td><code>class</code></td>
+<td>CrossEntropy</td>
+</tr>
+<tr>
+<td></td>
+<td><code>proposal.graspness_loss</code></td>
+<td><code>unit</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td><code>TemplateViewStage</code> (GSNet, EconomicGrasp, FineGrasp)</td>
+<td><code>view.loss</code></td>
+<td><code>unit</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td><code>LatticeViewStage</code>, <code>IcosphereViewStage</code>, <code>HealpixViewStage</code> (<a href="../view/">view slot</a>)</td>
+<td><code>view.loss</code></td>
+<td><code>unit</code> with <code>target: score</code>, <code>class</code> with <code>target: best_view</code></td>
+<td>SmoothL1 / CrossEntropy</td>
+</tr>
+<tr>
+<td><code>ObjectnessViewStage</code> (GraspNet-baseline, Scale-Balanced-Grasp)</td>
+<td><code>view.objectness_loss</code></td>
+<td><code>class</code></td>
+<td>CrossEntropy</td>
+</tr>
+<tr>
+<td></td>
+<td><code>view.view_loss</code></td>
+<td><code>value</code></td>
+<td>MSE</td>
+</tr>
+<tr>
+<td><code>SWADHead</code> (GSNet)</td>
+<td><code>head.score_loss</code></td>
+<td><code>unit</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.width_loss</code></td>
+<td><code>value</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td><code>EconomicHead</code> (EconomicGrasp, FineGrasp)</td>
+<td><code>head.angle_loss</code>, <code>head.depth_loss</code>, <code>head.score_loss</code></td>
+<td><code>class</code></td>
+<td>CrossEntropy</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.width_loss</code></td>
+<td><code>value</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td><code>OperationHead</code> (GraspNet-baseline, Scale-Balanced-Grasp)</td>
+<td><code>head.angle_loss</code></td>
+<td><code>class</code></td>
+<td>CrossEntropy</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.score_loss</code>, <code>head.width_loss</code>, <code>head.tolerance_loss</code></td>
+<td><code>value</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td><code>DecoupledGridHead</code> (new)</td>
+<td><code>head.score_loss</code></td>
+<td><code>unit</code></td>
+<td>SmoothL1</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.angle_loss</code></td>
+<td><code>class</code></td>
+<td>CrossEntropy</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.depth_loss</code></td>
+<td><code>class</code> or <code>value</code> (option <code>depth</code>)</td>
+<td>CrossEntropy / SmoothL1</td>
+</tr>
+<tr>
+<td></td>
+<td><code>head.width_loss</code></td>
+<td><code>value</code>, <code>class</code> or <code>bins</code> (option <code>width</code>)</td>
+<td>SmoothL1 / CrossEntropy / DistributionFocal</td>
+</tr>
+</tbody>
+</table>
+<p>The config checker refuses a loss in a term of another kind and names the losses that fit.
+Two further attributes of a primitive matter:</p>
+<ul>
+<li><code>prediction</code>: <code>value</code> or <code>logit</code>. A loss that trains the output of a <code>unit</code> term as a
+  logit (<code>QualityFocal</code>, <code>Varifocal</code>, <code>GHMC</code>, <code>FocalLoss</code>, <code>BinaryCrossEntropy</code>) changes
+  what the raw output means. The stages read it through the sigmoid where they consume it:
+  <code>GraspnessFPS</code> compares the graspness with its threshold, <code>SWADHead</code> decodes its score.</li>
+<li><code>applies_weights</code>: false for a loss that scores the supervised set as a whole
+  (<code>DiceLoss</code>, <code>LovaszSoftmaxLoss</code>). It is refused in a term that receives a weight per
+  seed from the assigner (Scale-Balanced-Grasp).</li>
+</ul>
+<p><code>grasppanda components &lt;Loss&gt;</code> prints both and the accepted kinds.</p>
+<h2 id="3-options-at-a-glance">3. Options at a glance<a class="headerlink" href="#3-options-at-a-glance" title="Permanent link">&para;</a></h2>
+<h3 id="losses">Losses<a class="headerlink" href="#losses" title="Permanent link">&para;</a></h3>
+<p>"Name" is the preset to write after <code>--set &lt;slot&gt;.&lt;option&gt;=</code>; "component" is the <code>type:</code> of
+a config node. "Probed" is what the measured records hold
+(<a href="../../advanced_guides/measured_combinations/">measured combinations</a>, group <code>loss</code>): the
+terms the loss was put into on real frames, all with the verdict <strong>runs</strong> unless stated.
+Every loss goes into every term of a kind it accepts, in any stage of any seed-based method
+(a contract, not a measured class); that it does is a unit test on tiny models of four
+methods (<code>tests/unit/test_losses_zoo.py</code>). The measured grid also has a cell for every loss
+in one term of each kind it fits, under every seed-based method with such a term (the last
+term of that kind in the pipeline, the one nearest the grasp); the
+<a href="../../advanced_guides/measured_combinations/#losses">measured page</a> lists those terms and
+which of the cells are not probed yet. Nothing here has weights.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Component</th>
+<th>Fits</th>
+<th>What it is</th>
+<th>Paper</th>
+<th>Code, licence</th>
+<th>Extra</th>
+<th>Probed in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>focal</code></td>
+<td><code>FocalLoss</code></td>
+<td><code>class</code>, <code>unit</code></td>
+<td>sigmoid focal loss: turns down well-classified elements; one-vs-all over classes</td>
+<td>Lin et al., ICCV 2017, <a href="https://arxiv.org/abs/1708.02002">arXiv 1708.02002</a></td>
+<td>route L: <code>torchvision.ops.sigmoid_focal_loss</code>, <a href="https://github.com/pytorch/vision">pytorch/vision</a>, BSD-3-Clause</td>
+<td><code>torchvision</code></td>
+<td>GSNet <code>proposal.objectness_loss</code>; FineGrasp <code>head.score_loss</code></td>
+</tr>
+<tr>
+<td><code>softmax-focal</code></td>
+<td><code>SoftmaxFocalLoss</code></td>
+<td><code>class</code></td>
+<td>focal loss over mutually exclusive classes</td>
+<td>same paper</td>
+<td>route L: <code>kornia.losses</code>, <a href="https://github.com/kornia/kornia">kornia/kornia</a>, Apache-2.0</td>
+<td><code>kornia</code></td>
+<td>GSNet <code>proposal.objectness_loss</code>; EconomicGrasp <code>head.angle_loss</code></td>
+</tr>
+<tr>
+<td><code>quality-focal</code></td>
+<td><code>QualityFocal</code></td>
+<td><code>unit</code></td>
+<td>focal loss for a soft target: sigmoid cross-entropy focused on large errors</td>
+<td>Generalized Focal Loss, Li et al., NeurIPS 2020, <a href="https://arxiv.org/abs/2006.04388">arXiv 2006.04388</a></td>
+<td>route A: <a href="https://github.com/open-mmlab/mmdetection">open-mmlab/mmdetection</a> @ <code>cfd5d3a</code>, Apache-2.0</td>
+<td>—</td>
+<td>GSNet <code>head.score_loss</code>; EconomicGrasp <code>proposal.graspness_loss</code>. Refused: GraspNet-baseline <code>head.score_loss</code> (a <code>value</code> term)</td>
+</tr>
+<tr>
+<td><code>distribution-focal</code></td>
+<td><code>DistributionFocal</code></td>
+<td><code>bins</code></td>
+<td>cross-entropy to the two bins around a continuous target</td>
+<td>same paper</td>
+<td>route A: mmdetection, as above</td>
+<td>—</td>
+<td>GSNet, as the width loss of the head preset <code>decoupled-grid-bins</code> (no other shipped stage has a <code>bins</code> term)</td>
+</tr>
+<tr>
+<td><code>varifocal</code></td>
+<td><code>Varifocal</code></td>
+<td><code>unit</code></td>
+<td>positives weighted by their target quality, negatives focused</td>
+<td>VarifocalNet, Zhang et al., CVPR 2021, <a href="https://arxiv.org/abs/2008.13367">arXiv 2008.13367</a></td>
+<td>route A: mmdetection, as above</td>
+<td>—</td>
+<td>GSNet <code>head.score_loss</code>; FineGrasp <code>view.loss</code></td>
+</tr>
+<tr>
+<td><code>ghm-c</code></td>
+<td><code>GHMC</code></td>
+<td><code>unit</code>, <code>class</code></td>
+<td>gradient harmonising, classification: every range of gradient norms counts alike</td>
+<td>Li et al., AAAI 2019, <a href="https://arxiv.org/abs/1811.05181">arXiv 1811.05181</a></td>
+<td>route A: mmdetection, as above</td>
+<td>—</td>
+<td>GSNet <code>head.score_loss</code>; GraspNet-baseline <code>head.angle_loss</code></td>
+</tr>
+<tr>
+<td><code>ghm-r</code></td>
+<td><code>GHMR</code></td>
+<td><code>value</code>, <code>unit</code></td>
+<td>gradient harmonising, regression</td>
+<td>same paper</td>
+<td>route A: mmdetection, as above</td>
+<td>—</td>
+<td>GSNet <code>head.width_loss</code>; GraspNet-baseline <code>head.score_loss</code></td>
+</tr>
+<tr>
+<td><code>balanced-l1</code></td>
+<td><code>BalancedL1</code></td>
+<td><code>value</code>, <code>unit</code></td>
+<td>Smooth-L1 with a larger gradient for small errors</td>
+<td>Libra R-CNN, Pang et al., CVPR 2019, <a href="https://arxiv.org/abs/1904.02701">arXiv 1904.02701</a></td>
+<td>route A: mmdetection, as above</td>
+<td>—</td>
+<td>GSNet <code>head.width_loss</code>; GraspNet-baseline <code>head.width_loss</code></td>
+</tr>
+<tr>
+<td><code>huber</code></td>
+<td><code>Huber</code></td>
+<td><code>value</code>, <code>unit</code></td>
+<td>quadratic below <code>delta</code>, linear above</td>
+<td>—</td>
+<td>PyTorch <code>huber_loss</code></td>
+<td>—</td>
+<td>GSNet <code>head.width_loss</code>; Scale-Balanced-Grasp <code>view.view_loss</code>, <code>head.width_loss</code></td>
+</tr>
+<tr>
+<td><code>charbonnier</code>, <code>cauchy</code></td>
+<td><code>RobustLoss</code> (<code>kind:</code> also <code>welsch</code>, <code>geman_mcclure</code>)</td>
+<td><code>value</code>, <code>unit</code></td>
+<td>robust penalties that grow slowly for large errors</td>
+<td>special cases of Barron, CVPR 2019, <a href="https://arxiv.org/abs/1701.03077">arXiv 1701.03077</a></td>
+<td>route L: <code>kornia.losses</code>, Apache-2.0</td>
+<td><code>kornia</code></td>
+<td>GSNet <code>head.width_loss</code> (both); GraspNet-baseline <code>head.tolerance_loss</code> (<code>charbonnier</code>); EconomicGrasp <code>head.width_loss</code> (<code>cauchy</code>). <code>welsch</code>, <code>geman_mcclure</code>: unit test only</td>
+</tr>
+<tr>
+<td><code>dice</code></td>
+<td><code>DiceLoss</code></td>
+<td><code>class</code></td>
+<td>one minus the overlap of predicted and labelled classes over the set</td>
+<td>V-Net, Milletari et al., <a href="https://arxiv.org/abs/1606.04797">arXiv 1606.04797</a></td>
+<td>route L: <code>kornia.losses</code>, Apache-2.0</td>
+<td><code>kornia</code></td>
+<td>GSNet, EconomicGrasp <code>proposal.objectness_loss</code>. Refused: Scale-Balanced-Grasp <code>head.angle_loss</code> (seed weights)</td>
+</tr>
+<tr>
+<td><code>lovasz-softmax</code></td>
+<td><code>LovaszSoftmaxLoss</code></td>
+<td><code>class</code></td>
+<td>surrogate of the mean intersection-over-union of the set</td>
+<td>Berman et al., CVPR 2018, <a href="https://arxiv.org/abs/1705.08790">arXiv 1705.08790</a></td>
+<td>route L: <code>kornia.losses</code>, Apache-2.0</td>
+<td><code>kornia</code></td>
+<td>GSNet, FineGrasp <code>proposal.objectness_loss</code></td>
+</tr>
+<tr>
+<td><code>label-smoothing</code></td>
+<td><code>LabelSmoothingCrossEntropy</code></td>
+<td><code>class</code></td>
+<td>cross-entropy with smoothed targets and optional class weights</td>
+<td>Szegedy et al., CVPR 2016, <a href="https://arxiv.org/abs/1512.00567">arXiv 1512.00567</a></td>
+<td>PyTorch <code>cross_entropy</code></td>
+<td>—</td>
+<td>GSNet <code>proposal.objectness_loss</code>; EconomicGrasp <code>head.depth_loss</code></td>
+</tr>
+<tr>
+<td><code>poly1</code></td>
+<td><code>Poly1CrossEntropy</code></td>
+<td><code>class</code></td>
+<td>cross-entropy plus <code>epsilon x (1 - p_t)</code></td>
+<td>PolyLoss, Leng et al., <a href="https://arxiv.org/abs/2204.12511">arXiv 2204.12511</a> (its arXiv record names ICLR)</td>
+<td>the Poly-1 formula on PyTorch <code>cross_entropy</code>, written here</td>
+<td>—</td>
+<td>GSNet <code>proposal.objectness_loss</code>; FineGrasp <code>head.angle_loss</code></td>
+</tr>
+<tr>
+<td><code>bce</code></td>
+<td><code>BinaryCrossEntropy</code></td>
+<td><code>unit</code></td>
+<td>sigmoid cross-entropy to a soft or binary target</td>
+<td>—</td>
+<td>PyTorch <code>binary_cross_entropy_with_logits</code></td>
+<td>—</td>
+<td>GSNet, FineGrasp <code>proposal.graspness_loss</code></td>
+</tr>
+<tr>
+<td><code>ohem</code>, <code>ohem-smooth-l1</code></td>
+<td><code>TopK</code> (a wrapper: <code>loss:</code> is any primitive)</td>
+<td>every kind</td>
+<td>online hard example mining: only the hardest fraction of the elements counts</td>
+<td>Shrivastava et al., CVPR 2016, <a href="https://arxiv.org/abs/1604.03540">arXiv 1604.03540</a>; top-k of point errors as in Contact-GraspNet, <a href="https://arxiv.org/abs/2103.14127">arXiv 2103.14127</a></td>
+<td>written here (a <code>topk</code> over the penalties)</td>
+<td>—</td>
+<td>GSNet <code>proposal.objectness_loss</code>, <code>head.score_loss</code>; FineGrasp <code>head.depth_loss</code>; GraspNet-baseline <code>view.view_loss</code></td>
+</tr>
+<tr>
+<td><code>class-balanced</code></td>
+<td><code>ClassBalanced</code> (a wrapper)</td>
+<td><code>class</code></td>
+<td>every class weighted by the inverse of its effective number of samples</td>
+<td>Cui et al., CVPR 2019, <a href="https://arxiv.org/abs/1901.05555">arXiv 1901.05555</a></td>
+<td>the weight formula of the paper, written here (reference: <a href="https://github.com/richardaecn/class-balanced-loss">richardaecn/class-balanced-loss</a>, MIT)</td>
+<td>—</td>
+<td>GSNet <code>proposal.objectness_loss</code>; EconomicGrasp <code>head.score_loss</code>; Scale-Balanced-Grasp <code>head.angle_loss</code></td>
+</tr>
+<tr>
+<td><code>uncertainty-weighting</code></td>
+<td><code>UncertaintyWeighted</code> (a wrapper)</td>
+<td>every kind</td>
+<td>multi-task weighting: a learned factor per wrapped term, which pays for being small</td>
+<td>Kendall et al., CVPR 2018, <a href="https://arxiv.org/abs/1705.07115">arXiv 1705.07115</a></td>
+<td>the formula as in the <code>UW</code> weighting of <a href="https://github.com/median-research-group/LibMTL">LibMTL</a> (MIT), written here, one log-variance per term</td>
+<td>—</td>
+<td>all five loss terms of GSNet; all six of GraspNet-baseline</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>CrossEntropy</code>, <code>L1</code>, <code>MSE</code>, <code>SmoothL1</code></td>
+<td><code>class</code> / <code>value</code>, <code>unit</code></td>
+<td>the primitives of the shipped configs</td>
+<td>—</td>
+<td>PyTorch</td>
+<td>—</td>
+<td>the shipped configs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="head-bundles">Head bundles<a class="headerlink" href="#head-bundles" title="Permanent link">&para;</a></h3>
+<p>"Fit" is the verdict of the measured records (group <code>stage</code>, one stage replaced under the
+method) for GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline / Scale-Balanced-Grasp.
+All are randomly initialised; none has released weights.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Component</th>
+<th>What it is</th>
+<th>From</th>
+<th>Fit</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>swad</code></td>
+<td><code>SWADHead</code></td>
+<td>a score and a width per (angle, depth) cell, regressed; arg-max cell</td>
+<td>GSNet (existed)</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>dense labels, crops without a depth axis</td>
+</tr>
+<tr>
+<td><code>swad-focal</code></td>
+<td><code>SWADHead</code></td>
+<td><code>swad</code> with <code>QualityFocal</code> on the score grid and a fixed friction range; the score is decoded through the sigmoid</td>
+<td>preset of this page</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>as <code>swad</code></td>
+</tr>
+<tr>
+<td><code>economic</code></td>
+<td><code>EconomicHead</code></td>
+<td>angle, depth and quality classes plus a width</td>
+<td>EconomicGrasp (existed)</td>
+<td>refused / runs / runs / refused / refused</td>
+<td>compact labels</td>
+</tr>
+<tr>
+<td><code>economic-focal</code></td>
+<td><code>EconomicHead</code></td>
+<td><code>economic</code> with <code>SoftmaxFocalLoss</code> on the three class terms and the arg-max restricted to supervised bins; extra <code>kornia</code></td>
+<td>preset of this page</td>
+<td>refused / runs / runs / refused / refused</td>
+<td>as <code>economic</code></td>
+</tr>
+<tr>
+<td><code>operation</code>, <code>operation-objectness</code></td>
+<td><code>OperationHead</code></td>
+<td>score, angle class, width and tolerance per depth crop</td>
+<td>GraspNet-baseline family (existed)</td>
+<td>refused / refused / refused / runs / runs</td>
+<td>crops with a depth axis</td>
+</tr>
+<tr>
+<td><code>decoupled-grid</code></td>
+<td><code>DecoupledGridHead</code></td>
+<td>the score grid of SWAD, but angle and depth come from two classifiers of their own and the width is predicted once per depth bin</td>
+<td>written here after the idea of the grasp head of FGC-GraspNet (Lu et al., ICRA 2022, <a href="https://arxiv.org/abs/2206.11141">arXiv 2206.11141</a>); no upstream code</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>dense labels, crops without a depth axis: swaps with <code>swad</code></td>
+</tr>
+<tr>
+<td><code>decoupled-grid-regression</code></td>
+<td><code>DecoupledGridHead</code></td>
+<td>depth and width regressed (a continuous depth)</td>
+<td>as above</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>as above</td>
+</tr>
+<tr>
+<td><code>decoupled-grid-class</code></td>
+<td><code>DecoupledGridHead</code></td>
+<td>depth and width classified (width into 16 bins, decoded as the bin centre)</td>
+<td>as above</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>as above</td>
+</tr>
+<tr>
+<td><code>decoupled-grid-bins</code></td>
+<td><code>DecoupledGridHead</code></td>
+<td>width as a distribution over 16 bins, trained with the distribution focal loss, decoded as the expectation</td>
+<td>as above; loss from Generalized Focal Loss</td>
+<td>runs / refused / refused / refused / refused</td>
+<td>as above</td>
+</tr>
+</tbody>
+</table>
+<p>Why the refusals: EconomicGrasp and FineGrasp train on <code>compact</code> labels, which hold one
+grasp per seed and not the grid a score-grid head is supervised with; GraspNet-baseline and
+Scale-Balanced-Grasp crop once per depth bin, so their features have a <code>depth</code> axis. The
+messages say so (section 5). A head preset can be moved to another method together with the
+stages it depends on, e.g. under GraspNet-baseline
+<code>--set view=template-view --set grouper=CylinderGroup --set head=decoupled-grid</code> (accepted by
+<code>compose</code>; not probed);
+which stage sets are legal is in <a href="../../advanced_guides/swapping/">swapping components</a>.</p>
+<h3 id="assigners">Assigners<a class="headerlink" href="#assigners" title="Permanent link">&para;</a></h3>
+<p>The assigner matches every seed to a grasp label during training and hands the matched
+labels to the view stage and the head bundle, so it is chosen with the head and the label
+set, not on its own. "Fit" is the verdict of the measured records (group <code>stage</code>, the
+assigner alone replaced) for GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline /
+Scale-Balanced-Grasp; "shipped" marks the method that ships it.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Component</th>
+<th>What it is</th>
+<th>Label set</th>
+<th>Fit</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NearestLabelAssigner</code> (constructor defaults; no preset)</td>
+<td><code>NearestLabelAssigner</code></td>
+<td>every seed takes the labels of the nearest label point of its object; every seed is supervised</td>
+<td>dense</td>
+<td>runs (shipped) / refused / refused / refused / refused</td>
+<td>compact-label heads read another label set; <code>ObjectnessViewStage</code> reads <code>on_object</code> and <code>view_width</code>, which the defaults do not return</td>
+</tr>
+<tr>
+<td><code>nearest-label-object-seeds</code></td>
+<td><code>NearestLabelAssigner</code></td>
+<td>the same matching, only seeds on an object supervised, crops at the matched label point (GraspNet-baseline)</td>
+<td>dense</td>
+<td>runs / refused / refused / runs (shipped) / runs</td>
+<td><code>EconomicHead</code> is supervised with compact labels</td>
+</tr>
+<tr>
+<td><code>compact-label</code></td>
+<td><code>CompactLabelAssigner</code></td>
+<td>one labelled grasp per seed at its chosen view, only within 5 mm of a label point (EconomicGrasp, FineGrasp); brings the dataset section <code>compact_labels</code></td>
+<td>compact</td>
+<td>refused / runs (shipped) / runs (shipped) / refused / refused</td>
+<td><code>SWADHead</code> and <code>OperationHead</code> are supervised with dense labels</td>
+</tr>
+<tr>
+<td><code>scale-balanced</code></td>
+<td><code>ScaleBalancedAssigner</code></td>
+<td>the matching of GraspNet-baseline plus a loss weight per seed, larger for rare grasp widths; brings the dataset section <code>scale_statistic</code></td>
+<td>dense</td>
+<td>refused / refused / refused / runs / runs (shipped)</td>
+<td>its seed weights are applied by <code>ObjectnessViewStage</code> and <code>OperationHead</code> only; the others would ignore them silently</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">assigner</span><span class="o">=</span>scale-balanced<span class="w"> </span>-o<span class="w"> </span>baseline_scale-balanced.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">assigner</span><span class="o">=</span>nearest-label-object-seeds<span class="w"> </span>-o<span class="w"> </span>gsnet_object-seeds.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>economicgrasp/economicgrasp_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">assigner</span><span class="o">=</span>compact-label<span class="w">          </span><span class="c1"># what the method ships; composes to the same config</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>--show<span class="w"> </span><span class="nv">assigner</span><span class="o">=</span>scale-balanced<span class="w">   </span><span class="c1"># the preset with what must be re-tuned</span>
+</code></pre></div>
+<p><code>scale-balanced</code> needs the width histogram (<code>grasppanda prepare graspnet1b --scale-statistic</code>;
+<code>configs/scale_balanced_grasp/README.md</code>), and a probe of it needs the reference's file (see the
+<a href="../#how-to-try-one">slot index</a>). A refusal names the head or the label set that does not
+fit and, where another shipped config serves it, that config.</p>
+<h2 id="4-how-to-use-each-option">4. How to use each option<a class="headerlink" href="#4-how-to-use-each-option" title="Permanent link">&para;</a></h2>
+<h3 id="one-loss-term">One loss term<a class="headerlink" href="#one-loss-term" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>--list<span class="w"> </span>loss<span class="w">                    </span><span class="c1"># the presets, one line each</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>--show<span class="w"> </span><span class="nv">loss</span><span class="o">=</span>quality-focal<span class="w">      </span><span class="c1"># one preset with its notes</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>head.score_loss<span class="o">=</span>quality-focal<span class="w"> </span>--set<span class="w"> </span>proposal.objectness_loss<span class="o">=</span>focal<span class="w"> </span>-o<span class="w"> </span>gsnet_focal.yaml
+grasppanda<span class="w"> </span>probe<span class="w"> </span>gsnet_focal.yaml<span class="w">                 </span><span class="c1"># a few iterations on real frames, about a minute</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>gsnet_focal.yaml
+</code></pre></div>
+<p>The left side of <code>--set</code> is <code>&lt;slot&gt;.&lt;loss option&gt;</code> from the table of section 2; the right
+side is a preset or a component type (<code>--set head.width_loss=Huber</code>, built with its
+defaults). A preset carries no weight: compose keeps the weight of the loss it replaces and
+says so. Real output of the command above:</p>
+<div class="highlight"><pre><span></span><code>what compose did
+  • head.score_loss: preset `quality-focal` (QualityFocal) in place of SmoothL1. Quality focal loss
+    (Generalized Focal Loss): sigmoid cross-entropy to a soft target, focused on the cells whose
+    prediction is far off. The weight 15.0 of the replaced loss is kept.
+  • proposal.objectness_loss: preset `focal` (FocalLoss) in place of CrossEntropy. Sigmoid focal
+    loss (RetinaNet) through torchvision: cross-entropy that turns down elements the network already
+    gets right. The weight 1.0 of the replaced loss is kept.
+...
+config check
+  ✓ valid  (hash fa1aebf6f2a3)
+</code></pre></div>
+<p>and the lines it writes into the composed config:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proposal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">objectness_loss</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FocalLoss</span>
+<span class="w">      </span><span class="nt">alpha</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w">                 </span><span class="c1"># positives x alpha, negatives x (1 - alpha); -1: off</span>
+<span class="w">      </span><span class="nt">gamma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span><span class="w">                  </span><span class="c1"># exponent of (1 - p_t)</span>
+<span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span><span class="w">                 </span><span class="c1"># kept from the CrossEntropy it replaces; the penalties differ in scale: re-tune</span>
+<span class="w">  </span><span class="nt">head</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">score_loss</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QualityFocal</span>
+<span class="w">      </span><span class="nt">beta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span><span class="w">                   </span><span class="c1"># exponent of |target - sigmoid(prediction)|</span>
+<span class="w">      </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span><span class="w">                </span><span class="c1"># kept from the SmoothL1 it replaces; the penalties differ in scale: re-tune</span>
+</code></pre></div>
+<p>The same by hand, in your own config or on any command line that takes <code>--opts</code>:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>model.proposal.objectness_loss.type<span class="o">=</span>FocalLoss
+</code></pre></div>
+<p>An override of <code>type</code> alone keeps the other keys of the node, so it works only when the new
+loss has the options of the old one (here: <code>weight</code>). Otherwise replace the whole node in a
+YAML file.</p>
+<p>Libraries: <code>pip install -e ".[torchvision]"</code> for <code>focal</code>, <code>pip install -e ".[kornia]"</code>
+for <code>softmax-focal</code>, <code>dice</code>, <code>lovasz-softmax</code>, <code>charbonnier</code>, <code>cauchy</code> and the head preset
+<code>economic-focal</code>. Without the library the config still loads; building the model raises an
+error that names the extra.</p>
+<h3 id="choosing-a-loss-for-a-term">Choosing a loss for a term<a class="headerlink" href="#choosing-a-loss-for-a-term" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Objectness (<code>class</code>, two classes, many easy points):</strong> <code>focal</code> (try <code>alpha: -1</code> first:
+  table-top objectness is far less imbalanced than detection anchors), <code>softmax-focal</code>,
+  <code>class-balanced</code>, <code>ohem</code>, or the set losses <code>dice</code> and <code>lovasz-softmax</code>.</li>
+<li><strong>Angle, depth and quality classes (<code>class</code>, classes exclude each other):</strong>
+  <code>softmax-focal</code>, <code>label-smoothing</code>, <code>poly1</code>, <code>class-balanced</code>, <code>ohem</code>.</li>
+<li><strong>Graspness, view scores, the SWAD score grid (<code>unit</code>):</strong> <code>quality-focal</code>, <code>varifocal</code>,
+  <code>ghm-c</code>, <code>bce</code> train a logit; <code>balanced-l1</code>, <code>huber</code>, <code>ghm-r</code>, <code>charbonnier</code>, <code>cauchy</code>,
+  <code>ohem-smooth-l1</code> keep the output a value.</li>
+<li><strong>Widths, tolerances, the scores of OperationHead (<code>value</code>):</strong> <code>huber</code>, <code>balanced-l1</code>,
+  <code>ghm-r</code>, <code>charbonnier</code>, <code>cauchy</code>, <code>ohem-smooth-l1</code>. Set the knee (<code>delta</code>, <code>beta</code>, <code>mu</code>)
+  in the units of the target: SWAD and Economic widths are metres x 10.</li>
+<li><strong>A width as a distribution (<code>bins</code>):</strong> <code>distribution-focal</code>, with the head preset
+  <code>decoupled-grid-bins</code>.</li>
+</ul>
+<h3 id="wrappers-mining-class-balance-multi-task-weighting">Wrappers: mining, class balance, multi-task weighting<a class="headerlink" href="#wrappers-mining-class-balance-multi-task-weighting" title="Permanent link">&para;</a></h3>
+<p><code>TopK</code>, <code>ClassBalanced</code> and <code>UncertaintyWeighted</code> take another loss as <code>loss:</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proposal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">objectness_loss</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TopK</span>
+<span class="w">      </span><span class="nt">fraction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w">              </span><span class="c1"># share of the supervised elements that is kept</span>
+<span class="w">      </span><span class="nt">loss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">FocalLoss</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt"> alpha</span><span class="p">:</span><span class="w"> </span><span class="nv">-1</span><span class="p p-Indicator">,</span><span class="nt"> gamma</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><code>uncertainty-weighting</code> is a preset without a loss of its own: compose wraps the loss that
+is in the term, with its weight. Set it on every term that should take part in the balance:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>proposal.objectness_loss<span class="o">=</span>uncertainty-weighting<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>proposal.graspness_loss<span class="o">=</span>uncertainty-weighting<span class="w"> </span>--set<span class="w"> </span>view.loss<span class="o">=</span>uncertainty-weighting<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>head.score_loss<span class="o">=</span>uncertainty-weighting<span class="w"> </span>--set<span class="w"> </span>head.width_loss<span class="o">=</span>uncertainty-weighting
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">head</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">score_loss</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UncertaintyWeighted</span>
+<span class="w">      </span><span class="nt">initial_log_variance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.6931</span><span class="w">   </span><span class="c1"># -ln 2: the factor starts at 1</span>
+<span class="w">      </span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SmoothL1</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span>
+<span class="w">        </span><span class="nt">beta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+<p>A term that is not wrapped keeps its fixed weight. The learned value is the parameter
+<code>&lt;stage&gt;.&lt;term&gt;.log_variance</code> of the checkpoint. The log-variances are model parameters: an
+optimizer that decays all parameters pulls them towards 0, so exclude them from weight
+decay. Wrapped terms, and so the total loss, can become negative.</p>
+<h3 id="a-head-bundle">A head bundle<a class="headerlink" href="#a-head-bundle" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>--list<span class="w"> </span>head
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">head</span><span class="o">=</span>swad-focal<span class="w"> </span>-o<span class="w"> </span>gsnet_swad-focal.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">head</span><span class="o">=</span>decoupled-grid-bins<span class="w"> </span>-o<span class="w"> </span>gsnet_grid-bins.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>economicgrasp/economicgrasp_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">head</span><span class="o">=</span>economic-focal<span class="w"> </span>-o<span class="w"> </span>eg_focal.yaml
+</code></pre></div>
+<p><code>DecoupledGridHead</code> in a config, with the options that matter:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">head</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DecoupledGridHead</span>
+<span class="w">    </span><span class="nt">num_angle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+<span class="w">    </span><span class="nt">num_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">    </span><span class="nt">depth_step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+<span class="w">    </span><span class="nt">depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">class</span><span class="w">                  </span><span class="c1"># class | regression (a continuous depth between the bins)</span>
+<span class="w">    </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bins</span><span class="w">                   </span><span class="c1"># regression | class (bin centre) | bins (expectation)</span>
+<span class="w">    </span><span class="nt">width_bins</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span><span class="w">                </span><span class="c1"># for class and bins: 16 over 0.1 m is a bin every 6.7 mm</span>
+<span class="w">    </span><span class="nt">score_target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log_friction_fixed_range</span>
+<span class="w">    </span><span class="nt">friction_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span><span class="w">    </span><span class="c1"># the range of the GraspNet-1Billion labels</span>
+<span class="w">    </span><span class="nt">score_loss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">SmoothL1</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span><span class="w"> </span><span class="nv">15.0</span><span class="p p-Indicator">,</span><span class="nt"> beta</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">angle_loss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">CrossEntropy</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">depth_loss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">CrossEntropy</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">width_loss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">DistributionFocal</span><span class="p p-Indicator">,</span><span class="nt"> weight</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<ul>
+<li><strong>Classification or regression of depth and width</strong> is the pair of options <code>depth</code> and
+  <code>width</code>; the presets <code>decoupled-grid-class</code> and <code>decoupled-grid-regression</code> are the two
+  ends. The kind of <code>depth_loss</code> and <code>width_loss</code> follows the option, so a loss must be
+  changed with it (the presets do).</li>
+<li>The class terms are cross-entropies of order ln 12 and ln 4 at the start, the regressed
+  width a distance in metres x 10: watch <code>loss/angle</code> and <code>loss/depth</code> beside <code>loss/score</code>
+  and re-tune the weights. The weights of the presets are starting points.</li>
+<li><code>width_decode_gain: 1.2</code> opens the gripper 20 % wider than learned, as the other bundles
+  of the family do; 1.0 decodes what was learned.</li>
+<li>A loss and a head combine: <code>--set head=decoupled-grid --set head.score_loss=varifocal</code>.</li>
+</ul>
+<h3 id="what-a-probe-shows">What a probe shows<a class="headerlink" href="#what-a-probe-shows" title="Permanent link">&para;</a></h3>
+<p><code>grasppanda probe</code> trains 20 iterations on 8 real frames and predicts on 2. Figures of the
+measured records of this page's options (random initialisation; evidence that the option
+trains and decodes, not a result):</p>
+<table>
+<thead>
+<tr>
+<th>Combination</th>
+<th>Parameters</th>
+<th>Total loss, first → last</th>
+<th>Grasps per frame</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>decoupled-grid</code> under GSNet</td>
+<td>15 321 491</td>
+<td>17.55 → 5.12</td>
+<td>510, 475</td>
+</tr>
+<tr>
+<td><code>decoupled-grid-regression</code> under GSNet</td>
+<td>15 321 104</td>
+<td>19.08 → 4.425</td>
+<td>987, 949</td>
+</tr>
+<tr>
+<td><code>decoupled-grid-class</code> under GSNet</td>
+<td>15 329 231</td>
+<td>19.33 → 7.311</td>
+<td>1024, 1024</td>
+</tr>
+<tr>
+<td><code>decoupled-grid-bins</code> under GSNet</td>
+<td>15 329 231</td>
+<td>19.32 → 7.462</td>
+<td>1024, 1024</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Loss preset, method, term</th>
+<th>Term value, first → last</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>focal</code>, GSNet, <code>proposal.objectness_loss</code></td>
+<td>0.3003 → 0.1454</td>
+</tr>
+<tr>
+<td><code>quality-focal</code>, GSNet, <code>head.score_loss</code></td>
+<td>3.306 → 0.06559</td>
+</tr>
+<tr>
+<td><code>balanced-l1</code>, GSNet, <code>head.width_loss</code></td>
+<td>7.802 → 1.089</td>
+</tr>
+<tr>
+<td><code>quality-focal</code>, EconomicGrasp, <code>proposal.graspness_loss</code></td>
+<td>1.052 → 0.3497</td>
+</tr>
+</tbody>
+</table>
+<p>The other cells, with the refusals, are in the sections "Head bundles" and "Losses" of the
+<a href="../../advanced_guides/measured_combinations/">measured combinations</a>.</p>
+<h2 id="5-pitfalls">5. Pitfalls<a class="headerlink" href="#5-pitfalls" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>A loss in the wrong kind of term is refused, with the alternatives.</strong> Real output of
+  <code>grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head.width_loss=focal</code>:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>✗ assigner · head: SWADHead.width_loss is a `value` term (a prediction and a target of equal
+  shape, the target an unbounded quantity), but FocalLoss fits `class` or `unit` terms. Losses for
+  a `value` term: BalancedL1, GHMR, Huber, L1, MSE, RobustLoss, SmoothL1, TopK,
+  UncertaintyWeighted.
+</code></pre></div>
+<ul>
+<li><strong>The scores of the GraspNet-baseline family are not qualities in [0, 1].</strong> The score and
+  view targets of <code>OperationHead</code> and <code>ObjectnessViewStage</code> are log-friction scores up to
+  ln 10, so they are <code>value</code> terms and the sigmoid losses are refused there
+  (<code>OperationHead.score_loss is a</code>value<code>term ..., but QualityFocal fits</code>unit<code>terms</code>).</li>
+<li><strong>A logit loss changes what the raw output is.</strong> After <code>quality-focal</code>, <code>varifocal</code>,
+  <code>ghm-c</code>, <code>focal</code> or <code>bce</code> in a <code>unit</code> term, the stage output is a logit. The shipped
+  stages read it through the sigmoid; a score threshold fitted on the unbounded score of
+  <code>swad</code> does not carry over to <code>swad-focal</code>, whose score lies in <code>[0, 1]</code>.</li>
+<li><strong>Weights are kept, scales are not.</strong> A focal term is much smaller than the Smooth-L1 or
+  cross-entropy it replaces, a distribution focal term much larger than a regressed width.
+  Compare the logged <code>loss/...</code> values of both runs before trusting a weight.</li>
+<li><strong>Set losses cannot weight seeds.</strong> <code>dice</code> and <code>lovasz-softmax</code> are refused in the terms
+  of Scale-Balanced-Grasp that receive the per-seed weights of its assigner; the message
+  names the losses that can.</li>
+<li><strong>Label smoothing and the extra class of EconomicHead.</strong> With <code>unmatched_class: true</code>
+  every classifier has one never-supervised output; smoothing gives it target mass. Use
+  <code>decode_argmax: supervised</code> (as <code>economic-focal</code> does) or <code>unmatched_class: false</code>.</li>
+<li><strong><code>SWADHead</code> with <code>score_target: log_friction_batch_norm</code></strong> (the GSNet reference
+  behaviour) normalises targets with the extrema of the batch; for a focal-type score loss
+  <code>log_friction_fixed_range</code> gives a target that means the same in every batch
+  (<code>swad-focal</code> sets it).</li>
+<li><strong>GHM with <code>momentum &gt; 0</code></strong> keeps running counts as a buffer of the module; it is saved
+  with the checkpoint.</li>
+<li><strong>Adding a constructor option to a loss used by the shipped configs changes the config
+  hash of every method</strong>, and with it every measured record. Label smoothing and class
+  weights are therefore a class of their own (<code>LabelSmoothingCrossEntropy</code>), and
+  <code>CrossEntropy</code> keeps its constructor.</li>
+<li><strong>Head presets do not cross label formats.</strong> <code>--set head=decoupled-grid</code> under
+  EconomicGrasp:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>✗ assigner · head: CompactLabelAssigner returns 'compact' matched labels, but DecoupledGridHead is
+  supervised with 'dense' ones. A head bundle and the assigner that feeds it must agree on the
+  label set; the dataset must serve that label set too.
+</code></pre></div>
+<h2 id="6-not-wrapped">6. Not wrapped<a class="headerlink" href="#6-not-wrapped" title="Permanent link">&para;</a></h2>
+<p>Looked at for this slot and left out. Licences are what the repository states (licence
+file, or the repository metadata where no file was found).</p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Why not (yet)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The grasp head of <a href="https://github.com/luyh20/FGC-GraspNet">luyh20/FGC-GraspNet</a> as code</td>
+<td>no licence file in the repository (its metadata says MIT), and it derives from graspnet-baseline, whose licence is non-commercial research only. The idea (separate outputs) is what <code>DecoupledGridHead</code> implements, without upstream code.</td>
+</tr>
+<tr>
+<td>Heads and losses of <a href="https://github.com/graspnet/graspnet-baseline">graspnet/graspnet-baseline</a> and its descendants as code</td>
+<td>non-commercial research licence. The ported methods are written here from papers and behaviour.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/NVlabs/contact_graspnet">NVlabs/contact_graspnet</a> (per-point contact head with width bins)</td>
+<td>its <code>License.pdf</code> is the NVIDIA Source Code License for Contact-GraspNet (non-commercial; see <a href="../view/">View</a>, section 6); not copied. Its top-k selection of point errors is the idea behind <code>TopK</code>.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/sh8/ZeroGrasp">sh8/ZeroGrasp</a></td>
+<td>CC BY-NC 4.0.</td>
+</tr>
+<tr>
+<td>Gradient surgery between loss terms (PCGrad: <a href="https://github.com/WeiChengTseng/Pytorch-PCGrad">WeiChengTseng/Pytorch-PCGrad</a>, BSD-3-Clause; Jacobian descent: <a href="https://github.com/TorchJD/torchjd">TorchJD/torchjd</a>, MIT)</td>
+<td>they need one backward pass per loss term inside the training step; a loss primitive only returns a value. A trainer hook, not an option of this slot. Of the multi-task weightings only the one that is a function of the loss values (uncertainty weighting) is wrapped.</td>
+</tr>
+<tr>
+<td>Ranking losses (<a href="https://github.com/allegro/allRank">allegro/allRank</a>, Apache-2.0; <a href="https://github.com/teddykoker/torchsort">teddykoker/torchsort</a>, Apache-2.0)</td>
+<td>a loss over the order of the grasps of a scene needs the frame boundaries, which a primitive does not see; torchsort has a compiled extension. Not started.</td>
+</tr>
+<tr>
+<td>Ordinal regression of the quality classes (<a href="https://github.com/Raschka-research-group/coral-pytorch">Raschka-research-group/coral-pytorch</a>, MIT)</td>
+<td>needs another output layer (one logit per threshold) in <code>EconomicHead</code>, i.e. a new term kind and a head option. Not started.</td>
+</tr>
+<tr>
+<td>Label and feature distribution smoothing for imbalanced regression (<a href="https://github.com/YyzHarry/imbalanced-regression">YyzHarry/imbalanced-regression</a>, MIT)</td>
+<td>needs the label statistics of the training set per term. Not started.</td>
+</tr>
+<tr>
+<td>Rotated-box losses of <a href="https://github.com/open-mmlab/mmrotate">open-mmlab/mmrotate</a> (Apache-2.0)</td>
+<td>they compare oriented boxes in the image plane; no seed-based stage predicts one.</td>
+</tr>
+<tr>
+<td>A decoupled head for depth-axis crops or for compact labels</td>
+<td><code>DecoupledGridHead</code> reads dense label grids and crops without a depth axis only, so it is refused under four of the five methods as shipped.</td>
+</tr>
+<tr>
+<td>Per-seed weights in <code>SWADHead</code>, <code>EconomicHead</code>, <code>DecoupledGridHead</code></td>
+<td><code>applies_seed_weights</code> is false for the three; only <code>OperationHead</code> and <code>ObjectnessViewStage</code> honour the weights of <code>ScaleBalancedAssigner</code>.</td>
+</tr>
+<tr>
+<td>Loss slots for HGGD</td>
+<td>its loss terms are functions inside the detector, not config nodes.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

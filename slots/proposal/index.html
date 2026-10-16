@@ -1,0 +1,3425 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/proposal/">
+      
+      
+        <link rel="prev" href="../scene_encoders_transformer/">
+      
+      
+        <link rel="next" href="../view/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Seed proposal and samplers - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#slot-seed-proposal-modelproposal" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Seed proposal and samplers
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as-a-yaml-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        As a YAML fragment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-settings-that-matter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The settings that matter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pretrained-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pretrained weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-what-is-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List what is installed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls-met-while-building-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls met while building this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#as-a-yaml-fragment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        As a YAML fragment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-settings-that-matter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The settings that matter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pretrained-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pretrained weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-what-is-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List what is installed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-pitfalls-met-while-building-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Pitfalls met while building this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/proposal.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="slot-seed-proposal-modelproposal">Slot: seed proposal (<code>model.proposal</code>)<a class="headerlink" href="#slot-seed-proposal-modelproposal" title="Permanent link">&para;</a></h1>
+<p><em>Words such as seed, contract, preset, adapter, label set and point painting are explained in the <a href="../#words-used-on-these-pages">slot index</a>.</em></p>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="admonition note">
+<p class="admonition-title">Which of these options fit a method</p>
+<p>Every method has a page that lists the options of each of its slots with what was measured for each (the verdict, the levels <em>composes</em>, <em>runs</em>, <em>learns</em> and <em>predicts</em>, the class, the grasps, the reason of a refusal): GSNet (<a href="../../methods/gsnet/#proposal">seed proposal</a>); EconomicGrasp (<a href="../../methods/economicgrasp/#proposal">seed proposal</a>); FineGrasp (<a href="../../methods/finegrasp/#proposal">seed proposal</a>); GraspNet-baseline (<a href="../../methods/graspnet_baseline/#proposal">seed proposal</a>); Scale-Balanced-Grasp (<a href="../../methods/scale_balanced_grasp/#proposal">seed proposal</a>). In a terminal: <code>grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list proposal</code>.</p>
+<p><em>Class: one run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</em> Where this page names a class or a measured verdict, it is one of the <a href="../../advanced_guides/measured_combinations/#measured-classes">measured classes</a>.</p>
+</div>
+<!-- method-options:end -->
+
+<p>Options for the stage that decides <strong>where grasps are predicted</strong>. Every option on this page was
+composed under all five seed-based methods and, where the contract rules accept it, probed on
+real GraspNet-1Billion frames on 2026-10-13; the verdicts are copied from the
+<a href="../../advanced_guides/measured_combinations/">measured records</a>. <strong>No AP has been
+measured for any option that is new here</strong>: a probe trains 20 iterations on 8 frames and predicts
+on 2, which shows that a combination builds, trains with finite losses and produces grasps, not
+how good it is.</p>
+<h2 id="1-the-task-of-the-slot">1. The task of the slot<a class="headerlink" href="#1-the-task-of-the-slot" title="Permanent link">&para;</a></h2>
+<p>A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp)
+predicts one grasp per <em>seed</em>: a 3-D point with a feature vector. The proposal turns the scene
+features of the encoder into a fixed number of seeds per frame, usually 1024. It is the only stage
+that decides which parts of the scene the rest of the model ever looks at: the view stage picks an
+approach direction per seed, the grouper crops the scene around each seed, the head predicts the
+grasp there. A proposal owns whatever it predicts to make that decision (point-wise graspness and
+objectness in the GSNet family), with the targets and the loss.</p>
+<div class="highlight"><pre><span></span><code>backbone ──► proposal ──► view ──► (assigner) ──► grouper ──► head
+ features     seeds        approach  labels        crops        grasps
+</code></pre></div>
+<p>Every published proposal is the same five choices, and this page offers each as an option:</p>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>What it decides</th>
+<th>Where it is set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scorer</td>
+<td>what is predicted per scene point (objectness, graspness, nothing)</td>
+<td>the proposal class</td>
+</tr>
+<tr>
+<td>selecting score</td>
+<td>which score cuts and ranks</td>
+<td><code>select_by</code></td>
+</tr>
+<tr>
+<td>candidate rule</td>
+<td>threshold, product threshold or rank cut</td>
+<td><code>graspness_threshold</code>, <code>objectness_threshold</code>, <code>top_fraction</code></td>
+</tr>
+<tr>
+<td>sampler</td>
+<td>which candidates become seeds</td>
+<td><code>sampler: {type: ...}</code>, a component of its own</td>
+</tr>
+<tr>
+<td>too few points</td>
+<td>what a frame with fewer candidates than seeds gets</td>
+<td><code>too_few</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-input-and-output">2. Input and output<a class="headerlink" href="#2-input-and-output" title="Permanent link">&para;</a></h2>
+<p><code>proposal(feats, observation) -&gt; (SeedSet, scores)</code> and <code>proposal.loss(scores, supervision) -&gt; dict</code>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Type</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in</td>
+<td><code>PointFeatures</code></td>
+<td><code>feats</code>: <code>(N, C)</code> features of the encoder, bound to a point set. <code>N</code> is the number of points of the whole batch; frames are told apart by <code>points.batch_offsets</code>. <code>C</code> is injected (<code>in_channels</code>).</td>
+</tr>
+<tr>
+<td>in</td>
+<td><code>Observation</code></td>
+<td><code>points</code>: the scene <code>PointSet</code>, <code>(N, 3)</code> coordinates in metres in the camera frame.</td>
+</tr>
+<tr>
+<td>out</td>
+<td><code>SeedSet</code></td>
+<td><code>points</code>: <code>B × num_seeds</code> seeds as a child set of the scene (<code>parent_index</code> says which scene point each seed is); <code>feats</code>: <code>(M, C)</code> features of the seeds, still attached to the encoder's graph; <code>scores</code>: named per-seed scores (<code>graspness</code>, <code>objectness</code>), detached; <code>valid</code>: <code>(M,)</code>, false for padding; <code>source</code>: how the seeds were chosen.</td>
+</tr>
+<tr>
+<td>out</td>
+<td>scores</td>
+<td>whatever the proposal's own <code>loss</code> needs (<code>PointScores</code> for a scoring proposal, <code>None</code> otherwise).</td>
+</tr>
+</tbody>
+</table>
+<p>What the neighbours require:</p>
+<ul>
+<li><strong>Every frame yields exactly <code>num_seeds</code> seeds</strong>, so that later stages work on dense <code>(B, M, …)</code>
+  tensors. Padding is marked <code>valid = False</code> and never becomes a grasp; the share of real seeds is
+  logged as <code>metric/real_seeds</code>.</li>
+<li><strong>Seeds are scene points.</strong> Assigners match labels through <code>parent_index</code>. All options here pick
+  existing points; none invents positions.</li>
+<li><strong>Groupers that gather among the seeds</strong> (<code>CylinderGroup</code> and relatives, <code>support = "seeds"</code>) see
+  the seed density as an input: 1024 seeds by top-k and 1024 by furthest point sampling give the
+  same grouper very different neighbourhoods.</li>
+<li><strong>Seeds are chosen from the predictions in training too</strong>, so a sampler changes which examples
+  the view stage and the head are trained on from the first iteration.</li>
+</ul>
+<p>The contract attributes, and what the config check (<code>grasppanda compose</code>, <code>grasppanda print-config --check</code>,
+the detector's constructor) does with them:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>requires</code></td>
+<td><code>dense</code>, <code>subsampled</code>, <code>any</code></td>
+<td>must equal the encoder's <code>output</code>; <code>compose</code> inserts the adapter (<code>FeaturePropagation</code> to make a sub-sampling encoder dense, <code>FurthestPointSubsample</code> for the opposite).</td>
+</tr>
+<tr>
+<td><code>seed_scores</code></td>
+<td>names of the scores it predicts</td>
+<td>one owner per score: a proposal that predicts <code>objectness</code> is refused next to <code>ObjectnessViewStage</code>, which predicts it too. A head that decodes with a score needs a stage that predicts it.</td>
+</tr>
+<tr>
+<td><code>sampler_inputs</code> (proposals with a sampler) against the sampler's <code>needs</code></td>
+<td><code>scores</code>, <code>feats</code></td>
+<td>a sampler that reads scores is refused inside a proposal that predicts none.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-options-at-a-glance">3. Options at a glance<a class="headerlink" href="#3-options-at-a-glance" title="Permanent link">&para;</a></h2>
+<p><strong>Proposal classes</strong> (registry <code>PROPOSALS</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Scorer</th>
+<th>Requires</th>
+<th>Predicts</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GraspnessFPS</code></td>
+<td>objectness + graspness</td>
+<td>dense</td>
+<td>graspness, objectness</td>
+<td>reference port (GSNet, EconomicGrasp, FineGrasp); selection and sampler hard-wired, with the two quirks of the reference sampling kernel</td>
+</tr>
+<tr>
+<td><code>SubsampledSeeds</code></td>
+<td>none</td>
+<td>subsampled</td>
+<td>nothing</td>
+<td>reference port (GraspNet-baseline, Scale-Balanced-Grasp); the encoder's subsample is the seed set</td>
+</tr>
+<tr>
+<td><code>ScoredSeeds</code></td>
+<td>objectness + graspness (same targets and losses as <code>GraspnessFPS</code>)</td>
+<td>dense</td>
+<td>graspness, objectness</td>
+<td><strong>new</strong>: selecting score, candidate rule, sampler and padding are options</td>
+</tr>
+<tr>
+<td><code>SampledSeeds</code></td>
+<td>none</td>
+<td>dense</td>
+<td>nothing</td>
+<td><strong>new</strong>: a sampler picks among all scene points; the dense counterpart of <code>SubsampledSeeds</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Samplers</strong> (registry <code>SAMPLERS</code>, slot <code>model.proposal.sampler</code>). All weights are "random init":
+a sampler has no parameters, and the scorer of <code>ScoredSeeds</code> is trained with the model.</p>
+<table>
+<thead>
+<tr>
+<th>Sampler</th>
+<th>What it is</th>
+<th>Paper</th>
+<th>Code</th>
+<th>Reads</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FPS</code></td>
+<td>furthest point sampling on coordinates (D-FPS); start <code>first</code> or <code>random</code></td>
+<td>PointNet++, Qi et al., NeurIPS 2017</td>
+<td><code>grasppanda.ops.furthest_point_sample</code></td>
+<td>coordinates</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FeatureFPS</code></td>
+<td>furthest point sampling in feature space (F-FPS)</td>
+<td><a href="https://arxiv.org/abs/2002.10187">3DSSD</a>, Yang et al., CVPR 2020 (oral)</td>
+<td>written from the definition; distance conventions read in <a href="https://github.com/dvlab-research/3DSSD/blob/8bc7605/lib/utils/layers_util.py#L84-L111">3DSSD@8bc7605</a> (MIT)</td>
+<td>features</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FusionFPS</code></td>
+<td>part of the seeds by F-FPS, the rest by D-FPS (FS)</td>
+<td>3DSSD, CVPR 2020</td>
+<td>as above</td>
+<td>features</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>ScoreWeightedFPS</code></td>
+<td>semantics-guided FPS (S-FPS): maximise score^γ × distance</td>
+<td><a href="https://arxiv.org/abs/2201.01976">SASA</a>, Chen et al., AAAI 2022</td>
+<td>written from the definition; kernel convention read in <a href="https://github.com/blakechen97/SASA/blob/cd79f60/pcdet/ops/pointnet2/pointnet2_batch/src/sampling_gpu.cu#L414-L463">SASA@cd79f60</a> (Apache-2.0)</td>
+<td>scores</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>TopK</code></td>
+<td>the best-scored points, no spread</td>
+<td><a href="https://arxiv.org/abs/2203.11139">IA-SSD</a>, Zhang et al., CVPR 2022 (oral); the last step of <a href="https://github.com/wang-h-w/GraNet/tree/d9992e1">GraNet</a>, Wang et al., IROS 2023</td>
+<td><code>torch.sort</code>; read in <a href="https://github.com/yifanzhang713/IA-SSD/blob/6b042b5/pcdet/ops/pointnet2/pointnet2_batch/pointnet2_modules.py#L276-L280">IA-SSD@6b042b5</a> (Apache-2.0)</td>
+<td>scores</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>RandomSampler</code></td>
+<td>uniform, without replacement, own seeded generator</td>
+<td>sampling ablation of GSNet (Wang et al., ICCV 2021); RandLA-Net, Hu et al., CVPR 2020</td>
+<td><code>torch.randperm</code></td>
+<td>coordinates</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>VoxelGridSampler</code></td>
+<td>one point per occupied voxel (the best-scored one when scores exist)</td>
+<td>regular subsampling as in <a href="https://arxiv.org/abs/1904.08889">KPConv</a>, Thomas et al., ICCV 2019</td>
+<td><code>grasppanda.ops.voxelize</code></td>
+<td>coordinates (scores optional)</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FPSThenTopK</code></td>
+<td>FPS for coverage, then the best-scored of the rest</td>
+<td>selection rule of <a href="https://arxiv.org/abs/2103.14127">Contact-GraspNet</a>, Sundermeyer et al., ICRA 2021</td>
+<td>written from the description (the reference code is under the NVIDIA Source Code License and was not copied)</td>
+<td>scores</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>ScoreNMS</code></td>
+<td>best score first, no two seeds closer than a radius</td>
+<td>Algorithm 1 of <a href="https://arxiv.org/abs/1910.14218">S4G</a>, Qin et al., CoRL 2019</td>
+<td>written from the paper (the repository has no licence file)</td>
+<td>scores</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FpsampleFPS</code></td>
+<td>CPU furthest point sampling, bucket-based QuickFPS and four other methods</td>
+<td>QuickFPS, Han et al., IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, 2023 (as cited by the library)</td>
+<td>bridge to <a href="https://github.com/leonardodalinky/fpsample"><code>fpsample</code></a> 1.0.2 (MIT)</td>
+<td>coordinates</td>
+<td><code>pip install -e ".[fpsample]"</code></td>
+</tr>
+<tr>
+<td><code>TorchClusterFPS</code></td>
+<td>the furthest point sampling kernel of PyTorch Geometric (CPU and CUDA)</td>
+<td>PointNet++, NeurIPS 2017</td>
+<td>bridge to <a href="https://github.com/rusty1s/pytorch_cluster"><code>torch_cluster.fps</code></a> 1.6.3 (MIT)</td>
+<td>coordinates</td>
+<td><code>pip install -e ".[torch-cluster]"</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ready-made options</strong> (presets: the name to write after <code>--set proposal=</code>). "Fit" is the verdict
+of the probe under GSNet / EconomicGrasp / FineGrasp / GraspNet-baseline / Scale-Balanced-Grasp,
+in that order, in the words of the measured page (<code>runs in &lt;adapter&gt;</code>: compose wrapped the
+encoder in that adapter and said so).</p>
+<!-- FIT TABLE -->
+<table>
+<thead>
+<tr>
+<th><code>--set proposal=</code></th>
+<th>What it is</th>
+<th>GSNet</th>
+<th>EconomicGrasp</th>
+<th>FineGrasp</th>
+<th>GraspNet-baseline</th>
+<th>Scale-Balanced-Grasp</th>
+<th>Real seeds</th>
+<th>Class at <em>runs</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>graspness-fps</code></td>
+<td><code>GraspnessFPS</code>: GSNet's proposal as ported (reference)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.96 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>SubsampledSeeds</code></td>
+<td><code>SubsampledSeeds</code>: the encoder's subsample (reference)</td>
+<td>runs in <code>FurthestPointSubsample</code></td>
+<td>runs in <code>FurthestPointSubsample</code></td>
+<td>runs in <code>FurthestPointSubsample</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>scored-fps</code></td>
+<td><code>ScoredSeeds</code> defaults: GSNet's rule, plain <code>FPS</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.98 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-ffps</code></td>
+<td>graspable points, <code>FeatureFPS</code> (F-FPS, 3DSSD)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.93 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-fusion-fps</code></td>
+<td>graspable points, <code>FusionFPS</code> (FS, 3DSSD)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.93 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-sfps</code></td>
+<td>graspable points, <code>ScoreWeightedFPS</code> (S-FPS, SASA)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.96 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-topk</code></td>
+<td>graspable points, <code>TopK</code> (IA-SSD, GraNet)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.98 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-random</code></td>
+<td>graspable points, <code>RandomSampler</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.94 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-voxel</code></td>
+<td>graspable points, <code>VoxelGridSampler</code> 1 cm</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.83 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-fps-topk</code></td>
+<td>graspable points, <code>FPSThenTopK</code> (Contact-GraspNet's rule)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.93 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-nms</code></td>
+<td>graspable points, <code>ScoreNMS</code> 1 cm (S4G's rule)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.68 to 0.93</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-fpsample</code></td>
+<td>graspable points, <code>FpsampleFPS</code> (QuickFPS, extra <code>fpsample</code>)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.98 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-torch-cluster</code></td>
+<td>graspable points, <code>TorchClusterFPS</code> (extra <code>torch-cluster</code>)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.97 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>objectness-fps</code></td>
+<td><code>select_by: objectness</code>: predicted foreground, <code>FPS</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>1.00 to 1.00</td>
+<td>most</td>
+</tr>
+<tr>
+<td><code>product-fps</code></td>
+<td><code>select_by: product</code>: P(object) × graspness &gt; 0.1, <code>FPS</code> (MultiGraspNet's rule)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>0.94 to 1.00</td>
+<td>most</td>
+</tr>
+<tr>
+<td><code>graspness-top-fraction</code></td>
+<td><code>top_fraction: 0.1</code>: rank cut, <code>FPS</code> (DexGraspNet 2.0's rule)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>graspness-fps-fill</code></td>
+<td><code>too_few: best_rest</code>: GSNet's rule without empty frames</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-fps</code></td>
+<td><code>SampledSeeds</code> defaults: <code>FPS</code> over all scene points</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-ffps</code></td>
+<td>all scene points, <code>FeatureFPS</code> (F-FPS, 3DSSD)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-fusion-fps</code></td>
+<td>all scene points, <code>FusionFPS</code> (FS, 3DSSD)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-random</code></td>
+<td>all scene points, <code>RandomSampler</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-voxel</code></td>
+<td>all scene points, <code>VoxelGridSampler</code> 2 cm</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>0.84 to 0.86</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-fpsample</code></td>
+<td>all scene points, <code>FpsampleFPS</code> (extra <code>fpsample</code>)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+<tr>
+<td><code>dense-torch-cluster</code></td>
+<td>all scene points, <code>TorchClusterFPS</code> (extra <code>torch-cluster</code>)</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>runs in <code>FeaturePropagation</code></td>
+<td>1.00 to 1.00</td>
+<td>universal</td>
+</tr>
+</tbody>
+</table>
+<p>"Real seeds" is the mean share of seed slots that held a real seed during the 20 probe iterations (smallest and largest over the methods that ran), with a scorer that started untrained: a low value is the padding of frames in which few points passed the candidate rule yet, not a defect.</p>
+<p>How to read the last column (the classes of the
+<a href="../../advanced_guides/measured_combinations/#measured-classes">measured page</a>): the <code>graspness-*</code>,
+<code>objectness-*</code>, <code>product-*</code> and <code>scored-*</code> options are <strong>most</strong> at the levels <em>composes</em> and
+<em>runs</em>: they run under the three methods of the graspness family (GSNet, EconomicGrasp, FineGrasp)
+and nowhere else. They predict objectness,
+and the view stage of GraspNet-baseline and Scale-Balanced-Grasp predicts it too, so the contract
+rule "one owner per score" refuses the pair with a message that names both stages. The <code>dense-*</code>
+options predict nothing and are <strong>universal</strong> at <em>composes</em> and <em>runs</em>: each ran under all five
+methods (<em>learns</em> and <em>predicts</em> are not checked yet: the records are of the first judge).</p>
+<p>Every cell of this table has a record: the 15 new scoring presets ran under each of the three methods
+of the graspness family, the seven <code>dense-*</code> presets under all five methods, and the 32 refusals are
+the contract rule above. The CPU swap matrix (<code>tests/unit/test_swap_matrix.py</code>) also builds, trains
+one step and predicts with <code>ScoredSeeds</code> and <code>SampledSeeds</code> under every detector type. To measure
+the options again, for example on another dataset:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>tools.probe_grid<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>mine<span class="w"> </span>--only<span class="w"> </span><span class="s1">'stage/*/proposal/*'</span>
+python<span class="w"> </span>-m<span class="w"> </span>tools.probe_grid<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--name<span class="w"> </span>mine<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>tools.make_combination_docs
+</code></pre></div>
+<h2 id="4-how-to-use-each-option">4. How to use each option<a class="headerlink" href="#4-how-to-use-each-option" title="Permanent link">&para;</a></h2>
+<h3 id="one-command">One command<a class="headerlink" href="#one-command" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">proposal</span><span class="o">=</span>graspness-sfps<span class="w"> </span>-o<span class="w"> </span>my.yaml
+grasppanda<span class="w"> </span>probe<span class="w"> </span>my.yaml<span class="w">            </span><span class="c1"># 20 iterations on 8 real frames, then predict</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>my.yaml
+</code></pre></div>
+<p>Real output of the first command (tail):</p>
+<div class="highlight"><pre><span></span><code>proposal  ScoredSeeds           preset `graspness-sfps`
+view      TemplateViewStage     base config
+assigner  NearestLabelAssigner  base config
+grouper   CylinderGroup         base config
+head      SWADHead              base config
+
+what compose did
+  • proposal: preset `graspness-sfps` (ScoredSeeds). Graspable points, then semantics-guided
+    furthest point sampling (S-FPS of SASA, AAAI 2022) with graspness as the weight: spread the
+    seeds, prefer graspable points.
+
+contracts
+  ✓ backbone · proposal
+  ✓ proposal · view
+  ...
+config check
+  ✓ valid  (hash 1a8cdb6139be)
+</code></pre></div>
+<p>An option universal at <em>runs</em>, under a method whose encoder sub-samples; <code>compose</code> wraps the encoder in
+<code>FeaturePropagation</code> by itself:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">proposal</span><span class="o">=</span>dense-ffps<span class="w"> </span>-o<span class="w"> </span>gnb_ffps.yaml
+grasppanda<span class="w"> </span>probe<span class="w"> </span>gnb_ffps.yaml<span class="w"> </span>--iters<span class="w"> </span><span class="m">6</span><span class="w"> </span>--frames<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>  model       GraspNetBaseline · 1,158,060 parameters
+  trained     6 of 6 iterations · 2.01 s per iteration (median, without data; data 0.20 s), measured on this machine now
+  seeds       real: min 1.00, mean 1.00 of the seed slots per iteration
+              supervised: 0.49 → 0.49, min 0.47
+  predicted   2 frame(s) · 282, 35 grasps
+
+✓ runs: trained 6 iterations on 4 frames of the dataset and predicted on 2 frame(s), with finite losses and real seeds in every iteration.
+</code></pre></div>
+<h3 id="as-a-yaml-fragment">As a YAML fragment<a class="headerlink" href="#as-a-yaml-fragment" title="Permanent link">&para;</a></h3>
+<p>Any sampler inside either proposal; this is everything a config needs:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proposal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ScoredSeeds</span>
+<span class="w">    </span><span class="nt">num_seeds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="w">    </span><span class="nt">select_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graspness_and_objectness</span><span class="w">   </span><span class="c1"># graspness | objectness | product</span>
+<span class="w">    </span><span class="nt">graspness_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="w">    </span><span class="nt">objectness_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">    </span><span class="nt">top_fraction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">                    </span><span class="c1"># e.g. 0.1: a rank cut instead of the thresholds</span>
+<span class="w">    </span><span class="nt">too_few</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pad</span><span class="w">                          </span><span class="c1"># best_rest: fill with the best other points</span>
+<span class="w">    </span><span class="nt">sampler</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ScoreWeightedFPS</span>
+<span class="w">      </span><span class="nt">gamma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">proposal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SampledSeeds</span>
+<span class="w">    </span><span class="nt">num_seeds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
+<span class="w">    </span><span class="nt">sampler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">FeatureFPS</span><span class="p p-Indicator">,</span><span class="nt"> metric</span><span class="p">:</span><span class="w"> </span><span class="nv">concat</span><span class="p p-Indicator">,</span><span class="nt"> coord_weight</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p><code>ScoredSeeds</code> reads point-wise graspness labels: the config needs the <code>graspness</code> section of the
+training dataset (the presets carry it; <code>grasppanda prepare graspnet1b --graspness --camera
+&lt;camera&gt; --config &lt;config&gt;</code> builds the labels once). <code>SampledSeeds</code> needs no label of its own.</p>
+<h3 id="the-settings-that-matter">The settings that matter<a class="headerlink" href="#the-settings-that-matter" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Choose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>select_by</code></td>
+<td><code>graspness_and_objectness</code> is GSNet's rule. <code>graspness</code> drops the objectness test (objectness is still trained). <code>objectness</code> makes every predicted object point a candidate: foreground sampling with a learned mask. <code>product</code> cuts <code>P(object) × graspness</code>, MultiGraspNet's rule (<a href="https://arxiv.org/abs/2602.06504">arXiv 2602.06504</a>, RA-L 2026): a soft version of the first.</td>
+</tr>
+<tr>
+<td><code>graspness_threshold</code></td>
+<td>belongs to the label definition: 0.1 for graspness normalised to [0, 1] per frame (GSNet) or per instance (FineGrasp). Change the label, change the threshold.</td>
+</tr>
+<tr>
+<td><code>top_fraction</code></td>
+<td>a rank cut: the best share of each frame's points, whatever their values. <a href="https://arxiv.org/abs/2410.23004">DexGraspNet 2.0</a> selects "object points that rank top 1%" in graspness before FPS to 1024 points. With 15 000 points per frame the share must be at least 0.07 to leave 1024 candidates; the preset uses 0.1.</td>
+</tr>
+<tr>
+<td><code>too_few</code></td>
+<td><code>pad</code> (GSNet): a frame without candidates has no real seed and trains the proposal only, which happens in the first iterations of every run. <code>best_rest</code>: such a frame gets the best-scored other points as real seeds.</td>
+</tr>
+<tr>
+<td><code>sampler.gamma</code> (<code>ScoreWeightedFPS</code>)</td>
+<td>0 is FPS started at the best point, 1 is SASA's reference, large values approach top-k. <code>distance: squared</code> is the released kernel, <code>euclidean</code> the paper's formula; <code>squared</code> with γ equals <code>euclidean</code> with γ/2.</td>
+</tr>
+<tr>
+<td><code>sampler.metric</code>, <code>sampler.coord_weight</code> (<code>FeatureFPS</code>, <code>FusionFPS</code>)</td>
+<td><code>concat</code> is the squared L2 distance of <code>[xyz, features]</code> as in the released 3DSSD code; <code>sum</code> is <code>coord_weight·|Δxyz| + |Δfeatures|</code>, Eq. 1 of the paper. With 512 feature channels and <code>coord_weight: 1</code> the coordinates (metres) hardly count; raise it or set <code>normalize: true</code> when the seeds cluster.</td>
+</tr>
+<tr>
+<td><code>sampler.voxel_size</code> (<code>VoxelGridSampler</code>), <code>sampler.min_distance</code> (<code>ScoreNMS</code>)</td>
+<td>they decide how many real seeds a scene yields. Read <code>metric/real_seeds</code> from the probe and adapt.</td>
+</tr>
+<tr>
+<td><code>sampler.seed</code> (<code>RandomSampler</code>, <code>FPS</code> with <code>start: random</code>)</td>
+<td>an integer makes two evaluations pick the same seeds.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pretrained-weights">Pretrained weights<a class="headerlink" href="#pretrained-weights" title="Permanent link">&para;</a></h3>
+<p>There are none to load for a new option and none are needed: a sampler has no parameters. A
+checkpoint of GSNet, EconomicGrasp or FineGrasp loads strictly into a model whose proposal is
+<code>ScoredSeeds</code> (the scorer is the same <code>score</code> layer), so a sampler can be swapped <strong>at test time</strong>
+on a trained model; that is a different experiment from training with the sampler (GSNet's own
+sampling ablation retrains per sampler), and the config should say which one it is.</p>
+<h3 id="list-what-is-installed">List what is installed<a class="headerlink" href="#list-what-is-installed" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>components<span class="w"> </span>--slot<span class="w"> </span>samplers
+grasppanda<span class="w"> </span>components<span class="w"> </span>ScoredSeeds
+</code></pre></div>
+<h2 id="5-pitfalls-met-while-building-this">5. Pitfalls met while building this<a class="headerlink" href="#5-pitfalls-met-while-building-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>fpsample</code> 1.0.2, bucket methods, do not begin at <code>start_idx</code>.</strong> Measured here on 5000 random
+  points, 256 picks: <code>vanilla</code> returns exactly the indices of <code>grasppanda.ops.furthest_point_sample</code>;
+  <code>bucket</code> (QuickFPS) is repeatable and spreads as well (smallest spacing 0.138 against 0.140) but
+  returns another seed set and does not contain the start point; the <code>npdu</code> methods assume points in
+  scan order and gave a smallest spacing of 0.007 on a shuffled cloud, worse than random sampling
+  (0.017). Use <code>method: vanilla</code> when the seed set must equal the reference.</li>
+<li><strong>CPU bridges are not faster here.</strong> 20 000 → 1024 points took 6 to 12 ms with <code>fpsample</code>
+  (<code>bucket</code>, h = 3 to 9) and 10 ms with the kernel GraspPanda already ships; the bridges are for
+  CPU-only inference and for people who want the same kernel as another code base.</li>
+<li><strong><code>torch_cluster.fps</code> takes a ratio, not a count,</strong> and starts at a random point by default. The
+  bridge converts the count, trims the result and sets <code>random_start: false</code>; with that it returned
+  exactly the reference indices in the unit test.</li>
+<li><strong>Three distances are called F-FPS.</strong> The 3DSSD paper adds L2 distances with a weight λ, its
+  released code takes the squared L2 distance of the concatenation without λ, and SASA's code adds
+  <code>cdist(xyz) + γ·cdist(features)</code>. <code>metric</code> and <code>coord_weight</code> name the convention; the unit test
+  compares both with a brute-force distance matrix.</li>
+<li><strong>S-FPS: paper and kernel differ by a factor of two in γ.</strong> The released kernel multiplies the
+  <em>squared</em> distance by <code>score^γ</code>; <code>distance</code> names the convention and the test pins the relation.</li>
+<li><strong>3DSSD's fusion sampling returns 2 M points.</strong> A proposal has a fixed seed count, so <code>FusionFPS</code>
+  splits the count between the two kinds (<code>feature_fraction</code>); that is a deviation, stated in the
+  docstring.</li>
+<li><strong>A score above 1 must not be clamped.</strong> A first version clamped graspness to [0, 1] before the
+  sampler; the predicted graspness is a regression output and is not bounded by 1, every value above
+  1 then tied, and top-k fell back to "the first k points" (caught by the unit test). The selecting
+  score is now only kept non-negative.</li>
+<li><strong>One value read back per pick makes a sampler slow on a shared GPU.</strong> The first version of the
+  general kernel read every pick as a Python number and measured feature distances by subtracting
+  an <code>N × C</code> array: 1024 picks among 15 000 points with 512 channels took 18 s on the GPU of this
+  machine while other jobs were running, and <code>dense-fusion-fps</code> probed at 14 s per iteration. Picks
+  now stay on the device and a feature distance is one matrix-vector product per pick: 0.19 s for
+  the same call (<code>FusionFPS</code> 0.5 s, <code>ScoreWeightedFPS</code> 0.3 s, <code>ScoreNMS</code> 0.2 s, plain <code>FPS</code> 0.01 s).
+  Feature-space sampling over the whole scene is still the most expensive option here.</li>
+<li><strong>Probes failed with "CUDA error: unspecified launch failure" once</strong>, in two processes at the same
+  second and at unrelated places (a loss, an assigner), while the GPU held 46 of 48 GB for
+  other jobs. The cells were probed again and their records replaced.</li>
+<li><strong>A stage preset used to have to be a stage of a shipped reference model</strong> (a tripwire test).
+  Options beyond the reference models are now listed in that test by component.</li>
+</ul>
+<h2 id="6-not-wrapped">6. Not wrapped<a class="headerlink" href="#6-not-wrapped" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Link opened</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Object-balanced seeds (quota per instance): OBS / FS of Scale-Balanced-Grasp, per-object quantile of DexGraspNet 2.0</td>
+<td><a href="https://github.com/mahaoxiang822/Scale-Balanced-Grasp">Scale-Balanced-Grasp</a> (an MIT licence file, on code derived from graspnet-baseline, whose terms are non-commercial), <a href="https://github.com/PKU-EPIC/DexGraspNet2">DexGraspNet2</a> (no licence file)</td>
+<td>needs an instance mask as a test-time input; <code>Observation.masks</code> is declared but no dataset or transform fills it. The sampler side would be a small wrapper around any sampler here; the missing part is the mask provider with its provenance (ground truth, a segmentation network, a height threshold are different experiments). Follow-up.</td>
+</tr>
+<tr>
+<td>GraNet's cascaded selection (object points, then ten value classes, graph convolutions between levels)</td>
+<td><a href="https://github.com/wang-h-w/GraNet/tree/d9992e1">GraNet@d9992e1</a> (MIT)</td>
+<td>not a proposal alone: it brings its own graph encoder (DGL) and a ten-class label that no dataset here builds. Its last step (top-k) is the <code>graspness-topk</code> option.</td>
+</tr>
+<tr>
+<td>MultiGraspNet's graspness loss (weighted binary cross-entropy on the soft target)</td>
+<td><a href="https://arxiv.org/abs/2602.06504">arXiv 2602.06504</a></td>
+<td>a primitive of the loss slot, not of this one; its candidate rule is the <code>product-fps</code> option. Written from the paper; no code of the work was used.</td>
+</tr>
+<tr>
+<td>RandLA-Net code</td>
+<td><a href="https://github.com/QingyongHu/RandLA-Net">RandLA-Net</a></td>
+<td>CC BY-NC-SA 4.0; random sampling needs no code from it.</td>
+</tr>
+<tr>
+<td>S4G code, Contact-GraspNet code</td>
+<td><a href="https://github.com/yzqin/s4g-release">s4g-release</a> (no licence file), <a href="https://github.com/NVlabs/contact_graspnet">contact_graspnet</a> (NVIDIA licence)</td>
+<td>licences; the two selection rules are small and were written from the papers (<code>ScoreNMS</code>, <code>FPSThenTopK</code>).</td>
+</tr>
+<tr>
+<td>PyTorch3D <code>sample_farthest_points</code>, Open3D <code>farthest_point_down_sample</code>, mmcv <code>PointsSampler</code></td>
+<td><a href="https://github.com/open-mmlab/mmcv/blob/d2111bd/mmcv/ops/points_sampler.py">mmcv@d2111bd</a></td>
+<td>not installed in the shared environment (PyTorch3D and mmcv need a compiled build matching the local PyTorch); they would add a third and fourth spelling of the same D-FPS.</td>
+</tr>
+<tr>
+<td>Voted seeds (VoteGrasp), mask queries (M2T2), image heat-map centres (HGGD, RNGNet, KGN)</td>
+<td>none opened for this page</td>
+<td>they emit virtual seeds or a variable number of regions; the seed-based skeleton needs scene points with <code>parent_index</code> (label matching). Another detector family.</td>
+</tr>
+<tr>
+<td>A sampler option inside the encoders (<code>PointNet2</code>, <code>FurthestPointSubsample</code>), where 3DSSD, IA-SSD and SASA place theirs</td>
+<td>—</td>
+<td>a change to the encoders, not to this slot. The <code>SAMPLERS</code> registry is ready for it.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

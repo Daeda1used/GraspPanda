@@ -1,0 +1,3770 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/grouper/">
+      
+      
+        <link rel="prev" href="../view/">
+      
+      
+        <link rel="next" href="../head_loss/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Grouper: local grouping and region features - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#grouper-what-is-gathered-around-a-seed-and-how-it-becomes-the-feature-the-head-reads" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Grouper: local grouping and region features
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/installation/" class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/config/" class="md-tabs__link">
+          
+  
+  
+  User Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Slots
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../advanced_guides/add_component/" class="md-tabs__link">
+          
+  
+  
+  Advanced Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../model_zoo/" class="md-tabs__link">
+          
+  
+  
+  Model Zoo
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/config/" class="md-tabs__link">
+          
+  
+  
+  API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataset preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training and testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference and visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Try a combination
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slots
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Slots
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks and released weights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and pretrained 3-D encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal and samplers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View: approach direction and orientation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper: local grouping and region features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#crops-among-the-seeds-for-heads-that-read-seed-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Crops among the seeds, for heads that read (seed, channel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crops-of-the-scene-for-heads-that-read-seed-depth-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Crops of the scene, for heads that read (seed, depth, channel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measured-fit-per-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured fit per method
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-localgroup-shape-encoder-and-pooling-as-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 LocalGroup: shape, encoder and pooling as options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-depthlocalgroup-the-same-over-the-scene-one-feature-per-depth-bin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 DepthLocalGroup: the same, over the scene, one feature per depth bin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-roi-pooling-of-3-d-detectors-roigridgroup-roiawaregroup-voxelsetabstractiongroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 RoI pooling of 3-D detectors: RoIGridGroup, RoIAwareGroup, VoxelSetAbstractionGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-pygconvgroup-layers-of-pytorch-geometric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 PyGConvGroup: layers of PyTorch Geometric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-several-radii-multiradiusgroup-linear-max-mean-and-multiscalegroup-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Several radii: MultiRadiusGroup (linear, max, mean) and MultiScaleGroup (attention)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-the-other-familys-crops-depth-embed-and-depth-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 The other family's crops: depth-embed and depth-pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-width-of-the-seed-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The width of the seed features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-pitfalls-met-while-building-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Pitfalls met while building this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grasp heads and losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe: optimizer, schedule, hooks, augmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The options of a method
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The options of a method
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swapping components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Measured combinations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learns like the reference?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Model Zoo
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-task-of-the-slot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The task of the slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-options-at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Options at a glance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Options at a glance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#crops-among-the-seeds-for-heads-that-read-seed-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Crops among the seeds, for heads that read (seed, channel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crops-of-the-scene-for-heads-that-read-seed-depth-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Crops of the scene, for heads that read (seed, depth, channel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measured-fit-per-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured fit per method
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-how-to-use-each-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. How to use each option
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. How to use each option">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-localgroup-shape-encoder-and-pooling-as-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 LocalGroup: shape, encoder and pooling as options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-depthlocalgroup-the-same-over-the-scene-one-feature-per-depth-bin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 DepthLocalGroup: the same, over the scene, one feature per depth bin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-roi-pooling-of-3-d-detectors-roigridgroup-roiawaregroup-voxelsetabstractiongroup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 RoI pooling of 3-D detectors: RoIGridGroup, RoIAwareGroup, VoxelSetAbstractionGroup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-pygconvgroup-layers-of-pytorch-geometric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 PyGConvGroup: layers of PyTorch Geometric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-several-radii-multiradiusgroup-linear-max-mean-and-multiscalegroup-attention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 Several radii: MultiRadiusGroup (linear, max, mean) and MultiScaleGroup (attention)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-the-other-familys-crops-depth-embed-and-depth-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6 The other family's crops: depth-embed and depth-pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-width-of-the-seed-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The width of the seed features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-pitfalls-met-while-building-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Pitfalls met while building this
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-not-wrapped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Not wrapped
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/grouper.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="grouper-what-is-gathered-around-a-seed-and-how-it-becomes-the-feature-the-head-reads">Grouper: what is gathered around a seed and how it becomes the feature the head reads<a class="headerlink" href="#grouper-what-is-gathered-around-a-seed-and-how-it-becomes-the-feature-the-head-reads" title="Permanent link">&para;</a></h1>
+<p><em>Words such as seed, contract, preset, adapter, label set and point painting are explained in the <a href="../#words-used-on-these-pages">slot index</a>.</em></p>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="admonition note">
+<p class="admonition-title">Which of these options fit a method</p>
+<p>Every method has a page that lists the options of each of its slots with what was measured for each (the verdict, the levels <em>composes</em>, <em>runs</em>, <em>learns</em> and <em>predicts</em>, the class, the grasps, the reason of a refusal): GSNet (<a href="../../methods/gsnet/#grouper">grouper</a>); EconomicGrasp (<a href="../../methods/economicgrasp/#grouper">grouper</a>); FineGrasp (<a href="../../methods/finegrasp/#grouper">grouper</a>); GraspNet-baseline (<a href="../../methods/graspnet_baseline/#grouper">grouper</a>); Scale-Balanced-Grasp (<a href="../../methods/scale_balanced_grasp/#grouper">grouper</a>). In a terminal: <code>grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list grouper</code>.</p>
+<p><em>Class: one run, seed 0, 20 iterations, 8 frames of one scene; a class counts verdicts, not accuracy.</em> Where this page names a class or a measured verdict, it is one of the <a href="../../advanced_guides/measured_combinations/#measured-classes">measured classes</a>.</p>
+</div>
+<!-- method-options:end -->
+
+<h2 id="1-the-task-of-the-slot">1. The task of the slot<a class="headerlink" href="#1-the-task-of-the-slot" title="Permanent link">&para;</a></h2>
+<p>A seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
+Scale-Balanced-Grasp) first picks about a thousand <em>seeds</em> on the scene and one approach
+direction per seed. The grouper then looks at the neighbourhood of every seed <strong>in the frame
+of that approach direction</strong> and turns it into one feature vector (or one per insertion
+depth). The head bundle predicts in-plane angle, depth, width and score from that feature
+and nothing else, so the grouper decides what the head can know about the local shape.</p>
+<p>Position in the pipeline: <code>backbone → proposal → view → (assigner) →</code> <strong><code>grouper</code></strong> <code>→ head</code>.</p>
+<p>Every published crop is the same five steps, and almost every alternative replaces exactly
+one of them:</p>
+<table>
+<thead>
+<tr>
+<th>step</th>
+<th>what the ported methods do</th>
+<th>what this page adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>query: which points, in which shape</td>
+<td>a cylinder along the approach axis</td>
+<td>ball, k nearest, oriented box, grid of balls, grid of cells</td>
+</tr>
+<tr>
+<td>geometry of a neighbour</td>
+<td>offset in the crop frame</td>
+<td>the same with its length</td>
+</tr>
+<tr>
+<td>encoder per neighbour</td>
+<td>shared MLP (plus self-attention in EconomicGrasp)</td>
+<td>DGCNN edge feature, PointNeXt InvResMLP, layers of PyTorch Geometric</td>
+</tr>
+<tr>
+<td>pooling</td>
+<td>maximum</td>
+<td>mean, attentive pooling, vector attention, all with a padding mask</td>
+</tr>
+<tr>
+<td>fusion, residual</td>
+<td>attention over radii (FineGrasp), linear + gate (Scale-Balanced-Grasp)</td>
+<td>linear / max / mean over radii (<code>MultiRadiusGroup</code>), projected seed residual</td>
+</tr>
+</tbody>
+</table>
+<p>No AP is claimed for any option on this page. Each was built, trained for 20 iterations on
+8 real frames and asked to predict (<code>grasppanda probe</code>); that shows it is usable, not that it
+is good.</p>
+<h2 id="2-input-and-output">2. Input and output<a class="headerlink" href="#2-input-and-output" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Grouper</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="n">support</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">"seeds"</span><span class="p">,</span> <span class="s2">"scene"</span><span class="p">]]</span>   <span class="c1"># which points are grouped</span>
+    <span class="n">out_axes</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>            <span class="c1"># ("seed", "channel") or ("seed", "depth", "channel")</span>
+    <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span>                              <span class="c1"># width of the returned feature</span>
+    <span class="n">uses_seed_features</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>               <span class="c1"># forward takes the seed features as 4th argument</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">support</span><span class="p">:</span> <span class="n">PointFeatures</span><span class="p">,</span> <span class="n">centres</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">rotation</span><span class="p">:</span> <span class="n">Tensor</span>
+                <span class="p">[,</span> <span class="n">seed_feats</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GroupFeatures</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>support</code></td>
+<td><code>PointFeatures</code>: points <code>(N, 3)</code> in metres, camera frame, with batch offsets, and features <code>(N, C)</code>. With <code>support = "seeds"</code> these are the <code>M</code> seeds of the batch with the encoder's features (<code>C = in_channels</code>, the width of the scene encoder, injected by the detector). With <code>support = "scene"</code> it is the whole scene cloud (20 000 points per frame in the shipped recipes): with features under a dense encoder, with <strong>zero feature channels</strong> under a sub-sampling encoder.</td>
+</tr>
+<tr>
+<td><code>centres</code></td>
+<td><code>(M, 3)</code> crop centre per seed, metres, camera frame. At inference the seed itself; in training the centre the assigner chose (the matched label point for some methods), so a crop may contain no point at all.</td>
+</tr>
+<tr>
+<td><code>rotation</code></td>
+<td><code>(M, 3, 3)</code> crop frame per seed. <strong>Column 0 is the approach axis</strong>; the head counts in-plane angles about it from column 1. In training the frame comes from the labels and may be a reflection: a grouper must not assume a right-handed frame. A neighbour <code>p</code> sits at <code>Rᵀ (p − c)</code> in the crop frame.</td>
+</tr>
+<tr>
+<td><code>seed_feats</code></td>
+<td><code>(M, C)</code> features of the seeds; passed only when the grouper sets <code>uses_seed_features</code>.</td>
+</tr>
+<tr>
+<td>returns</td>
+<td><code>GroupFeatures(feats, axes)</code>: <code>(M, out_channels)</code> with axes <code>("seed", "channel")</code>, or <code>(M, D, out_channels)</code> with <code>("seed", "depth", "channel")</code>, one row per seed in the order given.</td>
+</tr>
+</tbody>
+</table>
+<p>All seeds of a batch are flattened: <code>M = batch × seeds per frame</code>, every frame has the same
+number of seeds, and a crop never sees points of another frame.</p>
+<p>What the neighbours require, and what the config checker does with the contract attributes
+(<code>stage_contract_problems</code> in <code>grasppanda/models/detectors/seed_based.py</code>):</p>
+<ul>
+<li><strong><code>out_axes</code> must equal the head's <code>in_axes</code>.</strong> <code>SWADHead</code> (GSNet) and <code>EconomicHead</code>
+  (EconomicGrasp, FineGrasp) read <code>("seed", "channel")</code>; <code>OperationHead</code> (GraspNet-baseline,
+  Scale-Balanced-Grasp) reads <code>("seed", "depth", "channel")</code>. An axis is never added or
+  squeezed implicitly; the two adapters of section 4.6 do it explicitly.</li>
+<li><strong>The depth axis has one entry per depth bin of the head</strong>: the length of the grouper's
+  <code>hmax</code> list, or its <code>num_depth</code>, must equal <code>head.num_depth</code>.</li>
+<li><strong><code>out_channels</code></strong> is handed to the head as its <code>in_channels</code>; nothing to configure.</li>
+<li><strong>The width of the seed features</strong> (new, see section 5): a grouper that <em>adds</em> the seed
+  features to its crops states the width it needs (<code>required_seed_channels</code>), and the check
+  compares it with what the encoder returns.</li>
+<li><code>support</code> must be <code>seeds</code> or <code>scene</code>. A scene-support grouper works under both kinds of
+  encoder; whether it reads scene features is its own option.</li>
+</ul>
+<p>Conventions of the queries (<code>grasppanda.ops.ball_query</code>, <code>box_query</code>, <code>cylinder_query</code>,
+<code>knn</code>): the first <code>nsample</code> hits in index order; missing slots repeat the first hit; a query
+without any hit returns point 0 of its frame. A maximum does not notice the copies; a mean or
+an attention does, which is why the groupers below mask them.</p>
+<h2 id="3-options-at-a-glance">3. Options at a glance<a class="headerlink" href="#3-options-at-a-glance" title="Permanent link">&para;</a></h2>
+<p>"Name" is what you write after <code>--set grouper=</code>; "class" is what you write as <code>type:</code>.
+Route: <strong>own</strong> = written here on <code>grasppanda.ops</code> from the paper (a few lines per part),
+<strong>A</strong> = adapted source, <strong>L</strong> = bridge to a library. All weights are random init: no released
+checkpoint contains any of these crops for grasping. Venues are those of the arXiv record or
+the proceedings page, opened on 2026-10-13.</p>
+<h3 id="crops-among-the-seeds-for-heads-that-read-seed-channel">Crops among the seeds, for heads that read <code>(seed, channel)</code><a class="headerlink" href="#crops-among-the-seeds-for-heads-that-read-seed-channel" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>class</th>
+<th>what it is</th>
+<th>paper (first author, venue, year)</th>
+<th>code and licence</th>
+<th>extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CylinderGroup</code></td>
+<td><code>CylinderGroup</code></td>
+<td>GSNet's crop: cylinder, shared MLP, max</td>
+<td>GSNet</td>
+<td>ported method</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>CylinderInteractionGroup</code></td>
+<td><code>CylinderInteractionGroup</code></td>
+<td>the same with self-attention among the neighbours</td>
+<td>EconomicGrasp</td>
+<td>ported method</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>multi-scale</code></td>
+<td><code>MultiScaleGroup</code></td>
+<td>four radii, attention over the scales</td>
+<td>FineGrasp</td>
+<td>ported method</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>multi-scale-linear</code></td>
+<td><code>MultiRadiusGroup</code></td>
+<td>four radii of GSNet's cylinder, concatenated, one linear layer (<code>fusion: linear</code>; also <code>max</code>, <code>mean</code>)</td>
+<td>multi-scale grouping of PointNet++ (Qi, NeurIPS 2017)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>ball</code></td>
+<td><code>LocalGroup</code></td>
+<td>ball around the seed, shared MLP, max</td>
+<td>PointNet++ (Qi, NeurIPS 2017)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>knn</code></td>
+<td><code>LocalGroup</code></td>
+<td>the 16 nearest seeds, whatever their distance</td>
+<td>DGCNN (Wang, ACM TOG 2019)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>box</code></td>
+<td><code>LocalGroup</code></td>
+<td>gripper-aligned box, canonical frame, cyclic padding (RoI point pooling)</td>
+<td>PointRCNN (Shi, CVPR 2019)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>cylinder-edgeconv</code></td>
+<td><code>LocalGroup</code></td>
+<td>cylinder; neighbour encoded from <code>[offset, f_j − f_i, f_i]</code> (offset variant)</td>
+<td>DGCNN (Wang, ACM TOG 2019)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>cylinder-attentive</code></td>
+<td><code>LocalGroup</code></td>
+<td>cylinder; offset with its length; attentive pooling</td>
+<td>RandLA-Net (Hu, CVPR 2020 oral)</td>
+<td>own (the official code is CC BY-NC-SA and was not used)</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>cylinder-vector-attention</code></td>
+<td><code>LocalGroup</code></td>
+<td>cylinder; pooled by vector attention, the seed as query</td>
+<td>Point Transformer (Zhao, ICCV 2021)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>cylinder-invres</code></td>
+<td><code>LocalGroup</code></td>
+<td>cylinder; max, then inverted residual MLP with the seed as identity</td>
+<td>PointNeXt (Qian, NeurIPS 2022)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>roi-grid</code></td>
+<td><code>RoIGridGroup</code></td>
+<td>3×3×3 grid points in the box, each pooling a small ball; flattened in order</td>
+<td>PV-RCNN (Shi, CVPR 2020)</td>
+<td><strong>A</strong>: OpenPCDet@233f849, Apache-2.0</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>roi-aware</code></td>
+<td><code>RoIAwareGroup</code></td>
+<td>4×4×4 cells of the box: max feature and mean position per cell, empty cells zero</td>
+<td>Part-A² (Shi, TPAMI 2020)</td>
+<td><strong>A</strong>: OpenPCDet@233f849, Apache-2.0</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>voxel-set-abstraction</code></td>
+<td><code>VoxelSetAbstractionGroup</code></td>
+<td><strong>scene</strong> points in balls of 3 and 6 cm, fused with the seed feature</td>
+<td>PV-RCNN (Shi, CVPR 2020)</td>
+<td><strong>A</strong>: OpenPCDet@233f849, Apache-2.0</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>pyg-pointnet-conv</code></td>
+<td><code>PyGConvGroup</code></td>
+<td><code>PointNetConv</code> on the crop graph</td>
+<td>PyTorch Geometric (Fey, ICLR 2019 RLGM workshop)</td>
+<td><strong>L</strong>: <code>torch_geometric</code>, MIT</td>
+<td><code>torch_geometric</code></td>
+</tr>
+<tr>
+<td><code>pyg-point-transformer-conv</code></td>
+<td><code>PyGConvGroup</code></td>
+<td><code>PointTransformerConv</code></td>
+<td>Point Transformer (Zhao, ICCV 2021)</td>
+<td><strong>L</strong>: <code>torch_geometric</code>, MIT</td>
+<td><code>torch_geometric</code></td>
+</tr>
+<tr>
+<td><code>pyg-edge-conv</code></td>
+<td><code>PyGConvGroup</code></td>
+<td><code>EdgeConv</code></td>
+<td>DGCNN (Wang, ACM TOG 2019)</td>
+<td><strong>L</strong>: <code>torch_geometric</code>, MIT</td>
+<td><code>torch_geometric</code></td>
+</tr>
+<tr>
+<td><code>pyg-gatv2-conv</code></td>
+<td><code>PyGConvGroup</code></td>
+<td><code>GATv2Conv</code>, offset as edge attribute</td>
+<td>GATv2 (Brody, ICLR 2022)</td>
+<td><strong>L</strong>: <code>torch_geometric</code>, MIT</td>
+<td><code>torch_geometric</code></td>
+</tr>
+<tr>
+<td><code>pyg-transformer-conv</code></td>
+<td><code>PyGConvGroup</code></td>
+<td><code>TransformerConv</code>, offset as edge attribute</td>
+<td>UniMP (Shi, IJCAI 2021)</td>
+<td><strong>L</strong>: <code>torch_geometric</code>, MIT</td>
+<td><code>torch_geometric</code></td>
+</tr>
+<tr>
+<td><code>depth-pool</code></td>
+<td><code>DepthPoolGroup</code></td>
+<td>adapter: any depth-sliced scene crop, max over the depth bins</td>
+<td>– (axis adapter)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+</tbody>
+</table>
+<h3 id="crops-of-the-scene-for-heads-that-read-seed-depth-channel">Crops of the scene, for heads that read <code>(seed, depth, channel)</code><a class="headerlink" href="#crops-of-the-scene-for-heads-that-read-seed-depth-channel" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>class</th>
+<th>what it is</th>
+<th>paper</th>
+<th>code and licence</th>
+<th>extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DepthCylinderGroup</code></td>
+<td><code>DepthCylinderGroup</code></td>
+<td>the baseline's crop: one cylinder of scene points per depth bin</td>
+<td>GraspNet-baseline</td>
+<td>ported method</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-multi-scale</code></td>
+<td><code>DepthCylinderGroup</code></td>
+<td>four radii, linear fusion, gated seed residual</td>
+<td>Scale-Balanced-Grasp</td>
+<td>ported method</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-projection</code></td>
+<td><code>DepthCylinderProjectionGroup</code></td>
+<td>the baseline's cylinder with a gated residual of the <em>projected</em> seed feature: any encoder width (section 5)</td>
+<td>GraspNet-baseline crop, Scale-Balanced-Grasp residual</td>
+<td>own (subclass of the ported crop)</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-ball</code></td>
+<td><code>DepthLocalGroup</code></td>
+<td>one ball of 64 scene points, pooled once per depth bin</td>
+<td>PointNet++ (Qi, NeurIPS 2017)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-box</code></td>
+<td><code>DepthLocalGroup</code></td>
+<td>gripper-aligned box, cyclic padding, projected seed residual</td>
+<td>PointRCNN (Shi, CVPR 2019)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-knn</code></td>
+<td><code>DepthLocalGroup</code></td>
+<td>the 64 nearest scene points, sliced per depth bin</td>
+<td>DGCNN (Wang, ACM TOG 2019)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-attentive</code></td>
+<td><code>DepthLocalGroup</code></td>
+<td>cylinder, attentive pooling, projected seed residual</td>
+<td>RandLA-Net (Hu, CVPR 2020 oral)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>depth-embed</code></td>
+<td><code>DepthEmbedGroup</code></td>
+<td>adapter: any <code>(seed, channel)</code> crop, repeated per depth bin with a learned embedding</td>
+<td>– (axis adapter)</td>
+<td>own</td>
+<td>–</td>
+</tr>
+</tbody>
+</table>
+<h3 id="measured-fit-per-method">Measured fit per method<a class="headerlink" href="#measured-fit-per-method" title="Permanent link">&para;</a></h3>
+<p>From the measured records
+(<a href="../../advanced_guides/measured_combinations/">measured combinations</a>, cells
+<code>stage/&lt;method&gt;/grouper/&lt;name&gt;</code>), probe runs of 2026-10-13: composed with
+<code>grasppanda compose &lt;method config&gt; --set grouper=&lt;name&gt;</code> and probed with
+<code>grasppanda probe &lt;file&gt; --iters 20 --frames 8</code> on GraspNet-1Billion (RealSense).
+<code>runs</code> = trained 20 iterations with finite losses and predicted grasps; <code>refused</code> = the
+config check refuses the combination and says why (for a grouper: its axes do not fit the
+head; take the option of the other table, or wrap it, section 4.6).
+Every option was probed under all five methods.</p>
+<!-- FIT TABLE -->
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>GSNet</th>
+<th>EconomicGrasp</th>
+<th>FineGrasp</th>
+<th>GraspNet-baseline</th>
+<th>Scale-Balanced-Grasp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CylinderGroup</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>CylinderInteractionGroup</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>multi-scale</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>multi-scale-linear</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>ball</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>knn</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>box</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>cylinder-edgeconv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>cylinder-attentive</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>cylinder-vector-attention</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>cylinder-invres</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>roi-grid</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>roi-aware</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>voxel-set-abstraction</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>pyg-pointnet-conv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>pyg-point-transformer-conv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>pyg-edge-conv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>pyg-gatv2-conv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>pyg-transformer-conv</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>depth-pool</code></td>
+<td>runs</td>
+<td>runs</td>
+<td>runs</td>
+<td>refused</td>
+<td>refused</td>
+</tr>
+<tr>
+<td><code>DepthCylinderGroup</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-multi-scale</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-projection</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-ball</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-box</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-knn</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-cylinder-attentive</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+<tr>
+<td><code>depth-embed</code></td>
+<td>refused</td>
+<td>refused</td>
+<td>refused</td>
+<td>runs</td>
+<td>runs</td>
+</tr>
+</tbody>
+</table>
+<!-- /FIT TABLE -->
+
+<p>Universal or method-specific: every <code>(seed, channel)</code> option fits GSNet, EconomicGrasp and
+FineGrasp, because their heads read the same axes and the crop is the only thing that
+changes; every <code>(seed, depth, channel)</code> option fits GraspNet-baseline and
+Scale-Balanced-Grasp for the same reason. Through <code>depth-embed</code> and <code>depth-pool</code> each crop
+reaches the other family as well. <code>voxel-set-abstraction</code>, <code>depth-*</code> and <code>depth-pool</code> gather
+from the scene cloud and therefore do not depend on how densely the proposal places seeds.</p>
+<h2 id="4-how-to-use-each-option">4. How to use each option<a class="headerlink" href="#4-how-to-use-each-option" title="Permanent link">&para;</a></h2>
+<p>One command composes a child config of a method with the grouper replaced, checks it, and
+says what it did; one more probes it on real frames:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>roi-grid<span class="w"> </span>-o<span class="w"> </span>my.yaml
+grasppanda<span class="w"> </span>probe<span class="w"> </span>my.yaml<span class="w"> </span>--iters<span class="w"> </span><span class="m">20</span><span class="w"> </span>--frames<span class="w"> </span><span class="m">8</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>my.yaml
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>slot      component             from
+────────  ────────────────────  ─────────────────
+backbone  SparseUNet14          base config
+proposal  GraspnessFPS          base config
+view      TemplateViewStage     base config
+assigner  NearestLabelAssigner  base config
+grouper   RoIGridGroup          preset `roi-grid`
+head      SWADHead              base config
+
+contracts
+  ✓ backbone · proposal
+  ✓ backbone · grouper
+  ...
+  ✓ grouper · head
+
+config check
+  ✓ valid  (hash d99e1d7a282f)
+</code></pre></div>
+<p>An option of the grouper is changed on the same command line
+(<code>--opts model.grouper.nsample=32</code>) or in the file. Every preset is a file under
+<code>grasppanda/presets/grouper/</code> whose header says what must be re-tuned. There are no
+pretrained weights to load for any grouper. To start the other stages from a checkpoint of
+the method with its own grouper, the options are <code>runtime.load_from=&lt;file&gt;</code> with
+<code>runtime.allow_weight_mismatch=true</code> (the keys that did not match are printed); this was not
+run for this page.</p>
+<h3 id="41-localgroup-shape-encoder-and-pooling-as-options">4.1 <code>LocalGroup</code>: shape, encoder and pooling as options<a class="headerlink" href="#41-localgroup-shape-encoder-and-pooling-as-options" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LocalGroup</span>
+<span class="w">    </span><span class="nt">shape</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cylinder</span><span class="w">          </span><span class="c1"># ball | knn | box | cylinder</span>
+<span class="w">    </span><span class="nt">radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">             </span><span class="c1"># ball / cylinder radius, half side of the box section (m)</span>
+<span class="w">    </span><span class="nt">hmin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.02</span><span class="w">              </span><span class="c1"># box and cylinder: near and far end along the approach axis (m)</span>
+<span class="w">    </span><span class="nt">hmax</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">    </span><span class="nt">nsample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span><span class="w">              </span><span class="c1"># neighbours per crop (k of knn)</span>
+<span class="w">    </span><span class="nt">padding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">first</span><span class="w">           </span><span class="c1"># first: repeat the first member, masked | cyclic: repeat in turn</span>
+<span class="w">    </span><span class="nt">geometry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">offset</span><span class="w">         </span><span class="c1"># offset | offset+distance</span>
+<span class="w">    </span><span class="nt">encoder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mlp</span><span class="w">             </span><span class="c1"># mlp | edge | invres</span>
+<span class="w">    </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max</span><span class="w">                </span><span class="c1"># max | mean | attentive | vector_attention</span>
+<span class="w">    </span><span class="nt">mlp_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="c1"># the last width goes to the head</span>
+</code></pre></div>
+<p>All 48 combinations of shape × encoder × pool are legal and unit-tested. How to choose:</p>
+<ul>
+<li><code>shape</code>: <code>cylinder</code> is what every grasp method uses (long along the approach axis).
+  <code>ball</code> has no preferred axis. <code>box</code> is the cylinder with a square section, the shape of
+  detection RoIs. <code>knn</code> has no radius: the reach follows the seed density, which helps on
+  sparse regions and hurts when the 16 nearest seeds are all on the table.</li>
+<li><code>encoder</code>: <code>edge</code> tells the MLP how a neighbour differs from the seed (DOGraspNet reports
+  this offset-driven aggregation for grasping; its code is non-commercial and was not
+  used). <code>invres</code> adds capacity after the pooling and a residual path from the seed.</li>
+<li><code>pool</code>: <code>max</code> is robust to padding. <code>mean</code>, <code>attentive</code> and <code>vector_attention</code> use the
+  padding mask. <code>vector_attention</code> is the only pooling that reads the seed's own feature.</li>
+<li>The crop gathers among the <strong>seeds</strong> (1024 per frame): sizes and <code>nsample</code> belong to the
+  seed density of the proposal as much as to the objects.</li>
+</ul>
+<h3 id="42-depthlocalgroup-the-same-over-the-scene-one-feature-per-depth-bin">4.2 <code>DepthLocalGroup</code>: the same, over the scene, one feature per depth bin<a class="headerlink" href="#42-depthlocalgroup-the-same-over-the-scene-one-feature-per-depth-bin" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DepthLocalGroup</span>
+<span class="w">    </span><span class="nt">shape</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ball</span><span class="w">                        </span><span class="c1"># ball | knn | box | cylinder</span>
+<span class="w">    </span><span class="nt">radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+<span class="w">    </span><span class="nt">hmin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.02</span>
+<span class="w">    </span><span class="nt">hmax</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.02</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.03</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.04</span><span class="p p-Indicator">]</span><span class="w">     </span><span class="c1"># one far end per depth bin of the head</span>
+<span class="w">    </span><span class="nt">nsample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">    </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max</span><span class="w">                          </span><span class="c1"># max | mean | attentive</span>
+<span class="w">    </span><span class="nt">mlp_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">128</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">seed_residual</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">none</span><span class="w">                </span><span class="c1"># none | projected (adds W·f of the seed feature)</span>
+</code></pre></div>
+<p>The crop is gathered once, to the farthest reach, and bin <code>d</code> pools the members with
+<code>hmin &lt; x &lt; hmax[d]</code>. This differs from <code>DepthCylinderGroup</code>, which queries <code>nsample</code> points
+per depth: here the near bins hold fewer members than <code>nsample</code>. <code>seed_residual: projected</code>
+works with any encoder width; the gated residual of Scale-Balanced-Grasp does not (section 5).</p>
+<h3 id="43-roi-pooling-of-3-d-detectors-roigridgroup-roiawaregroup-voxelsetabstractiongroup">4.3 RoI pooling of 3-D detectors: <code>RoIGridGroup</code>, <code>RoIAwareGroup</code>, <code>VoxelSetAbstractionGroup</code><a class="headerlink" href="#43-roi-pooling-of-3-d-detectors-roigridgroup-roiawaregroup-voxelsetabstractiongroup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>roi-grid
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>roi-aware
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>voxel-set-abstraction
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RoIGridGroup</span>
+<span class="w">    </span><span class="nt">radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w">          </span><span class="c1"># the box: 2 * radius across the approach axis,</span>
+<span class="w">    </span><span class="nt">hmin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.02</span><span class="w">           </span><span class="c1"># hmin .. hmax along it</span>
+<span class="w">    </span><span class="nt">hmax</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">    </span><span class="nt">grid_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">          </span><span class="c1"># 27 grid points</span>
+<span class="w">    </span><span class="nt">pool_radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.03</span><span class="w">     </span><span class="c1"># ball around every grid point; &gt;= box side / grid_size</span>
+<span class="w">    </span><span class="nt">nsample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">    </span><span class="nt">mlp_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">64</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">fc_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>The region of a detection RoI is a box with a yaw angle; here it is the box of a seed in its
+approach frame. Unlike a max over the crop, both RoI poolings keep <em>where</em> in the box a
+feature was found. <code>roi-aware</code> leaves empty cells at zero, so with 1024 seeds per frame most
+of its 64 cells are empty: try <code>grid_size: 2</code> or <code>3</code>. <code>voxel-set-abstraction</code> is the one
+option that reads the scene and returns <code>(seed, channel)</code>; <code>scene_features: true</code> adds the
+dense features of the scene points and needs a dense encoder (otherwise the grouper stops
+with a message that says so).</p>
+<h3 id="44-pygconvgroup-layers-of-pytorch-geometric">4.4 <code>PyGConvGroup</code>: layers of PyTorch Geometric<a class="headerlink" href="#44-pygconvgroup-layers-of-pytorch-geometric" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[torch_geometric]"</span><span class="w">        </span><span class="c1"># torch_geometric, a pure Python wheel</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>pyg-gatv2-conv<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span><span class="s1">'model.grouper.conv_args={heads: 8}'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PyGConvGroup</span>
+<span class="w">    </span><span class="nt">conv</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PointTransformerConv</span><span class="w">   </span><span class="c1"># PointNetConv | PointTransformerConv | EdgeConv | GATv2Conv | TransformerConv</span>
+<span class="w">    </span><span class="nt">conv_args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w">                </span><span class="c1"># further keyword arguments of the layer</span>
+<span class="w">    </span><span class="nt">shape</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cylinder</span><span class="w">              </span><span class="c1"># the same shapes as LocalGroup</span>
+<span class="w">    </span><span class="nt">radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+<span class="w">    </span><span class="nt">hmin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.02</span>
+<span class="w">    </span><span class="nt">hmax</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">    </span><span class="nt">nsample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">    </span><span class="nt">out_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+</code></pre></div>
+<p>The crop is handed to the layer as a bipartite graph in the crop frame: every member is a
+source node at its offset <code>Rᵀ (p − c) / radius</code>, the seed is the target node at the origin.
+Nothing is padded: a crop with five members has five edges. The five layers above are the
+ones that were run; adding another needs three lines in <code>PYG_CONVS</code>
+(<code>grasppanda/models/groupers/pyg.py</code>).</p>
+<h3 id="45-several-radii-multiradiusgroup-linear-max-mean-and-multiscalegroup-attention">4.5 Several radii: <code>MultiRadiusGroup</code> (linear, max, mean) and <code>MultiScaleGroup</code> (attention)<a class="headerlink" href="#45-several-radii-multiradiusgroup-linear-max-mean-and-multiscalegroup-attention" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>multi-scale-linear
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MultiRadiusGroup</span>
+<span class="w">    </span><span class="nt">radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.07</span><span class="w">                       </span><span class="c1"># largest crop</span>
+<span class="w">    </span><span class="nt">radius_scales</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.25</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.75</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">fusion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linear</span><span class="w">                     </span><span class="c1"># linear | max | mean</span>
+<span class="w">    </span><span class="nt">branch</span><span class="p">:</span><span class="w">                            </span><span class="c1"># one copy per radius; its radius is set above</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CylinderGroup</span>
+<span class="w">      </span><span class="nt">nsample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">      </span><span class="nt">mlp_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p><code>branch</code> is any seeds-support grouper with a <code>radius</code>, <code>LocalGroup</code> and <code>PyGConvGroup</code>
+included. <code>MultiScaleGroup</code> (preset <code>multi-scale</code>) is the same with FineGrasp's attention
+over the scales.</p>
+<h3 id="46-the-other-familys-crops-depth-embed-and-depth-pool">4.6 The other family's crops: <code>depth-embed</code> and <code>depth-pool</code><a class="headerlink" href="#46-the-other-familys-crops-depth-embed-and-depth-pool" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># a (seed, channel) crop under GraspNet-baseline or Scale-Balanced-Grasp</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>depth-embed
+<span class="c1"># a depth-sliced scene crop under GSNet, EconomicGrasp or FineGrasp</span>
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--set<span class="w"> </span><span class="nv">grouper</span><span class="o">=</span>depth-pool
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grouper</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DepthEmbedGroup</span>
+<span class="w">    </span><span class="nt">num_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">                 </span><span class="c1"># = model.head.num_depth</span>
+<span class="w">    </span><span class="nt">grouper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RoIGridGroup</span><span class="p p-Indicator">}</span><span class="w">   </span><span class="c1"># any seeds-support (seed, channel) grouper</span>
+</code></pre></div>
+<p><code>depth-embed</code> computes the crop once and tells the depth bins apart only by a learned
+embedding, which is weaker than a crop per depth; <code>depth-pool</code> throws the depth resolution
+away. They exist so that a swap is possible, not because a paper proposes them.</p>
+<h2 id="5-the-width-of-the-seed-features">5. The width of the seed features<a class="headerlink" href="#5-the-width-of-the-seed-features" title="Permanent link">&para;</a></h2>
+<p>Scale-Balanced-Grasp's crop adds <code>sigmoid(W f) · f</code> of the seed feature <code>f</code> to its
+256-channel crop features, so the encoder had to return 256 channels. An encoder with an
+<code>out_channels</code> option was fitted by <code>compose</code>; one without (LitePT, PTv3 and its pretrained
+variants, PointNeXt, PointNet2Dense) passed the config check and failed when the model was
+built. Now:</p>
+<ul>
+<li><code>DepthCylinderGroup.required_seed_channels(options)</code> states the width, and the config
+  check compares it with the width the encoder declares for its options
+  (<code>Backbone.output_channels</code>; an encoder whose width is known only once built, such as
+  Uni3D without <code>out_channels</code>, is built once for the check, without released weights). <code>grasppanda compose ... --set backbone=PointNeXt
+  --no-adapter</code> under Scale-Balanced-Grasp now ends with:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>✗ backbone · grouper: DepthCylinderGroup as configured adds the seed features to its
+  256-channel crop features, but PointNeXt returns 32-channel features. Use
+  `type: DepthCylinderProjectionGroup` for the grouper (the same crop with a linear layer
+  in front of the residual; `grasppanda compose` does that), or give the encoder 256
+  output channels where it has that option, or end the grouper's `mlp_channels` on 32, or
+  set `seed_residual: none`.
+</code></pre></div>
+<ul>
+<li><code>DepthCylinderProjectionGroup</code> is the same crop with a linear layer
+  <code>in_channels → out_channels</code> in front of the gate. Without <code>--no-adapter</code>, compose puts it
+  in place of <code>DepthCylinderGroup</code>, with the options of the crop it replaces, and says so:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>grouper   DepthCylinderProjectionGroup         base config, projected
+...
+• grouper: DepthCylinderProjectionGroup in place of DepthCylinderGroup. DepthCylinderGroup as
+  configured adds the seed features to its 256-channel crop features, but FurthestPointSubsample
+  returns 32-channel features. DepthCylinderProjectionGroup is the same crop with a linear layer
+  in front of its seed residual; it changes the model (the base method has none). `--no-adapter`
+  leaves the pair refused.
+</code></pre></div>
+<p>The reference model has no such layer, so the composed model is a variant of
+  Scale-Balanced-Grasp, not the paper's.</p>
+<ul>
+<li>The fix is a class of its own, not an option of <code>DepthCylinderGroup</code>, on purpose: the
+  config hash of a shipped config covers the constructor defaults of its components, so a
+  new option on a ported class would change the hash of every config that uses it (and
+  orphan their measured records and checkpoints). The same holds for <code>MultiRadiusGroup</code>
+  beside <code>MultiScaleGroup</code>.</li>
+</ul>
+<p>The same holds for every encoder preset without a 256-channel output, including those
+that start from released weights (the check learns the width from the architecture, so its
+verdict does not depend on which weight files are on the machine). The encoder
+cells under Scale-Balanced-Grasp that used to fail at build were probed again; in each,
+compose put <code>DepthCylinderProjectionGroup</code> in place of <code>DepthCylinderGroup</code>:</p>
+<!-- WIDTH TABLE -->
+<table>
+<thead>
+<tr>
+<th>cell</th>
+<th>before</th>
+<th>now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/LitePT@litept-structured3d</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/LitePT@litept</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3@ptv3-encoder</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3@ptv3-ppt</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3@ptv3-scannet200</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3@ptv3</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata-small</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3Sonata@ptv3-sonata</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PTv3Utonia</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase-xl</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointMetaBase@pointmetabase</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-b</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-l</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointNeXt@pointnext-xl</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointNeXt@pointnext</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointVector@pointvector-xl</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+<tr>
+<td><code>encoder/Scale-Balanced-Grasp/PointVector@pointvector</code></td>
+<td>fails at build</td>
+<td>runs in <code>FurthestPointSubsample</code>, projected grouper</td>
+</tr>
+</tbody>
+</table>
+<!-- /WIDTH TABLE -->
+
+<h2 id="6-pitfalls-met-while-building-this">6. Pitfalls met while building this<a class="headerlink" href="#6-pitfalls-met-while-building-this" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Padding and non-max pooling.</strong> The queries repeat the first hit in empty slots. With a
+  mean or an attention those copies would outvote the real members; <code>LocalGroup</code>,
+  <code>DepthLocalGroup</code> and <code>VoxelSetAbstractionGroup</code> mask them, and <code>PyGConvGroup</code> does not
+  create them. If you write a pooling of your own, use the mask <code>crop_members</code> returns.</li>
+<li><strong>Empty crops in training.</strong> The crop centre comes from the assigner and need not be a
+  seed, so a seed-support box or cylinder may be empty. The queries then return point 0 of
+  the frame; here its first slot counts as the only member, so no pooling reduces an empty
+  set (a soft-max over nothing is NaN).</li>
+<li><strong>Do not add an option to a component that shipped configs use.</strong> The first version of
+  this work added <code>fusion</code> to <code>MultiScaleGroup</code> and <code>seed_projection</code> to
+  <code>DepthCylinderGroup</code>; 130 measured cells stopped matching what compose writes, because
+  the config hash had changed. New behaviour goes into a new class or a subclass.</li>
+<li><strong>A bridge passes the config check without its library.</strong> The check compares contracts and
+  does not build; <code>PyGConvGroup</code> without <code>torch_geometric</code> stops when the model is built,
+  with the <code>pip install</code> line.</li>
+<li><strong>Scale-Balanced-Grasp needs its width histogram to be probed on real frames</strong>
+  (<code>data.train.dataset.scale_statistic</code>); without it <code>grasppanda probe</code> falls back to a
+  synthetic scene and reports <code>wired</code>. <code>tools/probe_grid.py</code> takes
+  <code>--scale-statistic-sha</code> for that.</li>
+<li><strong><code>knn</code> over the scene is short-sighted.</strong> With 20 000 points the 64 nearest lie within
+  about a centimetre, so the far depth bins of <code>depth-knn</code> see the same members as the near
+  ones. Raise <code>nsample</code> or prefer a radius.</li>
+<li><strong>Memory.</strong> A scene-support crop holds <code>seeds × nsample × width</code> activations per MLP layer
+  (and per depth for <code>DepthCylinderGroup</code>); two probes side by side on a shared GPU can run
+  out of memory where one alone runs.</li>
+</ul>
+<h2 id="7-not-wrapped">7. Not wrapped<a class="headerlink" href="#7-not-wrapped" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>candidate</th>
+<th>link opened</th>
+<th>why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DOGraspNet's offset crop (code)</td>
+<td><a href="https://github.com/huamo555/DOGraspNet/blob/a619808a802492c7f5a3b9468815cab508818eca/LICENSE">huamo555/DOGraspNet <code>LICENSE</code></a></td>
+<td>graspnet-baseline non-commercial licence. The idea (feature offsets to the seed) is <code>encoder: edge</code>, written here.</td>
+</tr>
+<tr>
+<td>RandLA-Net official code</td>
+<td><a href="https://github.com/QingyongHu/RandLA-Net/blob/master/LICENSE">QingyongHu/RandLA-Net <code>LICENSE</code></a></td>
+<td>CC BY-NC-SA 4.0 and TensorFlow. The pooling is five lines and was written here.</td>
+</tr>
+<tr>
+<td>CUDA extensions of OpenPCDet / MMDetection3D (<code>roiaware_pool3d</code>, <code>roipoint_pool3d</code>, stacked ball query, voxel query)</td>
+<td><a href="https://github.com/open-mmlab/OpenPCDet/tree/233f849829b6ac19afb8af8837a0246890908755">OpenPCDet@233f849</a></td>
+<td>compiled extensions that are not installed here and rotate about one axis only. The pooling rules were adapted onto <code>grasppanda.ops</code>; <code>mmcv</code> was not made a dependency.</td>
+</tr>
+<tr>
+<td>Voxel RoI pooling (Voxel R-CNN) and the multi-stride voxel sources of PV-RCNN's set abstraction</td>
+<td>same repository, <code>pcdet/ops/pointnet2/pointnet2_stack/voxel_query_utils.py</code></td>
+<td>they read intermediate levels of a sparse encoder; the slot contract hands the grouper the final features only.</td>
+</tr>
+<tr>
+<td>Closing-region crops (<a href="https://github.com/atenpas/gpd">GPD</a>, BSD-2-Clause; <a href="https://github.com/lianghongzhuo/PointNetGPD">PointNetGPD</a>, MIT; the refine stage of <a href="https://github.com/zhaobinglei/REGNet_for_3D_Grasping">REGNet</a>, MIT)</td>
+<td>the three repositories and their licence files</td>
+<td>the licences would allow it, the contract does not: these crops need the complete grasp pose (in-plane angle, depth, width), and the grouper runs before the head, when only the approach axis is known. They belong to a re-scoring stage after the head, which the skeleton does not have.</td>
+</tr>
+<tr>
+<td>Region patches of the image-to-region family (<a href="https://github.com/THU-VCLab/RegionNormalizedGrasp">RegionNormalizedGrasp</a>)</td>
+<td>the repository page (no licence file found on <code>master</code> or <code>main</code>)</td>
+<td>no licence file; and <code>model.grouper</code> is a slot of the seed-based family, whose seeds are points, not image patches.</td>
+</tr>
+<tr>
+<td>KPConv (<a href="https://github.com/HuguesTHOMAS/KPConv-PyTorch">HuguesTHOMAS/KPConv-PyTorch</a>, MIT), PosPool, point-pair features, Set-Transformer pooling as crop encoders</td>
+<td>the KPConv repository and its licence file only</td>
+<td>not reached in this wave; each would be one more <code>encoder</code> or <code>pool</code> value of <code>LocalGroup</code>. <code>PPFConv</code> of PyTorch Geometric needs normals, which the seeds do not carry.</td>
+</tr>
+<tr>
+<td>Cylindrical coordinate embedding of "A Cross-view Fusion Framework for Robust 6-DoF Grasp Pose Estimation"</td>
+<td><a href="https://arxiv.org/abs/2606.06878">arXiv 2606.06878</a></td>
+<td>no code was looked for beyond the arXiv record; nothing to wrap in this wave.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
