@@ -528,6 +528,50 @@
     return (data.level_states || {})[code] || code;
   }
 
+  /* What a record shows at a level: {state, label}. `state` is "yes", "no", "refused"
+   * (compose refused it, so it reached no level), "unstable" (an unstable probe that did
+   * not reach the level) or "undecided" (the label says why). */
+  function recordTile(data, cell, level) {
+    if (cell.verdict === "refused") {
+      return { state: "refused", label: "refused by compose" + (cell.kind ? " (" + cell.kind + ")" : ""), contract: false };
+    }
+    var said = levelState(data, cell, level);
+    if (said === "yes") return { state: "yes", label: "yes", contract: false };
+    if (cell.verdict === "runs-unstable" && (said === "no" || said === "unstable, not repeated")) {
+      return { state: "unstable", label: said === "no" ? "no: unstable, and so was its repeat" : said, contract: false };
+    }
+    if (said === "no") return { state: "no", label: "no", contract: false };
+    return { state: "undecided", label: said || "not checked", contract: false };
+  }
+
+  /* The tile of a cell of the grid at a level: {state, label, contract}. `found` are the
+   * records of the cell; `checked` is the answer of the contract check for the single swap
+   * (contract()), used only where no record exists, and then marked `contract: true` with
+   * the states "accepted" or "check-refused", which no record ever gets. Records that
+   * disagree at the level give "mixed"; nothing at all gives "none". */
+  function levelTile(data, found, level, checked) {
+    if (found && found.length) {
+      var tiles = found.map(function (cell) {
+        return recordTile(data, cell, level);
+      });
+      var same = tiles.every(function (tile) {
+        return tile.state === tiles[0].state;
+      });
+      return same ? tiles[0] : { state: "mixed", label: "its records disagree", contract: false };
+    }
+    if (checked) {
+      return checked.ok
+        ? { state: "accepted", label: "accepted by compose, not probed", contract: true }
+        : { state: "check-refused", label: "refused by compose, not probed", contract: true };
+    }
+    return { state: "none", label: "no answer on this page", contract: false };
+  }
+
+  /* A count with comma digit groups, as the page prints its numbers: 1,262. */
+  function thousands(value) {
+    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
   /* The levels a record reached, as one line: "composes ✓ · runs ✓ · learns ? · ...". */
   function levelsText(data, cell) {
     if (!cell || !cell.levels) return "";
@@ -632,6 +676,9 @@
     classAt: classAt,
     classColumn: classColumn,
     levelState: levelState,
+    levelTile: levelTile,
+    recordTile: recordTile,
+    thousands: thousands,
     classesOf: classesOf,
     classText: classText,
     levelsText: levelsText,

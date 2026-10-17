@@ -132,6 +132,15 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
 - The README opens with a recording of the explorer in use, light and dark
   (`resources/explorer-{light,dark}.webp`), made by `tools/record_explorer_demo.py` from the
   built documentation site.
+- The explorer redesigned as a product interface: a header with the verdict mix of the
+  records and its caveats behind an information button; Build as a configuration column
+  (method tiles, the pipeline as slot rows, a searchable picker per slot, a bottom sheet on
+  a phone) beside a result card (status, changes, the four levels, numbers, the fall of
+  every loss term, alerts, the commands in a terminal, folded details); Compare as a slot
+  sidebar and a matrix of tiles at the chosen level with tooltips and a cell menu; Run with
+  numbered steps, drop zones and a result card. One SVG icon set, colour tokens with dark
+  variants, keyboard support throughout; `grasppanda explore` gets an app bar and a dark
+  mode. The answer of the contract check stays an outline, apart from measured verdicts.
 
 ### Measured records
 

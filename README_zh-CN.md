@@ -24,7 +24,7 @@
 
 <a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
-  <img src="resources/explorer-light.webp" alt="组合浏览器：把另一篇论文的场景编码器换进 GSNet，实测结论是能跑；换上不匹配的检测头会被拒绝，并给出冲突和改法；HGGD 换上 DINOv2 图像编码器；分组槽位的矩阵显示每个选项在哪个方法下能用" width="820">
+  <img src="resources/explorer-light.webp" alt="组合浏览器：把 GSNet 的场景编码器换成另一篇论文的 PTv3，实测记录显示能跑，并给出四个层级和各项数字；换上不匹配的分组模块会被拒绝，并给出 compose 打印的冲突；HGGD 换上 DINOv2 图像编码器；Compare 视图显示每个分组模块在每个方法下的结果，并从 Runs 层级切换到 Learns" width="820">
 </picture></a>
 
 **抓取检测器的任何一个阶段都能换，换完立刻知道能不能用。** 每个结论都来自实测记录。<br>

@@ -24,7 +24,7 @@
 
 <a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
-  <img src="resources/explorer-light.webp" alt="The combination explorer: a scene encoder from another paper is swapped into GSNet and the measured verdict says it runs; a head that does not fit is refused with the conflict and the fix; HGGD takes a DINOv2 image encoder; the grid of the grouping slot shows which option works under which method" width="820">
+  <img src="resources/explorer-light.webp" alt="The combination explorer: GSNet's scene encoder is swapped for PTv3 from another paper and the measured record says it runs, with its four levels and its numbers; a grouper that does not fit is refused with the conflict compose prints; HGGD takes a DINOv2 image encoder; Compare shows every grouper under every method, switched from the level Runs to Learns" width="820">
 </picture></a>
 
 **Swap any stage of a grasp detector and see at once whether it works.** Every answer is a measured record.<br>

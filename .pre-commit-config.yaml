@@ -19,4 +19,4 @@ repos:
         exclude: ^mkdocs\.yml$
       - id: check-added-large-files
         args: [--maxkb=500]
-        exclude: ^resources/demo\.webp$
+        exclude: ^resources/(demo|explorer-(light|dark))\.webp$

@@ -639,11 +639,11 @@ def _browser_step(method: str, get: Weights) -> list[str]:
                 explore_command(),
             ]
         ),
-        f"The page opens at <http://127.0.0.1:8765/>. In the tab **Run a method** choose "
+        f"The page opens at <http://127.0.0.1:8765/>. In the **Run** tab choose "
         f"{method}: `{get.converted_name}` is chosen for you by its name. Keep the example "
-        "scene (or upload a depth image with its intrinsics), tick the collision filter and "
-        "press *Run*: the page shows the picture, the best ten grasps, the counts through the "
-        "post-processing and the command that does the same in a terminal. The server listens "
+        "scene (or upload a depth image with its intrinsics), leave the collision filter on, "
+        "and press *Run*: the page shows the picture, the best ten grasps, the counts through "
+        "the post-processing and the command that does the same in a terminal. The server listens "
         "on your machine only, reads weights only from that folder and downloads nothing: "
         "[Run in the browser](../user_guides/inference.md#run-in-the-browser).",
         "",
