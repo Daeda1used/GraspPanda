@@ -284,4 +284,40 @@ if (contracts) {
   check(L.contract(withContracts, "GSNet", ["backbone=no-such"]) === null, "no contract answer for an unknown option");
 }
 
+// 13. The tiles of the grid at a level: a record decides, the contract check fills in only
+// where no record exists and says so, and a refusal reaches no level.
+{
+  const withContracts = contracts ? Object.assign({}, data, { contracts }) : data;
+  const recordStates = new Set(["yes", "no", "refused", "unstable", "undecided", "mixed"]);
+  for (const entry of data.lanes) {
+    const grid = L.gridRows(data, entry.key);
+    for (const row of grid.rows) {
+      for (const m of grid.columns) {
+        const found = row.cells[m.name];
+        const sets = [entry.key + "=" + row.option.name];
+        const checked = entry.key === "loss" ? null : L.contract(withContracts, m.name, sets);
+        for (const level of data.levels.map((item) => item.key)) {
+          const tile = L.levelTile(data, found, level, found.length ? null : checked);
+          if (found.length) {
+            check(recordStates.has(tile.state) && !tile.contract, `${m.name}/${row.option.name}: a record shown as ${tile.state}`);
+            if (found.length === 1) {
+              const cell = found[0];
+              const said = L.levelState(data, cell, level);
+              if (cell.verdict === "refused") check(tile.state === "refused", `${cell.id}: refused at ${level}`);
+              else check((tile.state === "yes") === (said === "yes"), `${cell.id}: ${level} ${said} as ${tile.state}`);
+              if (tile.state === "undecided") check(tile.label in data.undecided, `${cell.id}: ${tile.label}`);
+            }
+          } else if (checked) {
+            check(tile.contract && tile.state === (checked.ok ? "accepted" : "check-refused"), "a contract answer is marked as one");
+          } else {
+            check(tile.state === "none" && !tile.contract, "no answer");
+          }
+        }
+      }
+    }
+  }
+  check(L.levelTile(data, [], "runs", null).state === "none", "nothing");
+}
+check(L.thousands(1262) === "1,262" && L.thousands(15353775) === "15,353,775" && L.thousands(12) === "12", "comma groups");
+
 console.log(`ok ${checks} checks`);

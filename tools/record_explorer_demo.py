@@ -1,13 +1,19 @@
 """Record the combination explorer being used, as the animated README picture.
 
-The page of the documentation site is opened in headless Chromium, driven by a drawn mouse
-pointer through four scenes (a scene encoder from another paper runs; a head that does not
-fit is refused with the fix; HGGD takes an image encoder; the grid of one slot under every
-method), and the frames are written as an animated WebP, light or dark::
+The page of the documentation site is opened in headless Chromium and driven by a drawn
+mouse pointer through five scenes: GSNet as shipped; its scene encoder swapped for one from
+another paper (PTv3), which runs, with its levels and numbers; a grouper that does not fit,
+refused with the conflict; HGGD with a DINOv2 image encoder; and the Compare view of the
+grouper slot, switched from the level Runs to Learns. The frames are written as an animated
+WebP, light or dark::
 
     TZ=UTC mkdocs build -d /tmp/site
     python -m tools.record_explorer_demo /tmp/site resources/explorer-light.webp
     python -m tools.record_explorer_demo /tmp/site resources/explorer-dark.webp --dark
+
+The README shows the picture 820 px wide. The page is recorded 744 CSS px wide (at device
+scale 1.5), so its smallest text (11 px) reads at 12 px there; a few rules keep the two columns
+of the desktop layout at that width (the page itself stacks them under 960 px).
 
 It needs Playwright with Chromium (``pip install playwright && playwright install chromium``),
 which is not a dependency of GraspPanda. What the page shows comes from the measured records
@@ -18,21 +24,40 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 import tempfile
 from pathlib import Path
 
-W, H = 1280, 860
+W, H = 744, 600
+SCALE = 1.5
 CSS = """
-.md-header, .md-tabs, .md-sidebar, .md-footer, .md-content__button, .headerlink { display: none !important; }
-.md-main__inner { margin-top: 0 !important; }
-.md-content__inner { margin-top: 0 !important; padding-top: 0 !important; }
-.md-typeset h1 { font-size: 1.6rem !important; margin: 0.6rem 0 0.3rem !important; color: var(--md-default-fg-color) !important; font-weight: 600 !important; }
-#democursor { position: fixed; z-index: 99999; width: 26px; height: 26px; pointer-events: none;
+.md-header, .md-tabs, .md-sidebar, .md-footer, .md-top, .md-content__button, .headerlink { display: none !important; }
+.md-main__inner.md-grid { margin-top: 0 !important; }
+.md-content__inner { margin: 0 16px !important; padding-top: 14px !important; }
+.gx-build { grid-template-columns: 312px minmax(0, 1fr) !important; gap: 20px !important; }
+.gx-side-inner { position: sticky !important; top: 12px !important; }
+.gx-bar { display: none !important; }
+.gpx .gx-mtile { padding: 0 9px !important; }
+.gpx .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) auto !important; }
+.gx-row.is-mod .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) 28px auto !important; }
+.gx-result { padding: 16px 18px 4px !important; }
+html { scrollbar-width: none; }
+::-webkit-scrollbar { display: none; }
+#democursor { position: fixed; z-index: 99999; width: 22px; height: 22px; pointer-events: none;
   transform: translate(-4px, -2px); filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
 #demoripple { position: fixed; z-index: 99998; border-radius: 50%; pointer-events: none;
-  border: 3px solid #2da44e; opacity: 0; }
+  border: 2.5px solid #2da44e; opacity: 0; }
 """
-CURSOR = '<svg viewBox="0 0 24 24" width="26" height="26"><path d="M3 2 L3 19 L8 14.5 L11.5 22 L14.5 20.6 L11 13.3 L18 13 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+CURSOR = (
+    '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 2 L3 19 L8 14.5 L11.5 22 '
+    'L14.5 20.6 L11 13.3 L18 13 Z" fill="#111" stroke="#fff" stroke-width="1.6" '
+    'stroke-linejoin="round"/></svg>'
+)
+
+
+def ease(t: float) -> float:
+    """Ease in and out (a cubic), for the pointer and the scrolling."""
+    return 4 * t * t * t if t < 0.5 else 1 - (-2 * t + 2) ** 3 / 2
 
 
 class Recorder:
@@ -40,13 +65,16 @@ class Recorder:
         self.out = out
         self.frames: list[Path] = []
         self.durations: list[int] = []
-        self.pos = [W * 0.55, H * 0.55]
+        self.pos = [W * 0.6, H * 0.5]
 
     async def shot(self, page, ms: int) -> None:
         path = self.out / f"f{len(self.frames):04d}.png"
         await page.screenshot(path=str(path))
         self.frames.append(path)
         self.durations.append(ms)
+
+    async def hold(self, page, ms: int) -> None:
+        await self.shot(page, ms)
 
     async def place(self, page, x: float, y: float, ripple: float | None = None) -> None:
         await page.evaluate(
@@ -55,40 +83,71 @@ class Recorder:
               const p = document.getElementById('demoripple');
               if (r === null) { p.style.opacity = 0; }
               else { p.style.width = p.style.height = (2 * r) + 'px'; p.style.left = (x - r) + 'px';
-                     p.style.top = (y - r) + 'px'; p.style.opacity = Math.max(0, 1 - r / 26); }
+                     p.style.top = (y - r) + 'px'; p.style.opacity = Math.max(0, 1 - r / 22); }
             }""",
             [x, y, ripple],
         )
 
-    async def click(self, page, key: str, hold: int = 1400, steps: int = 9) -> None:
-        element = page.locator(f'[data-key="{key}"]').first
-        await element.scroll_into_view_if_needed()
-        box = await element.bounding_box()
-        tx, ty = box["x"] + min(box["width"] * 0.5, 60), box["y"] + box["height"] * 0.55
+    async def move(self, page, tx: float, ty: float, steps: int = 12) -> None:
         sx, sy = self.pos
         for i in range(1, steps + 1):
-            t = i / steps
-            e = t * t * (3 - 2 * t)
+            e = ease(i / steps)
             await self.place(page, sx + (tx - sx) * e, sy + (ty - sy) * e)
-            await self.shot(page, 40)
+            await self.shot(page, 33)
         self.pos = [tx, ty]
-        for r in (8, 16):
-            await self.place(page, tx, ty, r)
+
+    async def scroll(self, page, y: float, steps: int = 7) -> None:
+        """Scroll the page to `y`, one frame per step, eased."""
+        start = await page.evaluate("window.scrollY")
+        top = await page.evaluate("document.documentElement.scrollHeight - window.innerHeight")
+        y = max(0, min(y, top))
+        if abs(y - start) < 2:
+            return
+        for i in range(1, steps + 1):
+            await page.evaluate(f"window.scrollTo(0, {start + (y - start) * ease(i / steps)})")
             await self.shot(page, 50)
-        await element.click()
-        await page.wait_for_timeout(350)
-        await self.place(page, tx, ty, 24)
-        await self.shot(page, 60)
+
+    async def reveal(self, page, key: str, at: float | None = None) -> None:
+        """Scroll until the element is in view; `at` puts its top that far below the top."""
+        box = await page.locator(f'[data-key="{key}"]').first.bounding_box()
+        scrolled = await page.evaluate("window.scrollY")
+        if at is not None:
+            await self.scroll(page, scrolled + box["y"] - at)
+        elif box["y"] < 8 or box["y"] + box["height"] > H - 8:
+            await self.scroll(page, scrolled + box["y"] - H / 2)
+
+    async def target(self, page, key: str):
+        await self.reveal(page, key)
+        box = await page.locator(f'[data-key="{key}"]').first.bounding_box()
+        return box["x"] + min(box["width"] * 0.5, 56), box["y"] + box["height"] * 0.55
+
+    async def click(self, page, key: str, hold: int = 1200) -> None:
+        tx, ty = await self.target(page, key)
+        await self.move(page, tx, ty)
+        for r in (6, 12):
+            await self.place(page, tx, ty, r)
+            await self.shot(page, 40)
+        # The pointer of the page, not a scripted click: nothing scrolls on its own.
+        await page.mouse.click(tx, ty)
+        await page.wait_for_timeout(260)
+        await self.place(page, tx, ty, 18)
+        await self.shot(page, 50)
         await self.place(page, tx, ty, None)
         await self.shot(page, hold)
 
-    async def type(self, page, key: str, text: str) -> None:
-        await self.click(page, key, hold=200)
+    async def hover(self, page, key: str, hold: int = 2000) -> None:
+        tx, ty = await self.target(page, key)
+        await self.move(page, tx, ty)
+        await page.mouse.move(tx, ty)
+        await page.wait_for_timeout(200)
+        await self.shot(page, hold)
+
+    async def type(self, page, text: str) -> None:
         for character in text:
             await page.keyboard.type(character)
-            await page.wait_for_timeout(60)
-            await self.shot(page, 110)
-        await self.shot(page, 300)
+            await page.wait_for_timeout(50)
+            await self.shot(page, 100)
+        await self.shot(page, 400)
 
 
 async def record(site: Path, out: Path, scheme: str) -> Recorder:
@@ -97,48 +156,96 @@ async def record(site: Path, out: Path, scheme: str) -> Recorder:
     rec = Recorder(out)
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-        page = await browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
+        page = await browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=SCALE)
         await page.goto(f"file://{site.resolve()}/explorer/index.html#m=GSNet", wait_until="load")
         await page.evaluate(f"document.body.setAttribute('data-md-color-scheme', '{scheme}')")
         await page.add_style_tag(content=CSS)
         await page.evaluate(
             """(svg) => { const c = document.createElement('div'); c.id = 'democursor'; c.innerHTML = svg;
                 document.body.appendChild(c); const r = document.createElement('div'); r.id = 'demoripple';
-                document.body.appendChild(r); }""",
+                document.body.appendChild(r); window.dispatchEvent(new Event('resize')); }""",
             CURSOR,
         )
         await page.wait_for_timeout(900)
         await rec.place(page, *rec.pos)
-        await rec.shot(page, 1300)
-        # 1. a scene encoder from another paper: measured, it runs
-        await rec.click(page, "lane-backbone", hold=700)
-        await rec.type(page, "lane-search", "ptv3")
-        await rec.click(page, "chip-backbone-ptv3", hold=2300)
-        await rec.click(page, "lane-backbone", hold=500)
-        # 2. a head that does not fit: refused before anything is built, with the fix
-        await rec.click(page, "lane-head", hold=600)
-        await rec.click(page, "chip-head-economic", hold=2900)
-        await rec.click(page, "reset", hold=700)
-        # 3. another family: HGGD takes any image encoder
-        await rec.click(page, "method-HGGD", hold=800)
-        await rec.click(page, "lane-image_encoder", hold=700)
-        await rec.type(page, "lane-search", "dino")
-        chips = await page.eval_on_selector_all(
+        await rec.hold(page, 2400)
+        # 1. GSNet's scene encoder swapped for one from another paper: measured, it runs
+        await rec.reveal(page, "lane-backbone", at=96)
+        await rec.hold(page, 300)
+        await rec.click(page, "lane-backbone", hold=600)
+        await rec.type(page, "ptv3")
+        await rec.click(page, "chip-backbone-ptv3", hold=3800)
+        # 2. a grouper that does not fit: refused before anything is built, with the conflict
+        await rec.click(page, "lane-reset-backbone", hold=600)
+        await rec.click(page, "lane-grouper", hold=500)
+        await rec.type(page, "embed")
+        await rec.click(page, "chip-grouper-depth-embed", hold=4600)
+        # 3. another family: HGGD takes an image encoder from DINOv2
+        await rec.scroll(page, 0)
+        await rec.click(page, "method-HGGD", hold=1000)
+        await rec.reveal(page, "lane-image_encoder", at=150)
+        await rec.click(page, "lane-image_encoder", hold=500)
+        await rec.type(page, "dinov2")
+        keys = await page.eval_on_selector_all(
             "[data-key^='chip-image_encoder-']", "els => els.map(e => e.getAttribute('data-key'))"
         )
-        await rec.click(page, next((k for k in chips if "dinov2" in k), chips[1]), hold=2300)
-        # 4. every option of a slot, measured under every method
-        await page.evaluate("window.scrollTo(0, 0)")
+        wanted = "chip-image_encoder-dinov2-small-reg"
+        await rec.click(page, wanted if wanted in keys else keys[min(1, len(keys) - 1)], hold=3800)
+        # 4. Compare: every grouper under every method, at the level Runs, then Learns
+        await rec.scroll(page, 0)
         await rec.click(page, "tab-grid", hold=900)
-        await rec.click(page, "slot-grouper", hold=1100)
-        start = await page.evaluate("window.scrollY")
-        for i in range(1, 13):
-            t = i / 12
-            await page.evaluate(f"window.scrollTo(0, {start + 470 * t * t * (3 - 2 * t)})")
-            await rec.shot(page, 45)
-        await rec.shot(page, 3200)
+        await page.evaluate(
+            "document.querySelector('[data-key=\"slot-grouper\"]')"
+            ".scrollIntoView({inline: 'center', block: 'nearest'})"
+        )
+        await rec.click(page, "slot-grouper", hold=1600)
+        await rec.click(page, "grid-search", hold=200)
+        await rec.type(page, "depth")
+        await rec.reveal(page, "level-learns", at=24)
+        await rec.hold(page, 2000)
+        await rec.click(page, "level-learns", hold=2000)
+        await rec.hover(page, "cell-grouper-depth-cylinder-multi-scale-EconomicGrasp", hold=4200)
         await browser.close()
     return rec
+
+
+def token_colours(site: Path, dark: bool) -> list[tuple[int, int, int]]:
+    """The colours of the explorer's tokens for one theme (the hex values of its stylesheet)."""
+    css = (site / "explorer" / "explorer.css").read_text(encoding="utf-8")
+    start = css.index('[data-md-color-scheme="slate"] .gpx {' if dark else ".gx-standalone {")
+    block = css[start : css.index("}", start)]
+    found = [
+        tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+        for h in re.findall(r"#([0-9a-fA-F]{6})", block)
+    ]
+    found += [(0x2D, 0xA4, 0x4E), (0x11, 0x11, 0x11), (0xFF, 0xFF, 0xFF)]  # the pointer, its ripple
+    return list(dict.fromkeys(found))
+
+
+def shared_palette(frames: list, tokens: list[tuple[int, int, int]], colors: int = 256) -> list:
+    """The frames in one palette, without dithering: the colours of the tokens exactly (a
+    status dot is a few pixels and would lose its hue to a palette of the frames alone), and
+    the rest taken from a sample of the frames.
+
+    Flat colours of the page stay flat and the same from frame to frame, so the lossless
+    encoder stores small differences: the text stays sharp, with none of the smudges a lossy
+    encoder leaves where the pointer passed.
+    """
+    from PIL import Image
+
+    sample = frames[:: max(1, len(frames) // 12)]
+    width, height = sample[0].size
+    mosaic = Image.new("RGB", (width, height * len(sample)))
+    for k, image in enumerate(sample):
+        mosaic.paste(image, (0, height * k))
+    free = colors - len(tokens)
+    entries = mosaic.quantize(colors=free, method=Image.Quantize.MEDIANCUT).getpalette()[: 3 * free]
+    entries += [value for colour in tokens for value in colour]
+    palette = Image.new("P", (1, 1))
+    palette.putpalette(entries + [0] * (768 - len(entries)))
+    return [
+        image.quantize(palette=palette, dither=Image.Dither.NONE).convert("RGB") for image in frames
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -147,26 +254,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("output", type=Path, help="the animated WebP to write")
     parser.add_argument("--dark", action="store_true", help="record the dark theme")
     parser.add_argument(
-        "--width", type=int, default=1000, help="width of the picture (default 1000)"
+        "--width", type=int, default=round(W * SCALE), help="width of the picture (default 1116)"
     )
-    parser.add_argument("--quality", type=int, default=72)
+    parser.add_argument("--colors", type=int, default=256, help="colours of the palette")
+    parser.add_argument("--frames", type=Path, help="also keep the PNG frames in this folder")
     args = parser.parse_args(argv)
     from PIL import Image
 
     with tempfile.TemporaryDirectory() as scratch:
-        rec = asyncio.run(record(args.site, Path(scratch), "slate" if args.dark else "default"))
+        folder = args.frames or Path(scratch)
+        folder.mkdir(parents=True, exist_ok=True)
+        rec = asyncio.run(record(args.site, folder, "slate" if args.dark else "default"))
         frames = []
         for path in rec.frames:
             image = Image.open(path).convert("RGB")
-            height = round(image.height * args.width / image.width)
-            frames.append(image.resize((args.width, height), Image.LANCZOS))
+            if image.width != args.width:
+                height = round(image.height * args.width / image.width)
+                image = image.resize((args.width, height), Image.LANCZOS)
+            frames.append(image)
+        frames = shared_palette(frames, token_colours(args.site, args.dark), args.colors)
         frames[0].save(
             args.output,
             save_all=True,
             append_images=frames[1:],
             duration=rec.durations,
             loop=0,
-            quality=args.quality,
+            lossless=True,
+            quality=100,
             method=6,
             minimize_size=True,
         )

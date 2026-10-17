@@ -24,7 +24,7 @@ The same in a browser: the [combination explorer](../explorer/index.md) answers 
 selection of method and options from the measured records and prints the commands, and
 `grasppanda explore` serves it locally, with every selection checked by the `compose` of
 your installation (nothing is trained). Started with weights
-(`grasppanda explore --weights-dir <dir>`), its tab *Run a method* also runs a ported
+(`grasppanda explore --weights-dir <dir>`), its *Run* tab also runs a ported
 method, or your selection when the weights fit it, on one frame and shows the grasps:
 [Run in the browser](inference.md#run-in-the-browser).
 
@@ -80,7 +80,7 @@ direction-regression     runs     ✓ ✓ ? ?  1024, 1024    not checked  most m
 
 Without a slot it lists every slot of the method; `--json` prints everything, every
 refusal message whole. The same lists are a page per method ([GSNet](../methods/gsnet.md),
-[HGGD](../methods/hggd.md), ...) and the lanes of a method in the
+[HGGD](../methods/hggd.md), ...) and the slot pickers of a method in the
 [explorer](../explorer/index.md), so the three always offer the same options. A config
 composed from a method config is listed as that method, with a note that the options were
 measured on the method config. The shipped method configs name the command above each

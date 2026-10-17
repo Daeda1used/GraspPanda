@@ -243,7 +243,7 @@ for later frames.
 ## Run in the browser
 
 `grasppanda explore` serves the [combination explorer](../explorer/index.md) on your
-machine. Give it weights and its tab **Run a method** runs a ported method in the page,
+machine. Give it weights and its **Run** tab runs a ported method in the page,
 with no code:
 
 ```bash
@@ -307,8 +307,9 @@ What the server allows, and nothing more:
 - One run at a time: a second request is answered with "another run is in progress".
 - A run predicts on one frame. Nothing is trained.
 
-`--device cpu` runs on the CPU. On the [documentation site](../explorer/index.md) the tab is
-greyed, with the command that enables it, since a run needs your weights on your computer.
+`--device cpu` runs on the CPU. On the [documentation site](../explorer/index.md) the tab
+shows the form disabled, with the command that enables it, since a run needs your weights on
+your computer.
 
 ## From Python
 

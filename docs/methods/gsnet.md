@@ -86,7 +86,7 @@ It runs the demo's pipeline on the demo's input, so it returns the demo's 418 gr
 grasppanda explore --weights-dir ~/grasppanda_weights
 ```
 
-The page opens at <http://127.0.0.1:8765/>. In the tab **Run a method** choose GSNet: `gsnet_realsense.pth` is chosen for you by its name. Keep the example scene (or upload a depth image with its intrinsics), tick the collision filter and press *Run*: the page shows the picture, the best ten grasps, the counts through the post-processing and the command that does the same in a terminal. The server listens on your machine only, reads weights only from that folder and downloads nothing: [Run in the browser](../user_guides/inference.md#run-in-the-browser).
+The page opens at <http://127.0.0.1:8765/>. In the **Run** tab choose GSNet: `gsnet_realsense.pth` is chosen for you by its name. Keep the example scene (or upload a depth image with its intrinsics), leave the collision filter on, and press *Run*: the page shows the picture, the best ten grasps, the counts through the post-processing and the command that does the same in a terminal. The server listens on your machine only, reads weights only from that folder and downloads nothing: [Run in the browser](../user_guides/inference.md#run-in-the-browser).
 
 ### 5. A first number on the benchmark {#run-test}
 

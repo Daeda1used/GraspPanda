@@ -44,6 +44,22 @@ STATIC = {
     "explorer.json": "application/json; charset=utf-8",
     "explorer_contracts.json": "application/json; charset=utf-8",
 }
+#: The logo of resources/logo.svg, inline (the page loads nothing from elsewhere).
+_LOGO = (
+    '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">'
+    '<circle class="gx-ear" cx="128" cy="146" r="68" fill="#1f2328"/>'
+    '<circle class="gx-ear" cx="384" cy="146" r="68" fill="#1f2328"/>'
+    '<circle cx="256" cy="290" r="192" fill="#ffffff" stroke="#1f2328" stroke-width="16"/>'
+    '<rect x="234" y="40" width="44" height="176" rx="12" fill="#2da44e"/>'
+    '<rect x="218" y="176" width="76" height="34" rx="10" fill="#1a7f37"/>'
+    '<rect x="124" y="204" width="264" height="46" rx="23" fill="#1f2328"/>'
+    '<g fill="#1f2328"><rect x="140" y="212" width="76" height="150" rx="38" transform="rotate(10 178 228)"/>'
+    '<rect x="296" y="212" width="76" height="150" rx="38" transform="rotate(-10 334 228)"/></g>'
+    '<circle cx="170" cy="314" r="17" fill="#ffffff"/><circle cx="342" cy="314" r="17" fill="#ffffff"/>'
+    '<ellipse cx="256" cy="374" rx="24" ry="16" fill="#1f2328"/>'
+    '<path d="M232 408 q24 22 48 0" fill="none" stroke="#1f2328" stroke-width="10" stroke-linecap="round"/>'
+    "</svg>"
+)
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+@-]{0,120}\.yaml$")
 _LOCK = threading.Lock()
 #: Bytes of the body of a compose or save request.
@@ -68,15 +84,23 @@ def page(view: str = "") -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>GraspPanda explorer (live)</title>
 <link rel="stylesheet" href="explorer.css">
 </head>
 <body class="gx-standalone">
+<header class="gx-appbar">
+<span class="gx-appbar-brand">{_LOGO}GraspPanda</span>
+<span class="gx-appbar-sep" aria-hidden="true"></span>
+<span class="gx-appbar-page">Combination explorer</span>
+<span class="gx-appbar-live" title="Served by this installation on 127.0.0.1">Live</span>
+<a class="gx-appbar-docs" href="{DOCS}">Documentation</a>
+</header>
 <main>
-<h1>GraspPanda explorer <span class="gx-live-tag">live</span></h1>
-<p>Run a ported method on a scene, or swap any stage of a grasp detector. Marks and verdicts
-come from the measured records; the <b>contract check</b> of exactly your selection and every
-run are done now, by this installation. Nothing is trained here.</p>
+<h1 class="gx-sr">GraspPanda explorer, live</h1>
+<p class="gx-sr">Run a ported method on a scene, or swap any stage of a grasp detector. Verdicts
+come from the measured records; the contract check of exactly your selection and every run
+are done now, by this installation. Nothing is trained here.</p>
 <div id="gp-explorer" class="gpx" data-src="explorer.json" data-live="api/" data-docs="{DOCS}"{opens}>
 <noscript><p>The explorer needs JavaScript.</p></noscript>
 </div>
