@@ -1,0 +1,3417 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/scene_encoders_transformer/">
+      
+      
+        <link rel="prev" href="../scene_encoders_sparse/">
+      
+      
+        <link rel="next" href="../image_encoders/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Transformers and sequence models - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#scene-encoders-transformers-and-sequence-models" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Transformers and sequence models
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../methods/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../methods/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Details
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user_guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Details
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+  
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Components
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../scene_encoders/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Scene encoders
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/scene_encoders_transformer.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="scene-encoders-transformers-and-sequence-models">Scene encoders: transformers and sequence models<a class="headerlink" href="#scene-encoders-transformers-and-sequence-models" title="Permanent link">&para;</a></h1>
+<!-- slot-head:begin (generated by tools/make_method_pages.py; do not edit) -->
+<div class="gp-chips"><span class="gp-chip">Seed-based · 5 methods</span><code class="gp-chip">--set backbone=</code><span class="gp-chip">16 options</span></div>
+<!-- slot-head:end -->
+
+<p>These encoders attend over points, voxels, octree nodes or point patches: the Point Transformer
+line (V1 to V3, with Sonata, Concerto and Utonia weights), LitePT, Volt, OctFormer, and the
+point-patch tokens of PointViT, PointMamba and Uni3D. What all scene encoders share is on the
+<a href="../scene_encoders/">overview</a>.</p>
+<h2 id="use-it">Use it<a class="headerlink" href="#use-it" title="Permanent link">&para;</a></h2>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">GraspNet-baseline</label><label for="__tabbed_1_2">GSNet</label><label for="__tabbed_1_3">Scale-Balanced-Grasp</label><label for="__tabbed_1_4">EconomicGrasp</label><label for="__tabbed_1_5">FineGrasp</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">backbone</span><span class="o">=</span>ptv3<span class="w"> </span>-o<span class="w"> </span>graspnet-baseline_ptv3.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span>--list<span class="w"> </span>backbone
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">backbone</span><span class="o">=</span>ptv3<span class="w"> </span>-o<span class="w"> </span>gsnet_ptv3.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span>--list<span class="w"> </span>backbone
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">backbone</span><span class="o">=</span>ptv3<span class="w"> </span>-o<span class="w"> </span>scale-balanced-grasp_ptv3.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e<span class="w"> </span>--list<span class="w"> </span>backbone
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>economicgrasp/economicgrasp_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">backbone</span><span class="o">=</span>ptv3<span class="w"> </span>-o<span class="w"> </span>economicgrasp_ptv3.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>economicgrasp/economicgrasp_sunet14_g1b-realsense_10e<span class="w"> </span>--list<span class="w"> </span>backbone
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>finegrasp/finegrasp_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">backbone</span><span class="o">=</span>ptv3<span class="w"> </span>-o<span class="w"> </span>finegrasp_ptv3.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>finegrasp/finegrasp_sunet14_g1b-realsense_10e<span class="w"> </span>--list<span class="w"> </span>backbone
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The first command writes a checked config; the second lists every option of the slot under that method, with what was measured. Then <code>grasppanda probe &lt;file&gt;</code> tries the config on real frames and <code>grasppanda train &lt;file&gt;</code> trains it (<a href="../../get_started/swap/">Swap a component</a>). Each method page lists the same: <a href="../../methods/graspnet_baseline/#backbone">GraspNet-baseline</a> · <a href="../../methods/gsnet/#backbone">GSNet</a> · <a href="../../methods/scale_balanced_grasp/#backbone">Scale-Balanced-Grasp</a> · <a href="../../methods/economicgrasp/#backbone">EconomicGrasp</a> · <a href="../../methods/finegrasp/#backbone">FineGrasp</a>.</p>
+<!-- method-options:end -->
+
+<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<!-- slot-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<p class="gp-caveat">A probe shows that a combination trains on real frames of GraspNet-1Billion, not how good it is. Accuracy is claimed only for a method trained and evaluated here.</p>
+<div class="gp-options">
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">litept</code></td>
+<td>LitePT-S (official LitePT, Pointcept LitePT-v1) on a 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">litept-structured3d</code></td>
+<td>LitePT-S started from the released Structured3D weights (MIT), on a 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">octformer</code></td>
+<td>OctFormer (ScanNet segmentation layout) on an octree with 5 mm leaves.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-mamba</code></td>
+<td>PointMamba: Mamba blocks over 1024 point-patch tokens in Hilbert order.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-transformer-v1</code></td>
+<td>Point Transformer (V1) U-Net, PointTransformer-Seg26 of Pointcept, as published.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp">1/5 on a par · 4 diverging</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-transformer-v2</code></td>
+<td>Point Transformer V2 (Pointcept PT-v2m2) with grid pooling scaled to a table top.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp">1/5 on a par · 4 diverging</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-vit</code></td>
+<td>Plain transformer over 1024 point-patch tokens (the Point-BERT / Point-MAE encoder).</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/5 on a par · 5 worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3</code></td>
+<td>Point Transformer V3 (encoder + decoder, Pointcept PT-v3m1) on a 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-encoder</code></td>
+<td>Point Transformer V3 without its decoder (encoder only, PT-v3m1), on a 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">2/5</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">2/2 on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-ppt</code></td>
+<td>PTv3 started from the Point Prompt Training weights (ScanNet + S3DIS + Structured3D, MIT).</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under Scale-Balanced-Grasp, FineGrasp">3/5 on a par · 2 diverging</span><br><small>diverging under Scale-Balanced-Grasp, FineGrasp</small></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-scannet200</code></td>
+<td>Point Transformer V3 started from the released ScanNet200 weights (MIT), on a 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under FineGrasp: the swap did not run at level 1">4/4 on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-sonata</code></td>
+<td>The PTv3 variant of Sonata and Concerto (Pointcept PT-v3m2), encoder only, 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp (unstable twice in the short probe)">3/5</span><br><small>not GSNet, EconomicGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1">2/3 on a par · 1 diverging</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-sonata-small</code></td>
+<td>The small Sonata encoder with its released self-supervised weights (CC BY-NC 4.0), 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">2/5</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">2/2 on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-utonia</code></td>
+<td>The PTv3 variant of Utonia (Pointcept PT-v3m3): PTv3Sonata plus rotary position embedding, encoder only, 5 mm grid.</td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp (unstable twice in the short probe)">3/5</span><br><small>not GSNet, EconomicGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under Scale-Balanced-Grasp, FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1">1/3 on a par · 2 diverging</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">uni3d</code></td>
+<td>Uni3D-S: 1024 point-patch tokens through the blocks of timm's EVA-02 small.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">volt</code></td>
+<td>Volt-S: a plain transformer with global attention over 2.5 cm voxel-patch tokens.</td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under Scale-Balanced-Grasp, FineGrasp; diverging under EconomicGrasp">2/5 on a par · 1 diverging · 2 worse</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<details class="note">
+<summary>What the columns say, and who is left out</summary>
+<ul>
+<li><strong>Runs</strong>: out of the methods the option is a swap under, those under which its probe trained on real frames without error. A method that ships the option is named <em>own</em> and not counted; a method still undecided is counted and named. Measured on 20 training iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, one run per cell; nothing was measured on GraspClutter6D or on Kinect frames.</li>
+<li><strong>Trains like shipped</strong>: out of the methods under which the swap ran, those under which every comparable loss term ended within the method's tolerance of the component it ships, with nothing rising; a method left out is named with why. Measured on 250 iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, at a constant learning rate (FineGrasp: its own warm-up), beside the method as shipped trained the same way twice.</li>
+<li><a href="../../evidence/">How we measure</a> defines every word of these columns.</li>
+</ul>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>point-transformer-v1</code>, trains like shipped: diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp.</li>
+<li><code>point-transformer-v2</code>, trains like shipped: diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp.</li>
+<li><code>point-vit</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>ptv3-encoder</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>ptv3-encoder</code>, trains like shipped: not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-scannet200</code>, trains like shipped: not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-sonata</code>, trains like shipped: diverging under FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-sonata-small</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>ptv3-sonata-small</code>, trains like shipped: not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-utonia</code>, trains like shipped: diverging under Scale-Balanced-Grasp, FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1.</li>
+<li><code>uni3d</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>volt</code>, trains like shipped: worse under Scale-Balanced-Grasp, FineGrasp; diverging under EconomicGrasp.</li>
+</ul>
+</details>
+<details class="note">
+<summary>Sources and licences</summary>
+<p><em>Code base</em>: the upstream repository, commit and licence that <code>THIRD_PARTY_NOTICES.md</code> lists for the class's file (code adapted from it, or a module tree that follows it so that its weights load); <em>written here</em>: no third-party code. <em>Extra</em>: the optional install the class needs (<a href="../../get_started/installation/">every extra</a>). <em>Output</em>: where the features live and how many channels the preset returns; compose sets a free <code>out_channels</code> to the width the method's other stages need. Released weights carry licences of their own.</p>
+<div data-search-exclude markdown>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Options</th>
+<th>Work</th>
+<th>Code base</th>
+<th>Extra</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LitePT</code></td>
+<td><code>litept</code>, <code>litept-structured3d</code></td>
+<td>LitePT (Yue et al., CVPR 2026)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td><code>spconv</code></td>
+<td>dense · 72</td>
+</tr>
+<tr>
+<td><code>OctFormer</code></td>
+<td><code>octformer</code></td>
+<td>OctFormer (Wang, ACM TOG / SIGGRAPH 2023)</td>
+<td><a href="https://github.com/octree-nn/octformer">octree-nn/octformer</a> @ <code>c2975ab</code>, MIT</td>
+<td><code>ocnn</code></td>
+<td>dense · width set by compose</td>
+</tr>
+<tr>
+<td><code>PointMamba</code></td>
+<td><code>point-mamba</code></td>
+<td>PointMamba (Liang et al., NeurIPS 2024)</td>
+<td><a href="https://github.com/Pang-Yatian/Point-MAE">Pang-Yatian/Point-MAE</a> @ <code>7445a68</code>, MIT; <a href="https://github.com/LMD0311/PointMamba">LMD0311/PointMamba</a> @ <code>80858e0</code>, Apache-2.0</td>
+<td><code>mamba-ssm</code></td>
+<td>subsampled, 1024 points · width set by compose</td>
+</tr>
+<tr>
+<td><code>PointTransformerV1</code></td>
+<td><code>point-transformer-v1</code></td>
+<td>Point Transformer (Zhao et al., ICCV 2021)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td>—</td>
+<td>dense · width set by compose</td>
+</tr>
+<tr>
+<td><code>PointTransformerV2</code></td>
+<td><code>point-transformer-v2</code></td>
+<td>Point Transformer V2 (Wu et al., NeurIPS 2022)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td>—</td>
+<td>dense · width set by compose</td>
+</tr>
+<tr>
+<td><code>PointViT</code></td>
+<td><code>point-vit</code></td>
+<td>Point-BERT (Yu et al., CVPR 2022) and Point-MAE (Pang et al., ECCV 2022) encoder</td>
+<td><a href="https://github.com/Pang-Yatian/Point-MAE">Pang-Yatian/Point-MAE</a> @ <code>7445a68</code>, MIT</td>
+<td>—</td>
+<td>subsampled, 1024 points · width set by compose</td>
+</tr>
+<tr>
+<td><code>PTv3</code></td>
+<td><code>ptv3</code>, <code>ptv3-encoder</code>, <code>ptv3-ppt</code>, <code>ptv3-scannet200</code></td>
+<td>Point Transformer V3 (Wu et al., CVPR 2024)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td><code>spconv</code></td>
+<td>dense · 64; <code>ptv3-encoder</code>: 992</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td><code>ptv3-sonata</code>, <code>ptv3-sonata-small</code></td>
+<td>Sonata (Wu et al., CVPR 2025), Concerto (Zhang et al., NeurIPS 2025)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td><code>spconv</code></td>
+<td>dense · <code>ptv3-sonata</code> 1232, <code>ptv3-sonata-small</code> 992</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code></td>
+<td><code>ptv3-utonia</code></td>
+<td>Utonia (Zhang et al., ICML 2026)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept/Pointcept</a> @ <code>1342eda</code>, MIT</td>
+<td><code>spconv</code></td>
+<td>dense · 1386</td>
+</tr>
+<tr>
+<td><code>Uni3D</code></td>
+<td><code>uni3d</code></td>
+<td>Uni3D (Zhou et al., ICLR 2024)</td>
+<td><a href="https://github.com/Pang-Yatian/Point-MAE">Pang-Yatian/Point-MAE</a> @ <code>7445a68</code>, MIT; <a href="https://github.com/baaivision/Uni3D">baaivision/Uni3D</a> @ <code>64e03c3</code>, MIT</td>
+<td><code>timm</code></td>
+<td>subsampled, 1024 points · width set by compose</td>
+</tr>
+<tr>
+<td><code>Volt</code></td>
+<td><code>volt</code></td>
+<td>Volt (Yilmaz et al., ECCV 2026, arXiv:2604.19609)</td>
+<td><a href="https://github.com/YilmazKadir/Volt">YilmazKadir/Volt</a> @ <code>8dcd608</code>, MIT</td>
+<td>—</td>
+<td>dense · width set by compose</td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+<details class="note">
+<summary>Released weights that load by name</summary>
+<p>Each file was downloaded and loaded strictly into its class (every tensor of the class from the file, with its shape). Write the name as <code>pretrained:</code> of the encoder; building the model without the file prints the command that fetches it. A file on a hub is fetched at the revision it was loaded from (the last column). No file was evaluated for grasping.</p>
+<div data-search-exclude markdown>
+<table>
+<thead>
+<tr>
+<th><code>pretrained:</code></th>
+<th>Class</th>
+<th>Work</th>
+<th>Trained on</th>
+<th>Licence</th>
+<th>MB</th>
+<th>Strict load with</th>
+<th>File, revision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ptv3-scannet200</code></td>
+<td><code>PTv3</code></td>
+<td>Point Transformer V3 (Wu et al., CVPR 2024)</td>
+<td>supervised ScanNet200 semantic segmentation</td>
+<td>MIT</td>
+<td>554</td>
+<td>defaults</td>
+<td><a href="https://huggingface.co/Pointcept/PointTransformerV3/resolve/5e25cfaf759289b03db1f90f143b3dc5172929d3/scannet200-semseg-pt-v3m1-0-base/model/model_best.pth">hub @ <code>5e25cfa</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>ptv3-s3dis-rpe</code></td>
+<td><code>PTv3</code></td>
+<td>Point Transformer V3 (Wu et al., CVPR 2024)</td>
+<td>supervised S3DIS semantic segmentation, relative position bias</td>
+<td>MIT</td>
+<td>554</td>
+<td><code>enable_rpe: true</code>, <code>enc_patch_size: [128, 128, 128, 128, 128]</code>, <code>dec_patch_size: [128, 128, 128, 128]</code></td>
+<td><a href="https://huggingface.co/Pointcept/PointTransformerV3/resolve/5e25cfaf759289b03db1f90f143b3dc5172929d3/s3dis-semseg-pt-v3m1-0-rpe/model/model_best.pth">hub @ <code>5e25cfa</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>ptv3-nuscenes</code></td>
+<td><code>PTv3</code></td>
+<td>Point Transformer V3 (Wu et al., CVPR 2024)</td>
+<td>supervised nuScenes lidar segmentation (outdoor)</td>
+<td>MIT</td>
+<td>554</td>
+<td><code>in_channels: 4</code></td>
+<td><a href="https://huggingface.co/Pointcept/PointTransformerV3/resolve/5e25cfaf759289b03db1f90f143b3dc5172929d3/nuscenes-semseg-pt-v3m1-0-base/model/model_best.pth">hub @ <code>5e25cfa</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>sonata-small</code></td>
+<td><code>PTv3Sonata</code></td>
+<td>Sonata (Wu et al., CVPR 2025)</td>
+<td>Sonata self-supervised pre-training, small encoder</td>
+<td>CC BY-NC 4.0 (NC)</td>
+<td>154</td>
+<td><code>enc_depths: [2, 2, 2, 6, 2]</code>, <code>enc_channels: [32, 64, 128, 256, 512]</code>, <code>enc_num_head: [2, 4, 8, 16, 32]</code></td>
+<td><a href="https://huggingface.co/facebook/sonata/resolve/df99897472c09f91ba9288da0a034aacffc0b010/sonata_small.pth">hub @ <code>df99897</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>sonata</code></td>
+<td><code>PTv3Sonata</code></td>
+<td>Sonata (Wu et al., CVPR 2025)</td>
+<td>Sonata self-supervised pre-training, base encoder</td>
+<td>CC BY-NC 4.0 (NC)</td>
+<td>434</td>
+<td>defaults</td>
+<td><a href="https://huggingface.co/facebook/sonata/resolve/df99897472c09f91ba9288da0a034aacffc0b010/sonata.pth">hub @ <code>df99897</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>concerto-base-origin</code></td>
+<td><code>PTv3Sonata</code></td>
+<td>Concerto (Zhang et al., NeurIPS 2025)</td>
+<td>Concerto joint 2-D/3-D self-supervised pre-training: the model of the paper</td>
+<td>CC BY-NC 4.0 (NC)</td>
+<td>433</td>
+<td>defaults</td>
+<td><a href="https://huggingface.co/Pointcept/Concerto/resolve/efc130718a564eba0ce4899318f3c20b19d9c752/concerto_base_origin.pth">hub @ <code>efc1307</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>litept-small-structured3d</code></td>
+<td><code>LitePT</code></td>
+<td>LitePT (Yue et al., CVPR 2026)</td>
+<td>supervised Structured3D semantic segmentation (synthetic rooms)</td>
+<td>MIT</td>
+<td>152</td>
+<td>defaults</td>
+<td><a href="https://huggingface.co/prs-eth/LitePT/resolve/a8e76e92efbb2061639f5c683968bc5d248ee002/structured3d-semseg-litept-small-v1m1/model/model_best.pth">hub @ <code>a8e76e9</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>litept-small-nuscenes</code></td>
+<td><code>LitePT</code></td>
+<td>LitePT (Yue et al., CVPR 2026)</td>
+<td>supervised nuScenes lidar segmentation (outdoor)</td>
+<td>MIT</td>
+<td>152</td>
+<td><code>in_channels: 4</code></td>
+<td><a href="https://huggingface.co/prs-eth/LitePT/resolve/a8e76e92efbb2061639f5c683968bc5d248ee002/nuscenes-semseg-litept-small-v1m1/model/model_best.pth">hub @ <code>a8e76e9</code></a><!-- codespell:ignore --></td>
+</tr>
+<tr>
+<td><code>ptv3-ppt-s3dis</code></td>
+<td><code>PTv3</code></td>
+<td>PPT (Wu et al., CVPR 2024) with Point Transformer V3</td>
+<td>Point Prompt Training: supervised jointly on ScanNet, S3DIS and Structured3D with one set of normalisation layers per dataset (0 ScanNet, 1 S3DIS, 2 Structured3D)</td>
+<td>MIT</td>
+<td>446</td>
+<td><code>enable_rpe: true</code>, <code>enc_channels: [32, 64, 128, 256, 384]</code>, <code>enc_num_head: [2, 4, 8, 16, 24]</code>, <code>enc_patch_size: [128, 128, 128, 128, 128]</code>, <code>dec_channels: [64, 64, 128, 256]</code>, <code>dec_num_head: [4, 4, 8, 16]</code>, <code>dec_patch_size: [128, 128, 128, 128]</code>, <code>pretrained_condition: 0</code></td>
+<td><a href="https://huggingface.co/Pointcept/PointTransformerV3/resolve/5e25cfaf759289b03db1f90f143b3dc5172929d3/s3dis-semseg-pt-v3m1-1-ppt-extreme/model/model_best.pth">hub @ <code>5e25cfa</code></a><!-- codespell:ignore --></td>
+</tr>
+</tbody>
+</table>
+</div>
+</details>
+<p><a href="../../explorer/#grid=backbone">Compare under every method</a></p>
+<!-- slot-options:end -->
+
+<h2 id="choosing">Choosing<a class="headerlink" href="#choosing" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Serialised voxels:</strong> <code>ptv3</code> and <code>litept</code> run on the 5 mm grid of the sparse encoders and
+  come with released weights (<code>ptv3-scannet200</code>, <code>ptv3-ppt</code>, <code>litept-structured3d</code>; the Sonata
+  weights are non-commercial).</li>
+<li><strong>The unit of length</strong> is a setting of every encoder here: <code>grid_sizes</code> of
+  <code>point-transformer-v2</code>, <code>grid_size × kernel_size</code> (the token edge) of <code>volt</code>, <code>voxel_size</code> of
+  <code>octformer</code>; <code>point-transformer-v1</code> sub-samples by ratio and has none.</li>
+<li><strong>Point-patch tokens</strong> (<code>point-vit</code>, <code>point-mamba</code>, <code>uni3d</code>) were designed for single objects;
+  their tokens become the seeds, and <code>num_group</code> must equal the seeds of the method.</li>
+<li><strong>Attention cost:</strong> <code>point-vit</code> attends globally (quadratic in the tokens), <code>point-mamba</code> is
+  linear but runs on CUDA only.</li>
+<li><strong>The encoders checked against their authors' code</strong> (PTv3, its Sonata and Utonia variants,
+  LitePT) are on <a href="../../model_zoo_backbones/">Encoders checked against their authors' code</a>.</li>
+</ul>
+<h2 id="details">Details<a class="headerlink" href="#details" title="Permanent link">&para;</a></h2>
+<details class="note">
+<summary>The settings that matter</summary>
+<p><strong>Point Transformer V2</strong>: <code>grid_sizes</code> is the cell edge of the four poolings, in metres; the
+class defaults are for rooms, the preset divides the ScanNet values by 4.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PointTransformerV2</span>
+<span class="w">    </span><span class="nt">grid_sizes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.015</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0375</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.09375</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.234375</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># metres</span>
+</code></pre></div>
+<p><strong>Volt</strong>: <code>grid_size × kernel_size</code> is the edge of a token (2.5 cm in the preset); smaller
+tokens resolve finer geometry and cost quadratically more attention. <code>embed_dim / num_heads</code>
+must be 64. The authors state that Volt overfits without their training recipe (strong
+augmentation, distillation, EMA), which is not part of this toolbox.</p>
+<p><strong>OctFormer</strong> (extra <code>ocnn</code>): <code>voxel_size</code> is the edge of an octree leaf; a frame must fit a
+cube of <code>voxel_size * 2**octree_depth</code>; <code>patch_size</code> octree nodes form one attention group.</p>
+<p><strong>PointViT, PointMamba, Uni3D</strong> (extras <code>mamba-ssm</code> for PointMamba, <code>timm</code> for Uni3D):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PointViT</span><span class="w">                 </span><span class="c1"># or PointMamba, or Uni3D</span>
+<span class="w">    </span><span class="nt">num_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span><span class="w">                </span><span class="c1"># tokens per cloud = points with features = seeds</span>
+<span class="w">    </span><span class="nt">group_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span><span class="w">                 </span><span class="c1"># nearest points per token (Uni3D: 64)</span>
+<span class="w">    </span><span class="nt">coord_scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span><span class="w">               </span><span class="c1"># metres -&gt; the unit-sphere scale of the object models</span>
+</code></pre></div>
+<p><strong>PTv3 and LitePT</strong> take the sparse grid (<code>grid_size</code>) and, with <code>pretrained:</code>, a release by
+name (below). <code>ptv3-encoder</code> sets <code>enc_mode: true</code>: no decoder, the encoder stages
+concatenated on every voxel. <code>ptv3-ppt</code> holds one set of normalisation layers per training
+dataset; <code>pretrained_condition</code> picks one. Other files of the same releases (the larger PPT
+model, the later Sonata file, the large Concerto model, the larger LitePT models) have the
+same layout and are expected to load the same way; they were not downloaded, so pass such a
+file as a path.</p>
+</details>
+<details class="note">
+<summary>Released weights for the point-patch encoders and Volt</summary>
+<p>These load through <code>tools/convert_encoder_checkpoint.py</code>, which reads the config you composed
+and writes the keys where the encoder sits:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>tools.convert_encoder_checkpoint<span class="w"> </span>pretrain.pth<span class="w"> </span>point-mae.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config<span class="w"> </span>&lt;composed<span class="w"> </span>config&gt;
+grasppanda<span class="w"> </span>train<span class="w"> </span>&lt;composed<span class="w"> </span>config&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.load_from<span class="o">=</span>point-mae.pth<span class="w"> </span>runtime.allow_weight_mismatch<span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<div data-search-exclude markdown>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>MB</th>
+<th>Fits</th>
+<th>Encoder options</th>
+<th>Trained on</th>
+<th>Licence</th>
+<th>SHA-256, first 16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Point-MAE <a href="https://github.com/Pang-Yatian/Point-MAE/releases/download/main/pretrain.pth"><code>pretrain.pth</code></a></td>
+<td>348</td>
+<td><code>PointViT</code></td>
+<td>defaults</td>
+<td>ShapeNet objects, masked autoencoding</td>
+<td>repository MIT</td>
+<td><code>27ded932bb0a2625</code></td>
+</tr>
+<tr>
+<td>MaskPoint <a href="https://static.hliu.cc/files/projects/maskpoint/checkpoints/pretrain_shapenet.pth"><code>pretrain_shapenet.pth</code></a></td>
+<td>286</td>
+<td><code>PointViT</code></td>
+<td><code>token_dim: 256</code></td>
+<td>ShapeNet objects</td>
+<td>repository BSD-3-Clause</td>
+<td><code>8173353d4117669c</code></td>
+</tr>
+<tr>
+<td>PointMamba <a href="https://github.com/LMD0311/PointMamba/releases/download/ckpts-2/pretrain.pth"><code>pretrain.pth</code></a></td>
+<td>64</td>
+<td><code>PointMamba</code></td>
+<td>defaults</td>
+<td>ShapeNet objects</td>
+<td>repository Apache-2.0</td>
+<td><code>3d1a89683d8b135d</code></td>
+</tr>
+<tr>
+<td>Uni3D <a href="https://huggingface.co/BAAI/Uni3D/resolve/main/modelzoo/uni3d-ti/model.pt"><code>uni3d-ti/model.pt</code></a></td>
+<td>13</td>
+<td><code>Uni3D</code></td>
+<td><code>timm_model: eva02_tiny_patch14_224</code></td>
+<td>object collections with colour, aligned with CLIP</td>
+<td>code MIT; the model card states none</td>
+<td><code>6ff7e821e6997cb8</code></td>
+</tr>
+<tr>
+<td>Uni3D <a href="https://huggingface.co/BAAI/Uni3D/resolve/main/modelzoo/uni3d-s/model.pt"><code>uni3d-s/model.pt</code></a></td>
+<td>46</td>
+<td><code>Uni3D</code></td>
+<td>the preset's</td>
+<td>the same</td>
+<td>the same</td>
+<td><code>9a6342fda2245f00</code></td>
+</tr>
+<tr>
+<td>Volt-S <a href="https://huggingface.co/KadirYilmaz/Volt/resolve/main/Volt_experiments/joint_training_small/scannet/model/model_last.pth"><code>joint_training_small</code></a></td>
+<td>381</td>
+<td><code>Volt</code></td>
+<td><code>in_channels: 6</code>, <code>grid_size: 0.02</code>, or <code>--fresh tokenizer.proj</code> with the preset</td>
+<td>ScanNet, ScanNet200, ScanNet++, ARKitScenes, with distillation</td>
+<td>MIT</td>
+<td><code>2ce43d64b17999fa</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The checksums are those of the files as downloaded on 2026-10-13. All but Volt were trained
+on single objects scaled to the unit sphere: on a metric scene they are an initialisation of
+the transformer, not a feature extractor. With other encoder sizes nothing is written, and
+the tool names the option to change.</p>
+</details>
+<details class="warning">
+<summary>Pitfalls met while building this</summary>
+<ul>
+<li><strong><code>mamba-ssm</code> on PyPI is a source build.</strong> Prebuilt wheels per torch, CUDA and Python are on
+  its <a href="https://github.com/state-spaces/mamba/releases">releases page</a>.</li>
+<li><strong><code>import mamba_ssm</code> compiles a Triton helper</strong> and fails with <code>cannot find -lcuda</code> when the
+  machine has <code>libcuda.so.1</code> but no <code>libcuda.so</code>: point <code>TRITON_LIBCUDA_PATH</code> at a directory
+  with a link of that name.</li>
+<li><strong><code>PointMamba</code> has no CPU path</strong>; on the CPU it says so.</li>
+<li><strong><code>ocnn</code> runs its convolutions on Triton kernels by default</strong>, which did not compile here;
+  <code>OctFormer</code> sets ocnn's pure-PyTorch path (<code>conv_method: block_gemm</code>).</li>
+<li><strong>OctFormer's features depend on the batch</strong>: attention groups are counts of z-ordered nodes
+  of the whole batch, as in the reference.</li>
+<li><strong>The default Concerto files are not the paper's Concerto.</strong> The model card calls them
+  pre-release Utonia models; the paper's model is <code>concerto-base-origin</code>.</li>
+<li><strong>Object checkpoints use other sizes.</strong> MaskPoint's ShapeNet file has the Point-BERT layout
+  (<code>token_dim: 256</code>); its ScanNet file is a 3DETR encoder and does not fit <code>PointViT</code>.</li>
+</ul>
+</details>
+<details class="note">
+<summary>Not wrapped</summary>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Swin3D</td>
+<td>built on MinkowskiEngine plus its own CUDA package, neither a dependency here.</td>
+</tr>
+<tr>
+<td>Superpoint Transformer / EZ-SP</td>
+<td>consumes a superpoint partition computed outside the network.</td>
+</tr>
+<tr>
+<td>Mamba3D, Point Cloud Mamba</td>
+<td>no licence file.</td>
+</tr>
+<tr>
+<td>PointGPT</td>
+<td>its blocks differ from <code>PointViT</code>'s, so its checkpoints need a second block type.</td>
+</tr>
+<tr>
+<td>ReCon, ACT, PCP-MAE, Point-JEPA, Point-BERT's own file</td>
+<td>checkpoints behind links that were not downloaded; nothing is claimed.</td>
+</tr>
+<tr>
+<td>Point-M2AE</td>
+<td>a hierarchical encoder, not the shared single-scale layout.</td>
+</tr>
+<tr>
+<td>Point-MoE, D-DITR, LAM3C weights for PTv3</td>
+<td>a mixture-of-experts block (Point-MoE); AGPL-3.0 (D-DITR) and non-commercial (LAM3C) weights, not downloaded.</td>
+</tr>
+</tbody>
+</table>
+</details>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+        
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../scene_encoders_sparse/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Sparse-voxel networks">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Sparse-voxel networks
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../image_encoders/" class="md-footer__link md-footer__link--next" aria-label="Next: Image encoders">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Image encoders
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

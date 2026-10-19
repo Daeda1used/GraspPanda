@@ -1,0 +1,3627 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/slots/image_encoders/">
+      
+      
+        <link rel="prev" href="../scene_encoders_transformer/">
+      
+      
+        <link rel="next" href="../proposal/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Image encoders - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#image-encoders" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Image encoders
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../methods/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../methods/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#point-painting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point painting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Details
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user_guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#choosing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#point-painting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point painting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Details
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+  
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Components
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/slots/image_encoders.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="image-encoders">Image encoders<a class="headerlink" href="#image-encoders" title="Permanent link">&para;</a></h1>
+<!-- slot-head:begin (generated by tools/make_method_pages.py; do not edit) -->
+<div class="gp-chips"><span class="gp-chip">HGGD only</span><code class="gp-chip">--set image_encoder=</code><span class="gp-chip">38 options</span></div>
+<!-- slot-head:end -->
+
+<p>An image encoder turns the colour image, or colour and depth, into feature maps. HGGD predicts
+its grasp heat-map from them; the seed-based methods can read them only through point painting,
+below.</p>
+<h2 id="use-it">Use it<a class="headerlink" href="#use-it" title="Permanent link">&para;</a></h2>
+<!-- method-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span><span class="nv">image_encoder</span><span class="o">=</span>resnet34<span class="w"> </span>-o<span class="w"> </span>hggd_resnet34.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span>--list<span class="w"> </span>image_encoder
+</code></pre></div>
+<p>HGGD is the one method with this slot. The first command writes a checked config; the second lists every option of the slot under that method, with what was measured. Then <code>grasppanda probe &lt;file&gt;</code> tries the config on real frames and <code>grasppanda train &lt;file&gt;</code> trains it (<a href="../../get_started/swap/">Swap a component</a>). Each method page lists the same: <a href="../../methods/hggd/#image-encoder">HGGD</a>.</p>
+<!-- method-options:end -->
+
+<p>One option of a preset changes on the same line, for example
+<code>--opts model.image_encoder.depth=depth_stem model.image_encoder.frozen=true</code>.</p>
+<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<!-- slot-options:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<p class="gp-caveat">A probe shows that a combination trains on real frames of GraspNet-1Billion, not how good it is. Accuracy is claimed only for a method trained and evaluated here.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">PyTorch Image Models (extra timm) · 24</label><label for="__tabbed_1_2">Hugging Face Transformers · 8</label><label for="__tabbed_1_3">The torchvision model zoo · 5</label><label for="__tabbed_1_4">HGGD's own · 1</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="gp-options" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">convnextv2-atto</code></td>
+<td>ConvNeXt V2-Atto from timm (FCMAE, fine-tuned on ImageNet-1k), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">convnextv2-tiny</code></td>
+<td>ConvNeXt V2-Tiny from timm (FCMAE, fine-tuned on ImageNet-22k and 1k), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dinov2-small-reg</code></td>
+<td>DINOv2 ViT-S/14 with registers from timm (LVD-142M), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dinov2-small-reg-depth-stem</code></td>
+<td>Frozen DINOv2 ViT-S/14 with registers (timm) and a trained depth stem in front.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dinov3-convnext-tiny</code></td>
+<td>ConvNeXt-Tiny distilled from DINOv3 (LVD-1689M) from timm, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dinov3-vits16</code></td>
+<td>DINOv3 ViT-S/16 from timm (LVD-1689M), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--no">HGGD: diverging</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">efficientnetv2-s</code></td>
+<td>EfficientNetV2-S from timm (ImageNet-21k, fine-tuned on 1k), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">efficientvit-b1</code></td>
+<td>EfficientViT-B1 (MIT Han lab) from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">eva02-tiny</code></td>
+<td>EVA-02 Tiny/14 from timm (masked image modelling on ImageNet-22k), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">fastvit-sa12</code></td>
+<td>FastViT-SA12 from timm with Apple's ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">fastvit-t8</code></td>
+<td>FastViT-T8 from timm with Apple's ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hiera-small-abswin</code></td>
+<td>Hiera-Small (absolute window positions) from timm, ImageNet-12k then 1k, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">maxvit-tiny</code></td>
+<td>MaxViT-Tiny from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">mobilenetv4-conv-small</code></td>
+<td>MobileNetV4-Conv-Small from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">mobilenetv4-hybrid-medium</code></td>
+<td>MobileNetV4-Hybrid-Medium from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pe-spatial-tiny</code></td>
+<td>Perception Encoder Spatial Tiny/16 from timm, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">repvit-m1</code></td>
+<td>RepViT-M1 from timm with distilled ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">resnet18</code></td>
+<td>ResNet-18 from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">resnet34</code></td>
+<td>ResNet-34 from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">resnet34-rgbd</code></td>
+<td>ResNet-34 from timm with ImageNet-1k weights and a fourth input channel for depth.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">resnet50</code></td>
+<td>ResNet-50 from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">sam2-hiera-tiny</code></td>
+<td>The image encoder of SAM 2.1 (Hiera-Tiny) from timm, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">siglip2-base</code></td>
+<td>The image tower of SigLIP 2 Base/16 from timm (WebLI), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">swinv2-tiny</code></td>
+<td>Swin Transformer V2-Tiny from timm with ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tabbed-block">
+<div class="gp-options" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">hf-convnextv2-tiny</code></td>
+<td>ConvNeXt V2-Tiny through transformers <code>AutoBackbone</code> (ImageNet-22k), colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-depth-anything-v2-small</code></td>
+<td>The encoder of Depth Anything V2 Small (a DINOv2 ViT-S/14) through transformers.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-dinov2-small</code></td>
+<td>DINOv2 ViT-S/14 through transformers <code>AutoBackbone</code>, four layers, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-dinov2-small-reg</code></td>
+<td>DINOv2 ViT-S/14 with registers through transformers <code>AutoBackbone</code>, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-hiera-tiny</code></td>
+<td>Hiera-Tiny through transformers <code>AutoBackbone</code>, colour only, at its fixed 224 x 224.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-radio-v3-base</code></td>
+<td>C-RADIOv3-B (NVIDIA's agglomerative ViT-B/16) through transformers and its hub code, colour only.</td>
+<td><span class="gp-chip gp-chip--muted" title="undecided (needs your consent (remote code))">HGGD ?</span><br><small>undecided (needs your consent (remote code))</small></td>
+<td><span class="gp-chip gp-chip--muted">not compared</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-siglip2-base</code></td>
+<td>The image tower of SigLIP 2 Base/16 through transformers <code>AutoModel</code>, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">hf-swinv2-tiny</code></td>
+<td>Swin Transformer V2-Tiny through transformers <code>AutoBackbone</code>, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tabbed-block">
+<div class="gp-options" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">tv-convnext-tiny</code></td>
+<td>ConvNeXt-Tiny from torchvision with its ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--warn">HGGD: worse</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">tv-efficientnetv2-s</code></td>
+<td>EfficientNetV2-S from torchvision with its ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">tv-mobilenetv3-large</code></td>
+<td>MobileNetV3-Large from torchvision with its ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">tv-regnet-y-800mf</code></td>
+<td>RegNetY-800MF from torchvision with its ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">tv-resnet34</code></td>
+<td>ResNet-34 from torchvision with its ImageNet-1k weights, colour only.</td>
+<td><span class="gp-chip gp-chip--ok">HGGD ✓</span></td>
+<td><span class="gp-chip gp-chip--ok">HGGD: on a par</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tabbed-block">
+<div class="gp-options" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Runs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">hggd-residual</code></td>
+<td>HGGD's own image encoder, written out: the reference network as a slot value.</td>
+<td><span class="gp-chip gp-chip--muted" title="own in HGGD">own only</span><br><small>own in HGGD</small></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<details class="note">
+<summary>What the columns say, and who is left out</summary>
+<ul>
+<li><strong>Runs</strong>: out of the methods the option is a swap under, those under which its probe trained on real frames without error. A method that ships the option is named <em>own</em> and not counted; a method still undecided is counted and named. Measured on 20 training iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, one run per cell; nothing was measured on GraspClutter6D or on Kinect frames.</li>
+<li><strong>Trains like shipped</strong>: out of the methods under which the swap ran, those under which every comparable loss term ended within the method's tolerance of the component it ships, with nothing rising; a method left out is named with why. Measured on 250 iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, at a constant learning rate (FineGrasp: its own warm-up), beside the method as shipped trained the same way twice.</li>
+<li><a href="../../evidence/">How we measure</a> defines every word of these columns.</li>
+</ul>
+</details>
+<p><a href="../../explorer/#grid=image_encoder">Compare under every method</a></p>
+<!-- slot-options:end -->
+
+<h2 id="choosing">Choosing<a class="headerlink" href="#choosing" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Depth or not.</strong> <code>depth: rgb_only</code> uses pretrained features as released;
+  <code>fourth_channel</code> suits convolutional pyramids you fine-tune; <code>depth_stem</code> suits a frozen
+  encoder.</li>
+<li><strong>Freeze foundation models</strong> (DINOv2 and v3, SigLIP 2, RADIO) on small data:
+  <code>frozen: true</code>.</li>
+<li><strong>Any stride fits.</strong> A pyramid decoder takes maps of any strides and widths; only
+  <code>hggd-residual</code> keeps HGGD's own decoder, so its checkpoints load.</li>
+<li><strong>Weights download on first use</strong> and print their licence. A preset never switches
+  non-commercial weights on, and an encoder that runs code from its hub repository needs
+  <code>accept_remote_code: true</code>.</li>
+<li><strong>The seed-based methods</strong> read an image through point painting, which you write into a
+  config by hand.</li>
+</ul>
+<h2 id="point-painting">Point painting<a class="headerlink" href="#point-painting" title="Permanent link">&para;</a></h2>
+<!-- slot-reach:begin (generated by tools/make_method_pages.py; do not edit) -->
+
+<p><span class="gp-chip gp-chip--muted" title="point painting: a wrapper written into a config by hand (compose does not write it); no probe record">no record</span> <code>image-painted</code>, <code>image-painted-subsampled</code> · point painting: a wrapper written into a config by hand (compose does not write it); no probe record.</p>
+<!-- slot-reach:end -->
+
+<p><code>ImagePainted</code> (around a dense scene encoder) and <code>ImagePaintedSubsampled</code> (around a
+sub-sampling one) project every point into the colour image and give the 3-D network the image
+features at its pixel, as extra input channels (<code>fusion: input</code>) or as a residual on its output
+(<code>fusion: output</code>). A painted config also changes the dataset node of every split, so compose
+does not write it: start from the presets <code>image-painted</code> and <code>image-painted-subsampled</code> and the
+fragment below.</p>
+<details class="note">
+<summary>The complete fragment, for GraspNet-baseline and GSNet</summary>
+<p>A file next to the shipped configs, for example <code>configs/experimental/my_painted.yaml</code>.
+GraspNet-baseline has a sub-sampling encoder, so it takes <code>ImagePaintedSubsampled</code>; GSNet
+has a dense one and takes <code>ImagePainted</code>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">GraspNet-baseline</label><label for="__tabbed_2_2">GSNet</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="nt">_base_</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml</span>
+
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">_delete_</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                  </span><span class="c1"># replace the base config's encoder node</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ImagePaintedSubsampled</span><span class="w">    </span><span class="c1"># around a sub-sampling encoder</span>
+<span class="w">    </span><span class="nt">fusion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span><span class="w">                   </span><span class="c1"># input | output</span>
+<span class="w">    </span><span class="nt">paint_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">    </span><span class="nt">image_scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w">                </span><span class="c1"># encode 640 x 360 instead of the 1280 x 720 sensor image</span>
+<span class="w">    </span><span class="nt">image_encoder</span><span class="p">:</span><span class="w">                  </span><span class="c1"># any image-encoder node with depth: rgb_only</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TimmImageEncoder</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resnet18.a1_in1k</span>
+<span class="w">      </span><span class="nt">pretrained</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">out_indices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># strides 4 and 8</span>
+<span class="w">      </span><span class="nt">depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgb_only</span>
+<span class="w">    </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PointNet2</span><span class="w">               </span><span class="c1"># the encoder of GraspNet-baseline</span>
+<span class="w">      </span><span class="nt">in_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span><span class="w">               </span><span class="c1"># 0 point features + 32 painted channels</span>
+<span class="w">      </span><span class="nt">npoints</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2048</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1024</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">radii</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0.04</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.3</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">nsamples</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">32</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">16</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">fps_skip_near_origin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">fps_tie_break</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pointnet2_cuda</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">transforms</span><span class="p">:</span><span class="w">                   </span><span class="c1"># the base list without RandomFlip and RandomRotation</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomSample</span><span class="p p-Indicator">,</span><span class="nt"> num_points</span><span class="p">:</span><span class="w"> </span><span class="nv">20000</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">FilterObjects</span><span class="p p-Indicator">,</span><span class="nt"> min_visible_points</span><span class="p">:</span><span class="w"> </span><span class="nv">50</span><span class="p p-Indicator">,</span><span class="nt"> exclude_object_ids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">18</span><span class="p p-Indicator">]}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">SampleGraspLabels</span><span class="p p-Indicator">,</span><span class="nt"> point_fraction</span><span class="p">:</span><span class="w"> </span><span class="nv">0.25</span><span class="p p-Indicator">,</span><span class="nt"> min_points</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> collision</span><span class="p">:</span><span class="w"> </span><span class="nv">zero_scores</span><span class="p p-Indicator">,</span><span class="nt"> visible_within</span><span class="p">:</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="nt"> grids</span><span class="p">:</span><span class="w"> </span><span class="nv">deferred</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]}}</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]}}</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="nt">_base_</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../gsnet/gsnet_sunet14_g1b-realsense_10e.yaml</span>
+
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">_delete_</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                  </span><span class="c1"># replace the base config's encoder node</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ImagePainted</span><span class="w">              </span><span class="c1"># around a dense encoder</span>
+<span class="w">    </span><span class="nt">fusion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span><span class="w">                   </span><span class="c1"># input | output</span>
+<span class="w">    </span><span class="nt">paint_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">    </span><span class="nt">image_scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w">                </span><span class="c1"># encode 640 x 360 instead of the 1280 x 720 sensor image</span>
+<span class="w">    </span><span class="nt">image_encoder</span><span class="p">:</span><span class="w">                  </span><span class="c1"># any image-encoder node with depth: rgb_only</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TimmImageEncoder</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resnet18.a1_in1k</span>
+<span class="w">      </span><span class="nt">pretrained</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">out_indices</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># strides 4 and 8</span>
+<span class="w">      </span><span class="nt">depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgb_only</span>
+<span class="w">    </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SparseUNet14</span><span class="w">            </span><span class="c1"># the encoder of GSNet</span>
+<span class="w">      </span><span class="nt">in_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">35</span><span class="w">               </span><span class="c1"># 3 constant ones + 32 painted channels</span>
+<span class="w">      </span><span class="nt">out_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">      </span><span class="nt">voxel_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.005</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dataset</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">transforms</span><span class="p">:</span><span class="w">                   </span><span class="c1"># the base list without RandomFlip and RandomRotation</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">RandomSample</span><span class="p p-Indicator">,</span><span class="nt"> num_points</span><span class="p">:</span><span class="w"> </span><span class="nv">15000</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">FilterObjects</span><span class="p p-Indicator">,</span><span class="nt"> min_visible_points</span><span class="p">:</span><span class="w"> </span><span class="nv">50</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">SampleGraspLabels</span><span class="p p-Indicator">,</span><span class="nt"> point_fraction</span><span class="p">:</span><span class="w"> </span><span class="nv">0.25</span><span class="p p-Indicator">,</span><span class="nt"> min_points</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> collision</span><span class="p">:</span><span class="w"> </span><span class="nv">zero_scores</span><span class="p p-Indicator">,</span><span class="nt"> grids</span><span class="p">:</span><span class="w"> </span><span class="nv">deferred</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">ConstantFeatures</span><span class="p p-Indicator">,</span><span class="nt"> channels</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">val</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]}}</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">images</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">rgb</span><span class="p p-Indicator">]}}</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>Under every seed-based detector type, the wrapper of the kind its proposal needs builds and
+asks for the colour image (<code>tests/unit/test_all_methods_skeleton.py</code>). For another
+seed-based method, inherit its config and wrap its own encoder:
+<code>ImagePaintedSubsampled</code> around the sub-sampling encoder of Scale-Balanced-Grasp,
+<code>ImagePainted</code> around the dense ones of EconomicGrasp and FineGrasp. With <code>fusion: input</code>
+the wrapped encoder's <code>in_channels</code> is what the detector feeds plus <code>paint_channels</code>; with
+<code>fusion: output</code> it stays as it was. A painted FineGrasp config needs
+<code>images: [depth, rgb]</code>, because FineGrasp already reads the depth image for its normals.</p>
+</details>
+<details class="note">
+<summary>What the data pipeline delivers, and what it does not</summary>
+<ul>
+<li><code>images: [rgb]</code> puts the colour image into <code>observation.rgb</code>; the camera matrix is always
+  there and points are in the camera frame, so the pixel of a point is its projection. A
+  scene encoder that declares <code>uses_observation = True</code> is called with the observation.</li>
+<li><strong>No painting under point augmentation.</strong> A dataset that serves images refuses
+  <code>RandomFlip</code> and <code>RandomRotation</code>, because a moved cloud no longer projects onto its
+  image. Carrying the per-point pixel index into the batch would lift this; it changes the
+  data contract of every method and is not done.</li>
+<li><strong>No probe record.</strong> The grid composes its cells, and compose does not write painted
+  configs, so no verdict is shown here. One painted config per seed-based method was probed
+  by hand while the wrappers were built; those runs are not records and cannot be reproduced
+  from the repository.</li>
+</ul>
+</details>
+<h2 id="details">Details<a class="headerlink" href="#details" title="Permanent link">&para;</a></h2>
+<details class="note">
+<summary>Input and output</summary>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>input</td>
+<td><code>image</code>: <code>(B, in_channels, H, W)</code>, float, upright</td>
+</tr>
+<tr>
+<td><code>input_layout</code></td>
+<td><code>rgb</code>: colour in [0, 1], normalised by the encoder for its weights; <code>rgbd</code>: the same followed by depth in metres; <code>drgb</code>: HGGD's own order, the reference encoder only</td>
+</tr>
+<tr>
+<td>output</td>
+<td>a list of <code>(B, out_channels[i], h_i, w_i)</code> maps, finest first</td>
+</tr>
+<tr>
+<td><code>out_strides</code>, <code>out_channels</code></td>
+<td>stride and width of every map; the bridges measure them with one forward pass when built</td>
+</tr>
+</tbody>
+</table>
+<p>HGGD hands over a transposed <code>[depth, R, G, B]</code> image. For any encoder but its own, HGGD turns
+it upright, re-orders the channels to the encoder's layout and turns the maps back; a pyramid
+decoder projects every map to <code>model.encoder.decoder_channels</code>, merges them and resamples to
+the stride of HGGD's proposals. The reference encoder keeps the reference decoder, so the
+model is the one of the shipped config and converted checkpoints load.</p>
+<p><code>image_encoder</code> is a typed slot: a node is checked against the constructor of its class
+before anything is built.</p>
+</details>
+<details class="note">
+<summary>RGB-D: what each depth mode does</summary>
+<p>No library ships weights pretrained on RGB-D, and timm's <code>in_chans=4</code> only repeats the colour
+filters. So depth is an explicit option of every bridge:</p>
+<table>
+<thead>
+<tr>
+<th><code>depth</code></th>
+<th>What the encoder sees</th>
+<th>Pretrained weights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rgb_only</code> (default of the presets)</td>
+<td>colour, 3 channels</td>
+<td>used as released; depth still reaches HGGD's region stage as points</td>
+</tr>
+<tr>
+<td><code>fourth_channel</code></td>
+<td>colour + depth; the first convolution (or patch embedding) gets a fourth input</td>
+<td>colour filters as released; the depth filters start at zero (or at the mean colour filter) and always train</td>
+</tr>
+<tr>
+<td><code>depth_stem</code></td>
+<td>colour + a residual computed from depth by a small stem of its own</td>
+<td>untouched; with <code>frozen: true</code> only the stem and the decoder learn</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="note">
+<summary>The settings that matter</summary>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>How to choose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>depth</code></td>
+<td><code>rgb_only</code> to use pretrained features as they are; <code>fourth_channel</code> for convolutional pyramids you fine-tune; <code>depth_stem</code> when the encoder is frozen</td>
+</tr>
+<tr>
+<td><code>frozen</code></td>
+<td><code>true</code> for foundation ViTs and small data; batch-norm statistics stay fixed too</td>
+</tr>
+<tr>
+<td><code>out_indices</code> (timm, transformers)</td>
+<td>which levels come out; for ViTs <code>[3, 6, 9, 12]</code> gives the decoder four depths to merge</td>
+</tr>
+<tr>
+<td><code>input_size</code></td>
+<td>for models of one fixed size (MaxViT, Hiera, EVA-02, timm's DINOv2 and SigLIP): the image is resampled to it</td>
+</tr>
+<tr>
+<td><code>size_multiple</code></td>
+<td>for models that take any multiple of their patch or window: the image is resampled up to it</td>
+</tr>
+<tr>
+<td><code>model_args</code></td>
+<td>free-form arguments of the library (<code>drop_path_rate</code>, <code>window_size</code>, <code>trust_remote_code</code>)</td>
+</tr>
+<tr>
+<td><code>model.encoder.decoder_channels</code></td>
+<td>64 by default; wider helps a wide encoder and costs memory in the region stage</td>
+</tr>
+<tr>
+<td><code>model.encoder.detach_features</code></td>
+<td><code>true</code> (the reference recipe): the region loss does not train the image network</td>
+</tr>
+</tbody>
+</table>
+<p>The bridges expose far more than the presets: <code>TimmImageEncoder(name=&lt;any timm model with
+features_only&gt;)</code>, <code>HFImageEncoder(name=&lt;hub id or local directory&gt;)</code>,
+<code>TorchvisionImageEncoder(name=&lt;resnet*, regnet*, or a model with .features&gt;)</code>.</p>
+</details>
+<details class="note">
+<summary>Weights and their licences</summary>
+<p>timm and transformers download a preset's weights on first use (<code>HF_HOME</code> chooses the
+cache) and print one line with the name and the licence the library states; a local file is
+<code>checkpoint:</code>. Non-commercial weights are supported, never switched on by a preset: such a
+preset sets <code>pretrained: false</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Weights and their licence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hggd-residual</code></td>
+<td>none released for the encoder alone; the authors' HGGD checkpoints convert with <code>tools/convert_checkpoint.py</code> and load into this model.</td>
+</tr>
+<tr>
+<td><code>resnet18</code></td>
+<td><code>resnet18.a1_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>resnet34</code></td>
+<td><code>resnet34.a1_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>resnet34-rgbd</code></td>
+<td><code>resnet34.a1_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>resnet50</code></td>
+<td><code>resnet50.a1_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>convnextv2-tiny</code></td>
+<td><code>convnextv2_tiny.fcmae_ft_in22k_in1k</code>, CC BY-NC 4.0: NON-COMMERCIAL weights, <strong>off in the preset</strong> (<code>pretrained: false</code>; <code>--opts model.image_encoder.pretrained=true</code> fetches them).</td>
+</tr>
+<tr>
+<td><code>convnextv2-atto</code></td>
+<td><code>convnextv2_atto.fcmae_ft_in1k</code>, CC BY-NC 4.0: NON-COMMERCIAL weights, <strong>off in the preset</strong> (<code>pretrained: false</code>; <code>--opts model.image_encoder.pretrained=true</code> fetches them).</td>
+</tr>
+<tr>
+<td><code>efficientnetv2-s</code></td>
+<td><code>tf_efficientnetv2_s.in21k_ft_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>mobilenetv4-conv-small</code></td>
+<td><code>mobilenetv4_conv_small.e2400_r224_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>mobilenetv4-hybrid-medium</code></td>
+<td><code>mobilenetv4_hybrid_medium.e500_r224_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>repvit-m1</code></td>
+<td><code>repvit_m1.dist_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>fastvit-sa12</code></td>
+<td><code>fastvit_sa12.apple_in1k</code>, Apple's FastViT licence (timm: <code>fastvit-license</code>; read it before any use beyond research).</td>
+</tr>
+<tr>
+<td><code>fastvit-t8</code></td>
+<td><code>fastvit_t8.apple_in1k</code>, Apple's FastViT licence (timm: <code>fastvit-license</code>).</td>
+</tr>
+<tr>
+<td><code>efficientvit-b1</code></td>
+<td><code>efficientvit_b1.r224_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>swinv2-tiny</code></td>
+<td><code>swinv2_tiny_window8_256.ms_in1k</code>, MIT (timm).</td>
+</tr>
+<tr>
+<td><code>maxvit-tiny</code></td>
+<td><code>maxvit_tiny_tf_224.in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>hiera-small-abswin</code></td>
+<td><code>hiera_small_abswin_256.sbb2_e200_in12k_ft_in1k</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>sam2-hiera-tiny</code></td>
+<td><code>sam2_hiera_tiny.fb_r896_2pt1</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>dinov2-small-reg</code></td>
+<td><code>vit_small_patch14_reg4_dinov2.lvd142m</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>dinov2-small-reg-depth-stem</code></td>
+<td><code>vit_small_patch14_reg4_dinov2.lvd142m</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>dinov3-vits16</code></td>
+<td><code>vit_small_patch16_dinov3.lvd1689m</code>, DINOv3 License (timm: <code>dinov3-license</code>; Meta's own hub repositories are gated, timm's mirror is not).</td>
+</tr>
+<tr>
+<td><code>dinov3-convnext-tiny</code></td>
+<td><code>convnext_tiny.dinov3_lvd1689m</code>, DINOv3 License (timm: <code>dinov3-license</code>).</td>
+</tr>
+<tr>
+<td><code>siglip2-base</code></td>
+<td><code>vit_base_patch16_siglip_256.v2_webli</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>eva02-tiny</code></td>
+<td><code>eva02_tiny_patch14_224.mim_in22k</code>, MIT (timm).</td>
+</tr>
+<tr>
+<td><code>pe-spatial-tiny</code></td>
+<td><code>vit_pe_spatial_tiny_patch16_512.fb</code>, Apache-2.0 (timm).</td>
+</tr>
+<tr>
+<td><code>hf-dinov2-small</code></td>
+<td><code>facebook/dinov2-small</code>, Apache-2.0 (hub card).</td>
+</tr>
+<tr>
+<td><code>hf-dinov2-small-reg</code></td>
+<td><code>facebook/dinov2-with-registers-small</code>, Apache-2.0 (hub card).</td>
+</tr>
+<tr>
+<td><code>hf-hiera-tiny</code></td>
+<td><code>facebook/hiera-tiny-224-hf</code>, CC BY-NC 4.0: NON-COMMERCIAL weights, <strong>off in the preset</strong> (<code>pretrained: false</code>; <code>--opts model.image_encoder.pretrained=true</code> fetches them).</td>
+</tr>
+<tr>
+<td><code>hf-depth-anything-v2-small</code></td>
+<td><code>depth-anything/Depth-Anything-V2-Small-hf</code>, Apache-2.0 (hub card). The Base and Large checkpoints are CC BY-NC 4.0.</td>
+</tr>
+<tr>
+<td><code>hf-siglip2-base</code></td>
+<td><code>google/siglip2-base-patch16-256</code>, Apache-2.0 (hub card).</td>
+</tr>
+<tr>
+<td><code>hf-convnextv2-tiny</code></td>
+<td><code>facebook/convnextv2-tiny-22k-224</code>, Apache-2.0 according to its hub card (timm lists the same family as CC BY-NC 4.0; check before commercial use).</td>
+</tr>
+<tr>
+<td><code>hf-swinv2-tiny</code></td>
+<td><code>microsoft/swinv2-tiny-patch4-window8-256</code>, Apache-2.0 (hub card).</td>
+</tr>
+<tr>
+<td><code>hf-radio-v3-base</code></td>
+<td><code>nvidia/C-RADIOv3-B</code> (runs hub code: <strong>refused until</strong> <code>--opts model.image_encoder.accept_remote_code=true</code>), NVIDIA Open Model License (hub card: <code>nvidia-open-model-license</code>; read it before any use beyond research).</td>
+</tr>
+<tr>
+<td><code>tv-resnet34</code></td>
+<td><code>ResNet34_Weights.IMAGENET1K_V1</code> from download.pytorch.org (torchvision, BSD-3-Clause code; the weights carry no separate licence statement).</td>
+</tr>
+<tr>
+<td><code>tv-convnext-tiny</code></td>
+<td><code>ConvNeXt_Tiny_Weights.IMAGENET1K_V1</code> from download.pytorch.org (torchvision).</td>
+</tr>
+<tr>
+<td><code>tv-efficientnetv2-s</code></td>
+<td><code>EfficientNet_V2_S_Weights.IMAGENET1K_V1</code> from download.pytorch.org (torchvision).</td>
+</tr>
+<tr>
+<td><code>tv-mobilenetv3-large</code></td>
+<td><code>MobileNet_V3_Large_Weights.IMAGENET1K_V2</code> from download.pytorch.org (torchvision).</td>
+</tr>
+<tr>
+<td><code>tv-regnet-y-800mf</code></td>
+<td><code>RegNet_Y_800MF_Weights.IMAGENET1K_V2</code> from download.pytorch.org (torchvision).</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="warning">
+<summary>Pitfalls met while building this</summary>
+<ul>
+<li><strong>HGGD's image is transposed.</strong> A pretrained network fed it sees a mirrored, rotated
+  picture, so HGGD turns the image upright for every encoder but its own.</li>
+<li><strong>Fixed-size transformers</strong> (timm's DINOv2, EVA-02, SigLIP, MaxViT, Hiera) assert the image
+  size they were built for; <code>input_size</code> and <code>size_multiple</code> resample, and the presets carry
+  values that ran.</li>
+<li><strong>Swin V2 in timm</strong> needs every stage to be a multiple of its window; the transformers
+  version pads by itself.</li>
+<li><strong>Hiera's MAE checkpoints</strong> have positions for 224 × 224 only; <code>hf-hiera-tiny</code> squeezes the
+  image to that square, <code>hiera-small-abswin</code> and <code>sam2-hiera-tiny</code> take it at its size.</li>
+<li><strong>Channels-last maps</strong> of timm's Swin cannot be told apart by shape; the bridge reads timm's
+  declared output format.</li>
+<li><strong>Depth Anything V2</strong> is a depth-estimation model on the hub: <code>api: depth_backbone</code> takes
+  its DINOv2 encoder out.</li>
+<li><strong>Meta's own DINOv3 repositories are gated</strong>; timm's mirrors are not and are what the
+  presets use.</li>
+<li><strong>A nested encoder node gets its defaults filled in by the config loader</strong>, so a wrapper
+  cannot inject <code>in_channels</code> into the encoder it wraps; the painted wrappers read it from the
+  wrapped node instead.</li>
+</ul>
+</details>
+<details class="note">
+<summary>Not wrapped</summary>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MambaVision</td>
+<td>its hub code needs <code>mamba_ssm</code>, a compiled CUDA extension; its weights are non-commercial.</td>
+</tr>
+<tr>
+<td>Meta's gated DINOv3 repositories</td>
+<td><code>HFImageEncoder</code> loads them once you have access; the presets use timm's mirrors.</td>
+</tr>
+<tr>
+<td>timm's MAE Hiera</td>
+<td>cannot be built for another image size; use <code>hiera-small-abswin</code>.</td>
+</tr>
+<tr>
+<td>RGB-D fusion encoders (CMX, CMNeXt, TokenFusion, DFormer)</td>
+<td>two streams fused at every stage: not one library model behind <code>forward(image)</code>; the contract <code>input_layout: rgbd</code> is ready for one.</td>
+</tr>
+<tr>
+<td>torchvision's transformers</td>
+<td><code>TorchvisionImageEncoder</code> cuts chains of stages only; timm has the same architectures.</td>
+</tr>
+<tr>
+<td>Image features at every level of the 3-D decoder (as DITR does)</td>
+<td>needs the wrapped encoder to expose its levels; input and output fusion are offered.</td>
+</tr>
+</tbody>
+</table>
+</details>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+        
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../scene_encoders_transformer/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Transformers and sequence models">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Transformers and sequence models
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../proposal/" class="md-footer__link md-footer__link--next" aria-label="Next: Seed proposal">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Seed proposal
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,4794 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../gsnet/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>GraspNet-baseline - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#graspnet-baseline" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              GraspNet-baseline
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../slots/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#run-in-five-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run GraspNet-baseline in five minutes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run GraspNet-baseline in five minutes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Get the weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Grasps on the example scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-anywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. From Python, a browser or your camera
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. A first number on the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numbers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options of every slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../slots/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user_guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#run-in-five-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run GraspNet-baseline in five minutes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run GraspNet-baseline in five minutes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Get the weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Grasps on the example scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-anywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. From Python, a browser or your camera
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. A first number on the benchmark
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numbers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-slots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options of every slot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Methods
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/methods/graspnet_baseline.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<!-- Generated by tools/make_method_pages.py from the metafile, the config, the README,
+     five_minutes.json, the presets, the grid, measured_combinations.json and
+     learns_like_reference.json. Do not edit by hand. -->
+
+<h1 id="graspnet-baseline">GraspNet-baseline<a class="headerlink" href="#graspnet-baseline" title="Permanent link">&para;</a></h1>
+<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping">CVPR 2020</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_baseline_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span></div>
+
+<p>From the point cloud of a depth image, it keeps 1024 PointNet++ seeds, scores 300 approach views per seed and predicts score, in-plane angle, width and tolerance at four depths along the best one.</p>
+<p><a href="https://openaccess.thecvf.com/content_CVPR_2020/html/Fang_GraspNet-1Billion_A_Large-Scale_Benchmark_for_General_Object_Grasping_CVPR_2020_paper.html">Paper</a> · <a href="https://github.com/graspnet/graspnet-baseline/tree/fb2f089a9515d2a5e433b28b53827c1c914437f2">Reference code</a> · <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/README.md">Configs, results and notes</a></p>
+<h2 id="run-in-five-minutes">Run GraspNet-baseline in five minutes<a class="headerlink" href="#run-in-five-minutes" title="Permanent link">&para;</a></h2>
+<p>Four steps from the authors' checkpoint to grasps. A <a href="https://github.com/Daeda1used/GraspPanda/blob/main/tests/unit/test_method_quickstart.py">test</a> parses each command and runs the demo and the Python code on a toy detector of the method's family.</p>
+<h3 id="run-weights">1. Get the weights<a class="headerlink" href="#run-weights" title="Permanent link">&para;</a></h3>
+<p>GraspPanda publishes no weights for GraspNet-baseline: the file to download is the authors' checkpoint, under its licence. Download <a href="https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view?usp=sharing"><code>checkpoint-rs.tar</code></a> (Google Drive) and convert it once, from the root of a GraspPanda checkout:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>tools.convert_checkpoint<span class="w"> </span>checkpoint-rs.tar<span class="w"> </span>baseline_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--source-format<span class="w"> </span>graspnet-baseline<span class="w"> </span>--camera<span class="w"> </span>realsense
+</code></pre></div>
+<details class="note">
+<summary>Licence, checksum and what the converter writes</summary>
+<ul>
+<li><strong>Licence</strong>: GraspNet-Baseline Software License Agreement (non-commercial research use only)</li>
+<li><strong>SHA-256</strong> of the download: <code>60680087c61cba2b6791614fef1519071e294f6dcaf99b3f581bb95f7c51a868</code></li>
+<li><strong>What the converter writes</strong>: <code>baseline_realsense.pth</code>, every tensor of the downloaded file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially. The converter is a tool of the repository; it is not installed with the package.</li>
+</ul>
+</details>
+<h3 id="run-demo">2. Grasps on the example scene<a class="headerlink" href="#run-demo" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>demo<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>baseline_realsense.pth<span class="w"> </span>--example<span class="w"> </span>--collision-filter
+</code></pre></div>
+<p><code>--example</code> is a synthetic table-top scene shipped with GraspPanda: no dataset, no download. <strong>10.5 s</strong> for the whole command, 285 grasps kept (one NVIDIA RTX A6000 shared with other jobs).</p>
+<details class="note">
+<summary>What it prints and writes, and every measured run</summary>
+<p>The command prints the config and its hash, how the weights loaded (every tensor matched, none missing), the test pipeline, the cloud, how many grasps the model predicted and how many the collision filter left (the config's variant <code>cd</code>: <code>ModelFreeCollisionFilter</code>), and the ten best grasps. It writes into <code>work_dirs/graspnet-baseline_pointnet2_g1b-realsense_18e/demo/</code>:</p>
+<ul>
+<li><code>grasps.npy</code>: the grasps that are left, <code>(G, 17)</code> float32 in the GraspNet layout, best first, camera frame, metres;</li>
+<li><code>grasps.png</code> and <code>grasps.gif</code>: the cloud with the 30 best grasps, still and swinging around the scene;</li>
+<li><code>example/</code>: the scene as files (<code>depth.png</code>, <code>rgb.png</code>, <code>mask.png</code>, <code>intrinsics.txt</code>).</li>
+</ul>
+<p>Measured with the authors' checkpoint, converted: <strong>10.5 s</strong> for the whole command; 20,000 points to the model, sampled from 316,254 in the workspace; 880 grasps predicted, 285 left after ModelFreeCollisionFilter (2026-10-15, commit <code>ea6268b</code>, one NVIDIA RTX A6000 shared with other jobs).</p>
+</details>
+<h3 id="run-anywhere">3. From Python, a browser or your camera<a class="headerlink" href="#run-anywhere" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Python</label><label for="__tabbed_1_2">Browser</label><label for="__tabbed_1_3">Your camera</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraspInferencer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.apis</span><span class="w"> </span><span class="kn">import</span> <span class="n">example_scene</span>
+<span class="n">scene</span> <span class="o">=</span> <span class="n">example_scene</span><span class="p">()</span>  <span class="c1"># the scene of --example</span>
+<span class="n">inferencer</span> <span class="o">=</span> <span class="n">GraspInferencer</span><span class="p">(</span>
+    <span class="s2">"graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e"</span><span class="p">,</span>
+    <span class="s2">"baseline_realsense.pth"</span><span class="p">)</span>
+<span class="n">grasps</span> <span class="o">=</span> <span class="n">inferencer</span><span class="p">(</span>
+    <span class="n">depth</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="n">intrinsics</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">intrinsics</span><span class="p">,</span>
+    <span class="n">depth_scale</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">depth_scale</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span>
+    <span class="n">table_from_camera</span><span class="o">=</span><span class="n">scene</span><span class="o">.</span><span class="n">table_from_camera</span><span class="p">,</span> <span class="n">collision_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">grasps</span><span class="p">),</span> <span class="n">grasps</span><span class="o">.</span><span class="n">sort_by_score</span><span class="p">()</span><span class="o">.</span><span class="n">to_graspnet_array</span><span class="p">()[:</span><span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+<p>It runs the demo's pipeline on the demo's scene and returns its 285 grasps. <code>mask=</code> stands in for the segmentation the config crops the workspace with; on your camera, pass a mask or <code>workspace=(xmin, ymin, zmin, xmax, ymax, zmax)</code> in metres. More: <a href="../../user_guides/inference/#from-python">From Python</a>.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="c1"># ~/grasppanda_weights: the folder that holds baseline_realsense.pth</span>
+grasppanda<span class="w"> </span>explore<span class="w"> </span>--weights-dir<span class="w"> </span>~/grasppanda_weights
+</code></pre></div>
+<p>Open <a href="http://127.0.0.1:8765/">http://127.0.0.1:8765/</a> and choose GraspNet-baseline in the <strong>Run</strong> tab: <code>baseline_realsense.pth</code> is chosen for you by its name. Keep the example scene or upload a depth image with its intrinsics, and press <em>Run</em>: the page shows the picture, the best ten grasps, the counts through the post-processing and the command that does the same in a terminal. The server listens on your machine only and downloads nothing: <a href="../../user_guides/inference/#run-in-the-browser">Run in the browser</a>.</p>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>demo<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>baseline_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--depth<span class="w"> </span>work_dirs/graspnet-baseline_pointnet2_g1b-realsense_18e/demo/example/depth.png<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--intrinsics<span class="w"> </span>work_dirs/graspnet-baseline_pointnet2_g1b-realsense_18e/demo/example/intrinsics.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--workspace<span class="w"> </span>-0.25<span class="w"> </span>-0.2<span class="w"> </span><span class="m">0</span>.35<span class="w"> </span><span class="m">0</span>.25<span class="w"> </span><span class="m">0</span>.2<span class="w"> </span><span class="m">0</span>.8<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--collision-filter<span class="w"> </span>--out<span class="w"> </span>work_dirs/camera
+</code></pre></div>
+<p>The scene files of step 2 stand in for a camera. GraspNet-baseline was trained on clouds cropped around the objects; on a camera image, <code>--workspace</code> (a box in the camera frame, metres) or <code>--mask</code> does that crop. Units, frames, the depth scale and the intrinsics: <a href="../../user_guides/inference/#your-own-camera">Your own camera</a>.</p>
+</div>
+</div>
+</div>
+<h3 id="run-test">4. A first number on the benchmark<a class="headerlink" href="#run-test" title="Permanent link">&para;</a></h3>
+<p>With GraspNet-1Billion on disk (<a href="../../user_guides/datasets/">Datasets</a>), score every 64th frame of the seen test scenes, 120 frames:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span><span class="nb">test</span><span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>baseline_realsense.pth<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>data.test.dataset.split<span class="o">=</span>test_seen<span class="w"> </span>data.test.dataset.frame_step<span class="o">=</span><span class="m">64</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>evaluation.num_workers<span class="o">=</span><span class="m">4</span>
+</code></pre></div>
+<p>Measured with the authors' checkpoint, converted: AP 32.60 without the collision filter and 48.67 with it, within 0.77 AP of the whole split.</p>
+<details class="note">
+<summary>What it prints, and every measured run against the whole split</summary>
+<p>It prints AP, AP0.8 and AP0.4 for every variant of the config, <code>raw</code> (the predictions as they are) and <code>cd</code> (with the collision filter), and writes a result record per variant into the run directory under <code>work_dirs/</code>. Testing needs no derived asset; the evaluator extracts a cache from the dataset's object models the first time it runs, which the times below do not include.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Weights, provenance</th>
+<th>Collision filter</th>
+<th>AP, 120 frames of test_seen</th>
+<th>AP, whole seen split</th>
+<th>Difference</th>
+<th>Wall time, commit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the authors' checkpoint, converted, <code>author-ckpt</code></td>
+<td>off</td>
+<td>32.60</td>
+<td>32.64 (<a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json">record</a>)</td>
+<td>−0.04</td>
+<td>35 s, <code>ea6268b</code></td>
+</tr>
+<tr>
+<td></td>
+<td>on</td>
+<td>48.67</td>
+<td>47.90 (<a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json">record</a>)</td>
+<td>+0.77</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Provenance: <code>author-ckpt</code>, the authors' checkpoint, evaluated by GraspPanda. Inputs: the workspace is cropped around the ground-truth segmentation (<code>gt_assisted: workspace</code>), as in the reference. On these 120 frames the AP is within 0.77 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-10-15 on one NVIDIA RTX A6000 shared with other jobs.</p>
+<p>The machine: one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8.</p>
+</details>
+<h2 id="numbers">Numbers<a class="headerlink" href="#numbers" title="Permanent link">&para;</a></h2>
+<p>GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel, from the <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/metafile.yaml">metafile</a>.</p>
+<div class="gp-matrix">
+<table>
+<thead>
+<tr>
+<th>Weights</th>
+<th>Collision filter</th>
+<th>Seen</th>
+<th>Similar</th>
+<th>Novel</th>
+<th>Record</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reported (reference repository README)</td>
+<td>on</td>
+<td>47.47</td>
+<td>42.27</td>
+<td>16.61</td>
+<td>—</td>
+</tr>
+<tr>
+<td>reported (paper)</td>
+<td>not stated</td>
+<td>27.56</td>
+<td>26.11</td>
+<td>10.55</td>
+<td>—</td>
+</tr>
+<tr>
+<td>authors' weights</td>
+<td>off</td>
+<td>32.64</td>
+<td>27.48</td>
+<td>10.42</td>
+<td><a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json">record</a></td>
+</tr>
+<tr>
+<td>authors' weights</td>
+<td>on</td>
+<td>47.90</td>
+<td>42.70</td>
+<td>16.98</td>
+<td><a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json">record</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<details class="note">
+<summary>Where these numbers come from</summary>
+<ul>
+<li><strong>The status of these numbers</strong>: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; nothing trained here yet.</li>
+<li><strong>reported</strong>: reference repository README, "In repo" (collision threshold 0.01); paper, as quoted in the reference repository README ("In paper").</li>
+<li><strong>authors' weights, scored here</strong>: the authors' checkpoint, converted and run through <code>grasppanda test</code> on every frame of the test split; the record holds the per-scene values, the config hash and the hashes of code and weights.</li>
+<li><strong>Inputs</strong>: workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace).</li>
+<li>Other cameras, GraspClutter6D and what is known about each gap: <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/README.md#results-on-graspnet-1billion">the README</a>; every method side by side: <a href="../../model_zoo/">Model zoo</a>.</li>
+</ul>
+</details>
+<h2 id="the-slots">The options of every slot<a class="headerlink" href="#the-slots" title="Permanent link">&para;</a></h2>
+<p>Every option that fits GraspNet-baseline, except <code>target-mask</code>, was composed under it; those accepted were probed on real frames; the others say why.</p>
+<p class="gp-caveat">A probe shows that a combination trains on real frames of GraspNet-1Billion, not how good it is. Accuracy is claimed only for a method trained and evaluated here.</p>
+<div class="gp-matrix gp-slots">
+<table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Shipped</th>
+<th>Composes</th>
+<th>Refused</th>
+<th>Runs here</th>
+<th>Explorer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#backbone">Scene encoder</a></td>
+<td><code>pointnet2</code></td>
+<td>47</td>
+<td>0</td>
+<td>46/46</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=backbone">compare</a></td>
+</tr>
+<tr>
+<td><a href="#proposal">Seed proposal</a></td>
+<td><code>SubsampledSeeds</code></td>
+<td>22</td>
+<td>2</td>
+<td>21/23</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=proposal">compare</a></td>
+</tr>
+<tr>
+<td><a href="#view">View</a></td>
+<td><code>objectness-view</code></td>
+<td>21</td>
+<td>0</td>
+<td>20/20</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=view">compare</a></td>
+</tr>
+<tr>
+<td><a href="#assigner">Assigner</a></td>
+<td><code>nearest-label-object-seeds</code></td>
+<td>3</td>
+<td>1</td>
+<td>2/3</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=assigner">compare</a></td>
+</tr>
+<tr>
+<td><a href="#grouper">Grouper</a></td>
+<td><code>DepthCylinderGroup</code></td>
+<td>26</td>
+<td>2</td>
+<td>25/27</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=grouper">compare</a></td>
+</tr>
+<tr>
+<td><a href="#head">Head bundle</a></td>
+<td><code>operation</code></td>
+<td>8</td>
+<td>2</td>
+<td>7/9</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=head">compare</a></td>
+</tr>
+<tr>
+<td><a href="#loss">Loss</a></td>
+<td>its own losses</td>
+<td>19</td>
+<td>1</td>
+<td>17/18</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=loss">compare</a></td>
+</tr>
+<tr>
+<td><a href="#post">Post-processing</a></td>
+<td>variants cd, raw</td>
+<td>14 · 1 no record</td>
+<td>0</td>
+<td>14/14</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=post">compare</a></td>
+</tr>
+<tr>
+<td><a href="#optimizer">Optimizer</a></td>
+<td><code>Adam</code></td>
+<td>17</td>
+<td>0</td>
+<td>17/17</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=optimizer">compare</a></td>
+</tr>
+<tr>
+<td><a href="#schedule">Schedule</a></td>
+<td><code>MultiStepLR</code></td>
+<td>7</td>
+<td>0</td>
+<td>7/7</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=schedule">compare</a></td>
+</tr>
+<tr>
+<td><a href="#hooks">Hooks</a></td>
+<td><code>BNMomentumHook</code></td>
+<td>6</td>
+<td>1</td>
+<td>5/7</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=hooks">compare</a></td>
+</tr>
+<tr>
+<td><a href="#augment">Augmentation</a></td>
+<td>its own</td>
+<td>3</td>
+<td>0</td>
+<td>3/3</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=augment">compare</a></td>
+</tr>
+<tr>
+<td><a href="#recipe">Recipe</a></td>
+<td>its own</td>
+<td>3</td>
+<td>0</td>
+<td>3/3</td>
+<td><a href="../../explorer/#m=GraspNet-baseline&amp;grid=recipe">compare</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<details class="note">
+<summary>Scene encoder: 47 options</summary>
+<div data-search-exclude markdown>
+<p id="backbone"><code>--set backbone=&lt;option&gt;</code>. What each option is: the <a href="../../slots/scene_encoders/">scene encoder page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">pointnet2</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GraspNet-baseline">4/4</span><br><small>own in GraspNet-baseline</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/4 on a par · 4 worse</span></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">assanet</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dgcnn-static</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dgcnn</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">0/5 on a par · 1 diverging · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dela</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under FineGrasp">4/5 on a par · 1 diverging</span><br><small>diverging under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">litept-structured3d</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">litept</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">minkunet18a-openscene</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp">4/5 on a par · 1 worse</span><br><small>worse under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">minkunet18a</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp">4/5 on a par · 1 worse</span><br><small>worse under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">minkunet34c-pointcontrast</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">minkunet34c</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp">4/5 on a par · 1 worse</span><br><small>worse under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">oacnns</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">2/5</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">2/2 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">octformer</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-encoder</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">2/5</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">2/2 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-ppt</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under Scale-Balanced-Grasp, FineGrasp">3/5 on a par · 2 diverging</span><br><small>diverging under Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-scannet200</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under FineGrasp: the swap did not run at level 1">4/4 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-sonata-small</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">2/5</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">2/2 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-sonata</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp (unstable twice in the short probe)">3/5</span><br><small>not GSNet, EconomicGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1">2/3 on a par · 1 diverging</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-utonia</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp (unstable twice in the short probe)">3/5</span><br><small>not GSNet, EconomicGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under Scale-Balanced-Grasp, FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1">1/3 on a par · 2 diverging</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointmlp</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-mamba</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointmetabase-xl</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under Scale-Balanced-Grasp; worse under FineGrasp">3/5 on a par · 1 diverging · 1 worse</span><br><small>diverging under Scale-Balanced-Grasp; worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointmetabase</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnext-b</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>predicts ✗: no grasp on frame 2</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnext-l</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>predicts ✗: no grasp on any frame</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnext-xl</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnext</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnet2-dense</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnet2-msg</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnet2-msg-dense</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointnet2-transformer</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in Scale-Balanced-Grasp">4/4</span><br><small>own in Scale-Balanced-Grasp</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">1/4 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-transformer-v1</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp">1/5 on a par · 4 diverging</span></td>
+<td>predicts ✗: no grasp on any frame</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-transformer-v2</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp">1/5 on a par · 4 diverging</span></td>
+<td>predicts ✗: no grasp on any frame</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointvector-xl</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pointvector</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">point-vit</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/5 on a par · 5 worse</span></td>
+<td>predicts ✗: no grasp on any frame</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-edgeconv</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1">1/4 on a par · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-point-transformer</code></td>
+<td><span class="gp-chip gp-chip--warn" title="FineGrasp undecided (unstable once, not repeated)">4/5</span><br><small>FineGrasp undecided (unstable once, not repeated)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1">0/4 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-pointgnn</code></td>
+<td><span class="gp-chip gp-chip--warn" title="FineGrasp undecided (unstable once, not repeated)">4/5</span><br><small>FineGrasp undecided (unstable once, not repeated)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1">0/4 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-pointnet</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/5 on a par · 5 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">randlanet</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet, EconomicGrasp, FineGrasp; worse under Scale-Balanced-Grasp">1/5 on a par · 3 diverging · 1 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">spunet-gaussiancross</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet; diverging under Scale-Balanced-Grasp">3/5 on a par · 1 diverging · 1 worse</span><br><small>worse under GSNet; diverging under Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">spunet</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under FineGrasp: the swap did not run at level 1">4/4 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">sparse-unet14</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GSNet, EconomicGrasp, FineGrasp">2/2</span><br><small>own in GSNet, EconomicGrasp, FineGrasp</small></td>
+<td><span class="gp-chip gp-chip--ok">2/2 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">uni3d</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">volt</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under Scale-Balanced-Grasp, FineGrasp; diverging under EconomicGrasp">2/5 on a par · 1 diverging · 2 worse</span></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>pointnet2</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>dgcnn-static</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>dgcnn</code>, trains like shipped: worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>oacnns</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>oacnns</code>, trains like shipped: not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-encoder</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>ptv3-encoder</code>, trains like shipped: not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-scannet200</code>, trains like shipped: not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-sonata-small</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>ptv3-sonata-small</code>, trains like shipped: not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-sonata</code>, trains like shipped: diverging under FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-utonia</code>, trains like shipped: diverging under Scale-Balanced-Grasp, FineGrasp; not compared under GSNet, EconomicGrasp: the swap did not run at level 1.</li>
+<li><code>pointmlp</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>pointnext-l</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>point-transformer-v1</code>, trains like shipped: diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp.</li>
+<li><code>point-transformer-v2</code>, trains like shipped: diverging under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp.</li>
+<li><code>point-vit</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>pyg-edgeconv</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>pyg-point-transformer</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>pyg-pointgnn</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>pyg-pointnet</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>randlanet</code>, trains like shipped: diverging under GSNet, EconomicGrasp, FineGrasp; worse under Scale-Balanced-Grasp.</li>
+<li><code>spunet</code>, trains like shipped: not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>uni3d</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>volt</code>, trains like shipped: worse under Scale-Balanced-Grasp, FineGrasp; diverging under EconomicGrasp.</li>
+</ul>
+<p>Not counted as options (no probe of their own):</p>
+<ul>
+<li><code>feature-propagation</code>: an adapter: compose inserts it where the next stage needs it, so it is measured inside the cells it was inserted in; inserted in 65 cells (43 runs, 18 runs-empty, 4 refused).</li>
+<li><code>furthest-point-subsample</code>: an adapter: compose inserts it where the next stage needs it, so it is measured inside the cells it was inserted in; inserted in 90 cells (54 runs, 36 runs-empty).</li>
+<li><code>image-painted-subsampled</code>: point painting: a wrapper written into a config by hand (compose does not write it); no probe record.</li>
+<li><code>image-painted</code>: point painting: a wrapper written into a config by hand (compose does not write it); no probe record.</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>Seed proposal: 24 options</summary>
+<div data-search-exclude markdown>
+<p id="proposal"><code>--set proposal=&lt;option&gt;</code>. What each option is: the <a href="../../slots/proposal/">seed proposal page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">SubsampledSeeds</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GraspNet-baseline, Scale-Balanced-Grasp">3/3</span><br><small>own in GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">1/3 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-ffps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-fps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-fpsample</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-fusion-fps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp, FineGrasp">2/5 on a par · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-random</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-torch-cluster</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dense-voxel</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-ffps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline; worse under Scale-Balanced-Grasp">3/5 on a par · 1 diverging · 1 worse</span></td>
+<td>learns ✗: objectness flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-fps-fill</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>learns ✗: objectness flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-fps-topk</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp">2/5 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp</small></td>
+<td>learns ✗: objectness flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-fps</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GSNet, EconomicGrasp, FineGrasp">2/2</span><br><small>own in GSNet, EconomicGrasp, FineGrasp</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">0/2 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>learns ✗: objectness flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-fpsample</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-fusion-fps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp, FineGrasp">2/5 on a par · 3 worse</span></td>
+<td>learns ✗: objectness flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-nms</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/5 on a par · 5 worse</span></td>
+<td>learns ✗: objectness flat; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-random</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-sfps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-top-fraction</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp">1/5 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-topk</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">0/5 on a par · 5 worse</span></td>
+<td>learns ✗: objectness rose 9 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-torch-cluster</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">graspness-voxel</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">0/5 on a par · 1 diverging · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">objectness-fps</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design)">3/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">2/3 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>refused (incompatible by design): ScoredSeeds and ObjectnessViewStage both predict and supervise the 'objectness' of a seed.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">product-fps</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design)">3/5</span></td>
+<td><span class="gp-chip gp-chip--ok">3/3 on a par</span></td>
+<td>refused (incompatible by design): ScoredSeeds and ObjectnessViewStage both predict and supervise the 'objectness' of a seed.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">scored-fps</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>dense-fusion-fps</code>, trains like shipped: worse under GraspNet-baseline, Scale-Balanced-Grasp, FineGrasp.</li>
+<li><code>graspness-ffps</code>, trains like shipped: diverging under GraspNet-baseline; worse under Scale-Balanced-Grasp.</li>
+<li><code>graspness-fusion-fps</code>, trains like shipped: worse under GraspNet-baseline, Scale-Balanced-Grasp, FineGrasp.</li>
+<li><code>graspness-nms</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>graspness-top-fraction</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp.</li>
+<li><code>graspness-topk</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>graspness-voxel</code>, trains like shipped: worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>objectness-fps</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design).</li>
+<li><code>product-fps</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design).</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>View: 21 options</summary>
+<div data-search-exclude markdown>
+<p id="view"><code>--set view=&lt;option&gt;</code>. What each option is: the <a href="../../slots/view/">view page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">objectness-view</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in GraspNet-baseline; not EconomicGrasp, FineGrasp (incompatible by design)">2/4</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet; worse under Scale-Balanced-Grasp">0/2 on a par · 1 diverging · 1 worse</span><br><small>diverging under GSNet; worse under Scale-Balanced-Grasp</small></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">direction-regression</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>learns ✗: score rose 11 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">direction-vmf</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">healpix-192</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">healpix-768</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">icosphere-162</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">icosphere-642</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-angular-cost</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-best-view</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-fibonacci-120</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-hemisphere-60</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-soft-argmax</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp">4/5 on a par · 1 worse</span><br><small>worse under Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-topk</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GSNet, Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lattice-view</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp">4/5 on a par · 1 worse</span><br><small>worse under Scale-Balanced-Grasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">objectness-view-graspable</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in Scale-Balanced-Grasp; not EconomicGrasp, FineGrasp (incompatible by design)">2/4</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet">0/2 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, GSNet</small></td>
+<td>predicts ✗: no grasp on frame 1</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">rotation-6d</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>learns ✗: view_frame rose 6 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">rotation-9d</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>learns ✗: view_frame rose 35 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">rotation-quaternion</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>learns ✗: view_frame rose 14 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">template-view</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GSNet, EconomicGrasp, FineGrasp">2/2</span><br><small>own in GSNet, EconomicGrasp, FineGrasp</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, Scale-Balanced-Grasp">0/2 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, Scale-Balanced-Grasp</small></td>
+<td>learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">two-vector-baseline</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>learns ✗: view_frame rising; score rose 31 %</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">two-vector</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp">1/5 on a par · 4 worse</span></td>
+<td>learns ✗: view_frame rose 30 %; score rose 91 %</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>objectness-view</code>, runs: own in GraspNet-baseline; not EconomicGrasp, FineGrasp (incompatible by design).</li>
+<li><code>direction-regression</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>direction-vmf</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>lattice-angular-cost</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>lattice-best-view</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>objectness-view-graspable</code>, runs: own in Scale-Balanced-Grasp; not EconomicGrasp, FineGrasp (incompatible by design).</li>
+<li><code>rotation-6d</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>rotation-9d</code>, trains like shipped: worse under GSNet, EconomicGrasp, FineGrasp; diverging under Scale-Balanced-Grasp.</li>
+<li><code>rotation-quaternion</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>two-vector-baseline</code>, trains like shipped: worse under GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp.</li>
+<li><code>two-vector</code>, trains like shipped: worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp.</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>Assigner: 4 options</summary>
+<div data-search-exclude markdown>
+<p id="assigner"><code>--set assigner=&lt;option&gt;</code>. What each option is: the <a href="../../slots/head_loss/">assigner page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">nearest-label-object-seeds</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in GraspNet-baseline; not EconomicGrasp, FineGrasp (incompatible by design)">2/4</span></td>
+<td><span class="gp-chip gp-chip--ok" title="not comparable under Scale-Balanced-Grasp">1/1 on a par</span><br><small>not comparable under Scale-Balanced-Grasp</small></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">compact-label</code></td>
+<td><span class="gp-chip gp-chip--no" title="own in EconomicGrasp, FineGrasp; incompatible by design">0/3</span><br><small>own in EconomicGrasp, FineGrasp; incompatible by design</small></td>
+<td><span class="gp-chip gp-chip--muted">not compared</span></td>
+<td>refused (incompatible by design): CompactLabelAssigner returns 'compact' matched labels, but OperationHead is supervised with 'dense' ones.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">scale-balanced</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in Scale-Balanced-Grasp; not EconomicGrasp, FineGrasp (incompatible by design)">2/4</span></td>
+<td><span class="gp-chip gp-chip--warn" title="not comparable under GraspNet-baseline; worse under GSNet">0/1 on a par · 1 worse</span><br><small>not comparable under GraspNet-baseline; worse under GSNet</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">NearestLabelAssigner</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in GSNet; not EconomicGrasp, FineGrasp (incompatible by design)">2/4</span></td>
+<td><span class="gp-chip gp-chip--no" title="not comparable under GraspNet-baseline; diverging under Scale-Balanced-Grasp">0/1 on a par · 1 diverging</span></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>nearest-label-object-seeds</code>, runs: own in GraspNet-baseline; not EconomicGrasp, FineGrasp (incompatible by design).</li>
+<li><code>scale-balanced</code>, runs: own in Scale-Balanced-Grasp; not EconomicGrasp, FineGrasp (incompatible by design).</li>
+<li><code>NearestLabelAssigner</code>, runs: own in GSNet; not EconomicGrasp, FineGrasp (incompatible by design).</li>
+<li><code>NearestLabelAssigner</code>, trains like shipped: not comparable under GraspNet-baseline; diverging under Scale-Balanced-Grasp.</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>Grouper: 28 options</summary>
+<div data-search-exclude markdown>
+<p id="grouper"><code>--set grouper=&lt;option&gt;</code>. What each option is: the <a href="../../slots/grouper/">grouper page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">DepthCylinderGroup</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GraspNet-baseline">4/4</span><br><small>own in GraspNet-baseline</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp">2/4 on a par · 2 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ball</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">box</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cylinder-attentive</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp">4/5 on a par · 1 worse</span><br><small>worse under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cylinder-edgeconv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under FineGrasp">4/5 on a par · 1 diverging</span><br><small>diverging under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cylinder-invres</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline; diverging under GSNet">3/5 on a par · 1 diverging · 1 worse</span><br><small>worse under GraspNet-baseline; diverging under GSNet</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cylinder-vector-attention</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet">4/5 on a par · 1 diverging</span><br><small>diverging under GSNet</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-ball</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-box</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-cylinder-attentive</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-cylinder-multi-scale</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in Scale-Balanced-Grasp">4/4</span><br><small>own in Scale-Balanced-Grasp</small></td>
+<td><span class="gp-chip gp-chip--ok">4/4 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-cylinder-projection</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-embed</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (incompatible by design)">2/5</span><br><small>not GSNet, EconomicGrasp, FineGrasp (incompatible by design)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline">1/2 on a par · 1 worse</span><br><small>worse under GraspNet-baseline</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-knn</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">depth-pool</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design)">3/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">2/3 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>refused (incompatible by design): DepthPoolGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">knn</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, FineGrasp</small></td>
+<td>learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">multi-scale-linear</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">multi-scale</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in FineGrasp">4/4</span><br><small>own in FineGrasp</small></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline; diverging under Scale-Balanced-Grasp">2/4 on a par · 1 diverging · 1 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-edge-conv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-gatv2-conv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-point-transformer-conv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-pointnet-conv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, EconomicGrasp, FineGrasp">2/5 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">pyg-transformer-conv</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet">4/5 on a par · 1 diverging</span><br><small>diverging under GSNet</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">roi-aware</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet">4/5 on a par · 1 diverging</span><br><small>diverging under GSNet</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">roi-grid</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">voxel-set-abstraction</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (not supported yet)">3/5</span></td>
+<td><span class="gp-chip gp-chip--ok">3/3 on a par</span></td>
+<td>refused (not supported yet): VoxelSetAbstractionGroup emits features with axes ('seed', 'channel'), but OperationHead expects ('seed', 'depth', 'channel').</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">CylinderGroup</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GSNet">4/4</span><br><small>own in GSNet</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, FineGrasp">2/4 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">CylinderInteractionGroup</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in EconomicGrasp">4/4</span><br><small>own in EconomicGrasp</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, FineGrasp">2/4 on a par · 2 worse</span><br><small>worse under GraspNet-baseline, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>depth-pool</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design).</li>
+<li><code>multi-scale</code>, trains like shipped: worse under GraspNet-baseline; diverging under Scale-Balanced-Grasp.</li>
+<li><code>voxel-set-abstraction</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (not supported yet).</li>
+</ul>
+<p>Not an option by its type name: <code>DepthEmbedGroup</code>, <code>DepthPoolGroup</code>, <code>MultiRadiusGroup</code>, <code>MultiScaleGroup</code> need an option only a preset supplies (refused before any contract is compared); the presets are listed.</p>
+</div>
+</details>
+<details class="note">
+<summary>Head bundle: 10 options</summary>
+<div data-search-exclude markdown>
+<p id="head"><code>--set head=&lt;option&gt;</code>. What each option is: the <a href="../../slots/head_loss/">head bundle page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">operation</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GraspNet-baseline">4/4</span><br><small>own in GraspNet-baseline</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet, EconomicGrasp">2/4 on a par · 2 worse</span><br><small>worse under GSNet, EconomicGrasp</small></td>
+<td>shipped</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">decoupled-grid-bins</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under EconomicGrasp">4/5 on a par · 1 diverging</span><br><small>diverging under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">decoupled-grid-class</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet; diverging under EconomicGrasp">3/5 on a par · 1 diverging · 1 worse</span><br><small>worse under GSNet; diverging under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">decoupled-grid-regression</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GSNet, EconomicGrasp, FineGrasp">2/5 on a par · 3 diverging</span><br><small>diverging under GSNet, EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">decoupled-grid</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet; diverging under EconomicGrasp">3/5 on a par · 1 diverging · 1 worse</span><br><small>worse under GSNet; diverging under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">economic-focal</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design)">3/5</span></td>
+<td><span class="gp-chip gp-chip--ok">3/3 on a par</span></td>
+<td>refused (incompatible by design): ObjectnessViewStage computes its targets from 'dense' matched labels, but CompactLabelAssigner returns 'compact' ones.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">economic</code></td>
+<td><span class="gp-chip gp-chip--warn" title="own in EconomicGrasp, FineGrasp; not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design)">1/3</span></td>
+<td><span class="gp-chip gp-chip--ok">GSNet: on a par</span></td>
+<td>refused (incompatible by design): ObjectnessViewStage computes its targets from 'dense' matched labels, but CompactLabelAssigner returns 'compact' ones.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">operation-objectness</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in Scale-Balanced-Grasp">4/4</span><br><small>own in Scale-Balanced-Grasp</small></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp; diverging under FineGrasp">1/4 on a par · 1 diverging · 2 worse</span><br><small>worse under GSNet, EconomicGrasp; diverging under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">swad-focal</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">swad</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in GSNet">4/4</span><br><small>own in GSNet</small></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under EconomicGrasp">3/4 on a par · 1 diverging</span><br><small>diverging under EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>economic-focal</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design).</li>
+<li><code>economic</code>, runs: own in EconomicGrasp, FineGrasp; not GraspNet-baseline, Scale-Balanced-Grasp (incompatible by design).</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>Loss: 17 of 20 presets</summary>
+<div data-search-exclude markdown>
+<p id="loss"><code>--set &lt;stage&gt;.&lt;term&gt;_loss=&lt;option&gt;</code>. What each option is: the <a href="../../slots/losses/">loss page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">ohem-smooth-l1</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ghm-r</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp; diverging under FineGrasp">2/5 on a par · 1 diverging · 2 worse</span><br><small>worse under GSNet, EconomicGrasp; diverging under FineGrasp</small></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ghm-c</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; diverging under FineGrasp">0/5 on a par · 1 diverging · 4 worse</span></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">balanced-l1</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">charbonnier</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">uncertainty-weighting</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.angle_loss</code>, <code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">quality-focal</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline (incompatible by design)">3/4</span><br><small>not GraspNet-baseline (incompatible by design)</small></td>
+<td><span class="gp-chip gp-chip--ok">3/3 on a par</span></td>
+<td><code>head.score_loss</code>: refused (incompatible by design): OperationHead.score_loss is a <code>value</code> term (a prediction and a target of equal shape, the target an unbounded quantity), but QualityFocal fits <code>unit</code> terms.</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cauchy</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">class-balanced</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.angle_loss</code>: learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">dice</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not Scale-Balanced-Grasp (incompatible by design)">4/5</span><br><small>not Scale-Balanced-Grasp (incompatible by design)</small></td>
+<td><span class="gp-chip gp-chip--ok">4/4 on a par</span></td>
+<td><code>head.angle_loss</code>: learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">focal</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">huber</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.tolerance_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">label-smoothing</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">lovasz-softmax</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not Scale-Balanced-Grasp (incompatible by design)">4/5</span><br><small>not Scale-Balanced-Grasp (incompatible by design)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet">3/4 on a par · 1 worse</span><br><small>worse under GSNet</small></td>
+<td><code>head.angle_loss</code>: learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ohem</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GSNet">4/5 on a par · 1 worse</span><br><small>worse under GSNet</small></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">poly1</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline">4/5 on a par · 1 worse</span><br><small>worse under GraspNet-baseline</small></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">softmax-focal</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td><code>head.angle_loss</code>: ✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>ghm-c</code>, trains like shipped: worse under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp; diverging under FineGrasp.</li>
+</ul>
+<p>Also probed under GraspNet-baseline: 2 cells that replace several terms at once (<code>ohem-smooth-l1+ghm-r+ghm-c+balanced-l1+charbonnier</code>, <code>uncertainty-weighting</code>); 2 of them run.</p>
+<p>Not tried under GraspNet-baseline: <code>varifocal</code>, <code>bce</code> fit <code>unit</code> terms only, and GraspNet-baseline has none (its terms are of kind <code>class</code>, <code>value</code>).</p>
+<p><code>distribution-focal</code> has no cell of its own: fits <code>bins</code> terms only, which no shipped method has; probed as the width loss of the head preset <code>decoupled-grid-bins</code> (stage cells).</p>
+</div>
+</details>
+<details class="note">
+<summary>Post-processing: 15 options</summary>
+<div data-search-exclude markdown>
+<p id="post"><code>--set post=&lt;option&gt;</code>. What each option is: the <a href="../../slots/post/">post-processing page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">approach-cone</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">center-gripper</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">collision-strict</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">collision</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">furthest-sampling</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">gripper-limits</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">mesh-collision</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">nms</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">score-threshold</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">table-plane</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">to-base-frame</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">top-k</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">width-from-cloud</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">workspace</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">target-mask</code></td>
+<td><span class="gp-chip gp-chip--muted" title="reads observation.masks, which no shipped dataset fills">no record</span><br><small>reads observation.masks, which no shipped dataset fills</small></td>
+<td>—</td>
+<td>no record</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>Trains like shipped</em>: — (post-processing trains nothing: it changes predictions, not the training).</p>
+</div>
+</details>
+<details class="note">
+<summary>Training recipe: 37 options (optimizer, schedule, hooks, augmentation, recipe)</summary>
+<div data-search-exclude markdown>
+<p id="optimizer"><strong>Optimizer</strong>, 17 options: <code>--set optimizer=&lt;option&gt;</code>. What each option is: the <a href="../../slots/recipe/">optimizer page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">adamw-no-decay-1d</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">adamw</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ademamix</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">encoder-lr-0.1</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp; diverging under FineGrasp">1/5 on a par · 1 diverging · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">layer-decay</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp; diverging under FineGrasp">2/5 on a par · 1 diverging · 2 worse</span><br><small>worse under GSNet, EconomicGrasp; diverging under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">prodigy</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp">4/6 on a par · 2 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp</small></td>
+<td>learns ✗: angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">schedulefree-adamw</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span></td>
+<td>learns ✗: score rose 19 %; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">schedulefree-radam</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span></td>
+<td>learns ✗: score flat; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">schedulefree-sgd</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">3/6</span></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, Scale-Balanced-Grasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped; not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">not compared</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">soap</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not HGGD (not verified: one CUDA illegal memory access on a shared GPU)">5/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>learns ✗: score flat; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">stableadamw</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-adan</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, HGGD; diverging under FineGrasp">2/6 on a par · 1 diverging · 3 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-adopt</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under EconomicGrasp, FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-lamb</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under FineGrasp">5/6 on a par · 1 diverging</span><br><small>diverging under FineGrasp</small></td>
+<td>learns ✗: score rising; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-lion</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp, HGGD; diverging under Scale-Balanced-Grasp">0/6 on a par · 1 diverging · 5 worse</span></td>
+<td>learns ✗: score flat; angle flat</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-madgrad</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline; worse under Scale-Balanced-Grasp, FineGrasp">3/6 on a par · 1 diverging · 2 worse</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">timm-mars</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>encoder-lr-0.1</code>, trains like shipped: worse under GraspNet-baseline, GSNet, EconomicGrasp; diverging under FineGrasp.</li>
+<li><code>schedulefree-adamw</code>, trains like shipped: not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped.</li>
+<li><code>schedulefree-radam</code>, trains like shipped: not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped.</li>
+<li><code>schedulefree-sgd</code>, runs: not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe).</li>
+<li><code>schedulefree-sgd</code>, trains like shipped: not compared under GraspNet-baseline, Scale-Balanced-Grasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped; not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1.</li>
+<li><code>soap</code>, runs: not HGGD (not verified: one CUDA illegal memory access on a shared GPU).</li>
+<li><code>timm-adan</code>, trains like shipped: worse under GSNet, EconomicGrasp, HGGD; diverging under FineGrasp.</li>
+<li><code>timm-lion</code>, trains like shipped: worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp, HGGD; diverging under Scale-Balanced-Grasp.</li>
+<li><code>timm-madgrad</code>, trains like shipped: diverging under GraspNet-baseline; worse under Scale-Balanced-Grasp, FineGrasp.</li>
+</ul>
+<p id="schedule"><strong>Schedule</strong>, 7 options: <code>--set schedule=&lt;option&gt;</code>. What each option is: the <a href="../../slots/recipe/">schedule page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">constant</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cosine-restarts</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">cosine</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">multistep-warmup</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">onecycle</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">poly</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">warmup-cosine</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td>—</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><em>Trains like shipped</em>: — (level 2 holds the schedule of the method as shipped fixed (a constant rate; FineGrasp: its own warm-up), so a schedule swap is not compared).</p>
+<p id="hooks"><strong>Hooks</strong>, 7 options: <code>--set hooks=&lt;option&gt;</code>. What each option is: the <a href="../../slots/recipe/">hooks page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">accumulate-2</code></td>
+<td><span class="gp-chip gp-chip--ok" title="own in HGGD">5/5</span><br><small>own in HGGD</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, EconomicGrasp">2/5 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, GSNet, EconomicGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">agc</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--ok">6/6 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">amp</code></td>
+<td><span class="gp-chip gp-chip--no" title="not supported yet">0/6</span><br><small>not supported yet</small></td>
+<td><span class="gp-chip gp-chip--muted">not compared</span></td>
+<td>refused (not supported yet): train.amp: mixed precision is not supported by GraspNetBaseline yet: its loss is not written for half-precision tensors (the detector does not declare <code>amp_ready = True</code>).</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ema</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--ok">6/6 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">freeze-encoder</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--ok" title="not compared under FineGrasp: the swap did not run at level 1">4/4 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">grad-clip</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under FineGrasp">5/6 on a par · 1 worse</span><br><small>worse under FineGrasp</small></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">swa</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (not verified: the probe is shorter than the epoch at which averaging starts)">4/6</span></td>
+<td><span class="gp-chip gp-chip--ok">4/4 on a par</span></td>
+<td>not verified: the probe is shorter than the epoch at which averaging starts</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>freeze-encoder</code>, trains like shipped: not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>swa</code>, runs: not GraspNet-baseline, Scale-Balanced-Grasp (not verified: the probe is shorter than the epoch at which averaging starts).</li>
+</ul>
+<p id="augment"><strong>Augmentation</strong>, 3 options: <code>--set augment=&lt;option&gt;</code>. What each option is: the <a href="../../slots/recipe/">augmentation page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">dropout</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (fails: the transform order of the composed config is wrong (DepthNormals must run first))">5/6</span></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">jitter</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not HGGD (not supported yet)">5/6</span><br><small>not HGGD (not supported yet)</small></td>
+<td><span class="gp-chip gp-chip--ok">5/5 on a par</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">shift</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not HGGD (not supported yet)">5/6</span><br><small>not HGGD (not supported yet)</small></td>
+<td><span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>dropout</code>, runs: not FineGrasp (fails: the transform order of the composed config is wrong (DepthNormals must run first)).</li>
+</ul>
+<p id="recipe"><strong>Recipe</strong>, 3 options: <code>--set recipe=&lt;option&gt;</code>. What each option is: the <a href="../../slots/recipe/">recipe page</a>.</p>
+<div class="gp-matrix" markdown>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Runs</th>
+<th>Trains like shipped</th>
+<th>Under GraspNet-baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code class="gp-nowrap">adamw-onecycle</code></td>
+<td><span class="gp-chip gp-chip--ok">6/6</span></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">finetune-encoder</code></td>
+<td><span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp: it trained on a schedule of its own, not on that of the method as shipped; not compared under FineGrasp: the swap did not run at level 1">not compared</span></td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code class="gp-nowrap">ptv3-adamw-onecycle</code></td>
+<td><span class="gp-chip gp-chip--ok">5/5</span></td>
+<td><span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp: it trained on a schedule of its own, not on that of the method as shipped">not compared</span></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Who is left out, and why:</p>
+<ul>
+<li><code>adamw-onecycle</code>, trains like shipped: not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped.</li>
+<li><code>finetune-encoder</code>, trains like shipped: not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp: it trained on a schedule of its own, not on that of the method as shipped; not compared under FineGrasp: the swap did not run at level 1.</li>
+<li><code>ptv3-adamw-onecycle</code>, trains like shipped: not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp: it trained on a schedule of its own, not on that of the method as shipped.</li>
+</ul>
+</div>
+</details>
+<details class="note">
+<summary>How to swap, and how to read these lists</summary>
+<p>Swap one option in with a single line, or list the options of a slot:</p>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>&lt;slot&gt;<span class="o">=</span>&lt;option&gt;<span class="w"> </span>-o<span class="w"> </span>swap.yaml
+grasppanda<span class="w"> </span>compose<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span>--list<span class="w"> </span>&lt;slot&gt;
+</code></pre></div>
+<p>The summary table:</p>
+<ul>
+<li><strong>Composes</strong>: the options the config check accepts under GraspNet-baseline, the one it ships included. <em>needs consent</em>: an option it holds back until you accept the code it downloads (the row says how), neither accepted nor refused. <em>no record</em>: never composed; the row says why.</li>
+<li><strong>Refused</strong>: the options the config check refuses under GraspNet-baseline; each row gives the first sentence of the reason. For losses, both columns count the terms (or sets of terms) a preset was tried on.</li>
+<li><strong>Runs here</strong>: the swaps whose probe trained on real frames under GraspNet-baseline without an error, out of every option tried there as a swap: a refusal counts, the option the method ships does not, and a loss preset is one option. <a href="../../advanced_guides/measured_combinations/#the-answer">Does it run?</a> counts the same way.</li>
+</ul>
+<p>The lists of each slot:</p>
+<ul>
+<li><strong>Runs</strong>: the methods under which the swap trained on real frames without an error, out of every method it is a swap under; the methods that ship the option are <em>own</em> and not counted. Who is left out, and why, stands under the chip, or below the table when it is long. Measured: 20 training iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, one run per cell; nothing was measured on GraspClutter6D or on Kinect frames.</li>
+<li><strong>Trains like shipped</strong>: trained 250 iterations beside the component the method ships, its losses fall as theirs do, out of the methods it was compared under; a method under which the swap did not run, or where it trained on a schedule of its own, is named and not counted. Level 2 needs <em>runs</em>, not <em>learns</em>: a term flat after 20 iterations can fall by 250. Measured: 250 iterations on 8 RealSense frames of GraspNet-1Billion (one scene), seed 0, at a constant learning rate (FineGrasp: its own warm-up), beside the method as shipped trained the same way twice.</li>
+<li><strong>Under GraspNet-baseline</strong>: ✓ when it reached every level here; <em>level ? (as shipped)</em> when GraspNet-baseline as shipped does not reach that level either (a note below the table says why), so the level says nothing about the option; else the level it missed and why (<em>composes</em>, <em>runs</em>, <em>learns</em>, <em>predicts</em>), or why it was refused.</li>
+</ul>
+<p>The levels, the refusal kinds and the thresholds: <a href="../../evidence/">How we measure</a>; every record: <a href="../../advanced_guides/measured_combinations/#measured-classes">Does it run?</a>; every comparison at level 2: <a href="../../advanced_guides/learns_like_reference/">Does it train like the shipped component?</a>.</p>
+</details>
+<details class="note">
+<summary>How this port differs from the reference</summary>
+<ul>
+<li>One model instance trains and predicts.</li>
+<li>Losses are means over the supervised entries (the reference adds 1e-6 to the count),
+  and zero, not NaN, when nothing is supervised.</li>
+<li>Validation uses the <code>val_dev</code> scenes, not <code>test_seen</code>.</li>
+</ul>
+<p>How it was checked, stage by stage: <code>tests/integration/test_baseline_parity.py</code> and <a href="https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/README.md">the README</a>.</p>
+</details>
+<h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../get_started/swap/">Swap a component</a>: change one slot of GraspNet-baseline with a single line.</li>
+<li><a href="../../explorer/#m=GraspNet-baseline">Open GraspNet-baseline in the explorer</a>: every option of every slot, with what was measured.</li>
+<li><a href="../">All six methods</a> side by side, and the <a href="../../model_zoo/">model zoo</a>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../" class="md-footer__link md-footer__link--prev" aria-label="Previous: Methods">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Methods
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../gsnet/" class="md-footer__link md-footer__link--next" aria-label="Next: GSNet">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                GSNet
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

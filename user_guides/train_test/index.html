@@ -1,0 +1,3376 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/user_guides/train_test/">
+      
+      
+        <link rel="prev" href="../datasets/">
+      
+      
+        <link rel="next" href="../cross_dataset/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Train and test - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#train-and-test" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Train and test
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../methods/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../slots/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../methods/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../slots/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-check-the-engine-on-a-cpu-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Check the engine on a CPU (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-train-a-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Train a method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-test-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-resume-or-reuse-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Resume or reuse a run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-check-the-engine-on-a-cpu-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Check the engine on a CPU (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-train-a-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Train a method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-test-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-resume-or-reuse-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Resume or reuse a run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-directory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The run directory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Guides
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/user_guides/train_test.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="train-and-test">Train and test<a class="headerlink" href="#train-and-test" title="Permanent link">&para;</a></h1>
+<p><strong>Goal:</strong> train one of the six methods on GraspNet-1Billion, score it on the benchmark,
+and resume or reuse a run.</p>
+<p><code>grasppanda train</code>, <code>grasppanda test</code> and <code>grasppanda infer</code> take a config and nothing
+else. Every setting lives in the config; the few flags are shorthand for overrides and are
+recorded with the run like any other override.</p>
+<p><strong>You need:</strong> the dataset and the assets of your method (<a href="../datasets/">Datasets</a>), a GPU,
+and for GSNet, EconomicGrasp and FineGrasp the sparse-convolution extra
+(<a href="../../get_started/installation/">Install</a>). Step 1 needs none of these.</p>
+<h2 id="1-check-the-engine-on-a-cpu-optional">1. Check the engine on a CPU (optional)<a class="headerlink" href="#1-check-the-engine-on-a-cpu-optional" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://github.com/Daeda1used/GraspPanda/tree/main/projects/example_project">example project</a>
+trains a toy detector on synthetic scenes. It goes through every step a real method goes
+through:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">CFG</span><span class="o">=</span>projects/example_project/configs/toy_train.yaml
+grasppanda<span class="w"> </span>train<span class="w"> </span><span class="nv">$CFG</span><span class="w"> </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>demo
+grasppanda<span class="w"> </span><span class="nb">test</span><span class="w">  </span><span class="nv">$CFG</span><span class="w"> </span>--weights<span class="w"> </span>work_dirs/toy_train/demo/checkpoints/best.pth
+</code></pre></div>
+<details class="note">
+<summary>Expected output of <code>train</code></summary>
+<div class="highlight"><pre><span></span><code>ʕ•ᴥ•ʔ  GraspPanda 0.1.0  ·  6-DoF grasp detection in clutter
+  train
+  config      projects/example_project/configs/toy_train.yaml  (hash be81c4b1301a)
+  run         work_dirs/toy_train/demo
+  device      cpu · 1 process · seed 0 · deterministic off
+  model       ToyDetector · 7,601 parameters (7,601 trainable)
+  data        32 frames · 8 batches of 4 per epoch
+  schedule    5 epochs · Adam(lr=0.005, weight_decay=0.0) · ExponentialLR(gamma=0.95) per epoch
+  evaluation  data.val every 1 epoch(s) · variants raw, centre · best by raw/AP
+  hooks       EvaluationHook, CheckpointHook, TextLoggerHook
+epoch 1/5  iter 4/8  loss 3.9746  loss/score 3.8631  loss/width 0.1115  cell_accuracy 0.0410  lr 5.000e-03  data 0.001s  iter 0.012s  eta 0:00:00
+...
+evaluation after epoch 1 (8 frames, 0.1 s)
+protocol toy-synthetic-v0 · dataset toy · split val · cameras toy · ground-truth-assisted inputs: none
+variant  frames  AP     AP_tight
+───────  ──────  ─────  ────────
+raw      8/8     1.31   0.68
+centre   8/8     15.46  7.75
+best checkpoint: raw/AP = 1.3054 at epoch 1
+</code></pre></div>
+<p>The commands exit with <code>0</code> on success, <code>2</code> when the config is invalid (nothing was
+started) and <code>1</code> when the run failed, with a one-paragraph reason on stderr.</p>
+</details>
+<h2 id="2-train-a-method">2. Train a method<a class="headerlink" href="#2-train-a-method" title="Permanent link">&para;</a></h2>
+<p>Each method trains from its shipped config, with the recipe of its authors:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:6"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">GraspNet-baseline</label><label for="__tabbed_1_2">GSNet</label><label for="__tabbed_1_3">Scale-Balanced-Grasp</label><label for="__tabbed_1_4">EconomicGrasp</label><label for="__tabbed_1_5">FineGrasp</label><label for="__tabbed_1_6">HGGD</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>gsnet/gsnet_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>economicgrasp/economicgrasp_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>finegrasp/finegrasp_sunet14_g1b-realsense_10e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>hggd/hggd_r34w8_g1b-realsense_15e<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The run lives in <code>work_dirs/&lt;config name&gt;/first/</code>. Every epoch is scored on the validation
+scenes (<code>val_dev</code>, held out from the training scenes) and checkpointed as
+<code>checkpoints/epoch_NNNN.pth</code>; the last part of the config name is the number of epochs.
+The recipe of each method is on its <a href="../../methods/">method page</a>.</p>
+<h2 id="3-test-it">3. Test it<a class="headerlink" href="#3-test-it" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span><span class="nb">test</span><span class="w"> </span>&lt;method<span class="w"> </span>config&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weights<span class="w"> </span>work_dirs/&lt;config<span class="w"> </span>name&gt;/first/checkpoints/epoch_NNNN.pth
+</code></pre></div>
+<p>It scores the test split (<code>test</code>: seen, similar and novel) once per post-processing
+variant of the config, <code>raw</code> and <code>cd</code> (with the collision filter) in the shipped configs.
+It writes one result record per variant into <code>results/</code> of its own run directory. Read a
+record with <code>grasppanda analyze</code> (<a href="../analysis/">Read an analysis</a>).</p>
+<h2 id="4-resume-or-reuse-a-run">4. Resume or reuse a run<a class="headerlink" href="#4-resume-or-reuse-a-run" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>train<span class="w"> </span>&lt;method<span class="w"> </span>config&gt;<span class="w"> </span>--opts<span class="w"> </span>runtime.run_id<span class="o">=</span>first<span class="w"> </span>--resume<span class="w">  </span><span class="c1"># its newest checkpoint</span>
+grasppanda<span class="w"> </span>train<span class="w"> </span>&lt;method<span class="w"> </span>config&gt;<span class="w"> </span>--resume<span class="w"> </span>path/to/epoch_0004.pth<span class="w">       </span><span class="c1"># a given checkpoint</span>
+</code></pre></div>
+<p>A run continues in its own directory when the config hash is unchanged.
+<code>runtime.load_from</code> (<code>--weights</code> for <code>test</code> and <code>infer</code>) loads weights only, also to start a
+training from them; any mismatch of keys is an error unless
+<code>runtime.allow_weight_mismatch: true</code>.</p>
+<h2 id="the-run-directory">The run directory<a class="headerlink" href="#the-run-directory" title="Permanent link">&para;</a></h2>
+<p>Every invocation works in <code>&lt;runtime.work_dir&gt;/&lt;run id&gt;/</code>. The run id is
+<code>runtime.run_id</code>, or the start time (<code>20261012-101500</code>, with <code>-test</code> or <code>-infer</code> appended
+for those commands) when it is not set.</p>
+<div class="highlight"><pre><span></span><code>work_dirs/toy_train/demo/
+├── config.resolved.yaml      the config with every default written out
+├── config.sources/           the files it was merged from, and overrides.txt
+├── run.json  git.json  env.json  code.tar.gz  diff.patch
+├── log.txt
+├── checkpoints/              epoch_0001.pth … (and best.pth with evaluation.save_best)
+├── predictions/&lt;variant&gt;/    scene_0100/&lt;camera&gt;/0000.npy, GraspNet (G, 17) arrays
+├── results/                  &lt;variant&gt;.json (test) · epoch_0005/&lt;variant&gt;.json (training)
+└── resumes/&lt;time&gt;/           the snapshot of each later invocation that resumed this run
+</code></pre></div>
+<p>One directory is one run. A fresh <code>train</code>, and every <code>test</code> and <code>infer</code>, refuses to write
+into a directory that already holds a run.</p>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
+<details class="note">
+<summary>What the config controls</summary>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data.train</code> / <code>val</code> / <code>test</code></td>
+<td><code>{dataset, batch_size, num_workers, shuffle, drop_last}</code>. <code>batch_size</code> is per process. Training shuffles unless <code>shuffle: false</code>; prediction never shuffles.</td>
+</tr>
+<tr>
+<td><code>optimizer</code>, <code>scheduler</code></td>
+<td>Any <code>torch.optim</code> optimizer and scheduler, <code>{type: ..., ...}</code>.</td>
+</tr>
+<tr>
+<td><code>train.epochs</code></td>
+<td>Length of the run.</td>
+</tr>
+<tr>
+<td><code>train.amp</code></td>
+<td>Mixed precision for the training forward pass. Prediction always runs in full precision. The config check refuses it unless the detector class declares <code>amp_ready = True</code>; none of the shipped detectors does yet.</td>
+</tr>
+<tr>
+<td><code>train.accumulate</code></td>
+<td>Batches whose gradients are summed before one optimizer step.</td>
+</tr>
+<tr>
+<td><code>train.grad_clip</code>, <code>train.grad_clip_mode</code></td>
+<td>Limit and <code>norm</code> (global L2 norm) or <code>value</code> (element-wise clamp).</td>
+</tr>
+<tr>
+<td><code>train.ema</code></td>
+<td>Decay of the moving average of the weights; <code>null</code> turns it off.</td>
+</tr>
+<tr>
+<td><code>train.sync_bn</code></td>
+<td>Synchronised batch norm across processes (CUDA only).</td>
+</tr>
+<tr>
+<td><code>train.scheduler_unit</code></td>
+<td><code>epoch</code> (default) or <code>iteration</code>: when the scheduler steps.</td>
+</tr>
+<tr>
+<td><code>evaluation.interval</code></td>
+<td>Evaluate on <code>data.val</code> every N epochs and after the last one; <code>0</code> turns it off.</td>
+</tr>
+<tr>
+<td><code>evaluation.evaluator</code></td>
+<td>The scorer.</td>
+</tr>
+<tr>
+<td><code>evaluation.variants</code></td>
+<td>Named post-processing chains, each scored separately.</td>
+</tr>
+<tr>
+<td><code>evaluation.save_best</code></td>
+<td><code>&lt;variant&gt;/&lt;metric&gt;</code> that selects <code>best.pth</code>; higher is better.</td>
+</tr>
+<tr>
+<td><code>evaluation.split</code></td>
+<td>The <code>data</code> section <code>test</code> and <code>infer</code> read (default <code>test</code>).</td>
+</tr>
+<tr>
+<td><code>evaluation.weights</code></td>
+<td><code>model</code> or <code>ema</code>: which weights are scored.</td>
+</tr>
+<tr>
+<td><code>evaluation.num_workers</code></td>
+<td>Worker processes of the evaluator.</td>
+</tr>
+<tr>
+<td><code>runtime.work_dir</code>, <code>runtime.run_id</code></td>
+<td>Where the run lives. Neither enters the config hash.</td>
+</tr>
+<tr>
+<td><code>runtime.device</code></td>
+<td><code>auto</code>, <code>cpu</code>, <code>cuda</code>, <code>cuda:N</code>.</td>
+</tr>
+<tr>
+<td><code>runtime.seed</code>, <code>runtime.deterministic</code></td>
+<td>See <em>Reproducibility</em> below.</td>
+</tr>
+<tr>
+<td><code>runtime.resume</code>, <code>runtime.allow_config_mismatch</code></td>
+<td>See <em>Checkpoints and resuming</em> below.</td>
+</tr>
+<tr>
+<td><code>runtime.load_from</code>, <code>runtime.allow_weight_mismatch</code></td>
+<td>See <em>Loading weights</em> below.</td>
+</tr>
+<tr>
+<td><code>runtime.checkpoint</code></td>
+<td><code>{interval, keep_last}</code>.</td>
+</tr>
+<tr>
+<td><code>runtime.log</code></td>
+<td><code>{interval, backends}</code> with backends <code>text</code>, <code>tensorboard</code>, <code>wandb</code>.</td>
+</tr>
+<tr>
+<td><code>hooks</code></td>
+<td>Extra hooks; see <em>Hooks</em> below.</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="note">
+<summary>The training loop</summary>
+<p>The loop is one method,
+<a href="https://github.com/Daeda1used/GraspPanda/blob/main/grasppanda/engine/trainer.py"><code>Trainer.train</code></a>,
+36 lines long. Per batch:</p>
+<ol>
+<li><code>losses = model.loss(observation, supervision)</code>, under autocast when <code>train.amp</code> is on.</li>
+<li>
+<p>Entries whose key starts with <code>loss/</code> are summed. Everything else is a metric: it is
+   logged, never summed. If the sum is NaN or infinite the run stops and names the term,
+   the iteration and the frames of the batch:</p>
+<div class="highlight"><pre><span></span><code>✗ NonFiniteLossError: non-finite loss at epoch 1, iteration 3: loss/aux = nan.
+  Frames in the batch: tiny/scene_0000/cam/0002, tiny/scene_0000/cam/0005
+</code></pre></div>
+</li>
+<li>
+<p><code>total / train.accumulate</code> is back-propagated.</p>
+</li>
+<li>Every <code>train.accumulate</code> batches, and on the last batch of an epoch, the gradients
+   are clipped and applied, the weight average is updated, and the scheduler steps when
+   <code>train.scheduler_unit</code> is <code>iteration</code>. A tail group smaller than <code>accumulate</code> therefore
+   takes a smaller step; with a scheduler per iteration, "iteration" means optimizer step.</li>
+</ol>
+<p>After the last batch the scheduler steps when its unit is <code>epoch</code>.</p>
+<p><strong>Schedulers that need the length of the run.</strong> <code>OneCycleLR</code> (<code>total_steps</code>),
+<code>CosineAnnealingLR</code> (<code>T_max</code>) and <code>PolynomialLR</code> (<code>total_iters</code>) are given the number of
+scheduler steps of the run, so the config does not repeat what <code>train.epochs</code> and the
+dataset size already say:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">OneCycleLR</span><span class="p p-Indicator">,</span><span class="nt"> max_lr</span><span class="p">:</span><span class="w"> </span><span class="nv">1e-3</span><span class="p p-Indicator">}</span><span class="w">     </span><span class="c1"># no total_steps</span>
+<span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">epochs</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> scheduler_unit</span><span class="p">:</span><span class="w"> </span><span class="nv">iteration</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<p>A value written in the config is kept. <code>ReduceLROnPlateau</code> and schedulers that take
+Python functions or other schedulers are rejected with an explanation.</p>
+<p><strong>Parameter groups and several optimizers.</strong> By default one optimizer covers every
+trainable parameter. A detector that needs more defines <code>configure_optimizers</code>, which
+receives the <code>optimizer</code> node of the config:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">backbone</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="s2">"lr"</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">[</span><span class="s2">"lr"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">parameters</span><span class="p">()},</span>
+    <span class="p">]</span>
+    <span class="c1"># or several optimizers: {"backbone": self.backbone.parameters(), "head": ...}</span>
+</code></pre></div>
+<p>Return parameter groups for one optimizer, or a mapping <code>name -&gt; parameters | optimizer</code>
+for several. Every optimizer steps on the same total loss and gets its own scheduler.</p>
+</details>
+<details class="note">
+<summary>Hooks</summary>
+<p>Whatever is not the arithmetic of a step is a hook. Three are added by default from the
+config: a logger per <code>runtime.log.backends</code> entry, in-training evaluation (when
+<code>data.val</code>, <code>evaluation.evaluator</code> and <code>evaluation.interval &gt; 0</code> are set) and
+checkpointing. Others are listed under <code>hooks</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">hooks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">BNMomentumHook</span><span class="p p-Indicator">,</span><span class="nt"> initial</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt"> decay</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="nt"> step</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> minimum</span><span class="p">:</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">StageTimerHook</span><span class="p p-Indicator">,</span><span class="nt"> sync</span><span class="p">:</span><span class="w"> </span><span class="nv">true</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Hook</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TextLoggerHook</code></td>
+<td>One line every <code>runtime.log.interval</code> iterations and on the last batch of an epoch, to the console and <code>log.txt</code>: running means of every loss term and metric, learning rate, gradient norm (when clipping by norm), data and iteration time, peak GPU memory, ETA.</td>
+</tr>
+<tr>
+<td><code>TensorBoardLoggerHook</code>, <code>WandbLoggerHook</code></td>
+<td>The same scalars to TensorBoard (<code>&lt;run&gt;/tensorboard</code>) or Weights &amp; Biases. Optional: <code>pip install -e ".[tensorboard]"</code> or <code>".[wandb]"</code>. A missing package fails before training starts.</td>
+</tr>
+<tr>
+<td><code>EvaluationHook</code></td>
+<td>Scores <code>data.val</code>; see <em>Evaluation</em> below.</td>
+</tr>
+<tr>
+<td><code>CheckpointHook</code></td>
+<td><code>epoch_NNNN.pth</code> every <code>interval</code> epochs and after the last one, the newest <code>keep_last</code> kept, <code>best.pth</code> by <code>evaluation.save_best</code>.</td>
+</tr>
+<tr>
+<td><code>BNMomentumHook</code></td>
+<td>Sets the momentum of every batch-norm layer to <code>max(initial * decay ** (epoch // step), minimum)</code> before each epoch.</td>
+</tr>
+<tr>
+<td><code>StageTimerHook</code></td>
+<td>Seconds per iteration spent in the forward pass of each stage (child module) of the detector, as <code>forward.&lt;stage&gt;</code> in the log. With <code>sync: true</code> it waits for the GPU around every stage, which makes the numbers honest and the training slower.</td>
+</tr>
+</tbody>
+</table>
+<p>A hook listed under <code>hooks</code> replaces the default of the same class. Hooks run in
+<code>priority</code> order (evaluation 70, checkpointing 80, loggers 90, everything else 50), so a
+checkpoint always knows the metrics of its epoch. To write one, subclass
+<code>grasppanda.engine.hooks.Hook</code>, annotate the constructor parameters, register it with
+<code>@HOOKS.register()</code> and load the module through <code>custom_imports</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@HOOKS</span><span class="o">.</span><span class="n">register</span><span class="p">()</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FreezeBackbone</span><span class="p">(</span><span class="n">Hook</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">before_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>          <span class="c1"># state.epoch: index of the epoch to run</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">backbone</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">epoch</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">)</span>
+</code></pre></div>
+<p><code>state</code> is a <code>TrainState</code>: model, optimizers, schedulers, epoch and iteration counters,
+the outputs of the last iteration, the latest evaluation metrics, the run directory.</p>
+</details>
+<details class="note">
+<summary>Checkpoints and resuming</summary>
+<p>A checkpoint holds the model, optimizer(s), scheduler(s), gradient scaler, weight
+average, the random-number states of every process, epoch, iteration, best metric,
+config hash and package version. It is written to a temporary file and renamed, so an
+interrupted job never leaves a truncated file, and it contains only tensors and plain
+values: files are read with <code>weights_only=True</code> and loading never executes pickled code.</p>
+<p>The run continues in the directory that owns the checkpoint when it is the same run:
+the checkpoint was written under the current config hash, and <code>runtime.work_dir</code> (and
+<code>runtime.run_id</code>, when set) point at that directory. The new invocation's snapshot is
+kept beside the original one, in <code>resumes/&lt;time&gt;/</code>.</p>
+<p>Otherwise the resumed run starts a new directory below <code>runtime.work_dir</code> and writes
+nothing into the checkpoint's directory: a checkpoint resumed with another <code>--work-dir</code>
+or <code>runtime.run_id</code>, a checkpoint file outside a run directory, and a config continued
+with <code>runtime.allow_config_mismatch=true</code>. Its <code>run.json</code> records <code>resumed_from</code>, and the
+log says why:</p>
+<div class="highlight"><pre><span></span><code>resuming work_dirs/toy/one/checkpoints/epoch_0002.pth in a new run directory, because
+runtime.work_dir and runtime.run_id ask for elsewhere; the run that owns the checkpoint,
+work_dirs/toy/one, is left as it is
+</code></pre></div>
+<p>The new directory starts with the best metric stored in the checkpoint, so its <code>best.pth</code>
+appears when one of its own epochs beats that value; the earlier best stays in the
+original run. A checkpoint written under a different config hash is refused before
+anything is written:</p>
+<div class="highlight"><pre><span></span><code>✗ ResumeError: …/epoch_0001.pth was written under config hash f77ba11a0ed6, but the current
+  config hashes to 590caa0a40d9: this is a different experiment. Resume with the original
+  config (config.resolved.yaml in the run directory), or set
+  runtime.allow_config_mismatch=true to continue it as a new run.
+</code></pre></div>
+<p><code>runtime.work_dir</code>, <code>runtime.run_id</code>, <code>runtime.resume</code> and
+<code>runtime.allow_config_mismatch</code> are not part of the hash. Anything else is, including
+<code>train.epochs</code>: training longer than planned needs <code>runtime.allow_config_mismatch=true</code>,
+and the longer run lives in a directory of its own.</p>
+</details>
+<details class="note">
+<summary>Loading weights</summary>
+<p><code>runtime.load_from</code> (<code>--weights</code> for <code>test</code> and <code>infer</code>) loads weights and nothing else.
+The key report is always printed, and any difference is an error unless
+<code>runtime.allow_weight_mismatch: true</code>; there is no silent non-strict load.</p>
+<div class="highlight"><pre><span></span><code>✗ WeightMismatchError: weights from w.pth: 1 matched, 0 missing, 5 unexpected, 3 with a different shape
+  unexpected (in the file, not in the model):
+    encoder.1.weight
+    encoder.1.running_mean
+    ...
+  different shape:
+    encoder.0.weight: file (8, 3), model (16, 3)
+    head.weight: file (1, 8), model (1, 16)
+    ...
+Nothing was loaded. Fix the model config or the file, or set
+runtime.allow_weight_mismatch=true to load the keys that match.
+</code></pre></div>
+<p>Accepted layouts: a GraspPanda checkpoint, a bare state dict, or a mapping with a
+<code>state_dict</code> / <code>model_state_dict</code> entry; a uniform <code>module.</code> prefix is stripped. Each of
+these is stated in the report. Files that pickle other objects must be converted first;
+the released checkpoints of the six methods are converted by <code>tools/convert_checkpoint.py</code>
+(each <a href="../../methods/">method page</a> has the command).</p>
+</details>
+<details class="note">
+<summary>Evaluation, result records and partial results</summary>
+<p>In-training evaluation and <code>grasppanda test</code> run the same routine:</p>
+<ol>
+<li><code>model.predict</code> runs over the split. The raw predictions are written once, to
+   <code>predictions/raw/</code>. An empty prediction is a valid result and is written too.</li>
+<li>For every entry of <code>evaluation.variants</code> with a non-empty chain, the chain is applied
+   to each frame's raw grasps, with the observation of that frame, and the result is
+   written to <code>predictions/&lt;variant&gt;/</code>. A variant with an empty chain <em>is</em> the raw
+   predictions. The name <code>raw</code> is reserved for it.</li>
+<li>The evaluator scores each variant against <strong>every</strong> key of the split, so a frame
+   without a prediction is reported as missing rather than skipped.</li>
+<li>One result record per variant is written, and metrics are reported as
+   <code>&lt;variant&gt;/&lt;metric&gt;</code>.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">evaluation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">evaluator</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">ToyEvaluator</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">variants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">raw</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">centre</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="nv">ToyCentreFilter</span><span class="p p-Indicator">,</span><span class="nt"> radius</span><span class="p">:</span><span class="w"> </span><span class="nv">0.15</span><span class="p p-Indicator">}]</span>
+<span class="w">  </span><span class="nt">save_best</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">raw/AP</span>
+</code></pre></div>
+<p><code>results/&lt;variant&gt;.json</code> holds what was measured and under which conditions: <code>protocol</code>,
+<code>dataset</code>, <code>split</code>, <code>cameras</code>, <code>requested</code> / <code>scored</code> / <code>coverage</code> / <code>missing</code>,
+<code>postprocessing</code> (the chain with every parameter), <code>gt_assisted</code>, <code>evaluator</code> (class,
+config and the info it reported), <code>config_hash</code>, <code>code</code> (commit, dirty flag, version),
+<code>weights</code> (path, sha256, <code>model</code> or <code>ema</code>, epoch, the config hash they were trained
+under), <code>seed</code>, <code>metrics</code> and <code>per_scene</code>. Per-scene numbers are the mean of the
+evaluator's per-frame precision tables, overall and per column, as fractions in <code>[0, 1]</code>.
+<code>gt_assisted</code> lists the inference inputs that were derived from ground truth, collected
+from <code>observation.gt_assisted()</code> over all frames.</p>
+<p>When not every requested frame was scored, the record is still written, but with
+<code>"partial": true</code>, <code>"metrics": null</code> and the aggregates under <code>"partial_metrics"</code>, so
+nothing that reads <code>metrics</code> can mistake them for a headline number. The console prints
+coverage and per-scene numbers only:</p>
+<div class="highlight"><pre><span></span><code>variant  frames  AP
+───────  ──────  ──────────────────
+raw      6/6     1.00
+best1    5/6     withheld (partial)
+best1: PARTIAL, 5 of 6 frames scored (83.3 %), 1 missing. Per-scene mean precision only:
+  cam/scene_0020  frames 5  0.5000
+</code></pre></div>
+<p>A partial variant contributes no <code>&lt;variant&gt;/&lt;metric&gt;</code> and never becomes the best
+checkpoint.</p>
+<p><code>grasppanda test &lt;config&gt; --weights &lt;checkpoint&gt; [--split val] [--work-dir DIR] [--opts ...]</code>:
+<code>--weights</code> is <code>runtime.load_from</code>, <code>--split</code> is <code>evaluation.split</code> (a <code>data</code> section:
+<code>train</code>, <code>val</code> or <code>test</code>). Which frames a section holds is the dataset's business:
+<code>--opts data.test.dataset.&lt;parameter&gt;=...</code>. To score the averaged weights of a run
+trained with <code>train.ema</code>, set <code>evaluation.weights=ema</code>.</p>
+</details>
+<details class="note">
+<summary><code>grasppanda infer</code>: predictions without a score</summary>
+<div class="highlight"><pre><span></span><code>grasppanda<span class="w"> </span>infer<span class="w"> </span>&lt;config&gt;<span class="w"> </span>--weights<span class="w"> </span>&lt;checkpoint&gt;<span class="w"> </span>--input<span class="w"> </span>&lt;split<span class="p">|</span>dir&gt;<span class="w"> </span>--output<span class="w"> </span>&lt;dir&gt;
+</code></pre></div>
+<p>Predicts and writes, scores nothing and needs no evaluator. <code>--output DIR</code> makes <code>DIR</code>
+the run directory (<code>runtime.work_dir</code> and <code>runtime.run_id</code>), so the grasps land in
+<code>DIR/predictions/&lt;variant&gt;/</code> next to the snapshot that says how they were made.
+<code>--input</code> is a <code>data</code> section, or a directory that is handed to the reader of
+<code>data.&lt;evaluation.split&gt;</code> as its <code>root</code> (<code>data.&lt;split&gt;.dataset.root=DIR</code>).</p>
+<p>Grasps are written as GraspNet <code>(G, 17)</code> arrays; a native <code>.npz</code> format does not exist
+yet. Reading a plain folder of RGB-D frames needs a dataset reader with a <code>root</code>
+parameter, and none is shipped yet. <code>infer</code> checks the directory before anything runs
+(the reader must have <code>root</code> and read the first frame) and otherwise stops with what to
+do instead:</p>
+<div class="highlight"><pre><span></span><code>✗ InputError: --input mydata: the reader of data.test, GraspNet1B, reads a directory as
+  the root of a GraspNet-1Billion tree and cannot read this one: [Errno 2] No such file or
+  directory: 'mydata/scenes/scene_0100/realsense/meta/0000.mat'. No reader for a plain
+  folder of frames (depth images and intrinsics) is shipped yet. For frames of your own
+  camera, run `grasppanda demo &lt;config&gt; --weights &lt;file&gt; --depth FILE --intrinsics
+  fx,fy,cx,cy` on one frame, or loop over your files in Python with GraspInferencer ...
+</code></pre></div>
+<p>For frames of your own camera: <a href="../inference/#your-own-camera">Your own camera</a> and
+<a href="../inference/#from-python">From Python</a>.</p>
+</details>
+<details class="note">
+<summary>Distributed training</summary>
+<div class="highlight"><pre><span></span><code>torchrun<span class="w"> </span>--nproc_per_node<span class="o">=</span><span class="m">4</span><span class="w"> </span>-m<span class="w"> </span>grasppanda.cli.main<span class="w"> </span>train<span class="w"> </span>&lt;config&gt;
+torchrun<span class="w"> </span>--nproc_per_node<span class="o">=</span><span class="m">4</span><span class="w"> </span>-m<span class="w"> </span>grasppanda.cli.main<span class="w"> </span><span class="nb">test</span><span class="w">  </span>&lt;config&gt;<span class="w"> </span>--weights<span class="w"> </span>&lt;checkpoint&gt;
+</code></pre></div>
+<p>Nothing in the config says "distributed": the processes read their rank from the
+environment <code>torchrun</code> sets. Then</p>
+<ul>
+<li>every process builds the model from the same seed and draws its own random numbers
+  afterwards (<code>runtime.seed + rank</code>);</li>
+<li>the training set is one common shuffle dealt out to the processes; <code>batch_size</code> is per
+  process;</li>
+<li><code>train.sync_bn: true</code> converts batch norm to its synchronised form (on CUDA; with
+  several CPU processes it is an error, because PyTorch has no such layer for the CPU);</li>
+<li>for evaluation each process predicts a disjoint share of the frames (no padding), the
+  keys are merged and de-duplicated by <code>SampleKey</code>, and the main process scores;</li>
+<li>only the main process writes files and prints; a checkpoint stores the random state
+  of every process.</li>
+</ul>
+<p>What has been exercised: two CPU processes with the gloo backend, in the unit suite
+(training, in-training evaluation, <code>test</code>, identical weights on both processes) and, by
+hand, an exact resume. Also by hand: the wrapper, synchronised batch norm and mixed
+precision on one GPU in a one-process NCCL group. <strong>Not tested: several GPUs.</strong> The
+development machine has one. While the main process scores an evaluation the others
+wait in a collective; its timeout is raised to 24 hours for that reason, which has not
+been observed under NCCL. <code>DistributedDataParallel</code> runs with its defaults: a detector
+with parameters that receive no gradient in some iterations needs
+<code>find_unused_parameters</code>, which is not exposed yet.</p>
+</details>
+<details class="note">
+<summary>Reproducibility</summary>
+<ul>
+<li><code>runtime.seed</code> seeds Python, NumPy and PyTorch. The order of an epoch depends on the
+  seed and the epoch only, and the seeds of data-loader workers on seed, rank and epoch,
+  so neither depends on how many epochs ran in this process.</li>
+<li>Prediction runs under its own seed (<code>runtime.seed + rank</code>) and puts the random state
+  back afterwards. Evaluating during training therefore does not change what is
+  trained, and the same weights give the same predictions in training and in
+  <code>grasppanda test</code> (same seed, batch size and number of processes), even when the data
+  pipeline or the detector draws random numbers at inference time.</li>
+<li><code>runtime.deterministic: true</code> selects deterministic kernels where PyTorch has them and
+  warns where it has none. It costs speed.</li>
+<li>With <code>deterministic: true</code>, training N epochs and training N/2, stopping and resuming
+  give bit-identical weights. This is a unit test on CPU (with dropout, augmentation
+  noise, batch norm, Adam, a one-cycle schedule, the weight average, clipping and
+  accumulation all on, with and without worker processes) and was checked once by hand
+  on a GPU with mixed precision. It is a property of this engine with those toy
+  components; a detector that uses an operator without a deterministic implementation
+  (the sparse convolutions of GSNet, EconomicGrasp and FineGrasp, for example) will not
+  have it.</li>
+</ul>
+</details>
+<details class="note">
+<summary>From Python</summary>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">grasppanda.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">commands</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"projects/example_project/configs/toy_train.yaml"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"train.epochs=2"</span><span class="p">],</span>
+                     <span class="n">command</span><span class="o">=</span><span class="s2">"train"</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">commands</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>            <span class="c1"># state.run.dir, state.model, state.best</span>
+</code></pre></div>
+<p><code>commands.test(config)</code> returns an <code>Evaluation</code> (<code>.records</code>, <code>.metrics</code>, <code>.partial</code>) and
+<code>commands.infer(config)</code> a <code>Dump</code> (<code>.root</code>, <code>.keys</code>, <code>.gt_assisted</code>). To validate a config
+without running it: <code>grasppanda print-config &lt;config&gt; --for train --check</code>.</p>
+</details>
+<h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../analysis/">Read an analysis</a>: where the AP of a result comes from.</li>
+<li><a href="../cross_dataset/">Cross-dataset evaluation</a>: the same weights on GraspClutter6D.</li>
+<li><a href="../combinations/">Compose and probe</a>: train a method with another component in a slot.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../datasets/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Datasets">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Datasets
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cross_dataset/" class="md-footer__link md-footer__link--next" aria-label="Next: Cross-dataset evaluation">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Cross-dataset evaluation
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

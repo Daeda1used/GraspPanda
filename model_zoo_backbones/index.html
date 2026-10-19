@@ -1,0 +1,4272 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/model_zoo_backbones/">
+      
+      
+        <link rel="prev" href="../advanced_guides/swapping/">
+      
+      
+        <link rel="next" href="../components/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Encoders checked against their authors' code - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#encoders-checked-against-their-authors-code" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Encoders checked against their authors' code
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../methods/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../slots/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../user_guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../methods/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../slots/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../user_guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-status-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the status means
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-encoders-and-how-each-was-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The encoders and how each was checked
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The encoders and how each was checked">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#released-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Released weights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-implementations-deliberately-differ-from-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the implementations deliberately differ from upstream
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-the-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing the evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewed-not-checked-against-their-authors-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reviewed, not checked against their authors' code
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-status-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the status means
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-encoders-and-how-each-was-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The encoders and how each was checked
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The encoders and how each was checked">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Speed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#released-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Released weights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-implementations-deliberately-differ-from-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the implementations deliberately differ from upstream
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-the-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing the evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reviewed-not-checked-against-their-authors-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reviewed, not checked against their authors' code
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../evidence/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Evidence
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/model_zoo_backbones.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="encoders-checked-against-their-authors-code">Encoders checked against their authors' code<a class="headerlink" href="#encoders-checked-against-their-authors-code" title="Permanent link">&para;</a></h1>
+<p>Each scene encoder below was checked to one of three depths. Nothing here is a
+grasp-detection result: the claims are about architecture fidelity, not accuracy.</p>
+<ul>
+<li><strong>Weights verified</strong> (5): <code>PointNet2</code>, <code>PTv3</code>, <code>PTv3Sonata</code>, <code>PTv3Utonia</code>, <code>LitePT</code>.
+  Released weights load strictly, and the outputs match the official implementation.</li>
+<li><strong>Compared on synthetic weights</strong> (3): <code>PointNeXt</code>, <code>OACNNs</code>, <code>SpUNet</code>. The outputs match
+  the official code when both are given the same analytic or hashed weights; no released
+  checkpoint was loaded.</li>
+<li><strong>Unit-tested only</strong> (4): <code>PointNet2Dense</code>, <code>FeaturePropagation</code>,
+  <code>FurthestPointSubsample</code>, <code>MinkUNet</code>. Unit tests only: not compared with the authors'
+  code.</li>
+</ul>
+<p>Every registered encoder, checked or not, is in
+<a href="../components/#scene-encoders">Registered classes</a>; how each fares under every method is
+on <a href="../advanced_guides/measured_combinations/#scene-encoders">Does it run?</a>.</p>
+<h2 id="what-the-status-means">What the status means<a class="headerlink" href="#what-the-status-means" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tested</code></td>
+<td>Unit tests on CPU: output shape and channels, binding to the right point set, gradients reaching every parameter, deterministic evaluation, batch independence, variable-size batches, rejection of misuse.</td>
+</tr>
+<tr>
+<td><code>tested</code> + parity</td>
+<td>Additionally: the outputs match the official implementation when both sides are given the same analytic or hashed weights. No released checkpoint was loaded. The measured difference is stated.</td>
+</tr>
+<tr>
+<td><code>weights-verified</code></td>
+<td>Additionally: a checkpoint released by the authors loads with no missing and no unexpected key, and the outputs match the official implementation run on the same input. The measured difference is stated.</td>
+</tr>
+</tbody>
+</table>
+<p>"Matches" is always a number. All comparisons are in strict float32 on one fixed
+20 000-point tabletop scene, on CPU and on an RTX A6000; the fixtures and the script that
+recorded them are in the repository (see <a href="#reproducing-the-evidence">Reproducing the evidence</a>).</p>
+<h2 id="the-encoders-and-how-each-was-checked">The encoders and how each was checked<a class="headerlink" href="#the-encoders-and-how-each-was-checked" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Backbone</th>
+<th>Paper</th>
+<th><code>output</code></th>
+<th>Status</th>
+<th>Needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PointNet2</code></td>
+<td>Qi et al., NeurIPS 2017</td>
+<td><code>subsampled</code></td>
+<td><code>weights-verified</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>PointNet2Dense</code></td>
+<td>same</td>
+<td><code>dense</code></td>
+<td><code>tested</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FeaturePropagation</code></td>
+<td>Qi et al., NeurIPS 2017, §3.4</td>
+<td><code>dense</code></td>
+<td><code>tested</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FurthestPointSubsample</code></td>
+<td>Qi et al., NeurIPS 2017, §3.2 (furthest point sampling)</td>
+<td><code>subsampled</code></td>
+<td><code>tested</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>PTv3</code></td>
+<td>Wu et al., CVPR 2024</td>
+<td><code>dense</code></td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td>Wu et al., CVPR 2025 (Sonata); Zhang et al., NeurIPS 2025 (Concerto)</td>
+<td><code>dense</code></td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code></td>
+<td>Zhang et al., ICML 2026</td>
+<td><code>dense</code></td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>Yue et al., CVPR 2026</td>
+<td><code>dense</code></td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PointNeXt</code></td>
+<td>Qian et al., NeurIPS 2022</td>
+<td><code>dense</code></td>
+<td><code>tested</code> + parity</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>OACNNs</code></td>
+<td>Peng et al., CVPR 2024</td>
+<td><code>dense</code></td>
+<td><code>tested</code> + parity</td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>MinkUNet</code></td>
+<td>Choy et al., CVPR 2019</td>
+<td><code>dense</code></td>
+<td><code>tested</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>SpUNet</code></td>
+<td>Choy et al., CVPR 2019 (the residual sparse U-Net and its 34C sizes)</td>
+<td><code>dense</code></td>
+<td><code>tested</code> + parity</td>
+<td>spconv</td>
+</tr>
+</tbody>
+</table>
+<p><code>FeaturePropagation</code> and <code>FurthestPointSubsample</code> wrap another encoder: they are adapters
+compose inserts, not options of the slot.</p>
+<details class="note">
+<summary>Official code, default configuration and parameter counts</summary>
+<table>
+<thead>
+<tr>
+<th>Backbone</th>
+<th>Paper</th>
+<th>Official code, licence</th>
+<th><code>output</code></th>
+<th>Default configuration</th>
+<th>Parameters: ours / reference</th>
+<th>Status</th>
+<th>Optional dependency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PointNet2</code></td>
+<td>Qi et al., NeurIPS 2017</td>
+<td><a href="https://github.com/charlesq34/pointnet2">charlesq34/pointnet2</a> (MIT); PyTorch lineage <a href="https://github.com/erikwijmans/Pointnet2_PyTorch">Pointnet2_PyTorch</a> (Unlicense), <a href="https://github.com/facebookresearch/votenet">VoteNet</a> (MIT)</td>
+<td><code>subsampled</code></td>
+<td>GraspNet-baseline backbone: SA 2048/1024/512/256 points, radii 0.04/0.1/0.2/0.3 m, 64/32/16/16 neighbours, 2 FP levels, 1024 seeds × 256 ch, xyz only</td>
+<td>641 856 / 641 856 (official model, counted when recording the fixture)</td>
+<td><code>weights-verified</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>PointNet2Dense</code></td>
+<td>same</td>
+<td>same</td>
+<td><code>dense</code></td>
+<td>Semantic-segmentation network of the paper (<code>pointnet2_sem_seg</code>): SA 1024/256/64/16 points, radii 0.1/0.2/0.4/0.8 m, 32 neighbours, 4 FP levels, 128 ch</td>
+<td>945 824 / 945 824 derived from the published layer list (949 536 with the redundant conv biases of the TensorFlow code)</td>
+<td><code>tested</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FeaturePropagation</code></td>
+<td>Qi et al., NeurIPS 2017, §3.4</td>
+<td>same</td>
+<td><code>dense</code> (wraps a <code>subsampled</code> backbone)</td>
+<td>One propagation level as in GraspNet-baseline: 3 neighbours, inverse distance, MLP 256-256</td>
+<td>132 096 on top of <code>PointNet2</code> / no reference (a wrapper)</td>
+<td><code>tested</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>FurthestPointSubsample</code></td>
+<td>Qi et al., NeurIPS 2017, §3.2 (furthest point sampling)</td>
+<td>same</td>
+<td><code>subsampled</code> (wraps a <code>dense</code> backbone)</td>
+<td>The 1024 seeds of GraspNet-baseline, sampled over the scene coordinates with the rules of <code>PointNet2</code>; the wrapped backbone's features at those points</td>
+<td>0 on top of the wrapped backbone / no reference (a wrapper)</td>
+<td><code>tested</code>; keeps exactly the points <code>PointNet2</code> ends on, index for index (unit test on four rule combinations, and at full size against the GraspNet-baseline backbone)</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>PTv3</code></td>
+<td>Wu et al., CVPR 2024</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept</a>, <a href="https://github.com/Pointcept/PointTransformerV3">PointTransformerV3</a> (MIT)</td>
+<td><code>dense</code></td>
+<td>ScanNet <code>semseg-pt-v3m1-0-base</code>: enc 2-2-2-6-2 blocks, 32–512 ch, dec 2-2-2-2, patch 1024, four curves, grid 0.02 m, 6 in, 64 out</td>
+<td>46 166 272 / 46 166 272 (official model); paper: 46.2 M</td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td>Wu et al., CVPR 2025 (Sonata); Zhang et al., NeurIPS 2025 (Concerto)</td>
+<td><a href="https://github.com/facebookresearch/sonata">sonata</a>, <a href="https://github.com/Pointcept/Concerto">Concerto</a> (code Apache-2.0)</td>
+<td><code>dense</code></td>
+<td>Released base encoder (<code>sonata</code>, <code>concerto_base</code>): encoder only, 3-3-3-12-3 blocks, 48–512 ch, grid 0.02 m, 9 in, all five stages concatenated: 1232 out</td>
+<td>108 461 376 / 108 461 376 (tensor elements of <code>concerto_base.pth</code>)</td>
+<td><code>weights-verified</code> (with the four default <code>concerto_*.pth</code> files, which their model card calls pre-release Utonia models; see the note under the table of weight files). <code>sonata.pth</code>, <code>sonata_small.pth</code> and <code>concerto_base_origin.pth</code> load strictly (<code>tests/integration/test_backbone_released_weights.py</code>), without an activation comparison</td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code></td>
+<td>Zhang et al., ICML 2026</td>
+<td><a href="https://github.com/Pointcept/Utonia">Utonia</a> (code Apache-2.0)</td>
+<td><code>dense</code></td>
+<td>Released <code>utonia</code> encoder: as above with 54–576 ch and rotary embedding (base 10), grid 0.01 m, 1386 out</td>
+<td>137 253 744 / 137 253 744 (official model built from <code>utonia.pth</code>)</td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>Yue et al., CVPR 2026</td>
+<td><a href="https://github.com/prs-eth/LitePT">LitePT</a> (MIT); also in Pointcept</td>
+<td><code>dense</code></td>
+<td>ScanNet <code>semseg-litept-small-v1m1</code> (LitePT-S): enc 2-2-2-6-2 blocks, 36–504 ch, sparse convolution in stages 0–2, attention with PointROPE in stages 3–4, decoder of unpooling steps only, patch 1024, four curves, grid 0.02 m, 6 in, 72 out</td>
+<td>12 712 932 / 12 712 932 (official model); paper: 12.7 M. Also checked: LitePT-S* 15 988 716 (16.0 M), LitePT-B 45 112 788 (45.1 M), LitePT-L 85 880 448 (85.9 M)</td>
+<td><code>weights-verified</code></td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>PointNeXt</code></td>
+<td>Qian et al., NeurIPS 2022</td>
+<td><a href="https://github.com/guochengqian/PointNeXt">PointNeXt</a>, <a href="https://github.com/guochengqian/openpoints">openpoints</a> (MIT)</td>
+<td><code>dense</code></td>
+<td>PointNeXt-S for S3DIS: width 32, stride 4 × 4 stages, radius 0.1 m × 2 per stage, 32 neighbours, 4 in, 32 out</td>
+<td>790 720 / 790 720 (official <code>BaseSeg</code> without head). With the official head: S 0.792 M, B 3.828 M, L 7.125 M, XL 41.576 M, equal to the published numbers</td>
+<td><code>tested</code>, plus parity with the official code. Official S3DIS checkpoints of PointNeXt-S, -B, -L and -XL are public in the Google Drive folders of the PointNeXt <a href="https://github.com/guochengqian/PointNeXt/blob/master/docs/modelzoo.md">model zoo</a> (the folder of PointNeXt-S was opened on 2026-10-13 and holds a <code>checkpoint</code> sub-folder); they have not been loaded here</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>OACNNs</code></td>
+<td>Peng et al., CVPR 2024</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept</a> <code>oacnns-v1m1</code> (MIT)</td>
+<td><code>dense</code></td>
+<td>ScanNet <code>semseg-oacnns-v1m1-0-base</code>, the paper's OA-CNN (L): stem 64 ch, enc 3-3-9-8 blocks with 64-64-128-256 ch, dec 256 ch, four pooling grids per stage (8-12-16-16, 6-9-12-12, 4-6-8-8, 3-4-6-6 cells), grid 0.02 m, 9 in, 20 out</td>
+<td>51 494 484 / 51 494 484 (official model built from the published config file)</td>
+<td><code>tested</code>, plus parity with the official code (no checkpoint has been released)</td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>MinkUNet</code></td>
+<td>Choy et al., CVPR 2019</td>
+<td><a href="https://github.com/NVIDIA/MinkowskiEngine">MinkowskiEngine</a> <code>examples/minkunet.py</code> @ <code>02fc608</code> (MIT), adapted onto <code>grasppanda.ops.sparse</code></td>
+<td><code>dense</code></td>
+<td>MinkUNet34C / Res16UNet34C: 3³ stem, enc 2-3-4-6 blocks with 32-64-128-256 ch, dec 2-2-2-2 with 256-128-96-96 ch, grid 0.02 m, 3 in, 96 out without the final layer. <code>layers</code>, <code>planes</code> and <code>block</code> give MinkUNet 14A–D, 18A/B/D, 34A–C, 50 and 101</td>
+<td>37 847 808 with a 32-channel final layer, the tensor elements of the released PointContrast Res16UNet34C (batch-norm counters aside)</td>
+<td><code>tested</code>. The PointContrast and Mask3D backbones load key for key (<code>tests/integration/test_backbone_released_weights.py</code>); no activation comparison with MinkowskiEngine was recorded for this class</td>
+<td>spconv</td>
+</tr>
+<tr>
+<td><code>SpUNet</code></td>
+<td>Choy et al., CVPR 2019 (the residual sparse U-Net and its 34C sizes)</td>
+<td><a href="https://github.com/Pointcept/Pointcept">Pointcept</a> <code>SpUNet-v1m1</code> (MIT)</td>
+<td><code>dense</code></td>
+<td>ScanNet <code>semseg-spunet-v1m1-0-base</code>: 5³ stem 32 ch, enc 2-3-4-6 blocks with 32-64-128-256 ch, dec 2-2-2-2 blocks with 256-128-96-96 ch, grid 0.02 m, 6 in, 20 out (<code>out_channels: null</code> returns the 96 decoder channels)</td>
+<td>39 157 844 / 39 157 844 (official model built from the published config file); 39 155 904 without the final layer</td>
+<td><code>tested</code>, plus parity with the official code (its authors have released no checkpoint)</td>
+<td>spconv</td>
+</tr>
+</tbody>
+</table>
+</details>
+<p>Since the review at the end of this page, DGCNN, OctFormer, Point Transformer V1 and V2,
+PointMamba, PointMLP and the multi-scale PointNet++ (<code>PointNet2MSG</code>) have been registered as
+well, as <code>tested</code> or <code>bridge</code> classes: none of them was compared with its authors' code.</p>
+<h3 id="evidence">Evidence<a class="headerlink" href="#evidence" title="Permanent link">&para;</a></h3>
+<p>The largest difference between our features and the official implementation's, per
+encoder and weight file, on CPU and CUDA, with the fixtures that pin it.</p>
+<details class="note">
+<summary>The differences, row by row</summary>
+<p>Largest absolute difference between our features and the official implementation's, over
+the stored rows, CPU / CUDA. <code>|f|</code> is the largest reference feature, for scale. Per-channel
+mean and standard deviation over all 20 000 points agree to better than 2e-5 in every row.</p>
+<table>
+<thead>
+<tr>
+<th>Backbone</th>
+<th>Oracle</th>
+<th>Weights</th>
+<th>Strict load</th>
+<th>Max. difference (CPU / CUDA)</th>
+<th><code>|f|</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PointNet2</code></td>
+<td>GraspNet-baseline <code>Pointnet2Backbone</code> with its CUDA extension</td>
+<td><code>checkpoint-rs.tar</code> (released)</td>
+<td>yes</td>
+<td>5.2e-6 / 9.5e-7; all 1024 seed indices and coordinates identical</td>
+<td>4.1</td>
+</tr>
+<tr>
+<td><code>PTv3</code></td>
+<td><code>PointTransformerV3/model.py</code> @ <code>3229e9b</code></td>
+<td>Pointcept <code>scannet-semseg-pt-v3m1-0-base</code> (released, MIT)</td>
+<td>yes</td>
+<td>2.1e-5 / 1.3e-5</td>
+<td>3.0</td>
+</tr>
+<tr>
+<td><code>PTv3</code></td>
+<td>same</td>
+<td>analytic, with relative position bias, post-norm and patch sizes 64/64/48/16</td>
+<td>same keys and shapes</td>
+<td>4.8e-7 / 4.8e-7</td>
+<td>1.5</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td><code>concerto</code> package @ <code>5b41117</code></td>
+<td><code>concerto_tiny.pth</code></td>
+<td>yes</td>
+<td>2.5e-6 / 2.9e-6</td>
+<td>3.6</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td>same</td>
+<td><code>concerto_small.pth</code></td>
+<td>yes</td>
+<td>7.6e-6 / 1.4e-6</td>
+<td>5.5</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td>same</td>
+<td><code>concerto_base.pth</code></td>
+<td>yes</td>
+<td>6.4e-6 / 2.9e-6</td>
+<td>8.1</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td>same</td>
+<td><code>concerto_large.pth</code></td>
+<td>yes</td>
+<td>9.1e-6 / 3.8e-6</td>
+<td>8.7</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code></td>
+<td><code>sonata</code> @ <code>18c09ff</code> and <code>concerto</code> packages</td>
+<td>analytic, with decoder and layer scale</td>
+<td>same keys and shapes</td>
+<td>1.1e-5 / 1.2e-5</td>
+<td>4.7</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code></td>
+<td><code>utonia</code> package @ <code>da776a0</code></td>
+<td><code>utonia.pth</code></td>
+<td>yes</td>
+<td>9.5e-6 / 2.5e-6</td>
+<td>7.7</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code></td>
+<td>same</td>
+<td>analytic, with decoder and layer scale</td>
+<td>same keys and shapes</td>
+<td>1.1e-5 / 5.5e-6</td>
+<td>4.7</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td><code>LitePT/litept/model.py</code> @ <code>436d048</code>, attention in float32 (see <em>LitePT: two reference outputs</em> below)</td>
+<td><code>scannet-semseg-litept-small-v1m1</code> (released, MIT): LitePT-S</td>
+<td>yes</td>
+<td>1.0e-5 / 1.7e-6</td>
+<td>4.4</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>same</td>
+<td><code>scannet-insseg-litept-small-v1m2</code>: LitePT-S*, with decoder blocks</td>
+<td>yes</td>
+<td>1.7e-5 / 4.1e-6</td>
+<td>5.1</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>same</td>
+<td><code>structured3d-semseg-litept-base-v1m1</code>: LitePT-B</td>
+<td>yes</td>
+<td>2.6e-5 / 1.7e-6</td>
+<td>4.3</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>same</td>
+<td><code>structured3d-semseg-litept-large-v1m1</code>: LitePT-L</td>
+<td>yes</td>
+<td>1.2e-5 / 2.6e-6</td>
+<td>5.0</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>same</td>
+<td>analytic: a stage that convolves and attends, decoder blocks of both kinds, a stride of 3, PointROPE bases from 10 to 100</td>
+<td>same keys and shapes</td>
+<td>5.6e-6 / 1.9e-6</td>
+<td>6.2</td>
+</tr>
+<tr>
+<td><code>LitePT</code></td>
+<td>same</td>
+<td>analytic: attention from the input level on, two curves, post-norm, no query/key/value bias, fixed attention scale</td>
+<td>same keys and shapes</td>
+<td>2.2e-5 / 1.4e-5</td>
+<td>2.4</td>
+</tr>
+<tr>
+<td><code>PointNeXt</code> (S and B)</td>
+<td>openpoints <code>BaseSeg</code> @ <code>bc778ec</code> with its CUDA extension, built from the published YAML</td>
+<td>analytic</td>
+<td>same keys and shapes</td>
+<td>1.3e-7 / 1.2e-7</td>
+<td>0.35</td>
+</tr>
+<tr>
+<td>serialisation codes</td>
+<td><code>PointTransformerV3/serialization</code></td>
+<td>—</td>
+<td>—</td>
+<td>equal, all four orders, depths 1/3/7/10/16</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>OACNNs</code></td>
+<td>Pointcept <code>oacnns_v1m1_base.py</code> @ <code>1342eda</code>, built from the published config file</td>
+<td>hashed, batch norm calibrated (see below)</td>
+<td>same keys and shapes</td>
+<td>3.2e-5 / 4.2e-5 (CUDA: largest of 60 runs, smallest 2.5e-5; the scatter-add of the pooling is unordered there)</td>
+<td>10.6</td>
+</tr>
+<tr>
+<td><code>OACNNs</code></td>
+<td>same file; three stages, a width that changes at every level, one to three pooling grids per stage</td>
+<td>analytic</td>
+<td>same keys and shapes</td>
+<td>1.5e-7 / 1.5e-7</td>
+<td>0.21</td>
+</tr>
+<tr>
+<td><code>OACNNs</code></td>
+<td>same model as the row above, on a crafted cloud of 2 583 voxels whose second level does not start at cell 0</td>
+<td>hashed, batch norm calibrated</td>
+<td>same keys and shapes</td>
+<td>3.9e-5 / 3.5e-5 (CUDA: largest of 60 runs)</td>
+<td>7.4</td>
+</tr>
+<tr>
+<td><code>SpUNet</code></td>
+<td>Pointcept <code>spconv_unet_v1m1_base.py</code> @ <code>1342eda</code>, built from the published config file</td>
+<td>hashed, batch norm calibrated</td>
+<td>same keys; same shapes but for the 1×1 kernels, which load strictly through <code>convert_pointcept_state</code></td>
+<td>3.2e-5 / 3.7e-5 (CUDA: largest of 20 runs)</td>
+<td>13.9</td>
+</tr>
+<tr>
+<td><code>SpUNet</code></td>
+<td>same file; three stages, no two widths alike, one to three blocks per stage, no final layer</td>
+<td>analytic</td>
+<td>as above</td>
+<td>3.0e-7 / 0 (bit-identical)</td>
+<td>0.90</td>
+</tr>
+</tbody>
+</table>
+<p>"Analytic" weights: both sides fill every tensor of their state dict with the same
+closed-form function of the tensor's name and shape. It needs no file, exercises options
+no released checkpoint uses, and fails if the two state dicts differ in a single key or
+shape. The fixtures are sensitive to the details that matter: for example, fusing before
+the decoder's positional convolution moves the <code>PTv3</code> output by 1e-2, another curve order
+by 4e-2, and dropping the radius normalisation moves the <code>PointNeXt</code> output by 3e-3, all
+orders of magnitude above the agreement in the table.</p>
+<p>"Hashed, batch norm calibrated" is the same idea for deep batch-norm networks, which the
+analytic weights do not survive: a sine of the flat index makes every weight matrix
+nearly rank two, and batch norm with made-up running statistics normalises nothing.
+Through the 23 residual blocks of the published OA-CNNs the features then reach 3e2 and
+rounding alone separates the two implementations by 1.3 on the GPU; with calibrated
+statistics but sine weights, one and the same model still disagreed with itself between
+CPU and GPU by 3 % of its features. For these fixtures every value is a 32-bit integer
+hash of the tensor's name and flat index (exact on every platform, full-rank matrices),
+and each side then sets the batch-norm statistics with one training-mode pass of its own
+code over the input, so the comparison covers batch norm in training mode as well.
+Sensitivity, measured the same way: keeping the voxels the official <code>OACNNs</code> loses at an
+odd axis (<code>crop_odd_extent: false</code>) moves the published configuration by 1.6; anchoring
+its pooling grids at cell 0 instead of the lowest occupied cell moves the crafted-cloud
+fixture by 1.1 and the tabletop scene not at all, which is why that fixture exists;
+dropping the <code>1e-6</code> of the voting softmax fails the published configuration. For <code>SpUNet</code>,
+reading a 1×1 kernel the way its shape suggests moves the two fixtures by 15.7 and 0.49,
+and counting cells from one cell further by 9.1 and 0.31.</p>
+<p>Additional checks that need no oracle and run in the unit suite: <code>PointNet2</code> and
+<code>PointNet2Dense</code> equal the paper's definition written out point by point in NumPy
+(float64, 1e-10) for five configurations; the Hilbert code equals Skilling's algorithm
+and visits every cell of a cube once through face neighbours.</p>
+<p><code>OACNNs</code> has its own: the first block of a small network equals the adaptive aggregation
+written out cube by cube in plain loops, on a batch of two clouds one of which does not
+start at cell 0 of its level; an isolated voxel in the lost cell of an odd axis leaves
+the features of the rest of its cloud untouched; clouds with different bounding boxes do
+not interact. Together they pin what a single-cloud oracle cannot see: the per-cloud
+bounding box and the per-cloud softmax shift. For <code>SpUNet</code>, a converted 1×1 kernel is
+compared with the 1×1 convolution of spconv itself.</p>
+<p>One caveat for anyone repeating this on a GPU: PyTorch lets cuDNN compute convolutions in
+TF32 by default. On the A6000 that alone moves the <code>PointNet2</code> features by 4.6e-3, in the
+official implementation too. The comparisons switch it off; normal use does not.</p>
+</details>
+<details class="note">
+<summary>LitePT: two reference outputs</summary>
+<p>The official LitePT attention has no float32 path. It casts queries, keys and values to
+float16 and calls flash-attention, so "the official output" exists in two forms, and the
+fixtures hold both:</p>
+<ul>
+<li><strong>Attention in float32</strong>: the official forward pass with that cast switched off
+  (<code>Tensor.half</code> returns its tensor while recording, and a plain softmax attention stands
+  in for flash-attention, which accepts float16 only). This is the computation the port
+  performs, and the one the table above compares with.</li>
+<li><strong>As released</strong>: the official forward pass untouched, with flash-attention 2.6.3 and the
+  authors' CUDA PointROPE extension.</li>
+</ul>
+<p>The port differs from the model as released by what float16 attention costs the official
+model itself:</p>
+<table>
+<thead>
+<tr>
+<th>Weights</th>
+<th>Official model, float16 against float32 attention (all points)</th>
+<th><code>LitePT</code> against the official model as released (stored rows, CPU / CUDA)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LitePT-S, ScanNet</td>
+<td>7.5e-4</td>
+<td>5.1e-4 / 5.1e-4</td>
+</tr>
+<tr>
+<td>LitePT-S*, ScanNet instances</td>
+<td>2.0e-3</td>
+<td>9.2e-4 / 9.2e-4</td>
+</tr>
+<tr>
+<td>LitePT-B, Structured3D</td>
+<td>7.4e-4</td>
+<td>5.4e-4 / 5.3e-4</td>
+</tr>
+<tr>
+<td>LitePT-L, Structured3D</td>
+<td>6.4e-4</td>
+<td>4.7e-4 / 4.7e-4</td>
+</tr>
+</tbody>
+</table>
+<p>With analytic weights the logits, and with them the effect of the cast, are arbitrary
+(6.1e-5 for the first analytic model, 6.3e-2 for the second), so only the float32 form is
+compared there.</p>
+<p>The released-weight fixtures use 1.25 mm voxels. The published models attend only after
+three poolings; at that grid the two attending stages hold 4 265 and 1 215 voxels of the
+scene, several patches of 1024 with an incomplete last one, where 5 mm would leave them
+308 and 80 voxels, one patch each. The fixtures are sensitive to what matters: a
+PointROPE base of 90 instead of 100 in one stage moves the LitePT-S output by 5.5e-2, a
+patch size of 512 in one stage by 0.23, two curves swapped by 0.42.</p>
+<p>All six references were also recorded without flash-attention and without the compiled
+extension: the official PyTorch fallback of PointROPE, the plain attention on float16 and
+on float32 inputs, PyTorch 2.7.1. The port agrees with those to 2.7e-5 or better too.
+Where both attention backends ran on the same float16 inputs they differ by 4.8e-4 to
+9.2e-4 with the released weights: the order of the float16 effect itself, and far below
+what a difference in meaning causes (5e-2 and more, as above).</p>
+</details>
+<h3 id="speed">Speed<a class="headerlink" href="#speed" title="Permanent link">&para;</a></h3>
+<p>Forward time and memory of each encoder on one GPU, measured on a shared machine: an order
+of magnitude.</p>
+<details class="note">
+<summary>Times and memory</summary>
+<p>One RTX A6000, PyTorch 2.7.1 + cu118, spconv 2.3.8, float32, evaluation mode, default
+CUDA settings, the 20 000-point fixture scene (batch 4: the scene and three mirrored or
+shifted copies). Forward time is the minimum and the median of 12 runs after warm-up;
+memory is the peak allocated by PyTorch. <strong>The machine was shared while measuring</strong> (load
+average about 37 on 16 cores, a second job on the GPU), and repeated passes varied by up to
+±40 %, so read the times as an order of magnitude; memory is stable.</p>
+<table>
+<thead>
+<tr>
+<th>Backbone, configuration</th>
+<th>Batch 1: ms (min / median)</th>
+<th>Batch 1: GiB</th>
+<th>Batch 4: ms (min / median)</th>
+<th>Batch 4: GiB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PointNet2</code>, default</td>
+<td>306 / 427</td>
+<td>0.16</td>
+<td>270 / 294</td>
+<td>0.64</td>
+</tr>
+<tr>
+<td><code>PointNet2Dense</code>, default</td>
+<td>111 / 181</td>
+<td>0.19</td>
+<td>125 / 144</td>
+<td>0.73</td>
+</tr>
+<tr>
+<td><code>PointNet2Dense</code>, GraspNet-baseline points and radii</td>
+<td>209 / 280</td>
+<td>0.36</td>
+<td>251 / 357</td>
+<td>1.43</td>
+</tr>
+<tr>
+<td><code>FeaturePropagation</code> around <code>PointNet2</code></td>
+<td>262 / 328</td>
+<td>0.20</td>
+<td>292 / 347</td>
+<td>0.77</td>
+</tr>
+<tr>
+<td><code>PTv3</code>, grid 0.02 m (1 227 voxels)</td>
+<td>29 / 40</td>
+<td>0.19</td>
+<td>33 / 34</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td><code>PTv3</code>, grid 0.005 m (10 993 voxels)</td>
+<td>35 / 35</td>
+<td>0.24</td>
+<td>69 / 74</td>
+<td>0.41</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code> base, grid 0.02 m</td>
+<td>87 / 103</td>
+<td>0.73</td>
+<td>56 / 75</td>
+<td>1.29</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code> base, grid 0.005 m</td>
+<td>62 / 128</td>
+<td>0.82</td>
+<td>107 / 134</td>
+<td>1.52</td>
+</tr>
+<tr>
+<td><code>PTv3Sonata</code> tiny, grid 0.005 m</td>
+<td>44 / 44</td>
+<td>0.56</td>
+<td>51 / 68</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code>, grid 0.01 m (4 266 voxels)</td>
+<td>63 / 95</td>
+<td>1.21</td>
+<td>90 / 126</td>
+<td>1.95</td>
+</tr>
+<tr>
+<td><code>PTv3Utonia</code>, grid 0.005 m</td>
+<td>79 / 108</td>
+<td>1.40</td>
+<td>162 / 227</td>
+<td>2.67</td>
+</tr>
+<tr>
+<td><code>LitePT</code> S, grid 0.02 m †</td>
+<td>23 / 34</td>
+<td>0.19</td>
+<td>27 / 33</td>
+<td>0.22</td>
+</tr>
+<tr>
+<td><code>LitePT</code> S, grid 0.005 m †</td>
+<td>28 / 37</td>
+<td>0.21</td>
+<td>36 / 43</td>
+<td>0.31</td>
+</tr>
+<tr>
+<td><code>LitePT</code> S* (decoder blocks), grid 0.005 m †</td>
+<td>32 / 43</td>
+<td>0.23</td>
+<td>45 / 48</td>
+<td>0.33</td>
+</tr>
+<tr>
+<td><code>LitePT</code> B, grid 0.005 m †</td>
+<td>37 / 49</td>
+<td>0.37</td>
+<td>52 / 56</td>
+<td>0.48</td>
+</tr>
+<tr>
+<td><code>LitePT</code> L, grid 0.005 m †</td>
+<td>39 / 53</td>
+<td>0.53</td>
+<td>63 / 95</td>
+<td>0.66</td>
+</tr>
+<tr>
+<td>† a later session, same protocol and load; <code>PTv3</code>, grid 0.005 m, measured again in it</td>
+<td>36 / 49</td>
+<td>0.24</td>
+<td>88 / 120</td>
+<td>0.41</td>
+</tr>
+<tr>
+<td><code>PointNeXt</code> S</td>
+<td>540 / 617</td>
+<td>1.70</td>
+<td>677 / 724</td>
+<td>4.36</td>
+</tr>
+<tr>
+<td><code>PointNeXt</code> B</td>
+<td>536 / 678</td>
+<td>1.71</td>
+<td>794 / 978</td>
+<td>4.37</td>
+</tr>
+<tr>
+<td><code>OACNNs</code>, grid 0.005 m, 3 in, 512 out</td>
+<td>82 / 113</td>
+<td>0.30</td>
+<td>88 / 123</td>
+<td>0.60</td>
+</tr>
+<tr>
+<td><code>SpUNet</code>, grid 0.005 m, 3 in, 512 out</td>
+<td>20 / 24</td>
+<td>0.27</td>
+<td>31 / 40</td>
+<td>0.61</td>
+</tr>
+<tr>
+<td><code>SpUNet</code>, grid 0.02 m, 3 in, 512 out</td>
+<td>19 / 19</td>
+<td>0.24</td>
+<td>22 / 23</td>
+<td>0.48</td>
+</tr>
+</tbody>
+</table>
+<p>The PointNet++ family is slow for its size because it runs on the pure-PyTorch reference
+operators: furthest point sampling is a Python loop of one step per sample, so most of the
+time is interpreter overhead, which is also why batch 4 costs about the same as batch 1.
+A compiled sampling backend, held to the reference by the operator tests, is where that
+time would go.</p>
+<p>The <code>OACNNs</code> and <code>SpUNet</code> rows come from a later session with the same protocol (load
+average about 30; the batch of four is the scene, two mirrored copies and a shifted one).
+<code>OACNNs</code> spends its time in about two thousand small operations, the voting and pooling
+of four grids in each of 23 blocks, not in convolutions. It has no row at 0.02 m: the
+scene is 15 voxels deep there, and with the official bounding-box rule the network needs
+16 along every axis (<code>crop_odd_extent</code>, below).</p>
+</details>
+<h2 id="released-weights">Released weights<a class="headerlink" href="#released-weights" title="Permanent link">&para;</a></h2>
+<p>The checkpoints of the self-supervised PTv3 family, of LitePT and of the released
+<code>SpUNet</code> backbones: what each file is, its licence and what it loads into.</p>
+<details class="note">
+<summary>Sonata, Concerto and Utonia</summary>
+<p>Files under <code>components/</code> of the local weight store, and what they are.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it is</th>
+<th>Released by</th>
+<th>Licence</th>
+<th>Loads into</th>
+<th>Configuration stored in the file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>concerto_tiny.pth</code> (SHA-256 <code>2d5ac74f…</code>)</td>
+<td>Concerto: PTv3 encoder pre-trained by joint 2-D/3-D self-supervised learning</td>
+<td>Pointcept group, <a href="https://huggingface.co/Pointcept/Concerto">Hugging Face</a></td>
+<td>code Apache-2.0; weights CC-BY-NC 4.0 per the repository README (the model card's metadata says Apache-2.0)</td>
+<td><code>PTv3Sonata</code></td>
+<td>enc 1-1-1-3-1, 16–256 ch, heads 1-2-4-8-16; 4.86 M parameters</td>
+</tr>
+<tr>
+<td><code>concerto_small.pth</code> (<code>251441d9…</code>)</td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+<td><code>PTv3Sonata</code></td>
+<td>enc 2-2-2-6-2, 32–512 ch, heads 2-4-8-16-32; 38.65 M</td>
+</tr>
+<tr>
+<td><code>concerto_base.pth</code> (<code>845ec7de…</code>)</td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+<td><code>PTv3Sonata</code> (the defaults)</td>
+<td>enc 3-3-3-12-3, 48–512 ch, heads 3-6-12-24-32; 108.46 M</td>
+</tr>
+<tr>
+<td><code>concerto_large.pth</code> (<code>04de4954…</code>)</td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+<td><code>PTv3Sonata</code></td>
+<td>enc 3-3-3-12-3, 64–768 ch, heads 4-8-16-32-48; 207.67 M</td>
+</tr>
+<tr>
+<td><code>utonia.pth</code> (<code>a0a2e5e2…</code>)</td>
+<td>Utonia: one PTv3 encoder pre-trained across domains (the authors show indoor, outdoor and object data), with rotary position embedding</td>
+<td>Pointcept group, <a href="https://huggingface.co/Pointcept/Utonia">Hugging Face</a></td>
+<td>as Concerto</td>
+<td><code>PTv3Utonia</code> (the defaults)</td>
+<td>enc 3-3-3-12-3, 54–576 ch, heads 3-6-12-24-32, <code>rope_base</code> 10; 137.25 M</td>
+</tr>
+<tr>
+<td><code>sonata.pth</code>, <code>sonata_small.pth</code> (under <code>$GRASPPANDA_CACHE/weights_components</code>, not in the local weight store)</td>
+<td>Sonata: self-supervised PTv3 encoder, same architecture and size as <code>concerto_base</code> (<code>sonata_small</code>: as <code>concerto_small</code>)</td>
+<td>Meta, <a href="https://huggingface.co/facebook/sonata">Hugging Face</a></td>
+<td>code Apache-2.0; weights CC-BY-NC 4.0 (repository README; the model card states none)</td>
+<td><code>PTv3Sonata</code>: every tensor loads with equal shape (<code>pretrained: sonata</code>, <code>sonata-small</code>); activations were not compared with the <code>sonata</code> package</td>
+<td>as <code>concerto_base</code> / <code>concerto_small</code></td>
+</tr>
+<tr>
+<td><code>concerto_base_origin.pth</code> (same place)</td>
+<td>The Concerto model of the paper</td>
+<td>Pointcept group, <a href="https://huggingface.co/Pointcept/Concerto">Hugging Face</a></td>
+<td>weights CC-BY-NC 4.0 (model card)</td>
+<td><code>PTv3Sonata</code> (the defaults): every tensor loads with equal shape (<code>pretrained: concerto-base-origin</code>); activations were not compared</td>
+<td>as <code>concerto_base</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Which file is "Concerto".</strong> The model card of <code>Pointcept/Concerto</code> says: "The default models(concerto_large/base/small/tiny) are the pre-release version of our next work, Utonia, which can deal with input without color and normal. If colors and normals are not available, please set them to zeros. [...] The original Concerto model is <code>concerto_base_origin.pth</code>." The four <code>concerto_*.pth</code> rows above are therefore the pre-release models, not the networks evaluated in the Concerto paper; the paper's are <code>concerto_base_origin.pth</code> and <code>concerto_large_origin.pth</code>. The activation fixtures of this page were recorded with the default files.</p>
+<p>All of them:</p>
+<ul>
+<li>are <strong>encoder-only</strong> (<code>enc_mode: true</code>): the state dict has <code>embedding.*</code> and <code>enc.*</code>
+  and no decoder. Dense features are the encoder stages concatenated through the pooling
+  maps (<code>concat_stages</code>), the authors' linear-probing protocol. Setting <code>enc_mode: false</code>
+  adds a decoder with random weights;</li>
+<li>expect <strong>9 input channels</strong>: coordinates, colour, normal. The authors advise zeros for
+  a modality that is missing. The coordinate channels go through their data pipeline
+  first (centring, and for Utonia a scale factor); reproducing that is the caller's job;</li>
+<li>contain a <code>mask_token</code> that only pre-training uses; keep <code>mask_token: true</code> to load
+  strictly;</li>
+<li>store <code>enable_flash: true</code>. That selects an attention backend, not an architecture;
+  flash-attention is not used here and is not needed;</li>
+<li>are <strong>non-commercial</strong> by the stricter of the two statements their authors make. Using
+  them makes the resulting model non-commercial. GraspPanda does not ship or download
+  them.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PTv3Sonata</span><span class="w">              </span><span class="c1"># concerto_small</span>
+<span class="w">    </span><span class="nt">grid_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.005</span>
+<span class="w">    </span><span class="nt">enc_depths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">6</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">enc_channels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">32</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">64</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">128</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">256</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">enc_num_head</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">8</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">32</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+</details>
+<details class="note">
+<summary>LitePT, PTv3, OA-CNNs and SpUNet</summary>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it is</th>
+<th>Loads into</th>
+<th>Backbone parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scannet-semseg-litept-small-v1m1.pth</code> (SHA-256 <code>4fc1c778…</code>)</td>
+<td>LitePT-S trained for ScanNet semantic segmentation</td>
+<td><code>LitePT</code> (the defaults)</td>
+<td>12.71 M</td>
+</tr>
+<tr>
+<td><code>scannet-insseg-litept-small-v1m2.pth</code> (<code>86408c63…</code>)</td>
+<td>LitePT-S* trained for ScanNet instance segmentation (PointGroup)</td>
+<td><code>LitePT</code> with <code>dec_depths: [2, 2, 2, 2]</code>, <code>dec_conv: [true, true, true, false]</code>, <code>dec_attn: [false, false, false, true]</code></td>
+<td>15.99 M</td>
+</tr>
+<tr>
+<td><code>structured3d-semseg-litept-base-v1m1.pth</code> (<code>53b18ba6…</code>)</td>
+<td>LitePT-B trained for Structured3D semantic segmentation</td>
+<td><code>LitePT</code> with enc 3-3-3-12-3, 54–576 ch, heads 3-6-12-24-32, <code>dec_channels: [72, 108, 216, 432]</code>, <code>dec_num_head: [4, 6, 12, 24]</code></td>
+<td>45.11 M</td>
+</tr>
+<tr>
+<td><code>structured3d-semseg-litept-large-v1m1.pth</code> (<code>e50bd216…</code>)</td>
+<td>LitePT-L, same task</td>
+<td><code>LitePT</code> with enc 3-3-3-12-3, 72–864 ch, heads 4-8-16-32-48, <code>dec_channels: [72, 144, 288, 576]</code>, <code>dec_num_head: [4, 8, 16, 32]</code></td>
+<td>85.88 M</td>
+</tr>
+</tbody>
+</table>
+<p>Released by the Photogrammetry and Remote Sensing Lab of ETH Zurich on
+<a href="https://huggingface.co/prs-eth/LitePT">Hugging Face</a> (revision <code>a8e76e9</code>; each file is
+<code>&lt;name&gt;/model/model_best.pth</code> there). Code and weights are <strong>MIT</strong>: the repository's
+<code>LICENSE</code>, and <code>license: mit</code> on the model card, both read on 2026-10-12. The files are
+Pointcept training checkpoints: the backbone is in <code>state_dict</code> under the prefix
+<code>module.backbone.</code>, next to a task head and the optimiser state. All four</p>
+<ul>
+<li>expect <strong>6 input channels</strong>, colour and normal as the authors' data pipeline prepares
+  them (reproducing it is the caller's job). A backbone built with another <code>in_channels</code>
+  has a stem convolution these weights do not fit;</li>
+<li>were trained on rooms at 0.02 m voxels, with float16 attention (see
+  <em>LitePT: two reference outputs</em> under <a href="#evidence">Evidence</a>);</li>
+<li>attend only in the two coarsest stages, on voxels of 8 and 16 grid cells. At a 5 mm
+  grid those are 4 cm and 8 cm, and the fixture scene is 308 and 80 voxels there: fewer
+  than one patch of 1024, so the attention is global.</li>
+</ul>
+<p>The repository also offers LitePT-S for nuScenes and Waymo (4 input channels, 0.05 m
+voxels), LitePT-L for nuScenes, a ScanNet200 instance model and a Waymo detection model.
+None of those was downloaded or checked.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backbone</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LitePT</span><span class="w">                  </span><span class="c1"># LitePT-S, untrained, on the 5 mm grid</span>
+<span class="w">    </span><span class="nt">in_channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">grid_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.005</span>
+</code></pre></div>
+<p>Also used for verification: the ScanNet segmentation checkpoint of PTv3
+(<code>scannet-semseg-pt-v3m1-0-base/model/model_best.pth</code> on
+<a href="https://huggingface.co/Pointcept/PointTransformerV3">Hugging Face</a>, MIT, SHA-256
+<code>40206376…</code>, backbone keys under <code>module.backbone.</code>), and the GraspNet-baseline RealSense
+checkpoint (<code>checkpoint-rs.tar</code>, non-commercial research licence, backbone keys under
+<code>view_estimator.backbone.</code>).</p>
+<p>No checkpoint of OA-CNNs has been released by its authors: on 2026-10-12 the Pointcept
+organisation on Hugging Face held PTv3, Sonata, Concerto and Utonia only, and the Pointcept
+model zoo lists a training command for it. <code>OACNNs</code> is therefore <code>tested</code> with parity
+against the official code, not <code>weights-verified</code>.</p>
+<p>Checkpoints of <code>SpUNet-v1m1</code> <strong>are</strong> released, by works that use it as their backbone, and
+they load into <code>SpUNet</code> key for key after <code>convert_pointcept_state</code>
+(<code>tests/integration/test_backbone_released_weights.py</code>; files loaded on 2026-10-13):</p>
+<table>
+<thead>
+<tr>
+<th>Release</th>
+<th>Files loaded here</th>
+<th>Licence</th>
+<th><code>SpUNet</code> options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://huggingface.co/RayYoh/GaussianCross">RayYoh/GaussianCross</a> (GaussianCross, ACM MM 2025)</td>
+<td><code>scannet/semseg-spunet-base-lin</code> (157 MB), <code>scannet/semseg-spunet-base</code> (470 MB)</td>
+<td>MIT (model card)</td>
+<td><code>out_channels: null</code> for the linear-probing file, defaults for the fine-tuned one</td>
+</tr>
+<tr>
+<td><a href="https://huggingface.co/KadirYilmaz/Volt">KadirYilmaz/Volt</a> <code>teacher_weights/</code> (the distillation teachers of Volt, ECCV 2026)</td>
+<td><code>scannet_unet_teacher.pth</code> (470 MB)</td>
+<td>MIT (model card)</td>
+<td>defaults</td>
+</tr>
+</tbody>
+</table>
+<p>The MSC archives the Pointcept README links (Masked Scene Contrast, CVPR 2023, on the
+author's SharePoint) were not downloaded here. <code>SpUNet</code> stays <code>tested</code>: the loads prove
+names and shapes, and no activation comparison with the official model was recorded for
+these files. A ScanNet SpUNet converted by a third party into another library's layout
+also exists (<code>torch-pointcloud/spunet-v1m1.scannet20.pointcept</code>, MIT according to its
+card, SHA-256 <code>11658b4d…</code>); its card does not say which checkpoint it was converted from,
+and it was not used here.</p>
+<p>How to start a grasp model from any of these files, and the full table of released
+weights that load into <code>SpUNet</code>, <code>PTv3</code>, <code>PTv3Sonata</code>, <code>LitePT</code> and <code>MinkUNet</code>:
+<a href="../slots/scene_encoders_sparse/">Scene encoders: sparse-voxel networks and released weights</a>.</p>
+</details>
+<h2 id="where-the-implementations-deliberately-differ-from-upstream">Where the implementations deliberately differ from upstream<a class="headerlink" href="#where-the-implementations-deliberately-differ-from-upstream" title="Permanent link">&para;</a></h2>
+<p>Each difference exists for the scene-encoder contract (batch independence, deterministic
+evaluation, no compiled extra) and is exact for a single cloud.</p>
+<details class="note">
+<summary>Every difference, and the upstream behaviours kept as options</summary>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Upstream</th>
+<th>Here</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PTv3 attention backend</td>
+<td>flash-attention in half precision; without it, the patch size shrinks to the smallest cloud of the batch</td>
+<td><code>scaled_dot_product_attention</code> in the input precision with the fixed-patch layout of the flash path</td>
+<td>No extra dependency; a cloud's result does not depend on its batch neighbours</td>
+</tr>
+<tr>
+<td>PTv3 serialisation depth</td>
+<td>one depth for the batch, from its largest cloud; the Hilbert curve depends on it</td>
+<td>one depth per cloud</td>
+<td>Batch independence</td>
+</tr>
+<tr>
+<td>PTv3 order shuffling</td>
+<td>every forward pass, in evaluation mode too</td>
+<td>training mode only</td>
+<td>Deterministic evaluation</td>
+</tr>
+<tr>
+<td>PTv3 voxel representative</td>
+<td>a random point of each voxel (training transform)</td>
+<td>the first point of each voxel</td>
+<td>Deterministic; features go back to exactly the points that produced the voxel</td>
+</tr>
+<tr>
+<td>PTv3 multi-dataset norms (<code>pdnorm_*</code>, PPT)</td>
+<td>one set of normalisation layers per training dataset, chosen per sample by a <code>condition</code></td>
+<td>one set, chosen when the weights are loaded (<code>pretrained_condition</code>); the model is a plain PTv3</td>
+<td>The <code>Backbone</code> contract carries no per-sample dataset condition. The released <code>ppt</code> checkpoints load with the statistics of the chosen dataset; the other sets are dropped</td>
+</tr>
+<tr>
+<td>PTv3 <code>cls_mode</code> (encoder without decoder)</td>
+<td>returns the coarsest level</td>
+<td><code>enc_mode: true</code> returns the deepest <code>concat_stages</code> encoder stages concatenated on every input voxel</td>
+<td>A scene encoder returns one feature per point; encoder-only checkpoints load strictly</td>
+</tr>
+<tr>
+<td>LitePT attention backend</td>
+<td>flash-attention on float16 queries, keys and values; there is no other path</td>
+<td><code>scaled_dot_product_attention</code> in the input precision, on the same patches</td>
+<td>No extra dependency. Measured: with the released weights the official output itself moves by 6e-4 to 2e-3 between the two precisions</td>
+</tr>
+<tr>
+<td>LitePT PointROPE</td>
+<td>a CUDA extension, or a PyTorch fallback that looks the rotations up in a table</td>
+<td>computed in PyTorch from the grid coordinates</td>
+<td>No compiled code; equal to both (the evidence was recorded with each)</td>
+</tr>
+<tr>
+<td>LitePT serialisation depth</td>
+<td>one depth for the batch, from its largest cloud</td>
+<td>one depth per cloud</td>
+<td>Batch independence</td>
+</tr>
+<tr>
+<td>LitePT order shuffling</td>
+<td>at every pooling, on every forward pass, in evaluation mode too; the model's <code>shuffle_orders</code> only reaches the input level</td>
+<td>training mode only, at every level, switched by <code>shuffle_orders</code></td>
+<td>Deterministic evaluation</td>
+</tr>
+<tr>
+<td>LitePT patch size of a decoder stage that attends</td>
+<td>ignored: the level keeps the layout its encoder stage computed</td>
+<td>has to equal the encoder's; anything else is an error</td>
+<td>An argument that silently does nothing is a trap</td>
+</tr>
+<tr>
+<td>LitePT voxel representative</td>
+<td>a random point of each voxel (training transform)</td>
+<td>the first point of each voxel</td>
+<td>As for PTv3</td>
+</tr>
+<tr>
+<td>LitePT <code>enc_mode</code> (encoder without decoder)</td>
+<td>supported</td>
+<td>not implemented</td>
+<td>No released checkpoint uses it, and the model then returns its coarsest level instead of dense features</td>
+</tr>
+<tr>
+<td>PointNet++ sampling below the first level</td>
+<td>searches again</td>
+<td>takes the first rows of the previous sample</td>
+<td>Identical result (furthest point samples are nested), about half the sampling time</td>
+</tr>
+<tr>
+<td>OA-CNNs sparse grid</td>
+<td>the bounding box of the batch, so which voxels a cloud loses at an odd axis (<code>crop_odd_extent</code>) depends on its batch neighbours</td>
+<td>the bounding box of each cloud</td>
+<td>Batch independence</td>
+</tr>
+<tr>
+<td>OA-CNNs voting weights</td>
+<td><code>exp(logit - m) / (sum + 1e-6)</code> with <code>m</code> the largest logit of the batch; because of the constant, <code>m</code> changes the result</td>
+<td><code>m</code> is the largest logit of the cloud</td>
+<td>Batch independence</td>
+</tr>
+<tr>
+<td>OA-CNNs pooling grids</td>
+<td>anchored at the lowest occupied cell of the batch at each level</td>
+<td>anchored at the lowest occupied cell of the cloud</td>
+<td>Batch independence</td>
+</tr>
+<tr>
+<td>OA-CNNs voxel representative</td>
+<td>a random point of each voxel (training transform)</td>
+<td>the first point of each voxel</td>
+<td>As for PTv3</td>
+</tr>
+<tr>
+<td>OA-CNNs arguments without effect (<code>groups</code>, <code>enc_num_ref</code>, <code>dec_depth</code>, <code>down_ratio</code>)</td>
+<td>accepted; none enters the computation, the decoder has no blocks</td>
+<td>not parameters</td>
+<td>A config key that changes nothing is a trap</td>
+</tr>
+<tr>
+<td>SpUNet 1×1 convolutions (the final layer, the projected shortcuts)</td>
+<td>spconv convolutions of kernel size 1, stored as <code>(out, 1, 1, 1, in)</code> and applied as that memory viewed as <code>(in, out)</code></td>
+<td>facade <code>Linear</code> layers with an <code>(out, in)</code> weight</td>
+<td>The facade defines a 1×1 convolution as a linear layer; <code>convert_pointcept_state</code> re-lays an official state dict, changing no value</td>
+</tr>
+<tr>
+<td>SpUNet <code>enc_mode</code> (no decoder, one pooled vector per cloud)</td>
+<td>supported</td>
+<td>not implemented</td>
+<td>Not a scene encoder</td>
+</tr>
+<tr>
+<td>SpUNet voxel representative</td>
+<td>a random point of each voxel (training transform)</td>
+<td>the first point of each voxel</td>
+<td>As for PTv3</td>
+</tr>
+</tbody>
+</table>
+<p>Two upstream behaviours are kept as named constructor arguments because checkpoints depend
+on them: <code>PointNet2.fps_skip_near_origin</code> (the PyTorch sampling kernel never selects a
+point within 3.2 cm of the frame origin) and <code>PTv3.fuse_before_decoder_cpe</code> (in PT-v3m1
+the first positional convolution of each decoder stage reads the skip features only).
+<code>PTv3</code> follows the serialisation-depth rule of the original release, which its weights
+were trained with; Pointcept ≥ 1.6 adds one to the largest coordinate first, which differs
+only when that coordinate plus one is a power of two.</p>
+<p><code>OACNNs.crop_odd_extent</code> keeps a third: the way the official model treats the border of
+its grid. It declares the sparse grid as the exact bounding box of the voxels, and a
+stride-2 convolution without padding cannot place the last cell of an axis with an odd
+number of cells. At every level the voxels in that cell are left out of the down-sampling
+and get zeros back from the up-sampling, and a cloud thinner than 16 voxels along any
+axis runs out of cells (the official code then stops inside spconv with "out spatial
+shape reach zero"; here the error names the cloud and says what to change).
+<code>crop_odd_extent: false</code> keeps every voxel and has no such limit; the two agree whenever
+every extent is a multiple of 16. A tabletop cloud is easily thinner than 16 voxels at the
+published 0.02 m grid (the fixture scene is 15 deep), so a grasp detector needs a finer
+grid or <code>crop_odd_extent: false</code>. The batch dependence that the per-cloud evaluation
+removes is not small: batching the fixture scene with its own left half moves the
+<em>official</em> features of the two clouds by up to 1.1 on features of magnitude 10.6
+(published configuration), where a batch here reproduces the clouds run alone to 2e-5.</p>
+<p>At a 5 mm grid, what has to be re-tuned in <code>OACNNs</code> is <code>point_grid_size</code>: the pooling
+grids are counted in cells, so the published 8 to 16 cells of the first stage shrink from
+0.32–0.64 m to 0.08–0.16 m. <code>SpUNet</code> has nothing counted in metres or cells besides the
+grid itself; its receptive field shrinks with the grid, as that of <code>SparseUNet14</code> does.
+The official <code>SpUNet</code> pads its sparse grid, loses no voxel and does not depend on the
+batch (measured as for <code>OACNNs</code>: 3.4e-5 on features of magnitude 13.9, which is rounding).</p>
+</details>
+<h2 id="reproducing-the-evidence">Reproducing the evidence<a class="headerlink" href="#reproducing-the-evidence" title="Permanent link">&para;</a></h2>
+<p>The unit suite needs no files; the oracle comparisons need the checkpoints named below.</p>
+<details class="note">
+<summary>Commands and environments</summary>
+<div class="highlight"><pre><span></span><code><span class="c1"># unit suite: contracts, written-out oracles, published sizes (CPU, no files needed)</span>
+pytest<span class="w"> </span>tests/unit<span class="w"> </span>-k<span class="w"> </span><span class="s2">"backbone or ops"</span>
+
+<span class="c1"># oracle comparisons; the analytic ones run anywhere, the others need the checkpoints</span>
+<span class="nv">GRASPPANDA_WEIGHTS</span><span class="o">=</span>/path/to/weights<span class="w"> </span>pytest<span class="w"> </span>tests/integration/test_backbone_oracle.py<span class="w"> </span>-rs
+</code></pre></div>
+<p><code>$GRASPPANDA_WEIGHTS</code> holds <code>graspnet_baseline/checkpoint-rs.tar</code>,
+<code>components/concerto_{tiny,small,base,large}.pth</code>, <code>components/utonia.pth</code> and
+<code>components/scannet-semseg-pt-v3m1-0-base.pth</code>. A test is skipped when its file is absent
+and fails when the file's SHA-256 is not the recorded one.</p>
+<p>The fixtures themselves are re-recorded with <code>tools/make_backbone_fixtures.py</code>, which runs
+the official code and is documented in its docstring. It never imports <code>grasppanda</code>; the
+packages an oracle needs (torch_scatter, timm, addict, the compiled extensions of
+graspnet-baseline and openpoints) belong in a separate environment.</p>
+<p>LitePT has its own test file and four more checkpoints, all MIT:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># components/{scannet-semseg-litept-small-v1m1,scannet-insseg-litept-small-v1m2}.pth,</span>
+<span class="c1"># components/structured3d-semseg-litept-{base,large}-v1m1.pth</span>
+<span class="nv">GRASPPANDA_WEIGHTS</span><span class="o">=</span>/path/to/weights<span class="w"> </span>pytest<span class="w"> </span>tests/integration/test_backbone_litept_oracle.py<span class="w"> </span>-rs
+</code></pre></div>
+<p>Its fixtures were recorded in an environment built for the purpose: PyTorch 2.4.1 + cu118
+(the newest release flash-attention publishes a cu118 wheel for), flash-attention 2.6.3,
+spconv 2.3.8, torch_scatter, timm, addict, colorhash, NumPy 1.26, and the official
+PointROPE extension compiled out of tree for the GPU at hand, as its README instructs.
+Without flash-attention and the extension <code>make_backbone_fixtures.py litept</code> still runs,
+on the official PyTorch PointROPE and a plain softmax attention, and writes into the
+fixture which backend it used.</p>
+<p>The sparse CNNs of Pointcept have their own test file, which needs no checkpoint:</p>
+<div class="highlight"><pre><span></span><code>pytest<span class="w"> </span>tests/integration/test_backbone_sparse_cnn_oracle.py<span class="w"> </span>-rs
+</code></pre></div>
+<p>Their fixtures were recorded from Pointcept at commit <code>1342eda</code> (MIT), unpacked from the
+GitHub archive, with spconv 2.3.8, timm, torch_geometric 2.6.1 and torch_cluster 1.6.3
+(torch_geometric 2.8 moved the grid clustering OA-CNNs uses into pyg-lib). The recorder
+imports the official model file without <code>pointcept/models/__init__.py</code>, which would pull
+in every model of the zoo and its compiled extensions; no upstream code is stubbed or
+modified.</p>
+</details>
+<h2 id="reviewed-not-checked-against-their-authors-code">Reviewed, not checked against their authors' code<a class="headerlink" href="#reviewed-not-checked-against-their-authors-code" title="Permanent link">&para;</a></h2>
+<p>Licences were read from the repositories on 2026-10-12 (GitHub licence metadata, and the
+licence file where GitHub could not classify it). "Pointcept" means the model is
+available inside <a href="https://github.com/Pointcept/Pointcept">Pointcept</a> under MIT; the
+dependencies listed for those rows are the imports of the Pointcept implementation.
+"Not checked" means exactly that.</p>
+<details class="note">
+<summary>Point-cloud and voxel encoders</summary>
+<table>
+<thead>
+<tr>
+<th>Encoder</th>
+<th>Paper</th>
+<th>Code, licence</th>
+<th>Extra dependencies</th>
+<th>Why not yet, and what it would take</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DGCNN (segmentation form)</td>
+<td>Wang et al., TOG 2019</td>
+<td><a href="https://github.com/WangYueFt/dgcnn">WangYueFt/dgcnn</a>, <a href="https://github.com/antao97/dgcnn.pytorch">dgcnn.pytorch</a> (both MIT)</td>
+<td>none</td>
+<td>On the list for this round, dropped for time. Needs a k-NN operator in feature space (the reference <code>knn</code> takes 3-D coordinates only), chunked: at 20 000 points every EdgeConv layer compares all pairs of points. The PyTorch port needs no compiled code, so it can serve as an oracle directly.</td>
+</tr>
+<tr>
+<td>SPVCNN</td>
+<td>Tang et al., ECCV 2020</td>
+<td><a href="https://github.com/mit-han-lab/spvnas">spvnas</a> (MIT, archived), <a href="https://github.com/mit-han-lab/torchsparse">torchsparse</a> (MIT)</td>
+<td>torchsparse</td>
+<td>A third sparse backend for one model. Port the point-voxel branch onto the facade instead.</td>
+</tr>
+<tr>
+<td>KPConv</td>
+<td>Thomas et al., ICCV 2019</td>
+<td><a href="https://github.com/HuguesTHOMAS/KPConv-PyTorch">KPConv-PyTorch</a> (MIT)</td>
+<td>its compiled C++ wrappers (<code>cpp_subsampling</code>, <code>cpp_neighbors</code>)</td>
+<td>Neighbourhoods are precomputed on the CPU in the data loader. That pipeline has to become a transform, or be redone on the GPU with the reference operators.</td>
+</tr>
+<tr>
+<td>KPConvX</td>
+<td>Thomas et al., CVPR 2024</td>
+<td><a href="https://github.com/apple/ml-kpconvx">ml-kpconvx</a> (MIT)</td>
+<td>not checked</td>
+<td>Successor of KPConv; review together with it.</td>
+</tr>
+<tr>
+<td>OctFormer</td>
+<td>Wang, SIGGRAPH 2023</td>
+<td><a href="https://github.com/octree-nn/octformer">octformer</a> (MIT); Pointcept</td>
+<td>ocnn (MIT), <a href="https://github.com/octree-nn/dwconv">dwconv</a> (no licence file)</td>
+<td>Octree attention. PTv3 covers the same niche with fewer dependencies; a port needs an octree structure and a depth-wise octree convolution.</td>
+</tr>
+<tr>
+<td>Swin3D</td>
+<td>Yang et al., arXiv 2304.06906</td>
+<td><a href="https://github.com/microsoft/Swin3D">Swin3D</a> (MIT); Pointcept</td>
+<td>MinkowskiEngine, the <code>Swin3D</code> package, timm</td>
+<td>Tied to MinkowskiEngine. Not worth a port before the sparse facade can express its attention.</td>
+</tr>
+<tr>
+<td>Point Transformer V1</td>
+<td>Zhao et al., ICCV 2021</td>
+<td>Pointcept. The widely copied POSTECH-CVLab reproduction carries no licence and cannot be a source</td>
+<td>pointops (Pointcept's compiled library), einops</td>
+<td>k-NN vector attention is feasible on the reference operators but slow without a compiled k-NN.</td>
+</tr>
+<tr>
+<td>Point Transformer V2</td>
+<td>Wu et al., NeurIPS 2022</td>
+<td>Pointcept</td>
+<td>pointops, torch_geometric, torch_scatter, timm, einops</td>
+<td>Grid pooling already exists here (<code>PTv3Sonata</code>); grouped vector attention needs k-NN grouping. Superseded by PTv3.</td>
+</tr>
+<tr>
+<td>Stratified Transformer</td>
+<td>Lai et al., CVPR 2022</td>
+<td><a href="https://github.com/dvlab-research/Stratified-Transformer">Stratified-Transformer</a> (MIT); Pointcept</td>
+<td>pointops2 (compiled), torch_geometric, torch_scatter, timm</td>
+<td>Same dependency problem as PTv2.</td>
+</tr>
+<tr>
+<td>PointMamba</td>
+<td>Liang et al., NeurIPS 2024</td>
+<td><a href="https://github.com/LMD0311/PointMamba">PointMamba</a> (Apache-2.0)</td>
+<td>mamba-ssm (Apache-2.0, compiled CUDA)</td>
+<td>An object-level model. The serialisation operators here are the ones it needs; blocked on a compiled dependency and on scene-scale evidence.</td>
+</tr>
+<tr>
+<td>Point Cloud Mamba</td>
+<td>Zhang et al., 2024</td>
+<td><a href="https://github.com/zhang-tao-whu/PCM">PCM</a> (no licence)</td>
+<td>not checked</td>
+<td>Unlicensed code cannot be a source; implement from the paper only.</td>
+</tr>
+<tr>
+<td>PointMLP</td>
+<td>Ma et al., ICLR 2022</td>
+<td><a href="https://github.com/ma-xu/pointMLP-pytorch">pointMLP-pytorch</a> (Apache-2.0)</td>
+<td>not checked</td>
+<td>Published for classification and part segmentation; no scene-scale configuration to reproduce.</td>
+</tr>
+<tr>
+<td>PointNet++ with multi-scale grouping, as in Contact-GraspNet</td>
+<td>Sundermeyer et al., ICRA 2021</td>
+<td><a href="https://github.com/NVlabs/contact_graspnet">contact_graspnet</a> (an NVIDIA licence shipped as <code>License.pdf</code>; read it before use)</td>
+<td>none</td>
+<td>A small extension of <code>PointNet2</code>: several radii per level, features concatenated. Take the configuration from the paper, not from the code.</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="note">
+<summary>Image encoders used by RGB-D grasp methods</summary>
+<p>These are image encoders, not scene encoders. HGGD's image-encoder slot takes several of
+them (DINOv2, DINOv3, EfficientViT, FastViT, the Hiera encoder of SAM 2, ResNets:
+<a href="../slots/image_encoders/">Image encoders</a>), and a seed-based method reads one through point
+painting. None of them was compared with its authors' code here.</p>
+<table>
+<thead>
+<tr>
+<th>Encoder</th>
+<th>Paper</th>
+<th>Code, licence</th>
+<th>Extra dependencies</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ResNet encoder-decoders</td>
+<td>He et al., CVPR 2016</td>
+<td><a href="https://github.com/pytorch/vision">torchvision</a> (BSD-3-Clause); the encoder inside <a href="https://github.com/THU-VCLab/HGGD">HGGD</a> (MIT)</td>
+<td>torchvision</td>
+<td>The obvious first image encoder: permissive, small, the one HGGD-style methods are built on.</td>
+</tr>
+<tr>
+<td>DINOv2</td>
+<td>Oquab et al., TMLR 2024</td>
+<td><a href="https://github.com/facebookresearch/dinov2">dinov2</a> (Apache-2.0)</td>
+<td>not checked</td>
+<td>Strong frozen RGB features.</td>
+</tr>
+<tr>
+<td>DINOv3</td>
+<td>Siméoni et al., 2025</td>
+<td><a href="https://github.com/facebookresearch/dinov3">dinov3</a> (the custom "DINOv3 License")</td>
+<td>not checked</td>
+<td>The licence has to be read before anything depends on it.</td>
+</tr>
+<tr>
+<td>EfficientViT</td>
+<td>Cai et al., ICCV 2023</td>
+<td><a href="https://github.com/mit-han-lab/efficientvit">efficientvit</a> (Apache-2.0)</td>
+<td>not checked</td>
+<td>A fast encoder for real-time use.</td>
+</tr>
+<tr>
+<td>FastViT</td>
+<td>Vasu et al., ICCV 2023</td>
+<td><a href="https://github.com/apple/ml-fastvit">ml-fastvit</a> (a custom Apple licence)</td>
+<td>not checked</td>
+<td>Custom licence; read before use.</td>
+</tr>
+<tr>
+<td>MambaVision</td>
+<td>Hatamizadeh and Kautz, CVPR 2025</td>
+<td><a href="https://github.com/NVlabs/MambaVision">MambaVision</a> (NVIDIA Source Code License-NC)</td>
+<td>not checked</td>
+<td>Non-commercial code: cannot be a source of code here.</td>
+</tr>
+<tr>
+<td>SAM 2 image encoder</td>
+<td>Ravi et al., 2024</td>
+<td><a href="https://github.com/facebookresearch/sam2">sam2</a> (Apache-2.0)</td>
+<td>not checked</td>
+<td>More useful as a provider of instance masks than as a scene encoder.</td>
+</tr>
+</tbody>
+</table>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../advanced_guides/swapping/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Swap rules">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Swap rules
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../components/" class="md-footer__link md-footer__link--next" aria-label="Next: Registered classes">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Registered classes
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,154 @@
+/* GraspPanda documentation theme. Colours are shared with the explorer
+ * (docs/explorer/explorer.css) so the site and the app read as one product. */
+
+:root {
+  --md-accent-fg-color: #1a7f37;
+  --md-accent-fg-color--transparent: #1a7f371a;
+  --md-typeset-a-color: #0969da;
+  --gp-ink: #1f2328;
+  --gp-muted: #59636e;
+  --gp-line: #d1d9e0;
+  --gp-surface: #f6f8fa;
+  --gp-chip-bg: #eff2f5;
+  --gp-chip-fg: #1f2328;
+  --gp-ok: #1a7f37;
+  --gp-ok-bg: #dafbe1;
+  --gp-warn: #9a6700;
+  --gp-warn-bg: #fff8c5;
+  --gp-no: #cf222e;
+  --gp-no-bg: #ffebe9;
+  --gp-hero-bg: linear-gradient(180deg, #f6f8fa 0%, #ffffff 100%);
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #0969da;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #4493f8;
+  --md-accent-fg-color: #3fb950;
+  --md-accent-fg-color--transparent: #3fb9501a;
+  --md-typeset-a-color: #4493f8;
+  --gp-ink: #e6edf3;
+  --gp-muted: #9198a1;
+  --gp-line: #3d444d;
+  --gp-surface: #151b23;
+  --gp-chip-bg: #262c36;
+  --gp-chip-fg: #e6edf3;
+  --gp-ok: #3fb950;
+  --gp-ok-bg: #12261e;
+  --gp-warn: #d29922;
+  --gp-warn-bg: #272115;
+  --gp-no: #f85149;
+  --gp-no-bg: #2d1416;
+  --gp-hero-bg: linear-gradient(180deg, #151b23 0%, var(--md-default-bg-color) 100%);
+}
+
+/* The repository widget of the header asks GitHub for the latest release. Until the
+ * rebuild has a release of its own that is a tag of the earlier, unrelated code base
+ * (v0.56), so the version is hidden; stars and forks stay. */
+.md-source__fact--version { display: none; }
+
+/* A measured combination that predicted no grasp on any probed frame
+ * (tools/make_combination_docs.py, tools/make_method_pages.py). */
+.gp-nograsp { color: var(--md-default-fg-color--light); opacity: 0.75; }
+
+/* ------------------------------------------------------------------ hero */
+.gp-hero { background: var(--gp-hero-bg); border-bottom: 1px solid var(--gp-line); }
+.gp-hero__inner { padding: 3.2rem 0.8rem 2.6rem; }
+.gp-hero__text { max-width: 40rem; }
+.gp-hero h1 {
+  margin: 0 0 0.8rem; font-size: 2.3rem; line-height: 1.15; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--gp-ink);
+}
+.gp-hero__lead { margin: 0 0 1.4rem; font-size: 1.05rem; line-height: 1.55; color: var(--gp-muted); }
+.gp-hero__badge {
+  display: inline-block; margin: 0 0 1rem; padding: 0.1rem 0.6rem; border-radius: 1rem;
+  font-size: 0.7rem; font-weight: 600; color: var(--gp-ok); background: var(--gp-ok-bg);
+}
+.gp-hero .md-button {
+  margin: 0 0.5rem 0.5rem 0; border-radius: 0.4rem; color: var(--gp-ink); border-color: var(--gp-line);
+}
+.gp-hero .md-button--primary {
+  color: var(--md-default-bg-color); background: var(--gp-ink); border-color: var(--gp-ink);
+}
+.gp-hero .md-button:hover { color: var(--md-default-bg-color); background: var(--md-accent-fg-color); border-color: var(--md-accent-fg-color); }
+
+/* ------------------------------------------------------------------ chips */
+.md-typeset .gp-chip {
+  display: inline-block; padding: 0.05rem 0.5rem; border-radius: 1rem; font-size: 0.68rem;
+  line-height: 1.5; font-weight: 600; white-space: nowrap; vertical-align: baseline;
+  color: var(--gp-chip-fg); background: var(--gp-chip-bg);
+}
+.md-typeset .gp-chip--ok { color: var(--gp-ok); background: var(--gp-ok-bg); }
+.md-typeset .gp-chip--warn { color: var(--gp-warn); background: var(--gp-warn-bg); }
+.md-typeset .gp-chip--no { color: var(--gp-no); background: var(--gp-no-bg); }
+.md-typeset .gp-chip--muted { color: var(--gp-muted); background: transparent; border: 1px solid var(--gp-line); }
+.md-typeset .gp-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: -0.4rem 0 1.2rem; }
+
+/* ------------------------------------------------------------------ cards */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.5rem; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--md-accent-fg-color); box-shadow: var(--md-shadow-z2);
+}
+.md-typeset .grid.cards > ul > li > hr { margin: 0.5rem 0; }
+
+/* ------------------------------------------------------------------ method strip */
+.md-typeset .gp-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; margin: 0.4rem 0 1rem; }
+.md-typeset .gp-strip__label { font-size: 0.7rem; font-weight: 600; color: var(--gp-muted); margin-right: 0.3rem; }
+
+/* ------------------------------------------------------------------ tables */
+.md-typeset table:not([class]) { font-size: 0.74rem; }
+.md-typeset table:not([class]) td { padding: 0.55em 0.9em; }
+/* Names that must not break inside (option names, extras). */
+.md-typeset .gp-nowrap { white-space: nowrap; }
+/* A slot x method matrix: columns narrow to fit, headers may wrap at hyphens. */
+.md-typeset .gp-matrix table:not([class]) th { min-width: 0; white-space: normal; }
+.md-typeset .gp-matrix table:not([class]) th,
+.md-typeset .gp-matrix table:not([class]) td { padding: 0.5em 0.6em; }
+
+/* ------------------------------------------------------------------ type */
+.md-typeset h1 { font-weight: 600; letter-spacing: -0.015em; color: var(--gp-ink); }
+.md-typeset h2 { font-weight: 600; letter-spacing: -0.01em; }
+.md-typeset :is(h2, h3) { color: var(--gp-ink); }
+
+/* Identifiers in tables keep their shape: a column grows instead of breaking a name. */
+.md-typeset table:not([class]) td code { word-break: normal; overflow-wrap: normal; }
+
+/* Folds read as quiet "more" rows, not as a stack of coloured notes. */
+.md-typeset details.note { border-color: var(--gp-line); box-shadow: none; }
+.md-typeset details.note > summary { background-color: transparent; }
+.md-typeset details.note > summary::before { background-color: var(--gp-muted); }
+.md-typeset details.note > summary::after { color: var(--gp-muted); }
+
+/* The probe caveat (docs/includes/caveat_probe.md), one look everywhere. */
+.md-typeset .gp-caveat { color: var(--gp-muted); font-size: 0.72rem; border-left: 2px solid var(--gp-line); padding-left: 0.7rem; }
+
+/* Option tables of the slot pages (<div class="gp-options" markdown>): on a phone the
+ * description column gives way to the measured ones. */
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gp-options :is(th, td):nth-child(2) { display: none; }
+}
+
+/* Code in table headers keeps its shape too (stage names in the swap rules). */
+.md-typeset table:not([class]) th code { word-break: normal; overflow-wrap: normal; }
+/* Info folds read like the quiet notes. */
+.md-typeset details.info { border-color: var(--gp-line); box-shadow: none; }
+.md-typeset details.info > summary { background-color: transparent; }
+.md-typeset details.info > summary::before { background-color: var(--gp-muted); }
+/* The option tables give their description room; on a phone the chips may wrap. */
+.md-typeset .gp-options td:nth-child(2) { min-width: 15rem; }
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gp-options td:nth-child(2) { min-width: 0; }
+  .md-typeset .gp-options :is(.gp-chip, .gp-nowrap) { white-space: normal; }
+  .md-typeset .gp-slots :is(th, td):nth-child(3),
+  .md-typeset .gp-slots :is(th, td):nth-child(4) { display: none; }
+}
+/* Screenshots of the app sit in a frame, so a light picture reads as a card in dark mode. */
+.md-typeset img.gp-shot, .md-typeset img[src$="explore-run.webp"] {
+  border: 1px solid var(--gp-line); border-radius: 0.5rem; box-shadow: var(--md-shadow-z1);
+}
