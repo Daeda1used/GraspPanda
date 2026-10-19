@@ -5,7 +5,7 @@ each alternative being a list of overrides. The plan is the product of the axes 
 the seeds. Every cell is a complete, validated config, so an incompatible combination
 is reported at planning time rather than hours into the sweep.
 
-    base: gsnet/gsnet_sunet14_g1b-realsense_10e
+    base: finegrasp/finegrasp_sunet14_g1b-realsense_10e
     seeds: [0, 1, 2]
     axes:
       backbone:

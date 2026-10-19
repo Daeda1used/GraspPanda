@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 744" width="1280" height="744" role="img" aria-label="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton of 5 methods has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses. HGGD has its own family: image encoder, heat-map stage, region stage. Post-processing and the training recipe are shared by all 6 methods.">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9198a1"/></marker></defs>
+<rect x="1" y="1" width="1278" height="742" rx="16" fill="#0d1117" stroke="#3d444d" stroke-width="2"/>
+<text x="32" y="56" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" fill="#e6edf3" font-weight="700">Two detector families, one toolbox</text>
+<text x="32" y="90" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" fill="#9198a1">A box with a green name is a slot: swap it with one line, --set &lt;slot&gt;=&lt;option&gt;. Grey boxes are fixed parts of a method.</text>
+<text x="114" y="316" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#9198a1" text-anchor="middle" font-weight="700">Datasets</text>
+<rect x="24" y="332" width="180" height="44" rx="22" fill="#0d1117" stroke="#3d444d" stroke-width="2"/>
+<text x="114" y="360" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" font-weight="700">GraspNet-1Billion</text>
+<rect x="24" y="388" width="180" height="44" rx="22" fill="#0d1117" stroke="#3d444d" stroke-width="2"/>
+<text x="114" y="416" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#e6edf3" text-anchor="middle" font-weight="700">GraspClutter6D</text>
+<path d="M204 378 L216 378 L216 240 L244 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<path d="M216 378 L216 516 L244 516" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="228" y="118" width="802" height="256" rx="14" fill="#151b23" stroke="#3d444d" stroke-width="2"/>
+<text x="244" y="150" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700">Seed-based skeleton · 5 methods</text>
+<text x="244" y="174" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">GraspNet-baseline · GSNet · Scale-Balanced-Grasp · EconomicGrasp · FineGrasp</text>
+<rect x="244" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="300.5" y="224" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Scene</text>
+<text x="300.5" y="247" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">encoder</text>
+<text x="300.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">backbone</text>
+<rect x="375" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="431.5" y="224" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Seed</text>
+<text x="431.5" y="247" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">proposal</text>
+<text x="431.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">proposal</text>
+<path d="M357 240 L375 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="506" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="562.5" y="234" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">View</text>
+<text x="562.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">view</text>
+<path d="M488 240 L506 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="637" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="693.5" y="234" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Assigner</text>
+<text x="693.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">assigner</text>
+<path d="M619 240 L637 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="768" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="824.5" y="234" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Grouper</text>
+<text x="824.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">grouper</text>
+<path d="M750 240 L768 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="899" y="190" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="955.5" y="224" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Head</text>
+<text x="955.5" y="247" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">bundle</text>
+<text x="955.5" y="274" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">head</text>
+<path d="M881 240 L899 240" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="899" y="306" width="113" height="60" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="955.5" y="333" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Losses</text>
+<text x="955.5" y="354" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">loss</text>
+<line x1="955.5" y1="290" x2="955.5" y2="306" stroke="#9198a1" stroke-width="2.5"/>
+<rect x="228" y="394" width="802" height="190" rx="14" fill="#151b23" stroke="#3d444d" stroke-width="2"/>
+<text x="244" y="426" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#e6edf3" font-weight="700">HGGD · own family</text>
+<text x="244" y="450" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">reads a colour image and its depth</text>
+<rect x="244" y="466" width="113" height="100" rx="12" fill="#0d1117" stroke="#c9d1d9" stroke-width="2.5"/>
+<text x="300.5" y="500" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Image</text>
+<text x="300.5" y="523" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">encoder</text>
+<text x="300.5" y="550" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">image_encoder</text>
+<rect x="375" y="466" width="113" height="100" rx="12" fill="#151b23" stroke="#656c76" stroke-width="2.5" stroke-dasharray="7 5"/>
+<text x="431.5" y="511.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#9198a1" text-anchor="middle" font-weight="700">Heat-map</text>
+<text x="431.5" y="534.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#9198a1" text-anchor="middle" font-weight="700">stage</text>
+<path d="M357 516 L375 516" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="506" y="466" width="113" height="100" rx="12" fill="#151b23" stroke="#656c76" stroke-width="2.5" stroke-dasharray="7 5"/>
+<text x="562.5" y="511.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#9198a1" text-anchor="middle" font-weight="700">Region</text>
+<text x="562.5" y="534.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#9198a1" text-anchor="middle" font-weight="700">stage</text>
+<path d="M488 516 L506 516" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<path d="M1012 240 L1044 240 L1044 358 L1058 358" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<path d="M619 516 L1044 516 L1044 398 L1058 398" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="1058" y="324" width="198" height="108" rx="12" fill="#12261e" stroke="#3fb950" stroke-width="2.5"/>
+<text x="1157" y="368" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" text-anchor="middle" font-weight="700">Post-processing</text>
+<text x="1157" y="416" text-anchor="middle" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="13" fill="#3fb950">post</text>
+<text x="1157" y="390" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#9198a1" text-anchor="middle">all 6 methods</text>
+<path d="M1157 432 L1157 496" fill="none" stroke="#9198a1" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a)"/>
+<rect x="1072" y="496" width="170" height="44" rx="22" fill="#0d1117" stroke="#3d444d" stroke-width="2"/>
+<text x="1157" y="524" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#e6edf3" text-anchor="middle" font-weight="700">6-DoF grasps</text>
+<rect x="228" y="604" width="1028" height="64" rx="14" fill="#12261e" stroke="#3fb950" stroke-width="2.5"/>
+<text x="244" y="644" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" fill="#e6edf3" font-weight="700">Training recipe</text>
+<text x="416" y="644" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">all 6 methods</text>
+<text x="1236" y="644" text-anchor="end" font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="15" fill="#3fb950">optimizer · schedule · hooks · augment</text>
+<rect x="228" y="697" width="26" height="18" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="2"/>
+<text x="264" y="712" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">slot</text>
+<rect x="320" y="697" width="26" height="18" rx="5" fill="#12261e" stroke="#3fb950" stroke-width="2"/>
+<text x="356" y="712" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">shared by all 6 methods</text>
+<rect x="564" y="697" width="26" height="18" rx="5" fill="#151b23" stroke="#656c76" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="600" y="712" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#9198a1">fixed part of a method</text>
+</svg>

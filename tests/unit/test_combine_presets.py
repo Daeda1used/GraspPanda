@@ -235,20 +235,58 @@ def test_every_preset_passes_the_signature_check_under_a_method_that_fits():
         assert accepted, f"{preset.slot}/{preset.name} is accepted under no method"
 
 
-def test_every_loss_preset_is_composed_into_a_term_it_fits_or_says_why_not():
-    """A loss preset is set as `<stage>.<loss option>=<preset>`; the cells of the grid
-    name a term for every preset, and compose accepts it there."""
-    from grasppanda.combine.compose import ComposeError, compose
-    from grasppanda.combine.grid import LOSS_CELLS, LOSS_NOT_PROBED
+def term_kinds(method: str) -> dict[str, str]:
+    """``<stage>.<loss option>`` → kind of every loss term of a seed-based method, as its
+    stages declare them (``loss_terms`` / ``loss_terms_for``)."""
+    from grasppanda.combine.grid import LOSS_STAGES
 
-    used: dict[str, set[str]] = {}
-    for method, sets in LOSS_CELLS:
-        for item in sets:
-            used.setdefault(item.partition("=")[2], set()).add(method)
+    model = Config.load(METHODS[method]).resolved()["model"]
+    found = {}
+    for slot in LOSS_STAGES:
+        node = model[slot]
+        cls = STAGE_REGISTRIES[slot].get(node["type"])
+        options = {name: value for name, value in node.items() if name != "type"}
+        reader = getattr(cls, "loss_terms_for", None)
+        terms = reader(options) if reader else getattr(cls, "loss_terms", {})
+        found.update({f"{slot}.{option}": kind for option, kind in terms.items()})
+    return found
+
+
+def test_every_loss_preset_has_a_cell_under_every_method_with_a_term_it_fits():
+    """The rule is the same for every seed-based method: a loss preset has a measured cell
+    under each method that has a term of a kind the preset fits, one per such kind, or
+    :data:`~grasppanda.combine.grid.LOSS_NOT_PROBED` says why it has none."""
+    from grasppanda.combine.grid import LOSS_NOT_PROBED, cells
+    from grasppanda.models.losses.terms import accepted_terms
+
+    kinds = {method: term_kinds(method) for method in METHODS}
+    placed: dict[tuple[str, str], set[str]] = {}
+    for cell in cells(("loss",)):
+        for item in cell.sets:
+            term, _, name = item.partition("=")
+            placed.setdefault((name, cell.method), set()).add(kinds[cell.method][term])
     names = set(presets()["loss"])
-    assert set(used) | set(LOSS_NOT_PROBED) == names and not set(used) & set(LOSS_NOT_PROBED)
-    for name, methods in used.items():  # under GSNet and under one more method
-        assert "GSNet" in methods and len(methods) >= 2, (name, methods)
+    assert set(LOSS_NOT_PROBED) <= names and all(LOSS_NOT_PROBED.values())
+    missing = []
+    for name in sorted(names - set(LOSS_NOT_PROBED)):
+        fits = set(accepted_terms(dict(presets()["loss"][name].node))[1])
+        assert any(placed.get((name, method)) for method in METHODS), f"{name}: no cell at all"
+        for method in METHODS:
+            for kind in sorted(fits & set(kinds[method].values())):
+                if kind not in placed.get((name, method), set()):
+                    missing.append(f"{name} in a `{kind}` term of {method}")
+    assert not missing, f"loss cells missing from the grid: {missing[:10]}"
+    for name in LOSS_NOT_PROBED:  # a stated reason, and then no cell
+        assert not any((name, method) in placed for method in METHODS), name
+
+
+def test_every_loss_preset_is_composed_into_a_term_it_fits_or_says_why_not():
+    """A loss preset is set as `<stage>.<loss option>=<preset>`; the hand-picked cells of
+    the grid, which replace several terms at once or pair a loss with a term that refuses
+    it, are composed as recorded."""
+    from grasppanda.combine.compose import ComposeError, compose
+    from grasppanda.combine.grid import LOSS_CELLS
+
     refused = 0
     for method, sets in LOSS_CELLS:
         result = compose(METHODS[method], list(sets))

@@ -15,7 +15,8 @@
 # * output: 992 channels, the five encoder stages concatenated (`enc_mode`), the
 #   authors' linear-probing protocol. Proposal, view stage and grouper are built that
 #   wide; `concat_stages` keeps fewer stages.
-# * grid_size: 0.005 m, GSNet's; the weights were trained at 0.02 m.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp; the weights were
+#   trained at 0.02 m.
 # * optimizer and schedule: the base method's, tuned for its own encoder.
 # * loading a grasp checkpoint trained from this preset builds the encoder first: keep
 #   the released file in place or set `pretrained: null` (the checkpoint holds the encoder).

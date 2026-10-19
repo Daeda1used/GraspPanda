@@ -3,7 +3,7 @@
 #
 # It reads compact grasp labels, a derived asset: the `compact_labels` section of the
 # training dataset, built with
-#   grasppanda prepare graspnet1b --compact-labels --config <this config>
+#   grasppanda prepare <dataset> --compact-labels --config <this config>
 # The head bundle must be supervised with compact labels too (EconomicHead). A dataset
 # serves either compact labels or the dense grids, and its transforms differ with it: a
 # base config whose dataset reads dense grids (`SampleGraspLabels` among its transforms)

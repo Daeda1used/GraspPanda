@@ -591,6 +591,7 @@ def test_converter_command_writes_weights_with_provenance(tmp_path, capsys):
     DETECTORS.build(Config.load(BASELINE_YAML)["model"]).load_state_dict(
         saved["state_dict"], strict=True
     )
-    # without the format the file is taken for a Graspness checkpoint and refused
-    assert converter.main([str(source), str(tmp_path / "never.pth")]) == 1
+    # the format is required; with another method's format the file is refused
+    wrong = [str(source), str(tmp_path / "never.pth"), "--source-format", "graspness-unofficial"]
+    assert converter.main(wrong) == 1
     assert "conversion failed" in capsys.readouterr().err and not (tmp_path / "never.pth").exists()

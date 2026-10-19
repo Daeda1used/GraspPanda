@@ -9,14 +9,17 @@ in [`docs/design/ARCHITECTURE.md`](docs/design/ARCHITECTURE.md).
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
 pip install -e ".[dev]"
 pre-commit install
-pytest                      # the whole suite runs on CPU in seconds
+pytest tests/unit           # the unit suite runs on CPU
 ```
 
 ## Ground rules
 
-1. **Only advertise what is verified.** A method enters `configs/` and the model zoo
-   after it has been trained and evaluated here. Until then it lives in `projects/`
-   with a stated support level.
+1. **Only advertise what is verified.** A ported method gets a folder under `configs/`
+   once it equals its reference implementation stage by stage: its configs, README,
+   metafile and the result records behind its measured numbers. It enters the model zoo,
+   with weights to download, only after it has been trained and evaluated here within the
+   admission rule ([configs/README.md](configs/README.md)); none has yet. Work that is not
+   that far lives in `projects/` with a stated support level.
 2. **Know where code comes from.** A component reaches the toolbox by one of three
    routes, and its `source` line says which:
    - *written here*: from the paper and from the *behaviour* of reference code. The ported
@@ -54,9 +57,9 @@ test, including one for the configuration it must *reject*.
 A component of the `grasppanda` package also states `source` (and `status`, `extras`)
 on its class, gets one tiny configuration in `tests/unit/test_swap_matrix.py` when it
 is a stage of the seed-based skeleton, and is followed by
-`python -m tools.make_component_docs`, which regenerates the
-[catalogue](docs/components.md) and the tables of
-[Swapping components](docs/advanced_guides/swapping.md). The unit suite fails until all
+`python -m tools.make_component_docs`, which regenerates
+[Registered classes](docs/components.md) and the tables of
+[Swap rules](docs/advanced_guides/swapping.md). The unit suite fails until all
 three are done.
 
 A rule that refuses a combination (a contract rule of the seed-based skeleton, a rule of
@@ -71,7 +74,7 @@ an option lifts is taught to `grasppanda compose`, which then inserts or sets it
 - Unit tests live in `tests/unit/` and run on CPU. The sparse components need a spconv
   extra (`pip install -e ".[dev,spconv-cpu]"` on a machine without CUDA); no thread
   setting is needed, because the CPU-only wheel's convolutions run on one thread by
-  themselves (see [Installation](docs/get_started/installation.md)). CI uses
+  themselves (see [Install](docs/get_started/installation.md)). CI uses
   `OMP_NUM_THREADS=1` because tiny test tensors gain nothing from threads.
 - CI also builds the wheel, installs it with the `spconv-cpu` extra and, from an empty
   directory outside the checkout, checks a shipped config and a config that inherits one
@@ -86,7 +89,9 @@ an option lifts is taught to `grasppanda compose`, which then inserts or sets it
 - `pre-commit run --all-files` and `pytest` pass.
 - User-visible changes get a line in `CHANGELOG.md`.
 - English for code, comments, docs and commit messages. If you change `README.md`, change
-  `README_zh-CN.md` in the same pull request; a test checks that they stay in step.
+  `README_zh-CN.md` in the same pull request; a test checks that they stay in step, and
+  that every number they print is the one the records and the metafiles give
+  (`tests/unit/test_repository.py`).
 
 ## Reporting bugs
 

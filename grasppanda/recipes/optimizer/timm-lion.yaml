@@ -6,8 +6,9 @@
 # What must be re-tuned, and why:
 # * lr and weight_decay: the paper uses a rate 3 to 10 times below AdamW's and a weight decay as
 #   many times above it; the two are coupled.
-# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
-#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+# * the method's own schedule stays (it differs per method:
+#   `grasppanda compose <method config> --list schedule` shows it); set one with
+#   `--set schedule=...` when the optimizer's paper assumes warm-up or a cosine.
 optimizer:
   type: TimmOptimizer
   name: lion

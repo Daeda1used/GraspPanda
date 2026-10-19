@@ -145,7 +145,7 @@ class SparseUNet14(Backbone):
 
     output = "dense"
     status = "tested"
-    source = "MinkUNet14D of GSNet (Choy et al., CVPR 2019)"
+    source = "MinkUNet14D (Choy et al., CVPR 2019), as GSNet, EconomicGrasp and FineGrasp use it"
     extras = ("spconv",)
     #: Each stage halves the resolution.
     stage_stride = 2

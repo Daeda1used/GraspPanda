@@ -1,10 +1,10 @@
 # Seeds by furthest point sampling over the predicted foreground: objectness alone selects,
 # graspness is still predicted and supervised but does not cut.
 #
-# The scorer is GSNet's (objectness and graspness per scene point, same targets and losses), so the
-# proposal needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and the
-# `graspness` section of the training dataset, built with
-#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# The scorer is the one GSNet, EconomicGrasp and FineGrasp share (objectness and graspness per
+# scene point, same targets and losses), so the proposal needs a `dense` encoder (compose wraps a
+# sub-sampling one in FeaturePropagation) and the `graspness` section of the training dataset:
+#   grasppanda prepare <dataset> --graspness --camera <camera> --config <this config>
 # It predicts objectness: a view stage that predicts objectness too (ObjectnessViewStage, GraspNet-
 # baseline and Scale-Balanced-Grasp) is refused next to it. No AP has been measured with this
 # option; a checkpoint trained with another sampler does not transfer its numbers.

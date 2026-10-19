@@ -6,11 +6,59 @@ All notable changes to GraspPanda are recorded here. The format follows
 
 ## [Unreleased]
 
-GraspPanda was rebuilt from scratch in October 2026. The releases up to v0.56 are an
-earlier code base with a different design; they stay available under their tags and on the
-`legacy` branch, and none of their code is part of this history.
+GraspPanda was rebuilt from scratch in October 2026. The releases up to v0.56 are an earlier
+code base with a different design; they stay under their tags and on the `legacy` branch, and
+none of their code is part of this history. Each line below has its full account in
+[In detail](#in-detail).
 
-### Initial public version of the rebuild
+### Added
+
+- **Methods.** GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp and FineGrasp on one seed-based skeleton, and HGGD as a family of its own; each equal to its reference stage by stage with converted weights.
+- **Datasets and evaluation.** Readers, label assets and evaluators for GraspNet-1Billion and GraspClutter6D, equal to the official tools; one command scores a GraspNet-1Billion model on GraspClutter6D.
+- **Options for every slot**, from published code and model libraries: image and scene encoders, seed proposal, view, grouper, heads, losses, post-processing and the training recipe.
+- **Compose and probe.** `grasppanda compose` builds a checked combination from a method config and presets; `grasppanda probe` trains it briefly on real frames and ends with one verdict.
+- **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
+- **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
+- **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
+- **Model zoo.** Released weights scored on whole test splits, GSNet trained here, each number backed by a committed result record.
+- **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
+- **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
+
+### Changed
+
+- **Documentation** rebuilt around tasks: install, run a method, swap a component, read the evidence; short pages with the detail folded.
+- **The README** is short: one picture, a quick start, what is inside and the targets; the rest is folded or in the documentation.
+- **Method order** is by family, then year, on every page, table and list.
+- **Where an option works** is shown as a fraction of the methods it applies to, with the reason for each method left out, instead of a class word.
+- **The pipeline figure** shows both detector families and the parts they share.
+- **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
+- **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
+- **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
+
+### Fixed
+
+- `train --resume` into another run directory no longer writes into the checkpoint's run.
+- A `_base_` that names a shipped config loads from any directory and from a wheel.
+- The CPU-only spconv wheel computes correctly: its sparse convolutions run on one thread.
+- `infer --input DIR` on a plain folder stops with what the reader looked for.
+- Data loaders below a `TMPDIR` too deep for their sockets stop with the fix instead of hanging.
+- Combinations that used to fail in the first iteration are refused by the config check with the fix.
+- `ASSANet` no longer returns zeros for constant input features.
+- Image-encoder bridges say when their library downloads weights, and under which licence.
+
+### Known limits
+
+- No method has passed the admission rule of the zoo yet, so the zoo has no weights to download.
+- No option beside the ported methods has been trained and evaluated: a probe says a combination trains, not how good it is.
+- Mixed precision is refused for the shipped detectors; `optimizer=soap` under HGGD is not verified (one CUDA illegal memory access on a shared GPU).
+- No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
+- Point painting is not written by `compose` and has no probe record.
+- Most combinations of two or more swapped options have no record.
+
+### In detail
+
+<details markdown="1">
+<summary>Initial public version of the rebuild</summary>
 
 - **Core.** YAML configs with inheritance and three layers of validation; registries with
   lazy imports; typed data contracts between pipeline stages; run snapshots. Commands:
@@ -18,19 +66,23 @@ earlier code base with a different design; they stay available under their tags 
   `explore`, `sweep`, `prepare`, `print-config`, `env`.
 - **Benchmarks.** Readers, derived label assets and evaluators for GraspNet-1Billion and
   GraspClutter6D. Both evaluators agree with the official tools on recorded frames (1,592
-  and 254); the GraspNet-1Billion one runs about 40 times faster. One command scores a
-  GraspNet-1Billion model on GraspClutter6D.
+  and 254; `tests/integration/test_eval_parity.py`, `test_eval_clutter_parity.py`). One
+  command scores a GraspNet-1Billion model on GraspClutter6D.
 - **Methods as interchangeable components**, each equal to its reference implementation
-  stage by stage with converted weights: GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline
-  and Scale-Balanced-Grasp on one seed-based skeleton, and HGGD as a family of its own.
+  stage by stage with converted weights: GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
+  EconomicGrasp and FineGrasp on one seed-based skeleton, and HGGD as a family of its own.
   `tools/convert_checkpoint.py` converts the authors' checkpoints strictly.
 - **Scene encoders.** Sparse U-Net, SpUNet, OA-CNNs, PointNet++ (two layouts), PointNeXt,
   Point Transformer V3 (also with Sonata, Concerto and Utonia weights), LitePT, the
   transformer encoder of Scale-Balanced-Grasp, and adapters between dense and sub-sampled
-  encoders. Released weights load strictly and reproduce the official outputs.
+  encoders. Five are weights-verified (`PointNet2`, `PTv3`, `PTv3Sonata`, `PTv3Utonia`,
+  `LitePT`): released weights load strictly and reproduce the official outputs. SpUNet,
+  OA-CNNs and PointNeXt were compared with the official code on synthetic weights only.
 - **Interchange.** `grasppanda components` lists every component with its contract, status
-  and source. A swap matrix test proves that every combination of registered stages either
-  trains and predicts or is refused at config time with the conflict and the fix.
+  and source. A swap-matrix test shows, on synthetic scenes, that every combination of
+  registered stages either trains and predicts or is refused at config time with the
+  conflict and the fix. On real frames the probes record some accepted swaps that fail or
+  train unstably.
   `configs/experimental/` holds ready-made encoder swaps.
 - **Combinations.** `grasppanda compose <method config> --set <slot>=<preset or component>`
   writes a checked config, inserting the one encoder adapter the stage contracts ask for;
@@ -39,8 +91,8 @@ earlier code base with a different design; they stay available under their tags 
   table-top depth clouds. `grasppanda probe <config>` runs the real trainer for a few
   iterations on the `sample` split and predicts, ending with one verdict. The generated
   page `docs/advanced_guides/measured_combinations.md` records the combinations probed on
-  real frames and the measured class of every component (universal, most, some,
-  specific); see "Measured records" below for the numbers. No AP.
+  real frames and, for every option, the fraction of the methods it runs under, with the
+  reason for each method left out; see "Measured records" below for the numbers. No AP.
 - **Inference and analysis.** `GraspInferencer` and `grasppanda demo` (depth image, point
   cloud, dataset frame or the built-in synthetic scene); `grasppanda analyze` splits an AP
   by scene, object and cause.
@@ -48,7 +100,10 @@ earlier code base with a different design; they stay available under their tags 
   query and nearest neighbours with bit-identical results; dense label grids are read where
   they are matched instead of being copied into every batch.
 
-### Added: options for every slot
+</details>
+
+<details markdown="1">
+<summary>Added: options for every slot</summary>
 
 Options taken from published code and model libraries, by three routes (a bridge to an
 optional library, source adapted from a repository under the MIT, BSD or Apache-2.0
@@ -108,7 +163,10 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   number of its options, one table that classifies every option from the measured
   records, how to try one), an overview of the scene encoders and one page per slot.
 
-### Added: the combination explorer
+</details>
+
+<details markdown="1">
+<summary>Added: the combination explorer</summary>
 
 - A documentation page (`docs/explorer/`) that answers a selection of method and slot
   options from the measured records: the verdict, the reason of a refusal or failure, the
@@ -142,7 +200,10 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   variants, keyboard support throughout; `grasppanda explore` gets an app bar and a dark
   mode. The answer of the contract check stays an outline, apart from measured verdicts.
 
-### Measured records
+</details>
+
+<details markdown="1">
+<summary>Measured records</summary>
 
 - 1262 cells (1014 `runs`, 174 `runs-empty`, 29 `runs-unstable`, each of those probed a
   second time, 41 `refused`, 4 `fails`), every one probed on real frames with judge 2 and
@@ -151,9 +212,10 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   methods, every loss preset in one term of every kind it fits, every recipe preset under
   every method it applies to, and `cross`: eighteen requests that replace an encoder
   together with options of other slots, at least two per method (all eighteen run).
-- The contract rules accept 9104 sets of stage variants; 95 were probed, picked so that
-  every stage variant appears in a probed set under each kind of encoder, and the others
-  are counted as not probed.
+- The contract rules accept 9104 sets of stage options, counted per kind of encoder output;
+  95 were probed, picked so that every stage variant appears in a probed set under each
+  kind of encoder, and the others are counted as not probed. The 3014 sets on the Swap
+  rules page count the same rules over registered classes.
 - Every record names the run that measured it; a probe that runs out of GPU memory is
   retried alone and, if memory stays short, not recorded.
 - `grasppanda probe` tells a stage that learns from one that is only wired in (judge 2):
@@ -187,8 +249,8 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   predicts on) and `--seed` (`runtime.seed` of every probe). A seeded run records the hash
   of the config with that seed, so probes of two seeds never stand for each other; without
   either option the commands and records are those of before.
-- Level 2 of the measured grid, `python -m tools.learn_check`: does an option learn like
-  the stage it replaces? A cell whose level-1 verdict is `runs`, `runs-empty` or
+- Level 2 of the measured grid, `python -m tools.learn_check`: does an option train like
+  the stage the method ships ("trains like shipped")? A cell whose level-1 verdict is `runs`, `runs-empty` or
   `runs-unstable` trains for 250 iterations on the same 8 frames (seed 0, `--schedule
   constant`, prediction on 4 frames), and the mean of every loss term over the last 25
   iterations is put beside that of the method as shipped under the same settings. Outcome
@@ -197,15 +259,23 @@ Each has a preset, a unit test of its contract, a row and a command on its slot 
   an assigner, a proposal or view stage that computes its loss with other code) is marked
   not comparable and the cell is judged on the others. The tolerance of a method is
   calibrated from its reference trained under two seeds: 1.25, or the first multiple of
-  0.05 above the largest seed ratio of a term (EconomicGrasp 1.35, HGGD 1.6); the rising
-  threshold likewise. Post-processing, which trains nothing, is left out. The runs are
+  0.05 above the largest seed ratio of a term (1.25 for the five seed-based methods, 1.55
+  for HGGD); the rising threshold likewise. FineGrasp's reference and cells keep its
+  recipe's warm-up: at the constant rate its fusion of crop scales gives every seed one
+  feature in a short run. Post-processing, which trains nothing, is left out. The runs are
   probe_grid run directories (`L2-<kind>`), resumable; `export` writes per-cell files
   under `$GRASPPANDA_CACHE/verification/L2/` and the committed summary
-  `docs/advanced_guides/learns_like_reference.json`, `page` the page "Learns like the
-  reference?" (in the docs nav), checked by the unit suite like the measured page. The
-  six references and a pilot of 27 cells (3 per kind) are recorded.
+  `docs/advanced_guides/learns_like_reference.json`, `page` the page "Does it train like
+  the shipped component?" (in the docs nav), checked by the unit suite like the measured page. Every
+  cell is recorded: 983 cells on top of the six references trained twice, 555 `on a par`,
+  347 `worse`, 77 `diverging`, 4 `not comparable` (groupers 97 of 128 on a par, losses 101
+  of 130, encoders 108 of 230; one run each, a statement about training dynamics, not
+  accuracy).
 
-### Added: classes of levels, and the options that fit each method
+</details>
+
+<details markdown="1">
+<summary>Added: classes of levels, and the options that fit each method</summary>
 
 A class used to count the methods under which a component *worked* (built, trained 20
 iterations, predicted), so "universal" meant "accepted by the contracts and did not crash".
@@ -254,14 +324,17 @@ Classes now count levels, and every method lists the options of each of its slot
   every slot page, whose class columns are now the class at *runs*, written from the
   records by the same tool. A test holds the explorer's lanes to the lists of `compose`.
 
-### Added: authors' checkpoints on whole test splits
+</details>
+
+<details markdown="1">
+<summary>Added: authors' checkpoints on whole test splits</summary>
 
 - The model-zoo page (`docs/model_zoo.md`) has two tables of `author-ckpt` numbers, the
   authors' released weights scored by this toolbox, with and without collision filter and
   with the reported number beside each. "Authors' checkpoints scored by this toolbox":
   GraspNet-1Billion, the whole test split (23,040 frames), for GraspNet-baseline,
-  Scale-Balanced-Grasp, HGGD, EconomicGrasp and FineGrasp on RealSense and for HGGD and
-  EconomicGrasp on Kinect. "GraspClutter6D transfers": the whole test split (3,055
+  Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD on RealSense and for
+  EconomicGrasp and HGGD on Kinect. "GraspClutter6D transfers": the whole test split (3,055
   frames) for GraspNet-baseline, Scale-Balanced-Grasp, EconomicGrasp and HGGD. They are
   not reproductions. Each method's README states every difference from the reported
   number and what is and is not known about it.
@@ -275,7 +348,10 @@ Classes now count levels, and every method lists the options of each of its slot
   is missing is a validation error. One test holds every measured row of every method to
   its record: whole split, clean code, and exactly the numbers of the row.
 
-### Added: the first model trained here
+</details>
+
+<details markdown="1">
+<summary>Added: the first model trained here</summary>
 
 - GSNet, trained from scratch with the recipe of `gsnet/gsnet_sunet14_g1b-realsense_10e`
   (10 epochs, seed 0), is the first `reproduced` entry of the zoo: on the whole
@@ -290,7 +366,10 @@ Classes now count levels, and every method lists the options of each of its slot
   `grasppanda demo <config>` without `--weights` then say that the weights are not
   published instead of failing on the missing link.
 
-### Added: refusals that say why, and the ones compose lifts
+</details>
+
+<details markdown="1">
+<summary>Added: refusals that say why, and the ones compose lifts</summary>
 
 - Every refusal of the stage contracts and of the config check carries a kind:
   `structural` (a genuine incompatibility), `not-implemented` (the lift is named),
@@ -314,7 +393,10 @@ Classes now count levels, and every method lists the options of each of its slot
   `ScaleBalancedAssigner` combines with every shipped stage. A stage that does not apply
   one is reported as a warning, no longer refused.
 
-### Added: the conversion command in the metafile
+</details>
+
+<details markdown="1">
+<summary>Added: the conversion command in the metafile</summary>
 
 - A metafile weights entry of `source: author` states its `convert` command, exactly as
   the method's README prints it (a test holds the two together); a model whose weights
@@ -324,10 +406,13 @@ Classes now count levels, and every method lists the options of each of its slot
   file under the name the authors publish it (`HGGD_realsense_checkpoint`), and
   EconomicGrasp's gives the RealSense command beside the Kinect one.
 
-### Added: run a method in five minutes
+</details>
+
+<details markdown="1">
+<summary>Added: run a method in five minutes</summary>
 
 - Every method page (`docs/methods/<method>.md`) starts with *Run <method> in five
-  minutes*: the authors' file, its licence and sha256, and that the project publishes no
+  minutes*: the released file, its licence and sha256, and that the project publishes no
   weights converted from it; the conversion command and the file it writes; the demo on
   the example scene with what it prints and writes, the measured wall time and grasp
   counts; the same from Python (`GraspInferencer`, six statements); the browser route
@@ -347,7 +432,10 @@ Classes now count levels, and every method lists the options of each of its slot
 - The README quick start, `docs/get_started/quickstart.md`, the inference guide and every
   method README link the six sections.
 
-### Fixed
+</details>
+
+<details markdown="1">
+<summary>Fixed, in full</summary>
 
 - `train --resume <checkpoint>` with another `--work-dir` or `runtime.run_id`, or with
   `runtime.allow_config_mismatch`, wrote into the run directory of the checkpoint; with a
@@ -436,7 +524,10 @@ Classes now count levels, and every method lists the options of each of its slot
 - `approach_to_rotation` was rewritten independently (cross products and a turn about the
   approach axis); the convention and its tests are unchanged.
 
-### Changed
+</details>
+
+<details markdown="1">
+<summary>Changed, in full</summary>
 
 - `compose --help` and `probe --help` name the slots, the base, examples, the verdicts
   and the exit statuses; `grasppanda components <name>` names the presets of a component.
@@ -448,7 +539,10 @@ Classes now count levels, and every method lists the options of each of its slot
   saved before it resumes with `runtime.allow_config_mismatch=true`, and
   `python -m tools.probe_grid rehash` rewrites the hashes of measured records.
 
-### Known limits
+</details>
+
+<details markdown="1">
+<summary>Known limits, in full</summary>
 
 - No method has passed the admission rule of the zoo yet, and the zoo has no weights to
   download. GSNet, the one model trained here, is above the paper by more than 1 AP and
@@ -459,8 +553,9 @@ Classes now count levels, and every method lists the options of each of its slot
   measured verdict says that a combination builds, trains for 20 iterations and predicts.
 - Mixed precision (`train.amp`, preset `hooks=amp`) does not work with the shipped
   detectors and is refused by the config check: GSNet stopped at a half/float mismatch in
-  the label assigner, HGGD's first loss was not finite. `optimizer=soap` fails under HGGD
-  with a CUDA error at the second step (it runs under GSNet).
+  the label assigner, HGGD's first loss was not finite. `optimizer=soap` under HGGD is not
+  verified: its one probe stopped at the second step with a CUDA illegal memory access on a
+  shared GPU, which says nothing about whether it fits (it runs under GSNet).
 - No shipped augmentation moves image and cloud together, so a detector that reads images
   (HGGD) has no geometric augmentation; point transforms that move points are refused there.
 - The point-painting wrappers (`image-painted`, `image-painted-subsampled`) are not written
@@ -486,3 +581,5 @@ Classes now count levels, and every method lists the options of each of its slot
 - Most combinations of two or more replaced options have no measured record.
 - The CPU-only wheel of spconv 2.3.8 miscomputes with more than one OpenMP thread; sparse
   layers detect this and stop with an explanation (see the installation guide).
+
+</details>

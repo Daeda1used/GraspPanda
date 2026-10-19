@@ -21,10 +21,11 @@ converted by ``tools/convert_checkpoint.py`` it is compared stage by stage again
 activations recorded from that implementation
 (``tests/integration/test_baseline_parity.py``).
 
-How it differs from :class:`~grasppanda.models.detectors.gsnet.GSNet`, slot by slot, is
-visible in the contracts: the backbone returns ``subsampled`` features, so a proposal
-that scores every scene point is refused; the grouper has ``support = "scene"`` and
-emits ``(seed, depth, channel)``, so a head written for ``(seed, channel)`` is refused.
+What sets it apart from the methods with dense features (GSNet, EconomicGrasp, FineGrasp)
+is visible in the contracts, slot by slot: the backbone returns ``subsampled`` features,
+so a proposal that scores every scene point is refused; the grouper has
+``support = "scene"`` and emits ``(seed, depth, channel)``, so a head written for
+``(seed, channel)`` is refused.
 
 Behaviours of the reference that change numbers are named options whose defaults
 reproduce it: the training crop is centred at the matched label point, not at the seed

@@ -102,11 +102,28 @@ def test_a_dense_encoder_serves_the_baseline_and_keeps_the_reference_seeds(cuda)
 
 @pytest.mark.parametrize("name", EXPERIMENTAL)
 def test_experimental_configs_build_and_predict_at_full_size(name, cuda):
-    """Every shipped swap config, as written: full-size model, one synthetic frame."""
+    """Every shipped swap config, as written: full-size model, one synthetic frame with
+    the inputs the model reads (point features, images), as the probe's wiring check
+    builds it."""
+    from grasppanda.combine.synthetic import _sizes, scene_batch
+    from grasppanda.utils.imports import MissingDependencyError
+
     config = Config.load(name)
-    model = DETECTORS.build(config["model"]).to(cuda).eval()
+    try:
+        model = DETECTORS.build(config["model"]).to(cuda).eval()
+    except MissingDependencyError as error:  # an extra of its encoder (timm, ...)
+        pytest.skip(str(error))
+    needs = set(getattr(model, "required_inputs", ()))
+    width = getattr(getattr(model, "backbone", None), "in_channels", 3)
+    observation, _ = scene_batch(
+        frames=1,
+        images=bool({"rgb", "depth"} & needs),
+        feature_channels=width if "point_feats" in needs else None,
+        **_sizes(config.resolved()),
+    )
     with torch.no_grad():
-        (grasps,) = model.predict(tabletop().to(cuda))
+        (grasps,) = model.predict(observation.to(cuda))
     grasps.validate()
-    assert len(grasps) <= model.proposal.num_seeds
+    seeds = getattr(getattr(model, "proposal", None), "num_seeds", None)
+    assert seeds is None or len(grasps) <= seeds
     assert EXPERIMENTAL and "experimental" in str(config.path)

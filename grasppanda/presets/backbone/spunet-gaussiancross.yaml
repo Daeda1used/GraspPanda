@@ -10,9 +10,10 @@
 # * pretrained_mismatch: skip. Two layers do not come from the file and keep their
 #   initialisation: the 5 x 5 x 5 stem (the release reads colour and normal, 6 channels;
 #   the grasp methods feed 3 constant ones) and the final 1 x 1 layer (`out_channels`).
-# * grid_size: 0.005 m, GSNet's. The weights were trained on rooms at 0.02 m, so every
-#   kernel sees a quarter of the extent it was trained on. 0.02 m matches the weights
-#   and leaves about one voxel per 16 points of a table-top frame.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp. The weights were
+#   trained on rooms at 0.02 m, so every kernel sees a quarter of the extent it was trained
+#   on. 0.02 m matches the weights and leaves about one voxel per 16 points of a table-top
+#   frame.
 # * out_channels: compose sets it to the width of the encoder it replaces; `null`
 #   returns the 96 channels of the last decoder stage with no new layer.
 # * learning rate: a pretrained encoder under a random head usually takes a lower rate

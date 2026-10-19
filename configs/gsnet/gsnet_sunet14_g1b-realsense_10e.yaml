@@ -1,8 +1,16 @@
 # GSNet (ICCV 2021) with the 14-layer sparse U-Net of the reference implementation,
 # GraspNet-1Billion, RealSense, the reference recipe (10 epochs).
 #
+#   grasppanda prepare graspnet1b --labels
+#   grasppanda prepare graspnet1b --graspness --camera realsense
 #   grasppanda train gsnet/gsnet_sunet14_g1b-realsense_10e
 #   grasppanda test  gsnet/gsnet_sunet14_g1b-realsense_10e --weights <checkpoint>
+#
+# The checkpoint released with the reference implementation (graspness_unofficial, a
+# third-party implementation; there is no official training code), converted with
+#   python -m tools.convert_checkpoint minkuresunet_realsense.tar gsnet_realsense.pth \
+#       --source-format graspness-unofficial --camera realsense
+# loads into this config unchanged (configs/gsnet/README.md says what it is worth).
 #
 # Results are always reported for both post-processing variants below.
 #

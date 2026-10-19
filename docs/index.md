@@ -1,40 +1,93 @@
-# GraspPanda
+---
+template: home.html
+title: GraspPanda
+hide: [navigation, toc]
+---
 
-**The toolbox for 6-DoF grasp detection in clutter.** Swappable components,
-faithful ports, one pinned evaluation.
+## What do you want to do?
 
-!!! note "Alpha"
-    Working today: the config system, both benchmark readers and evaluators, six methods
-    as swappable components, options for every slot of the pipeline, and the commands
-    from `train` to `compose`, `probe` and `explore`. The first model trained here, GSNet,
-    has been scored on both benchmarks; its weights are not published yet, so the model
-    zoo has nothing to download. A method enters the zoo only after it has been trained
-    and evaluated here, and no accuracy is claimed for an option that is not part of a
-    ported method.
+<div class="grid cards" markdown>
 
-**[Try combinations in the browser](explorer/index.md)**: pick a method, swap a slot, read
-the measured verdict, the command and the reason of a refusal. `grasppanda explore` serves
-the same page locally and checks any selection with the `compose` of your installation.
+-   :material-play-circle-outline: **Run a method**
 
-![grasppanda print-config catching a misspelt key and an incompatible swap](assets/terminal-demo.png)
+    A published detector from its released weights: first grasps in minutes.
 
-## Where to go
+    [Run a method →](get_started/run_a_method.md)
 
-| I want to… | Read |
-|---|---|
-| install it and see it run | [Installation](get_started/installation.md), [Quick start](get_started/quickstart.md) |
-| understand the config language | [Configuration](user_guides/config.md) |
-| see every stage of the pipeline, its options and which fits which method | [Slots](slots/index.md) |
-| try a combination in the browser | [Combination explorer](explorer/index.md) |
-| compose, probe and train a combination | [Try a combination](user_guides/combinations.md) |
-| see every component, its contract and where it comes from | [Components](components.md) |
-| replace the encoder or another stage of a method | [Swapping components](advanced_guides/swapping.md) |
-| add my own backbone, head or detector | [Add a component](advanced_guides/add_component.md) |
-| know what the stages pass to each other | [Data contracts](advanced_guides/data_flow.md) |
-| see why it is built this way | [Architecture](design/ARCHITECTURE.md) |
+-   :material-swap-horizontal: **Swap a component**
 
-## The idea in one picture
+    One line swaps an encoder, a grouper or a loss; compose checks it first.
 
-![Pipeline slots and the contracts between them](assets/pipeline.png)
+    [Swap a component →](get_started/swap.md)
 
-The panda is the animal, not the robot arm: GraspPanda is not tied to any robot.
+-   :material-chart-box-outline: **Train and evaluate**
+
+    One evaluator per dataset, collision filter on and off, every number with its record.
+
+    [Train and test →](user_guides/train_test.md)
+
+-   :material-camera-outline: **Your camera**
+
+    A depth image and its intrinsics; HGGD also reads the colour image.
+
+    [Your camera and Python →](user_guides/inference.md)
+
+-   :material-puzzle-outline: **Add a component**
+
+    Register your own encoder, head or detector without forking.
+
+    [Add a component →](advanced_guides/add_component.md)
+
+-   :material-shield-check-outline: **See the evidence**
+
+    Where each option runs and learns, under which method, and why not elsewhere.
+
+    [How we measure →](evidence/index.md)
+
+</div>
+
+## Methods and datasets
+
+<div class="gp-strip" markdown>
+<span class="gp-strip__label">Seed-based skeleton</span>
+[GraspNet-baseline <small>CVPR 2020</small>](methods/graspnet_baseline.md){ .gp-chip }
+[GSNet <small>ICCV 2021</small>](methods/gsnet.md){ .gp-chip }
+[Scale-Balanced-Grasp <small>CoRL 2022</small>](methods/scale_balanced_grasp.md){ .gp-chip }
+[EconomicGrasp <small>ECCV 2024</small>](methods/economicgrasp.md){ .gp-chip }
+[FineGrasp <small>arXiv 2025</small>](methods/finegrasp.md){ .gp-chip }
+</div>
+
+<div class="gp-strip" markdown>
+<span class="gp-strip__label">Own family</span>
+[HGGD <small>RA-L 2023</small>](methods/hggd.md){ .gp-chip }
+</div>
+
+<div class="gp-strip" markdown>
+<span class="gp-strip__label">Datasets</span>
+[GraspNet-1Billion](user_guides/datasets.md){ .gp-chip }
+[GraspClutter6D](user_guides/datasets.md#graspclutter6d){ .gp-chip }
+</div>
+
+## How a swap goes
+
+<div class="gp-steps" markdown>
+
+<div markdown>
+**Compose**
+
+`grasppanda compose` writes a checked config, or says why the swap cannot work.
+</div>
+
+<div markdown>
+**Probe**
+
+`grasppanda probe` trains it briefly on real frames and gives one verdict.
+</div>
+
+<div markdown>
+**Train**
+
+`grasppanda train` and `test` give its accuracy, with the collision filter on and off.
+</div>
+
+</div>

@@ -1,8 +1,11 @@
-# The model-free collision filter of the GSNet test script on the full cloud.
+# Model-free collision filter on the full cloud: drop a grasp whose gripper would hit observed
+# points.
 #
-# Four boxes (two fingers, palm, approach sweep) against the voxelised sensor cloud. It is the
-# `cd` variant of the GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline and
-# Scale-Balanced-Grasp configs. Needs `keep_full_points` in the dataset section.
+# Four boxes (two fingers, palm, approach sweep) against the voxelised sensor cloud, as in the
+# test script of GraspNet-baseline, which its successors kept. It is the `cd` variant of the
+# GraspNet-baseline, GSNet, Scale-Balanced-Grasp and FineGrasp configs (EconomicGrasp's uses a
+# 0.005 m voxel; HGGD's starts with `collision-strict`). Needs `keep_full_points` in the
+# dataset section.
 #
 # Use: `--post collision` with grasppanda test, infer or demo; `--set post=collision` with
 # grasppanda compose; or copy the fragment into `evaluation.variants.<name>` of a config.

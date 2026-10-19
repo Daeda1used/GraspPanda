@@ -69,14 +69,15 @@ jobs:
           cd "$RUNNER_TEMP/smoke"
           grasppanda --version
           grasppanda print-config _base_/default_runtime.yaml --check
-          grasppanda print-config gsnet/gsnet_sunet14_g1b-realsense_10e --check
+          # a shipped method config loads and passes the check (other methods below)
+          grasppanda print-config scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e --check
           # a config of one's own inherits a shipped one by name, from any directory
-          printf '_base_: [gsnet/gsnet_sunet14_g1b-realsense_10e.yaml]\ntrain: {epochs: 2}\n' > child.yaml
+          printf '_base_: [hggd/hggd_r34w8_g1b-realsense_15e.yaml]\ntrain: {epochs: 2}\n' > child.yaml
           grasppanda print-config child.yaml --check
           # the example project copied out of the checkout: the README's training command
           grasppanda train projects/example_project/configs/toy_train.yaml
           # a composed sparse encoder, wired on the CPU with the CPU-only spconv wheel
-          grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o x.yaml
+          grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --set backbone=ptv3 -o x.yaml
           grasppanda probe x.yaml --synthetic --device cpu
           # the measured records ship in the wheel: the options of a method's slot
           grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --list image_encoder --json > /dev/null

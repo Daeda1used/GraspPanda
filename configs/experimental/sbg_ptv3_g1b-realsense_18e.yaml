@@ -1,0 +1,82 @@
+# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
+# the config check; it has not been trained to convergence or evaluated.
+#
+#   base  scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e (Scale-Balanced-Grasp)
+#   set   backbone `ptv3`
+#
+#   grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e \
+#       --set backbone=ptv3
+#   grasppanda probe experimental/sbg_ptv3_g1b-realsense_18e
+#   grasppanda train experimental/sbg_ptv3_g1b-realsense_18e
+#
+# Everything not set below is the base config's: the other stages, the data and the
+# schedule. `probe` trains a few iterations on real frames and predicts, in about a minute.
+# What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
+#
+# What compose did, and why:
+# * backbone: preset `ptv3` (PTv3). Point Transformer V3 (encoder + decoder, Pointcept
+#   PT-v3m1) on a 5 mm grid.
+# * wrapped PTv3 in the adapter FurthestPointSubsample (preset `furthest-point-subsample`):
+#   SubsampledSeeds requires 'subsampled' scene features, but PTv3 returns 'dense' ones (one
+#   feature per scene point). An adapter changes the model; its notes below say how.
+# * FurthestPointSubsample.npoint: 1024, the number of seeds of the proposal
+#   (`model.proposal.num_seeds`): the points the adapter keeps are the seeds.
+# * FurthestPointSubsample: fps_skip_near_origin: true, fps_tie_break: pointnet2_cuda, the
+#   sampling rules of the encoder it replaces (PointNet2Transformer), so that the adapter
+#   keeps the very points that encoder ends on.
+# * grouper: DepthCylinderProjectionGroup in place of DepthCylinderGroup. DepthCylinderGroup
+#   as configured adds the seed features to its 256-channel crop features, but
+#   FurthestPointSubsample returns 64-channel features. DepthCylinderProjectionGroup is the
+#   same crop with a linear layer in front of its seed residual; it changes the model (the
+#   base method has none). `--no-adapter` leaves the pair refused.
+#
+# What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
+# backbone `ptv3`
+# * grid_size. It is the encoder's unit of length. The class default, 0.02 m, is for
+#   ScanNet rooms; 0.005 m is the grid of GSNet, EconomicGrasp and FineGrasp, so under them
+#   both encoders see the same voxels (about 11 000 for a 15 000-point frame, more for the
+#   20 000 points other methods feed).
+# * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
+#   serialised voxels, so the receptive field is counted in points, not in metres: a
+#   frame holds about ten patches at the finest level and fewer than one at the coarsest.
+# * output width: 64 channels (`dec_channels[0]`), where SparseUNet14 returns 512 and
+#   PointNet++ 256. Proposal, view stage and grouper are built that wide. A stage that
+#   adds seed features to crop features (`DepthCylinderGroup` with `seed_residual:
+#   gated`, Scale-Balanced-Grasp) needs the two widths equal and says so when built.
+# * optimizer and schedule. The base method's recipe was tuned for its own encoder;
+#   transformers are usually trained with AdamW, weight decay and warm-up, at a lower rate.
+# * batch size and memory: 46.2 M parameters against 14.6 M for SparseUNet14.
+# backbone `furthest-point-subsample`
+# * npoint: the number of seeds. Compose sets it to `model.proposal.num_seeds`.
+# * sampling rules. With the `fps_tie_break` and `fps_skip_near_origin` of the encoder it
+#   replaces, the adapter keeps exactly the points that encoder ends on, in the same order
+#   (tests/unit/test_backbone_subsample.py): the swap changes the features of the seeds
+#   and leaves the seeds where they were. Compose copies both from the base config.
+# * where the seeds are. They are spread evenly over the cloud, table included; seed
+#   selection by predicted graspness (GraspnessFPS) would be a different model, with
+#   another proposal and other label statistics.
+# the base config
+# * the recipe: optimizer, schedule, batch size and point budget are the base config's,
+#   tuned by its authors for its own stages. A starting point, not a claim.
+_base_:
+  - ../scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e.yaml
+
+model:
+  backbone:
+    type: FurthestPointSubsample  # `dense` -> `subsampled`, written down
+    npoint: 1024                  # = model.proposal.num_seeds
+    fps_skip_near_origin: true    # the rule of the encoder it replaces: same seeds
+    fps_tie_break: pointnet2_cuda   # the rule of the encoder it replaces: same seeds
+    backbone:
+      type: PTv3                  # `dense`: one feature per input point
+      in_channels: 3              # constant ones; geometry enters through the grid
+      grid_size: 0.005
+  grouper:
+    type: DepthCylinderProjectionGroup   # the same crop with a linear layer in front of its seed residual
+    radius: 0.08
+    hmin: -0.02
+    hmax: [0.01, 0.02, 0.03, 0.04]
+    nsample: 64
+    mlp_channels: [64, 128, 256]
+    normalize_offsets: false
+    radius_scales: [0.25, 0.5, 0.75, 1.0]

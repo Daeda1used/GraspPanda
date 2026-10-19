@@ -64,6 +64,7 @@ from .recipes import recipes
 __all__ = [
     "CROSS_CELLS",
     "FAMILIES",
+    "KNOWN_FAILURES",
     "LOSS_CELLS",
     "LOSS_NOT_PROBED",
     "METHODS",
@@ -72,6 +73,7 @@ __all__ = [
     "RECIPE_ENCODER_PRESETS",
     "RECIPE_METHODS",
     "RECIPE_REQUIRES",
+    "SHIPPED_EQUIVALENTS",
     "STAGE_SET_ENCODERS",
     "STAGE_SET_SKIPPED",
     "STAGE_SLOTS",
@@ -84,13 +86,43 @@ __all__ = [
     "stage_variants",
 ]
 
-#: The seed-based methods of the grid: the name shown in the tables → its config.
+#: The seed-based methods of the grid, in the order of their papers: the name shown in the
+#: tables → its config. Every table, list and page follows this order (then :data:`FAMILIES`).
 METHODS: dict[str, str] = {
+    "GraspNet-baseline": "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
     "GSNet": "gsnet/gsnet_sunet14_g1b-realsense_10e",
+    "Scale-Balanced-Grasp": "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e",
     "EconomicGrasp": "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e",
     "FineGrasp": "finegrasp/finegrasp_sunet14_g1b-realsense_10e",
-    "GraspNet-baseline": "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
-    "Scale-Balanced-Grasp": "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e",
+}
+#: Recorded failures that say nothing about whether the option fits the method: cell id →
+#: (what a page says instead of "fails", a piece of the recorded failure message that must
+#: still be there). ``tests/unit/test_combine_grid.py`` holds each to its record, so a
+#: re-probe that fails differently is noticed.
+KNOWN_FAILURES: dict[str, tuple[str, str]] = {
+    "recipe/GraspNet-baseline/hooks/swa": (
+        "not verified: the probe is shorter than the epoch at which averaging starts",
+        "SWAHook.start_epoch is 7, but the run has 5 epochs",
+    ),
+    "recipe/Scale-Balanced-Grasp/hooks/swa": (
+        "not verified: the probe is shorter than the epoch at which averaging starts",
+        "SWAHook.start_epoch is 7, but the run has 5 epochs",
+    ),
+    "recipe/HGGD/optimizer/soap": (
+        "not verified: one CUDA illegal memory access on a shared GPU",
+        "an illegal memory access was encountered",
+    ),
+    "recipe/FineGrasp/augment/dropout": (
+        "fails: the transform order of the composed config is wrong (DepthNormals must run first)",
+        "DepthNormals must run before the cloud",
+    ),
+}
+#: Cells whose option is the method's own component written out as a preset (another config
+#: hash, the same model): cell id → why. They are the method as shipped, not a swap.
+SHIPPED_EQUIVALENTS: dict[str, str] = {
+    "family-slot/HGGD/image_encoder/hggd-residual": (
+        "the preset writes out HGGD's own image encoder, parameter for parameter"
+    ),
 }
 #: Detector families of their own, probed as they are.
 FAMILIES: dict[str, str] = {"HGGD": "hggd/hggd_r34w8_g1b-realsense_15e"}
@@ -103,10 +135,10 @@ POST_NOT_PROBED: dict[str, str] = {
     "target-mask": "reads observation.masks, which no shipped dataset fills",
 }
 #: The hand-picked loss cells: a method and the loss terms that are replaced together, as
-#: ``slot.option=preset``. Each replaces several terms of one method at once (every loss
-#: preset sits in one under GSNet and in one under another method) or pairs a loss with a
-#: term the config check refuses (the last three). Beside them every loss preset has a cell
-#: of one term per kind it accepts and per seed-based method (:func:`loss_terms`).
+#: ``slot.option=preset``. Each replaces several terms of one method at once or pairs a
+#: loss with a term the config check refuses (the last three). They add to the cells that
+#: decide a loss preset's class: one term per kind it accepts, under every seed-based
+#: method that has a term of that kind (:func:`loss_terms`).
 LOSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "GSNet",
@@ -227,9 +259,10 @@ LOSS_NOT_PROBED: dict[str, str] = {
 LOSS_STAGES = ("proposal", "view", "head")
 #: The cross cells: a method and options of several slots replaced together, as
 #: ``slot=choice``. Each pairs a scene encoder (or, under HGGD, an image encoder) with
-#: options of other slots, so that every method and every slot appears at least once. One
-#: of them is a request the config check refuses. The pairs of a request are in the order
-#: of the pipeline (stages, post-processing, recipe), the order the explorer writes them in.
+#: options of other slots, so that every method and every slot appears at least once. None
+#: of them is refused: compose lifts what the contracts would refuse (an axis adapter for the
+#: FineGrasp cell with a depth-axis grouper). The pairs of a request are in the order of the
+#: pipeline (stages, post-processing, recipe), the order the explorer writes them in.
 CROSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("GSNet", ("backbone=point-transformer-v2", "grouper=cylinder-vector-attention")),
     ("GSNet", ("backbone=pointvector", "proposal=graspness-nms", "grouper=roi-grid")),
@@ -262,7 +295,7 @@ CROSS_CELLS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("FineGrasp", ("backbone=randlanet", "view=lattice-soft-argmax", "hooks=ema")),
     ("FineGrasp", ("backbone=point-transformer-v1", "grouper=cylinder-invres")),
     (
-        "FineGrasp",  # refused: the head reads crops without a depth axis
+        "FineGrasp",  # the head reads crops without a depth axis: compose adds DepthPoolGroup
         ("backbone=point-transformer-v1", "view=lattice-best-view", "grouper=depth-ball"),
     ),
     ("GraspNet-baseline", ("backbone=pointnet2-msg", "grouper=depth-ball", "post=nms")),

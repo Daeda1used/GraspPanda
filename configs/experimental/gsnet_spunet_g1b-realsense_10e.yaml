@@ -18,9 +18,10 @@
 #
 # What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
 # backbone `spunet`
-# * grid_size: 0.005 m, GSNet's. The class default, 0.02 m, is for ScanNet rooms. The
-#   coarsest voxel is 16 x the grid, 8 cm here; what grows against SparseUNet14 is the
-#   number of 3 x 3 x 3 convolutions per level, and with it how far a feature reaches.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp. The class
+#   default, 0.02 m, is for ScanNet rooms. The coarsest voxel is 16 x the grid, 8 cm
+#   here; what grows against SparseUNet14 is the number of 3 x 3 x 3 convolutions per
+#   level, and with it how far a feature reaches.
 # * out_channels: 512, the width of SparseUNet14's output. The published model ends on
 #   20 class scores; `null` returns the 96 channels of the last decoder stage. Compose
 #   sets it to the width of the encoder it replaces.

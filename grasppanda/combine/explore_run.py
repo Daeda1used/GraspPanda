@@ -91,13 +91,15 @@ _MAGIC = {
     ".jpg": (b"\xff\xd8\xff",),
     ".jpeg": (b"\xff\xd8\xff",),
 }
-#: Words in a file name that suggest which method the weights are for.
+#: Words in a file name that suggest which method the weights are for: those of the files
+#: the `convert` commands of the metafiles write (`baseline_realsense.pth`, ...). A word
+#: that several methods could carry (`graspness`) suggests none.
 _HINTS = {
-    "GSNet": ("gsnet", "graspness"),
+    "GraspNet-baseline": ("baseline",),
+    "GSNet": ("gsnet",),
+    "Scale-Balanced-Grasp": ("sbg", "scale_balanced", "scale-balanced"),
     "EconomicGrasp": ("economic",),
     "FineGrasp": ("finegrasp",),
-    "GraspNet-baseline": ("baseline",),
-    "Scale-Balanced-Grasp": ("sbg", "scale_balanced", "scale-balanced"),
     "HGGD": ("hggd",),
 }
 _INTRINSICS = (
@@ -166,7 +168,7 @@ class WeightsSource:
             if not _NAME.match(name):
                 raise ValueError(
                     f"--weights {name}=...: a name is a plain word of letters, digits, '.', '_' "
-                    "and '-', for example gsnet=runs/gsnet/epoch_0010.pth"
+                    "and '-', for example hggd=hggd_realsense.pth"
                 )
             if name in files:
                 raise ValueError(f"--weights {name}=... is given twice")
@@ -283,9 +285,7 @@ def _pair(item: str) -> tuple[str, str]:
     if sep and name and path:
         return name, path
     if sep:
-        raise ValueError(
-            f"--weights {item}: write NAME=PATH, for example gsnet=runs/gsnet/epoch_0010.pth"
-        )
+        raise ValueError(f"--weights {item}: write NAME=PATH, for example sbg=sbg_realsense.pth")
     stem = re.sub(r"[^A-Za-z0-9._-]", "_", Path(item).stem).lstrip("._-") or "weights"
     return stem[:64], item
 

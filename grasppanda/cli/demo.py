@@ -4,6 +4,7 @@
     grasppanda demo <config> --weights W --depth depth.png --intrinsics fx,fy,cx,cy [--rgb rgb.png]
     grasppanda demo <config> --weights W --points cloud.ply
     grasppanda demo <config> --weights W --frame graspnet1b:scene_0100/realsense/0000
+    grasppanda demo <config> --weights W --frame graspclutter6d:scene_12/realsense-d435/3
 
 The input goes through the test pipeline of the config
 (:class:`~grasppanda.apis.GraspInferencer`). The command prints the best grasps and
@@ -67,7 +68,10 @@ def register(commands: Any) -> None:
         "--points", metavar="FILE", help="point cloud (.npy, .ply or .pcd), camera frame, metres"
     )
     source.add_argument(
-        "--frame", metavar="KEY", help="dataset frame, e.g. graspnet1b:scene_0100/realsense/0000"
+        "--frame",
+        metavar="KEY",
+        help="dataset frame, <dataset>:scene_<N>/<camera>/<frame>, e.g. "
+        "graspnet1b:scene_0100/realsense/0000 or graspclutter6d:scene_12/realsense-d435/3",
     )
     camera = parser.add_argument_group("with --depth")
     camera.add_argument(

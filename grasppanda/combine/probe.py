@@ -28,7 +28,7 @@ the probe. Schedules then treat methods unequally (one decays to 2 % within 20
 iterations, another is still in its warm-up), so ``schedule="constant"`` trains every
 step at the recipe's peak rate instead (:data:`SCHEDULES`, :func:`peak_rates`).
 
-    report = probe("experimental/gsnet_ptv3_g1b-realsense_10e", iters=20, frames=8)
+    report = probe("experimental/economicgrasp_ptv3_g1b-realsense_10e", iters=20, frames=8)
     report.verdict, report.detail
 """
 

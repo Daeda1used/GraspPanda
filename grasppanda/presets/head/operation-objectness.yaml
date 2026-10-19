@@ -3,8 +3,8 @@
 #
 # Two options differ from GraspNet-baseline (preset `operation`). Like that preset it
 # expects crop features with a depth axis and reads tolerance labels (`tolerance` section
-# of the training dataset; `grasppanda prepare graspnet1b --tolerance --config <this
-# config>`).
+# of the training dataset;
+# `grasppanda prepare <dataset> --tolerance --config <this config>`).
 #
 # What must be re-tuned, and why:
 # * score_decode: score_x_objectness_x_tolerance reads the objectness of the seeds, so a

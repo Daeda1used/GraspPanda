@@ -1,8 +1,9 @@
-# PyGConvGroup with TransformerConv of PyTorch Geometric on GSNet's cylinder.
+# TransformerConv of PyTorch Geometric on the seed cylinder crop (PyGConvGroup).
 #
-# Dot-product graph attention with edge features (Shi et al., IJCAI 2021), four heads
-# averaged and a skip from the seed feature; the crop-frame offset is the edge attribute.
-# Needs the optional library: pip install -e ".[torch_geometric]".
+# The crop is GSNet's seed cylinder. Dot-product graph attention with edge features (Shi
+# et al., IJCAI 2021), four heads averaged and a skip from the seed feature; the
+# crop-frame offset is the edge attribute. Needs the optional library: pip install -e
+# ".[torch_geometric]".
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

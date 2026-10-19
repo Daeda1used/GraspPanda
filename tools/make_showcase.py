@@ -1,10 +1,15 @@
-"""Generate the animated picture of the README: compose, a refusal, a probe.
+"""Generate the animated showcase: compose, a refusal, a probe, on one seed-based method.
 
-``resources/showcase-light.svg`` and ``resources/showcase-dark.svg`` are one loop of
-twenty-five seconds: a terminal in which a combination is composed, a wrong swap is
-refused with the conflict and the fix, and a probe ends with its verdict, under the
-pipeline whose slots flip to the chosen options. They are SVG files animated with CSS
-keyframes: no script, no font download, a few dozen kilobytes.
+``resources/showcase-{light,dark}.svg`` (and the same files under ``docs/assets/`` for the
+documentation) are one loop of twenty-five seconds: a terminal in which a combination is
+composed, a wrong swap is refused with the conflict and the fix, and a probe ends with its
+verdict, under the pipeline of the method whose slots flip to the chosen options. They are
+SVG files animated with CSS keyframes: no script, no font download, a few dozen kilobytes.
+
+The method is :data:`METHOD` and the combination :data:`SWAP`, a cell of the measured grid
+(:data:`RECORD`) whose record says ``runs``: the picture shows a combination that was
+measured, on a method that is one of six. ``tests/unit/test_showcase.py`` holds the record,
+the composed config hash and the pictures to it.
 
 Every line of terminal text is real output. ``resources/showcase_transcript.json`` holds
 what three commands printed, whole; the picture shows a selection of those lines
@@ -17,6 +22,9 @@ frame: the probe with its verdict.
     python -m tools.make_showcase --check    # exit 1 when a picture is stale
     python -m tools.make_showcase --capture  # run the three commands again (needs
                                              # GraspNet-1Billion and a GPU for the probe)
+
+To show another method, set :data:`METHOD`, :data:`SWAP`, :data:`REFUSED` and
+:data:`RECORD`, capture, and adjust the line patterns of :data:`SCENES` to its output.
 
 ``tests/unit/test_showcase.py`` runs the check.
 """
@@ -37,17 +45,26 @@ from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "resources"
+#: The documentation's copy of the pictures (``docs/assets/showcase-{light,dark}.svg``).
+DOCS = REPO / "docs" / "assets"
 TRANSCRIPT = OUT / "showcase_transcript.json"
-EXPLORER = REPO / "docs" / "explorer" / "explorer.json"
 
 SANS = "'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif"
 MONO = "'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, Menlo, monospace"
 GREEN, DEEP_GREEN, RED = "#2da44e", "#1a7f37", "#cf222e"
 
-#: The method of the picture and the composed file.
-METHOD = "GSNet"
-CONFIG = "gsnet/gsnet_sunet14_g1b-realsense_10e"
-COMPOSED = "gsnet_pointnet2_multi-scale.yaml"
+#: The method of the picture: a seed-based method (its stages are the boxes drawn).
+METHOD = "FineGrasp"
+#: Its shipped config (``grasppanda.combine.grid.METHODS``).
+CONFIG = "finegrasp/finegrasp_sunet14_g1b-realsense_10e"
+#: The combination that is composed and probed: two slots swapped at once.
+SWAP = ("backbone=point-transformer-v1", "grouper=cylinder-invres")
+#: The cell of the measured grid that is this combination; its record says ``runs``.
+RECORD = "cross/FineGrasp/point-transformer-v1+cylinder-invres"
+#: A swap the contracts refuse under the method, whatever compose inserts.
+REFUSED = "view=objectness-view"
+#: The file the combination is written to.
+COMPOSED = "finegrasp_ptv1_invres.yaml"
 #: The line in the title bar of the terminal. The exact version the transcript was
 #: captured with is in the transcript file; it names a development build.
 CAPTION = "real output of grasppanda compose and probe · lines dropped, none invented"
@@ -56,16 +73,15 @@ COMMANDS: dict[str, list[str]] = {
     "compose": [
         "compose",
         CONFIG,
-        "--set",
-        "backbone=pointnet2",
-        "--set",
-        "grouper=multi-scale",
+        *[word for pair in SWAP for word in ("--set", pair)],
         "-o",
         COMPOSED,
     ],
-    "refuse": ["compose", CONFIG, "--set", "head=economic"],
+    "refuse": ["compose", CONFIG, "--set", REFUSED],
     "probe": ["probe", COMPOSED, "--iters", "20", "--frames", "8"],
 }
+#: The slots the combination swaps, and the slot of the refused swap.
+SWAPPED = {pair.split("=", 1)[0]: "ok" for pair in SWAP}
 #: Scene → the seconds it is on screen, the slots it changes (``slot: state``), and the
 #: lines of its output that are shown, each a regular expression that must match a line
 #: of the transcript, in this order. A line that continues the one above it in the
@@ -73,11 +89,10 @@ COMMANDS: dict[str, list[str]] = {
 SCENES: dict[str, dict[str, Any]] = {
     "compose": {
         "seconds": 8.0,
-        "flips": {"backbone": "ok", "grouper": "ok"},
+        "flips": SWAPPED,
         "lines": [
-            r"wrapped PointNet2 in the adapter FeaturePropagation",
-            r"requires 'dense' scene features, but PointNet2 returns",
-            r"^    sub-sampled point set\)",
+            r"in_channels: 6\. The base config feeds real point features",
+            r"^    point\), so the encoder reads those instead of the constant ones",
             r"✓ backbone · proposal$",
             r"✓ grouper · head$",
             r"✓ valid",
@@ -86,24 +101,25 @@ SCENES: dict[str, dict[str, Any]] = {
     },
     "refuse": {
         "seconds": 8.0,
-        "flips": {"head": "no"},
+        "flips": {REFUSED.split("=", 1)[0]: "no"},
         "lines": [
-            r"✗ assigner · head:",
-            r"^    supervised with 'compact' ones\. A head bundle",
-            r"^    label set; the dataset must serve",
+            r"✗ view · assigner \[structural\]:",
+            r"^    labels, but CompactLabelAssigner returns 'compact' ones",
+            r"^    DirectionViewStage, HealpixViewStage",
+            r"^    RomaRotationViewStage, TemplateViewStage",
             r"^✗ refused: nothing was written",
         ],
     },
     "probe": {
         "seconds": 9.0,
-        "flips": {"backbone": "ok", "grouper": "ok"},
+        "flips": SWAPPED,
         "lines": [
-            r"^  model ",
             r"^  data ",
             r"^    loss/view ",
             r"^    loss/width ",
             r"^    loss  ",
             r"^  predicted ",
+            r"^  gradient ",
             r"^✓ runs",
         ],
     },
@@ -226,19 +242,39 @@ def _text(line: str) -> str:
 # ----------------------------------------------------------------------------- picture
 
 
-def _pipeline() -> list[dict[str, str]]:
-    """The stages of the method and what it ships with, from the explorer's data.
+def _docs_chips() -> Any:
+    """``tools/docs_chips.py``: the words the pages use for a slot."""
+    import importlib.util
 
-    The slots of the training recipe are around the model and are not drawn.
+    name = "docs_chips"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _pipeline() -> list[dict[str, str]]:
+    """The stages of the method and the option it ships in each, as ``grasppanda compose
+    <config> --list`` lists them, under the titles of the documentation.
+
+    Losses, post-processing and the training recipe are around the stages and are not drawn.
     """
-    data = json.loads(EXPLORER.read_text(encoding="utf-8"))
-    method = next(m for m in data["methods"] if m["name"] == METHOD)
-    lanes = {lane["key"]: lane["title"] for lane in data["lanes"] if not lane.get("recipe")}
-    return [
-        {"slot": slot, "title": lanes[slot], "ships": method["ships"][slot]["option"]}
-        for slot in method["slots"]
-        if slot in method["ships"] and slot in lanes
-    ]
+    from grasppanda.combine import options
+    from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES
+
+    titles = _docs_chips().SLOT_TITLES
+    stages = []
+    for slot in options.method_slots(METHOD):
+        if slot not in STAGE_REGISTRIES:
+            continue
+        found = options.slot_listing(METHOD, slot)
+        stages.append(
+            {"slot": slot, "title": titles[slot], "ships": found.shipped_option or found.shipped}
+        )
+    return stages
 
 
 def _sets(name: str) -> dict[str, str]:
@@ -367,15 +403,15 @@ def svg(dark: bool) -> str:
     parts.append(
         f'<text x="{left}" y="42" font-family="{SANS}" font-size="24" font-weight="700">'
         f'<tspan fill="{page["brand"]}">GraspPanda</tspan>'
-        f'<tspan fill="{page["muted"]}" font-weight="400" font-size="21">  ·  every stage of '
-        f"{METHOD} is a slot</tspan></text>"
+        f'<tspan fill="{page["muted"]}" font-weight="400" font-size="21">  ·  {METHOD}, one of '
+        f"{len(_docs_chips().methods())} methods: every stage is a slot</tspan></text>"
     )
     starts, moment = {}, 0.0
     for name, scene in SCENES.items():
         starts[name] = moment
         moment += scene["seconds"]
     captions = {
-        "compose": "1 · compose: swap two slots",
+        "compose": f"1 · compose: swap {len(SWAP)} slots",
         "refuse": "2 · a wrong swap is refused",
         "probe": "3 · probe: train it on real frames",
     }
@@ -506,7 +542,13 @@ def _break(command: str) -> list[str]:
 
 
 def expected() -> dict[Path, str]:
-    return {OUT / "showcase-light.svg": svg(dark=False), OUT / "showcase-dark.svg": svg(dark=True)}
+    """Every picture the tool writes: light and dark, for the README and for the docs."""
+    light, dark = svg(dark=False), svg(dark=True)
+    return {
+        folder / f"showcase-{theme}.svg": content
+        for folder in (OUT, DOCS)
+        for theme, content in (("light", light), ("dark", dark))
+    }
 
 
 def stale() -> list[Path]:

@@ -33,11 +33,11 @@ _base_:
   - ../_base_/default_runtime.yaml
 
 # The data recipe of the reference implementation (dataset/graspnet_dataset.py,
-# dataset/generate_economic.py @ 7361bb6) differs from the Graspness one of the dataset
-# base in four places: compact labels instead of dense grids, 20 000 points instead of
-# 15 000, every object and every kept label point is used (no visibility filter, no
-# label sub-sampling), and the only augmentation is the flip. Preprocessing, workspace
-# crop and point-wise graspness are the same.
+# dataset/generate_economic.py @ 7361bb6) differs from that of the dataset base in four
+# places: compact labels instead of dense grids, 20 000 points instead of 15 000, every
+# object and every kept label point is used (no visibility filter, no label
+# sub-sampling), and the only augmentation is the flip. Preprocessing, workspace crop
+# and point-wise graspness are the same.
 data:
   train:
     dataset:

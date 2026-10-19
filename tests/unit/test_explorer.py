@@ -16,12 +16,16 @@ import sys
 
 import pytest
 
+from grasppanda.combine.grid import SHIPPED_EQUIVALENTS
+
 from .conftest import REPO
 
 EXPLORER = REPO / "docs" / "explorer"
 DATA = EXPLORER / "explorer.json"
 CONTRACTS = EXPLORER / "explorer_contracts.json"
+LEARNS = EXPLORER / "explorer_learns.json"
 MEASURED = REPO / "docs" / "advanced_guides" / "measured_combinations.json"
+LEVEL2 = REPO / "docs" / "advanced_guides" / "learns_like_reference.json"
 
 
 def tool(name: str):
@@ -37,15 +41,25 @@ def tool(name: str):
 
 @pytest.fixture(scope="module")
 def data() -> dict:
-    """The data file, with the key of every cell as the page computes it at load."""
+    """The data file as the page prepares it at load: the key of every cell, the names of
+    its run and probe options (stored as indexes) and the index from a key to its cell."""
     loaded = json.loads(DATA.read_text(encoding="utf-8"))
-    key_of = tool("make_explorer").key_of
+    generator = tool("make_explorer")
     by_name = {method["name"]: method for method in loaded["methods"]}
+    assert "index" not in loaded, "the index is built by the page, not stored"
     for cell in loaded["cells"]:
         assert "key" not in cell, "the key is computed by the page, not stored"
-        cell["key"] = key_of(by_name[cell["method"]], cell["sets"])
+        cell["key"] = generator.key_of(by_name[cell["method"]], cell["sets"])
         cell["run"] = loaded["runs"][cell["run"]]  # stored as an index
+        if "probe_opts" in cell:
+            cell["probe_opts"] = loaded["probe_opts"][cell["probe_opts"]]
+    loaded["index"] = generator.index_of(loaded["cells"], [cell["key"] for cell in loaded["cells"]])
     return loaded
+
+
+@pytest.fixture(scope="module")
+def chips():
+    return tool("docs_chips")
 
 
 @pytest.fixture(scope="module")
@@ -124,21 +138,247 @@ def test_options_come_from_the_presets_and_the_catalogue(data):
                 assert part in registered or (slot in around and part == "train options"), option
             assert option["summary"], option["name"]
             assert option["yaml"].strip()
-            if option["page"]:
-                assert (REPO / "docs" / "slots" / f"{option['page']}.md").is_file()
+        # By name, a base before its variants, and with the source the slot page prints.
+        names = [option["name"] for option in options]
+        assert names == sorted(names, key=str.lower), slot
+        page = {
+            found.name: found.source for found in tool("make_combination_docs").slot_options(slot)
+        }
+        for option in options:
+            if option["name"] in page:
+                assert option["source"] == page[option["name"]], (slot, option["name"])
+    for method in data["methods"]:
+        for slot, listed in method["options"].items():
+            names = [item if isinstance(item, str) else item["name"] for item in listed]
+            assert names == sorted(names, key=str.lower), (method["name"], slot)
+
+
+def test_a_slot_is_named_placed_and_scoped_as_the_pages_do(data, chips):
+    """Lane titles, doc pages and the methods a slot applies to come from docs_chips, the
+    vocabulary of every page; nothing is counted from the text of a page."""
     for lane in data["lanes"]:
-        for page in lane["pages"]:
-            assert (REPO / "docs" / "slots" / f"{page['stem']}.md").is_file()
+        slot = lane["key"]
+        assert lane["title"] == chips.SLOT_TITLES[slot]
+        assert lane["page"] + ".md" == chips.SLOT_PAGES[slot]
+        assert (REPO / "docs" / chips.SLOT_PAGES[slot]).is_file(), slot
+        assert lane["scope"] == chips.scope(slot)
+        assert lane["count"] == chips.option_count(slot), f"{slot}: counted unlike the pages"
+        listed = [o["name"] for o in data["options"][slot] if not o.get("not_option")]
+        assert sorted(listed) == sorted(chips.options_of(slot)), slot
+        having = [m["name"] for m in data["methods"] if slot in m["slots"]]
+        assert having == list(chips.slot_methods(slot)), slot
+        if "counterpart" in lane:
+            other = next(entry for entry in data["lanes"] if entry["key"] == lane["counterpart"])
+            assert other["counterpart"] == slot and other["scope"] != lane["scope"]
+    assert data["scopes"] == chips.SCOPE_TEXT and data["families"] == chips.FAMILY_NAMES
+    for option in (o for members in data["options"].values() for o in members):
+        assert "page" not in option and "classes" not in option
 
 
-def test_the_page_claims_no_accuracy_and_says_what_is_measured(data):
-    generator = tool("make_explorer")
-    page = (EXPLORER / "index.md").read_text(encoding="utf-8")
-    assert data["no_accuracy"] == generator.NO_ACCURACY
-    assert "**No accuracy.**" in page and "*not measured*" in page
-    assert '--8<-- "docs/explorer/explorer.json"' in page
+def test_the_methods_are_in_page_order_with_their_own_venue(data, chips):
+    """No method comes first by accident: the gallery shows them by family, then year, each
+    with the venue of its own metafile (FineGrasp is not EconomicGrasp's ECCV 2024)."""
+    import yaml
+
+    assert [m["name"] for m in data["methods"]] == [info.name for info in chips.methods()]
+    for method, info in zip(data["methods"], chips.methods()):
+        folder = method["config"].split("/")[0]
+        meta = yaml.safe_load((REPO / "configs" / folder / "metafile.yaml").read_text())
+        assert method["venue"] == str(meta["venue"]) == info.venue
+        assert (method["family"], method["inputs"], method["page"]) == (
+            info.family,
+            info.inputs,
+            info.page.removesuffix(".md"),
+        )
+        assert (REPO / "docs" / info.page).is_file() and method["line"]
+        assert "source" not in method, "a citation of the detector type, not of the method"
+    finegrasp = next(m for m in data["methods"] if m["name"] == "FineGrasp")
+    assert finegrasp["venue"] == "arXiv 2025"
+    for name in ("explorer.js", "explorer_logic.js"):
+        source = (EXPLORER / name).read_text(encoding="utf-8")
+        assert "data.methods[0]" not in source, f"{name}: the page chooses no method for anyone"
+
+
+def test_where_an_option_works_is_the_reach_of_the_records(data):
+    """Every fraction, tone and tail of the page is grasppanda.combine.reach's, at the four
+    levels and at level 2; no class word is shown."""
+    from grasppanda.combine import options as option_lists
+    from grasppanda.combine import reach as reaching
+    from grasppanda.combine.levels import LEVELS
+
+    records = option_lists.Measured(json.loads(MEASURED.read_text(encoding="utf-8")))
+    rows = data["reach"]
+    for slot, members in data["options"].items():
+        for option in members:
+            for level, at in zip(LEVELS, option["reach"], strict=True):
+                found = reaching.reach(slot, option["name"], level, records)
+                assert rows[at] == [found.fraction, found.tone, found.tail], (slot, option, level)
+            found = reaching.level2(slot, option["name"], records, path=LEVEL2)
+            assert rows[option["learns"]] == [found.fraction, found.tone, found.tail]
+    words = re.compile(r"\b(universal|most|some|specific)\b", re.I)
+    assert not any(words.search(" ".join(row)) for row in rows)
+    for name in ("explorer.js", "explorer_logic.js"):
+        source = (EXPLORER / name).read_text(encoding="utf-8")
+        assert not re.search(r"\b[Uu]niversal\b|CLASS_NAMES", source), name
+    point_painting = next(o for o in data["options"]["backbone"] if o["name"] == "image-painted")
+    assert rows[point_painting["reach"][0]][0] == "no record"
+
+
+def test_level_two_is_in_a_file_of_its_own(data, chips):
+    """Every record compared beside its method's own component says how it went, with the
+    first reasons of a worse or diverging run; every other record says why it was not, by
+    the rules of grasppanda.combine.reach.level2: no outcome for a swap that did not run at
+    level 1 (unstable, failed, refused), for a slot without level 2, or for a run on a
+    schedule other than the one its method's reference ran on."""
+    from grasppanda.combine import options as option_lists
+    from grasppanda.combine import reach as reaching
+
+    learns = json.loads(LEARNS.read_text(encoding="utf-8"))
+    level2 = json.loads(LEVEL2.read_text(encoding="utf-8"))
+    records = option_lists.Measured(json.loads(MEASURED.read_text(encoding="utf-8")))
+    outcomes = {cell["id"]: cell for cell in level2["cells"]}
+    schedules = {ref["method"]: ref.get("schedule", "constant") for ref in level2["references"]}
+    assert set(learns["cells"]) <= set(outcomes)
+    assert set(learns["cells"]) | set(learns["none"]) == {cell["id"] for cell in data["cells"]}
+    assert not set(learns["cells"]) & set(learns["none"])
+    by_id = {cell["id"]: cell for cell in data["cells"]}
+    for cell_id, found in learns["cells"].items():
+        words = learns["outcomes"][found[0]]
+        expected = outcomes[cell_id]["outcome"]
+        assert words == ("did not train" if expected == "fails" else expected)
+        assert found[1:] == outcomes[cell_id]["reasons"][:2]
+        record = records.get(cell_id)
+        assert records.levels(record).states["runs"] == "yes", f"{cell_id}: did not run"
+        assert record.get("slot") not in reaching.LEVEL2_NONE, cell_id
+        assert outcomes[cell_id].get("schedule", "constant") == schedules[record["method"]]
+    # A method reach.level2 leaves out for an option (a scheduler of its own, a swap that
+    # did not run there) shows no outcome for it: what every page says.
+    option_of = {
+        option.cell: (option.slot, (*option.presets, option.name)[0])
+        for name in option_lists.methods()
+        for option in option_lists.options(name)
+        if option.cell and len(option.presets) <= 1
+    }
+    for cell_id in learns["cells"]:
+        if cell_id in option_of:
+            excluded = reaching.level2(*option_of[cell_id], records, path=LEVEL2).excluded
+            assert records.get(cell_id)["method"] not in excluded, cell_id
+    words = learns["none_words"][learns["none"]["recipe/FineGrasp/optimizer/schedulefree-adamw"]]
+    assert words == reaching.LEVEL2_EXCLUDED["schedule"]
+    left_out = set(outcomes) & set(learns["none"])
+    assert left_out, "the level-2 file holds swaps that are not compared"
+    for cell_id in left_out:
+        words = learns["none_words"][learns["none"][cell_id]]
+        if cell_id in SHIPPED_EQUIVALENTS:
+            assert learns["none"][cell_id] == 0, "a written-out own component is no swap"
+            continue
+        assert words.startswith(
+            (
+                reaching.LEVEL2_EXCLUDED["runs"],
+                reaching.LEVEL2_EXCLUDED["schedule"],
+                *reaching.LEVEL2_NONE.values(),
+            )
+        ), (cell_id, words)
+    for cell_id, why in learns["none"].items():
+        cell = by_id[cell_id]
+        assert 0 <= why < len(learns["none_words"])
+        if cell["verdict"] == "refused" and why != 0:
+            assert why == 1, cell_id
+        if cell["verdict"] == "runs-unstable":
+            assert learns["none_words"][why].startswith(
+                (reaching.LEVEL2_EXCLUDED["runs"], *reaching.LEVEL2_NONE.values())
+            ), cell_id
+    for method in data["methods"]:
+        assert learns["none"][method["reference"]] == 0, "the method as shipped is the reference"
+    assert learns["measured_on"].startswith(str(level2["about"]["settings"]["iterations"]))
+    # One name for level 2, that of every page.
+    assert (learns["name"], learns["header"], learns["meaning"]) == (
+        chips.LEVEL2_NAME,
+        chips.LEVEL2_HEADER,
+        chips.LEVEL2_MEANING,
+    )
+    for name in ("explorer.js", "explorer_logic.js", "index.md"):
+        source = (EXPLORER / name).read_text(encoding="utf-8")
+        assert not re.search(r"[Ll]earns like own|\"Like own\"", source), name
+    assert "*Trains like shipped*" in (EXPLORER / "index.md").read_text(encoding="utf-8")
+
+
+def test_what_a_method_ships_is_marked_as_its_own(data, measured):
+    """A record that composes to the method as shipped (its reference's config hash), or a
+    preset that writes out what the method builds in (``grid.SHIPPED_EQUIVALENTS``), is the
+    method's own option: drawn as such in Compare at every level, never counted as a swap."""
+    by_id = {record["id"]: record for record in measured["cells"]}
+    methods = {method["name"]: method for method in data["methods"]}
+    for cell in data["cells"]:
+        record = by_id[cell["id"]]
+        reference = by_id[methods[cell["method"]]["reference"]]
+        own = (
+            record["id"] == reference["id"]
+            or record["id"] in SHIPPED_EQUIVALENTS
+            or (
+                bool(record.get("config_hash"))
+                and record["config_hash"] == reference["config_hash"]
+            )
+        )
+        assert bool(cell.get("own")) == own, cell["id"]
+    assert sum(bool(cell.get("own")) for cell in data["cells"]) > len(data["methods"])
+
+
+def test_as_shipped_is_what_compose_lists(data):
+    """The option a slot ships is the one `grasppanda compose <config> --list` marks
+    shipped (HGGD's `accumulate-2` is no change); a part the detector builds in is "built
+    in", as on the method pages, not the name of the preset that writes it out."""
+    from grasppanda.combine import options as option_lists
+
+    records = option_lists.measured()
+    for method in data["methods"]:
+        for slot, ships in method["ships"].items():
+            if slot != "post":
+                listing = option_lists.slot_listing(method["name"], slot, records)
+                assert ships["option"] == listing.shipped_option, (method["name"], slot)
+    hggd = next(method for method in data["methods"] if method["name"] == "HGGD")
+    assert hggd["ships"]["hooks"]["option"] == "accumulate-2"
+    assert hggd["ships"]["image_encoder"]["label"] == "built in"
+    assert hggd["ships"]["image_encoder"]["option"] == ""
+
+
+def test_build_names_what_a_method_ships_in_every_slot(data):
+    """No "None" for post-processing: a method is evaluated with the variants of its config."""
+    from grasppanda.config import Config, resolve_config_path
+
+    for method in data["methods"]:
+        resolved = Config.load(resolve_config_path(method["config"])).resolved()
+        variants = list(resolved["evaluation"]["variants"])
+        assert method["ships"]["post"]["label"] == f"as shipped (variants {', '.join(variants)})"
+        assert method["ships"]["post"]["option"] == ""
+        for name in variants:
+            assert f"{name}: " in method["ships"]["post"]["about"]
     script = (EXPLORER / "explorer.js").read_text(encoding="utf-8")
-    assert "data.no_accuracy" in script and "this page does not guess" in script
+    assert "ships.plain" in script
+
+
+def test_links_to_the_documentation_are_internal_on_the_site():
+    """The pages the explorer links to are pages of the same site: no external-link icon
+    there (only `grasppanda explore`, which links to the hosted site, draws one)."""
+    script = (EXPLORER / "explorer.js").read_text(encoding="utf-8")
+    assert "external(" not in script
+    assert 'docLink("user_guides/inference#run-in-the-browser", "How it works")' in script
+    assert "/^https?:/.test(docsBase)" in script
+
+
+def test_the_page_claims_no_accuracy_and_says_what_is_measured(data, chips):
+    page = (EXPLORER / "index.md").read_text(encoding="utf-8")
+    caveat = (REPO / "docs" / "includes" / "caveat_probe.md").read_text(encoding="utf-8")
+    assert data["no_accuracy"] == " ".join(re.sub(r"<[^>]+>", " ", caveat).split())
+    assert data["measured_on"] == chips.measured_on(1)
+    assert '--8<-- "docs/includes/caveat_probe.md"' in page, "the caveat of every page"
+    assert "**No accuracy**" in page and "*not measured*" in page
+    assert '--8<-- "docs/explorer/explorer.json"' in page
+    assert "../evidence/index.md" in page, "the questions lead to how it is measured"
+    assert page.count('??? note "') <= 4, "at most four questions below the tool"
+    script = (EXPLORER / "explorer.js").read_text(encoding="utf-8")
+    assert "data.no_accuracy" in script and "data.measured_on" in script
+    assert "Not tested together yet" in script
     # No number of the data is an accuracy: the records hold none, and none is derived.
     for cell in data["cells"]:
         assert not {"ap", "AP", "accuracy", "score"} & set(cell)
@@ -166,7 +406,7 @@ def test_the_contract_answers_are_those_of_compose(data):
     """The stored answers of compose: complete in shape, and a sample composed again."""
     generator = tool("make_explorer_contracts")
     contracts = json.loads(CONTRACTS.read_text(encoding="utf-8"))
-    assert set(contracts["methods"]) <= {method["name"] for method in data["methods"]}
+    assert set(contracts["methods"]) == {method["name"] for method in data["methods"]}
     assert contracts["table"][0] == {"ok": True}
     counted = 0
     for entry in contracts["methods"].values():
@@ -186,6 +426,10 @@ def test_the_contract_answers_are_those_of_compose(data):
     gsnet = next(method for method in data["methods"] if method["name"] == "GSNet")
     refused = generator.lookup(contracts, "GSNet", ["grouper=depth-embed"])
     assert refused and not refused["ok"] and "DepthEmbedGroup" in refused["messages"][0]
+    assert refused["kind"] == "structural", "a refusal says its kind, as a record does"
+    # The scene-encoder recipes name parts HGGD lacks: compose refuses them there.
+    hggd = generator.lookup(contracts, "HGGD", ["optimizer=encoder-lr-0.1"])
+    assert hggd is not None and not hggd["ok"], hggd
     assert generator.lookup(contracts, gsnet["name"], ["backbone=ptv3"]) == {"ok": True}
     assert generator.lookup(contracts, "GSNet", ["backbone=no-such-option"]) is None
     assert generator.lookup(contracts, "GSNet", ["head=economic", "backbone=ptv3"]) == (
@@ -207,11 +451,17 @@ def test_the_contract_answers_are_those_of_compose(data):
 def test_the_page_is_self_contained_and_small():
     for path in EXPLORER.iterdir():
         assert path.stat().st_size < 1_000_000, f"{path.name} is over 1 MB"
-    for path in (DATA, CONTRACTS):
+    assert DATA.stat().st_size <= 900_000, "explorer.json is over its 900 KB budget"
+    for path in (DATA, CONTRACTS, LEARNS):
         text = path.read_text(encoding="utf-8")
         assert "</" not in text and text.count("\n") == 1, "not safe inside a <script> element"
     page = (EXPLORER / "index.md").read_text(encoding="utf-8")
     assert '--8<-- "docs/explorer/explorer_contracts.json"' in page
+    assert '--8<-- "docs/explorer/explorer_learns.json"' in page
+    from grasppanda.combine.explore import STATIC
+
+    data_files = {path.name for path in EXPLORER.glob("*.json")}
+    assert data_files <= set(STATIC), "a data file `grasppanda explore` does not serve"
     for name in ("index.md", "explorer.js", "explorer_logic.js", "explorer.css"):
         source = (EXPLORER / name).read_text(encoding="utf-8")
         for remote in re.findall(

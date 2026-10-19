@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="GraspPanda: The toolbox for 6-DoF grasp detection in clutter">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="GraspPanda: A toolbox for 6-DoF grasp detection in cluttered scenes">
   <g transform="translate(70 28) scale(0.515)">
   <!-- ears -->
   <circle cx="128" cy="146" r="64" fill="#1f2328" stroke="#8b949e" stroke-width="8"/>
@@ -23,6 +23,6 @@
   <text x="372" y="158" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-2">
     <tspan fill="#2da44e">Grasp</tspan><tspan fill="#e6edf3">Panda</tspan>
   </text>
-  <text x="378" y="212" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="31" fill="#e6edf3">The toolbox for 6-DoF grasp detection in clutter</text>
-  <text x="378" y="258" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#8b949e">Swappable components  ·  Faithful ports  ·  One pinned evaluation</text>
+  <text x="378" y="210" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" fill="#e6edf3">A toolbox for 6-DoF grasp detection in cluttered scenes</text>
+  <text x="378" y="256" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#8b949e">Run published methods  ·  Swap any stage  ·  See what was measured</text>
 </svg>

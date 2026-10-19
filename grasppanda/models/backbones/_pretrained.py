@@ -284,7 +284,8 @@ RELEASED: dict[str, ReleasedWeights] = {
         187,
         "OpenScene: MinkUNet18A distilled on ScanNet (2 cm voxels) to predict per-point "
         "OpenSeg / CLIP features (768 channels); its input is geometry alone, three "
-        "constant ones per point, which is what GSNet feeds",
+        "constant ones per point, exactly what GSNet, EconomicGrasp and GraspNet-baseline "
+        "feed (FineGrasp feeds six channels)",
         "OpenScene (Peng et al., CVPR 2023)",
     ),
 }

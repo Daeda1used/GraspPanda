@@ -1,4 +1,5 @@
-"""The five-minute sections of the method pages: every command runs, every number has a source.
+"""The five-minute sections of the method pages: every command parses, the demo runs on a toy
+detector of the method's family, every number has a source.
 
 ``tools/make_method_pages.py`` starts ``docs/methods/<method>.md`` with *Run <method> in five
 minutes*, written from the metafile, the config and ``docs/methods/five_minutes.json``. The
@@ -25,6 +26,7 @@ from __future__ import annotations
 
 import re
 import shlex
+import textwrap
 from pathlib import Path
 
 import numpy as np
@@ -62,13 +64,15 @@ TOY_IMAGE = {"type": "ImageToyDetector", "num_grasps": 64}
 
 
 def section(method: str) -> str:
+    """The section *Run <method> in five minutes*, up to the next section of the page."""
     page = (REPO / "docs" / "methods" / f"{PAGES.page_of(method)}.md").read_text(encoding="utf-8")
     start = page.index(f"## Run {method} in five minutes {{#{PAGES.RUN_ANCHOR}}}")
-    return page[start : page.index("## The options of every slot", start)]
+    return page[start : page.index("\n## ", start)]
 
 
 def blocks(text: str, language: str) -> list[str]:
-    return re.findall(rf"```{language}\n(.*?)```", text, re.S)
+    """The code blocks of ``language``, wherever they sit (a content tab indents them)."""
+    return [textwrap.dedent(code) for code in re.findall(rf"```{language}\n(.*?)```", text, re.S)]
 
 
 def shell_commands(text: str) -> list[list[str]]:
@@ -185,12 +189,27 @@ def test_the_demo_the_camera_files_and_python_give_the_same_grasps(
 
     monkeypatch.setattr(grasppanda, "GraspInferencer", inferencer, raising=False)
     (code,) = blocks(text, "python")
+    assert '=== "Python"' in text and '=== "Browser"' in text  # the routes are content tabs
     statements = [line for line in code.splitlines() if line and not line[0].isspace()]
     assert len([line for line in statements if line != ")"]) <= 6, "the block is meant to be short"
     namespace: dict = {}
     exec(compile(code, f"docs/methods/{PAGES.page_of(method)}.md", "exec"), namespace)
     np.testing.assert_array_equal(namespace["grasps"].sort_by_score().to_graspnet_array(), written)
     assert capsys.readouterr().out.split()[0] == str(len(written))
+
+
+@pytest.mark.parametrize("method", METHODS)
+def test_the_section_says_what_this_file_checks_and_whose_weights_they_are(method):
+    """The lead of the section claims no more than these tests do, and names the released
+    checkpoint as the metafile does (a third-party reference is never "the authors'")."""
+    text = section(method)
+    lead = text.split("### 1.")[0]
+    assert PAGES.TESTED in lead and "tests/unit/test_method_quickstart.py" in PAGES.TESTED
+    assert "toy detector" in PAGES.TESTED and "runs every command" not in text
+    words = PAGES.upstream_words(method)
+    assert f"Four steps from {words['checkpoint']} to grasps." in lead
+    step = text.split("### 1.")[1].split("### 2.")[0]  # whose file it is, said in full
+    assert f"the file to download is {words['weights']}" in step
 
 
 @pytest.mark.parametrize("method", METHODS)
@@ -262,16 +281,26 @@ def test_every_conversion_command_of_a_metafile_is_in_the_method_readme():
                     assert weights.convert in readme, (metafile.method, weights.convert)
 
 
+#: The documentation site: a file read on GitHub links a page there (GitHub shows the MkDocs
+#: source of ``docs/*.md``, folds as literal text).
+SITE = "https://daeda1used.github.io/GraspPanda"
+
+
 def test_the_sections_are_linked_from_the_quick_starts_and_the_method_readmes():
-    linked = {
-        "README.md": "docs/methods/{stem}.md",
-        "README_zh-CN.md": "docs/methods/{stem}.md",
-        "docs/get_started/quickstart.md": "../methods/{stem}.md#run-in-five-minutes",
-        "docs/user_guides/inference.md": "../methods/{stem}.md#run-in-five-minutes",
+    linked = {  # either form: the page in the repository, or the page on the site
+        "README.md": ("docs/methods/{stem}.md", SITE + "/methods/{stem}/"),
+        "README_zh-CN.md": ("docs/methods/{stem}.md", SITE + "/methods/{stem}/"),
+        "docs/get_started/run_a_method.md": ("../methods/{stem}.md#run-in-five-minutes",),
+        "docs/user_guides/inference.md": ("../methods/{stem}.md#run-in-five-minutes",),
     }
     for method in METHODS:
         stem = PAGES.page_of(method)
-        for name, link in linked.items():
-            assert link.format(stem=stem) in (REPO / name).read_text(encoding="utf-8"), name
+        for name, links in linked.items():
+            text = (REPO / name).read_text(encoding="utf-8")
+            assert any(link.format(stem=stem) in text for link in links), name
         readme = (REPO / "configs" / stem / "README.md").read_text(encoding="utf-8")
-        assert f"**Run it in five minutes:** [docs/methods/{stem}.md]" in readme
+        page = f"{SITE}/methods/{stem}/"
+        assert (
+            f"**Run it in five minutes:** [the method page]({page}#run-in-five-minutes)" in readme
+        )
+        assert f"({page}#the-slots)" in readme and "](../../docs/" not in readme

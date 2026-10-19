@@ -805,7 +805,8 @@ class PTv3(_PTv3):
     (``semseg-pt-v3m1-0-base``): five encoder stages of 2-2-2-6-2 blocks with 32 to 512
     channels, four decoder stages, patches of 1024 voxels, all four curves, 0.02 m
     voxels, 6 input channels (colour and normal) and 64 output channels. For tabletop
-    clouds a finer grid is usual (GSNet voxelises at 0.005 m).
+    clouds a finer grid is usual (GSNet, EconomicGrasp and FineGrasp voxelise at
+    0.005 m).
 
     Args:
         in_channels: Feature channels per point.

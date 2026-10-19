@@ -143,7 +143,12 @@ def model(manifest, converter, cuda):
     if not checkpoint.is_file():
         pytest.skip(f"the checkpoint the fixtures were recorded with is missing: {checkpoint}")
     assert sha256(checkpoint) == manifest["checkpoint_sha256"]
-    state, meta = converter.convert_file(checkpoint, "_base_/models/gsnet.yaml", camera="realsense")
+    state, meta = converter.convert_file(
+        checkpoint,
+        "_base_/models/gsnet.yaml",
+        camera="realsense",
+        source_format="graspness-unofficial",
+    )
     assert meta["parameters"] == REFERENCE_PARAMETERS and meta["tensors"] == 216
     detector = DETECTORS.build(Config.load("_base_/models/gsnet.yaml")["model"])
     assert sum(p.numel() for p in detector.parameters()) == REFERENCE_PARAMETERS

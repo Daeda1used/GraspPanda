@@ -255,8 +255,8 @@ class OACNNs(Backbone):
     (``semseg-oacnns-v1m1-0-base``, 51.5 M parameters): 0.02 m voxels, 9 input channels
     (coordinates, colour, normal), a 64-channel stem, four stages of 3-3-9-8 blocks with
     64-64-128-256 channels, a 256-channel decoder and a 20-channel output. For tabletop
-    clouds a finer grid is usual (GSNet voxelises at 0.005 m); the pooling grids are
-    counted in cells, so they shrink with it. At 0.02 m such a cloud is easily thinner
+    clouds a finer grid is usual (GSNet, EconomicGrasp and FineGrasp voxelise at
+    0.005 m); the pooling grids are counted in cells, so they shrink with it. At 0.02 m such a cloud is easily thinner
     than the 16 voxels that ``crop_odd_extent`` requires.
 
     Args:

@@ -1,4 +1,4 @@
-"""Level 2 of the measured grid: does an option learn like the stage it replaces?
+"""Level 2 of the measured grid: does an option train like the shipped component it replaces?
 
 Level 1 (``tools/probe_grid.py``, 20 iterations on 8 frames) says that a cell composes,
 builds, trains without blowing up and predicts. It does not say whether the option learns
@@ -20,7 +20,8 @@ The runs are those of ``tools/probe_grid.py``: one run directory per kind of cel
 stopped and a cell that died of GPU memory is run again by the next ``run``. ``export``
 compares, writes one file per cell under ``$GRASPPANDA_CACHE/verification/L2/`` and the
 committed summary ``docs/advanced_guides/learns_like_reference.json`` (losses in a side
-file beside it, as level 1 does); ``page`` writes the page from the summary::
+file beside it, as level 1 does); ``page`` writes the page from the summary, counting what
+:func:`grasppanda.combine.reach.level2` counts (the slot pages and the explorer read it)::
 
     python -m tools.learn_check references --seeds 0 1 --scale-statistic-sha <sha>
     python -m tools.learn_check run --kind encoder --scale-statistic-sha <sha>
@@ -44,12 +45,13 @@ import glob
 import importlib.util
 import json
 import math
+import re
 import statistics
 import sys
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 REPO = Path(__file__).resolve().parents[1]
 LEVEL1 = REPO / "docs" / "advanced_guides" / "measured_combinations.json"
@@ -438,7 +440,9 @@ def compare(
         result["terms"][name] = entry
         if up is not None and up > rising_above and (ref_up is None or up - ref_up > rising_above):
             against = "" if ref_up is None else f"; the reference {ref_up * 100:+.0f} %"
-            diverging.append(f"{name} rises {up * 100:+.0f} % over the last half{against}")
+            # A term that blows up rises by orders of magnitude: say how many times over.
+            amount = f"{up * 100:+.0f} %" if up < 9 else f"{up + 1:.3g}-fold"
+            diverging.append(f"{name} rises {amount} over the last half{against}")
     for item in cell.get("nonfinite") or []:
         diverging.append(f"non-finite: {item}")
     grasps = list(cell.get("grasps_per_frame") or [])
@@ -1205,103 +1209,528 @@ def _why(line: Mapping[str, Any]) -> str:
     return "; ".join(items) or "—"
 
 
-def page(summary: Mapping[str, Any]) -> str:
+def _chips() -> Any:
+    """``tools/docs_chips.py``: the chips and the words every page shares."""
+    name = "docs_chips"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(f"{name}.py"))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+#: The kinds in the order of the page: the slots as data flows, then the recipe.
+PAGE_KINDS = (
+    "image-encoder",
+    "encoder",
+    "proposal",
+    "view",
+    "assigner",
+    "grouper",
+    "head",
+    "loss",
+    "recipe",
+)
+#: Outcome → (the mark of a cell, the tone of its chip). The worst outcomes come last.
+MARKS: dict[str, tuple[str, str]] = {
+    "on a par": ("✓", "ok"),
+    "not comparable": ("n/c", "muted"),
+    "no reference": ("no reference", "muted"),
+    "worse": ("worse", "warn"),
+    "diverging": ("diverging", "no"),
+    "fails": ("did not train", "no"),
+}
+#: The outcomes the answer counts, each with its tone and its words.
+COUNTED = (("on a par", "ok", "on a par"), ("worse", "warn", "worse"))
+
+
+def _anchor(title: str) -> str:
+    return title.lower().replace(" ", "-")
+
+
+def _methods(cells_: Iterable[Mapping[str, Any]]) -> list[str]:
+    """The methods of ``cells_`` in page order: the seed-based skeleton by year, then HGGD."""
+    from grasppanda.combine.reach import method_order
+
+    found = {line["method"] for line in cells_}
+    return [name for name in method_order() if name in found]
+
+
+def _ordered(names: Iterable[str]) -> list[str]:
+    """``names`` in page order; a name the page does not know comes last."""
+    from grasppanda.combine.reach import method_order
+
+    order = method_order()
+    return sorted(names, key=lambda name: order.index(name) if name in order else len(order))
+
+
+def _row_key(line: Mapping[str, Any]) -> str:
+    """The option of a cell as a row of its table: the choice after ``=``, the slot too for
+    the recipe, the loss presets (one cell per term they were put in) for a loss."""
+    if line["kind"] == "loss":
+        return " + ".join(line["id"].split("/", 2)[2].split("@")[0].split("+"))
+    if line["kind"] == "recipe":
+        return line["option"]
+    return line["option"].split("=", 1)[-1]
+
+
+def _short_reason(line: Mapping[str, Any]) -> str:
+    """The first reason of an outcome, in a few words: ``score 1.42x``."""
+    reasons = list(line.get("reasons") or [])
+    if not reasons:
+        return line["outcome"]
+    first = reasons[0].replace("loss/", "")
+    match = re.match(r"(\S+) ([\d.]+)x the reference", first)
+    if match:
+        return f"{match.group(1)} {float(match.group(2)):.2f}x"
+    return first.split(";")[0]
+
+
+def _cell_chip(line: Mapping[str, Any]) -> str:
+    """One cell as a chip; its ratios and reasons are the tooltip."""
+    mark, tone = MARKS.get(line["outcome"], (line["outcome"], ""))
+    term = ""
+    if line["kind"] == "loss":
+        term = ", ".join(item.split("=")[0] for item in line["option"].split(", ")) + ": "
+    tip = f"{term}{line['outcome']}. Ratios to the reference: {_terms_text(line)}. {_why(line)}"
+    return _chips().chip(mark, tone, tip)
+
+
+class Compared(NamedTuple):
+    """One option as the page shows it: its level-2 result, by the rules of
+    :func:`grasppanda.combine.reach.level2`, and the cells that result was read from.
+
+    Attributes:
+        slot: The slot of the option (``loss`` for a loss preset).
+        name: The option.
+        level2: Its :class:`grasppanda.combine.reach.Level2`.
+        lines: Method → the summary lines its outcome there was read from (one per term a
+            loss preset was put in; one otherwise).
+    """
+
+    slot: str
+    name: str
+    level2: Any
+    lines: dict[str, list[Mapping[str, Any]]]
+
+
+#: Why a cell of the summary is not counted, beyond the reasons of
+#: :mod:`grasppanda.combine.reach` (``LEVEL2_NONE``, ``LEVEL2_EXCLUDED``).
+JOINT = "a loss preset is read from its cells of one term"
+#: Why a cell whose preset writes out the method's own component
+#: (``grasppanda.combine.grid.SHIPPED_EQUIVALENTS``) is not counted.
+OWN = "it is the method as shipped, not a swap"
+NOT_READ = "level 2 does not compare it (no option of the grid)"
+#: The groups of :func:`compared_options` that are not counted, in the order of the page,
+#: each with its short title.
+NOT_COUNTED_TITLES = {
+    "schedule-slot": "Schedules",
+    "schedule": "On a schedule of its own",
+    "runs": "Did not run at level 1",
+    "joint": "Several loss terms at once",
+    "own": "The method's own component",
+    "other": "Not read",
+}
+#: The groups of the grid without a level-2 check (:data:`LEFT_OUT`) → their titles.
+LEFT_OUT_TITLES = {
+    "post": "Post-processing",
+    "stage-set, cross": "Sets of stages, and requests that replace several slots",
+}
+
+
+def compared_options(
+    summary: Mapping[str, Any], path: Path | None = None
+) -> tuple[dict[str, list[Compared]], dict[str, list[tuple[Mapping[str, Any], str]]]]:
+    """Kind → its options, each with its level-2 result as
+    :func:`grasppanda.combine.reach.level2` gives it (the summary at ``path``); and the cells
+    of the summary that result does not count, grouped (:data:`NOT_COUNTED_TITLES`), each with
+    why. The page counts and shows only what ``level2`` counts, so it cannot disagree with the
+    slot pages, the method pages and the explorer."""
+    from grasppanda.combine import reach as reaching
+    from grasppanda.combine.grid import SHIPPED_EQUIVALENTS
+    from grasppanda.combine.options import _class_index, measured
+
+    records = measured()
+    source = path or SUMMARY
+    lines = {line["id"]: line for line in summary["cells"]}
+    shown: dict[str, list[Compared]] = {}
+    left: dict[str, list[tuple[Mapping[str, Any], str]]] = {}
+    seen: set[str] = set()
+    for (slot, name), by_method in _class_index().items():
+        if not any(cell in lines for ids in by_method.values() for cell in ids):
+            continue
+        found = reaching.level2(slot, name, records, source)
+        used: dict[str, list[Mapping[str, Any]]] = {}
+        for method, ids in by_method.items():
+            single = [cell for cell in ids if not reaching._joint(records, cell)] or list(ids)
+            mine = [lines[cell] for cell in single if cell in lines]
+            if not mine:
+                continue
+            detail = ""
+            if found.none:
+                group = "schedule-slot"
+            elif method in found.excluded:
+                group = next(
+                    key
+                    for key, words in reaching.LEVEL2_EXCLUDED.items()
+                    if words == found.excluded[method]
+                )
+                if group == "runs":
+                    level1 = reaching.reach(slot, name, "runs", records)
+                    detail = level1.missed.get(method) or level1.undecided.get(method) or ""
+            elif method in found.outcomes:
+                used[method] = mine
+                seen.update(line["id"] for line in mine)
+                continue
+            elif method in reaching.reach(slot, name, "runs", records).own:
+                group = "own"
+                why = [SHIPPED_EQUIVALENTS.get(line["id"], "") for line in mine]
+                detail = "; ".join(dict.fromkeys(text for text in why if text))
+            else:
+                continue
+            for line in mine:
+                if line["id"] not in seen:
+                    left.setdefault(group, []).append((line, detail))
+                    seen.add(line["id"])
+        if used:
+            kind = next(iter(used.values()))[0]["kind"]
+            ordered = {method: used[method] for method in found.outcomes if method in used}
+            shown.setdefault(kind, []).append(Compared(slot, name, found, ordered))
+    for cell_id, line in lines.items():
+        if cell_id not in seen:
+            group = "joint" if reaching._joint(records, cell_id) else "other"
+            left.setdefault(group, []).append((line, ""))
+    return shown, {group: left[group] for group in NOT_COUNTED_TITLES if group in left}
+
+
+def _option_chip(outcome: str, lines: list[Mapping[str, Any]]) -> str:
+    """The outcome of an option under one method as a chip: the worst of its cells (a loss
+    preset in several terms has a cell per term); the ratios of every cell as the tooltip."""
+    if len(lines) == 1:
+        return _cell_chip(lines[0])
+    mark, tone = MARKS.get(outcome, (outcome, ""))
+    tips = []
+    for line in lines:
+        term = ", ".join(item.split("=")[0] for item in line["option"].split(", "))
+        tips.append(f"{term}: {line['outcome']}, ratios {_terms_text(line)}")
+    return _chips().chip(mark, tone, f"{outcome} (the worst of its terms). " + "; ".join(tips))
+
+
+def _answer(
+    shown: Mapping[str, list[Compared]], cells_: list[Mapping[str, Any]], methods: list[str]
+) -> list[str]:
+    """Kind × method: how many options are on a par, worse, diverging (or did not train),
+    not comparable, by :func:`grasppanda.combine.reach.level2`."""
+    chips = _chips()
+    rows = []
+    for kind in PAGE_KINDS:
+        title = KINDS[kind][2]
+        row = [f"[{title}](#{_anchor(title)})"]
+        for method in methods:
+            counts = Counter(
+                option.level2.outcomes[method]
+                for option in shown.get(kind, [])
+                if method in option.level2.outcomes
+            )
+            if not counts:
+                ran = any(line["kind"] == kind and line["method"] == method for line in cells_)
+                row.append(chips.chip("not counted", "muted", NOT_COUNTED_TIP) if ran else "—")
+                continue
+            parts = [
+                chips.chip(str(counts[name]), tone, words)
+                for name, tone, words in COUNTED
+                if counts[name]
+            ]
+            bad = counts["diverging"] + counts["fails"]
+            if bad:
+                parts.append(chips.chip(str(bad), "no", "diverging or did not train"))
+            if counts["not comparable"]:
+                parts.append(chips.chip(str(counts["not comparable"]), "muted", "not comparable"))
+            row.append(" ".join(parts))
+        rows.append(row)
+    return _table(["Kind", *methods], rows)
+
+
+#: The tooltip of a kind under a method whose every cell is listed under *Not on this page*.
+NOT_COUNTED_TIP = "every cell of this kind is listed under Not on this page"
+
+
+def _kind_section(
+    kind: str,
+    title: str,
+    about: Mapping[str, Any],
+    cells_: list[Mapping[str, Any]],
+    options: list[Compared],
+    left: int,
+) -> list[str]:
+    """One kind: a sentence that counts, and every option it compares in a fold."""
+    members = [line for line in cells_ if line["kind"] == kind]
+    numbers = (about.get("kinds") or {}).get(kind, {})
+    selected = numbers.get("selected", 0)
+    lines = [f"### {title} {{#{_anchor(title)}}}", ""]
+    if not members:
+        return [*lines, f"Not run yet ({selected} cells selected).", ""]
+    methods = _ordered({method for option in options for method in option.lines})
+    rows, reasons, par = [], [], 0
+    for option in options:
+        compared = option.level2.compared
+        par += bool(compared) and len(option.level2.on_a_par) == len(compared)
+        key = _row_key(next(iter(option.lines.values()))[0])
+        why = [
+            f"{method}: {line['outcome']} ({_short_reason(line)})"
+            for method in methods
+            for line in option.lines.get(method, [])
+            if line["outcome"] not in ("on a par", "not comparable")
+        ]
+        cells = [
+            _option_chip(option.level2.outcomes[method], option.lines[method])
+            if method in option.lines
+            else "—"
+            for method in methods
+        ]
+        rows.append([key, *cells])  # plain text wraps at its hyphens in a narrow column
+        if why:
+            reasons.append(f"- `{key}`: " + "; ".join(why))
+    pending = selected - len(members)
+    counted = f"{len(members)} of {selected} selected cells run" + (
+        f"; {pending} not yet." if pending > 0 else "."
+    )
+    if left:
+        counted += f" {left} not counted ([why](#not-on-this-page))."
+    noun = "option" if len(rows) == 1 else "options"
+    return [
+        *lines,
+        f"**{len(rows)} {noun} compared** "
+        + _chips().chip(f"{par} on a par under every method compared", "ok" if par else "muted")
+        + f" · {counted}",
+        "",
+        f'??? note "{title}: one row per option"',
+        "",
+        "    <div data-search-exclude markdown>",
+        "",
+        *[f"    {row}" for row in _table(["Option", *methods], rows)],
+        "",
+        *[
+            f"    {item}".rstrip()
+            for item in (["Not on a par, and why:", "", *reasons] if reasons else [])
+        ],
+        *([""] if reasons else []),
+        "    </div>",
+        "",
+    ]
+
+
+def _not_counted_label(line: Mapping[str, Any]) -> str:
+    """A cell not counted, as the option a reader asks for."""
+    if line["kind"] == "loss":
+        return line["option"]
+    return line["option"] if line["kind"] == "recipe" else line["option"].split("=", 1)[-1]
+
+
+def _not_counted_section(
+    about: Mapping[str, Any], left: Mapping[str, list[tuple[Mapping[str, Any], str]]]
+) -> list[str]:
+    """What the page leaves out: the groups of the grid without level 2, and the cells of
+    the summary :func:`grasppanda.combine.reach.level2` does not count, each with why; the
+    cells one row per option in a fold."""
+    from grasppanda.combine.reach import LEVEL2_EXCLUDED, LEVEL2_NONE
+
+    words = {
+        "schedule-slot": LEVEL2_NONE["schedule"],
+        "schedule": LEVEL2_EXCLUDED["schedule"] + " (a schedule-free optimizer, a recipe "
+        "preset with a scheduler)",
+        "runs": LEVEL2_EXCLUDED["runs"] + "; it stays named on every page",
+        "joint": JOINT,
+        "own": OWN,
+        "other": NOT_READ,
+    }
+    lines = [
+        "## Not on this page {#not-on-this-page}",
+        "",
+        *[
+            f"- **{LEFT_OUT_TITLES.get(group, group)}**: {reason}."
+            for group, reason in about["left_out"].items()
+        ],
+        *[
+            f"- **{NOT_COUNTED_TITLES[group]}** ({len(found)} "
+            f"{'cell' if len(found) == 1 else 'cells'}): {words[group]}."
+            for group, found in left.items()
+        ],
+        "",
+    ]
+    rows = []
+    for group, found in left.items():
+        # one row per option and reason: the methods it names, the group and the detail
+        by_option: dict[tuple[str, str], list[str]] = {}
+        for line, detail in found:
+            by_option.setdefault((_not_counted_label(line), detail), []).append(line["method"])
+        for (option, detail), methods in by_option.items():
+            why = NOT_COUNTED_TITLES[group] + (f": {detail}" if detail else "")
+            rows.append([f"`{option}`", ", ".join(_ordered(methods)), why])
+    if rows:
+        lines += [
+            '??? note "The cells not counted, option by option"',
+            "",
+            "    <div data-search-exclude markdown>",
+            "",
+            *[f"    {row}" for row in _table(["Option", "Under", "Why"], rows)],
+            "",
+            "    </div>",
+            "",
+        ]
+    lines += [
+        "Accuracy of any kind is on the [model zoo](../model_zoo.md). The noise floor above is "
+        "the only repeat: every cell is one run.",
+        "",
+    ]
+    return lines
+
+
+def page(summary: Mapping[str, Any], path: Path | None = None) -> str:
+    """The page of ``summary`` (read from ``path``, :data:`SUMMARY` by default): what it
+    counts is what :func:`grasppanda.combine.reach.level2` counts."""
     about = summary["about"]
     settings = about["settings"]
     cells_ = summary["cells"]
     references_ = summary["references"]
+    methods = _methods([*cells_, *references_])
+    chips = _chips()
+    shown, left = compared_options(summary, path)
+    left_by_kind = Counter(line["kind"] for found in left.values() for line, _ in found)
     lines = [
         "<!-- Generated by tools/learn_check.py from learns_like_reference.json.",
         "     Do not edit by hand: run (python -m tools.learn_check), export, regenerate. -->",
         "",
-        "# Learns like the reference?",
+        "# Does it train like the shipped component?",
         "",
-        "[Measured combinations](measured_combinations.md) says that an option composes, builds,",
-        "trains for 20 iterations without blowing up and predicts. This page asks the next",
-        "question: does the option **learn like the stage it replaces**? Every cell is trained",
-        f"for {settings['iterations']} iterations and its losses are put beside those of the "
-        "method as shipped (its",
-        "*reference*), trained under exactly the same settings.",
+        "An option that runs ([Does it run?](measured_combinations.md)) may still train badly. "
+        f"Here each swap that ran trains {settings['iterations']} iterations beside the method "
+        "as shipped (the *reference* below, not the authors' code), and the losses are "
+        f"compared term by term. Other pages call this check *{chips.LEVEL2_NAME}*.",
         "",
-        f"**One run per cell, {settings['iterations']} iterations on {settings['frames']} frames "
-        "of one scene.** An outcome is a",
-        "statement about training dynamics on that budget, **not an accuracy measurement**: a",
-        "cell *on a par* may still detect worse grasps, and a cell that is *worse* here may",
-        "catch up with a full schedule. No number on this page is an AP.",
+        '--8<-- "docs/includes/caveat_probe.md"',
         "",
-        "## How a cell is judged",
+        f"**One run per cell, {settings['iterations']} iterations on {settings['frames']} "
+        "frames of one scene.** An outcome is about training dynamics, **not an accuracy "
+        "measurement**: a cell on a par may still detect worse grasps, and one that is worse "
+        "here may catch up over a full schedule.",
         "",
-        f"- **Settings**, the same for a cell and its reference: {settings['iterations']} "
-        f"iterations on the {settings['frames']} frames",
-        f"  of the split `{settings['split']}` (scene 0), seed {settings['seed']}, prediction "
-        f"on {settings['predict_frames']} frames, `grasppanda probe",
-        f"  --schedule {settings['schedule']}`: no scheduler, every parameter group at the "
-        "recipe's peak rate, scaled by the",
-        "  batch ratio when the probe's batches are smaller than the recipe's (FineGrasp: "
-        "0.008 for 32 frames",
-        "  becomes 0.002 for 8), so that methods compare. A cell whose request sets the "
-        "schedule runs it",
-        "  (as at level 1): there the schedule is what is measured.",
+        "## The answer, kind by method {#the-answer}",
+        "",
+        '<div class="gp-matrix" markdown>',
+        "",
+        *_answer(shown, cells_, methods),
+        "",
+        "</div>",
+        "",
+        "A cell counts the options of a kind under that method: "
+        + " ".join(chips.chip(words, tone) for _, tone, words in COUNTED)
+        + f" {chips.chip('diverging or did not train', 'no')} "
+        f"{chips.chip('not comparable', 'muted')}. — : the method has no such kind. Every "
+        "option is [below](#option-by-option); what is not counted is "
+        "[at the end](#not-on-this-page).",
+        "",
+        "## How a cell is judged {#how-a-cell-is-judged}",
+        "",
+        f"- **The same settings for a cell and its reference**: {chips.measured_on(2)}.",
+        "- **Per loss term**, the mean of the last "
+        f"{settings['window']} iterations of the cell is divided by the reference's.",
+        "- **On a par**: every comparable term ends within the method's tolerance, nothing rises, "
+        "every value is finite and a frame has a grasp. **Worse**: a term ends above the "
+        "tolerance, or a part got no gradient. **Diverging**: a term rises at the end, a value "
+        "became non-finite, or no grasp was predicted.",
+        "- **A term the option redefines is not compared** (a loss preset, a head bundle, an "
+        "assigner, a stage with its own loss code); the cell is judged on the other terms.",
+        "- **Counted only where the comparison holds**: a swap that did not run at level 1, and a "
+        "cell trained on a schedule other than its reference's, are not counted; "
+        "[Not on this page](#not-on-this-page) names them.",
+        f"- **The tolerance of a method** is {about.get('tolerance', TOLERANCE):g} unless its two "
+        "reference runs (seed 0 and 1) "
+        "differ by more; then it is the next step of "
+        f"{about.get('step', STEP):g} above that spread.",
         *[
             f"- **{method}** runs under `--schedule {schedule}`, its reference and its cells "
             f"alike: {why}."
             for method, (schedule, why) in METHOD_SCHEDULES.items()
         ],
-        *[f"- **{name}**: {text}." for name, text in about["measures"].items()],
         "",
-        "Outcomes, in order of precedence:",
+        '??? note "Thresholds, measures and outcomes in full"',
         "",
-        *_table(["Outcome", "Meaning"], [[f"`{k}`", v] for k, v in about["outcomes"].items()]),
+        *_indent(
+            [
+                *[f"- **{name}**: {text}." for name, text in about["measures"].items()],
+                "",
+                "Outcomes, in order of precedence:",
+                "",
+                *_table(
+                    ["Outcome", "Meaning"], [[f"`{k}`", v] for k, v in about["outcomes"].items()]
+                ),
+                "",
+                "A term is **not comparable** when the cell changes its definition; the cell is "
+                "judged on the others:",
+                "",
+                *[f"- {name}: {text}." for name, text in about["not_comparable"].items()],
+                "",
+                f"**The tolerance and the rising threshold of a method.** {about['calibration']}.",
+                "",
+                *_calibration_table(about),
+            ]
+        ),
         "",
-        "A term is **not comparable** when the cell changes its definition; the cell is "
-        "judged on the others:",
+        "## Option by option {#option-by-option}",
         "",
-        *[f"- {name}: {text}." for name, text in about["not_comparable"].items()],
-        "",
-        f"**The tolerance and the rising threshold of a method.** {about['calibration']}.",
-        "",
-        *_calibration_table(about),
+        "One chip per option and method: ✓ on a par, *worse*, *diverging*, *did not train*, "
+        "*n/c* not comparable. Hover a chip for the ratios to the reference; the list under a "
+        "table says why a cell is not on a par. A loss preset put in several terms shows the "
+        "worst of them.",
         "",
     ]
+    for kind in PAGE_KINDS:
+        lines += _kind_section(
+            kind, KINDS[kind][2], about, cells_, shown.get(kind, []), left_by_kind[kind]
+        )
     lines += _noise_section(about, references_)
-    lines += _references_section(references_)
-    lines += _glance_section(about, cells_)
-    for kind, (_, _, title) in KINDS.items():
-        lines += _kind_section(kind, title, about, cells_)
+    lines += _not_counted_section(about, left)
     lines += [
-        "## Not on this page",
+        "## The records {#the-records}",
         "",
-        *[f"- **{group}**: {reason}." for group, reason in about["left_out"].items()],
-        "- Accuracy of any kind: see the method pages of the [model zoo](../model_zoo.md).",
-        "- More than one run per cell: the noise floor above is the only repeat.",
+        "- [learns_like_reference.json](learns_like_reference.json): every cell with its "
+        "outcome, its reasons, the ratio of every term and its two commands.",
+        "- [learns_like_reference/losses_per_iteration.json]"
+        "(learns_like_reference/losses_per_iteration.json): the losses of every run, the mean "
+        f"of every {BLOCK} iterations.",
         "",
-        "## Running it",
+        '??? note "Run it again"',
         "",
-        "```bash",
-        "python -m tools.learn_check references --seeds 0 1 --scale-statistic-sha <SHA-256>",
-        "python -m tools.learn_check run --kind encoder --scale-statistic-sha <SHA-256>",
-        "python -m tools.learn_check status    # selected, run and pending cells; time left",
-        "python -m tools.learn_check export    # compare -> learns_like_reference.json",
-        "python -m tools.learn_check page      # this page",
-        "```",
+        "    ```bash",
+        "    python -m tools.learn_check references --seeds 0 1 --scale-statistic-sha <SHA-256>",
+        "    python -m tools.learn_check run --kind encoder --scale-statistic-sha <SHA-256>",
+        "    python -m tools.learn_check status    # selected, run and pending cells; time left",
+        "    python -m tools.learn_check export    # compare -> learns_like_reference.json",
+        "    python -m tools.learn_check page      # this page",
+        "    ```",
         "",
-        "The runs are those of `tools/probe_grid.py` (`--iters "
+        "    The runs are those of `tools/probe_grid.py` (`--iters "
         f"{settings['iterations']} --predict-frames {settings['predict_frames']}`), one run "
-        "directory per kind, so an",
-        "interrupted run continues where it stopped. The SHA-256 is that of the imported "
-        "width histogram of",
-        "Scale-Balanced-Grasp (see [Measured combinations](measured_combinations.md)). The "
-        "losses of every run",
-        "are in `learns_like_reference/losses_per_iteration.json` (the mean of every "
-        f"{BLOCK} iterations).",
+        "directory per kind, so an interrupted run continues where it stopped. The SHA-256 is "
+        "that of the imported width histogram of Scale-Balanced-Grasp.",
     ]
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _indent(lines: list[str]) -> list[str]:
+    return [f"    {line}".rstrip() for line in lines]
 
 
 def _calibration_table(about: Mapping[str, Any]) -> list[str]:
     """Per method: the largest seed spread of its references, and what it sets."""
     rows = []
-    for method, values in (about.get("calibrated") or {}).items():
+    calibrated = about.get("calibrated") or {}
+    for method in _ordered(calibrated):
+        values = calibrated[method]
         terms = {
             f"{seed}: {name}": numbers
             for seed, by_term in (about.get("noise") or {}).get(method, {}).items()
@@ -1332,19 +1761,14 @@ def _calibration_table(about: Mapping[str, Any]) -> list[str]:
 
 
 def _noise_section(about: Mapping[str, Any], references_: list[Mapping[str, Any]]) -> list[str]:
+    """The references, and the noise floor: each reference trained under two seeds."""
     noise = about.get("noise") or {}
-    lines = ["## The noise floor: the references twice", ""]
+    lines = ["## The noise floor: the references twice {#the-noise-floor}", ""]
     if not noise:
         return [*lines, "The references have not been run under a second seed yet.", ""]
-    lines += [
-        "Each reference trained under seed 0 and again under seed 1, nothing else changed. "
-        "*ratio* is seed 1 over",
-        "seed 0 (mean of the last window); *rise* is each run's rise over the last half.",
-        "",
-    ]
     rows = []
-    for method, by_seed in noise.items():
-        for seed, terms in by_seed.items():
+    for method in _ordered(noise):
+        for seed, terms in noise[method].items():
             for name, (a, b, ratio, up_a, up_b) in terms.items():
                 rows.append(
                     [
@@ -1357,10 +1781,6 @@ def _noise_section(about: Mapping[str, Any], references_: list[Mapping[str, Any]
                         f"{_fmt(up_a, 2)} / {_fmt(up_b, 2)}",
                     ]
                 )
-    lines += _table(
-        ["Method", "Again with", "Term", "Seed 0", "Other seed", "Ratio", "Rise (seed 0 / other)"],
-        rows,
-    )
     ratios = [
         abs(math.log(values[2]))
         for by_seed in noise.values()
@@ -1368,21 +1788,50 @@ def _noise_section(about: Mapping[str, Any], references_: list[Mapping[str, Any]
         for name, values in terms.items()
         if name != "loss" and values[2]
     ]
+    spread = ""
     if ratios:
-        spread = math.exp(max(ratios))
+        largest = math.exp(max(ratios))
         typical = math.exp(math.sqrt(sum(r * r for r in ratios) / len(ratios)))
-        lines += [
-            "",
-            f"Over {len(ratios)} terms (the total left out): the largest ratio away from 1 is "
-            f"{spread:.2f}x, the root mean square {typical:.3f}x.",
-        ]
-    return [*lines, ""]
+        spread = (
+            f" Over {len(ratios)} terms (the total left out), the largest ratio away from 1 is "
+            f"{largest:.2f}x and the root mean square {typical:.3f}x."
+        )
+    lines += [
+        "Each reference trained under seed 0 and again under seed 1, nothing else changed: the "
+        "spread two runs of one config show, which sets each method's tolerance." + spread,
+        "",
+        '??? note "The references, and every term under both seeds"',
+        "",
+        *_indent(
+            [
+                *_references_table(references_),
+                "",
+                "*ratio* is seed 1 over seed 0 (mean of the last window); *rise* is each run's "
+                "rise over the last half.",
+                "",
+                *_table(
+                    [
+                        "Method",
+                        "Again with",
+                        "Term",
+                        "Seed 0",
+                        "Other seed",
+                        "Ratio",
+                        "Rise (seed 0 / other)",
+                    ],
+                    rows,
+                ),
+            ]
+        ),
+        "",
+    ]
+    return lines
 
 
-def _references_section(references_: list[Mapping[str, Any]]) -> list[str]:
-    lines = ["## The references", ""]
+def _references_table(references_: list[Mapping[str, Any]]) -> list[str]:
+    """The references of seed 0: their terms, grasps and scores."""
     if not references_:
-        return [*lines, "No reference has been run yet.", ""]
+        return ["No reference has been run yet."]
     rows = []
     for line in references_:
         if "@" in line["id"]:
@@ -1407,96 +1856,20 @@ def _references_section(references_: list[Mapping[str, Any]]) -> list[str]:
                 f"{line.get('seconds') or 0:.0f} s",
             ]
         )
-    lines += _table(
-        ["Method", "Loss terms (mean of the last window)", "Grasps", "Median score", "Run"], rows
-    )
-    lines += [
-        "",
-        "*Run* is the wall time of the probe, measured on a shared machine: an order of magnitude.",
-        "",
-    ]
-    return lines
-
-
-def _glance_section(about: Mapping[str, Any], cells_: list[Mapping[str, Any]]) -> list[str]:
-    kinds = about.get("kinds") or {}
-    outcomes = list(about["outcomes"])
-    rows = []
-    for kind, (_, _, title) in KINDS.items():
-        counts = Counter(line["outcome"] for line in cells_ if line["kind"] == kind)
-        numbers = kinds.get(kind, {})
-        selected = numbers.get("selected", 0)
-        measured = numbers.get("measured", 0)
-        rows.append(
-            [
-                title,
-                str(selected),
-                str(measured),
-                *[str(counts[name]) if counts[name] else "" for name in reversed(outcomes)],
-            ]
-        )
-    lines = [
-        "## At a glance",
-        "",
-        "*Selected*: the level-1 cells of the kind whose verdict is `runs`, `runs-empty` or "
-        "`runs-unstable`, without",
-        "those whose config is the reference's own. *Run*: those with a level-2 run so far.",
-        "",
-        *_table(["Kind", "Selected", "Run", *reversed(outcomes)], rows),
-        "",
-    ]
-    return lines
-
-
-def _kind_section(
-    kind: str, title: str, about: Mapping[str, Any], cells_: list[Mapping[str, Any]]
-) -> list[str]:
-    members = [line for line in cells_ if line["kind"] == kind]
-    numbers = (about.get("kinds") or {}).get(kind, {})
-    lines = [f"## {title}", ""]
-    selected = numbers.get("selected", 0)
-    if not members:
-        return [*lines, f"Not run yet ({selected} cells selected).", ""]
-    order = {name: index for index, name in enumerate(about["outcomes"])}
-    members.sort(key=lambda line: (order.get(line["outcome"], 99), line["method"], line["id"]))
-    rows = [
-        [
-            line["method"],
-            f"`{line['option']}`",
-            line.get("level1") or "—",
-            f"**{line['outcome']}**",
-            _terms_text(line),
-            _excluded_text(line),
-            _grasps(line),
-            _why(line),
-        ]
-        for line in members
-    ]
-    pending = selected - len(members)
-    lines += [
-        f"{len(members)} of {selected} selected cells run"
-        + (f"; {pending} not yet." if pending > 0 else "."),
-        "",
+    order = _ordered(row[0] for row in rows)
+    rows.sort(key=lambda row: order.index(row[0]))
+    return [
         *_table(
-            [
-                "Method",
-                "Option",
-                "Level 1",
-                "Outcome",
-                "Ratios to the reference",
-                "Not comparable",
-                "Grasps",
-                "Why",
-            ],
+            ["Reference", "Loss terms (mean of the last window)", "Grasps", "Median score", "Run"],
             rows,
         ),
         "",
+        "*Run* is the wall time of the probe on a shared machine: an order of magnitude.",
     ]
-    return lines
 
 
 def expected() -> str:
-    return page(json.loads(SUMMARY.read_text(encoding="utf-8")))
+    return page(json.loads(SUMMARY.read_text(encoding="utf-8")), SUMMARY)
 
 
 def write_page(args: argparse.Namespace) -> int:

@@ -1,10 +1,10 @@
-# GraspnessFPS as GSNet, EconomicGrasp and FineGrasp use it: 1024 seeds by furthest point
-# sampling among the points predicted graspable.
+# 1024 seeds by furthest point sampling among the points predicted graspable
+# (GraspnessFPS).
 #
-# The proposal scores every scene point, so it needs a `dense` encoder (compose wraps a
-# sub-sampling one in FeaturePropagation) and point-wise graspness labels: the `graspness`
-# section of the training dataset, built with
-#   grasppanda prepare graspnet1b --graspness --camera <camera> --config <this config>
+# The proposal of GSNet, EconomicGrasp and FineGrasp. It scores every scene point, so it
+# needs a `dense` encoder (compose wraps a sub-sampling one in FeaturePropagation) and
+# point-wise graspness labels: the `graspness` section of the training dataset, built with
+#   grasppanda prepare <dataset> --graspness --camera <camera> --config <this config>
 # A base config that already has that section keeps its own (FineGrasp normalises
 # graspness per instance).
 #

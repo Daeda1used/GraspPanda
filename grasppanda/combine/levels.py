@@ -244,8 +244,14 @@ class CellLevels:
     def gated(self, reference: CellLevels) -> CellLevels:
         """These levels held against the reference cell of the method: a level of
         :data:`GATED` that neither reaches is :data:`BELOW_REFERENCE`, not ``no``. A level
-        the cell reaches stays reached; one the reference reaches stays as it is."""
+        the cell reaches stays reached; one the reference reaches stays as it is.
+
+        Only a cell that trained is held against its reference: a cell that was refused,
+        failed or did not run stays ``no`` at every later level, since its own failure, not
+        the method's, kept it from them."""
         states, why, notes = dict(self.states), dict(self.why), list(self.notes)
+        if states.get("runs") != YES:
+            return CellLevels(states, why, notes, self.repeated)
         for level in GATED:
             if states.get(level) == NO and reference.states.get(level) == NO:
                 states[level] = BELOW_REFERENCE

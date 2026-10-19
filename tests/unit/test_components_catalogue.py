@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import json
+import sys
 
 import pytest
 
@@ -38,6 +39,23 @@ def docs_tool():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def chips_tool():
+    """``tools/docs_chips.py``, as the generator loads it."""
+    return docs_tool()._chips()
+
+
+def budgets_tool():
+    """``tools/check_page_budgets.py``, registered before it runs: its dataclass looks its
+    module up."""
+    name = "check_page_budgets"
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, REPO / "tools" / f"{name}.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return sys.modules[name]
 
 
 def in_tree():
@@ -262,6 +280,16 @@ def test_the_catalogue_page_holds_every_component_and_only_in_tree_ones():
     # terminal, where the installed version is the one that counts, not on the page.
     assert "## Head bundles" in page and "`Adam`" not in page and "`OneCycleLR`" not in page
     assert "`grasppanda components --slot optimizers` lists them" in page
+    # Reference › Registered classes: one heading per registry, its tables folded, and the
+    # scope of the slot a registry fills, from the shared chips.
+    tool, chips = docs_tool(), chips_tool()
+    assert "\n# Registered classes\n" in page
+    budgets = budgets_tool()
+    assert budgets.count(page).visible_rows == 0
+    for registry, slot in tool.REGISTRY_SLOTS.items():
+        heading = f"## {tool.TITLES[registry]}\n\n"
+        line = page.split(heading)[1].splitlines()[0]
+        assert chips.scope_chip(slot) in line and f"]({chips.SLOT_PAGES[slot]})" in line
 
 
 def test_the_swapping_page_states_what_the_matrix_test_proves():
@@ -304,3 +332,37 @@ def test_the_swapping_page_states_what_the_matrix_test_proves():
     }
     assert documented == ran
     assert f"**{len(tool.legal_stage_sets())} of " in page
+    # Every legal set is in the file beside the page, by index into its variants; the sets
+    # of the methods as shipped are among them.
+    published = json.loads(tool.STAGE_SETS.read_text(encoding="utf-8"))
+    variants = published["variants"]
+    sets = [
+        {slot: variants[slot][index] for slot, index in zip(published["slots"], item, strict=True)}
+        for item in published["sets"]
+    ]
+    assert sets == tool.legal_stage_sets() and published["count"] == len(sets)
+    for method, item in published["methods"].items():
+        assert item in published["sets"], method
+    assert "](stage_sets.json)" in page
+
+
+def test_the_swapping_page_says_it_covers_the_seed_based_skeleton_and_names_its_methods():
+    """The page is about the five seed-based methods, says so first, and its encoder table
+    has one column per method in page order, each the matrix test's verdict for the
+    method's detector type."""
+    tool, chips = docs_tool(), chips_tool()
+    page = (REPO / "docs" / "advanced_guides" / "swapping.md").read_text(encoding="utf-8")
+    opening = page.split("\n## ")[0]
+    assert chips.chip(chips.SCOPE_TEXT["seed-based"]) in opening
+    seed = [info.name for info in chips.methods() if info.family == "seed-based"]
+    for name in seed:
+        assert name in opening, name
+    assert "HGGD" in opening and "../slots/image_encoders.md" in opening
+    header = "| Encoder | `output` | Width | Status | Needs | " + " | ".join(seed) + " |"
+    assert header in page
+    by_detector = tool.encoder_verdicts()
+    models = tool.method_models()
+    assert list(models) == seed
+    for name, per_method in tool.method_encoder_verdicts().items():
+        for method, verdict in per_method.items():
+            assert verdict == by_detector[name][models[method]["type"]], (name, method)

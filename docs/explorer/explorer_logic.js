@@ -144,12 +144,15 @@
     var named = from.method;
     var m = method(data, named);
     if (named && !m) out.push("the method `" + named + "`");
-    m = m || data.methods[0];
     Object.keys(from.picks || {})
       .sort()
       .forEach(function (slot) {
         var name = from.picks[slot];
         var text = "`" + slot + "=" + name + "`";
+        if (!m) {
+          out.push(text + " (no method chosen)");
+          return;
+        }
         if (m.slots.indexOf(slot) < 0) {
           out.push(text + (lane(data, slot) ? " (not a slot of " + m.name + ")" : ""));
           return;
@@ -182,14 +185,24 @@
   }
 
   /* The data as the page uses it: every cell with its key, which the data file leaves out
-     to stay small (it follows from the method and the sets), and the name of its run, which
-     the file gives as an index into `runs`. Idempotent. */
+     to stay small (it follows from the method and the sets), the name of its run and the
+     options of its probe, which the file gives as indexes into `runs` and `probe_opts`, and
+     the index from a key to the cell that answers it. Two records with one key are one
+     experiment: the first wins, unless it shares the probe of another record and a later
+     one with the same verdict has a probe of its own (tools/make_explorer.py, index_of).
+     Idempotent. */
   function prepare(data) {
     if (data && data.cells && data.methods && !data.keyed) {
-      data.cells.forEach(function (cell) {
+      var index = {};
+      data.cells.forEach(function (cell, position) {
         if (cell.key === undefined) cell.key = keyOf(data, cell.method, cell.sets || []);
         if (typeof cell.run === "number" && data.runs) cell.run = data.runs[cell.run];
+        if (typeof cell.probe_opts === "number" && data.probe_opts) cell.probe_opts = data.probe_opts[cell.probe_opts];
+        var kept = index[cell.key];
+        if (kept === undefined) index[cell.key] = position;
+        else if (data.cells[kept].shares && !cell.shares && data.cells[kept].verdict === cell.verdict) index[cell.key] = position;
       });
+      if (!data.index) data.index = index;
       data.keyed = true;
     }
     return data;
@@ -240,10 +253,16 @@
     return {
       ok: found.ok,
       adapter: found.adapter || "",
+      kind: found.kind || "",
       messages: (found.messages || []).map(function (index) {
         return data.contracts.messages[index];
       }),
     };
+  }
+
+  /* The words of a refusal kind ("structural" -> "incompatible by design"), or "". */
+  function refusalWords(data, kind) {
+    return (kind && data.refusal_words && data.refusal_words[kind]) || "";
   }
 
   /* How an answer of the contract check is shown where no record exists. */
@@ -424,10 +443,28 @@
     };
   }
 
-  /* The cells of the grid of one slot: rows are options, columns are methods. */
+  /* Why an option has no record of its own (an adapter compose inserts, a point-painting
+   * wrapper a config names by hand: grasppanda.combine.reach says "no record"), or "". */
+  function noRecord(data, entry) {
+    var found = reachOf(data, entry, "runs");
+    return found && found.fraction === "no record" ? found.tail || "no record of its own" : "";
+  }
+
+  /* The cells of the grid of one slot: rows are options, columns are methods. A cell is
+   * the record of the option's request under the method: its one `slot=option`, or the sets
+   * the method's list gives it (a recipe that needs its scene encoder). An option without a
+   * record of its own (noRecord) comes last, with `noRecord` saying why. */
   function gridRows(data, slot) {
     var columns = data.methods.filter(function (m) {
       return m.slots.indexOf(slot) >= 0;
+    });
+    var requests = {};
+    columns.forEach(function (m) {
+      requests[m.name] = {};
+      if (slot === LOSS) return;
+      choices(data, m.name, slot).forEach(function (choice) {
+        requests[m.name][choice.name] = choice.sets;
+      });
     });
     var rows = (data.options[slot] || []).map(function (entry) {
       var cellsOf = {};
@@ -441,14 +478,39 @@
               return cell.method === m.name;
             });
         } else {
-          var found = lookup(data, m.name, [slot + "=" + entry.name]);
+          var found = lookup(data, m.name, requests[m.name][entry.name] || [slot + "=" + entry.name]);
           cellsOf[m.name] = found ? [found] : [];
         }
       });
-      return { option: entry, cells: cellsOf };
+      return { option: entry, cells: cellsOf, noRecord: noRecord(data, entry) };
     });
-    return { columns: columns, rows: rows };
+    var measured = rows.filter(function (row) {
+      return !row.noRecord;
+    });
+    return {
+      columns: columns,
+      rows: measured.concat(
+        rows.filter(function (row) {
+          return row.noRecord;
+        })
+      ),
+    };
   }
+
+  /* Whether the records of a cell are the method as shipped: the option is what it ships
+   * (the same config as its reference), so it is no swap there and no fraction counts it. */
+  function isOwn(found) {
+    return Boolean(
+      found &&
+        found.length &&
+        found.every(function (cell) {
+          return cell.own;
+        })
+    );
+  }
+
+  /* The tile of what a method ships, at every level and at level 2. */
+  var OWN_TILE = { state: "own", label: "what the method ships: this is the method as shipped", contract: false, own: true };
 
   /* The position of a level in the data's order of levels (composes, runs, ...). */
   function levelIndex(data, level) {
@@ -459,22 +521,32 @@
     return at < 0 ? 1 : at;
   }
 
-  /* An option's class at a level: [text, column]; the column is a class word, "relative"
-   * (N of M probed) or "undecided". Null without a class. */
-  function classAt(data, entry, level) {
-    return (entry && entry.classes && entry.classes[levelIndex(data, level)]) || null;
+  /* The key of level 2 in Compare: a fifth column after the four levels of a record. */
+  var LEVEL2 = "level2";
+
+  /* Where an option works at a level (grasppanda.combine.reach, exported by
+   * tools/make_explorer.py): {fraction, tone, tail}. The level `level2` is level 2: how it
+   * trains beside each method's own component. Null without. */
+  function reachOf(data, entry, level) {
+    if (!entry || !data.reach) return null;
+    var at = level === LEVEL2 ? entry.learns : entry.reach ? entry.reach[levelIndex(data, level)] : undefined;
+    var row = at === undefined || at === null ? null : data.reach[at];
+    return row ? { fraction: row[0], tone: row[1], tail: row[2] } : null;
   }
 
-  function classColumn(data, entry, level) {
-    var found = classAt(data, entry, level);
-    return found ? found[1] : "";
+  function toneOf(data, entry, level) {
+    var found = reachOf(data, entry, level);
+    return found ? found.tone : "";
   }
 
-  /* Filters of the grid: {q, level, classes: [..], extra: bool, weights: bool}; the
-   * classes are those of the level (runs by default). */
+  /* The tones of a fraction, from every method it swaps into to none, then undecided. */
+  var TONE_ORDER = ["ok", "warn", "no", "muted"];
+
+  /* Filters of the grid: {q, level, tones: [..], extra: bool, weights: bool}; the tones
+   * are those of the level (runs by default). */
   function matches(entry, filter, data) {
     filter = filter || {};
-    if (filter.classes && filter.classes.length && filter.classes.indexOf(classColumn(data || {}, entry, filter.level)) < 0) {
+    if (filter.tones && filter.tones.length && filter.tones.indexOf(toneOf(data || {}, entry, filter.level)) < 0) {
       return false;
     }
     if (filter.extra && !(entry.extras && entry.extras.length)) return false;
@@ -487,37 +559,104 @@
     });
   }
 
-  /* The class columns that occur among the options of a slot at a level, in the order of
-   * the definition. */
-  function classesOf(data, slot, level) {
-    var order = ["universal", "most", "some", "specific", "none", "relative", "undecided"];
+  /* The tones that occur among the options of a slot at a level, in TONE_ORDER. */
+  function tonesOf(data, slot, level) {
     var used = {};
     (data.options[slot] || []).forEach(function (entry) {
-      var column = classColumn(data, entry, level);
-      if (column) used[column] = true;
+      var tone = toneOf(data, entry, level);
+      if (tone) used[tone] = true;
     });
-    return order.filter(function (name) {
-      return used[name];
+    return TONE_ORDER.filter(function (tone) {
+      return used[tone];
     });
   }
 
-  /* The classes of an option at the four levels, levels of the same class said once:
-   * "universal (composes, runs) · not checked (learns, predicts)"; "" without a class. */
-  function classText(data, entry) {
-    if (!entry || !entry.classes) return "";
-    var groups = [];
-    (data.levels || []).forEach(function (level) {
-      var found = classAt(data, entry, level.key);
-      var text = found ? found[0] : "";
-      var last = groups[groups.length - 1];
-      if (last && last.text === text) last.levels.push(level.key);
-      else groups.push({ text: text, levels: [level.key] });
+  /* What the page calls level 2, as docs_chips names it: {name, header, meaning}. */
+  function level2Words(data) {
+    var side = data.learns || {};
+    return {
+      name: side.name || "trains like shipped",
+      header: side.header || "Trains like shipped",
+      meaning: side.meaning || "",
+    };
+  }
+
+  /* Level 2 of a record (explorer_learns.json): {outcome, tone, rank, reasons} when it was
+   * compared beside the method's own component (rank 0 is the best outcome); {none, own}
+   * when it was not, with why (the rules of grasppanda.combine.reach.level2: the method as
+   * shipped, a slot without level 2, a swap that did not run at level 1, a run on another
+   * schedule than the reference's); null when the page does not hold level 2. */
+  function learnsOf(data, cell) {
+    var side = data.learns;
+    if (!side || !cell) return null;
+    var found = side.cells[cell.id];
+    if (found) {
+      return { outcome: side.outcomes[found[0]], tone: side.tones[found[0]], rank: found[0], reasons: found.slice(1) };
+    }
+    var why = side.none[cell.id];
+    var words = side.none_words;
+    var own = why === 0 || Boolean(cell.own);
+    return { none: own ? words[0] : why === undefined ? "not measured at level 2" : words[why], own: own, rank: -1 };
+  }
+
+  /* A tone of level 2 as a state of a tile of the grid. */
+  var LEVEL2_TILE = { ok: "yes", warn: "unstable", no: "no", muted: "undecided" };
+
+  /* The tile of a grid cell at level 2: {state, label, own}. Of several records (a loss in
+   * several terms), those that replace one term decide, as grasppanda.combine.reach reads
+   * them, and the worst outcome is shown. */
+  function learnsTile(data, found) {
+    if (!found || !found.length) return { state: "none", label: "no record", contract: false };
+    if (isOwn(found)) return OWN_TILE;
+    if (!data.learns) return { state: "none", label: "level 2 is not loaded", contract: false };
+    var single = found.filter(function (cell) {
+      return (cell.sets || []).length <= 1;
     });
-    return groups
-      .map(function (group) {
-        return group.text + " (" + group.levels.join(", ") + ")";
+    var pool = single.length ? single : found;
+    var worst = null;
+    var others = [];
+    pool.forEach(function (cell) {
+      var said = learnsOf(data, cell);
+      if (said && !said.none) {
+        if (worst === null || said.rank > worst.rank) worst = said;
+      } else if (said) {
+        others.push(said);
+      }
+    });
+    if (worst) return { state: LEVEL2_TILE[worst.tone] || "undecided", label: worst.outcome, contract: false };
+    var first = others[0] || { none: "", own: false };
+    if (first.own) return OWN_TILE;
+    return { state: "undecided", label: "not compared: " + first.none, contract: false };
+  }
+
+  /* The slots in groups by the methods that have them: every method, the seed-based
+   * methods, HGGD only (docs_chips.scope): [{key, title, lanes}]. */
+  function slotGroups(data) {
+    var order = ["all", "seed-based", "hggd"];
+    var groups = {};
+    data.lanes.forEach(function (entry) {
+      var key = entry.scope || "other";
+      (groups[key] = groups[key] || []).push(entry);
+    });
+    var keys = order
+      .filter(function (key) {
+        return groups[key];
       })
-      .join(" · ");
+      .concat(
+        Object.keys(groups).filter(function (key) {
+          return order.indexOf(key) < 0;
+        })
+      );
+    return keys.map(function (key) {
+      return { key: key, title: (data.scopes || {})[key] || key, lanes: groups[key] };
+    });
+  }
+
+  /* The methods that do not have a slot, in page order. */
+  function without(data, slot) {
+    return data.methods.filter(function (m) {
+      return m.slots.indexOf(slot) < 0;
+    });
   }
 
   /* The state of a record at a level: "yes", "no" or why it is undecided. A record
@@ -547,9 +686,17 @@
   /* The tile of a cell of the grid at a level: {state, label, contract}. `found` are the
    * records of the cell; `checked` is the answer of the contract check for the single swap
    * (contract()), used only where no record exists, and then marked `contract: true` with
-   * the states "accepted" or "check-refused", which no record ever gets. Records that
-   * disagree at the level give "mixed"; nothing at all gives "none". */
-  function levelTile(data, found, level, checked) {
+   * the states "accepted" or "check-refused", which no record ever gets. What the method
+   * ships is "own" at every level (it is no swap there). Records that disagree at the level
+   * give "mixed"; nothing at all gives "none", and "muted" for an option without a record of
+   * its own (`noRecordWhy`, from gridRows: an adapter or a wrapper). At level 2 the tile is
+   * that of learnsTile(). */
+  function levelTile(data, found, level, checked, noRecordWhy) {
+    if (isOwn(found)) return OWN_TILE;
+    if (noRecordWhy && !(found && found.length)) {
+      return { state: "muted", label: "no record of its own", contract: false };
+    }
+    if (level === LEVEL2) return learnsTile(data, found);
     if (found && found.length) {
       var tiles = found.map(function (cell) {
         return recordTile(data, cell, level);
@@ -584,14 +731,18 @@
       .join(" · ");
   }
 
-  /* A selection as the fragment of a link, and back. */
+  /* A selection as the fragment of a link, and back. No method chosen: no `m=` and no
+   * picks (the page opens on the gallery of methods, or on the view the link names). */
   function toHash(methodName, picks, view, slot) {
-    var parts = ["m=" + encodeURIComponent(methodName)];
-    Object.keys(picks || {})
-      .sort()
-      .forEach(function (key) {
-        parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(picks[key]));
-      });
+    var parts = [];
+    if (methodName) {
+      parts.push("m=" + encodeURIComponent(methodName));
+      Object.keys(picks || {})
+        .sort()
+        .forEach(function (key) {
+          parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(picks[key]));
+        });
+    }
     if (view === "grid") parts.push("grid=" + encodeURIComponent(slot || ""));
     else if (view === "run") parts.push("run=1");
     return parts.join("&");
@@ -661,6 +812,112 @@
     return out;
   }
 
+  /* What a record says in one sentence, and what stands behind it (its tooltip):
+   * {text, full}. What it was measured on is said only where a probe ran, and that the
+   * combination works only where it ran (runs, runs-empty); a refusal built nothing. */
+  function recordSummary(data, cell) {
+    var it = data.probe.iterations;
+    var fr = data.probe.frames;
+    var measuredOn = capitalise(data.measured_on) + ".";
+    var said = {
+      runs: ["It builds, trains " + it + " iterations on " + fr + " real frames and predicts grasps.", measuredOn + " It shows that the combination works, not how well."],
+      "runs-empty": ["It builds and trains, but predicted no grasp on the test frames.", measuredOn + " It shows that the combination trains, not how well; it predicted no grasp."],
+      "runs-unstable": ["It builds and trains, but the short run was unstable.", measuredOn + " An unstable run does not show that the combination works."],
+      fails: ["It passed the config check, then stopped with an error.", measuredOn + " The error is below."],
+      refused: ["Refused by compose: nothing was built.", "The answer of `grasppanda compose`: it checks that the stages fit before anything is built. Nothing was trained."],
+    }[cell.verdict];
+    if (said) return { text: said[0], full: said[1] };
+    return { text: capitalise(badge(cell).label) + ".", full: "" };
+  }
+
+  function capitalise(text) {
+    text = String(text || "");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  /* Preferred options of the examples of the gallery, best first: a scene encoder from
+   * another paper, another method's head bundle (incompatible by design), a pretrained
+   * image encoder. */
+  var EXAMPLE_PREFER = {
+    swap: ["backbone=ptv3"],
+    refused: ["head=economic", "grouper=depth-embed", "assigner=compact-label"],
+    family: ["image_encoder=dinov2-small-reg"],
+  };
+
+  /* The selections the gallery offers to start from, each on a method of its own: a scene
+   * encoder from another paper that runs, a swap compose refuses (`refused`), an image
+   * encoder of a family of its own, and Compare on the first slot of every method. The two
+   * seed-based examples take the methods of the skeleton in rotation: `turn` (the page
+   * passes the day) names the method of the swap, and the refusal goes to the method before
+   * it, so no method is shown twice and every method has its turn.
+   * [{kind, slot, option, method, cell, refused}], kind "swap" | "refused" | "family" |
+   * "compare" (no cell; `method` is the title of the group of every method). */
+  function examples(data, turn) {
+    var seed = data.methods.filter(function (m) {
+      return m.seed_based;
+    }).map(function (m) {
+      return m.name;
+    });
+    var others = data.methods.filter(function (m) {
+      return !m.seed_based;
+    }).map(function (m) {
+      return m.name;
+    });
+    var n = seed.length;
+    var start = n ? (((turn || 0) % n) + n) % n : 0;
+    function rotation(from, step) {
+      var out = [];
+      for (var i = 0; i < n; i++) out.push(seed[(((from + step * i) % n) + n) % n]);
+      return out;
+    }
+    var used = {};
+    function first(names, test, prefer) {
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        if (used[name]) continue;
+        var found = data.cells.filter(function (cell) {
+          return cell.method === name && cell.sets.length === 1 && test(cell);
+        });
+        if (!found.length) continue;
+        var rank = function (cell) {
+          var at = prefer.indexOf(cell.sets[0]);
+          return at < 0 ? prefer.length : at;
+        };
+        found.sort(function (a, b) {
+          return rank(a) - rank(b) || data.cells.indexOf(a) - data.cells.indexOf(b);
+        });
+        used[name] = true;
+        return found[0];
+      }
+      return null;
+    }
+    var picked = [
+      ["swap", first(rotation(start, 1), function (cell) {
+        return cell.group === "encoder" && cell.verdict === "runs";
+      }, EXAMPLE_PREFER.swap)],
+      ["refused", first(rotation(start - 1, -1), function (cell) {
+        if (cell.verdict !== "refused" || (cell.group !== "stage" && cell.group !== "encoder")) return false;
+        var now = contract(data, cell.method, cell.sets);
+        return !(now && now.ok);
+      }, EXAMPLE_PREFER.refused)],
+      ["family", first(others, function (cell) {
+        return cell.group === "family-slot" && cell.verdict === "runs";
+      }, EXAMPLE_PREFER.family)],
+    ];
+    var out = [];
+    picked.forEach(function (item) {
+      var cell = item[1];
+      if (!cell) return;
+      var at = cell.sets[0].indexOf("=");
+      out.push({ kind: item[0], slot: cell.sets[0].slice(0, at), option: cell.sets[0].slice(at + 1), method: cell.method, cell: cell, refused: cell.verdict === "refused" });
+    });
+    var everyone = slotGroups(data)[0];
+    if (everyone && everyone.key === "all" && everyone.lanes.length) {
+      out.push({ kind: "compare", slot: everyone.lanes[0].key, option: "", method: everyone.title, cell: null, refused: false });
+    }
+    return out;
+  }
+
   var api = {
     prepare: prepare,
     answer: answer,
@@ -673,14 +930,23 @@
     lossLabel: lossLabel,
     lossName: lossName,
     mark: mark,
-    classAt: classAt,
-    classColumn: classColumn,
+    reachOf: reachOf,
+    toneOf: toneOf,
+    tonesOf: tonesOf,
+    learnsOf: learnsOf,
+    learnsTile: learnsTile,
+    level2Words: level2Words,
+    examples: examples,
+    isOwn: isOwn,
+    noRecord: noRecord,
+    recordSummary: recordSummary,
+    refusalWords: refusalWords,
+    slotGroups: slotGroups,
+    without: without,
     levelState: levelState,
     levelTile: levelTile,
     recordTile: recordTile,
     thousands: thousands,
-    classesOf: classesOf,
-    classText: classText,
     levelsText: levelsText,
     noGrasp: noGrasp,
     notProbed: notProbed,

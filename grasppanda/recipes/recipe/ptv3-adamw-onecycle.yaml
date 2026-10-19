@@ -1,8 +1,10 @@
 # Pointcept's PTv3 recipe with its tenth of the rate for the transformer blocks.
 #
 # As `adamw-onecycle`, plus Pointcept's `param_dicts = [dict(keyword="block", lr=lr/10)]` as a
-# ParamGroups pattern. For a PTv3 encoder (`--set backbone=ptv3`): the pattern must match a
-# parameter.
+# ParamGroups pattern. For a PTv3 scene encoder (`--set backbone=ptv3`), so for the seed-based
+# methods only (HGGD has no scene encoder; compose refuses it there).
+#
+# Source: Pointcept's PTv3 recipe.
 #
 # What must be re-tuned, and why:
 # * lr_multipliers: the pattern matches parameters with `.block` in their name, the transformer

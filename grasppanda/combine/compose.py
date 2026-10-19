@@ -1,6 +1,9 @@
 """Compose a config: a base config, one component per ``slot=choice``, checked.
 
-    composition = compose("gsnet/gsnet_sunet14_g1b-realsense_10e", ["backbone=pointnet2"])
+    composition = compose(
+        "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
+        ["backbone=sparse-unet14"],
+    )
     composition.accepted          # the config check passes
     composition.text(path)        # the child config, with a header that says how it was made
 
@@ -36,7 +39,9 @@ No rule about what fits what lives here: every verdict is
 :func:`~grasppanda.models.detectors.seed_based.stage_contract_problems` or the config
 checker, quoted, and what compose adapts it reads from the contracts the components
 declare (the width an encoder returns, the width a grouper needs, the labels a stage
-reads and a dataset serves).
+reads and a dataset serves). One fact the config cannot show is added: a recipe preset
+written for the scene encoder of the seed-based skeleton is refused under a detector
+without one (HGGD), also where its pattern is a regular expression the check cannot read.
 """
 
 from __future__ import annotations
@@ -46,6 +51,7 @@ import copy
 import difflib
 import inspect
 import os
+import re
 import shlex
 import tempfile
 import textwrap
@@ -283,7 +289,7 @@ class Composition:
             "EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes",
             "the config check; it has not been trained to convergence or evaluated.",
             "",
-            f"  base  {self.base} ({self.detector})",
+            f"  base  {self.base} ({_method_label(self.base_path, self.detector)})",
             f"  set   {changed or 'nothing; only overrides'}",
         ]
         lines += ["", *_command_lines(self.command)]
@@ -338,6 +344,27 @@ class Composition:
         if self.adapter is None:
             return []
         return [p for p in presets().get("backbone", {}).values() if p.type == self.adapter][:1]
+
+
+@lru_cache(maxsize=32)
+def _metafile_method(folder: Path) -> str:
+    """The method a config folder holds, as its ``metafile.yaml`` names it; ``""`` if none."""
+    path = folder / "metafile.yaml"
+    if not path.is_file():
+        return ""
+    data = parse_yaml(path.read_text(encoding="utf-8"))
+    return str(data.get("method") or "") if isinstance(data, Mapping) else ""
+
+
+def _method_label(base_path: Path, detector: str) -> str:
+    """The method of a base config by its name, with the detector class where that name
+    is another (``FineGrasp; detector EconomicGrasp``); the class alone outside a method
+    folder."""
+    method = _metafile_method(base_path.resolve().parent)
+    if not method:
+        return detector
+    same = re.sub(r"[^a-z0-9]", "", method.lower()) == re.sub(r"[^a-z0-9]", "", detector.lower())
+    return method if same else f"{method}; detector {detector}"
 
 
 def _spell(
@@ -453,8 +480,8 @@ def _parse_sets(sets: Sequence[str], slots: Mapping[str, Registry], detector: st
             hint = f" Did you mean '{close[0]}'?" if close else ""
             painting = (
                 " A seed-based method reads image features through point painting (the "
-                "`ImagePainted` wrapper around its scene encoder): docs/slots/"
-                "image_encoders.md, section 5."
+                "`ImagePainted` wrapper around its scene encoder, written into a config by "
+                "hand): docs/slots/image_encoders.md#point-painting."
                 if slot == "image_encoder" and "backbone" in slots
                 else ""
             )
@@ -1588,8 +1615,8 @@ def compose(
         if slots[choice.slot] is BACKBONES and is_adapter(cls):
             how = (
                 "Compose does not write this wrapper: it joins an image encoder to a scene "
-                "encoder, and the YAML fragment to copy is in docs/slots/image_encoders.md, "
-                "section 5 (point painting)."
+                "encoder, and the YAML fragment to copy is in "
+                "docs/slots/image_encoders.md#point-painting."
                 if "Painted" in choice.node["type"]
                 else "Set the encoder (`--set backbone=<encoder>`); compose inserts the "
                 "adapter when the contracts ask for it."
@@ -1724,6 +1751,7 @@ def compose(
         _unset(result, config.resolved(), body, comments, unsets)
     result.body, result.comments = body, comments
     _check(result)
+    _encoder_recipes(result)
     if not result.accepted:
         result.hints = _hints(result)
     return result
@@ -2076,6 +2104,47 @@ def _check(result: Composition) -> None:
             result.issues = [issue for issue in error.issues if issue.message not in known]
         else:
             result.config_hash = merged.digest()
+
+
+def _encoder_recipes(result: Composition) -> None:
+    """Refuse a recipe preset written for the scene encoder of the seed-based skeleton
+    (:data:`grasppanda.combine.grid.RECIPE_ENCODER_PRESETS`) under a detector without that
+    skeleton, where the config check cannot: it refuses a pattern that names `backbone`,
+    but a pattern written as a regular expression (``ptv3-adamw-onecycle``'s
+    ``re:\\.block``) meets the parameters only when training starts. Structural."""
+    if result.seed_based or not result.recipes:
+        return
+    from .grid import RECIPE_ENCODER_PRESETS
+
+    told = {issue.path.split(".")[0] for issue in result.issues}
+    for _, _, members in result.recipes:
+        for member in members:
+            if f"{member.slot}/{member.name}" not in RECIPE_ENCODER_PRESETS:
+                continue
+            if told & set(member.body):
+                continue  # the config check refused what it names
+            optimizer = member.body.get("optimizer") or {}
+            patterns = [
+                str(pattern)
+                for pattern in optimizer.get("lr_multipliers") or {}
+                if str(pattern).startswith("re:")
+            ]
+            why = (
+                f": no parameter of {result.detector} matches its pattern `{patterns[0]}`, so "
+                "training would stop before its first step"
+                if patterns
+                else ""
+            )
+            result.issues.append(
+                Issue(
+                    "optimizer.lr_multipliers" if patterns else member.slot,
+                    f"`{member.slot}={member.name}` is written for the scene encoder of the "
+                    f"seed-based skeleton (`model.backbone`), which {result.detector} does not "
+                    f"have{why}. It applies to the seed-based methods only.",
+                    kind="structural",
+                )
+            )
+            result.config_hash = None
 
 
 # ------------------------------------------------------------------- the command, as text

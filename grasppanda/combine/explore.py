@@ -43,6 +43,7 @@ STATIC = {
     "explorer_logic.js": "text/javascript; charset=utf-8",
     "explorer.json": "application/json; charset=utf-8",
     "explorer_contracts.json": "application/json; charset=utf-8",
+    "explorer_learns.json": "application/json; charset=utf-8",
 }
 #: The logo of resources/logo.svg, inline (the page loads nothing from elsewhere).
 _LOGO = (
@@ -98,10 +99,10 @@ def page(view: str = "") -> str:
 </header>
 <main>
 <h1 class="gx-sr">GraspPanda explorer, live</h1>
-<p class="gx-sr">Run a ported method on a scene, or swap any stage of a grasp detector. Verdicts
-come from the measured records; the contract check of exactly your selection and every run
-are done now, by this installation. Nothing is trained here.</p>
-<div id="gp-explorer" class="gpx" data-src="explorer.json" data-live="api/" data-docs="{DOCS}"{opens}>
+<p class="gx-sr">Pick a method, swap a stage, and see whether it still trains, or run a ported
+method on a scene. Verdicts come from the measured records; the config check of exactly your
+selection and every run are done now, by this installation. Nothing is trained here.</p>
+<div id="gp-explorer" class="gpx" data-src="explorer.json" data-learns="explorer_learns.json" data-live="api/" data-docs="{DOCS}"{opens}>
 <noscript><p>The explorer needs JavaScript.</p></noscript>
 </div>
 </main>

@@ -6,9 +6,10 @@ Methods of the GraspNet family share one flow (``docs/design/ARCHITECTURE.md`` Â
 
 ``SeedGraspDetector`` holds that flow and nothing method-specific: which stages run is
 decided by the configured components, and their compatibility is decided by the
-contracts they declare. It is deliberately small. Graspness (:class:`GSNet`) is its
-first user; the split between this base and a concrete method is to be re-examined
-when the second seed-based method lands.
+contracts they declare. It is deliberately small. Five methods are built on it:
+GraspNet-baseline, GSNet, Scale-Balanced-Grasp and EconomicGrasp, each with a detector
+type of its own, and FineGrasp, which configures the EconomicGrasp type with its own
+stages (``configs/_base_/models/finegrasp.yaml``). HGGD is a detector family of its own.
 
 Ground truth enters in exactly one place, the assigner, and only through the
 ``supervision`` argument of :meth:`SeedGraspDetector.loss`.

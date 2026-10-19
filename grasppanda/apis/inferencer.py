@@ -2,9 +2,14 @@
 
     from grasppanda import GraspInferencer
 
-    inferencer = GraspInferencer("gsnet/gsnet_sunet14_g1b-realsense_10e", "gsnet.pth")
+    inferencer = GraspInferencer(
+        "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e", "economicgrasp_realsense.pth"
+    )
     grasps = inferencer(depth=depth_mm, intrinsics=K, depth_scale=1000.0)
     array = grasps.to_graspnet_array()          # (G, 17), camera frame, metres
+
+    hggd = GraspInferencer("hggd/hggd_r34w8_g1b-realsense_15e", "hggd_realsense.pth")
+    grasps = hggd(depth=depth_mm, intrinsics=K, rgb=rgb, depth_scale=1000.0)  # reads colour too
 
 **What runs.** The transforms of the config's test pipeline (``data.<evaluation.split>``),
 built from the same config nodes ``grasppanda test`` builds them from: the image-space
@@ -159,6 +164,7 @@ class GraspInferencer:
         inferencer(depth=..., intrinsics=..., rgb=None, mask=None)   # a camera frame
         inferencer(points=...)                                       # a point cloud
         inferencer(frame="graspnet1b:scene_0100/realsense/0000")     # a dataset frame
+        inferencer(frame="graspclutter6d:scene_12/realsense-d435/3")  # (also GraspClutter6D)
 
     Each call returns one :class:`~grasppanda.structures.GraspGroup` in the camera
     frame, metres, in the order the detector emits them (not sorted; use

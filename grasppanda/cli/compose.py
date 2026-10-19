@@ -1,12 +1,14 @@
 """``grasppanda compose``: turn "this method with that component" into a checked config.
 
-    grasppanda compose --list                          # presets, slot by slot
-    grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list view
-                                                       # the options of GSNet's view slot,
-                                                       # with what was measured for each
+    grasppanda compose --list                          # every slot: the methods it applies
+                                                       # to, its presets, where each ran
+    grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e --list view
+                                                       # the options of EconomicGrasp's view
+                                                       # slot, with what was measured for each
     grasppanda compose --show backbone=ptv3            # one preset, with its notes
-    grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e \\
-        --set backbone=pointnet2 --set grouper=multi-scale -o my_config.yaml
+    grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e \\
+        --set backbone=ptv3 -o my_config.yaml
+    grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=convnextv2-tiny
 
 The command builds the combination from the base config and the presets, fits a new
 encoder to what the method feeds and expects, inserts the encoder adapter the contracts
@@ -34,9 +36,14 @@ __all__ = ["register"]
 
 
 EPILOG = """\
-slots of a seed-based detector (GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline,
-Scale-Balanced-Grasp), in the order data flows:
-  backbone  proposal  view  assigner  grouper  head
+slots, by the methods they apply to (in the order data flows, then the training recipe):
+  HGGD only                image_encoder
+  Seed-based · 5 methods   backbone  proposal  view  assigner  grouper  head  loss
+  All 6 methods            post  optimizer  schedule  hooks  augment  recipe
+The seed-based methods are GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp
+and FineGrasp. The five recipe presets written for the scene encoder (`model.backbone`)
+apply to them only; compose refuses them under HGGD. A loss goes into a loss option of a
+stage (`--set head.score_loss=focal`).
 A choice is a preset (`grasppanda compose --list`) or a registered component by its type
 (`grasppanda components --slot groupers`), which is then built with its own defaults.
 `--set labels=dense|compact` sets the label set of the training data (by default the
@@ -46,15 +53,22 @@ compose inserts what lifts a refusal and says so: an encoder adapter, an axis ad
 between grouper and head, the projected grouper, the assigner options a stage reads,
 graspness only for a proposal next to a view stage that owns objectness, the decode
 option of a head, the label set of the head in the data recipe. `--no-adapter` does none
-of these. Every refusal says why in brackets: structural, not-implemented,
-fixed-by-compose, not-a-combination or policy (`refusal_kinds` in --json).
+of these. Every refusal says why in brackets (`refusal_kinds` in --json): structural
+(incompatible by design), not-implemented (not supported yet), fixed-by-compose (needs a
+setting compose adds), not-a-combination (needs a preset's settings) or policy (needs
+your consent).
 
-examples:
-  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --list view    # options that fit
-  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
-  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=pointnet2 \\
+examples (one per method):
+  grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e --list view
+  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set head.score_loss=quality-focal
+  grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e \\
+      --set backbone=ptv3 -o sbg_ptv3.yaml
+  grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \\
       --set grouper=multi-scale --opts train.epochs=20 -o mine.yaml
-  grasppanda compose mine.yaml --set head=swad -o mine2.yaml    # composed again from its base
+  grasppanda compose mine.yaml --set view=healpix-768 -o mine2.yaml    # again from its base
+  grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --set hooks=ema
+  grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e --set image_encoder=convnextv2-tiny \\
+      -o hggd_convnextv2.yaml
 
 the base is a config that inherits fragments only, like the method configs under configs/
 (a chain is two levels deep). A config that was composed is composed again from its own
@@ -77,8 +91,8 @@ def register(commands: Any) -> None:
         "compose",
         help="compose a config from a base config and presets, and check it",
         description=(
-            "Compose a child config: a base config with one component per --set, taken from "
-            "a preset or from the registry. The contract rules and the config check decide "
+            "Compose a child config: a base config with one component per --set, taken from\n"
+            "a preset or from the registry. The contract rules and the config check decide\n"
             "whether it is written."
         ),
         epilog=EPILOG,
@@ -120,10 +134,19 @@ def _slot(name: str) -> str | None:
 
 #: The component slot of the image-based family (HGGD).
 IMAGE_SLOT = "image_encoder"
+#: What the global listing says above its tables.
+LIST_HEADER = (
+    "Slots and their presets. Each slot names the methods it applies to. `runs under`: the\n"
+    "methods the preset ran under on real frames, of those it is a swap under (a method that\n"
+    "ships it is not counted; one short probe per method on GraspNet-1Billion RealSense).\n"
+    "The options of one method, with every level: grasppanda compose <method config> --list."
+)
 
 
 def _list(which: str) -> int:
+    from grasppanda.combine import options
     from grasppanda.combine.presets import LOSS_SLOT, POST_SLOT, presets
+    from grasppanda.combine.reach import reach
     from grasppanda.combine.recipes import RECIPE_SLOTS, recipes
     from grasppanda.registry import IMAGE_ENCODERS, LOSSES, POSTPROCESSORS
 
@@ -135,42 +158,53 @@ def _list(which: str) -> int:
     }
     found = presets()
     wanted = _slot(which) or which.strip()
-    slots = [slot for slot in registries if which == "all" or slot == wanted]
-    around = [slot for slot in RECIPE_SLOTS if which in ("all", slot)]
-    if not slots and not around:
-        known = ", ".join([*registries, *RECIPE_SLOTS])
+    order = [slot for slot in options.SLOT_ORDER if slot in registries or slot in RECIPE_SLOTS]
+    chosen = [slot for slot in order if which == "all" or slot == wanted]
+    if not chosen:
+        known = ", ".join(order)
         print(f"unknown slot '{which}'. Slots: {known}", file=sys.stderr)
         return 2
     color = sys.stdout.isatty()
-    for slot in around:
-        several = " (several: a+b)" if slot in ("hooks", "augment") else ""
-        print(style(slot, "bold", "cyan", enabled=color) + f"  --set {slot}=<preset>{several}")
+    if which == "all":
+        print(LIST_HEADER)
+        print()
+    for slot in chosen:
+        scope = style(options.scope(slot), "gray", enabled=color)
+        if slot in RECIPE_SLOTS:
+            members = recipes().get(slot, {})
+            several = " (several: a+b)" if slot in ("hooks", "augment") else ""
+            head = f"  --set {slot}=<preset>{several}"
+            columns = ["preset", "sets", "runs under", "what it is"]
+        else:
+            members = found.get(slot, {})
+            target = "<stage>.<loss option>" if slot == LOSS_SLOT else slot
+            head = f"  --set {target}=<preset or component>"
+            columns = ["preset", "component", "runs under", "what it is"]
+        print(style(slot, "bold", "cyan", enabled=color) + head + f"   · {scope}")
+        if slot in RECIPE_SLOTS and any(f"{slot}/{name}" in _encoder_recipes() for name in members):
+            print("  presets that name the scene encoder (`model.backbone`): seed-based only")
+        if slot == IMAGE_SLOT:
+            print(
+                "  under a seed-based method an image encoder goes into the point-painting "
+                "wrapper, written by hand\n  (backbone preset `image-painted`; no probe record)"
+            )
         rows = [
-            [name, preset.type, _short(preset.summary)]
-            for name, preset in recipes().get(slot, {}).items()
+            [name, preset.type, reach(slot, name).fraction, _short(preset.summary, 80)]
+            for name, preset in members.items()
         ]
         if rows:
-            print(table(["preset", "sets", "what it is"], rows, enabled=color))
+            print(table(columns, rows, enabled=color))
+        if slot not in RECIPE_SLOTS:
+            covered = {preset.type for preset in members.values()}
+            bare = [name for name in registries[slot].names() if name not in covered]
+            if bare:
+                words = f"components without a preset: {', '.join(bare)}"
+                print(textwrap.fill(words, 96, initial_indent="  ", subsequent_indent="    "))
         print()
+    slots = [slot for slot in chosen if slot not in RECIPE_SLOTS]
     if not slots:
         print("One preset with its notes: grasppanda compose --show <slot>=<preset>.")
         return 0
-    for slot in slots:
-        members = found.get(slot, {})
-        target = "<stage>.<loss option>" if slot == LOSS_SLOT else slot
-        only = "  (HGGD; seed-based methods: point painting)" if slot == IMAGE_SLOT else ""
-        print(
-            style(slot, "bold", "cyan", enabled=color)
-            + f"  --set {target}=<preset or component>{only}"
-        )
-        rows = [[name, preset.type, _short(preset.summary)] for name, preset in members.items()]
-        if rows:
-            print(table(["preset", "component", "what it is"], rows, enabled=color))
-        covered = {preset.type for preset in members.values()}
-        bare = [name for name in registries[slot].names() if name not in covered]
-        if bare:
-            print(f"  components without a preset: {', '.join(bare)}")
-        print()
     if LOSS_SLOT in slots:
         print(
             "a loss goes into a loss option of a stage and keeps the weight of the loss it\n"
@@ -189,6 +223,13 @@ def _list(which: str) -> int:
         "One preset with its notes: grasppanda compose --show <slot>=<preset>."
     )
     return 0
+
+
+def _encoder_recipes() -> dict[str, tuple[str, ...]]:
+    """Recipe presets that name the scene encoder → the methods they apply to."""
+    from grasppanda.combine.grid import RECIPE_ENCODER_PRESETS
+
+    return dict(RECIPE_ENCODER_PRESETS)
 
 
 def _method_list(base: str, which: str, as_json: bool) -> int:
@@ -385,9 +426,14 @@ def run(args: argparse.Namespace) -> int:
     if args.show:
         return _show(args.show)
     if not args.base:
+        from grasppanda.combine.options import methods
+
+        configs = "\n".join(f"  {config}" for config in methods().values())
         print(
-            "compose needs a base config (or --list / --show), for example\n"
-            "  grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3",
+            "compose needs a base config (or --list / --show): a config of yours, or one of "
+            f"the method configs\n{configs}\n"
+            "and one --set per slot: grasppanda compose <method config> --set <slot>=<option>. "
+            "The slots and their options: grasppanda compose --list.",
             file=sys.stderr,
         )
         return 2

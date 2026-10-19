@@ -2,368 +2,237 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/banner-dark.png">
-  <img src="resources/banner-light.png" alt="GraspPanda: the toolbox for 6-DoF grasp detection in clutter" width="820">
+  <img src="resources/banner-light.png" alt="GraspPanda: a toolbox for 6-DoF grasp detection in cluttered scenes" width="820">
 </picture>
 
 **English** | [简体中文](README_zh-CN.md)
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
 [![docs](https://img.shields.io/badge/docs-mkdocs--material-2da44e)](https://daeda1used.github.io/GraspPanda)
-[![PyPI](https://img.shields.io/badge/PyPI-coming%20soon-lightgrey)](#-installation-and-quick-start)
 [![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776ab)](pyproject.toml)
-[![PyTorch](https://img.shields.io/badge/PyTorch-%E2%89%A5%202.1-ee4c2c)](https://pytorch.org)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![status](https://img.shields.io/badge/status-alpha-orange)](#-roadmap)
 
 [Documentation](https://daeda1used.github.io/GraspPanda) ·
-[Quick start](#-installation-and-quick-start) ·
+[Get started](https://daeda1used.github.io/GraspPanda/get_started/) ·
+[Explorer](https://daeda1used.github.io/GraspPanda/explorer/) ·
 [Model zoo](#-model-zoo) ·
-[Roadmap](#-roadmap) ·
-[Design](docs/design/ARCHITECTURE.md) ·
+[Design](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) ·
 [Contributing](CONTRIBUTING.md)
 
 <a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
-  <img src="resources/explorer-light.webp" alt="The combination explorer: GSNet's scene encoder is swapped for PTv3 from another paper and the measured record says it runs, with its four levels and its numbers; a grouper that does not fit is refused with the conflict compose prints; HGGD takes a DINOv2 image encoder; Compare shows every grouper under every method, switched from the level Runs to Learns" width="820">
+  <img src="resources/explorer-light.webp" alt="The combination explorer: the six methods in their two families; GraspNet-baseline with a PTv3 scene encoder from another paper, which runs, and with EconomicGrasp's head bundle, refused as incompatible by design with the reason; HGGD with a DINOv2 image encoder; Compare on post-processing under all six methods, then on the scene encoder of the five seed-based methods" width="820">
 </picture></a>
 
-**Swap any stage of a grasp detector and see at once whether it works.** Every answer is a measured record.<br>
-[**Open the combination explorer →**](https://daeda1used.github.io/GraspPanda/explorer/) · or run it locally: `grasppanda explore`
-
 </div>
 
-**GraspPanda is to 6-DoF grasp detection in clutter what MMDetection is to object detection:**
-one codebase where every stage of the pipeline can be swapped from a YAML file, where
-published methods are ported and checked against their reference implementations stage by
-stage, and where every number is produced by the same pinned evaluation.
+**GraspPanda is an open toolbox for 6-DoF parallel-jaw grasp detection in cluttered scenes.**
+It starts from GraspNet-1Billion and also reads GraspClutter6D. Six published methods are
+ported and match their reference code stage by stage. The stages of the seed-based skeleton,
+HGGD's image encoder, post-processing and the training recipe are slots you can swap with one
+line. Each option was composed under every method it fits, those accepted were
+probed on real frames, and the few without a record say why.
 
-🐼 *The panda is the animal, not the robot arm. GraspPanda is not tied to any robot.*
+<details>
+<summary>Why GraspPanda</summary>
 
-> [!NOTE]
-> **Alpha.** Working today: the config system, both benchmark readers, both evaluators
-> (equal to the official tools stage by stage), six methods as swappable components
-> (GSNet, EconomicGrasp, FineGrasp, HGGD, GraspNet-baseline, Scale-Balanced-Grasp; each equal to its
-> reference implementation stage by stage with converted weights), options for every slot
-> of the pipeline ([Slots](docs/slots/index.md)), and the `train` / `test` / `infer` / `demo` /
-> `analyze` / `sweep` / `compose` / `probe` / `explore` commands. The first model trained here
-> from scratch, GSNet, has been scored on the whole test splits of both benchmarks (above
-> the paper; its weights are not published yet), so the model zoo still has nothing to
-> download. A method enters it only after it has been trained *and* evaluated here. No
-> accuracy is claimed for an option that is not part of a ported method.
+<br>
 
-<div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="resources/showcase-dark.svg">
-  <img src="resources/showcase-light.svg" alt="A terminal composes GSNet with another scene encoder and grouper, a wrong head swap is refused with the conflict and the fix, and a probe on real frames ends with the verdict runs; above it the slots of the pipeline flip to the chosen options" width="830">
-</picture>
+Grasp detection in clutter has strong methods and a great benchmark, but comparing them is
+harder than it should be.
 
-*Real output, lines dropped, none invented. A combination is one command; a wrong one is refused with the fix before anything is built; a probe says whether it trains. No accuracy is claimed by a probe.*
+- **Numbers with and without the collision filter get mixed.** GSNet reports 65.70 AP on
+  GraspNet-1Billion (RealSense, seen) without the filter and 67.12 with it. Tables that quote
+  one against the other differ by more than many claimed improvements.
+- **The same method yields different numbers.** HGGD's README lists 59.36 AP (RealSense,
+  seen) as its paper result and 64.45 as its repository result; two later papers that re-ran
+  it, [RNGNet](https://arxiv.org/abs/2406.01767) and [GraRe](https://arxiv.org/abs/2608.00946),
+  report 58.35 and 63.37.
+- **Each method lives in its own repository**, with its own data pipeline, label files and
+  compiled operators, and often its own copy of the evaluator.
 
-**[Try combinations in the browser →](https://daeda1used.github.io/GraspPanda/explorer/)** every slot, every option: the measured verdict of 960 recorded combinations (740 probed on real frames by a probe of their own), and for any two swaps the answer of the real `compose`. Or locally, checked by your own installation: `grasppanda explore`.
+GraspPanda answers with one pipeline, one pinned evaluator per dataset, and a rule: only
+advertise what has been verified.
 
-<img src="resources/demo.webp" alt="Predicted grasps on a cluttered GraspNet-1Billion test scene, rendered by GraspPanda" width="720">
-
-*GSNet predictions on a GraspNet-1Billion test frame (top 40 after the collision filter), computed by GraspPanda's implementation with weights trained by the reference code. Scene image: GraspNet-1Billion, CC BY-NC-SA 4.0.*
-</div>
-
-## 📰 News
-
-- **2026-10** — First public version of the rebuild. Six methods as interchangeable components, each equal to its reference implementation stage by stage; eleven scene encoders; `grasppanda components`, `demo` and `analyze`; GraspClutter6D end to end. Releases up to v0.56 are an earlier, unrelated code base and stay available under their tags and on the `legacy` branch.
-- **2026-10** — `grasppanda compose` builds a combination from a method config and a preset, `grasppanda probe` trains it for a few iterations on real frames, and a generated page shows the measured result of every recorded combination (208 at that time; which component works under which method, and what the contract rules refuse).
-- **2026-10** — [Options for every slot](docs/slots/index.md), taken from published code and model libraries: 248 in all (image and scene encoders, seed proposal, view, grouper, heads and losses, post-processing, training recipe). Each has a row and a command on its slot page and a measured verdict per method; none has been trained and evaluated yet, so none carries an accuracy.
-- **2026-10** — The [combination explorer](https://daeda1used.github.io/GraspPanda/explorer/): pick a method, swap a slot, read the measured verdict, the command and the reason of a refusal; two swaps without a record get the stored answer of `compose`; `grasppanda explore` serves it locally and checks any selection with the real `compose`.
-- **2026-10** — More combinations that used to pass the check and fail in the first iteration are refused with the fix: a head or a view stage on another grid than the labels, a seed count the encoder does not return, a point augmentation next to images, a collision filter without the full cloud, mixed precision under a detector not written for it. A probe on real frames now reports a part of the model that received no gradient.
-- **2026-10** — Two more families of wrong combinations are refused when a config is checked instead of failing later: stages on a data recipe that does not serve their labels, and an encoder whose width a grouper cannot take (`compose` then fits the encoder or puts the projected grouper in place, and says so).
-
-## 🤔 Why GraspPanda
-
-Grasp detection in clutter has strong methods and a great benchmark, but comparing them is harder than it should be.
-
-- **Numbers with and without collision filtering get mixed.** GSNet reports 65.70 AP on GraspNet-1Billion (RealSense, seen) without the filter and 67.12 with it. Tables that quote one against the other differ by more than many claimed improvements.
-- **The same method yields different numbers.** HGGD's own README lists 59.36 AP (RealSense, seen) as its paper result and 64.45 as its repository result; two later papers that re-ran it report 58.35 and 63.37.
-- **Each method lives in its own repository**, with its own data pipeline, its own label files, its own compiled operators and often its own copy of the evaluator.
-
-GraspPanda answers with one pipeline, one evaluator, and a rule: **only advertise what has been verified**.
+</details>
 
 ## ✨ Features
 
 | | |
 |---|---|
-| 🎯 **Certified reproductions** ⏳ | A method enters the model zoo only after it is trained and evaluated in this toolbox, within 1 AP of the published number or with the gap explained. Every number is labelled `reported`, `author-ckpt` or `reproduced`. |
-| 🧩 **Swappable components** | Backbone, seed proposal, approach view, grouping, head bundle, loss and post-processing are config slots. An ablation is one base config plus one override. |
-| 🛡️ **Typed contracts, strict configs** | Unknown keys, wrong types and incompatible swaps are errors with a suggested fix, raised before anything is built. Nothing is silently interpolated, projected or squeezed. |
-| 📏 **One pinned evaluation** | A clean-room re-implementation of the official GraspNet-1Billion and GraspClutter6D protocols that equals the official tools stage by stage (1,592 recorded frames, zero mismatches), about 40x faster and with a ninth of the memory. Collision filter on *and* off are always reported. |
-| 🔍 **Honest inputs** | `predict()` never sees ground truth. Inputs derived from it, such as the ground-truth workspace crop most pipelines use at test time, are declared in the config and stamped on results. |
-| 📦 **Small core** | `torch`, `numpy`, `pyyaml`. Sparse convolution and other heavy pieces are optional extras; operators have pure-PyTorch reference implementations. |
-| 🧾 **Reproducible runs** | Each run snapshots its resolved config, overrides, code, git state and environment. |
+| 🧩 **Swap any stage**<br>Encoders, seed proposal, view, grouper, heads, losses, post-processing and the training recipe are slots. | 🔬 **Measured, not assumed**<br>Each option shows under how many methods it runs and learns, and why the others are left out. |
+| 🎯 **Faithful ports**<br>Six methods in two families, each equal to its reference stage by stage with converted weights. | 📏 **Pinned evaluators**<br>GraspNet-1Billion and GraspClutter6D, equal to the official tools; collision filter on and off. The GraspNet-1Billion one equals `graspnetAPI` value for value on 1,592 recorded frames ([test](tests/integration/test_eval_parity.py)). |
+| 🛡️ **Wrong swaps stop early**<br>Most wrong combinations are refused before anything is built, with the conflict and the fix; a short probe catches the rest. | 📦 **Small core**<br>`torch`, `numpy`, `scipy`, `pyyaml`, `pillow` and `tqdm`; sparse convolution and model libraries are extras. |
 
-⏳ marks what is still in progress (no method has passed the admission gate yet); everything else works today.
+## 🚀 Quick start
 
-### A config is the whole experiment
-
-```yaml
-_base_:                                     # shipped building blocks, found from any directory
-  - _base_/default_runtime.yaml
-  - _base_/schedules/gsnet_10e.yaml
-
-custom_imports: [../toy_components.py]      # out-of-tree code, no fork needed
-
-model:
-  type: ToyDetector
-  backbone: {type: ToyBackbone, out_channels: 64}
-  grouper:  {type: ToyGrouper, radius: 0.05, nsample: 16}
-  head:     {type: ToyHead, num_angle: 12, num_depth: 4}
-```
+Install PyTorch for your CUDA version, then GraspPanda with the extras the examples below
+use, and check it with a toy detector:
 
 ```bash
-# swap a component: kwargs of the old type are dropped, not silently merged
-grasppanda print-config <config> --opts optimizer.type=SGD --check
-
-# see everything a run would use, defaults included
-grasppanda print-config <config> --defaults
+git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
+pip install -e ".[spconv-cu118,timm]"   # match spconv to your CUDA
+grasppanda env                                                     # what is installed
+grasppanda train projects/example_project/configs/toy_train.yaml   # a toy detector, trained on the CPU in under a minute
 ```
 
-### One pipeline, typed contracts
+Swap a stage with one line: a scene encoder from another paper under GraspNet-baseline, and a
+pretrained image encoder under HGGD.
 
-<div align="center">
-<img src="resources/pipeline.png" alt="Pipeline slots: backbone, proposal, view, grouper and head bundle, with the data contract each one emits" width="820">
-</div>
+```bash
+grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
+    --set backbone=ptv3 -o baseline_ptv3.yaml
+grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
+    --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
+# each probe trains briefly on GraspNet-1Billion if it is set up; otherwise a synthetic check: `wired`
+grasppanda probe baseline_ptv3.yaml
+grasppanda probe hggd_dinov2.yaml
+```
 
-### Every slot has options
+`compose` checks the stage contracts and writes the config, inserting an adapter where one is
+needed. PTv3 runs under 5/5 seed-based methods; under 4/5 it trains like shipped, on a par
+with the method's own encoder (worse under FineGrasp). The DINOv2 encoder runs under HGGD and
+trains on a par with HGGD's own. A probe shows that a combination trains, not how good it is;
+a swapped model has no weights until you train it.
 
-An option is a name after `--set <slot>=`: a component with settings for table-top depth
-clouds. Each slot page starts with the task of the slot and its input and output, then
-gives one row and one command per option. [The index](docs/slots/index.md) classifies
-every option from the measured records, level by level (it composes, runs, learns,
-predicts), as universal, most, some or specific.
+**Next:** [run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/) from its released weights, first grasps in minutes ·
+[swap a component](https://daeda1used.github.io/GraspPanda/get_started/swap/) ·
+[open the explorer](https://daeda1used.github.io/GraspPanda/explorer/)
 
-| Slot | Options | What they are |
+## 🧩 What's inside
+
+| Method | Venue | Family | Reads |
+|---|---|---|---|
+| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | seed-based skeleton | depth |
+| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | seed-based skeleton | depth |
+| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | seed-based skeleton | depth |
+| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | seed-based skeleton | depth |
+| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | seed-based skeleton | depth |
+| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | own family | RGB-D |
+
+**Datasets:** GraspNet-1Billion and GraspClutter6D, each with a reader, label assets and an
+evaluator equal to the official one. **Slots**, and the methods each applies to:
+
+| Slots | Applies to |
+|---|---|
+| post-processing, training recipe | All 6 methods |
+| scene encoder, seed proposal, view, assigner, grouper, head bundle, loss | Seed-based · 5 methods |
+| image encoder | HGGD only |
+
+<details>
+<summary>Every slot, and how a detector is put together</summary>
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/pipeline-dark.png">
+  <img src="resources/pipeline.png" alt="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses; HGGD has its own family with an image encoder slot and fixed heat-map and region stages. Post-processing and the training recipe are shared by all methods." width="820">
+</picture>
+
+| Slot | `--set` key | What goes in |
 |---|---|---|
-| [Image encoder](docs/slots/image_encoders.md) | 38 | HGGD's own encoder and bridges to timm, transformers and torchvision; point painting for the seed-based methods |
-| [Scene encoder](docs/slots/scene_encoders.md) | 47 | point-based networks, sparse-voxel networks, transformers and pretrained 3-D encoders, with released weights where they fit |
-| [Seed proposal](docs/slots/proposal.md) | 24 | scored or plain seeds, with eleven samplers |
-| [View](docs/slots/view.md) | 21 | view lattices of any size, regressed directions, full rotations |
-| [Grouper](docs/slots/grouper.md) | 32 | crops among the seeds or of the scene: shapes, encoders, poolings, RoI pooling, graph layers |
-| [Head bundle and assigner](docs/slots/head_loss.md) | 10 + 4 | the heads of the ported methods, a decoupled grid head, and the label assigners they go with |
-| [Loss](docs/slots/head_loss.md) | 20 | focal, quality, robust and set losses, mining, class balance, uncertainty weighting, per loss term |
-| [Post-processing](docs/slots/post.md) | 15 | collision, table, workspace and gripper filters, NMS, selection, change of frame |
-| [Training recipe](docs/slots/recipe.md) | 37 | optimizers, schedules, hooks, augmentation (one of them, mixed precision, is refused for every shipped detector today) |
+| [Image encoder](https://daeda1used.github.io/GraspPanda/slots/image_encoders/) | `image_encoder` | HGGD's own encoder and bridges to timm, transformers and torchvision |
+| [Scene encoder](https://daeda1used.github.io/GraspPanda/slots/scene_encoders/) | `backbone` | point-based, sparse-voxel and transformer encoders, with released weights where they fit |
+| [Seed proposal](https://daeda1used.github.io/GraspPanda/slots/proposal/) | `proposal` | scored or plain seeds, with their samplers |
+| [View](https://daeda1used.github.io/GraspPanda/slots/view/) | `view` | view lattices of any size, regressed directions, full rotations |
+| [Assigner](https://daeda1used.github.io/GraspPanda/slots/head_loss/) | `assigner` | how labels are matched to the predicted grasps |
+| [Grouper](https://daeda1used.github.io/GraspPanda/slots/grouper/) | `grouper` | crops among the seeds or of the scene: shapes, encoders, poolings |
+| [Head bundle](https://daeda1used.github.io/GraspPanda/slots/head_loss/) | `head` | the heads of the ported methods and a decoupled grid head |
+| [Loss](https://daeda1used.github.io/GraspPanda/slots/losses/) | `<stage>.<term>_loss`, e.g. `head.score_loss` | focal, quality, robust and set losses, set per loss term |
+| [Post-processing](https://daeda1used.github.io/GraspPanda/slots/post/) | `post` | collision, table and workspace filters, NMS, selection |
+| [Training recipe](https://daeda1used.github.io/GraspPanda/slots/recipe/) | `optimizer`, `schedule`, `hooks`, `augment`, `recipe` | optimizers, schedules, hooks, augmentation; presets that tune the scene encoder apply to the seed-based methods only |
 
-## 🗺️ Overview
+Where each option runs, under which method and why not elsewhere: the
+[explorer](https://daeda1used.github.io/GraspPanda/explorer/) and the
+[evidence pages](https://daeda1used.github.io/GraspPanda/evidence/).
 
-✅ available · 🚧 in progress · 📅 planned
-
-| Area | Status | What |
-|---|---|---|
-| **Core** | ✅ | YAML configs with inheritance and strict three-layer validation · registries with lazy auto-import · build-time injection · run snapshots |
-| **Data contracts** | ✅ | `Observation` / `Supervision` · `PointSet` / `PointFeatures` · `SeedSet` · `ApproachSet` · `GroupFeatures` · `GraspGroup` |
-| **Operators** | ✅ | furthest point sampling · ball and cylinder query · kNN · interpolation · grasp NMS · voxelisation · space-filling curves · view templates (pure PyTorch reference, CPU-testable) · optional compiled CPU and CUDA kernels for the four hot operators, checked against the reference on the device they run on ([details](docs/advanced_guides/operators.md)) |
-| **CLI** | ✅ `train`, `test`, `infer`, `demo`, `analyze`, `components`, `compose`, `probe`, `explore`, `sweep`, `prepare`, `print-config`, `env` · 📅 `profile` | |
-| **Datasets** | ✅ GraspNet-1Billion and GraspClutter6D readers, split manifests, content-hashed label assets (equal to the reference preprocessing on recorded frames) | |
-| **Evaluation** | ✅ GraspNet-1Billion and GraspClutter6D evaluators, result records with coverage and provenance | |
-| **Methods** | ✅ GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, Scale-Balanced-Grasp (one seed-based skeleton) and HGGD (a family of its own): each equal to its reference stage by stage with converted weights · 🚧 full-split evaluation and from-scratch reproduction · 📅 Contact-GraspNet | |
-| **Scene encoders** | ✅ compared with the official code where weights are released: sparse U-Net (spconv), SpUNet (MinkUNet-34C layout), OA-CNNs, PointNet++ (two forms), PointNeXt, PTv3, PTv3 with Concerto and Utonia weights, LitePT ([details](docs/model_zoo_backbones.md)) · ✅ usable, not compared: the other encoders of the [slot pages](docs/slots/scene_encoders.md) · every combination of encoder and method either trains or is refused at config time with the fix ([swap matrix](docs/advanced_guides/swapping.md)) | |
+</details>
 
 ## 🏆 Model zoo
 
-This table lists **targets**: numbers reported by the original authors on
-GraspNet-1Billion (RealSense, AP on seen / similar / novel), and in the last column the
-model trained here, where there is one.
-
-The first is GSNet, trained from scratch with the recipe of its config (one run, one
-seed). It scores above the paper by more than the 1 AP of the admission rule, so it is
-not certified, and why is not known: the implementation equals the public reference
-implementation stage by stage, a model trained with the reference code (on a modified
-label set) is above the paper too, and the authors' original code is not public
-([details](configs/gsnet/README.md#results-on-graspnet-1billion)). Its weights are not
-published yet. Everything else measured here is how the weights released by the authors
-score: five methods on the whole GraspNet-1Billion test split and four of them on
-GraspClutter6D, with and without collision filter, the reported number beside each. These
-`author-ckpt` numbers are in [docs/model_zoo.md](docs/model_zoo.md) with GSNet's, each
-backed by a committed result record; they are not reproductions.
+Targets: what the authors report on GraspNet-1Billion (RealSense, AP on seen / similar /
+novel), and in the last column the model trained here, where there is one.
 
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
-| GraspNet-baseline | CVPR 2020 | on | 47.47 / 42.27 / 16.61 ("In repo" row of its README) | — |
+| GraspNet-baseline | CVPR 2020 | not stated | 27.56 / 26.11 / 10.55 (paper) | — |
+| GraspNet-baseline | CVPR 2020 | on | 47.47 / 42.27 / 16.61 (repository) | — |
 | GSNet | ICCV 2021 | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
 | GSNet | ICCV 2021 | on | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
-| EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | — |
-| HGGD | RA-L 2023 | see note | 59.36 / 51.20 / 22.17 ("In paper" row of its README) · 64.45 / 53.59 / 24.59 ("In repo" row; also the arXiv version) | — |
 | Scale-Balanced-Grasp | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | — |
 | Scale-Balanced-Grasp | CoRL 2022 | on | 63.83 / 58.46 / 24.63 | — |
+| EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | — |
 | FineGrasp | arXiv 2025 | off | 71.67 / 62.83 / 27.40 | — |
 | FineGrasp | arXiv 2025 | on | 73.71 / 64.56 / 28.14 | — |
+| HGGD | RA-L 2023 | not stated | 59.36 / 51.20 / 22.17 (paper) · 64.45 / 53.59 / 24.59 (repository) | — |
 
-Note: HGGD publishes two sets of numbers and does not state the collision filter; its released test script filters collisions before dumping. Which settings separate the numbers is one of the things this toolbox is built to pin down.
+A method enters the zoo when it is trained here within 1 AP of the reported number, or with
+the gap explained. None has passed so far, so GraspPanda publishes no trained weights yet;
+the methods run from their released weights
+([Run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)).
 
-Admission rule: config + weights (sha256) + training log + result record from the pinned
-evaluator, with `|reproduced − reported| ≤ 1 AP` on each split or a documented gap.
+<details>
+<summary>Notes on these numbers</summary>
 
-## 🚀 Installation and quick start
+<br>
 
-Install PyTorch for your CUDA version first, then:
+- **GSNet** was trained here from scratch with the recipe of its config: one run, one seed.
+  It scores above the paper by more than the gate allows, and why is not known. What is
+  known: the port equals the reference implementation stage by stage, a model trained with
+  the reference code (on a modified label set) is also above the paper, and the authors'
+  original code is not public
+  ([details](https://daeda1used.github.io/GraspPanda/model_zoo/#trained-and-evaluated-here)).
+  Its weights are not published yet.
+- **The authors' released weights** of the other methods were scored on the whole test splits
+  here, with and without the collision filter. Those `author-ckpt` numbers are in the
+  [model zoo](https://daeda1used.github.io/GraspPanda/model_zoo/), each backed by a committed
+  result record. They are not reproductions.
+- **HGGD** publishes two sets of numbers and does not state the collision filter; its
+  released test script filters collisions before it saves the grasps.
+- **Admission rule:** config, weights with sha256, training log and a result record of the
+  pinned evaluator, within 1 AP on each split or with the gap documented.
 
-```bash
-git clone https://github.com/Daeda1used/GraspPanda.git
-cd GraspPanda
-pip install -e .
-```
+</details>
 
-Three commands to see the framework work, no dataset required:
+## 📰 News
 
-```bash
-grasppanda env                                                              # environment report
-grasppanda train projects/example_project/configs/toy_train.yaml            # trains a toy detector on CPU in seconds
-grasppanda print-config projects/example_project/configs/toy_detector.yaml \
-    --opts model.grouper.type=ToyDepthGrouper                               # rejected, with the reason
-```
+- **2026-10** — Swaps that train were also trained beside the component the method ships, to see whether they [train like shipped](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/).
+- **2026-10** — The documentation is rebuilt around tasks: run a method, swap a component, read the evidence.
 
-### First grasps in five minutes
+<details>
+<summary>Older news</summary>
 
-No dataset is needed for a first picture. The zoo has no weights to download yet and the
-authors' checkpoints are under their own licences, so no grasp checkpoint is downloaded for you.
-(The one exception to "nothing is fetched": an image-encoder preset with `pretrained: true`
-lets `timm`, `transformers` or `torchvision` download ImageNet-style weights on first use and
-prints one line with their licence; see [image encoders](docs/slots/image_encoders.md).)
+<br>
 
-**1. Check the installation** (no download, CPU, seconds): a toy detector, trained on the spot.
+- **2026-10** — Refusals say why: each one names its kind, and `compose` lifts the ones an adapter or a setting can fix.
+- **2026-10** — The [combination explorer](https://daeda1used.github.io/GraspPanda/explorer/): pick a method, swap a slot, read the measured record and the reason of a refusal. `grasppanda explore` serves it locally.
+- **2026-10** — Options for every slot, taken from published code and model libraries, each probed under the methods it fits.
+- **2026-10** — `grasppanda compose` builds a combination from a method config and presets; `grasppanda probe` trains it briefly on real frames.
+- **2026-10** — First public version of the rebuild. Releases up to v0.56 are an earlier, unrelated code base and stay under their tags and on the `legacy` branch.
 
-```bash
-grasppanda train projects/example_project/configs/toy_train.yaml --opts runtime.run_id=toy
-grasppanda demo  projects/example_project/configs/toy_train.yaml \
-    --weights work_dirs/toy_train/toy/checkpoints/best.pth --example
-```
-
-`--example` is a synthetic table-top scene that ships with the package. The toy's grasps
-mean nothing; the command shows that everything runs.
-
-**2. A real method.** Download an author checkpoint, convert it once, run it. Every
-method has a page that walks through it: the file, its licence, the conversion, the demo,
-the same from Python and in the browser, and a first AP on part of the benchmark, each
-with what it printed when it was measured: [GSNet](docs/methods/gsnet.md) ·
-[EconomicGrasp](docs/methods/economicgrasp.md) · [FineGrasp](docs/methods/finegrasp.md) ·
-[GraspNet-baseline](docs/methods/graspnet_baseline.md) ·
-[Scale-Balanced-Grasp](docs/methods/scale_balanced_grasp.md) · [HGGD](docs/methods/hggd.md).
-GraspNet-baseline, for example:
-
-```bash
-python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
-    --source-format graspnet-baseline --camera realsense
-grasppanda demo graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
-    --weights baseline_realsense.pth --example --collision-filter
-```
-
-It prints the best grasps and writes `grasps.npy` (GraspNet 17-column layout, camera
-frame, metres), `grasps.png` and `grasps.gif`.
-
-**3. Your camera.** A depth image and its intrinsics are enough for the point-cloud
-methods; HGGD also reads the registered colour image:
-
-```bash
-grasppanda demo <config> --weights <file> --depth depth.png --intrinsics fx,fy,cx,cy \
-    --workspace -0.25 -0.2 0.35 0.25 0.2 0.8
-```
-
-The models were trained on GraspNet-1Billion (RealSense D435 and Azure Kinect, table-top
-scenes); results on other cameras have not been measured. The same pipeline is available
-in Python as `GraspInferencer`, and `grasppanda analyze` says where the AP of an
-evaluation comes from: see [Inference and visualisation](docs/user_guides/inference.md).
-
-### Try a combination
-
-```bash
-grasppanda compose --list grouper                            # the options of a slot, one line each
-grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=ptv3 -o gsnet_ptv3.yaml
-grasppanda probe gsnet_ptv3.yaml                             # 20 iterations on real frames, then predict
-grasppanda train gsnet_ptv3.yaml
-
-# two slots at once, with options added in 2026-10 (recorded: runs)
-grasppanda compose gsnet/gsnet_sunet14_g1b-realsense_10e --set backbone=point-transformer-v2 \
-    --set grouper=cylinder-vector-attention -o gsnet_ptv2_attention.yaml
-grasppanda explore                                           # the same in a browser, checked by compose
-```
-
-`compose` writes a checked config from a method config and presets, inserts an adapter
-where the stage contracts ask for one and says so; a combination the contracts refuse is
-reported with the conflict and the fix, and a composed config can be composed again.
-`probe` ends with one verdict (`runs`, `runs-empty`, `runs-unstable`, `fails`, `refused`)
-and says what did not learn: a flat loss term, a part no gradient reached. Which
-component works under which method has been measured on real frames, not inferred: see
-[Slots](docs/slots/index.md), [Try a combination](docs/user_guides/combinations.md) and
-[Measured combinations](docs/advanced_guides/measured_combinations.md). No accuracy is
-claimed for a combination until it has been trained and evaluated.
-
-### Benchmarks
-
-With GraspNet-1Billion on disk (`export GRASPPANDA_GRASPNET1B_ROOT=...`, and the sparse
-backend: `pip install -e ".[spconv-cu118]"`):
-
-```bash
-grasppanda prepare graspnet1b --check                        # verify the dataset tree
-grasppanda prepare graspnet1b --labels                       # memory-mapped grasp labels
-grasppanda prepare graspnet1b --graspness --camera realsense # point-wise graspness labels
-grasppanda train gsnet/gsnet_sunet14_g1b-realsense_10e
-grasppanda test  gsnet/gsnet_sunet14_g1b-realsense_10e --weights <checkpoint>
-```
-
-A model trained on GraspNet-1Billion is scored on GraspClutter6D with one command (see
-[Cross-dataset evaluation](docs/user_guides/cross_dataset.md)):
-
-```bash
-grasppanda test gsnet/gsnet_sunet14_g1b-realsense-to-gc6d-d435_10e --weights <checkpoint>
-```
-
-`grasppanda components` lists what can go into each slot. Swapping the scene encoder is one
-override; an incompatible one is rejected with the reason:
-
-```bash
-grasppanda print-config gsnet/gsnet_sunet14_g1b-realsense_10e --check \
-    --opts "model.backbone={type: PTv3, in_channels: 3, grid_size: 0.005}"
-```
-
-Build a detector from a config and run it:
-
-```python
-import torch
-from grasppanda.config import Config
-from grasppanda.registry import DETECTORS
-from grasppanda.structures import Observation, PointSet, SampleKey
-
-config = Config.load("projects/example_project/configs/toy_detector.yaml")
-model = DETECTORS.build(config["model"]).eval()
-
-observation = Observation(
-    keys=[SampleKey("demo", 0, "none", 0)],
-    points=PointSet.from_dense(torch.rand(1, 2048, 3)),
-)
-grasps = model.predict(observation)[0]     # GraspGroup: translation, rotation, width, depth, score
-array = grasps.to_graspnet_array()         # (64, 17), the GraspNet interchange layout
-```
-
-The example detector is a wiring template: it is untrained and its grasps are arbitrary.
-`pip install grasppanda` arrives with the first release.
+</details>
 
 ## 🧭 Roadmap
 
-- [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs skeleton, brand.
-- [ ] **M1 — GraspNet-1Billion, evaluator, GSNet.** ✅ Evaluator agrees with the official API value for value. ✅ GSNet equals the reference implementation stage by stage with converted weights. ✅ Trained from scratch and scored on the whole test split (1.2 to 7.5 AP above the paper). 🚧 The gap is not explained; the weights are not published.
-- [ ] **M2 — EconomicGrasp and HGGD.** A second method of the same family, and one that deliberately does not fit it. ✅ Both equal their reference stage by stage with the authors' weights. 🚧 Full-split evaluation and training.
-- [ ] **M3 — Scale-Balanced-Grasp, GraspNet-baseline, FineGrasp.** First controlled comparison table: same backbone, same budget, same inputs, same evaluator. ✅ All three equal their reference stage by stage with the authors' weights. 📅 The table.
-- [ ] **M4 — GraspClutter6D and Contact-GraspNet.** ✅ Reader, evaluator (equal to the official tool on 254 recorded frames), label assets, transfer configs for five methods (checked on a 312-frame subset). 📅 Full-split transfer table, training on GraspClutter6D, Contact-GraspNet.
+<details>
+<summary>Milestones</summary>
+
+<br>
+
+- [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
+- [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** ✅ Evaluator equal to the official one. ✅ GSNet equal to its reference stage by stage, trained here and scored on the whole test split. 🚧 Its gap to the paper is not explained; its weights are not published.
+- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** ✅ EconomicGrasp and HGGD equal to their reference stage by stage with the authors' weights. 🚧 Training here.
+- [ ] **M3 — The other seed-based methods.** ✅ GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal to their reference. 📅 A controlled comparison: same encoder, budget, inputs and evaluator.
+- [ ] **M4 — GraspClutter6D.** ✅ Reader, evaluator equal to the official one, label assets, transfer configs. 📅 Training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.
 
-## 📚 Tutorials
-
-- [Configuration guide](docs/user_guides/config.md): inheritance, the merge rules, overrides, validation.
-- [Slots](docs/slots/index.md): the task of every stage, its options and which fits which method.
-- [Try a combination](docs/user_guides/combinations.md): catalogue, compose, probe, train.
-- [Add a component](docs/advanced_guides/add_component.md): register a backbone or a head bundle without forking.
-- [Data contracts](docs/advanced_guides/data_flow.md): what each stage receives and returns.
-- [Architecture](docs/design/ARCHITECTURE.md): the full design, with the evidence behind each decision.
+</details>
 
 ## 📝 Citation
 
-If GraspPanda helps your research, please cite it:
+<details>
+<summary>BibTeX</summary>
 
 ```bibtex
 @software{grasppanda,
@@ -376,6 +245,8 @@ If GraspPanda helps your research, please cite it:
 
 Please also cite the methods and datasets you use; each method page lists its reference.
 
+</details>
+
 ## 🙏 Acknowledgements
 
 GraspPanda borrows ideas from [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg),
@@ -383,15 +254,16 @@ GraspPanda borrows ideas from [PaddleSeg](https://github.com/PaddlePaddle/Paddle
 [Detectron2](https://github.com/facebookresearch/detectron2) and
 [Pointcept](https://github.com/Pointcept/Pointcept), and builds on the
 [GraspNet-1Billion](https://graspnet.net) and
-[GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) benchmarks
-and on the authors of the methods it reproduces. The methods and the evaluators are written
-from the papers and from behavioural study of the reference code; no source file of those
-repositories is copied. Some other components are adapted from code under the MIT, BSD or
-Apache-2.0 licence, each listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) with
-repository, commit and licence, and components that bridge to an optional library contain
-none of its code ([CONTRIBUTING.md](CONTRIBUTING.md), [NOTICE](NOTICE)).
+[GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) benchmarks and
+the authors of the methods it ports. Methods and evaluators are written from the papers and
+from the behaviour of the reference code; no file of those repositories is copied. Code
+adapted from MIT, BSD or Apache-2.0 projects is listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); [NOTICE](NOTICE) says how the datasets,
+upstream code and released weights are licensed.
+
+🐼 *The panda is the animal, not the robot arm: GraspPanda is not tied to any robot.*
 
 ## 📄 License
 
-GraspPanda is released under the [Apache License 2.0](LICENSE). Datasets, upstream
-repositories and released weights keep their own licences, recorded per method.
+[Apache License 2.0](LICENSE). Datasets, upstream repositories and released weights keep
+their own licences, stated per method.

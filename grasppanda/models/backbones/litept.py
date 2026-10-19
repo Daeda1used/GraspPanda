@@ -347,7 +347,8 @@ class LitePT(Backbone):
     of four unpooling steps without blocks, patches of 1024 voxels, all four curves,
     0.02 m voxels, 6 input channels (colour and normal) and 72 output channels;
     12.7 M parameters. ``docs/model_zoo_backbones.md`` lists the other published sizes.
-    For tabletop clouds a finer grid is usual (GSNet voxelises at 0.005 m).
+    For tabletop clouds a finer grid is usual (GSNet, EconomicGrasp and FineGrasp
+    voxelise at 0.005 m).
 
     The strides and the grid size decide what attention sees: with the defaults, voxels
     of ``8 * grid_size`` and ``16 * grid_size``. PointROPE reads positions in units of

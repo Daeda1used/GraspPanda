@@ -9,7 +9,9 @@ add.
 
 from __future__ import annotations
 
+import importlib.util
 import re
+import sys
 
 import pytest
 
@@ -37,8 +39,9 @@ def difference(measured: str, reported: str) -> str:
 
 
 def table_under(page: str, heading: str) -> list[list[str]]:
-    """The cells of the first Markdown table below ``heading``, without the two header lines."""
-    lines = page[page.index(heading) :].splitlines()
+    """The cells of the first Markdown table below ``heading``, without the two header lines
+    (a table may be indented, inside a fold)."""
+    lines = [line.strip() for line in page[page.index(heading) :].splitlines()]
     start = next(index for index, line in enumerate(lines) if line.startswith("|"))
     rows = []
     for line in lines[start:]:
@@ -197,7 +200,7 @@ def reproduced_by_target() -> dict[tuple[str, bool], str]:
     [
         ("docs/model_zoo.md", "## Targets"),
         ("README.md", "## 🏆 Model zoo"),
-        ("README_zh-CN.md", "## 🏆 Model zoo"),
+        ("README_zh-CN.md", "## 🏆 模型库"),
     ],
 )
 def test_the_reproduced_column_of_the_targets_shows_exactly_the_reproduced_rows(page, heading):
@@ -217,7 +220,8 @@ def test_the_zoo_page_says_how_each_reproduction_stands_against_the_admission_ru
     assert "Gate: `|reproduced − reported| ≤ 1.0 AP` on each of seen / similar / novel" in page
     assert "No method has been trained and evaluated here" not in page
     assert "provenance `author-ckpt`; they are not reproductions" in page
-    section = page[page.index("## Trained and evaluated here") : page.index("## Authors'")]
+    start = page.index("## Trained and evaluated here")
+    section = page[start : page.index("\n## ", start + 1)]
     for meta, model, result in MEASURED:
         if result.provenance != "reproduced" or model.protocol != "graspnet1b-sv-v1":
             continue
@@ -233,5 +237,63 @@ def test_the_zoo_page_says_how_each_reproduction_stands_against_the_admission_ru
             assert "**Against the admission gate.**" in section, meta.method
         if not model.weights.published:
             assert "**The weights are not published yet.**" in section, meta.method
-            opening = " ".join(page[: page.index("## Admission gate")].split())
+            opening = " ".join(page[: page.index("\n## ")].split())
             assert "weights are not published yet" in opening, meta.method
+
+
+def test_the_zoo_page_opens_with_each_method_under_the_provenance_of_its_numbers():
+    """The opening names, per measured provenance, exactly the methods with rows of it."""
+    page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
+    opening = page[: page.index("\n## ")]
+    methods = {meta.method for meta in METAFILES}
+    wanted: dict[str, set[str]] = {}
+    for meta, _, result in MEASURED:
+        wanted.setdefault(result.provenance, set()).add(meta.method)
+    for provenance, named in wanted.items():
+        item = next(part for part in opening.split("\n- ") if f"(`{provenance}`)" in part)
+        assert {method for method in methods if method in item} == named, provenance
+
+
+#: The encoders' page: the status of an encoder in its table → the words of the summary
+#: above it (the same mapping as the evidence card, tools/make_combination_docs.py).
+ENCODER_SUMMARY = {
+    "`weights-verified`": "Weights verified",
+    "`tested` + parity": "Compared on synthetic weights",
+    "`tested`": "Unit-tested only",
+}
+
+
+def _tool(name: str):
+    """A module of ``tools/``, loaded by path (the directory is not a package on sys.path)."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, REPO / "tools" / f"{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_the_encoders_page_says_how_far_each_encoder_was_checked_from_its_own_table():
+    """The summary above the table names, per depth of evidence, exactly the encoders of
+    that status and their number: released weights loaded (weights-verified), outputs
+    compared on synthetic weights (+ parity), unit tests only (tested). The evidence card
+    counts the same table."""
+    page = (REPO / "docs" / "model_zoo_backbones.md").read_text(encoding="utf-8")
+    rows = table_under(page, "## The encoders and how each was checked")
+    by_status: dict[str, list[str]] = {}
+    for row in rows:
+        by_status.setdefault(row[3], []).append(row[0].strip("`"))
+    assert set(by_status) == set(ENCODER_SUMMARY), set(by_status)
+    opening = page[: page.index("\n## ")]
+    items = [" ".join(item.split()) for item in opening.split("\n- ")[1:]]
+    for status, words in ENCODER_SUMMARY.items():
+        names = by_status[status]
+        item = next(item for item in items if item.startswith(f"**{words}** ({len(names)}):"))
+        listed = item.split(":", 1)[1].split(". ")[0]
+        assert re.findall(r"`([^`]+)`", listed) == names, status
+    # Strict loading of released weights is claimed for the weights-verified rows only.
+    assert "load strictly" not in opening.split("\n- ")[0]
+    generator = _tool("make_combination_docs")
+    assert generator.encoder_checks() == {s: by_status[s] for s in generator.ENCODER_CHECKS}
+    assert {s: words for s, (words, _) in generator.ENCODER_CHECKS.items()} == ENCODER_SUMMARY

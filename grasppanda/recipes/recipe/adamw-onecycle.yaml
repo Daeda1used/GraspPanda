@@ -5,6 +5,8 @@
 # OneCycleLR with pct_start 0.05, div_factor 10, final_div_factor 1000, mixed precision on. Mixed
 # precision is left off here (`--set hooks=amp` adds it).
 #
+# Source: Pointcept's PTv3 recipe.
+#
 # What must be re-tuned, and why:
 # * lr and max_lr: 1e-3 instead of Pointcept's 6e-3, which belongs to batches of 12 rooms; keep
 #   the two equal.

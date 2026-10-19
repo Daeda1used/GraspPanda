@@ -133,7 +133,8 @@ class SpUNet(Backbone):
     The defaults are the published ScanNet semantic-segmentation model
     (``semseg-spunet-v1m1-0-base``, 39.2 M parameters): 0.02 m voxels, 6 input channels
     (colour and normal), four stages down and four up, and a 20-channel output. For
-    tabletop clouds a finer grid is usual (GSNet voxelises at 0.005 m).
+    tabletop clouds a finer grid is usual (GSNet, EconomicGrasp and FineGrasp voxelise
+    at 0.005 m).
 
     Args:
         in_channels: Feature channels per point.

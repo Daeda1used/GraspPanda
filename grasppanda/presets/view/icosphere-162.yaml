@@ -6,8 +6,9 @@
 #
 # What must be re-tuned, and why:
 # * subdivisions: 2. Levels 0 to 4 give 12, 42, 162, 642, 2562 views.
-# * loss weight: 100 is GSNet's, tuned against the other loss terms of GSNet; no AP has been
-#   measured for this stage under any method.
+# * loss weight: 100, as GSNet, EconomicGrasp and FineGrasp ship it (GraspNet-baseline and
+#   Scale-Balanced-Grasp ship 1, with MSE): under those two it changes the balance of the
+#   loss terms. No AP has been measured for this stage under any method.
 # * label_views: 300 is the lattice the label files are indexed by. The stage ties every
 #   view of its own lattice to the nearest of those 300; it does not create finer labels.
 # * max_friction: 0.6 must equal the value compact labels were encoded with
@@ -17,7 +18,7 @@ model:
     type: IcosphereViewStage
     subdivisions: 2               # 162 views
     hemisphere: false
-    target: score                 # regress a score per view (GSNet)
+    target: score                 # regress a score per view (GSNet, EconomicGrasp, FineGrasp)
     selection: argmax             # evaluation mode: the best view
     train_selection: multinomial  # training mode: draw a view from the scores
     top_k: null

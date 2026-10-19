@@ -13,8 +13,9 @@
 # * output: 1386 channels, the five encoder stages concatenated (`enc_mode: true`, no
 #   decoder). Proposal, view stage and grouper are built that wide; `enc_mode: false`
 #   adds a decoder with 54 output channels.
-# * grid_size: 0.005 m, GSNet's (the class default is 0.01 m). The rotary embedding
-#   encodes positions in grid cells, so the grid is part of what the attention sees.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp (the class default
+#   is 0.01 m). The rotary embedding encodes positions in grid cells, so the grid is part
+#   of what the attention sees.
 # * in_channels: 3 constant ones, as the base methods feed them.
 # * optimizer and schedule: the base method's, tuned for its own encoder.
 model:

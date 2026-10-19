@@ -1,6 +1,6 @@
 """``grasppanda probe``: check in about a minute that a config really trains and predicts.
 
-    grasppanda probe experimental/gsnet_ptv3_g1b-realsense_10e
+    grasppanda probe experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e
     grasppanda probe my_config.yaml --iters 20 --frames 8 --json
 
 The probe builds the detector and the data pipeline of the config, trains a few
@@ -84,9 +84,10 @@ later losses, seed fractions and grasp counts differ from run to run, and a comb
 near the edge can be `runs` in one probe and `runs-unstable` (or `runs-empty`) in the next.
 
 examples:
-  grasppanda probe gsnet/gsnet_sunet14_g1b-realsense_10e
+  grasppanda probe graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e
   grasppanda probe my_config.yaml --iters 20 --frames 8 --json
   grasppanda probe finegrasp/finegrasp_sunet14_g1b-realsense_10e --schedule constant
+  grasppanda probe hggd/hggd_r34w8_g1b-realsense_15e --synthetic --device cpu
 """
 
 
@@ -108,7 +109,7 @@ def register(commands: Any) -> None:
         "probe",
         help="train a few iterations on real frames and predict: does this config run?",
         description=(
-            "Build the detector, train a few iterations on real frames, predict, and report "
+            "Build the detector, train a few iterations on real frames, predict, and report\n"
             "one verdict: runs, runs-empty, runs-unstable, fails, refused or wired."
         ),
         epilog=EPILOG,

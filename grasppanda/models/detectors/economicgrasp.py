@@ -1,6 +1,7 @@
 """EconomicGrasp: An Economic Framework for 6-DoF Grasp Detection (ECCV 2024).
 
-The method as a configuration of registered stages; the first four are GSNet's:
+The method as a configuration of registered stages; the first three are those of GSNet,
+which EconomicGrasp builds on:
 
 =============  ============================  ============================================
 slot           reference component           what it does

@@ -1,7 +1,7 @@
 # Out-of-tree example: `grasppanda print-config projects/example_project/configs/toy_detector.yaml --check`
 _base_:                           # shipped building blocks, found from any directory
   - _base_/default_runtime.yaml
-  - _base_/schedules/gsnet_10e.yaml
+  - _base_/schedules/adam_10e.yaml
 
 custom_imports:
   - ../toy_components.py          # a .py path is resolved relative to this file
