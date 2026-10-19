@@ -1,19 +1,21 @@
 """Convert an upstream checkpoint into a GraspPanda state dict.
 
-Supported sources:
+``--source-format`` names the implementation that wrote the file; it is required, because
+two methods release a file of the same name (``checkpoint-rs.tar``):
 
-``graspness-unofficial``
-    The GraspNet of ``graspnet/graspness_unofficial`` (MinkowskiEngine backbone, e.g. the
-    authors' ``checkpoint-rs.tar``), converted for ``configs/_base_/models/gsnet.yaml``.
 ``graspnet-baseline``
     The GraspNet of ``graspnet/graspnet-baseline`` (PointNet++ backbone, e.g. the authors'
     ``checkpoint-rs.tar``), converted for ``configs/_base_/models/graspnet_baseline.yaml``.
+``graspness-unofficial``
+    GSNet: the GraspNet of ``graspnet/graspness_unofficial`` (MinkowskiEngine backbone,
+    e.g. the authors' ``minkuresunet_realsense.tar``), converted for
+    ``configs/_base_/models/gsnet.yaml``.
 ``scale-balanced-grasp``
     The ``GraspNet_MSCQ`` of ``mahaoxiang822/Scale-Balanced-Grasp`` (the baseline layout
-    with attention blocks and one crop module per radius), converted for
-    ``configs/_base_/models/scale_balanced_grasp.yaml``.
+    with attention blocks and one crop module per radius, e.g. the authors'
+    ``checkpoint-rs.tar``), converted for ``configs/_base_/models/scale_balanced_grasp.yaml``.
 ``economicgrasp``
-    The network of ``iSEE-Laboratory/EconomicGrasp`` (same backbone, e.g. the authors'
+    The network of ``iSEE-Laboratory/EconomicGrasp`` (the GSNet backbone, e.g. the authors'
     ``economicgrasp_kinect.tar``), converted for
     ``configs/_base_/models/economicgrasp.yaml``.
 ``finegrasp``
@@ -23,21 +25,24 @@ Supported sources:
     ``configs/_base_/models/finegrasp.yaml``.
 ``hggd``
     The two networks and the learned rotation anchors of ``THU-VCLab/HGGD`` (e.g. the
-    authors' ``checkpoint-realsense.tar``: keys ``anchor``, ``local``, ``gamma``,
+    authors' ``HGGD_realsense_checkpoint``: keys ``anchor``, ``local``, ``gamma``,
     ``beta``), converted for ``configs/_base_/models/hggd.yaml``. The optimizer state in
     the file is not a model tensor and is left behind.
 
-    python -m tools.convert_checkpoint checkpoint-rs.tar gsnet_realsense.pth --camera realsense
+The commands of the model zoo (``convert`` in ``configs/<method>/metafile.yaml``)::
+
     python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
         --source-format graspnet-baseline --camera realsense
+    python -m tools.convert_checkpoint minkuresunet_realsense.tar gsnet_realsense.pth \
+        --source-format graspness-unofficial --camera realsense
     python -m tools.convert_checkpoint checkpoint-rs.tar sbg_realsense.pth \
         --source-format scale-balanced-grasp --camera realsense
-    python -m tools.convert_checkpoint economicgrasp_kinect.tar economicgrasp_kinect.pth \
-        --source-format economicgrasp --camera kinect
-    python -m tools.convert_checkpoint checkpoint-realsense.tar hggd_realsense.pth \
-        --source-format hggd --camera realsense
+    python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
+        --source-format economicgrasp --camera realsense
     python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
         finegrasp_realsense.pth --source-format finegrasp --camera realsense
+    python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth \
+        --source-format hggd --camera realsense
 
 What the conversion does, and nothing else:
 
@@ -77,6 +82,7 @@ from torch import Tensor
 from grasppanda.ops.sparse import convert_minkowski_kernel
 
 __all__ = [
+    "FORMAT_METHODS",
     "SOURCE_FORMATS",
     "ConversionError",
     "build_parser",
@@ -595,13 +601,15 @@ def _model_state(convert):
     return lambda checkpoint: convert(checkpoint.get("model_state_dict", checkpoint))
 
 
-#: Source format → (converter of the loaded file, config the weights are converted for).
+#: Source format → (converter of the loaded file, config the weights are converted for), in
+#: the order of the methods (GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp,
+#: FineGrasp, HGGD).
 SOURCE_FORMATS = {
-    "graspness-unofficial": (_model_state(convert_graspness_reference), "_base_/models/gsnet.yaml"),
     "graspnet-baseline": (
         _model_state(convert_graspnet_baseline),
         "_base_/models/graspnet_baseline.yaml",
     ),
+    "graspness-unofficial": (_model_state(convert_graspness_reference), "_base_/models/gsnet.yaml"),
     "scale-balanced-grasp": (
         _model_state(convert_scale_balanced_grasp),
         "_base_/models/scale_balanced_grasp.yaml",
@@ -612,6 +620,17 @@ SOURCE_FORMATS = {
     ),
     "finegrasp": (_model_state(convert_finegrasp_reference), "_base_/models/finegrasp.yaml"),
     "hggd": (convert_hggd_reference, "_base_/models/hggd.yaml"),
+}
+
+
+#: Source format → the method whose released weights it reads.
+FORMAT_METHODS = {
+    "graspnet-baseline": "GraspNet-baseline",
+    "graspness-unofficial": "GSNet",
+    "scale-balanced-grasp": "Scale-Balanced-Grasp",
+    "economicgrasp": "EconomicGrasp",
+    "finegrasp": "FineGrasp",
+    "hggd": "HGGD",
 }
 
 
@@ -652,20 +671,21 @@ def convert_file(
     source: Path,
     config: str | None = None,
     *,
+    source_format: str,
     camera: str | None = None,
-    source_format: str = "graspness-unofficial",
 ) -> tuple[dict[str, Tensor], dict[str, Any]]:
     """Convert a checkpoint file; returns the state dict and its provenance record.
 
-    ``config`` defaults to the reference model config of ``source_format``.
+    ``source_format`` (a key of :data:`SOURCE_FORMATS`) has no default: two methods release
+    a file of the same name. ``config`` defaults to the reference model config of
+    ``source_format``.
     """
     from grasppanda.config import Config
     from grasppanda.registry import DETECTORS
 
     if source_format not in SOURCE_FORMATS:
         raise ConversionError(
-            f"unknown source format '{source_format}'; "
-            f"supported: {', '.join(sorted(SOURCE_FORMATS))}"
+            f"unknown source format '{source_format}'; supported: {', '.join(SOURCE_FORMATS)}"
         )
     convert, default_config = SOURCE_FORMATS[source_format]
     config = config or default_config
@@ -703,9 +723,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("destination", type=Path, help="where to write the converted file")
     parser.add_argument(
         "--source-format",
-        choices=sorted(SOURCE_FORMATS),
-        default="graspness-unofficial",
-        help="which upstream implementation produced the checkpoint",
+        choices=list(SOURCE_FORMATS),
+        required=True,
+        help="which upstream implementation produced the checkpoint: "
+        + ", ".join(f"{name} ({method})" for name, method in FORMAT_METHODS.items()),
     )
     parser.add_argument(
         "--config",

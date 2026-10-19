@@ -658,8 +658,9 @@ def test_converter_command_writes_weights_with_provenance(tmp_path, capsys):
     DETECTORS.build(Config.load(MODEL_YAML)["model"]).load_state_dict(
         saved["state_dict"], strict=True
     )
-    # Without the format the file is read as a Graspness checkpoint, which it is not.
-    assert converter.main([str(source), str(tmp_path / "never.pth")]) == 1
+    # With GSNet's format the file is read as a Graspness checkpoint, which it is not.
+    wrong = ["--source-format", "graspness-unofficial"]
+    assert converter.main([str(source), str(tmp_path / "never.pth"), *wrong]) == 1
     assert "conversion failed" in capsys.readouterr().err and not (tmp_path / "never.pth").exists()
     with pytest.raises(converter.ConversionError, match="unknown source format 'no-such'"):
         converter.convert_file(source, source_format="no-such")

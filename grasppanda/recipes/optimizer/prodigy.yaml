@@ -6,8 +6,9 @@
 # What must be re-tuned, and why:
 # * lr: leave it at 1.0, it multiplies the estimated step size; the estimate grows during the
 #   first few hundred steps, so a short probe moves the weights little.
-# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
-#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+# * the method's own schedule stays (it differs per method:
+#   `grasppanda compose <method config> --list schedule` shows it); set one with
+#   `--set schedule=...` when the optimizer's paper assumes warm-up or a cosine.
 optimizer:
   type: PytorchOptimizer
   name: prodigy

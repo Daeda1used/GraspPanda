@@ -8,7 +8,7 @@
 #   grasppanda test  hggd/hggd_r34w8_g1b-realsense_15e --weights <checkpoint>
 #
 # The authors' checkpoint, converted with
-#   python -m tools.convert_checkpoint checkpoint-realsense.tar hggd_realsense.pth \
+#   python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth \
 #       --source-format hggd --camera realsense
 # loads into this config unchanged.
 #

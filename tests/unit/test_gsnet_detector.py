@@ -1,9 +1,11 @@
-"""GSNet end to end on tiny inputs: config validation, contracts between slots,
-loss and predict, padding, replay hooks, and the checkpoint converter."""
+"""GSNet on tiny inputs: its shipped config, its own loss terms and decoding, the
+reference size and the checkpoint converter.
+
+The properties of the seed-based skeleton GSNet is built on are tested under every
+seed-based method in tests/unit/test_all_methods_skeleton.py."""
 
 from __future__ import annotations
 
-import copy
 import importlib.util
 import math
 from collections.abc import Iterator
@@ -13,10 +15,9 @@ import torch
 from torch import Tensor, nn
 
 from grasppanda.cli.main import main
-from grasppanda.config import Config, ConfigError
+from grasppanda.config import Config
 from grasppanda.models import Backbone, Grouper
 from grasppanda.models.detectors.gsnet import GSNet
-from grasppanda.models.detectors.seed_based import SeedGraspDetector
 from grasppanda.ops import approach_to_rotation
 from grasppanda.registry import (
     BACKBONES,
@@ -26,10 +27,8 @@ from grasppanda.registry import (
     INJECTED,
     PROPOSALS,
     VIEWS,
-    BuildError,
 )
 from grasppanda.structures import (
-    ContractError,
     Gripper,
     GroupFeatures,
     ObjectGraspLabels,
@@ -79,18 +78,6 @@ class GSNetUnitDenseBackbone(Backbone):
         return PointFeatures(self.mlp(torch.cat([points.coords, feats], dim=1)), points)
 
 
-@BACKBONES.register()
-class GSNetUnitSubsampledBackbone(GSNetUnitDenseBackbone):
-    """Returns features on every second point, like a set-abstraction backbone."""
-
-    output = "subsampled"
-
-    def forward(self, points: PointSet, feats: Tensor) -> PointFeatures:
-        keep = torch.arange(0, len(points), 2)
-        dense = super().forward(points, feats).feats
-        return PointFeatures(dense[keep], points.subset(keep, points.batch_offsets // 2))
-
-
 @GROUPERS.register()
 class GSNetUnitDepthGrouper(Grouper):
     """Declares a depth axis that the SWAD head does not accept."""
@@ -106,24 +93,6 @@ class GSNetUnitDepthGrouper(Grouper):
         return GroupFeatures(
             support.feats[:, None, :].expand(-1, self.num_depth, -1), self.out_axes
         )
-
-
-@GROUPERS.register()
-class GSNetUnitSceneGrouper(Grouper):
-    """Groups over the scene cloud: remembers what it was handed."""
-
-    support = "scene"
-    out_axes = ("seed", "channel")
-
-    def __init__(self, in_channels: int = INJECTED) -> None:
-        super().__init__()
-        self.out_channels = in_channels
-        self.received: PointFeatures | None = None
-
-    def forward(self, support: PointFeatures, centres: Tensor, rotation: Tensor) -> GroupFeatures:
-        self.received = support
-        pooled = support.feats.mean(dim=0, keepdim=True).expand(len(centres), -1)
-        return GroupFeatures(pooled, self.out_axes)
 
 
 # ------------------------------------------------------------------------ helpers
@@ -257,175 +226,24 @@ def test_the_shipped_config_states_exactly_the_component_defaults():
             assert default.beta == node["beta"]
 
 
-@pytest.mark.parametrize(
-    ("slot", "replacement", "fragments"),
-    [
-        (
-            "backbone",
-            {"type": "GSNetUnitSubsampledBackbone"},
-            (
-                "GraspnessFPS requires 'dense' scene features",
-                "GSNetUnitSubsampledBackbone",
-                "sub-sampled",
-            ),
-        ),
-        (
-            "grouper",
-            {"type": "GSNetUnitDepthGrouper"},
-            (
-                "emits features with axes ('seed', 'depth', 'channel')",
-                "SWADHead expects ('seed', 'channel')",
-            ),
-        ),
-    ],
-)
-def test_incompatible_slots_are_config_errors_before_anything_is_built(
-    slot, replacement, fragments
-):
-    with pytest.raises(ConfigError) as error:
-        Config.from_dict({"model": tiny_config(**{slot: replacement})})
-    (issue,) = error.value.issues
-    assert issue.path == "model"
-    for fragment in fragments:
-        assert fragment in issue.message
+# ---------------------------------------------------------------- what is GSNet's
+# The properties of the skeleton (refusals at the config check and at build time, what the
+# children receive, loss and predict, padding, crops at the labelled frames, the input
+# features, scene support, malformed input) are tested under every seed-based method in
+# tests/unit/test_all_methods_skeleton.py. What follows is GSNet's own.
 
 
-def test_incompatible_prebuilt_components_fail_at_build_time():
-    with pytest.raises(ContractError, match="requires 'dense' scene features"):
-        DETECTORS.build(tiny_config(backbone=GSNetUnitSubsampledBackbone(out_channels=16)))
-    with pytest.raises(ContractError, match=r"SWADHead expects \('seed', 'channel'\)"):
-        DETECTORS.build(tiny_config(grouper=GSNetUnitDepthGrouper(in_channels=16)))
-
-
-def test_children_receive_what_the_parent_knows_and_conflicts_are_errors():
-    model = tiny_model()
-    assert isinstance(model, SeedGraspDetector) and model.required_inputs == frozenset({"points"})
-    assert model.proposal.in_channels == model.view.in_channels == 16
-    assert (
-        model.grouper.in_channels == 16
-        and model.head.in_channels == model.grouper.out_channels == 8
-    )
-    assert model.assigner.template is model.view.template  # one template, shared
-    assert model.head.gripper is model.gripper and model.gripper == Gripper()
-    with pytest.raises(BuildError, match="in the config, but the parent component provides 8"):
-        DETECTORS.build(tiny_config(head={"type": "SWADHead", "in_channels": 32}))
-    custom = DETECTORS.build(tiny_config(gripper={"max_width": 0.08}))  # config nodes are mappings
-    assert custom.gripper.max_width == 0.08 and custom.head.gripper is custom.gripper
-
-
-# --------------------------------------------------------------------- loss, predict
-
-
-def test_loss_reports_weighted_stage_losses_and_backpropagates_everywhere():
+def test_gsnet_reports_its_five_terms_and_decodes_every_seed_in_two_depth_bins():
     model = tiny_model().train()
     observation, supervision = batch()
     losses = model.loss(observation, supervision)
     expected = {"loss/objectness", "loss/graspness", "loss/view", "loss/score", "loss/width"}
     assert {key for key in losses if key.startswith("loss/")} == expected
-    assert all(value.ndim == 0 and torch.isfinite(value) for value in losses.values())
     assert losses["metric/supervised_seeds"].item() == 1.0
-    sum(value for key, value in losses.items() if key.startswith("loss/")).backward()
-    for name, parameter in model.named_parameters():
-        assert parameter.grad is not None and torch.isfinite(parameter.grad).all(), name
-    # forward(observation, supervision) is loss(); forward(observation) is predict()
-    assert set(model(observation, supervision)) == set(losses)
-
-
-def test_predict_returns_one_valid_group_per_frame_and_never_sees_labels():
-    model = tiny_model().eval()
-    observation, _ = batch()
-    grasps = model.predict(observation)
-    assert len(grasps) == 2 and [g.key for g in grasps] == observation.keys
-    cloud = observation.points.dense()
-    for frame, group in enumerate(grasps):
+    grasps = model.eval().predict(observation)
+    for group in grasps:
         assert len(group) == SEEDS and group.score_kind == "predicted_quality"
-        assert group.frame == "camera" and group.gripper == Gripper()
-        array = group.validate().to_graspnet_array()
-        assert array.shape == (SEEDS, 17)
-        assert (group.width >= 0).all() and (group.width <= 0.1).all()
         assert set((group.depth * 100).round().int().tolist()) <= {1, 2}  # two depth bins
-        offset = (group.translation[:, None, :] - cloud[frame][None, :, :]).abs().amax(dim=-1)
-        assert offset.min(dim=1).values.max() == 0  # every grasp sits on a point of its own frame
-    again = model.predict(observation)
-    assert torch.equal(grasps[0].score, again[0].score)  # eval mode: no sampling
-    assert not grasps[0].score.requires_grad and isinstance(model(observation), list)
-
-
-def test_padded_and_missing_seeds_are_never_emitted():
-    model = tiny_model().eval()
-    observation, _ = batch()
-    chosen = torch.zeros(2 * POINTS, dtype=torch.bool)
-    chosen[[3, 11, 27, 40, 59]] = True  # five candidates in frame 0, none in frame 1
-    model.proposal.candidates = lambda scores: chosen
-    out = model.run_stages(observation)
-    assert len(out.seeds) == 2 * SEEDS and out.seeds.valid.sum() == 5  # tensors stay dense
-    first, second = model.decode(out, observation)
-    assert len(first) == 5 and len(second) == 0 and second.key == observation.keys[1]
-    assert sorted(first.translation.tolist()) == sorted(observation.points.coords[chosen].tolist())
-    assert second.to_graspnet_array().shape == (0, 17)  # an empty prediction is a valid result
-
-
-def test_training_crops_use_label_frames_and_inference_the_template():
-    model = tiny_model().train()
-    observation, supervision = batch()
-    seed_index = torch.stack([torch.arange(SEEDS), POINTS + torch.arange(SEEDS)])
-    views = torch.arange(2 * SEEDS) % VIEW_COUNT
-    with_labels = model.run_stages(
-        observation, supervision, seed_index=seed_index, view_index=views
-    )
-    without = model.run_stages(observation, seed_index=seed_index, view_index=views)
-    assert torch.equal(with_labels.seeds.points.parent_index, seed_index.reshape(-1))
-    assert torch.equal(with_labels.approach.view_index, views) and without.matched is None
-    assert with_labels.seeds.source == "replayed"
-    matched = with_labels.matched
-    assert not torch.allclose(
-        matched.crop_rotation, with_labels.approach.rotation
-    )  # object pose applied
-    assert torch.equal(matched.crop_centre, with_labels.seeds.points.coords)
-    support = PointFeatures(with_labels.seeds.feats, with_labels.seeds.points)
-    expected = model.grouper(support, matched.crop_centre, matched.crop_rotation).feats
-    assert torch.allclose(with_labels.groups.feats, expected, atol=1e-6)
-    assert not torch.allclose(with_labels.groups.feats, without.groups.feats)
-
-
-def test_input_feature_policy_is_explicit():
-    observation, _ = batch()
-    ones = tiny_model().eval()
-    seen = []
-    ones.backbone.register_forward_pre_hook(lambda _module, args: seen.append(args[1]))
-    ones.predict(observation)
-    assert torch.equal(seen[0], torch.ones(2 * POINTS, 3))  # geometry only
-
-    given = tiny_model(point_features="observation").eval()
-    assert given.required_inputs == frozenset({"points", "point_feats"})
-    with pytest.raises(ContractError, match="observation.point_feats is missing"):
-        given.predict(observation)
-    observation.point_feats = torch.rand(2 * POINTS, 3)
-    assert len(given.predict(observation)) == 2
-    with pytest.raises(ValueError, match="unknown point_features"):
-        DETECTORS.build(tiny_config(point_features="rgb"))
-
-
-def test_a_scene_support_grouper_is_handed_the_scene_features():
-    model = tiny_model(grouper={"type": "GSNetUnitSceneGrouper"}).eval()
-    observation, _ = batch()
-    out = model.run_stages(observation)
-    received = model.grouper.received
-    assert received.points is observation.points and received.feats.shape == (2 * POINTS, 16)
-    assert torch.equal(received.feats, out.feats.feats)
-
-
-def test_malformed_observations_and_duplicate_loss_keys_are_refused():
-    model = tiny_model().eval()
-    observation, supervision = batch()
-    with pytest.raises(ContractError, match="needs observation.points"):
-        model.predict(Observation(keys=observation.keys))
-    with pytest.raises(ContractError, match=r"1 sample key\(s\) for a batch of 2"):
-        model.predict(Observation(keys=observation.keys[:1], points=observation.points))
-    clashing = copy.deepcopy(model)
-    clashing.view.loss = lambda approach, matched: {"loss/objectness": torch.zeros(())}
-    with pytest.raises(ContractError, match=r"reports \['loss/objectness'\], which another stage"):
-        clashing.loss(observation, supervision)
 
 
 # ------------------------------------------------------------- the reference model
@@ -601,7 +419,8 @@ def test_converter_command_writes_weights_with_provenance(tmp_path, capsys):
     source = tmp_path / "reference.tar"
     torch.save({"epoch": 10, "model_state_dict": reference_state()}, source)
     destination = tmp_path / "out" / "gsnet.pth"
-    assert converter.main([str(source), str(destination), "--camera", "realsense"]) == 0
+    gsnet = ["--source-format", "graspness-unofficial"]
+    assert converter.main([str(source), str(destination), *gsnet, "--camera", "realsense"]) == 0
     assert "216 tensors, 15,353,775 parameters" in capsys.readouterr().out
     saved = torch.load(destination, map_location="cpu", weights_only=True)
     assert set(saved) == {"state_dict", "meta"}
@@ -615,5 +434,5 @@ def test_converter_command_writes_weights_with_provenance(tmp_path, capsys):
 
     broken = tmp_path / "broken.tar"
     torch.save({"model_state_dict": {"nonsense": torch.zeros(1)}}, broken)
-    assert converter.main([str(broken), str(tmp_path / "never.pth")]) == 1
+    assert converter.main([str(broken), str(tmp_path / "never.pth"), *gsnet]) == 1
     assert "conversion failed" in capsys.readouterr().err and not (tmp_path / "never.pth").exists()

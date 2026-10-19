@@ -356,3 +356,22 @@ def test_a_level_the_method_as_shipped_does_not_reach_is_undecided_under_it():
     # A class does not count the method where the level is undecided.
     found = option_class("predicts", {"FineGrasp": BELOW_REFERENCE, "GSNet": "yes"}, SEED, SEED)
     assert found.text.startswith("1 of 1 probed")
+
+
+def test_a_cell_that_did_not_train_is_not_held_against_its_reference():
+    """A refused or failed cell missed every later level by its own fault: it stays `no`
+    there, also under a method whose shipped config does not reach the level, so a class
+    keeps counting that method instead of dropping it."""
+    from grasppanda.combine.options import Measured
+
+    flat = [[-0.29, -0.29, -0.29], [-0.29, -0.29, -0.29]]
+    reference = {**GSNET, "id": "reference/FineGrasp", "method": "FineGrasp"}
+    reference["score_quantiles"] = flat
+    failed = {"id": "augment/FineGrasp/x", "method": "FineGrasp", "verdict": "fails"}
+    refused = {"id": "augment/FineGrasp/y", "method": "FineGrasp", "verdict": "refused"}
+    refused["refusal"] = ["a point augmentation next to images"]
+    measured = Measured({"cells": [reference, failed, refused]})
+    for record in (failed, refused):
+        levels = measured.levels(record)
+        assert levels.states["runs"] == "no"
+        assert levels.states["learns"] == "no" and levels.states["predicts"] == "no"

@@ -1,4 +1,4 @@
-# MinkUNet18A of MinkowskiEngine: two residual blocks per stage, on the 5 mm grid of GSNet.
+# MinkUNet18A of MinkowskiEngine: two residual blocks per stage, on a 5 mm grid.
 #
 # The next size up from the 14-layer reference encoder in the same family, in the
 # original MinkowskiEngine arrangement: 2 blocks in each of the eight stages, decoder

@@ -1,7 +1,7 @@
 # EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
 # the config check; it has not been trained to convergence or evaluated.
 #
-#   base  graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e (GraspNetBaseline)
+#   base  graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e (GraspNet-baseline)
 #   set   backbone `sparse-unet14`
 #
 #   grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
@@ -14,8 +14,8 @@
 # What a swap changes besides these lines is in docs/advanced_guides/swapping.md.
 #
 # What compose did, and why:
-# * backbone: preset `sparse-unet14` (SparseUNet14). SparseUNet14, the 14-layer sparse U-Net
-#   of GSNet and EconomicGrasp, on their 5 mm grid.
+# * backbone: preset `sparse-unet14` (SparseUNet14). SparseUNet14: a 14-layer sparse
+#   residual U-Net on a 5 mm grid, one feature per point.
 # * out_channels: 256, the output width of the encoder it replaces (PointNet2), so that the
 #   other stages keep the width they have in the base model and the encoder is the only
 #   stage that differs.

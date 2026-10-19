@@ -11,10 +11,11 @@ import pytest
 
 from grasppanda.cli.main import main
 from grasppanda.combine import explore
-from grasppanda.combine.grid import METHODS
+from grasppanda.combine.grid import FAMILIES, METHODS
 from grasppanda.config import REFUSAL_KINDS
 
-GSNET = next(iter(METHODS))
+GSNET = "GSNet"
+assert GSNET in METHODS
 
 
 @pytest.fixture(scope="module")
@@ -50,6 +51,8 @@ def test_it_serves_the_page_and_the_files_of_the_documentation_page(live):
     assert status == 200 and kind.startswith("text/html")
     page = body.decode()
     assert 'data-live="api/"' in page and 'data-src="explorer.json"' in page
+    # Level 2 is a file of its own beside the data, fetched by the page.
+    assert 'data-learns="explorer_learns.json"' in page and "explorer_learns.json" in explore.STATIC
     assert "http" not in page.replace(explore.DOCS, ""), "the page loads nothing from elsewhere"
     for name in explore.STATIC:
         status, _, body = call(base, "/" + name)
@@ -83,6 +86,32 @@ def test_a_selection_gets_the_verdict_of_the_real_compose(live):
     assert status == 400 and "nope" in json.loads(body)["error"]
     status, _, body = call(base, "/api/compose", {"method": "Nobody", "sets": []})
     assert status == 400 and "unknown method" in json.loads(body)["error"]
+
+
+@pytest.mark.parametrize("method", [*METHODS, *FAMILIES])
+def test_every_method_as_shipped_is_accepted_by_the_live_check(live, method):
+    """The page opens on no method; whichever the visitor picks, the live check answers."""
+    base, _, _ = live
+    status, _, body = call(base, "/api/compose", {"method": method, "sets": []})
+    report = json.loads(body)
+    assert status == 200 and report["accepted"] is True and report["config"], method
+
+
+def test_an_image_encoder_of_hggd_is_checked_live(live):
+    from grasppanda.combine import options as option_lists
+
+    base, _, _ = live
+    name = next(o.name for o in option_lists.options("HGGD", "image_encoder") if not o.reason)
+    status, _, body = call(
+        base, "/api/compose", {"method": "HGGD", "sets": [f"image_encoder={name}"]}
+    )
+    report = json.loads(body)
+    assert status == 200 and report["accepted"] is True and report["config"], report
+    # A seed-based method has no image encoder: the request names a slot it does not have.
+    status, _, body = call(
+        base, "/api/compose", {"method": GSNET, "sets": [f"image_encoder={name}"]}
+    )
+    assert status == 400 and "image_encoder" in json.loads(body)["error"]
 
 
 def test_an_accepted_config_is_saved_on_request_and_never_overwritten_silently(live):

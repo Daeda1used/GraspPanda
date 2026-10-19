@@ -1,15 +1,19 @@
 """Record the combination explorer being used, as the animated README picture.
 
-The page of the documentation site is opened in headless Chromium and driven by a drawn
-mouse pointer through five scenes: GSNet as shipped; its scene encoder swapped for one from
-another paper (PTv3), which runs, with its levels and numbers; a grouper that does not fit,
-refused with the conflict; HGGD with a DINOv2 image encoder; and the Compare view of the
-grouper slot, switched from the level Runs to Learns. The frames are written as an animated
-WebP, light or dark::
+The page of the documentation site is opened in headless Chromium, with no method chosen,
+and driven by a drawn mouse pointer through five scenes: the gallery of the six methods in
+their two families; GraspNet-baseline picked there, its scene encoder swapped for one from
+another paper (PTv3), which runs; its head bundle then swapped for EconomicGrasp's, refused
+by compose as incompatible by design, with the reason; HGGD, the family of its own, with
+the pretrained image encoder ``dinov2-small-reg-depth-stem`` (the README example); and Compare, first on post-processing (a
+slot of all six methods), then on the scene encoder (the five seed-based methods, with the
+note that HGGD has none). Each scene checks that the page shows what it is about, so the
+README's alt text stays true. The frames are written as an animated WebP, light or dark::
 
     TZ=UTC mkdocs build -d /tmp/site
     python -m tools.record_explorer_demo /tmp/site resources/explorer-light.webp
     python -m tools.record_explorer_demo /tmp/site resources/explorer-dark.webp --dark
+    python -m tools.record_explorer_demo /tmp/site --dry-run   # the selectors, no picture
 
 The README shows the picture 820 px wide. The page is recorded 744 CSS px wide (at device
 scale 1.5), so its smallest text (11 px) reads at 12 px there; a few rules keep the two columns
@@ -41,6 +45,18 @@ CSS = """
 .gpx .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) auto !important; }
 .gx-row.is-mod .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) 28px auto !important; }
 .gx-result { padding: 16px 18px 4px !important; }
+.gx-ggroup-head { min-height: 0 !important; }
+.gx-ggroup.is-seed-based .gx-ggroup-sub { display: none !important; }
+.gpx .gx-gcard { min-height: 0 !important; padding: 10px 12px !important; }
+.gx-gcard-line { -webkit-line-clamp: 2 !important; }
+.gx-start-head { margin-bottom: 12px !important; }
+.gx-gallery { gap: 10px !important; }
+.gx-matrix .gx-m-opt { min-width: 128px !important; max-width: 150px !important; padding: 6px 6px 6px 10px !important; }
+.gx-m-sub { display: none !important; }
+.gx-matrix .gx-m-where { width: 72px !important; min-width: 72px !important; padding: 0 6px !important; }
+.gx-matrix thead .gx-m-where .gx-info { display: none !important; }
+.gx-matrix .gx-m-method { width: 78px !important; min-width: 78px !important; font-size: 10.5px !important; }
+.gx-m-cell { height: 40px !important; }
 html { scrollbar-width: none; }
 ::-webkit-scrollbar { display: none; }
 #democursor { position: fixed; z-index: 99999; width: 22px; height: 22px; pointer-events: none;
@@ -61,13 +77,28 @@ def ease(t: float) -> float:
 
 
 class Recorder:
-    def __init__(self, out: Path) -> None:
+    """Takes the frames; a dry run (``dry``) drives the page the same way and takes none."""
+
+    def __init__(self, out: Path, dry: bool = False) -> None:
         self.out = out
+        self.dry = dry
         self.frames: list[Path] = []
         self.durations: list[int] = []
         self.pos = [W * 0.6, H * 0.5]
+        self.steps = 0
+
+    async def expect(self, page, selector: str, what: str) -> None:
+        """Stop the recording when the page does not show what the scene is about."""
+        count = await page.locator(selector).count()
+        if not count:
+            raise RuntimeError(f"the page does not show {what} ({selector})")
+        if self.dry:
+            print(f"ok: {what}")
 
     async def shot(self, page, ms: int) -> None:
+        self.steps += 1
+        if self.dry:
+            return
         path = self.out / f"f{len(self.frames):04d}.png"
         await page.screenshot(path=str(path))
         self.frames.append(path)
@@ -150,14 +181,16 @@ class Recorder:
         await self.shot(page, 400)
 
 
-async def record(site: Path, out: Path, scheme: str) -> Recorder:
+async def record(site: Path, out: Path, scheme: str, dry: bool = False) -> Recorder:
     from playwright.async_api import async_playwright
 
-    rec = Recorder(out)
+    rec = Recorder(out, dry)
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=SCALE)
-        await page.goto(f"file://{site.resolve()}/explorer/index.html#m=GSNet", wait_until="load")
+        page.set_default_timeout(8000 if dry else 30000)
+        # No method chosen: the page opens on the gallery of the six methods.
+        await page.goto(f"file://{site.resolve()}/explorer/index.html", wait_until="load")
         await page.evaluate(f"document.body.setAttribute('data-md-color-scheme', '{scheme}')")
         await page.add_style_tag(content=CSS)
         await page.evaluate(
@@ -167,21 +200,32 @@ async def record(site: Path, out: Path, scheme: str) -> Recorder:
             CURSOR,
         )
         await page.wait_for_timeout(900)
+        await rec.expect(page, '[data-key="method-GraspNet-baseline"]', "the gallery")
         await rec.place(page, *rec.pos)
-        await rec.hold(page, 2400)
-        # 1. GSNet's scene encoder swapped for one from another paper: measured, it runs
+        await rec.hold(page, 2600)
+        # 1. GraspNet-baseline from the gallery; its scene encoder swapped for PTv3: it runs
+        await rec.click(page, "method-GraspNet-baseline", hold=900)
         await rec.reveal(page, "lane-backbone", at=96)
         await rec.hold(page, 300)
         await rec.click(page, "lane-backbone", hold=600)
         await rec.type(page, "ptv3")
         await rec.click(page, "chip-backbone-ptv3", hold=3800)
-        # 2. a grouper that does not fit: refused before anything is built, with the conflict
-        await rec.click(page, "lane-reset-backbone", hold=600)
-        await rec.click(page, "lane-grouper", hold=500)
-        await rec.type(page, "embed")
-        await rec.click(page, "chip-grouper-depth-embed", hold=4600)
-        # 3. another family: HGGD takes an image encoder from DINOv2
+        await rec.expect(page, ".gx-result .gx-pill.s-ok", "a swap that runs")
+        await rec.expect(page, ".gx-res-title:text('GraspNet-baseline')", "GraspNet-baseline")
+        # 2. its head bundle swapped for EconomicGrasp's: refused by compose before anything
+        # is built, as incompatible by design, with the reason
+        await rec.click(page, "lane-head", hold=500)
+        await rec.type(page, "economic")
+        await rec.click(page, "chip-head-economic", hold=4600)
+        await rec.expect(page, ".gx-result .gx-alert.s-refused", "a refusal with its reason")
+        await rec.expect(
+            page,
+            ".gx-result .gx-alert.s-refused .gx-alert-title:has-text('incompatible by design')",
+            "the kind of the refusal",
+        )
+        # 3. the family of its own: HGGD takes an image encoder from DINOv2
         await rec.scroll(page, 0)
+        await rec.click(page, "method-change", hold=900)
         await rec.click(page, "method-HGGD", hold=1000)
         await rec.reveal(page, "lane-image_encoder", at=150)
         await rec.click(page, "lane-image_encoder", hold=500)
@@ -189,22 +233,25 @@ async def record(site: Path, out: Path, scheme: str) -> Recorder:
         keys = await page.eval_on_selector_all(
             "[data-key^='chip-image_encoder-']", "els => els.map(e => e.getAttribute('data-key'))"
         )
-        wanted = "chip-image_encoder-dinov2-small-reg"
-        await rec.click(page, wanted if wanted in keys else keys[min(1, len(keys) - 1)], hold=3800)
-        # 4. Compare: every grouper under every method, at the level Runs, then Learns
+        wanted = "chip-image_encoder-dinov2-small-reg-depth-stem"
+        if wanted not in keys:
+            raise RuntimeError(f"the picker of HGGD does not offer {wanted}")
+        await rec.click(page, wanted, hold=3800)
+        await rec.expect(page, ".gx-result .gx-pill.s-ok", "HGGD with dinov2-small-reg-depth-stem")
+        # 4. Compare: post-processing under all six methods, then the scene encoder of the
+        # five seed-based ones, with the note that HGGD has none
         await rec.scroll(page, 0)
-        await rec.click(page, "tab-grid", hold=900)
-        await page.evaluate(
-            "document.querySelector('[data-key=\"slot-grouper\"]')"
-            ".scrollIntoView({inline: 'center', block: 'nearest'})"
-        )
-        await rec.click(page, "slot-grouper", hold=1600)
-        await rec.click(page, "grid-search", hold=200)
-        await rec.type(page, "depth")
-        await rec.reveal(page, "level-learns", at=24)
-        await rec.hold(page, 2000)
-        await rec.click(page, "level-learns", hold=2000)
-        await rec.hover(page, "cell-grouper-depth-cylinder-multi-scale-EconomicGrasp", hold=4200)
+        await rec.click(page, "tab-grid", hold=600)
+        await rec.click(page, "slot-post", hold=3400)
+        await rec.expect(page, ".gx-matrix thead .gx-m-method >> nth=5", "six columns")
+        await rec.click(page, "slot-backbone", hold=1800)
+        columns = await page.locator(".gx-matrix thead .gx-m-method").count()
+        if columns != 5:
+            raise RuntimeError(
+                f"the scene encoder shows {columns} methods, not the five seed-based"
+            )
+        await rec.expect(page, ".gx-cmp-note", "the note of the method without the slot")
+        await rec.hover(page, "cell-backbone-ptv3-GraspNet-baseline", hold=4200)
         await browser.close()
     return rec
 
@@ -251,20 +298,32 @@ def shared_palette(frames: list, tokens: list[tuple[int, int, int]], colors: int
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("site", type=Path, help="a built documentation site (mkdocs build -d DIR)")
-    parser.add_argument("output", type=Path, help="the animated WebP to write")
+    parser.add_argument("output", type=Path, nargs="?", help="the animated WebP to write")
     parser.add_argument("--dark", action="store_true", help="record the dark theme")
     parser.add_argument(
         "--width", type=int, default=round(W * SCALE), help="width of the picture (default 1116)"
     )
     parser.add_argument("--colors", type=int, default=256, help="colours of the palette")
     parser.add_argument("--frames", type=Path, help="also keep the PNG frames in this folder")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="drive the page through every scene and check each step; write no picture",
+    )
     args = parser.parse_args(argv)
+    scheme = "slate" if args.dark else "default"
+    if args.dry_run:
+        rec = asyncio.run(record(args.site, Path(tempfile.gettempdir()), scheme, dry=True))
+        print(f"dry run: every selector found, {rec.steps} frames would be taken")
+        return 0
+    if args.output is None:
+        parser.error("the output picture is required (or --dry-run)")
     from PIL import Image
 
     with tempfile.TemporaryDirectory() as scratch:
         folder = args.frames or Path(scratch)
         folder.mkdir(parents=True, exist_ok=True)
-        rec = asyncio.run(record(args.site, folder, "slate" if args.dark else "default"))
+        rec = asyncio.run(record(args.site, folder, scheme))
         frames = []
         for path in rec.frames:
             image = Image.open(path).convert("RGB")

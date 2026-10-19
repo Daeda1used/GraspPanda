@@ -31,7 +31,7 @@ def test_version_and_help(capsys):
 def test_print_config_check(capsys):
     assert main(["print-config", TOY, "--check"]) == 0
     out = capsys.readouterr().out
-    assert "is valid" in out and "model.head: ToyHead" in out and "gsnet_10e.yaml" in out
+    assert "is valid" in out and "model.head: ToyHead" in out and "adam_10e.yaml" in out
 
 
 def test_print_config_outputs_loadable_yaml(capsys):
@@ -99,7 +99,7 @@ def test_snapshot_records_config_code_and_environment(tmp_path):
     assert names == [
         "00_toy_detector.yaml",
         "01_default_runtime.yaml",
-        "02_gsnet_10e.yaml",
+        "02_adam_10e.yaml",
         "overrides.txt",
     ]
     assert (run_dir / "config.sources/overrides.txt").read_text() == "train.epochs=2\n"

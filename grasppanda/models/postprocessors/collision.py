@@ -14,9 +14,11 @@ The filter reads ``observation.full_points``, the cloud before the network's poi
 budget was applied. Its voxel size is its own parameter and has nothing to do with the
 voxel size of a sparse backbone (``docs/design/ARCHITECTURE.md`` §8.6).
 
-Two reference test scripts ship a filter of this kind, and they differ in more than
-their constants. The defaults are the filter of the Graspness test script. HGGD's (its
-detector in mode ``graspnet``) is the same four boxes with these options::
+Two kinds of reference test script ship a filter of this kind, and they differ in more
+than their constants. The defaults are the filter of the GraspNet-baseline test script,
+which GSNet, Scale-Balanced-Grasp, EconomicGrasp (with a 0.005 m voxel) and FineGrasp
+kept. HGGD's (its detector in mode ``graspnet``) is the same four boxes with these
+options::
 
     cloud: points             # the 25 600 points the network saw, not the full cloud
     finger_length: 0.04
@@ -140,7 +142,7 @@ class ModelFreeCollisionFilter(PostProcessor):
     reads_full_points = True
 
     status = "tested"
-    source = "Collision filter of the GSNet and HGGD test scripts"
+    source = "Collision filter of the GraspNet-baseline and HGGD test scripts"
 
     def __init__(
         self,

@@ -1,8 +1,8 @@
-# LocalGroup as GSNet's cylinder followed by the inverted residual MLP of PointNeXt.
+# Seed cylinder crop followed by the inverted residual MLP of PointNeXt (LocalGroup).
 #
-# After the maximum, `ReLU(W2 ReLU(W1 x) + skip(f_i))` with a hidden layer `expansion`
-# times wider and the seed's own feature as the identity branch (InvResMLP, Qian et al.,
-# NeurIPS 2022).
+# The crop is GSNet's seed cylinder. After the maximum, `ReLU(W2 ReLU(W1 x) + skip(f_i))`
+# with a hidden layer `expansion` times wider and the seed's own feature as the identity
+# branch (InvResMLP, Qian et al., NeurIPS 2022).
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

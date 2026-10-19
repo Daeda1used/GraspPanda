@@ -158,7 +158,7 @@ class MinkUNet(Backbone):
 
     The defaults are MinkUNet34C / Res16UNet34C with the 3³ stem of the PointContrast
     and Contrastive Scene Contexts checkpoints, on a 2 cm grid. For tabletop clouds a
-    finer grid is usual (GSNet voxelises at 0.005 m).
+    finer grid is usual (GSNet, EconomicGrasp and FineGrasp voxelise at 0.005 m).
 
     Args:
         in_channels: Feature channels per point.

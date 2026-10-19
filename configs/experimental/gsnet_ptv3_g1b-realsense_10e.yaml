@@ -19,8 +19,9 @@
 # What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
 # backbone `ptv3`
 # * grid_size. It is the encoder's unit of length. The class default, 0.02 m, is for
-#   ScanNet rooms; 0.005 m keeps GSNet's grid, so both encoders see the same voxels
-#   (about 11 000 for a 15 000-point frame, more for the 20 000 points other methods feed).
+#   ScanNet rooms; 0.005 m is the grid of GSNet, EconomicGrasp and FineGrasp, so under them
+#   both encoders see the same voxels (about 11 000 for a 15 000-point frame, more for the
+#   20 000 points other methods feed).
 # * enc_patch_size / dec_patch_size (1024). Attention runs over patches of that many
 #   serialised voxels, so the receptive field is counted in points, not in metres: a
 #   frame holds about ten patches at the finest level and fewer than one at the coarsest.

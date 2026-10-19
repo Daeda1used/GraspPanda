@@ -4,10 +4,11 @@
 # GraspNet-1Billion result uses it. Needs no sparse-convolution library.
 #
 # What must be re-tuned, and why:
-# * grid_size and kernel_size: 0.005 m voxels (GSNet's grid) in patches of 5, so a token
-#   is a 2.5 cm cube; the released models use 2 cm voxels and 10 cm tokens, larger than
-#   many graspable parts. The token edge decides the cost: attention is over all tokens
-#   of a frame at once, a few thousand for a table top at 2.5 cm.
+# * grid_size and kernel_size: 0.005 m voxels (the grid of GSNet, EconomicGrasp and
+#   FineGrasp) in patches of 5, so a token is a 2.5 cm cube; the released models use 2 cm
+#   voxels and 10 cm tokens, larger than many graspable parts. The token edge decides the
+#   cost: attention is over all tokens of a frame at once, a few thousand for a table top
+#   at 2.5 cm.
 # * weights: random init as written. The released checkpoints (ScanNet, ScanNet200,
 #   ScanNet++, MIT) fill the transformer and the decoder of this layout but expect six
 #   input channels (colour and normal) on a 2 cm grid

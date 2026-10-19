@@ -101,6 +101,8 @@ packages = ["grasppanda"]
 "docs/explorer" = "grasppanda/_explorer"
 # The measured records, read by `grasppanda compose <method config> --list`.
 "docs/advanced_guides/measured_combinations.json" = "grasppanda/_measured/measured_combinations.json"
+# The level-2 summary, read by the same listing for "learns like the method's own component".
+"docs/advanced_guides/learns_like_reference.json" = "grasppanda/_measured/learns_like_reference.json"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -108,6 +110,7 @@ include = [
     "/configs",
     "/docs/explorer",
     "/docs/advanced_guides/measured_combinations.json",
+    "/docs/advanced_guides/learns_like_reference.json",
     "/tests",
     "/projects",
     "/README.md",

@@ -5,11 +5,11 @@ have no record, and for those the page can still say one thing that is a fact: w
 ``grasppanda compose`` answers. This tool asks it, for every method, for every option of a
 slot alone and for every pair of options of two different slots, and writes the answers
 into ``docs/explorer/explorer_contracts.json``: accepted (with the adapter compose
-inserted, if any) or refused with the messages, whole. The slots of the training recipe
-(optimizer, schedule, hooks, augmentation) are asked alone and in pairs among themselves;
-a recipe option together with a stage is not stored (it would double the file and the
-time for an answer the contract rules give on the stage alone), so the page says "not
-measured" there and prints the commands.
+inserted, if any) or refused with the messages, whole, and the kind of the refusal. The
+slots of the training recipe (optimizer, schedule, hooks, augmentation) are asked alone and
+in pairs among themselves; a recipe option together with a stage is not stored (it would
+double the file and the time for an answer the contract rules give on the stage alone), so
+the page says "not measured" there and prints the commands.
 
 Nothing is trained and no dataset is read: this is the check of the contract rules and of
 the config, the same call ``grasppanda compose`` makes. The page shows it as a second
@@ -46,8 +46,12 @@ LOSS = "loss"
 
 
 def answer(config: str, sets: list[str]) -> dict[str, Any]:
-    """What compose answers for ``sets`` on ``config``, as the page stores it."""
+    """What compose answers for ``sets`` on ``config``, as the page stores it: accepted
+    (with the adapter it inserted), or refused with its messages and the kind of the
+    refusal as a whole (:func:`grasppanda.combine.levels.refusal_kind`, the rule a record
+    of the grid is told by)."""
     from grasppanda.combine.compose import compose
+    from grasppanda.combine.levels import refusal_kind
 
     try:
         composition = compose(config, sets)
@@ -58,7 +62,12 @@ def answer(config: str, sets: list[str]) -> dict[str, Any]:
         if composition.adapter:
             found["adapter"] = composition.adapter
         return found
-    return {"ok": False, "messages": composition.refusal()}
+    messages = composition.refusal()
+    refused: dict[str, Any] = {"ok": False, "messages": messages}
+    kind = refusal_kind({"refusal": messages, "refusal_kinds": composition.refusal_kinds()})
+    if kind:
+        refused["kind"] = kind
+    return refused
 
 
 def _answer(task: tuple[str, list[str]]) -> dict[str, Any]:
@@ -124,7 +133,10 @@ def build(jobs: int) -> dict[str, Any]:
                     message_at[text] = len(messages)
                     messages.append(text)
                 places.append(message_at[text])
+            kind = found.get("kind")
             found = {"ok": False, "messages": places}
+            if kind:
+                found["kind"] = kind
         spelled = json.dumps(found, sort_keys=True)
         if spelled not in table_at:
             table_at[spelled] = len(table)

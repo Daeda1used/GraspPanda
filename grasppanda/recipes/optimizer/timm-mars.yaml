@@ -5,8 +5,9 @@
 #
 # What must be re-tuned, and why:
 # * lr: start at AdamW's rate; the variance reduction is on by default.
-# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
-#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+# * the method's own schedule stays (it differs per method:
+#   `grasppanda compose <method config> --list schedule` shows it); set one with
+#   `--set schedule=...` when the optimizer's paper assumes warm-up or a cosine.
 optimizer:
   type: TimmOptimizer
   name: mars

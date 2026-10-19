@@ -3,7 +3,7 @@
     grasppanda explore                                # http://127.0.0.1:8765/, in the browser
     grasppanda explore --port 9000 --no-browser
     grasppanda explore --weights-dir ~/weights        # the Run panel lists the files there
-    grasppanda explore --weights gsnet=runs/gsnet/epoch_0010.pth --device cpu
+    grasppanda explore --weights sbg=sbg_realsense.pth --device cpu
 
 The page is the explorer of the documentation: pick a method, replace the option of a
 slot, read what was measured. Served by this command it also composes every selection with
@@ -36,7 +36,7 @@ does; one run at a time, in a temporary directory that is removed afterwards.
 
 examples:
   grasppanda explore --weights-dir ~/grasppanda_weights
-  grasppanda explore --weights gsnet=work_dirs/gsnet/run/checkpoints/epoch_0010.pth \\
+  grasppanda explore --weights mine=work_dirs/<config>/<run>/checkpoints/best.pth \\
       --weights hggd=hggd_realsense.pth --device cpu
 """
 

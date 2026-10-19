@@ -1,9 +1,10 @@
-# LocalGroup as GSNet's cylinder with RandLA-Net's position encoding and attentive
-# pooling.
+# Seed cylinder crop pooled by attention: RandLA-Net's position encoding and attentive
+# pooling (LocalGroup).
 #
-# The neighbours are weighted per channel by a soft-max of a learned score instead of
-# reduced by a maximum, and the offset carries its length (RandLA-Net, Hu et al., CVPR
-# 2020). Padded slots are masked, so a crop with few members is not dominated by copies.
+# The crop is GSNet's seed cylinder. The neighbours are weighted per channel by a
+# soft-max of a learned score instead of reduced by a maximum, and the offset carries its
+# length (RandLA-Net, Hu et al., CVPR 2020). Padded slots are masked, so a crop with few
+# members is not dominated by copies.
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

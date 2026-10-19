@@ -5,7 +5,7 @@
 # It is supervised with compact grasp labels, so the assigner must return them
 # (CompactLabelAssigner) and the training dataset must serve them: the `compact_labels`
 # section, built with
-#   grasppanda prepare graspnet1b --compact-labels --config <this config>
+#   grasppanda prepare <dataset> --compact-labels --config <this config>
 # A base config whose dataset reads dense grids (`SampleGraspLabels` among its
 # transforms) refuses the section; compose from an EconomicGrasp or FineGrasp config.
 #

@@ -2,12 +2,16 @@
 #
 # The rule of timm and of most transformer recipes: only weight matrices are decayed.
 #
+# Source: the weight-decay rule of PyTorch Image Models.
+#
 # What must be re-tuned, and why:
-# * lr: the value is a starting point for batches of 4 frames of 15000 points; every shipped
-#   method was tuned with Adam at 1e-3 (HGGD: AdamW at 1e-2), so compare against that.
+# * lr: the value is a starting point for batches of 4 frames of 15000 points. It replaces
+#   the method's own optimizer: Adam at 1e-3 for GraspNet-baseline, GSNet, Scale-Balanced-Grasp
+#   and EconomicGrasp, Adam at 8e-3 for FineGrasp, AdamW at 1e-2 for HGGD; compare with that.
 # * weight_decay: 0.05 applies to parameters with two or more dimensions.
-# * the schedule of the base config stays (GSNet: a factor 0.95 per epoch); set one with `--set
-#   schedule=...` when the optimizer's paper assumes warm-up or a cosine.
+# * the method's own schedule stays (it differs per method:
+#   `grasppanda compose <method config> --list schedule` shows it); set one with
+#   `--set schedule=...` when the optimizer's paper assumes warm-up or a cosine.
 optimizer:
   type: ParamGroups
   optimizer: {type: AdamW, lr: 1.0e-3, weight_decay: 0.05}

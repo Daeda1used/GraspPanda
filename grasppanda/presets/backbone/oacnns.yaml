@@ -5,7 +5,8 @@
 # GraspNet-1Billion result uses OA-CNNs and no checkpoint has been released for it.
 #
 # What must be re-tuned, and why:
-# * grid_size: 0.005 m, GSNet's. The class default, 0.02 m, is for ScanNet rooms.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp. The class
+#   default, 0.02 m, is for ScanNet rooms.
 # * point_grid_size. The adaptive pooling grids are counted in cells, so they shrink
 #   with the grid: the published 8 to 16 cells of the first stage cover 0.32 to 0.64 m at
 #   2 cm and 0.08 to 0.16 m at 5 mm. Left at the published values; scaling them by four

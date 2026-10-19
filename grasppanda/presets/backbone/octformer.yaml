@@ -5,9 +5,9 @@
 # released ScanNet weights were not tried: random init.
 #
 # What must be re-tuned, and why:
-# * voxel_size: 0.005 m, GSNet's grid (the class default, 0.01 m, is the ScanNet
-#   setting). The stem reduces by four per axis, so the first attention stage works on
-#   2 cm nodes and the last on 16 cm nodes.
+# * voxel_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp (the class
+#   default, 0.01 m, is the ScanNet setting). The stem reduces by four per axis, so the
+#   first attention stage works on 2 cm nodes and the last on 16 cm nodes.
 # * octree_depth: 11 (the class default), so a frame must fit a cube of
 #   0.005 * 2**11 = 10.24 m around the middle of its bounding box; a larger cloud is
 #   refused with that number.

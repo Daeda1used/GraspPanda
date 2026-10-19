@@ -1,4 +1,5 @@
-"""The animated picture of the README shows real output, and is what its tool writes."""
+"""The animated showcase shows real output of a measured combination on one of the
+methods, and is what its tool writes (for the README and for the documentation)."""
 
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import pytest
 from .conftest import REPO
 
 RESOURCES = REPO / "resources"
+DOCS_ASSETS = REPO / "docs" / "assets"
 PICTURES = ("showcase-light.svg", "showcase-dark.svg")
 
 
@@ -31,6 +33,33 @@ def tool():
 def test_the_committed_pictures_are_what_the_tool_writes(tool):
     assert not tool.stale(), "stale: run `python -m tools.make_showcase`."
     assert tool.main(["--check"]) == 0
+    # The documentation shows the same pictures as the README.
+    for name in PICTURES:
+        assert (DOCS_ASSETS / name).read_bytes() == (RESOURCES / name).read_bytes()
+        assert {RESOURCES / name, DOCS_ASSETS / name} <= set(tool.expected())
+
+
+def test_the_picture_shows_a_measured_combination_of_a_seed_based_method(tool):
+    """The combination is a cell of the grid whose record says `runs`, composed to the
+    config that was probed there; the refused swap is refused in the records too."""
+    from grasppanda.combine.grid import METHODS
+    from grasppanda.combine.options import measured
+
+    assert tool.METHOD in METHODS and METHODS[tool.METHOD] == tool.CONFIG
+    records = measured()
+    record = records.get(tool.RECORD)
+    assert record is not None and record["verdict"] == "runs", tool.RECORD
+    assert record["method"] == tool.METHOD and list(record["sets"]) == list(tool.SWAP)
+    output = json.loads((RESOURCES / "showcase_transcript.json").read_text(encoding="utf-8"))
+    composed = output["commands"]["compose"]["output"]
+    (valid,) = [line for line in composed if "✓ valid" in line]
+    assert record["config_hash"][:12] in valid
+    refused = [
+        found
+        for found in records.by_id.values()
+        if found.get("method") == tool.METHOD and list(found.get("sets") or []) == [tool.REFUSED]
+    ]
+    assert refused and all(found["verdict"] == "refused" for found in refused)
 
 
 def test_every_line_of_the_terminal_is_a_line_of_the_transcript(tool):
@@ -76,6 +105,7 @@ def test_the_pictures_are_plain_animated_svg(tool):
         path = RESOURCES / name
         text = path.read_text(encoding="utf-8")
         assert path.stat().st_size < 900_000
+        assert f"{tool.METHOD}, one of 6 methods" in html.unescape(text)
         assert "@keyframes" in text and "infinite" in text
         assert "<script" not in text and "href=" not in text and "url(" not in text
         assert "@font-face" not in text and "@import" not in text

@@ -21,7 +21,7 @@
     slot: "",
     laneQuery: "",
     pickerActive: 0,
-    filter: { q: "", level: "runs", classes: [], extra: false, weights: false },
+    filter: { q: "", level: "runs", tones: [], extra: false, weights: false },
     yamlTab: "",
     repro: "compose",
     folds: {},
@@ -32,7 +32,6 @@
     focusKey: "",
     about: false,
     filters: false,
-    docsMenu: false,
   };
   var pushNext = false;
   var watchers = [];
@@ -42,6 +41,8 @@
   var live = { key: "", status: "", report: null, error: "" };
   var saving = { key: "", name: "", status: "", message: "" };
   var tip = null;
+  /* The slot row of Compare on a narrow screen: the slot it was scrolled to, and where. */
+  var navShown = { key: "", left: 0 };
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   // -------------------------------------------------------------------------- icons
@@ -164,13 +165,9 @@
     return docsBase + path + "/" + (window.location.protocol === "file:" ? "index.html" : "");
   }
 
-  function slotHref(stem) {
-    return docHref("slots/" + stem);
-  }
-
   /* The task of a slot without the slot's name in front: "Scene encoder: points to ..." */
   function task(entry) {
-    var text = plain(entry.task);
+    var text = String(entry.task || "");
     var at = text.indexOf(": ");
     if (at > 0 && at < 30 && text.slice(0, at).toLowerCase() === entry.title.toLowerCase()) text = capital(text.slice(at + 2));
     return text;
@@ -190,7 +187,6 @@
     state.cellMenu = "";
     state.about = false;
     state.filters = false;
-    state.docsMenu = false;
   }
 
   function pick(slot, name) {
@@ -317,7 +313,6 @@
       mixed: "Mixed",
       none: "Not measured",
     }[kind] || capital(badge.label);
-    if (kind === "refused" && !contract && cell && cell.kind) label += " · " + cell.kind.replace(/-/g, " ");
     var glyph = { ok: "check", empty: "minus", unstable: "alert", refused: "ban", fails: "alertCircle", none: "circle" }[TONES[kind] || "none"];
     return { tone: TONES[kind] || "none", label: label, icon: glyph, contract: contract };
   }
@@ -331,6 +326,51 @@
   function dot(badge, title) {
     var s = status(badge);
     return h("span", { class: "gx-dot s-" + s.tone + (s.contract ? " is-contract" : ""), title: title || null, "aria-hidden": "true" });
+  }
+
+  /* The marks of the small lists and their words: [tone, contract class, label]. A legend
+   * shows the ones its list uses. */
+  var DOT_LEGEND = [
+    ["ok", "", "Runs"],
+    ["empty", "", "Runs, no grasps"],
+    ["unstable", "", "Unstable"],
+    ["refused", "", "Refused"],
+    ["fails", "", "Fails"],
+    ["ok", " is-contract", "Accepted, not trained"],
+    ["refused", " is-contract", "Refused by compose"],
+    ["none", "", "Not tested"],
+  ];
+
+  /* Which methods have a slot, as the pages say it: All 6 methods, Seed-based · 5 methods,
+   * HGGD only. */
+  function scopeChip(entry) {
+    if (!entry || !entry.scope) return null;
+    return h("span", { class: "gx-scope-chip is-" + entry.scope, text: (data.scopes || {})[entry.scope] || entry.scope });
+  }
+
+  /* Where an option works: a fraction with its tone; the tail (who is left out and why)
+   * shows on hover, focus and tap. */
+  function reachChip(found, key) {
+    if (!found) return h("span", { class: "gx-muted", text: "—" });
+    var label = found.fraction + (found.tail ? ". " + plain(found.tail) : "");
+    if (!found.tail) return h("span", { class: "gx-frac t-" + found.tone, "data-key": key || null, text: found.fraction });
+    return h("button", {
+      type: "button",
+      class: "gx-frac t-" + found.tone + " has-tail",
+      "data-key": key || null,
+      "aria-label": label,
+      onmouseenter: function (event) {
+        showTip(event.currentTarget, found.tail);
+      },
+      onmouseleave: hideTip,
+      onfocus: function (event) {
+        showTip(event.currentTarget, found.tail);
+      },
+      onblur: hideTip,
+      onclick: function (event) {
+        showTip(event.currentTarget, found.tail);
+      },
+    }, [found.fraction]);
   }
 
   function alertBox(tone, glyph, title, body, extra) {
@@ -417,8 +457,15 @@
     return h("dl", { class: "gx-kv" }, items);
   }
 
-  function external(href, text, key) {
-    return h("a", { class: "gx-link", href: href, "data-key": key || null }, [h("span", { text: text }), icon("external", 14)]);
+  /* A link to a page of the documentation. On the documentation site it is a page of the
+   * same site, drawn as a plain link; served by `grasppanda explore` the pages are on the
+   * hosted site (data-docs names its address), and the link says it leaves the page. */
+  function docLink(path, text, key) {
+    var away = /^https?:/.test(docsBase);
+    return h("a", { class: "gx-link" + (away ? "" : " is-internal"), href: docHref(path.split("#")[0]) + (path.indexOf("#") >= 0 ? path.slice(path.indexOf("#")) : ""), "data-key": key || null }, [
+      h("span", { text: text }),
+      icon(away ? "external" : "chevronRight", 14),
+    ]);
   }
 
   // ---------------------------------------------------------------------- tooltip
@@ -531,27 +578,11 @@
 
   function header() {
     var counts = data.counts;
-    var parts = data.verdict_order.map(function (name) {
-      return [name, counts.by_verdict[name] || 0];
-    });
-    var summary = parts.map(function (part) {
-      return num(part[1]) + " " + VERDICT_LABEL[part[0]].toLowerCase();
-    }).join(", ");
-    var bar = h("div", { class: "gx-mix", role: "img", "aria-label": "Verdicts of the records: " + summary }, parts.map(function (part) {
-      return h("span", {
-        class: "gx-mix-seg s-" + VERDICT_TONE[part[0]],
-        style: "flex-grow:" + part[1],
-        onmouseenter: function (event) {
-          showTip(event.currentTarget, num(part[1]) + " · " + VERDICT_LABEL[part[0]]);
-        },
-        onmouseleave: hideTip,
-      });
-    }));
     var about = h("button", {
       type: "button",
-      class: "gx-iconbtn",
+      class: "gx-ghost gx-head-about",
       "data-key": "about",
-      "aria-label": "About these records",
+      "aria-label": num(counts.records) + " records: what was measured",
       "aria-expanded": state.about ? "true" : "false",
       "aria-controls": "gx-about",
       onclick: function () {
@@ -560,24 +591,18 @@
         state.focusKey = "about";
         set({ about: open });
       },
-    }, [icon("info", 16)]);
+    }, [h("b", { text: num(counts.records) }), h("span", { text: "records" }), icon("info", 14)]);
     return h("header", { class: "gx-head" }, [
       h("div", { class: "gx-head-text", "aria-hidden": "true" }, [
         h("div", { class: "gx-head-title" }, [h("span", { text: "Combination explorer" }), liveBase ? h("span", { class: "gx-live-chip" }, [h("span", { class: "gx-live-dot" }), "Live"]) : null]),
-        h("p", { class: "gx-head-sub", text: "Swap any stage of a grasp detector and see what happened when it was built and trained." }),
+        h("p", { class: "gx-head-sub", text: "Pick a method, swap a stage, see whether it still trains." }),
       ]),
-      h("div", { class: "gx-head-data" }, [
-        h("div", { class: "gx-head-stat" }, [
-          h("div", { class: "gx-head-count" }, [h("b", { text: num(counts.records) }), h("span", { text: " records" })]),
-          bar,
-        ]),
-        about,
-      ]),
+      h("div", { class: "gx-head-data" }, [about]),
       state.about ? aboutPop() : null,
     ]);
   }
 
-  /* What stands behind the numbers of the page, computed from the data. */
+  /* What stands behind the answers of the page, computed from the data. */
   function aboutPop() {
     var counts = data.counts;
     var rows = [
@@ -591,8 +616,8 @@
       var c = data.contracts.counts;
       rows.push(["Answers of compose, no probe", num(c.answers)]);
     }
-    return h("div", { class: "gx-pop gx-about", id: "gx-about", role: "dialog", "aria-label": "About these records", "data-anchor": "about", "data-align": "end", hidden: true }, [
-      h("div", { class: "gx-pop-title", text: "About these records" }),
+    return h("div", { class: "gx-pop gx-about", id: "gx-about", role: "dialog", "aria-label": "What was measured", "data-anchor": "about", "data-align": "end", hidden: true }, [
+      h("div", { class: "gx-pop-title", text: "What was measured" }),
       h("p", { class: "gx-pop-lead", text: data.no_accuracy }),
       h("ul", { class: "gx-about-mix" }, data.verdict_order.map(function (name) {
         return h("li", {}, [
@@ -605,8 +630,9 @@
       h("dl", { class: "gx-about-rows" }, rows.map(function (row) {
         return h("div", {}, [h("dt", { text: row[0] }), h("dd", { text: row[1] })]);
       })),
-      data.caveat ? h("p", { class: "gx-pop-fine", text: "Class: " + data.caveat + "." }) : null,
-      h("div", { class: "gx-pop-foot" }, [external(docHref("advanced_guides/measured_combinations"), "Measured combinations")]),
+      h("p", { class: "gx-pop-fine" }, [h("b", { text: "Probe: " }), capital(data.measured_on) + "."]),
+      data.learns ? h("p", { class: "gx-pop-fine" }, [h("b", { text: L.level2Words(data).header + ": " }), capital(data.learns.measured_on) + "."]) : null,
+      h("div", { class: "gx-pop-foot" }, [docLink("evidence", "How we measure")]),
     ]);
   }
 
@@ -655,7 +681,10 @@
       if (index) children.push(h("span", { text: index === state.notice.length - 1 ? " and " : ", " }));
       children.push(rich(text));
     });
-    children.push(h("span", { text: ", which this version does not know. Showing " + state.method + (Object.keys(state.picks).length ? " with the rest of the link." : " as shipped.") }));
+    var showing = !state.method || state.view !== "build"
+      ? "."
+      : ". Showing " + state.method + (Object.keys(state.picks).length ? " with the rest of the link." : " as shipped.");
+    children.push(h("span", { text: ", which this page does not know" + showing }));
     return h("div", { class: "gx-notice", role: "status" }, [
       icon("info", 16),
       h("p", {}, children),
@@ -821,30 +850,71 @@
 
   // ---------------------------------------------------------------------- build view
 
-  /* "GSNet (Wang et al., ICCV 2021)" -> "ICCV 2021". */
-  function venue(m) {
-    var found = /,\s*([^,()]+\d{4})\)\s*$/.exec(m.source || "");
-    return found ? found[1] : "";
+  /* What a method reads, in words. */
+  function reads(m) {
+    return m.inputs === "RGB-D" ? "RGB-D image" : "Depth cloud";
   }
 
-  function methodTiles(methods, current, keyOf, onpick, off) {
-    return h("div", { class: "gx-mtiles", role: "group", "aria-label": "Method" }, methods.map(function (m) {
+  /* Titles of lanes as one phrase: the slots of the training recipe are named once. */
+  function slotPhrase(entries) {
+    var names = [];
+    var recipe = false;
+    entries.forEach(function (entry) {
+      if (entry.recipe) recipe = true;
+      else names.push(entry.title.toLowerCase());
+    });
+    if (recipe) names.push("the training recipe");
+    if (names.length < 2) return names.join("");
+    return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  }
+
+  /* The methods in their families, in page order: [{key, title, methods}]. A family of one
+   * method is titled with its name ("Own family · HGGD"). */
+  function families(list) {
+    var groups = [];
+    list.forEach(function (m) {
       var known = L.method(data, m.name) || m;
-      var on = m.name === current;
-      return h("button", {
-        type: "button",
-        class: "gx-mtile",
-        "data-key": keyOf(m),
-        "aria-pressed": on ? "true" : "false",
-        disabled: off ? true : null,
-        title: (known.source || m.name) + (known.config ? " · " + known.config : ""),
-        onclick: function () {
-          onpick(m.name);
-        },
-      }, [
-        h("span", { class: "gx-mtile-name", text: m.name }),
-        venue(known) ? h("span", { class: "gx-mtile-venue", text: venue(known) }) : null,
-        on ? h("span", { class: "gx-mtile-check", "aria-hidden": "true" }, [icon("check", 12)]) : null,
+      var key = known.family || (known.seed_based ? "seed-based" : "own");
+      var group = groups.filter(function (item) {
+        return item.key === key;
+      })[0];
+      if (!group) {
+        group = { key: key, methods: [] };
+        groups.push(group);
+      }
+      group.methods.push(m);
+    });
+    groups.forEach(function (group) {
+      var name = (data.families || {})[group.key] || capital(group.key);
+      group.title = name + " · " + (group.methods.length > 1 ? group.methods.length + " methods" : group.methods[0].name);
+    });
+    return groups;
+  }
+
+  /* The methods as tiles in their families; the Run panel picks one with them. */
+  function methodTiles(methods, current, keyOf, onpick, off) {
+    return h("div", { class: "gx-mgroups" }, families(methods).map(function (group) {
+      return h("div", { class: "gx-mgroup", role: "group", "aria-label": group.title }, [
+        h("div", { class: "gx-mgroup-label", text: group.title }),
+        h("div", { class: "gx-mtiles" }, group.methods.map(function (m) {
+          var known = L.method(data, m.name) || m;
+          var on = m.name === current;
+          return h("button", {
+            type: "button",
+            class: "gx-mtile",
+            "data-key": keyOf(m),
+            "aria-pressed": on ? "true" : "false",
+            disabled: off ? true : null,
+            title: (known.title ? known.title + " (" + known.venue + ")" : m.name) + (known.config ? " · " + known.config : ""),
+            onclick: function () {
+              onpick(m.name);
+            },
+          }, [
+            h("span", { class: "gx-mtile-name", text: m.name }),
+            known.venue ? h("span", { class: "gx-mtile-venue", text: known.venue }) : null,
+            on ? h("span", { class: "gx-mtile-check", "aria-hidden": "true" }, [icon("check", 12)]) : null,
+          ]);
+        })),
       ]);
     }));
   }
@@ -854,52 +924,164 @@
     return ships.option || ships.label || ships.component || "";
   }
 
-  function examples() {
-    var wanted = [
-      ["adapter", "Adapter inserted"],
-      ["refused", "Refused swap"],
-      ["unstable", "Unstable run"],
-      ["fails", "Failure"],
-    ];
-    /* A structural refusal that compose still refuses: the example must show the conflict. */
-    var preferred = { refused: "stage/EconomicGrasp/view/objectness-view" };
-    var found = [];
-    wanted.forEach(function (item) {
-      var best = null;
-      for (var i = 0; i < data.cells.length; i++) {
-        var cell = data.cells[i];
-        if (L.badge(cell).kind !== item[0] || cell.sets.length !== 1 || !cell.slot) continue;
-        if (item[0] === "refused") {
-          var now = L.contract(data, cell.method, cell.sets);
-          if (now && now.ok) continue;
-        }
-        if (cell.id === preferred[item[0]]) {
-          best = cell;
-          break;
-        }
-        if (!best) best = cell;
-      }
-      if (best) found.push([item[1], best]);
+  /* Open the builder on a method as shipped, its name in focus and its slots in view. */
+  function chooseMethod(name) {
+    closePopovers();
+    state.focusKey = "method-name";
+    set({ method: name, picks: {}, laneQuery: "", notice: [], view: "build" }, true);
+    if (root.getBoundingClientRect().top < 0 && root.scrollIntoView) root.scrollIntoView({ block: "start" });
+  }
+
+  function openCompare(slot) {
+    closePopovers();
+    state.filter = { q: "", level: state.filter.level || "runs", tones: [], extra: false, weights: false };
+    state.focusKey = "slot-" + slot;
+    set({ view: "grid", slot: slot, gridFocus: "" }, true);
+  }
+
+  /* The selections to start from (explorer_logic.examples): each on a method of its own,
+   * the seed-based ones in rotation, one turn a day. */
+  function exampleList() {
+    var turn = Math.floor(Date.now() / 86400000);
+    return L.examples(data, turn).map(function (item) {
+      var entry = L.lane(data, item.slot);
+      var title = entry ? entry.title : item.slot;
+      return {
+        label: item.kind === "compare" ? "Compare " + title.toLowerCase() : title,
+        option: item.option,
+        method: item.method,
+        cell: item.cell,
+        slot: item.slot,
+        refused: item.refused,
+      };
     });
-    for (var i = 0; i < data.cells.length; i++) {
-      var cell = data.cells[i];
-      if (cell.group === "stage-set" && cell.key.split("&").length > 2 && !cell.shares) {
-        found.push(["Several stages", cell]);
-        break;
-      }
+  }
+
+  /* No method chosen: the methods in their families, where each slot applies, and a few
+   * selections to start from. */
+  function gallery() {
+    var groups = families(data.methods);
+    /* What a family has in common, in a line; the slots every method has are below. */
+    function line(group) {
+      var first = group.methods[0];
+      if (group.methods.length > 1) return "They share one skeleton of slots, so a swap can be compared across all " + group.methods.length + ".";
+      return "Reads an " + (first.inputs === "RGB-D" ? "RGB-D image" : "depth cloud") + " with stages of its own.";
     }
-    return h("div", { class: "gx-sec gx-examples" }, [h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: "Examples" })]), h("div", { class: "gx-examples-row" }, found.map(function (item, index) {
-        return h("button", {
+    function card(m) {
+      return h("button", {
+        type: "button",
+        class: "gx-gcard",
+        "data-key": "method-" + m.name,
+        "aria-label": m.name + ", " + m.venue + ". " + m.line,
+        onclick: function () {
+          chooseMethod(m.name);
+        },
+      }, [
+        h("span", { class: "gx-gcard-head" }, [h("span", { class: "gx-gcard-name", text: m.name }), h("span", { class: "gx-gcard-venue", text: m.venue })]),
+        h("span", { class: "gx-gcard-line", text: m.line }),
+        h("span", { class: "gx-gcard-foot" }, [
+          h("span", { class: "gx-tag", text: reads(m) }),
+          h("span", { class: "gx-gcard-slots", text: m.slots.length + " slots" }),
+          h("span", { class: "gx-gcard-go", "aria-hidden": "true" }, [icon("arrowRight", 14)]),
+        ]),
+      ]);
+    }
+    var examples = exampleList();
+    return h("div", { class: "gx-start" }, [
+      h("div", { class: "gx-start-head" }, [
+        h("h2", { class: "gx-start-title", id: "gx-title", "data-key": "start-title", tabindex: "-1", text: "Choose a method to start from" }),
+        h("p", { class: "gx-start-sub", text: "Each method lists the options that fit its slots. Compare shows one slot under every method that has it." }),
+      ]),
+      h("div", { class: "gx-gallery" }, groups.map(function (group) {
+        return h("section", { class: "gx-ggroup is-" + group.key, "aria-label": group.title }, [
+          h("div", { class: "gx-ggroup-head" }, [h("h3", { class: "gx-label", text: group.title }), h("p", { class: "gx-ggroup-sub", text: line(group) })]),
+          h("div", { class: "gx-gcards" }, group.methods.map(card)),
+        ]);
+      })),
+      h("div", { class: "gx-start-foot" }, [
+        h("section", { class: "gx-scopes", "aria-label": "Where each slot applies" }, [
+          h("h3", { class: "gx-label", text: "Where each slot applies" }),
+          h("dl", { class: "gx-scope-rows" }, L.slotGroups(data).map(function (group) {
+            return h("div", { class: "gx-scope-row" }, [
+              h("dt", {}, [h("span", { class: "gx-scope-chip is-" + group.key, text: group.title })]),
+              h("dd", {}, group.lanes.map(function (entry) {
+                return h("button", {
+                  type: "button",
+                  class: "gx-scope-slot",
+                  "data-key": "scope-" + entry.key,
+                  title: "Compare " + entry.title.toLowerCase() + " under every method that has it",
+                  onclick: function () {
+                    openCompare(entry.key);
+                  },
+                  text: entry.title,
+                });
+              })),
+            ]);
+          })),
+        ]),
+        examples.length
+          ? h("section", { class: "gx-examples", "aria-label": "Try one" }, [
+              h("h3", { class: "gx-label", text: "Try one" }),
+              h("div", { class: "gx-examples-row" }, examples.map(function (item, index) {
+                return h("button", {
+                  type: "button",
+                  class: "gx-example",
+                  "data-key": "example-" + index,
+                  onclick: function () {
+                    if (item.cell) loadCell(item.cell);
+                    else openCompare(item.slot);
+                  },
+                }, [
+                  h("span", { class: "gx-example-what" }, item.option ? [item.label + " → ", h("code", { text: item.option })] : [item.label]),
+                  item.refused ? h("span", { class: "gx-tag is-refused", text: "Refused" }) : null,
+                  h("span", { class: "gx-example-who", text: item.method }),
+                  icon("arrowRight", 14),
+                ]);
+              })),
+            ])
+          : null,
+      ]),
+    ]);
+  }
+
+  /* The method of the builder: its name, venue and input, its page, and a way back to the
+   * gallery. A method of a family of its own says which slots it shares. */
+  function methodRow(m) {
+    var note = null;
+    if (!m.seed_based) {
+      var encoder = data.lanes.filter(function (entry) {
+        return entry.counterpart && m.slots.indexOf(entry.key) >= 0;
+      })[0];
+      var shared = data.lanes.filter(function (entry) {
+        return entry.scope === "all" && m.slots.indexOf(entry.key) >= 0;
+      });
+      note = h("p", { class: "gx-family" }, [
+        m.name + " reads an " + (m.inputs === "RGB-D" ? "RGB-D image" : "depth cloud") + (encoder ? ", so its encoder is an " + encoder.title.toLowerCase() + " (" + ((data.scopes || {})[encoder.scope] || encoder.scope) + ")" : "") + ".",
+        shared.length ? " " + capital(slotPhrase(shared)) + " are slots of every method." : "",
+      ]);
+    }
+    return h("div", { class: "gx-sec gx-method" }, [
+      h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: "Method" })]),
+      h("div", { class: "gx-mrow" }, [
+        h("div", { class: "gx-mrow-text" }, [
+          h("div", { class: "gx-mrow-name", "data-key": "method-name", tabindex: "-1", text: m.name }),
+          h("div", { class: "gx-mrow-meta", text: [m.venue, reads(m), m.slots.length + " slots"].join(" · ") }),
+        ]),
+        h("a", { class: "gx-ghost is-small", href: docHref(m.page), "data-key": "method-page", "aria-label": "The page of " + m.name, title: "The page of " + m.name }, [icon("book", 14), h("span", { text: "Page" })]),
+        h("button", {
           type: "button",
-          class: "gx-chipbtn",
-          "data-key": "example-" + index,
-          title: item[1].method + (item[1].sets.length ? " with " + item[1].sets.join(", ") : ""),
-          text: item[0],
+          class: "gx-btn is-small",
+          "data-key": "method-change",
           onclick: function () {
-            loadCell(item[1]);
+            closePopovers();
+            state.focusKey = "start-title";
+            set({ method: "", picks: {}, laneQuery: "", notice: [] }, true);
+            if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: "start" });
           },
-        });
-      }))]);
+        }, [h("span", { text: "Change" })]),
+      ]),
+      note,
+    ]);
   }
 
   function laneRow(entry, m) {
@@ -932,7 +1114,7 @@
       h("span", { class: "gx-node", "aria-hidden": "true" }),
       h("span", { class: "gx-row-slot", text: entry.title }),
       name
-        ? h("span", { class: "gx-row-opt", title: name, text: name })
+        ? h("span", { class: "gx-row-opt" + (!chosen && ships.plain ? " is-default" : ""), title: chosen ? name : ships.about ? name + ": " + ships.about : name, text: name })
         : h("span", { class: "gx-row-opt is-default", text: slot === "post" ? "None" : "Default" }),
       h("span", { class: "gx-row-caret", "aria-hidden": "true" }, [icon("chevronDown", 14)]),
     ]);
@@ -964,22 +1146,50 @@
       return entry.recipe;
     });
     var changed = Object.keys(state.picks).length;
+    /* The training recipe is folded until it is opened or one of its slots is changed. */
+    var recipeChanged = around.filter(function (entry) {
+      return state.picks[entry.key];
+    }).length;
+    var recipeOpen = Boolean(state.folds.recipe || recipeChanged || around.some(function (entry) {
+      return state.open === entry.key;
+    }));
     return h("div", { class: "gx-sec" }, [
       h("div", { class: "gx-sec-head" }, [
         h("span", { class: "gx-label", text: "Pipeline" }),
-        changed ? h("span", { class: "gx-sec-count", text: changed + " modified" }) : null,
+        changed ? h("span", { class: "gx-sec-count", text: changed + " changed" }) : null,
       ]),
-      m.seed_based ? null : h("p", { class: "gx-family" }, [m.name + " is a detector family of its own (", h("code", { text: m.detector }), ")."]),
       h("div", { class: "gx-pipe" }, [
-        h("div", { class: "gx-pipe-cap is-start" }, [h("span", { class: "gx-pipe-mark", "aria-hidden": "true" }), m.seed_based ? "Depth cloud" : "RGB-D image"]),
+        h("div", { class: "gx-pipe-cap is-start" }, [h("span", { class: "gx-pipe-mark", "aria-hidden": "true" }), reads(m)]),
         h("ol", { class: "gx-rows", "aria-label": "Stages" }, own.map(function (entry) {
           return laneRow(entry, m);
         })),
         h("div", { class: "gx-pipe-cap is-end" }, [h("span", { class: "gx-pipe-mark", "aria-hidden": "true" }), "Grasps"]),
       ]),
-      around.length ? h("div", { class: "gx-sec-head is-recipe" }, [h("span", { class: "gx-label", text: "Training recipe" })]) : null,
       around.length
-        ? h("ol", { class: "gx-rows is-recipe", "aria-label": "Training recipe" }, around.map(function (entry) {
+        ? h("button", {
+            type: "button",
+            class: "gx-recipe-head",
+            "data-key": "fold-recipe",
+            "aria-expanded": recipeOpen ? "true" : "false",
+            "aria-controls": "gx-recipe",
+            disabled: recipeChanged ? true : null,
+            onclick: function () {
+              var folds = {};
+              Object.keys(state.folds).forEach(function (name) {
+                folds[name] = state.folds[name];
+              });
+              folds.recipe = !recipeOpen;
+              state.focusKey = "fold-recipe";
+              set({ folds: folds });
+            },
+          }, [
+            h("span", { class: "gx-label", text: "Training recipe" }),
+            h("span", { class: "gx-sec-count", text: recipeChanged ? recipeChanged + " changed" : around.length + " slots · as shipped" }),
+            icon("chevronDown", 14),
+          ])
+        : null,
+      around.length && recipeOpen
+        ? h("ol", { class: "gx-rows is-recipe", id: "gx-recipe", "aria-label": "Training recipe" }, around.map(function (entry) {
             return laneRow(entry, m);
           }))
         : null,
@@ -997,7 +1207,7 @@
     items.push({
       key: "chip-" + slot + "-",
       name: name || (slot === "post" ? "None" : "Default"),
-      mono: Boolean(name),
+      mono: Boolean(name) && !ships.plain,
       value: "",
       isDefault: true,
       option: shippedOption,
@@ -1022,9 +1232,10 @@
       });
     });
     var query = state.laneQuery.trim().toLowerCase();
-    if (!query) return { all: items.length, items: items };
+    if (!query) return { all: items.length, items: items, every: items };
     return {
       all: items.length,
+      every: items,
       items: items.filter(function (item) {
         var hay = item.words.join(" ").toLowerCase();
         return query.split(/\s+/).every(function (word) {
@@ -1127,8 +1338,15 @@
             },
           }),
         ]);
-    var page = entry.pages[0];
-    var legend = [["ok", "", "Runs"], ["empty", "", "No grasps"], ["unstable", "", "Unstable"], ["refused", "", "Refused"], ["fails", "", "Fails"], ["ok", " is-contract", "Compose only"], ["none", "", "No answer"]];
+    /* The legend names the marks of this list only. */
+    var shown = {};
+    listed.every.forEach(function (item) {
+      var s = status(item.badge);
+      shown[s.tone + (s.contract ? " is-contract" : "")] = true;
+    });
+    var legend = DOT_LEGEND.filter(function (item) {
+      return shown[item[0] + item[1]];
+    });
     return h("div", {
       class: "gx-pop gx-picker",
       id: "gx-picker",
@@ -1148,10 +1366,10 @@
     }, [
       h("div", { class: "gx-picker-head" }, [
         h("div", { class: "gx-picker-text" }, [
-          h("div", { class: "gx-pop-title", text: entry.title }),
-          h("p", { class: "gx-picker-task", text: task(entry) }),
+          h("div", { class: "gx-pop-title" }, [h("span", { text: entry.title }), scopeChip(entry)]),
+          h("p", { class: "gx-picker-task" }, [rich(task(entry)), slot === "loss" ? null : h("code", { class: "gx-picker-key", text: "--set " + slot + "=" })]),
         ]),
-        page ? external(slotHref(page.stem), "Docs") : null,
+        entry.page ? docLink(entry.page, "Docs") : null,
       ]),
       searchable
         ? h("label", { class: "gx-search is-picker" }, [
@@ -1212,12 +1430,6 @@
     if (title) title.focus({ preventScroll: true });
   }
 
-  function same(a, b) {
-    return a.length === b.length && a.every(function (item, index) {
-      return item === b[index];
-    });
-  }
-
   /* The alerts of a record: why it was refused, where it failed, what was unstable, what
    * compose adjusted. */
   function recordAlerts(cell, methodName) {
@@ -1225,18 +1437,16 @@
     /* What compose answers now, where the page holds it: a record keeps the message of
      * the day it was measured, and the lists of alternatives in a fix grow with the code. */
     var now = cell.sets.length ? L.contract(data, methodName, cell.sets) : null;
+    var kind = L.refusalWords(data, (now && !now.ok && now.kind) || cell.kind);
     if (cell.refusal) {
       if (now && !now.ok) {
-        out.push(alertBox("refused", "ban", "Why compose refuses it", [
-          messageList(now.messages),
-          same(now.messages, cell.refusal) ? null : h("p", { class: "gx-alert-fine", text: "Today's wording; the record was refused by an earlier version with other words." }),
-        ]));
+        out.push(alertBox("refused", "ban", "Why compose refuses it" + (kind ? ": " + kind : ""), [messageList(now.messages)]));
       } else {
-        out.push(alertBox("refused", "ban", "Why compose refused it", [messageList(cell.refusal)]));
-        if (now && now.ok) out.push(alertBox("none", "info", "compose accepts this today", [h("p", { text: "The record is older than the code of this page and has not been probed again." })]));
+        out.push(alertBox("refused", "ban", "Why compose refused it" + (kind ? ": " + kind : ""), [messageList(cell.refusal)]));
+        if (now && now.ok) out.push(alertBox("none", "info", "compose accepts this now", [h("p", { text: "The record is older than the code of this page and has not been probed again." })]));
       }
     } else if (now && !now.ok) {
-      out.push(alertBox("unstable", "alert", "Today's compose refuses this record", [h("p", { text: "It was measured with an earlier version. compose now says:" }), messageList(now.messages)]));
+      out.push(alertBox("unstable", "alert", "compose now refuses this record", [h("p", { text: "It was measured with an earlier version. compose now says:" }), messageList(now.messages)]));
     }
     if (cell.failure) {
       var f = cell.failure;
@@ -1248,7 +1458,7 @@
     if (cell.unstable) out.push(alertBox("unstable", "alert", "What was unstable", [rich(cell.unstable, "p")]));
     var adjusted = [];
     if (cell.adapter && cell.verdict !== "refused") {
-      adjusted.push(h("p", {}, ["Wrapped the encoder in ", h("code", { text: cell.adapter }), "; the bare swap breaks the contract between encoder and proposal."]));
+      adjusted.push(h("p", {}, ["compose wrapped the encoder in ", h("code", { text: cell.adapter }), " so that its output fits the next stage."]));
     }
     if (cell.fitted && cell.fitted.length) {
       adjusted.push(h("p", {}, ["Set "].concat(cell.fitted.map(function (item, index) {
@@ -1258,6 +1468,18 @@
     if (adjusted.length) out.push(alertBox("none", "info", cell.adapter && cell.verdict !== "refused" ? "Adapter inserted by compose" : "Fitted by compose", adjusted));
     return out;
   }
+
+  /* Why a level is undecided, in the few words under its mark (the whole reason is its
+   * tooltip). */
+  var SHORT_STATE = {
+    "not checked": "not checked",
+    "unstable, not repeated": "unstable once",
+    "needs consent": "needs consent",
+    "not a combination": "needs a preset",
+    "not probed": "not probed",
+    "not reached by the method as shipped": "reference misses it too",
+    "not reached": "not reached",
+  };
 
   /* The four levels of a record (or of a contract answer) as a tracker. */
   function levelTracker(cell, checked) {
@@ -1273,7 +1495,7 @@
       } else {
         said = "not probed";
       }
-      return { key: level.key, said: said, contract: contract, meaning: level.meaning };
+      return { key: level.key, said: said, contract: contract, short: level.short || level.key };
     });
     var reached = 0;
     while (reached < steps.length && steps[reached].said === "yes" && !steps[reached].contract) reached += 1;
@@ -1292,10 +1514,11 @@
       var tone = step.said === "yes" ? "ok" : step.said === "no" ? "refused" : "none";
       var glyph = step.said === "yes" ? "check" : step.said === "no" ? "x" : null;
       var undecided = tone === "none";
-      return h("li", { class: "gx-level s-" + tone + (step.contract ? " is-contract" : "") + (undecided ? " is-undecided" : "") + (index < reached ? " is-reached" : "") }, [
+      var words = (data.undecided_words || {})[step.said];
+      return h("li", { class: "gx-level s-" + tone + (step.contract ? " is-contract" : "") + (undecided ? " is-undecided" : "") + (index < reached ? " is-reached" : ""), title: capital(step.short) + (words ? ". Undecided: " + words : "") }, [
         h("span", { class: "gx-level-mark", "aria-hidden": "true" }, [glyph ? icon(glyph, 12) : null]),
-        h("span", { class: "gx-level-name", title: plain(step.meaning) }, [capital(step.key)]),
-        h("span", { class: "gx-level-state", text: undecided ? step.said : step.said === "yes" ? (step.contract ? "compose says yes" : "yes") : step.contract ? "compose says no" : "no" }),
+        h("span", { class: "gx-level-name" }, [capital(step.key)]),
+        h("span", { class: "gx-level-state", text: undecided ? SHORT_STATE[step.said] || step.said : step.said === "yes" ? (step.contract ? "compose says yes" : "yes") : step.contract ? "compose says no" : "no" }),
       ]);
     }));
     var lines = steps.filter(function (step) {
@@ -1320,9 +1543,8 @@
       tiles.push(["Total loss", [short(cell.loss[0]), icon("arrowRight", 14), short(cell.loss[1])], percent(change), change > 0 ? "is-bad" : ""]);
     }
     if (cell.grasps && cell.grasps.length) {
-      tiles.push(["Grasps per frame", [cell.grasps.map(num).join(" · ")], cell.grasps.length + " frames", ""]);
+      tiles.push(["Grasps predicted", [cell.grasps.map(num).join(" · ")], "on " + cell.grasps.length + " test frame" + (cell.grasps.length > 1 ? "s" : ""), ""]);
     }
-    tiles.push(["Probe", [data.probe.iterations + " it"], "on " + data.probe.frames + " frames", ""]);
     return h("div", { class: "gx-stats" }, tiles.map(function (tile) {
       return h("div", { class: "gx-stat" }, [
         h("div", { class: "gx-stat-label", text: tile[0] }),
@@ -1335,7 +1557,7 @@
   function lossFalls(cell) {
     if (!cell || !cell.fall) {
       if (cell && cell.levels && cell.levels.indexOf("C") >= 0) {
-        return h("p", { class: "gx-muted gx-small", text: "Loss terms not checked: a record of the first judge." });
+        return h("p", { class: "gx-muted gx-small", text: "The fall of each loss term was not recorded for this probe." });
       }
       return null;
     }
@@ -1393,22 +1615,26 @@
           var name = item.slice(item.indexOf("=") + 1);
           var loss = L.option(data, part.slot, name);
           return [item.slice(0, item.indexOf("=")), [h("code", { text: name }), loss ? " " + plain(loss.summary) : ""]];
-        }).concat(slotLane.pages.length ? [["Docs", [external(slotHref(slotLane.pages[0].stem), plain(slotLane.pages[0].title))]]] : [])),
+        }).concat(slotLane.page ? [["Docs", [docLink(slotLane.page, slotLane.title + " page")]]] : [])),
       ]);
     }
-    var page = option.page || (slotLane.pages[0] || {}).stem;
-    var classes = L.classText(data, option);
+    var works = L.reachOf(data, option, "runs");
+    var learns = L.reachOf(data, option, "level2");
+    function said(found) {
+      return [h("span", { class: "gx-frac t-" + found.tone, text: found.fraction }), found.tail ? h("span", { class: "gx-detail-tail", text: " " + plain(found.tail) }) : null];
+    }
     return h("div", { class: "gx-detail" }, [
       h("div", { class: "gx-detail-head" }, [h("span", { class: "gx-muted", text: slotLane.title }), h("code", { text: option.name })]),
       rich(option.summary, "p", { class: "gx-detail-sum" }),
       keyValues([
+        works ? ["Runs under", said(works)] : null,
+        learns ? [L.level2Words(data).header, said(learns)] : null,
         ["Component", [h("code", { text: option.component }), option.preset ? " through its preset" : " with its defaults"]],
         option.source ? ["Source", [option.source]] : null,
         ["Needs", option.extras.length ? [h("code", { text: 'pip install "grasppanda[' + option.extras.join(",") + ']"' })] : ["The core install"]],
         slotLane.recipe ? null : ["Weights", option.weights ? ["Released, ", h("code", { text: option.weights })] : ["Random initialisation"]],
-        classes ? ["Class", [classes, " ", infoButton("Class: " + data.caveat + ".", "What a class counts")]] : null,
         ["Config", [h("code", { text: slotLane.config })]],
-        page ? ["Docs", [external(slotHref(page), "Slot page")]] : null,
+        slotLane.page ? ["Docs", [docLink(slotLane.page, slotLane.title + " page")]] : null,
       ]),
     ]);
   }
@@ -1451,6 +1677,7 @@
     var cell = result.cell;
     var counts = data.counts;
     var coverage = num(counts.grid - counts.grid_without_record) + " of " + num(counts.grid) + " grid combinations have a record";
+    var foot = h("p", { class: "gx-fold-foot" }, [docLink("evidence", "How we measure"), " ", docLink("advanced_guides/measured_combinations", "Every record")]);
     if (!cell) {
       return fold("record", "Record", [
         keyValues([
@@ -1458,7 +1685,7 @@
           ["Coverage", [coverage]],
           ["Method", [h("code", { text: result.method.config })]],
         ]),
-        h("p", { class: "gx-fold-foot" }, [external(docHref("advanced_guides/measured_combinations"), "Measured combinations")]),
+        foot,
       ], "none");
     }
     var rows = [
@@ -1473,12 +1700,10 @@
         : null,
       cell.unchanged && cell.unchanged.length ? ["Unchanged parts", [cell.unchanged.join(", ")]] : null,
       cell.probe_opts ? ["Probe options", [plain(data.scale_statistic)]] : null,
+      cell.verdict === "refused" ? null : ["Measured on", [capital(data.measured_on)]],
       ["Method", [h("code", { text: result.method.config })]],
     ];
-    return fold("record", "Record", [
-      keyValues(rows),
-      h("p", { class: "gx-fold-foot" }, [external(docHref("advanced_guides/measured_combinations"), "Measured combinations")]),
-    ], day(cell.run));
+    return fold("record", "Record", [keyValues(rows), foot], day(cell.run));
   }
 
   /* The badge at the top of the answer. A record decides it; without one, the contract
@@ -1499,29 +1724,24 @@
     var text;
     var full;
     if (cell) {
-      text = {
-        runs: "Built, trained " + it + " iterations on " + fr + " real frames, and predicted grasps.",
-        "runs-empty": "Built, trained and asked to predict, but no probed frame got a grasp.",
-        "runs-unstable": "Built and trained, but a loss, a weight, a seed or a gradient went wrong.",
-        refused: "The config check refused it, so nothing was built.",
-        fails: "It passed the config check, then raised an error.",
-      }[cell.verdict] || capital(L.badge(cell).label) + ".";
-      full = data.verdicts[cell.verdict] || "";
+      var said = L.recordSummary(data, cell);
+      text = said.text;
+      full = said.full;
     } else if (liveOn) {
       if (live.status === "done" && live.report) {
-        text = live.report.accepted ? "This installation's compose accepts it; whether it trains is what the probe shows." : "This installation's compose refuses it and writes no file.";
+        text = live.report.accepted ? "This installation's compose accepts it. Whether it trains is what the probe shows." : "This installation's compose refuses it and writes no file.";
       } else if (live.status === "error") {
         text = "The server gave no answer.";
       } else {
         text = "Composing it with this installation…";
       }
-      full = "The contract check runs now, on this machine. It is no probe: nothing is trained here.";
+      full = "The config check runs now, on this machine. Nothing is trained here.";
     } else if (result.contract) {
-      text = result.contract.ok ? "compose accepts it; nobody has probed whether it trains." : "compose refuses it, so nothing can be built.";
-      full = "The answer of `grasppanda compose`, stored when this page was generated, for one change or two changes of two slots. It is the check of the contract rules and of the config, not a probe: “accepted” says that the contracts fit, not that it trains.";
+      text = result.contract.ok ? "The config check accepts it. It has not been trained yet." : "The config check refuses it, so nothing can be built.";
+      full = "The answer of `grasppanda compose`, stored when this page was made. Accepted means the stages fit together, not that it trains.";
     } else {
-      text = "Nobody has probed this combination, so this page does not guess.";
-      full = "The page stores answers of compose for one change and for two changes of two slots; a stage together with an option of the training recipe is not among them. The commands below find out: compose answers at once, the probe trains " + it + " iterations on " + fr + " frames.";
+      text = "Not tested together yet. The commands below test it.";
+      full = "The page stores answers of compose for one change and for two changes of two slots. compose answers at once; the probe trains " + it + " iterations on " + fr + " frames.";
     }
     return h("p", { class: "gx-res-sum" }, [rich(text, "span"), full ? infoButton(full, "What this means") : null]);
   }
@@ -1560,6 +1780,65 @@
     }));
   }
 
+  /* Level 2 of the selection ("trains like shipped"): how its record trained beside the
+   * method's own component (250 iterations), or why it was not compared (the rules of
+   * grasppanda.combine.reach.level2). Nothing for a refusal, which built nothing, or when the
+   * page does not hold level 2. */
+  function learnsLine(result) {
+    if (!data.learns) return null;
+    var m = result.method;
+    var words = L.level2Words(data);
+    var said;
+    var own = "";
+    if (result.parts.length === 1) {
+      var entry = L.lane(data, result.parts[0].slot);
+      if (entry) own = entry.title.toLowerCase();
+    }
+    if (!result.sets.length) {
+      said = { own: true };
+    } else if (result.cell && result.cell.verdict !== "refused") {
+      said = L.learnsOf(data, result.cell);
+    } else {
+      /* Refused: nothing was built, the tracker says it already. */
+      return null;
+    }
+    var beside = own ? m.name + "'s own " + own : m.name + " as shipped";
+    var info = infoButton(
+      capital(words.header) + ": " + words.meaning + " (here: " + beside + "). " + capital(data.learns.measured_on) +
+        ". On a par: every loss term it shares with the method ends within the method's tolerance, none rises, and it predicts grasps.",
+      "What " + words.name + " means"
+    );
+    if (said.own) {
+      /* A change that builds what the method ships (HGGD's encoder written out as a preset)
+       * is no swap either, but it is not the method's own record. */
+      var ownText = result.sets.length
+        ? "Not compared: this option builds what " + m.name + " ships, so it is no swap."
+        : "This is " + m.name + " as shipped: the reference every swap is compared with.";
+      return h("div", { class: "gx-learns is-none" }, [
+        h("span", { class: "gx-learns-label", text: words.header }),
+        h("span", { class: "gx-learns-none", text: ownText }),
+        info,
+      ]);
+    }
+    if (said.none) {
+      return h("div", { class: "gx-learns is-none" }, [
+        h("span", { class: "gx-learns-label", text: words.header }),
+        h("span", { class: "gx-learns-none", text: "Not compared: " + said.none + "." }),
+        info,
+      ]);
+    }
+    return h("div", { class: "gx-learns" }, [
+      h("span", { class: "gx-learns-label", text: words.header }),
+      h("span", { class: "gx-frac t-" + said.tone + " is-outcome", text: said.outcome }),
+      info,
+      said.reasons.length
+        ? h("ul", { class: "gx-learns-why" }, said.reasons.map(function (reason) {
+            return rich(reason, "li");
+          }))
+        : null,
+    ]);
+  }
+
   function resultCard(result, badge) {
     var cell = result.cell;
     var liveOn = Boolean(liveBase && result.sets.length);
@@ -1569,7 +1848,7 @@
       : liveOn
         ? "Checked by this installation"
         : checked
-          ? "Contract check, no probe"
+          ? "Config check only"
           : "No record";
     var top = h("div", { class: "gx-res-top" }, [
       badge.loading
@@ -1594,40 +1873,48 @@
         : null,
     ]);
     var children = [top, titleRow, changeChips(result), summaryLine(result, liveOn)];
+    var numbers = null;
     if (cell) {
       children.push(levelTracker(cell, null));
-      children.push(statTiles(cell));
-      children.push(lossFalls(cell));
+      children.push(learnsLine(result));
       recordAlerts(cell, result.method.name).forEach(function (node) {
         children.push(node);
       });
       children.push(liveBlock(result));
+      var tiles = statTiles(cell);
+      var falls = lossFalls(cell);
+      if (tiles || falls) {
+        var count = (cell.fall ? Object.keys(cell.fall).length + " loss terms" : "");
+        numbers = fold("numbers", "Numbers", [tiles, falls], [cell.parameters !== undefined ? compact(cell.parameters) + " parameters" : "", count].filter(Boolean).join(" · "));
+      }
+    } else if (!result.sets.length) {
+      children.push(learnsLine(result));
     } else if (liveOn) {
       result.parts.forEach(function (part) {
-        if (part.reason) children.push(alertBox("none", "info", "No grid cell for " + part.name, [rich(part.reason, "p")]));
+        if (part.reason) children.push(alertBox("none", "info", "No record of " + part.name, [rich(part.reason, "p")]));
       });
       children.push(liveBlock(result));
       children.push(partsBlock(result, liveOn));
     } else {
       if (checked) {
         children.push(levelTracker(null, checked));
-        if (!checked.ok) children.push(alertBox("refused", "ban", "Why compose refuses it", [messageList(checked.messages)]));
+        if (!checked.ok) children.push(alertBox("refused", "ban", "Why compose refuses it" + (L.refusalWords(data, checked.kind) ? ": " + L.refusalWords(data, checked.kind) : ""), [messageList(checked.messages)]));
         else if (checked.adapter) children.push(alertBox("none", "info", "Adapter inserted by compose", [h("p", {}, ["compose wraps the scene encoder in ", h("code", { text: checked.adapter }), "."])]));
       }
       result.parts.forEach(function (part) {
-        if (part.reason) children.push(alertBox("none", "info", "No grid cell for " + part.name, [rich(part.reason, "p")]));
+        if (part.reason) children.push(alertBox("none", "info", "No record of " + part.name, [rich(part.reason, "p")]));
       });
       children.push(partsBlock(result, liveOn));
       if (!checked) {
         children.push(h("div", { class: "gx-hint" }, [
           icon("terminal", 16),
-          h("p", {}, [h("span", { text: "Get an answer in seconds: " }), h("code", { text: "grasppanda explore" }), h("span", { text: " checks any selection with the real compose." })]),
+          h("p", {}, [h("span", { text: "Check it in seconds: " }), h("code", { text: "grasppanda explore" }), h("span", { text: " runs the real compose on any selection." })]),
           copyButton("grasppanda explore", "copy-explore", "grasppanda explore", { cls: "is-ghost" }),
         ]));
       }
     }
     children.push(reproduce(result, liveOn));
-    var folds = [];
+    var folds = [numbers];
     if (result.parts.length) folds.push(fold("cards", "Option details", result.parts.map(optionDetails), result.parts.length > 1 ? result.parts.length + " options" : result.parts[0].name));
     folds.push(yamlFold(result));
     folds.push(recordFold(result));
@@ -1637,6 +1924,7 @@
 
   function buildView() {
     var m = L.method(data, state.method);
+    if (!m) return gallery();
     var result = L.answer(data, state.method, state.picks);
     ensureLive(result);
     var badge = shownBadge(result);
@@ -1654,17 +1942,7 @@
     var s = status(badge, result.cell);
     return h("div", { class: "gx-build" }, [
       h("section", { class: "gx-config", "aria-label": "Configuration" }, [
-        h("div", { class: "gx-sec" }, [
-          h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: "Method" })]),
-          methodTiles(data.methods, state.method, function (item) {
-            return "method-" + item.name;
-          }, function (name) {
-            closePopovers();
-            state.focusKey = "method-" + name;
-            set({ method: name, picks: {}, laneQuery: "", notice: [] }, true);
-          }),
-        ]),
-        examples(),
+        methodRow(m),
         pipeline(m),
         h("div", { class: "gx-config-actions" }, [
           h("button", {
@@ -1693,7 +1971,7 @@
         },
       }, [
         h("span", { class: "gx-pill s-" + s.tone + (s.contract ? " is-contract" : "") }, [icon(s.icon, 14), h("span", { text: s.label })]),
-        h("span", { class: "gx-bar-text", text: result.method.name + (changed ? " · " + changed + " modified" : " as shipped") }),
+        h("span", { class: "gx-bar-text", text: result.method.name + (changed ? " · " + changed + " changed" : " as shipped") }),
         h("span", { class: "gx-bar-more" }, [h("span", { text: "Result" }), icon("chevronDown", 14)]),
       ]),
     ]);
@@ -1701,27 +1979,43 @@
 
   // -------------------------------------------------------------------- compare view
 
-  var TILE_ICON = { yes: "check", no: "x", refused: "ban", unstable: "minus", "check-refused": "ban", mixed: "minus" };
+  var TILE_ICON = { yes: "check", no: "x", refused: "ban", unstable: "minus", "check-refused": "ban", mixed: "minus", own: "dot", muted: "slash" };
 
-  function tipFor(m, slot, entry, found, tile) {
+  /* The name of a level of Compare: the four levels of a record, then level 2. */
+  function levelName(level) {
+    return level === "level2" ? L.level2Words(data).header : capital(level);
+  }
+
+  function tipFor(m, slot, entry, found, tile, noRecordWhy) {
     var lines = [h("div", { class: "gx-tip-title", text: m.name + " · " + entry.name })];
     var level = state.filter.level || "runs";
     function statusLine(badge, cell) {
       var s = status(badge, cell);
       return h("div", { class: "gx-tip-status" }, [h("span", { class: "gx-dot s-" + s.tone + (s.contract ? " is-contract" : "") }), h("span", { text: s.label })]);
     }
+    if (tile.state === "own") {
+      lines.push(h("div", { class: "gx-tip-line", text: m.name + " ships it: this record is " + m.name + " as shipped, so it is no swap and no fraction counts it." }));
+    }
     if (!found.length) {
-      lines.push(statusLine(tile.contract ? L.mark(data, m.name, [slot + "=" + entry.name]) : L.badge(null)));
+      if (noRecordWhy) {
+        lines.push(h("div", { class: "gx-tip-line", text: "No record of its own: " + plain(noRecordWhy) + "." }));
+        var asked = L.contract(data, m.name, [slot + "=" + entry.name]);
+        if (asked) lines.push(h("div", { class: "gx-tip-line", text: "compose " + (asked.ok ? "accepts" : "refuses") + " it as an option of its own." }));
+      } else {
+        lines.push(statusLine(tile.contract ? L.mark(data, m.name, [slot + "=" + entry.name]) : L.badge(null)));
+      }
       var reason = slot === "loss" ? "" : L.notProbed(m, slot, entry.name);
-      if (reason) lines.push(h("div", { class: "gx-tip-line", text: "No grid cell: " + plain(reason) }));
-      if (tile.contract) lines.push(h("div", { class: "gx-tip-line", text: "The answer of compose; no probe on record." }));
+      if (reason && !noRecordWhy) lines.push(h("div", { class: "gx-tip-line", text: "No record: " + plain(reason) }));
+      if (tile.contract) lines.push(h("div", { class: "gx-tip-line", text: "The config check only: nothing was trained." }));
     }
     found.slice(0, 2).forEach(function (cell) {
       lines.push(statusLine(L.badge(cell), cell));
       if (slot === "loss") lines.push(h("div", { class: "gx-tip-mono", text: cell.sets.join(" ") }));
-      var said = L.recordTile(data, cell, level);
-      lines.push(h("div", { class: "gx-tip-row" }, [h("span", { text: capital(level) }), h("b", { text: said.label })]));
-      if (cell.grasps && cell.grasps.length) lines.push(h("div", { class: "gx-tip-row" }, [h("span", { text: "Grasps per frame" }), h("b", { text: cell.grasps.map(num).join(" · ") })]));
+      var said = level === "level2" ? L.learnsTile(data, [cell]) : L.recordTile(data, cell, level);
+      lines.push(h("div", { class: "gx-tip-row" }, [h("span", { text: levelName(level) }), h("b", { text: said.label })]));
+      var second = level === "level2" ? L.learnsOf(data, cell) : null;
+      if (second && second.reasons && second.reasons.length) lines.push(h("div", { class: "gx-tip-line", text: plain(second.reasons[0]) }));
+      if (cell.grasps && cell.grasps.length) lines.push(h("div", { class: "gx-tip-row" }, [h("span", { text: "Grasps predicted" }), h("b", { text: cell.grasps.map(num).join(" · ") })]));
       var why = cell.refusal
         ? plain(cell.refusal[0].split(". ")[0]) + "."
         : cell.failure
@@ -1747,13 +2041,13 @@
     return { method: m.name, picks: picks, answer: L.answer(data, m.name, picks) };
   }
 
-  function gridTile(m, slot, entry, found, place, focusable) {
+  function gridTile(m, slot, entry, found, place, focusable, noRecordWhy) {
     var level = state.filter.level || "runs";
     var checked = !found.length && slot !== "loss" ? L.contract(data, m.name, [slot + "=" + entry.name]) : null;
-    var tile = L.levelTile(data, found, level, checked);
+    var tile = L.levelTile(data, found, level, checked, noRecordWhy);
     var key = "cell-" + slot + "-" + entry.name + "-" + m.name;
     var badge = found.length ? L.badgeOf(found) : checked ? L.contractBadge(checked) : L.badge(null);
-    var label = m.name + ", " + entry.name + ", " + level + ": " + tile.label + (found.length ? " (" + status(badge, found[0]).label.toLowerCase() + ")" : "");
+    var label = m.name + ", " + entry.name + ", " + levelName(level).toLowerCase() + ": " + tile.label + (found.length ? " (" + status(badge, found[0]).label.toLowerCase() + ")" : "");
     var glyph = TILE_ICON[tile.state];
     return h("td", { class: "gx-m-cell" }, [
       h("button", {
@@ -1767,12 +2061,12 @@
         "aria-haspopup": "menu",
         "aria-expanded": state.cellMenu === key ? "true" : "false",
         onmouseenter: function (event) {
-          if (!state.cellMenu) showTip(event.currentTarget, tipFor(m, slot, entry, found, tile), true);
+          if (!state.cellMenu) showTip(event.currentTarget, tipFor(m, slot, entry, found, tile, noRecordWhy), true);
         },
         onmouseleave: hideTip,
         onfocus: function (event) {
           state.gridFocus = key;
-          if (!state.cellMenu) showTip(event.currentTarget, tipFor(m, slot, entry, found, tile), true);
+          if (!state.cellMenu) showTip(event.currentTarget, tipFor(m, slot, entry, found, tile, noRecordWhy), true);
         },
         onblur: hideTip,
         onclick: function () {
@@ -1854,42 +2148,61 @@
     to.focus();
   }
 
-  /* The slot the grid opens on: the one with the most options. */
+  /* The slot Compare opens on: the first slot of every method (post-processing). */
   function firstGridSlot() {
-    var best = data.lanes[0].key;
-    data.lanes.forEach(function (entry) {
-      if ((data.options[entry.key] || []).length > (data.options[best] || []).length) best = entry.key;
-    });
-    return best;
+    var groups = L.slotGroups(data);
+    return groups.length ? groups[0].lanes[0].key : data.lanes[0].key;
   }
 
-  /* The slots in groups: the stages of the seed-based methods, the training recipe, and
-   * the slots of a family of its own (HGGD). */
-  function slotGroups() {
-    var groups = [["Model", []], ["Training recipe", []]];
-    var family = {};
-    data.lanes.forEach(function (entry) {
-      var seed = data.methods.some(function (m) {
-        return m.seed_based && m.slots.indexOf(entry.key) >= 0;
-      });
-      if (entry.recipe) groups[1][1].push(entry);
-      else if (seed) groups[0][1].push(entry);
-      else {
-        var owners = data.methods.filter(function (m) {
-          return m.slots.indexOf(entry.key) >= 0;
-        }).map(function (m) {
+  /* Who lacks the slot, said instead of a column that is not there: "Not a slot of HGGD:
+   * its encoder is the image encoder." With the slot that stands in its place, if any. */
+  function missingNote(entry) {
+    var absent = L.without(data, entry.key);
+    if (!absent.length) return null;
+    var family = absent.length > 1 && absent.every(function (m) {
+      return m.seed_based;
+    }) && absent.length === data.methods.filter(function (m) {
+      return m.seed_based;
+    }).length;
+    var names = family
+      ? "the " + absent.length + " seed-based methods"
+      : absent.map(function (m) {
           return m.name;
         }).join(", ");
-        if (!family[owners]) {
-          family[owners] = [owners, []];
-          groups.push(family[owners]);
-        }
-        family[owners][1].push(entry);
-      }
+    var other = entry.counterpart ? L.lane(data, entry.counterpart) : null;
+    var words = [h("span", { text: "Not a slot of " + names }), other ? h("span", { text: (family ? ": their encoder is the " : ": its encoder is the ") + other.title.toLowerCase() + "." }) : h("span", { text: "." })];
+    if (!other) {
+      var theirs = data.lanes.filter(function (lane) {
+        return absent[0].slots.indexOf(lane.key) >= 0;
+      });
+      if (absent.length === 1 && theirs.length) words.push(h("span", { text: " Its slots: " + slotPhrase(theirs) + "." }));
+    }
+    return h("p", { class: "gx-cmp-note" }, [
+      icon("info", 14),
+      h("span", {}, words),
+      other
+        ? h("button", {
+            type: "button",
+            class: "gx-link",
+            "data-key": "note-" + other.key,
+            onclick: function () {
+              openCompare(other.key);
+            },
+          }, [h("span", { text: "Compare " + other.title.toLowerCase() + "s" }), icon("arrowRight", 14)])
+        : null,
+    ]);
+  }
+
+  /* What the options without a record of their own are, in the words of reach: "adapter",
+   * "point painting". */
+  function noRecordKinds(rows) {
+    var kinds = [];
+    rows.forEach(function (row) {
+      if (!row.noRecord) return;
+      var kind = row.noRecord.split(":")[0].replace(/^an? /, "");
+      if (kinds.indexOf(kind) < 0) kinds.push(kind);
     });
-    return groups.filter(function (group) {
-      return group[1].length;
-    });
+    return kinds;
   }
 
   /* A method's name over its column, in at most two lines: broken after its last hyphen
@@ -1900,18 +2213,9 @@
     return [h("span", { class: "gx-m-line", text: name.slice(0, at + 1) }), h("span", { class: "gx-m-line", text: name.slice(at + 1) })];
   }
 
-  var CLASS_NAMES = { universal: "Universal", most: "Most", some: "Some", specific: "Specific", none: "None", relative: "N of M", undecided: "Undecided" };
-
-  function classPill(option, level) {
-    var found = L.classAt(data, option, level);
-    if (!found) return h("span", { class: "gx-muted", text: "—" });
-    var text = found[0];
-    var column = found[1];
-    var title = text + " (at " + level + "). Class: " + data.caveat + ".";
-    if (column === "undecided") return h("span", { class: "gx-cls is-undecided", title: title, text: capital(text) });
-    var shortText = column === "relative" ? (/^(\d+ of \d+)/.exec(text) || [text, text])[1] : CLASS_NAMES[column] || capital(text);
-    return h("span", { class: "gx-cls c-" + column, title: title, text: shortText });
-  }
+  /* The words of the filter by where an option works, per tone, at a level and at level 2. */
+  var TONE_WORDS = { ok: "Every method", warn: "Part of the methods", no: "No method", muted: "Not decided" };
+  var TONE_WORDS_2 = { ok: "On a par everywhere", warn: "Worse somewhere", no: "Diverging or failing somewhere", muted: "Not compared" };
 
   function gridView() {
     var slot = state.slot || firstGridSlot();
@@ -1923,16 +2227,17 @@
       return L.matches(row.option, filter, data);
     });
     var level = filter.level || "runs";
-    var active = filter.classes.length + (filter.extra ? 1 : 0) + (filter.weights ? 1 : 0);
+    var level2 = level === "level2";
+    var active = filter.tones.length + (filter.extra ? 1 : 0) + (filter.weights ? 1 : 0);
     function patch(change) {
-      var next = { q: filter.q, level: level, classes: filter.classes.slice(), extra: filter.extra, weights: filter.weights };
+      var next = { q: filter.q, level: level, tones: filter.tones.slice(), extra: filter.extra, weights: filter.weights };
       Object.keys(change).forEach(function (name) {
         next[name] = change[name];
       });
       set({ filter: next, cellMenu: "" });
     }
-    var nav = h("nav", { class: "gx-slotnav", "aria-label": "Slots" }, slotGroups().map(function (group) {
-      return h("div", { class: "gx-slotnav-group" }, [h("div", { class: "gx-label", text: group[0] })].concat(group[1].map(function (item) {
+    var nav = h("nav", { class: "gx-slotnav", "aria-label": "Slots" }, L.slotGroups(data).map(function (group) {
+      return h("div", { class: "gx-slotnav-group" }, [h("div", { class: "gx-label", text: group.title })].concat(group.lanes.map(function (item) {
         var on = item.key === slot;
         return h("button", {
           type: "button",
@@ -1940,53 +2245,47 @@
           "data-key": "slot-" + item.key,
           "aria-current": on ? "true" : null,
           onclick: function () {
-            state.filter = { q: "", level: level, classes: [], extra: false, weights: false };
-            closePopovers();
-            state.focusKey = "slot-" + item.key;
-            set({ slot: item.key, gridFocus: "" }, true);
+            openCompare(item.key);
           },
-        }, [h("span", { text: item.title }), h("span", { class: "gx-slotnav-count", text: String((data.options[item.key] || []).length) })]);
+        }, [h("span", { text: item.title }), h("span", { class: "gx-slotnav-count", text: String(item.count !== undefined ? item.count : (data.options[item.key] || []).length) })]);
       })));
     }));
-    var withClass = (data.options[slot] || []).some(function (option) {
-      return option.classes;
-    });
     var levelItems = (data.levels || []).map(function (item) {
-      return [item.key, capital(item.key), "level-" + item.key, plain(item.meaning)];
+      return [item.key, capital(item.key), "level-" + item.key, capital(item.short || item.key)];
     });
+    var words2 = L.level2Words(data);
+    if (data.learns) levelItems.push(["level2", words2.header, "level-level2", capital(words2.meaning)]);
     var levelNow = data.levels.filter(function (item) {
       return item.key === level;
     })[0];
-    var docs = entry.pages.length > 1
-      ? h("button", {
-          type: "button",
-          class: "gx-ghost",
-          "data-key": "grid-docs",
-          "aria-expanded": state.docsMenu ? "true" : "false",
-          "aria-controls": "gx-docs",
-          onclick: function () {
-            var open = !state.docsMenu;
-            closePopovers();
-            state.focusKey = "grid-docs";
-            set({ docsMenu: open });
-          },
-        }, [icon("book", 14), h("span", { text: "Docs" }), icon("chevronDown", 14)])
-      : entry.pages.length
-        ? h("a", { class: "gx-ghost", href: slotHref(entry.pages[0].stem), "data-key": "grid-docs" }, [icon("book", 14), h("span", { text: "Docs" })])
-        : null;
-    var wrappers = grid.rows.filter(function (row) {
-      return /^(feature-propagation|furthest-point-subsample|image-painted(-subsampled)?)$/.test(row.option.name);
-    }).length;
-    var countText = (rows.length === grid.rows.length ? num(grid.rows.length) + " options" : num(rows.length) + " of " + num(grid.rows.length)) +
-      (slot === "backbone" && wrappers ? " · " + wrappers + " are adapters" : "");
+    var levelHelp = level2
+      ? words2.header + ": " + words2.meaning + ". " + capital(data.learns.measured_on) + "."
+      : levelNow
+        ? capital(levelNow.key) + ": " + levelNow.short + ". " + capital(data.measured_on) + "."
+        : "";
+    var docs = entry.page
+      ? h("a", { class: "gx-ghost", href: docHref(entry.page), "data-key": "grid-docs" }, [icon("book", 14), h("span", { text: "Docs" })])
+      : null;
+    /* The options a user can `--set` are counted as every page counts them (docs_chips);
+     * adapters and wrappers are listed with them, last, and not counted. */
+    function counted(list) {
+      return list.filter(function (row) {
+        return !row.option.not_option;
+      }).length;
+    }
+    var total = counted(grid.rows);
+    var others = grid.rows.length - total;
+    var countText = (rows.length === grid.rows.length ? num(total) + " options" : num(counted(rows)) + " of " + num(total) + " options") +
+      (others ? " · " + others + " adapters and wrappers" : "");
     var head = h("div", { class: "gx-cmp-head" }, [
       h("div", { class: "gx-cmp-titles" }, [
         h("div", { class: "gx-cmp-titlerow" }, [
           h("h2", { class: "gx-cmp-title", text: entry.title }),
+          scopeChip(entry),
           h("span", { class: "gx-cmp-count", "aria-live": "polite", text: countText }),
-          loss ? infoButton("A loss sits on one term of a stage, and most were probed several terms at a time: a tile is the verdict of the sets this loss was part of under the method of its column, not of the loss alone.", "About losses") : null,
+          loss ? infoButton("A loss sits on one term of a stage, and most were probed several terms at a time. A tile shows the records of the sets this loss was part of.", "About losses") : null,
         ]),
-        h("p", { class: "gx-cmp-task", text: task(entry) }),
+        rich(task(entry), "p", { class: "gx-cmp-task" }),
       ]),
       docs,
     ]);
@@ -2026,7 +2325,7 @@
           "data-key": "grid-clear",
           onclick: function () {
             state.focusKey = "grid-search";
-            set({ filter: { q: "", level: level, classes: [], extra: false, weights: false }, filters: false });
+            set({ filter: { q: "", level: level, tones: [], extra: false, weights: false }, filters: false });
           },
         }, [h("span", { text: "Clear" })])
       : null;
@@ -2034,23 +2333,12 @@
       h("div", { class: "gx-toolbar-left" }, [
         segmented(levelItems, level, function (value) {
           state.focusKey = "level-" + value;
-          patch({ level: value, classes: [] });
+          patch({ level: value, tones: [] });
         }, "Level"),
-        levelNow ? infoButton(capital(levelNow.key) + ": " + levelNow.meaning + ".", "What " + levelNow.key + " means") : null,
+        levelHelp ? infoButton(levelHelp, "What " + levelName(level).toLowerCase() + " means") : null,
       ]),
       h("div", { class: "gx-toolbar-right" }, [search, filtersButton, clear]),
     ]);
-    var legendItems = [["yes", "Yes"], ["no", "No"], ["refused", "Refused"], ["unstable", "Unstable"], ["undecided", "Undecided"]];
-    if (loss) legendItems.push(["mixed", "Mixed"]);
-    else if (data.contracts) legendItems.push(["accepted", "Compose only"]);
-    legendItems.push(["none", "No answer"]);
-    var legend = h("ul", { class: "gx-legend", "aria-label": "Legend" }, legendItems.map(function (item) {
-      var glyph = TILE_ICON[item[0]];
-      return h("li", {}, [
-        h("span", { class: "gx-tile is-mini t-" + item[0] + (item[0] === "accepted" ? " is-contract" : ""), "aria-hidden": "true" }, [glyph ? icon(glyph, 10) : item[0] === "none" ? h("span", { class: "gx-tile-dot" }) : null]),
-        h("span", { text: item[1] }),
-      ]);
-    }));
     var firstKey = rows.length && grid.columns.length ? "cell-" + slot + "-" + rows[0].option.name + "-" + grid.columns[0].name : "";
     var focusKey = firstKey;
     rows.forEach(function (row) {
@@ -2059,9 +2347,20 @@
       });
     });
     var menu = null;
-    var body = rows.map(function (row, r) {
+    var seen = {};
+    var body = [];
+    rows.forEach(function (row, r) {
       var option = row.option;
-      return h("tr", {}, [
+      /* The options without a record of their own come last, under a line that says why. */
+      if (row.noRecord && !(r && rows[r - 1].noRecord)) {
+        body.push(h("tr", { class: "gx-m-group" }, [
+          h("th", { scope: "rowgroup", colspan: String(grid.columns.length + 2) }, [
+            h("span", { text: "Without a record of their own" }),
+            h("span", { class: "gx-m-group-why", text: " · " + noRecordKinds(rows).join(", ") }),
+          ]),
+        ]));
+      }
+      body.push(h("tr", { class: row.noRecord ? "is-norecord" : null }, [
         h("th", { scope: "row", class: "gx-m-opt" }, [
           h("div", { class: "gx-m-name", title: plain(option.summary) }, [h("code", { text: option.name })]),
           h("div", { class: "gx-m-sub" }, [
@@ -2070,44 +2369,72 @@
             option.weights ? h("span", { class: "gx-tag", title: option.weights, text: "weights" }) : null,
           ]),
         ]),
+        h("td", { class: "gx-m-where" }, [reachChip(L.reachOf(data, option, level), "where-" + option.name)]),
       ].concat(
         grid.columns.map(function (m, c) {
           var key = "cell-" + slot + "-" + option.name + "-" + m.name;
           if (key === state.cellMenu) menu = cellMenu(m, slot, option, row.cells[m.name], key);
-          return gridTile(m, slot, option, row.cells[m.name], [r, c], key === focusKey);
-        }),
-        withClass ? [h("td", { class: "gx-m-class" }, [classPill(option, level)])] : []
-      ));
+          var td = gridTile(m, slot, option, row.cells[m.name], [r, c], key === focusKey, row.noRecord);
+          var button = td.firstChild;
+          seen[button.className.replace(/^gx-tile /, "")] = true;
+          if (m.name === state.method) td.classList.add("is-current");
+          return td;
+        })
+      )));
     });
     if (!rows.length) {
-      body = [h("tr", {}, [h("td", { class: "gx-m-empty", colspan: String(grid.columns.length + 1 + (withClass ? 1 : 0)) }, [
+      body = [h("tr", {}, [h("td", { class: "gx-m-empty", colspan: String(grid.columns.length + 2) }, [
         h("div", { class: "gx-empty" }, [
           h("span", { class: "gx-empty-icon" }, [icon("search", 20)]),
           h("p", { text: "No option matches" + (filter.q.trim() ? " “" + filter.q.trim() + "”" : " these filters") + "." }),
           h("button", { type: "button", class: "gx-btn is-small", "data-key": "grid-empty-clear", text: "Clear search and filters", onclick: function () {
             state.focusKey = "grid-search";
-            set({ filter: { q: "", level: level, classes: [], extra: false, weights: false } });
+            set({ filter: { q: "", level: level, tones: [], extra: false, weights: false } });
           } }),
         ]),
       ])])];
     }
+    /* The legend names the tiles of this table only. */
+    var legendItems = (level2
+      ? [["t-yes", "On a par"], ["t-unstable", "Worse"], ["t-no", "Diverging"], ["t-undecided", "Not compared"]]
+      : [["t-yes", "Yes"], ["t-no", "No"], ["t-refused", "Refused"], ["t-unstable", "Unstable"], ["t-undecided", "Undecided"], ["t-mixed", "Records disagree"], ["t-accepted is-contract", "Accepted, not trained"], ["t-check-refused is-contract", "Refused by compose"]]
+    ).concat([["t-own", "Ships with the method"], ["t-muted", "No record of its own"], ["t-none", level2 ? "No record" : "Not tested"]]).filter(function (item) {
+      return seen[item[0]];
+    });
+    var legend = h("ul", { class: "gx-legend", "aria-label": "Legend" }, legendItems.map(function (item) {
+      var state0 = item[0].split(" ")[0].slice(2);
+      var glyph = TILE_ICON[state0];
+      return h("li", {}, [
+        h("span", { class: "gx-tile is-mini " + item[0], "aria-hidden": "true" }, [glyph ? icon(glyph, 10) : state0 === "none" ? h("span", { class: "gx-tile-dot" }) : null]),
+        h("span", { text: item[1] }),
+      ]);
+    }));
+    var whereHead = level2 ? words2.header : "Where it " + (level === "composes" ? "composes" : level === "runs" ? "runs" : level === "learns" ? "learns" : "predicts");
     var table = h("table", { class: "gx-matrix", onkeydown: moveInGrid }, [
       h("thead", {}, [
-        h("tr", {}, [h("th", { scope: "col", class: "gx-m-opt", text: loss ? "Loss and term" : "Option" })].concat(
+        h("tr", {}, [
+          h("th", { scope: "col", class: "gx-m-opt", text: loss ? "Loss" : "Option" }),
+          h("th", { scope: "col", class: "gx-m-where" }, [
+            h("span", { text: whereHead }),
+            infoButton(level2
+              ? "Of the methods it was compared under, how many trained it on a par with the component they ship. A swap that did not run at level 1, or that trained on a schedule other than the reference's, is not compared. Hover a fraction for who is left out and why."
+              : "How many of the methods it can be swapped into reached this level with it. A method that ships it is not counted; an undecided one stays in the count. Hover a fraction for who is left out and why.", "What the fraction counts"),
+          ]),
+        ].concat(
           grid.columns.map(function (m) {
-            return h("th", { scope: "col", class: "gx-m-method", title: m.name + " · " + m.config }, headName(m.name));
-          }),
-          withClass ? [h("th", { scope: "col", class: "gx-m-class" }, [h("span", { text: "Class" }), infoButton("The class of an option counts, at the level picked above, the methods under which it reached the level. Class: " + data.caveat + ".", "What a class counts")])] : []
+            return h("th", { scope: "col", class: "gx-m-method" + (m.name === state.method ? " is-current" : ""), title: m.name + " · " + m.venue + " · " + m.config }, headName(m.name));
+          })
         )),
       ]),
       h("tbody", {}, body),
     ]);
     var filtersPop = null;
     if (state.filters) {
-      var classes = L.classesOf(data, slot, level);
-      var countOf = function (name) {
+      var tones = L.tonesOf(data, slot, level);
+      var words = level2 ? TONE_WORDS_2 : TONE_WORDS;
+      var countOf = function (tone) {
         return (data.options[slot] || []).filter(function (option) {
-          return L.classColumn(data, option, level) === name;
+          return L.toneOf(data, option, level) === tone;
         }).length;
       };
       var check = function (key, label, on, count, onchange) {
@@ -2119,12 +2446,12 @@
         ]);
       };
       filtersPop = h("div", { class: "gx-pop gx-filters", id: "gx-filters", role: "dialog", "aria-label": "Filters", "data-anchor": "grid-filters", "data-align": "end", hidden: true }, [
-        classes.length ? h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: "Class at " + level }), infoButton("Class: " + data.caveat + ".", "What a class counts")]) : null,
-        classes.length ? h("div", { class: "gx-checks" }, classes.map(function (name) {
-          var on = filter.classes.indexOf(name) >= 0;
-          return check("class-" + name, CLASS_NAMES[name] || capital(name), on, countOf(name), function () {
-            state.focusKey = "class-" + name;
-            patch({ classes: on ? filter.classes.filter(function (other) { return other !== name; }) : filter.classes.concat([name]) });
+        tones.length ? h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: whereHead })]) : null,
+        tones.length ? h("div", { class: "gx-checks" }, tones.map(function (tone) {
+          var on = filter.tones.indexOf(tone) >= 0;
+          return check("tone-" + tone, words[tone] || tone, on, countOf(tone), function () {
+            state.focusKey = "tone-" + tone;
+            patch({ tones: on ? filter.tones.filter(function (other) { return other !== tone; }) : filter.tones.concat([tone]) });
           });
         })) : null,
         h("div", { class: "gx-sec-head" }, [h("span", { class: "gx-label", text: "Option" })]),
@@ -2140,23 +2467,16 @@
         ]),
       ]);
     }
-    var docsPop = state.docsMenu && entry.pages.length > 1
-      ? h("div", { class: "gx-pop gx-menu gx-docs", id: "gx-docs", role: "menu", "aria-label": "Docs", "data-anchor": "grid-docs", "data-align": "end", hidden: true }, [
-          h("div", { class: "gx-menu-items" }, entry.pages.map(function (page, index) {
-            return h("a", { role: "menuitem", class: "gx-menu-item", href: slotHref(page.stem), "data-key": "docs-" + index }, [h("span", { text: plain(page.title) }), icon("external", 14)]);
-          })),
-        ])
-      : null;
     return h("div", { class: "gx-compare" }, [
       nav,
       h("div", { class: "gx-cmp-main" }, [
         head,
+        missingNote(entry),
         toolbar,
         legend,
-        h("div", { class: "gx-matrix-wrap", role: "region", "aria-label": entry.title + ": option by method", tabindex: "-1" }, [table]),
+        h("div", { class: "gx-matrix-wrap" + (grid.columns.length < 3 ? " is-narrow" : ""), role: "region", "aria-label": entry.title + ": option by method", tabindex: "-1" }, [table]),
       ]),
       filtersPop,
-      docsPop,
       menu,
     ]);
   }
@@ -2220,21 +2540,30 @@
     });
   }
 
+  /* The method the panel runs: the one chosen, never a default; null before a choice. */
   function runMethod() {
     var methods = runMethods();
     for (var i = 0; i < methods.length; i++) {
       if (methods[i].name === state.method) return methods[i];
     }
-    return methods[0];
+    return null;
+  }
+
+  /* The name a weights file is given on the command line: the folder of the method's
+   * configs ("graspnet_baseline=<file>"), which the panel matches to the method. */
+  function weightsName(m) {
+    return m && m.config ? m.config.split("/")[0] : "<method>";
   }
 
   function runWeights(m) {
+    if (!m) return "";
     if (runForm.typing) return runForm.typed.trim();
     return Object.prototype.hasOwnProperty.call(runForm.chosen, m.name) ? runForm.chosen[m.name] : m.suggested || "";
   }
 
   /* The selection of the builder, when there is one, with what compose said of it. */
   function runSelection() {
+    if (!L.method(data, state.method)) return null;
     var result = L.answer(data, state.method, state.picks);
     if (!result.sets.length) return null;
     if (liveBase) ensureLive(result);
@@ -2271,6 +2600,7 @@
     var m = runMethod();
     if (!setup) return "The server has not said yet which weights it reads.";
     if (!setup.weights.length) return "This server reads no weights: start it again with --weights-dir, as said above.";
+    if (!m) return "Choose the method to run.";
     if (!runWeights(m)) return runForm.typing ? "Type the path of a weights file inside " + setup.weights_dir + "." : "Choose a weights file.";
     if (runForm.input !== "depth") return "";
     var limit = setup.limits.upload_bytes;
@@ -2425,10 +2755,14 @@
   function methodStep(off) {
     var m = runMethod();
     var children = [
-      methodTiles(runMethods(), m.name, function (item) {
+      methodTiles(runMethods(), m ? m.name : "", function (item) {
         return "run-method-" + item.name;
       }, pickRunMethod, off),
     ];
+    if (!m) {
+      if (!off) children.push(h("p", { class: "gx-step-fine", text: "Choose the method to run." }));
+      return runStep(1, "Method", children, "gx-run-l1");
+    }
     var selection = off ? null : runSelection();
     if (selection) {
       var count = selection.sets.length;
@@ -2462,16 +2796,16 @@
 
   function weightsStep(off) {
     var setup = runLive.setup;
+    var m = runMethod();
     if (!off && setup && !setup.weights.length) {
       return runStep(2, "Weights", [
         alertBox("unstable", "alert", "This server reads no weights", [
-          h("p", { text: "Stop it (Ctrl+C) and start it again with a folder of weights, or with one file:" }),
+          h("p", { text: "Stop it (Ctrl+C) and start it again with a folder of weights, or with one file" + (m ? " of " + m.name : "") + ":" }),
           terminal("grasppanda explore --weights-dir <dir>", "run-dir", "the command with a folder"),
-          terminal("grasppanda explore --weights gsnet=<file>", "run-file", "the command with one file"),
+          terminal("grasppanda explore --weights " + weightsName(m) + "=<file>", "run-file", "the command with one file"),
         ]),
       ], "gx-run-l2");
     }
-    var m = runMethod();
     var entries = !off && setup ? setup.weights : [];
     var value = runWeights(m);
     function option(entry) {
@@ -2484,7 +2818,7 @@
       id: "gx-run-weights",
       "data-key": "run-weights",
       "aria-labelledby": "gx-run-l2",
-      disabled: off || !setup ? true : null,
+      disabled: off || !setup || !m ? true : null,
       onchange: function (event) {
         var chosen = event.target.value;
         runForm.typing = chosen === TYPE_PATH;
@@ -2493,7 +2827,7 @@
         state.focusKey = runForm.typing ? "run-typed" : "run-weights";
         render();
       },
-    }, [h("option", { value: "", text: off ? "A weights file of your machine" : entries.length ? "Choose a weights file…" : "…" })]);
+    }, [h("option", { value: "", text: off ? "A weights file of your machine" : !m ? "Choose a method first" : entries.length ? "Choose a weights file…" : "…" })]);
     if (named.length) select.appendChild(h("optgroup", { label: "Named on the command line" }, named.map(option)));
     if (listed.length) select.appendChild(h("optgroup", { label: "In " + setup.weights_dir }, listed.map(option)));
     if (setup && setup.weights_dir) select.appendChild(h("option", { value: TYPE_PATH, text: "Another file in this folder: type its path…" }));
@@ -2515,7 +2849,7 @@
       }));
     }
     var fine = [];
-    if (!off && value && value === m.suggested && !runForm.typing) fine.push("Chosen by its name for " + m.name + "; the run says whether it fits.");
+    if (!off && m && value && value === m.suggested && !runForm.typing) fine.push("Chosen by its name for " + m.name + "; the run says whether it fits.");
     if (setup && setup.truncated) fine.push("The folder holds more files than are listed; type the path of another one.");
     if (!off && setup) fine.push("The server reads only the files listed here.");
     if (fine.length) children.push(h("p", { class: "gx-step-fine", text: fine.join(" ") }));
@@ -2631,7 +2965,7 @@
       h("span", { class: "gx-field-label" }, ["Intrinsics, in pixels ", infoButton("Of the depth camera at the resolution of the image. Pasting 925,925,640,360 into one box fills all four.", "About the intrinsics")]),
       h("div", { class: "gx-nums" }, numberBoxes("run-k", runForm.intrinsics, ["fx", "fy", "cx", "cy"], off)),
     ]));
-    children.push(dropZone("rgb", m.needs_rgb ? "Colour image (" + m.name + " needs it)" : "Colour image (optional)", ".png,.jpg,.jpeg", "registered to the depth image", off));
+    children.push(dropZone("rgb", m && m.needs_rgb ? "Colour image (" + m.name + " needs it)" : "Colour image (optional)", ".png,.jpg,.jpeg", "registered to the depth image", off));
     var labels = ["x min", "y min", "z min", "x max", "y max", "z max"];
     children.push(h("div", { class: "gx-field" }, [
       h("span", { class: "gx-field-label" }, ["Workspace box (optional) ", infoButton("Metres, camera frame: x right, y down, z forward. Only points inside are kept. Empty: every pixel with depth is used, and the run says what that means for this method.", "About the workspace box")]),
@@ -2661,7 +2995,7 @@
 
   function runLabel() {
     var m = runMethod();
-    return "Run " + m.name + (runSets().length ? " with your changes" : "");
+    return m ? "Run " + m.name + (runSets().length ? " with your changes" : "") : "Run";
   }
 
   function goButton(off) {
@@ -2828,7 +3162,7 @@
         h("p", {}, [h("b", { text: "Runs on your machine." }), h("span", { class: "gx-muted", text: " Start the explorer with a folder of weights to run a method here." })]),
         h("div", { class: "gx-banner-actions" }, [
           h("span", { class: "gx-cmdpill" }, [h("code", { text: command }), copyButton(command, "copy-run-explore", command, { cls: "is-pill" })]),
-          external(docHref("user_guides/inference") + "#run-in-the-browser", "How it works"),
+          docLink("user_guides/inference#run-in-the-browser", "How it works"),
         ]),
       ]),
     ]);
@@ -2927,11 +3261,29 @@
     }
     var current = root.querySelector(".gx-opt.is-active");
     if (current && current.scrollIntoView) current.scrollIntoView({ block: "nearest" });
-    var hash = "#" + L.toHash(state.method, state.picks, state.view, state.slot);
+    /* On a narrow screen the slots of Compare are one scrolling row: the slot shown is in it. */
+    var slotNow = root.querySelector('.gx-slotnav-item[aria-current="true"]');
+    var slotRow = slotNow ? slotNow.closest(".gx-slotnav") : null;
+    if (slotRow) {
+      var key = slotNow.getAttribute("data-key");
+      if (key === navShown.key) slotRow.scrollLeft = navShown.left;
+      else if (slotRow.scrollWidth > slotRow.clientWidth) {
+        var shift = slotNow.getBoundingClientRect().left - slotRow.getBoundingClientRect().left;
+        slotRow.scrollLeft += shift - (slotRow.clientWidth - slotNow.offsetWidth) / 2;
+      }
+      navShown = { key: key, left: slotRow.scrollLeft };
+      slotRow.addEventListener("scroll", function () {
+        navShown.left = slotRow.scrollLeft;
+      });
+    }
+    var fragment = L.toHash(state.method, state.picks, state.view, state.slot);
+    var hash = fragment ? "#" + fragment : "";
     try {
       if (window.location.hash !== hash) {
-        if (pushNext && window.location.hash) window.history.pushState(null, "", hash);
-        else window.history.replaceState(null, "", hash);
+        /* No fragment: the address of the page itself (the gallery). */
+        var address = hash || window.location.pathname + window.location.search;
+        if (pushNext) window.history.pushState(null, "", address);
+        else window.history.replaceState(null, "", address);
       }
     } catch (error) {
       /* file: pages of some browsers refuse it; the link is a convenience */
@@ -2944,8 +3296,9 @@
   function readAddress() {
     var from = L.fromHash(window.location.hash);
     state.notice = L.dropped(data, from);
-    state.method = L.method(data, from.method) ? from.method : data.methods[0].name;
-    state.picks = L.normalise(data, state.method, from.picks);
+    /* No method is chosen for the visitor: an address without one opens the gallery. */
+    state.method = L.method(data, from.method) ? from.method : "";
+    state.picks = state.method ? L.normalise(data, state.method, from.picks) : {};
     state.view = from.view;
     /* The server says which tab a page without an address opens on (the Run panel when
      * it was given weights). */
@@ -2960,7 +3313,6 @@
     if (state.open) return { anchor: "lane-" + state.open, close: { open: "", laneQuery: "" } };
     if (state.cellMenu) return { anchor: state.cellMenu, close: { cellMenu: "" } };
     if (state.filters) return { anchor: "grid-filters", close: { filters: false } };
-    if (state.docsMenu) return { anchor: "grid-docs", close: { docsMenu: false } };
     if (state.about) return { anchor: "about", close: { about: false } };
     return null;
   }
@@ -2974,6 +3326,29 @@
       } catch (error) {
         data.contracts = null;
       }
+    }
+    /* Level 2: in the page, or a file of its own beside the data (`grasppanda explore`).
+     * Until it arrives the page says nothing of level 2. */
+    var learns = document.getElementById("gp-explorer-learns");
+    var learnsSource = root.getAttribute("data-learns");
+    if (learns && learns.textContent.trim()) {
+      try {
+        data.learns = JSON.parse(learns.textContent);
+      } catch (error) {
+        data.learns = null;
+      }
+    } else if (learnsSource && window.fetch) {
+      window
+        .fetch(learnsSource)
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (loaded) {
+          data.learns = loaded;
+          render();
+        }, function () {
+          data.learns = null;
+        });
     }
     readAddress();
     root.classList.add("is-ready");

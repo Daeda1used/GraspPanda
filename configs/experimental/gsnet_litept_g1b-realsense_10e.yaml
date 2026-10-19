@@ -18,11 +18,12 @@
 #
 # What must be re-tuned, and why (from grasppanda/presets/<slot>/<preset>.yaml):
 # backbone `litept`
-# * grid_size. The class default, 0.02 m, is for ScanNet rooms; 0.005 m keeps GSNet's
-#   grid. LitePT convolves in its three finest stages (voxels of 5, 10 and 20 mm here)
-#   and attends only in the two coarsest (4 and 8 cm). A table-top frame is a few hundred
-#   voxels there, fewer than one attention patch of 1024, so attention is global over the
-#   scene and `enc_patch_size` has no effect at this scale.
+# * grid_size. The class default, 0.02 m, is for ScanNet rooms; 0.005 m is the grid of
+#   GSNet, EconomicGrasp and FineGrasp. LitePT convolves in its three finest stages
+#   (voxels of 5, 10 and 20 mm here) and attends only in the two coarsest (4 and 8 cm). A
+#   table-top frame is a few hundred voxels there, fewer than one attention patch of
+#   1024, so attention is global over the scene and `enc_patch_size` has no effect at
+#   this scale.
 # * output width: 72 channels (`dec_channels[0]`), where SparseUNet14 returns 512.
 #   Proposal, view stage and grouper are built 72 wide; widening it leaves the published
 #   model. A stage that needs the encoder's width to equal its own

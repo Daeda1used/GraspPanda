@@ -2,9 +2,12 @@
 
 Derived assets depend on how a dataset is configured (the preprocessing chain, the
 graspness parameters, the per-view grasp parameters), so every action reads a dataset
-config: the shipped base config of the dataset and camera unless ``--config`` names
-another. What gets built is exactly what that config will later ask for; nothing is
-written into the dataset tree.
+config: ``_base_/datasets/<dataset>_<camera>.yaml`` unless ``--config`` names another.
+For GraspNet-1Billion that is ``graspnet1b_realsense.yaml`` (``--camera kinect``:
+``graspnet1b_kinect.yaml``), the data recipe GSNet, EconomicGrasp and FineGrasp train
+with; the other methods read assets of their own, so name a config of theirs. What gets
+built is exactly what that config will later ask for; nothing is written into the
+dataset tree.
 """
 
 from __future__ import annotations
@@ -43,7 +46,7 @@ def register(commands: Any) -> None:
             "Generation is resumable: finished shards are skipped."
         ),
     )
-    parser.add_argument("dataset", help="dataset name, e.g. graspnet1b")
+    parser.add_argument("dataset", help="dataset name: graspnet1b or graspclutter6d")
     parser.add_argument("--root", help="dataset directory (default: resolved as in configs)")
     parser.add_argument(
         "--check", action="store_true", help="report what the tree and the assets lack"
@@ -52,7 +55,10 @@ def register(commands: Any) -> None:
         "--labels", action="store_true", help="convert grasp labels into the memory-mapped store"
     )
     parser.add_argument(
-        "--graspness", action="store_true", help="generate point-wise graspness maps"
+        "--graspness",
+        action="store_true",
+        help="generate point-wise graspness maps (read by a graspness proposal: the configs of "
+        "GSNet, EconomicGrasp and FineGrasp, and a composed config with one)",
     )
     parser.add_argument(
         "--import-legacy",
@@ -63,18 +69,19 @@ def register(commands: Any) -> None:
         "--compact-labels",
         action="store_true",
         help="collapse the grasp labels to one grasp per point and view (needs a --config "
-        "whose dataset declares `compact_labels`, e.g. an EconomicGrasp config)",
+        "whose dataset declares `compact_labels`: EconomicGrasp, FineGrasp)",
     )
     parser.add_argument(
         "--view-grasps",
         action="store_true",
-        help="generate per-view grasp labels (the `view_grasps` section of the dataset config)",
+        help="generate per-view grasp labels (needs a --config whose dataset has a "
+        "`view_grasps` section: HGGD)",
     )
     parser.add_argument(
         "--tolerance",
         action="store_true",
         help="generate grasp tolerance labels (needs a --config whose dataset has a "
-        "`tolerance` section)",
+        "`tolerance` section: GraspNet-baseline, Scale-Balanced-Grasp)",
     )
     parser.add_argument(
         "--scale-statistic",
@@ -86,11 +93,16 @@ def register(commands: Any) -> None:
     parser.add_argument(
         "--scale-statistic-file", metavar="PATH", help="reference file to import as scale statistic"
     )
-    parser.add_argument("--camera", help="camera whose shipped base config is used")
+    parser.add_argument(
+        "--camera", help="camera of the default dataset config (graspnet1b: realsense or kinect)"
+    )
     parser.add_argument("--split", help="split whose scenes are prepared (default: the config's)")
     parser.add_argument("--scenes", help="scene ids instead of a split, e.g. 0-99 or 3,7,100-129")
     parser.add_argument(
-        "--config", help="dataset config to prepare for (default: shipped base config)"
+        "--config",
+        help="config to prepare for (default: _base_/datasets/<dataset>_<camera>.yaml, for "
+        "graspnet1b the data recipe of GSNet, EconomicGrasp and FineGrasp; for another "
+        "method, pass its config)",
     )
     parser.add_argument(
         "--loader",

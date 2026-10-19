@@ -9,6 +9,7 @@ configs are what compose writes today.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -22,8 +23,13 @@ from grasppanda.combine.compose import (
     is_adapter,
     recompose,
 )
+from grasppanda.combine.grid import FAMILIES, METHODS
 from grasppanda.config import Config, ConfigError, available_configs, configs_root, parse_yaml
-from grasppanda.models.detectors.seed_based import STAGE_REGISTRIES, stage_contract_problems
+from grasppanda.models.detectors.seed_based import (
+    STAGE_REGISTRIES,
+    SeedGraspDetector,
+    stage_contract_problems,
+)
 from grasppanda.registry import BACKBONES, DETECTORS
 
 GSNET = "gsnet/gsnet_sunet14_g1b-realsense_10e"
@@ -673,7 +679,7 @@ def test_the_written_file_says_how_it_was_made_and_composes_again(tmp_path):
     outside = tmp_path / "mine.yaml"
     text = result.text(outside)
     assert text.startswith("# EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`")
-    assert f"#   base  {BASELINE} (GraspNetBaseline)\n#   set   backbone `sparse-unet14`\n" in text
+    assert f"#   base  {BASELINE} (GraspNet-baseline)\n#   set   backbone `sparse-unet14`\n" in text
     assert "No AP is claimed" in text and "What compose did, and why:" in text
     assert (
         "What must be re-tuned, and why" in text and "backbone `furthest-point-subsample`" in text
@@ -775,7 +781,10 @@ def test_the_command_as_json_and_its_listings(capsys):
     assert "What must be re-tuned, and why:" in shown and "grid_size: 0.005" in shown
     assert main(["compose", "--show", "backbone=nope"]) == 2
     assert main(["compose"]) == 2
-    assert "compose needs a base config" in capsys.readouterr().err
+    missing = capsys.readouterr().err
+    assert "compose needs a base config" in missing
+    # ... and names every method config, none of them as the default.
+    assert all(config in missing for config in {**METHODS, **FAMILIES}.values())
     with pytest.raises(SystemExit) as stop:
         main(["compose", "--help"])
     text = capsys.readouterr().out
@@ -783,12 +792,15 @@ def test_the_command_as_json_and_its_listings(capsys):
     # The help is enough to use the command: slots, examples, the base, exit statuses.
     for fragment in (
         "backbone  proposal  view  assigner  grouper  head",
-        "examples:",
+        "examples (one per method):",
         "exit status:",
         "composed again from its own",
         "grasppanda probe",
     ):
         assert fragment in text, fragment
+    # The kinds of a refusal, each in plain words.
+    words = " ".join(text.split())
+    assert "structural (incompatible by design), not-implemented (not supported yet)" in words
     # Slots are also known by the plural `grasppanda components --slot` uses.
     assert main(["compose", "--list", "backbones"]) == 0
     assert "ptv3" in capsys.readouterr().out
@@ -822,6 +834,174 @@ def test_the_command_does_not_overwrite_a_file_or_its_own_base(tmp_path, capsys)
         main(["compose", GSNET, "--set", "grouper=depth-embed", "-o", str(target), "--force"]) == 1
     )
     assert "LitePT" in target.read_text(encoding="utf-8")
+
+
+# ------------------------------------------- the help, the listings and where options ran
+
+
+def _commands(text: str) -> list[list[str]]:
+    """The ``grasppanda compose`` commands of a help text, continued over ``\\`` lines."""
+    import shlex
+
+    found, current = [], ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if current:
+            current += " " + stripped
+        elif stripped.startswith("grasppanda compose "):
+            current = stripped
+        else:
+            continue
+        if current.endswith("\\"):
+            current = current[:-1].rstrip()
+            continue
+        found.append(shlex.split(current, comments=True))
+        current = ""
+    return found
+
+
+def _docs_chips():
+    import importlib.util
+    import sys
+
+    from .conftest import REPO
+
+    if "docs_chips" in sys.modules:
+        return sys.modules["docs_chips"]
+    spec = importlib.util.spec_from_file_location("docs_chips", REPO / "tools" / "docs_chips.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["docs_chips"] = module  # its dataclasses look their module up
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_every_example_of_the_help_is_accepted_and_each_method_has_one(
+    tmp_path, monkeypatch, capsys
+):
+    """The examples of `grasppanda compose --help` and of the module run as printed, in
+    order (one composes the file of the one before it), and rotate over the six methods."""
+    from grasppanda.cli import compose as command
+    from grasppanda.combine.options import method_of
+
+    monkeypatch.chdir(tmp_path)
+    epilog = _commands(command.EPILOG)
+    examples = epilog + _commands(command.__doc__)
+    assert len(examples) >= 10
+    for words in examples:
+        assert words[:2] == ["grasppanda", "compose"], words
+        assert main(words[1:]) == 0, (words, capsys.readouterr())
+        capsys.readouterr()
+    bases = [words[2] for words in epilog if not words[2].startswith("-")]
+    shipped = [method_of(base)[0] for base in bases if not base.endswith(".yaml")]
+    assert sorted(shipped) == sorted({**METHODS, **FAMILIES}), shipped
+    # A swap example (without overrides of its own) writes a combination whose record says
+    # it trains on real frames.
+    from grasppanda.combine.options import measured
+
+    hashes = {
+        (record.get("config_hash") or "")[:12]
+        for record in measured().by_id.values()
+        if record.get("verdict") == "runs"
+    }
+    for words in epilog:
+        if "-o" in words and "--opts" not in words and not words[2].endswith(".yaml"):
+            written = Config.load(tmp_path / words[words.index("-o") + 1]).digest()
+            assert written[:12] in hashes, words
+
+
+def test_the_help_and_the_listing_state_the_methods_each_slot_applies_to(capsys):
+    """The scope of a slot is computed from the options of every method; the help, the
+    listing and the pages (``tools/docs_chips.py``) say it in the same words."""
+    from grasppanda.cli import compose as command
+    from grasppanda.combine import options
+    from grasppanda.combine.reach import reach
+
+    chips = _docs_chips()
+    scopes = {slot: options.scope(slot) for slot in options.SLOT_ORDER}
+    assert scopes == {slot: chips.SCOPE_TEXT[chips.scope(slot)] for slot in options.SLOT_ORDER}
+    assert set(scopes.values()) == {"All 6 methods", "Seed-based · 5 methods", "HGGD only"}
+    block = command.EPILOG.split("slots, by the methods they apply to")[1].splitlines()[1:4]
+    stated = {}
+    for line in block:
+        words, slots = re.split(r"\s{3,}", line.strip())
+        stated.update(dict.fromkeys(slots.split(), words))
+    assert stated == scopes
+    # The listing without a base: every slot's header, and where each preset ran.
+    assert main(["compose", "--list"]) == 0
+    out = capsys.readouterr().out
+    lines = out.splitlines()
+    for slot, words in scopes.items():
+        (header,) = [line for line in lines if line.startswith(f"{slot}  --set ")]
+        assert header.endswith(f"· {words}"), header
+    for slot, name in [
+        ("image_encoder", "convnextv2-tiny"),
+        ("backbone", "ptv3"),
+        ("backbone", "image-painted"),
+        ("grouper", "depth-embed"),
+        ("post", "collision"),
+        ("optimizer", "encoder-lr-0.1"),
+        ("hooks", "amp"),
+    ]:
+        (row,) = [line for line in lines if line.startswith(f"{name} ")]
+        assert f"  {reach(slot, name).fraction}  " in row, row
+    assert "point-painting wrapper, written by hand" in out and "no probe record" in out
+    assert "image_encoder (HGGD; seed-based methods: point painting)" not in out
+
+
+def test_the_options_of_a_method_say_where_each_ran_across_the_methods(capsys):
+    """The fraction of :mod:`grasppanda.combine.reach`: in the text a column and the methods
+    it leaves out, in the JSON every level and level 2. The text has no second fraction of
+    the same fact (the class column, with its own denominator and its words, is left out)."""
+    from grasppanda.combine.reach import level2, reach
+
+    assert main(["compose", SBG, "--list", "grouper", "--json"]) == 0
+    (slot,) = json.loads(capsys.readouterr().out)["slots"]
+    assert slot["scope"] == "Seed-based · 5 methods"
+    for item in slot["options"]:
+        assert set(item["reach"]) == set(item["classes"]), item["option"]
+        for level, found in item["reach"].items():
+            assert found == reach("grouper", item["option"], level).to_dict()
+        assert item["trains_like_shipped"] == level2("grouper", item["option"]).to_dict()
+    assert main(["compose", SBG, "--list", "grouper"]) == 0
+    text = capsys.readouterr().out
+    # Level 2 under the name the pages and the explorer give it.
+    from grasppanda.combine.options import LEVEL2_NAME
+
+    name = _docs_chips().LEVEL2_NAME
+    assert name == LEVEL2_NAME == "trains like shipped" and "level 2" not in text
+    assert "runs under" in text and f"{name}: trained beside" in text
+    from grasppanda.combine.levels import CAVEAT
+
+    for word in ("class", "univ", "most", "some", "spec"):
+        assert re.search(rf"\b{word}\b", text.replace(CAVEAT, "")) is None, word
+    (header,) = [line for line in text.splitlines() if line.startswith("option ")]
+    assert f"  runs under  {name}" in header and header.rstrip().endswith(name)
+    depth = reach("grouper", "depth-embed")
+    assert depth.tone == "warn"  # it does not fit the methods without a depth axis
+    (row,) = [line for line in text.splitlines() if line.startswith("depth-embed ")]
+    assert f"  {depth.fraction}  " in row
+    assert f"runs {depth.fraction}: {depth.tail}" in " ".join(text.split())
+    # A loss option of several presets has no single fraction; one of one preset has.
+    assert main(["compose", GSNET, "--list", "loss", "--json"]) == 0
+    (loss,) = json.loads(capsys.readouterr().out)["slots"]
+    kinds = {item["reach"] is None for item in loss["options"]}
+    assert kinds == {True, False}
+    assert all((item["reach"] is None) == (len(item["presets"]) > 1) for item in loss["options"])
+
+
+@pytest.mark.parametrize("method", [*METHODS, *FAMILIES])
+def test_the_five_seed_based_methods_are_built_on_one_skeleton(method):
+    """What ``seed_based.py`` says: GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
+    EconomicGrasp and FineGrasp (the EconomicGrasp type, configured) are seed-based
+    detectors with the same six stage slots; HGGD is a family of its own."""
+    model = Config.load({**METHODS, **FAMILIES}[method]).resolved()["model"]
+    detector = DETECTORS.get(model["type"])
+    seed_based = issubclass(detector, SeedGraspDetector)
+    assert seed_based == (method in METHODS)
+    slots = sorted(component_slots(detector))
+    assert slots == (sorted(STAGE_REGISTRIES) if seed_based else ["image_encoder"])
+    if method == "FineGrasp":
+        assert model["type"] == "EconomicGrasp"
 
 
 # ------------------------------------------------- label grids, seed counts, ranges
@@ -873,10 +1053,17 @@ def test_option_values_out_of_range_are_refusals_not_build_failures():
 
 
 def test_an_adapter_that_compose_does_not_write_points_to_its_fragment():
-    with pytest.raises(ComposeError, match="Compose does not write this wrapper.*section 5"):
-        compose(GSNET, ["backbone=image-painted"])
+    """The point-painting wrapper is written by hand; the messages name the heading of the
+    page that holds its fragment (``docs/slots/image_encoders.md``, "Point painting")."""
+    where = r"docs/slots/image_encoders\.md#point-painting"
+    with pytest.raises(ComposeError, match=f"Compose does not write this wrapper.*{where}"):
+        compose(SBG, ["backbone=image-painted"])
     with pytest.raises(ComposeError, match="compose inserts the adapter"):
         compose(GSNET, ["backbone=feature-propagation"])
+    # An image encoder asked for under a seed-based method points at the same heading.
+    for base in (BASELINE, ECONOMIC):
+        with pytest.raises(ComposeError, match=f"through point painting.*{where}"):
+            compose(base, ["image_encoder=resnet18"])
 
 
 def test_a_config_that_names_a_shipped_base_counts_its_levels(tmp_path):
@@ -888,3 +1075,180 @@ def test_a_config_that_names_a_shipped_base_counts_its_levels(tmp_path):
     Config.load(mine)  # two levels: loads
     with pytest.raises(ComposeError, match="limited to 2 levels"):
         compose(mine, ["grouper=multi-scale"])
+
+
+# ---------------------------------------------- recipes written for the seed-based skeleton
+
+
+def _recipe_sets(key: str) -> list[str]:
+    """The request of a recipe preset ``slot/name`` and what it needs with it."""
+    from grasppanda.combine.grid import RECIPE_REQUIRES
+
+    slot, name = key.split("/")
+    return [f"{slot}={name}", *RECIPE_REQUIRES.get(key, ())]
+
+
+def test_a_recipe_for_the_scene_encoder_is_refused_under_hggd_and_says_why(capsys):
+    """A recipe preset that names the scene encoder of the seed-based skeleton is refused
+    under HGGD (structural), by the config check where it names `backbone` and by compose
+    where its pattern is a regular expression; it composes under the five seed-based
+    methods; and HGGD's listing shows it as not fitting, with that reason."""
+    from grasppanda.cli import compose as command
+    from grasppanda.combine.grid import RECIPE_ENCODER_PRESETS
+    from grasppanda.combine.options import ENCODER_RECIPE_REASON
+
+    assert len(RECIPE_ENCODER_PRESETS) == 5
+    epilog = " ".join(command.EPILOG.split())
+    assert "The five recipe presets written for the scene encoder" in epilog
+    assert "compose refuses them under HGGD" in epilog
+    for key in RECIPE_ENCODER_PRESETS:
+        result = compose(HGGD, [_recipe_sets(key)[0]])
+        assert not result.accepted and result.config_hash is None, key
+        assert set(result.refusal_kinds()) == {"structural"}, key
+        for issue in result.issues:
+            assert "backbone`" in issue.message and "HGGD does not have" in issue.message, (
+                key,
+                issue.message,
+            )
+        for base in METHODS.values():
+            assert compose(base, _recipe_sets(key)).accepted, (key, base)
+    # The config check names the part and lists those HGGD has.
+    (issue,) = compose(HGGD, ["optimizer=encoder-lr-0.1"]).issues
+    assert issue.path == "optimizer.lr_multipliers"
+    assert issue.message.startswith("`backbone` names a part HGGD does not have")
+    assert "Its parts: `anchors`, `encoder`" in issue.message
+    # Compose says what the check cannot see: a pattern written as a regular expression.
+    (issue,) = compose(HGGD, ["recipe=ptv3-adamw-onecycle"]).issues
+    assert issue.path == "optimizer.lr_multipliers" and issue.kind == "structural"
+    assert issue.message == (
+        "`recipe=ptv3-adamw-onecycle` is written for the scene encoder of the seed-based "
+        "skeleton (`model.backbone`), which HGGD does not have: no parameter of HGGD matches "
+        "its pattern `re:\\.block`, so training would stop before its first step. It applies "
+        "to the seed-based methods only."
+    )
+    assert main(["compose", HGGD, "--set", "recipe=ptv3-adamw-onecycle"]) == 1
+    out = " ".join(capsys.readouterr().out.split())
+    assert "✗ optimizer.lr_multipliers [structural]: `recipe=ptv3-adamw-onecycle`" in out
+    assert "✗ refused: nothing was written." in out
+    # The listing of HGGD: none of them fits, each for the reason above.
+    for slot in ("optimizer", "hooks", "recipe"):
+        assert main(["compose", HGGD, "--list", slot, "--json"]) == 0
+        (listed,) = json.loads(capsys.readouterr().out)["slots"]
+        options = {item["option"]: item for item in listed["options"]}
+        for key in RECIPE_ENCODER_PRESETS:
+            if key.startswith(f"{slot}/"):
+                item = options[key.split("/")[1]]
+                assert item["status"] == "does not fit" and item["kind"] == "structural", item
+                assert item["reason"] == ENCODER_RECIPE_REASON.format(method="HGGD")
+                assert "compose refuses it" in item["reason"]
+        assert main(["compose", HGGD, "--list", slot]) == 0
+        text = capsys.readouterr().out
+        assert "do not fit:" in text and "(refused by compose)" in text
+
+
+def test_what_compose_says_of_a_regular_expression_is_what_training_meets():
+    """The pattern of `ptv3-adamw-onecycle` matches no parameter of HGGD: the optimizer of
+    the config, were it written, stops before the first step, as compose says."""
+    from grasppanda.combine.recipes import find
+    from grasppanda.engine.builders import build_model
+    from grasppanda.engine.optim import build_optimizers
+
+    model = build_model(Config.load(HGGD))
+    node = find("recipe", "ptv3-adamw-onecycle").body["optimizer"]
+    with pytest.raises(Exception, match=r"no parameter matches re:\\\.block"):
+        build_optimizers(model, node)
+
+
+def _rate(value: float) -> str:
+    """``0.001`` as the presets write it in prose: ``1e-3``."""
+    mantissa, exponent = f"{value:.0e}".split("e")
+    return f"{mantissa}e{int(exponent)}"
+
+
+def _and(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def test_the_recipe_presets_name_the_optimizer_each_method_ships():
+    """What a recipe preset says about the methods' own optimizers is read from their
+    configs, and a preset that says it is for the seed-based methods only is one of
+    ``RECIPE_ENCODER_PRESETS`` (refused under HGGD, composed under the five: tested above)."""
+    from grasppanda.combine.grid import RECIPE_ENCODER_PRESETS
+    from grasppanda.combine.recipes import recipes
+
+    every = {**METHODS, **FAMILIES}
+    shipped = {method: Config.load(config)["optimizer"] for method, config in every.items()}
+    groups: dict[tuple[str, str], list[str]] = {}
+    for method, node in shipped.items():
+        groups.setdefault((node["type"], _rate(node["lr"])), []).append(method)
+    replaced = "It replaces the method's own optimizer: " + ", ".join(
+        f"{kind} at {rate} for {_and(names)}" for (kind, rate), names in groups.items()
+    )
+    texts = {
+        f"{slot}/{name}": " ".join(
+            " ".join([recipe.summary, *recipe.about, *recipe.retune]).split()
+        )
+        for slot, members in recipes().items()
+        for name, recipe in members.items()
+    }
+    naming = {key for key, text in texts.items() if "replaces the method's own optimizer" in text}
+    assert naming == {
+        "optimizer/adamw",
+        "optimizer/adamw-no-decay-1d",
+        "optimizer/layer-decay",
+        "recipe/finetune-encoder",
+        "optimizer/encoder-lr-0.1",
+    }
+    for key in naming - {"optimizer/encoder-lr-0.1"}:
+        assert replaced in texts[key], key
+    # encoder-lr-0.1 writes out Adam at 1e-3: what four methods ship, not FineGrasp's.
+    inner = recipes()["optimizer"]["encoder-lr-0.1"].body["optimizer"]["optimizer"]
+    alike = [method for method, node in shipped.items() if node == inner]
+    assert alike == ["GraspNet-baseline", "GSNet", "Scale-Balanced-Grasp", "EconomicGrasp"]
+    fine, text = shipped["FineGrasp"], texts["optimizer/encoder-lr-0.1"]
+    assert text.startswith(f"{inner['type']} at {_rate(inner['lr'])} with the scene encoder")
+    assert f"FineGrasp's {fine['type']} at {_rate(fine['lr'])}" in text
+    assert f"as {_and(alike)} ship it" in text
+    decay = _rate(fine["weight_decay"])
+    assert f"({fine['type']} at {_rate(fine['lr'])}, weight decay {decay})" in text
+    kinds = {node["type"] for method, node in shipped.items() if method in METHODS}
+    assert kinds == {"Adam"} and shipped["HGGD"]["type"] == "AdamW"
+    assert "HGGD ships AdamW and the five seed-based methods ship Adam" in texts["optimizer/adamw"]
+    only = "seed-based methods only (hggd has no scene encoder; compose refuses it there)"
+    assert {key for key, text in texts.items() if only in text.lower()} == set(
+        RECIPE_ENCODER_PRESETS
+    )
+
+
+def test_the_experimental_readme_cites_the_probe_record_of_every_file():
+    """Every experimental config has a row naming the record whose config hash is the
+    file's, with its verdict; the first table holds one config per method, in the method
+    order, each linked to its combination in the explorer."""
+    from grasppanda.combine.options import measured
+
+    by_hash: dict[str, list[dict]] = {}
+    for record in measured().by_id.values():
+        if record.get("config_hash"):
+            by_hash.setdefault(record["config_hash"][:12], []).append(record)
+    readme = (configs_root() / "experimental" / "README.md").read_text(encoding="utf-8")
+    lines = readme.splitlines()
+    for name in EXPERIMENTAL:
+        stem = name.split("/")[1]
+        (record,) = by_hash[Config.load(name).digest()[:12]]
+        cited = [line for line in lines if f"`{stem}`" in line and f"`{record['id']}`" in line]
+        assert len(cited) == 1, (stem, record["id"])
+        assert f"`{record['verdict']}`" in cited[0].split("|")[-2], (stem, cited[0])
+    first = next(
+        i for i in range(lines.index("## One per method"), len(lines)) if lines[i][:1] == "|"
+    )
+    end = next(i for i in range(first, len(lines)) if not lines[i].startswith("|"))
+    rows = lines[first + 2 : end]  # without the header and its rule
+    every = {**METHODS, **FAMILIES}
+    assert [line.split("|")[1].strip() for line in rows] == list(every)
+    for line in rows:
+        method, config = (cell.strip().strip("`") for cell in line.split("|")[1:3])
+        result = recompose(configs_root() / "experimental" / f"{config}.yaml")
+        assert result.base == every[method], line
+        picks = "&".join(f"{choice.slot}={choice.request}" for choice in result.choices)
+        assert f"/explorer/#m={method}&{picks})" in line, line
+        assert "`runs`" in line.split("|")[-2], line

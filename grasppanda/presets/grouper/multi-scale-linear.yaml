@@ -1,6 +1,6 @@
-# MultiRadiusGroup with GSNet's cylinder at four radii, fused by one linear layer.
+# Seed cylinder crops at four radii, fused by one linear layer (MultiRadiusGroup).
 #
-# Seed-support crops at several radii, concatenated and reduced by a linear layer: the
+# GSNet's seed cylinder at each radius, concatenated and reduced by a linear layer: the
 # multi-scale grouping of PointNet++ as several grasp papers apply it to the crop
 # (FineGrasp's ablation calls it MsCG). The `multi-scale` preset fuses by attention and
 # crops with EconomicGrasp's module instead.

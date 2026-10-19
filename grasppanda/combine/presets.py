@@ -1,9 +1,9 @@
 """Presets: the part of a config a newcomer cannot guess, one file per component variant.
 
 A preset is a config fragment under ``grasppanda/presets/<slot>/<name>.yaml``: the node
-``model.<slot>`` with the settings that make sense for table-top depth clouds of
-GraspNet-1Billion and, where the stage reads a label asset, the section of the training
-dataset that serves it (``data.train.dataset.<section>``). Its leading comment says what
+``model.<slot>`` with the settings that make sense for table-top depth clouds (chosen
+on GraspNet-1Billion) and, where the stage reads a label asset, the section of the
+training dataset that serves it (``data.train.dataset.<section>``). Its leading comment says what
 the preset is and what must be re-tuned, and why::
 
     # One sentence that says what this is.

@@ -367,3 +367,64 @@ def stages_use_the_grid_of_the_labels(
             f"are indexed by a lattice of {grid.num_view} views. Set `{option}: "
             f"{grid.num_view}`.{other}",
         )
+
+
+def _model_parts(model: Mapping[str, Any]) -> list[str]:
+    """The parts a detector config names: its keys whose value is a component node."""
+    return sorted(key for key, value in model.items() if isinstance(value, Mapping))
+
+
+@rule(kind="structural")
+def training_recipe_names_parts_the_model_has(
+    data: Mapping[str, Any], command: str | None
+) -> Iterator[Finding]:
+    """A learning-rate pattern and the layer-decay module of ``ParamGroups``, and a module of
+    ``FreezeHook``, must name a part of the model.
+
+    Both are written against the parts of a detector (``backbone`` for the scene encoder of
+    the seed-based skeleton). A pattern that names a part the model does not have matches
+    no parameter, which the optimizer reports only when training starts; HGGD, for one,
+    has no ``backbone``. A pattern written as ``re:<regular expression>`` is not checked, and
+    neither is a detector whose config names no component nodes (it builds its parts itself).
+    """
+    model = _select(data, ("model",))
+    if not isinstance(model, Mapping) or not isinstance(model.get("type"), str):
+        return
+    parts = _model_parts(model)
+    if not parts:
+        return  # a detector that builds its parts itself: nothing to compare with
+    named = ", ".join(f"`{part}`" for part in parts)
+
+    def missing(pattern: Any) -> bool:
+        text = str(pattern)
+        return not text.startswith("re:") and text.split(".")[0] not in parts
+
+    optimizer = data.get("optimizer")
+    if isinstance(optimizer, Mapping) and optimizer.get("type") == "ParamGroups":
+        module = optimizer.get("layer_decay_module")
+        if module is not None and optimizer.get("layer_decay") is not None and missing(module):
+            yield (
+                ("optimizer", "layer_decay_module"),
+                f"layer decay is set on `{module}`, a part {model['type']} does not have. "
+                f"Its parts: {named}.",
+            )
+        multipliers = optimizer.get("lr_multipliers")
+        for pattern in multipliers if isinstance(multipliers, Mapping) else ():
+            if missing(pattern):
+                yield (
+                    ("optimizer", "lr_multipliers"),
+                    f"`{pattern}` names a part {model['type']} does not have, so it would "
+                    f"match no parameter. Its parts: {named}.",
+                )
+    hooks = data.get("hooks")
+    for index, hook in enumerate(hooks if isinstance(hooks, list) else ()):
+        if not (isinstance(hook, Mapping) and hook.get("type") == "FreezeHook"):
+            continue
+        modules = hook.get("modules")
+        for module in modules if isinstance(modules, list) else ():
+            if missing(module):
+                yield (
+                    ("hooks", index, "modules"),
+                    f"FreezeHook freezes `{module}`, a part {model['type']} does not have. "
+                    f"Its parts: {named}.",
+                )

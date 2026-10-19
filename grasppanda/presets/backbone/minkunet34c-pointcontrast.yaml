@@ -12,8 +12,8 @@
 #   `out_channels` to the width of the encoder it replaces). The 3 x 3 x 3 stem loads:
 #   the release reads 3 channels and the grasp methods feed 3 constant ones, which need
 #   not be the input it was trained on.
-# * voxel_size: 0.005 m, GSNet's. The published pre-training config voxelises at
-#   0.025 m, a grid five times coarser; 0.025 m matches it.
+# * voxel_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp. The published
+#   pre-training config voxelises at 0.025 m, a grid five times coarser; 0.025 m matches it.
 # * bn_momentum: 0.05, the value PointContrast trains with.
 # * learning rate: a pretrained encoder under a random head usually takes a lower rate
 #   or a warm-up; the base method's recipe has neither.

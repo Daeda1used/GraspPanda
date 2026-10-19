@@ -1,4 +1,4 @@
-# SparseUNet14, the 14-layer sparse U-Net of GSNet and EconomicGrasp, on their 5 mm grid.
+# SparseUNet14: a 14-layer sparse residual U-Net on a 5 mm grid, one feature per point.
 #
 # The reference encoder of GSNet, EconomicGrasp and FineGrasp: under those methods this
 # preset is their own backbone. Under a method written for a sub-sampling encoder

@@ -1,18 +1,18 @@
-# SWADHead as GSNet uses it: a score and a width per (angle, depth bin) of every seed,
-# regressed; one decoded grasp per seed.
+# A score and a width regressed per (angle, depth bin) of every seed; one decoded grasp
+# per seed (SWADHead).
 #
-# The values are the constructor defaults, written out with the losses the bundle builds
-# when none is given. It expects crop features without a depth axis (CylinderGroup,
-# CylinderInteractionGroup, MultiScaleGroup) and is supervised with the dense label
-# grids, so the assigner must return dense labels (NearestLabelAssigner).
+# GSNet's head bundle. The values are the constructor defaults, written out with the
+# losses the bundle builds when none is given. It expects crop features without a depth
+# axis (CylinderGroup, CylinderInteractionGroup, MultiScaleGroup) and is supervised with
+# the dense label grids, so the assigner must return dense labels (NearestLabelAssigner).
 #
 # What must be re-tuned, and why:
 # * score_target: log_friction_batch_norm is a reference quirk: score targets are
 #   normalised with the extrema of the current batch, so they depend on which seeds reach
 #   the head. Another proposal or encoder moves those extrema;
 #   `log_friction_fixed_range` with `friction_range` is the controlled variant.
-# * loss weights: 15 for the score and 10 for the width, tuned against the proposal and
-#   view losses of GSNet.
+# * loss weights: 15 for the score and 10 for the width, GSNet's, tuned against its
+#   proposal and view losses.
 # * width_decode_gain: 1.2 is a reference quirk applied by the decoder only.
 # * score_kind. The decoded score is an unbounded regressed value, not comparable with
 #   the score of another head bundle.

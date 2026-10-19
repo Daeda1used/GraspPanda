@@ -12,7 +12,9 @@ from the measured file (``docs/advanced_guides/measured_combinations.json``, pac
 the wheel as ``grasppanda/_measured/``): the verdict, the levels of
 :mod:`grasppanda.combine.levels`, the class of the option at each level across the methods
 it applies to, the grasps per frame and the fall of every loss term; for a refusal the
-messages, their kind and the lift. An option without a record is *not probed*. Nothing is
+messages, their kind and the lift. An option without a record is *not probed*. Where an
+option works across the methods is said as a fraction with the methods it leaves out
+(:mod:`grasppanda.combine.reach`, the words of the pages and the explorer). Nothing is
 probed or composed here.
 """
 
@@ -55,8 +57,13 @@ __all__ = [
     "records_file",
     "render",
     "report",
+    "scope",
+    "slot_methods",
 ]
 
+#: What the listing, the pages and the explorer call level 2 (``tools/docs_chips.py``
+#: ``LEVEL2_NAME``; a test holds the two together).
+LEVEL2_NAME = "trains like shipped"
 #: The slots in the order data flows, then the training recipe.
 SLOT_ORDER = (
     "image_encoder",
@@ -103,8 +110,8 @@ WRAPPER_REASON = (
     "the grid has no cell for it"
 )
 ENCODER_RECIPE_REASON = (
-    "it names the scene encoder of the seed-based skeleton (`model.backbone`), which {method} "
-    "does not have"
+    "it is written for the scene encoder of the seed-based skeleton (`model.backbone`), which "
+    "{method} does not have; compose refuses it"
 )
 PENDING_REASON = (
     "a cell of the grid without a record yet: `python -m tools.probe_grid run --only '{cell}'`"
@@ -303,6 +310,30 @@ def method_slots(method: str) -> list[str]:
     return list(dict.fromkeys(option.slot for option in options(method)))
 
 
+def slot_methods(slot: str) -> list[str]:
+    """The methods that have ``slot``, in page order (the seed-based ones by year, then
+    the detector families)."""
+    return [method for method in methods() if slot in method_slots(method)]
+
+
+def scope(slot: str) -> str:
+    """The methods ``slot`` applies to, in the words of the pages: ``All 6 methods``,
+    ``Seed-based · 5 methods`` or ``HGGD only`` (``tools/docs_chips.py`` prints the same
+    words; ``tests/unit/test_combine_compose.py`` holds the two together)."""
+    from .grid import METHODS
+
+    under = slot_methods(slot)
+    if not under:
+        return "no method"
+    if len(under) == len(methods()):
+        return f"All {len(under)} methods"
+    if set(under) == set(METHODS):
+        return f"Seed-based · {len(under)} methods"
+    if len(under) == 1:
+        return f"{under[0]} only"
+    return ", ".join(under)
+
+
 def notes(method: str, slot: str) -> list[str]:
     """What a listing says below the options of a slot: components that are no option."""
     from .grid import LOSS_NOT_PROBED, METHODS, STAGE_SLOTS, needs_an_option, stage_variants
@@ -417,6 +448,8 @@ class Entry:
 
     ``status`` is ``fits`` (the config check accepts it), ``does not fit`` (refused) or
     ``not probed`` (no record); the other fields are empty where they do not apply.
+    :meth:`reach` and :meth:`trains_like_shipped` say where the option works across the
+    methods (read on demand from ``records``).
     """
 
     option: Option
@@ -434,6 +467,41 @@ class Entry:
     kind: str = ""
     command: str = ""
     adapter: str = ""
+    records: Measured | None = field(default=None, repr=False, compare=False)
+    _reach: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    @property
+    def counted_as(self) -> str | None:
+        """The name the class and the reach of the option are counted under: the option,
+        or the loss preset of a loss option; ``None`` for a loss option of several presets."""
+        keys = self.option.presets or (self.option.name,)
+        return keys[0] if len(keys) == 1 else None
+
+    def reach(self, level: str = "runs") -> Any:
+        """Where the option reached ``level``: a :class:`grasppanda.combine.reach.Reach`
+        over the methods it is a swap under (``fraction``, ``tail``); ``None`` for a loss
+        option of several presets."""
+        from .reach import reach
+
+        name = self.counted_as
+        if name is None:
+            return None
+        if level not in self._reach:
+            self._reach[level] = reach(self.option.slot, name, level, self.records)
+        return self._reach[level]
+
+    def trains_like_shipped(self) -> Any:
+        """Level 2, *trains like shipped*: how the option trains beside the component each
+        method ships (:class:`grasppanda.combine.reach.Level2`); ``None`` as for
+        :meth:`reach`."""
+        from .reach import level2
+
+        name = self.counted_as
+        if name is None:
+            return None
+        if "level 2" not in self._reach:
+            self._reach["level 2"] = level2(self.option.slot, name, self.records)
+        return self._reach["level 2"]
 
     def to_dict(self) -> dict[str, Any]:
         option = self.option
@@ -450,6 +518,17 @@ class Entry:
             "judge": self.judge or None,
             "levels": self.levels.to_dict() if self.levels else None,
             "classes": {level: found.to_dict() for level, found in self.classes.items()},
+            # Where it works across the methods it is a swap under: the fraction, the
+            # methods it leaves out and why (grasppanda.combine.reach), level by level.
+            "reach": (
+                {level: self.reach(level).to_dict() for level in LEVELS}
+                if self.counted_as is not None
+                else None
+            ),
+            # Level 2, trains like shipped (grasppanda.combine.reach.level2).
+            "trains_like_shipped": (
+                self.trains_like_shipped().to_dict() if self.counted_as is not None else None
+            ),
             "grasps_per_frame": self.grasps,
             "fall": self.fall,
             "reason": self.reason,
@@ -461,6 +540,7 @@ class Entry:
             out["adapter"] = self.adapter
         if self.refusal:
             out["refusal"] = self.refusal
+        if self.refusal or self.kind:
             out["kind"] = self.kind or None
         return out
 
@@ -489,6 +569,7 @@ class SlotListing:
             "method": self.method,
             "config": self.config,
             "slot": self.slot,
+            "scope": scope(self.slot),
             "written_as": SLOT_KEYS.get(self.slot, self.slot),
             "shipped": self.shipped,
             "shipped_option": self.shipped_option or None,
@@ -572,7 +653,7 @@ def _shipped_component(method: str, slot: str) -> str:
 def entry(method: str, option: Option, records: Measured, shipped_hash: str | None = None) -> Entry:
     """One option with its record, its levels and its class."""
     config = methods()[method]
-    found = Entry(option)
+    found = Entry(option, records=records)
     if option.sets:
         found.command = compose_command(config, method, option.sets)
     keys = option.presets or (option.name,)
@@ -583,6 +664,9 @@ def entry(method: str, option: Option, records: Measured, shipped_hash: str | No
         found.reason = option.reason or (
             PENDING_REASON.format(cell=option.cell) if option.cell else ""
         )
+        if option.reason and option.reason == ENCODER_RECIPE_REASON.format(method=method):
+            # names a part the method does not have: compose refuses it (structural)
+            found.status, found.kind = "does not fit", "structural"
         return found
     numbers = records.numbers(record)
     found.record = record["id"]
@@ -686,8 +770,6 @@ def method_of(config: str | Path) -> tuple[str, str]:
 
 #: Marks of a level in a terminal listing.
 MARKS = {YES: "✓", NO: "✗"}
-#: Short class names for a terminal column.
-SHORT = {"universal": "univ", "specific": "spec", NOT_PROBED: "-"}
 
 
 def _mark(levels: CellLevels | None, level: str) -> str:
@@ -696,14 +778,26 @@ def _mark(levels: CellLevels | None, level: str) -> str:
     return MARKS.get(levels.states.get(level, ""), "?")
 
 
-def _short_class(found: OptionClass | None) -> str:
-    if found is None:
-        return "-"
-    if found.relative:
-        return f"{found.reached}/{found.decided}"
-    if not found.decided:
-        return "?"
-    return SHORT.get(found.name, found.name)
+def _fraction(entry: Entry) -> str:
+    """Where the option ran, as a fraction of the methods it is a swap under."""
+    found = entry.reach("runs")
+    return "-" if found is None else found.fraction
+
+
+def _level2(entry: Entry) -> str:
+    found = entry.trains_like_shipped()
+    return "-" if found is None else found.fraction
+
+
+def _left_out(entry: Entry) -> str:
+    """The methods the runs fraction leaves out and why; ``""`` when the option ran under
+    every method it is a swap under (the JSON also names those that did not train like
+    shipped)."""
+    found = entry.reach("runs")
+    if found is None or found.tone == "ok" or not found.measured or not found.swaps:
+        return ""
+    tail = "; ".join(part for part in found.tail.split("; ") if not part.startswith("own in"))
+    return f"runs {found.fraction}: {tail}" if tail else ""
 
 
 def _fall(fall: Mapping[str, float | None]) -> str:
@@ -755,9 +849,14 @@ def render(listings: Sequence[SlotListing], *, color: bool = False, note: str = 
         lines.append(note)
     lines.append(
         "levels C R L P: composes, runs, learns, predicts under this method "
-        "(✓ reached, ✗ not, ? undecided, · not probed); class: of the option at each level "
-        "across the methods it applies to (univ, most, some, spec, none; n/m: n of m probed; "
-        "? undecided)"
+        "(✓ reached, ✗ not, ? undecided, · not probed)"
+    )
+    lines.append(
+        "runs under: of the methods the option is a swap under (not shipped there), those it "
+        "ran under"
+    )
+    lines.append(
+        f"{LEVEL2_NAME}: trained beside the shipped component; on a par where its losses fall alike"
     )
     for found in listings:
         lines.append("")
@@ -778,15 +877,22 @@ def render(listings: Sequence[SlotListing], *, color: bool = False, note: str = 
                         " ".join(_mark(item.levels, level) for level in LEVELS),
                         ", ".join(map(str, item.grasps)) or "-",
                         _fall(item.fall) if item.judge >= 2 else "not checked",
-                        " ".join(_short_class(item.classes.get(level)) for level in LEVELS)
-                        if item.classes
-                        else "-",
+                        _fraction(item),
+                        _level2(item),
                     ]
                 )
             lines.append(f"  fit: {len(fits)} (the config check accepts them)")
             lines.append(
                 table(
-                    ["option", "verdict", "C R L P", "grasps/frame", "term fall", "class C R L P"],
+                    [
+                        "option",
+                        "verdict",
+                        "C R L P",
+                        "grasps/frame",
+                        "term fall",
+                        "runs under",
+                        LEVEL2_NAME,
+                    ],
                     rows,
                     enabled=color,
                 )
@@ -801,11 +907,14 @@ def render(listings: Sequence[SlotListing], *, color: bool = False, note: str = 
                 )
                 if item.verdict in ("fails", "runs-unstable") and item.reason:
                     parts.insert(0, item.reason)
+                left_out = _left_out(item)
+                if left_out:
+                    parts.append(left_out)
                 if parts:
                     lines.append(f"    {_shown(item.option)}: " + "; ".join(parts))
         refused = found.group("does not fit")
         if refused:
-            lines.append(f"  do not fit: {len(refused)} (refused by the config check)")
+            lines.append(f"  do not fit: {len(refused)} (refused by compose)")
             for item in refused:
                 kind = f" [{item.kind}]" if item.kind else ""
                 lines.append(f"    {_shown(item.option)}{kind}: {item.reason}")
@@ -822,6 +931,6 @@ def render(listings: Sequence[SlotListing], *, color: bool = False, note: str = 
     lines.append("")
     lines.append(
         f"compose one: grasppanda compose {first.config} --set <slot>=<option> -o <file>; "
-        "the JSON (--json) holds every message, level and class"
+        "the JSON (--json) holds every message, level and fraction"
     )
     return "\n".join(lines)

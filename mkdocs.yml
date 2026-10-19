@@ -8,29 +8,49 @@ copyright: Copyright &copy; 2026 The GraspPanda Contributors
 
 theme:
   name: material
+  custom_dir: overrides
   logo: assets/logo.svg
   favicon: assets/logo.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: white
-      accent: green
+      accent: custom
       toggle: {icon: material/weather-night, name: Switch to dark mode}
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: black
-      accent: green
+      accent: custom
       toggle: {icon: material/weather-sunny, name: Switch to light mode}
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.indexes
+    - navigation.path
+    - navigation.footer
     - navigation.top
-    - content.code.copy
-    - content.action.edit
+    - navigation.tracking
+    - toc.follow
     - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.tooltips
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+
+extra:
+  generator: false
 
 extra_css:
   - stylesheets/extra.css
+
+exclude_docs: |
+  includes/
+
+validation:
+  links: {anchors: warn}
 
 plugins:
   - search
@@ -44,66 +64,86 @@ plugins:
             docstring_style: google
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
   - tables
-  - toc: {permalink: true}
-  - pymdownx.highlight
-  - pymdownx.superfences
+  - toc: {permalink: true, toc_depth: 3}
   - pymdownx.details
-  - pymdownx.snippets: {base_path: ["."], check_paths: true}
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.superfences
+  - pymdownx.tabbed: {alternate_style: true, combine_header_slug: true}
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
 
 nav:
   - Home: index.md
+  - Get started:
+      - get_started/index.md
+      - Install: get_started/installation.md
+      - Run a method: get_started/run_a_method.md
+      - Swap a component: get_started/swap.md
+      - Tour the config: get_started/quickstart.md
   - Explorer: explorer/index.md
-  - Get Started:
-      - Installation: get_started/installation.md
-      - Quick start: get_started/quickstart.md
-  - User Guides:
-      - Configuration: user_guides/config.md
-      - Dataset preparation: user_guides/datasets.md
-      - Cross-dataset evaluation: user_guides/cross_dataset.md
-      - Training and testing: user_guides/train_test.md
-      - Inference and visualisation: user_guides/inference.md
-      - Try a combination: user_guides/combinations.md
-  - Slots:
-      - Overview: slots/index.md
-      - Image encoders: slots/image_encoders.md
+  - Methods:
+      - methods/index.md
+      - GraspNet-baseline: methods/graspnet_baseline.md
+      - GSNet: methods/gsnet.md
+      - Scale-Balanced-Grasp: methods/scale_balanced_grasp.md
+      - EconomicGrasp: methods/economicgrasp.md
+      - FineGrasp: methods/finegrasp.md
+      - HGGD: methods/hggd.md
+  - Components:
+      - slots/index.md
       - Scene encoders:
           - Overview: slots/scene_encoders.md
           - Point-based networks: slots/scene_encoders_point.md
-          - Sparse-voxel networks and released weights: slots/scene_encoders_sparse.md
-          - Transformers and pretrained 3-D encoders: slots/scene_encoders_transformer.md
-      - Seed proposal and samplers: slots/proposal.md
-      - "View: approach direction and orientation": slots/view.md
-      - "Grouper: local grouping and region features": slots/grouper.md
-      - Grasp heads and losses: slots/head_loss.md
+          - Sparse-voxel networks: slots/scene_encoders_sparse.md
+          - Transformers and sequence models: slots/scene_encoders_transformer.md
+      - Image encoders: slots/image_encoders.md
+      - Seed proposal: slots/proposal.md
+      - View: slots/view.md
+      - Grouper: slots/grouper.md
+      - Heads and assigners: slots/head_loss.md
+      - Losses: slots/losses.md
       - Post-processing: slots/post.md
-      - "Training recipe: optimizer, schedule, hooks, augmentation": slots/recipe.md
-      - The options of a method:
-          - GSNet: methods/gsnet.md
-          - EconomicGrasp: methods/economicgrasp.md
-          - FineGrasp: methods/finegrasp.md
-          - GraspNet-baseline: methods/graspnet_baseline.md
-          - Scale-Balanced-Grasp: methods/scale_balanced_grasp.md
-          - HGGD: methods/hggd.md
-  - Advanced Guides:
+      - Training recipe: slots/recipe.md
+  - Guides:
+      - user_guides/index.md
+      - Configuration: user_guides/config.md
+      - Datasets: user_guides/datasets.md
+      - Train and test: user_guides/train_test.md
+      - Cross-dataset evaluation: user_guides/cross_dataset.md
+      - Your camera and Python: user_guides/inference.md
+      - Read an analysis: user_guides/analysis.md
+      - Compose and probe: user_guides/combinations.md
       - Add a component: advanced_guides/add_component.md
-      - Swapping components: advanced_guides/swapping.md
-      - Measured combinations: advanced_guides/measured_combinations.md
-      - "Learns like the reference?": advanced_guides/learns_like_reference.md
+  - Evidence:
+      - evidence/index.md
+      - Model zoo: model_zoo.md
+      - Does it run?: advanced_guides/measured_combinations.md
+      - Does it train like the shipped component?: advanced_guides/learns_like_reference.md
+      - Swap rules: advanced_guides/swapping.md
+      - Encoders checked against their authors' code: model_zoo_backbones.md
+  - Reference:
+      - Registered classes: components.md
       - Data contracts: advanced_guides/data_flow.md
       - Data loading: advanced_guides/data_loading.md
       - Operators and backends: advanced_guides/operators.md
+      - API:
+          - Config: api/config.md
+          - Registry: api/registry.md
+          - Structures: api/structures.md
+          - Operators: api/ops.md
       - Architecture: design/ARCHITECTURE.md
-  - Model Zoo:
-      - Methods: model_zoo.md
-      - Components: components.md
-      - Scene encoders: model_zoo_backbones.md
-  - API:
-      - Config: api/config.md
-      - Registry: api/registry.md
-      - Structures: api/structures.md
-      - Operators: api/ops.md
-  - FAQ: faq.md
-  - Changelog: changelog.md
+      - FAQ: faq.md
+      - Changelog: changelog.md

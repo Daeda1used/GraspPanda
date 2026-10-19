@@ -10,8 +10,9 @@
 # * pretrained_mismatch: skip. One tensor does not come from the file: the stem kernel
 #   (the release reads colour and normal, 6 channels; the grasp methods feed 3 constant
 #   ones). With `in_channels: 6` and real colour and normal the load is strict.
-# * grid_size: 0.005 m, GSNet's; the weights were trained on rooms at 0.02 m. The
-#   convolution stages see a quarter of the extent they were trained on.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp; the weights were
+#   trained on rooms at 0.02 m. The convolution stages see a quarter of the extent they were
+#   trained on.
 # * output width: 72 channels, as in the `litept` preset; the stages are built that wide.
 # * optimizer and schedule: the base method's, tuned for its own encoder.
 # * loading a grasp checkpoint trained from this preset builds the encoder first: keep

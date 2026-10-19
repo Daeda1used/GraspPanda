@@ -1,9 +1,11 @@
-# LocalGroup as GSNet's cylinder with the edge feature of DGCNN: offsets of the features.
+# Seed cylinder crop with the edge feature of DGCNN: each neighbour also sees how its
+# features differ from the seed's (LocalGroup).
 #
-# Every neighbour is encoded from `[offset, f_j - f_i, f_i]` (EdgeConv, Wang et al., TOG
-# 2019) instead of `[offset, f_j]`: the crop sees how the neighbours differ from the seed.
-# Offset-driven aggregation of this kind is what DOGraspNet reports for grasping; its code
-# is under non-commercial terms and was not used.
+# The crop is GSNet's seed cylinder. Every neighbour is encoded from
+# `[offset, f_j - f_i, f_i]` (EdgeConv, Wang et al., TOG 2019) instead of `[offset, f_j]`:
+# the crop sees how the neighbours differ from the seed. Offset-driven aggregation of this
+# kind is what DOGraspNet reports for grasping; its code is under non-commercial terms and
+# was not used.
 #
 # What must be re-tuned, and why:
 # * radius / hmin / hmax: the crop gathers among the SEEDS (1024 per frame in the shipped

@@ -13,8 +13,9 @@
 #   `out_channels` to the width of the encoder it replaces. To keep the released output,
 #   add `--opts model.backbone.out_channels=768 model.backbone.final_bias=false`: the
 #   load is then strict and the other stages are built 768 wide.
-# * voxel_size: 0.005 m, GSNet's. The weights were trained on rooms at 0.02 m, so every
-#   kernel sees a quarter of the extent it was trained on; 0.02 m matches the weights.
+# * voxel_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp. The weights were
+#   trained on rooms at 0.02 m, so every kernel sees a quarter of the extent it was trained
+#   on; 0.02 m matches the weights.
 # * under FineGrasp the stem does not load either: that method feeds 6 real channels.
 # * learning rate: a pretrained encoder under a random head usually takes a lower rate
 #   or a warm-up; the base method's recipe has neither.

@@ -2,14 +2,45 @@
 
 | | |
 |---|---|
-| Status | **Design record (v1.0).** Written before the implementation. Where the code or the user guides differ from this document, they are authoritative; the differences are being folded back in. |
+| Status | **Design record (v1.0), written before the implementation.** It keeps the decisions and the reasons for them. Where the code, the guides or the evidence pages differ from it, they are authoritative. |
 | Date | 2026-10-12 |
 | Scope | Design for v1: single-view 6-DoF parallel-jaw grasp detection in cluttered scenes. |
 | Evidence | Every claim about an upstream repository was read from source at the pinned commit listed in Appendix A. No model was trained, no checkpoint was loaded and no AP was measured while writing this document. AP numbers quoted here are author-reported unless marked otherwise. |
 
----
+Section numbers are kept as they were: docstrings in the code cite them (§5.2 to §11.2).
+Every section is folded; open the one you need.
+
+**Superseded since the record was written**
+
+- §1 lists a web UI as out of scope. `grasppanda explore` now serves the combination
+  explorer, a local web page that composes, compares and runs a method on one frame
+  ([Explorer](../explorer/index.md)).
+- §2, principle 7 ("share on second use"). The registries also hold options wrapped from
+  papers and libraries that no shipped method uses, most scene encoders among them. Each
+  was composed under every method it fits and, where accepted, probed on real frames; the
+  few without a record say why ([Evidence](../evidence/index.md)).
+- §4 and §8.2. Six methods are ported: five on the seed-based skeleton and HGGD. The
+  dense-contact family (Contact-GraspNet) was not implemented. HGGD's image encoder is a
+  registered slot (`image_encoder`); its other parts are options of the detector.
+  `grasppanda/combine/` (compose, probe, the measured records) and `grasppanda/presets/`
+  were added; tests live in `tests/unit/` and `tests/integration/`.
+- §8 and Appendix A.2 were written with GSNet as the first user of the seed-based skeleton:
+  the flow of §8.5, the constants of §8.6 and most examples are GSNet's. The skeleton now
+  carries five methods on equal terms (GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
+  EconomicGrasp, FineGrasp); which slots each method has is on
+  [Components](../slots/index.md).
+- §12.2 to §12.4. No command downloads weights or a sample subset: `prepare` builds assets
+  from a dataset on disk, `demo` runs given weights on a frame or the built-in example
+  scene, `analyze` reads result records, and `infer` writes GraspNet arrays only.
+  `compose`, `probe`, `components` and `explore` were added. `GraspInferencer` takes a
+  config and a weights file. First steps: [Get started](../get_started/index.md).
+- §13.3 and §13.4. No weights are published yet ([Model zoo](../model_zoo.md)). The site is
+  organised as Get started, Explorer, Methods, Components, Guides, Evidence and Reference.
 
 ## 1. Goals and scope
+
+<details markdown="1">
+<summary>§1 in full</summary>
 
 **One line.** GraspPanda is to 6-DoF grasp detection in clutter what MMDetection is to object detection: certified reproductions and controlled component-swap experiments, all scored by one pinned, official-equivalent evaluation.
 
@@ -29,7 +60,12 @@ multi-view fusion track (Generalizing-Grasp; own protocol and own leaderboard), 
 
 **Out of scope.** Planar grasps, dexterous hands, object-centric datasets (ACRONYM, GraspGen), web UI, and wrapping upstream repositories in subprocesses as the core implementation.
 
+</details>
+
 ## 2. Design principles
+
+<details markdown="1">
+<summary>§2 in full</summary>
 
 Each rule exists because the previous GraspPanda (v0.62) or an upstream codebase broke it.
 
@@ -44,7 +80,12 @@ Each rule exists because the previous GraspPanda (v0.62) or an upstream codebase
 9. **A run is fully described by its snapshot.** No behaviour is reachable only through a CLI flag (§5.6).
 10. **Clean room.** Upstream logic is studied; code is written here. No file is copied (§14.3).
 
+</details>
+
 ## 3. Lessons from reference frameworks
+
+<details markdown="1">
+<summary>§3 in full</summary>
 
 Verified against source on 2026-10-12: PaddleSeg `release/2.10`, MMEngine `main`, Detectron2 `main`, Pointcept `main`.
 
@@ -57,7 +98,12 @@ Verified against source on 2026-10-12: PaddleSeg `release/2.10`, MMEngine `main`
 
 Resulting choices: YAML with strict three-layer validation (§5.3), type-aware merge (§5.2), one flat registry family with lazy auto-import and nearest-name errors (§6), build-time injection instead of repeated channel counts (§6.3), a ~300-line trainer with hooks (§12.1), and a snapshot that records code without running from the copy (§5.6).
 
+</details>
+
 ## 4. Repository layout
+
+<details markdown="1">
+<summary>§4 in full</summary>
 
 ```
 GraspPanda/
@@ -109,7 +155,12 @@ Packaging notes:
 - **The CLI lives in the package**, not in `tools/`, for the same reason. `tools/` keeps only scripts that make sense inside a checkout.
 - **Method folders are organised by method, benchmark is in the file name** (`<method>_<backbone>_<dataset>-<camera>_<schedule>.yaml`), matching PaddleSeg and MMDetection. The benchmark-first view is generated: the model-zoo page is grouped by protocol.
 
+</details>
+
 ## 5. Configuration system
+
+<details markdown="1">
+<summary>§5 in full: 5.1 Format and top-level schema · 5.2 Inheritance and merge rules · 5.3 Strict validation · 5.4 Command-line overrides · 5.5 Cross-field consistency checker · 5.6 Run snapshot</summary>
 
 ### 5.1 Format and top-level schema
 
@@ -205,7 +256,12 @@ Every `train`, `test` and `sweep` run writes into `work_dir/<run_id>/`:
 
 `grasppanda print-config <cfg> [--opts ...]` prints `config.resolved.yaml` to stdout without creating a run.
 
+</details>
+
 ## 6. Registry and builder
+
+<details markdown="1">
+<summary>§6 in full: 6.1 Registries · 6.2 Behaviour · 6.3 Building and injection</summary>
 
 ### 6.1 Registries
 
@@ -254,7 +310,12 @@ class GSNet(SeedGraspDetector):
 - A parameter that is meant to be injected is declared with the sentinel default `INJECTED`; the validator treats it as optional, and construction fails clearly if nobody supplied it.
 - `REGISTRY.build` also accepts an already-constructed object, so the Python API and unit tests can assemble a detector without YAML.
 
+</details>
+
 ## 7. Data contracts
+
+<details markdown="1">
+<summary>§7 in full: 7.1 Observation and Supervision · 7.2 Points and features · 7.3 Stage outputs · 7.4 GraspGroup</summary>
 
 All structures are plain dataclasses holding tensors. They live in `grasppanda/structures/` and have no dependency on any model.
 
@@ -343,30 +404,35 @@ The single output type of every detector and the single input type of every post
 - **Scores.** Raw GraspNet label scores are the minimum friction coefficient μ for force closure: lower is better and `-1` means invalid. They are not confidences. μ exists only inside `Supervision`. A detector's `score_kind` is declared by its head bundle (for example `predicted_quality`, an uncalibrated regression of a label-derived quantity); no method's score is assumed to be a calibrated probability.
 - The GraspNet 17-D array `[score, width, height, depth, R(9), t(3), object_id]` appears only in `GraspGroup.from_graspnet_array()` / `.to_graspnet_array()`, i.e. at the import/export boundary.
 
+</details>
+
 ## 8. Grasp pipeline abstraction
+
+<details markdown="1">
+<summary>§8 in full: 8.1 What the reference methods actually do · 8.2 Detector families · 8.3 Stage contracts of the seed-based family · 8.4 Head bundle · 8.5 Training-time flow and the assigner · 8.6 Ownership of constants · 8.7 Reference behaviour, controlled variants, reserved extensions</summary>
 
 ### 8.1 What the reference methods actually do
 
 Read from source at the pinned commits (Appendix A). This table, not the papers' block diagrams, drives the abstraction.
 
-| | GSNet (graspness_unofficial) | EconomicGrasp | GraspNet-baseline / SBG | HGGD |
+| | GraspNet-baseline / SBG | GSNet (graspness_unofficial) | EconomicGrasp | HGGD |
 |---|---|---|---|---|
-| Input | Depth → cloud, constant-ones features | Same | Depth → cloud, xyz | 4-channel RGB-D image 640×360 + 25 600-point cloud |
+| Input | Depth → cloud, xyz | Depth → cloud, constant-ones features | Same as GSNet | 4-channel RGB-D image 640×360 + 25 600-point cloud |
 | Workspace crop | Box around **GT segmentation** in table frame, ±2 cm, also at test time | Same | Same | None |
-| Scene encoder | Sparse U-Net, per-point 512-d | Same architecture | PointNet++ (baseline) / 2 SA + 2 transformer blocks (SBG) → 1024 seeds, 256-d | 2-D encoder-decoder; no 3-D scene network |
-| Proposal | Objectness + graspness per point → mask → FPS to 1024 | Same code | 2-way "objectness" on the 1024 seeds; optional OBS needs a second segmentation network at test time (SBG) | Heat-map peaks → up to 48 **partial grasps** `(u, v, θ, width, Δz)` |
-| Approach | 300 view scores; train: one view sampled by multinomial from predicted scores; test: argmax | Same code | 300 view scores; argmax in both modes | None. Rotation is Euler-factored: θ in 2-D, 7×7 learned (γ, β) anchors in 3-D |
-| Grouping | One cylinder (r 0.05, 16 neighbours) **among the seeds**, with features; no depth axis | Same grouper + neighbour self-attention | Cylinders over the **scene cloud**, xyz only, one per depth → explicit depth axis `(seed, 4)`; SBG adds four radii | Unrotated ball of radius = predicted width around the lifted centre; 512 points; image features attached and **detached** |
-| Head | SWAD: score and width grids `(12, 4)`, regression | Angle (13-way), depth (5-way), score (6-way) classification + width regression, with a validity mask | Score, angle class, width per depth, plus tolerance | 49 anchor logits + per-anchor translation offsets |
-| GT inside the training forward | Label matching runs mid-forward; the **crop rotation comes from the labels** (object pose × template) | Same | Same, and crops are centred at the matched **GT grasp point** rather than the seed | None; targets are computed after the forward from the network's own proposals |
-| Output score | Max of regressed grid (unbounded) | Bin-centre-weighted sum of **raw logits** (no softmax) | `score × P(objectness) × tolerance / 0.05` (SBG) | Anchor sigmoid |
-| Collision filter in shipped test path | Default on in `test.py`, shipped command turns it off | Off | Shipped command turns it off (SBG) | **On**, and also rejects grasps with ≤ 2 points between the fingers |
-| Recipe | Adam 1e-3, ×0.95/epoch, 10 epochs, batch 4, 15 000 points, flip + x-rotation | Adam 1e-3, cosine, 20 epochs by default (README command: 10), batch 4, 20 000 points, flip | SBG: Adam 1e-3, OneCycle, 18 epochs, batch 2, BN-momentum decay; "validation" on `test_seen` | AdamW 1e-2, StepLR, 15 epochs, batch 4 × 2 accumulation, value clipping, BN-momentum decay; one optimizer over two networks |
+| Scene encoder | PointNet++ (baseline) / 2 SA + 2 transformer blocks (SBG) → 1024 seeds, 256-d | Sparse U-Net, per-point 512-d | Same architecture as GSNet | 2-D encoder-decoder; no 3-D scene network |
+| Proposal | 2-way "objectness" on the 1024 seeds; optional OBS needs a second segmentation network at test time (SBG) | Objectness + graspness per point → mask → FPS to 1024 | Same code as GSNet | Heat-map peaks → up to 48 **partial grasps** `(u, v, θ, width, Δz)` |
+| Approach | 300 view scores; argmax in both modes | 300 view scores; train: one view sampled by multinomial from predicted scores; test: argmax | Same code as GSNet | None. Rotation is Euler-factored: θ in 2-D, 7×7 learned (γ, β) anchors in 3-D |
+| Grouping | Cylinders over the **scene cloud**, xyz only, one per depth → explicit depth axis `(seed, 4)`; SBG adds four radii | One cylinder (r 0.05, 16 neighbours) **among the seeds**, with features; no depth axis | Same grouper + neighbour self-attention | Unrotated ball of radius = predicted width around the lifted centre; 512 points; image features attached and **detached** |
+| Head | Score, angle class, width per depth, plus tolerance | SWAD: score and width grids `(12, 4)`, regression | Angle (13-way), depth (5-way), score (6-way) classification + width regression, with a validity mask | 49 anchor logits + per-anchor translation offsets |
+| GT inside the training forward | Label matching runs mid-forward; the **crop rotation comes from the labels** (object pose × template); crops are centred at the matched **GT grasp point** rather than the seed | Same, but crops are centred at the seed | Same as GSNet | None; targets are computed after the forward from the network's own proposals |
+| Output score | `score × P(objectness) × tolerance / 0.05` (SBG) | Max of regressed grid (unbounded) | Bin-centre-weighted sum of **raw logits** (no softmax) | Anchor sigmoid |
+| Collision filter in shipped test path | Shipped command turns it off (SBG) | Default on in `test.py`, shipped command turns it off | Off | **On**, and also rejects grasps with ≤ 2 points between the fingers |
+| Recipe | SBG: Adam 1e-3, OneCycle, 18 epochs, batch 2, BN-momentum decay; "validation" on `test_seen` | Adam 1e-3, ×0.95/epoch, 10 epochs, batch 4, 15 000 points, flip + x-rotation | Adam 1e-3, cosine, 20 epochs by default (README command: 10), batch 4, 20 000 points, flip | AdamW 1e-2, StepLR, 15 epochs, batch 4 × 2 accumulation, value clipping, BN-momentum decay; one optimizer over two networks |
 
 Consequences:
 
-1. GSNet, EconomicGrasp, GraspNet-baseline and SBG share one skeleton with a small number of real variation points (encoder output kind, proposal, view selection policy, grouping support and axes, head bundle).
-2. **HGGD shares none of the four GSNet-shaped stages.** It has no per-point graspness, no 3-D scene backbone, no view classification and no approach-aligned crop; its proposal stage emits partial grasps, not points. It must be its own detector.
+1. GraspNet-baseline, GSNet, SBG and EconomicGrasp share one skeleton with a small number of real variation points (encoder output kind, proposal, view selection policy, grouping support and axes, head bundle).
+2. **HGGD shares none of the four seed-based stages.** It has no per-point graspness, no 3-D scene backbone, no view classification and no approach-aligned crop; its proposal stage emits partial grasps, not points. It must be its own detector.
 3. Three of four families crop the workspace with ground-truth segmentation at inference and HGGD does not. A comparison table that does not show this column is comparing different input conditions.
 
 ### 8.2 Detector families
@@ -386,7 +452,7 @@ Train and eval behaviour follow `nn.Module.training`; there is no constructor fl
 
 | Family | Methods in v1 | Internal stages |
 |---|---|---|
-| Seed-based (`SeedGraspDetector`) | GSNet, EconomicGrasp, FineGrasp, GraspNet-baseline, SBG | backbone → proposal → view → (assigner, training only) → grouper → head bundle |
+| Seed-based (`SeedGraspDetector`) | GraspNet-baseline, GSNet, SBG, EconomicGrasp, FineGrasp | backbone → proposal → view → (assigner, training only) → grouper → head bundle |
 | Image-to-region (`HGGD`) | HGGD; RNGNet later if approved | image encoder → heat-map proposal → lift → region grouping → local encoder → anchor head bundle |
 | Dense contact (`ContactGraspNet`) | Contact-GraspNet | PointNet++ encoder → per-point contact head bundle |
 
@@ -455,7 +521,7 @@ What the checker does with these declarations:
 | `SWADHead` → operation/tolerance bundle | Allowed only with a depth-axis grouper and the tolerance asset | Checker lists every missing piece at once. |
 | `GraspnessFPS` → object-balanced sampling | Allowed if an `instance` mask input is configured | Its provenance (`predicted` or `ground_truth`) is recorded on the run. |
 | HGGD local PointNet → PointNet++ | Allowed inside HGGD | Same region contract. |
-| HGGD heat-map proposal into a GSNet slot | Rejected | Different family: emits partial grasps, not seeds. |
+| HGGD heat-map proposal into a seed-based slot | Rejected | Different family: emits partial grasps, not seeds. |
 
 Any change of structure or feature distribution requires retraining or declared fine-tuning. Loading a checkpoint into a swapped architecture fails on the key report (§12.1); nothing claims a checkpoint is portable across components.
 
@@ -489,7 +555,7 @@ Seed-based detectors cannot compute targets before the forward pass, because tar
 4. Grouper, with the rotation from step 3 in training or from step 2 in inference.
 5. Head bundle forward; stage losses are summed.
 
-Ground truth enters only at step 3 and only through the `Supervision` argument of `loss()`. `predict()` has no step 3. The assigner is a registered component because all four seed-based methods share its first half; their differences are parameters (distance threshold for a valid match: none in GSNet, 5 mm in EconomicGrasp; crop centre: seed or matched label point).
+Ground truth enters only at step 3 and only through the `Supervision` argument of `loss()`. `predict()` has no step 3. The assigner is a registered component because all five seed-based methods share its first half; their differences are parameters (distance threshold for a valid match: none in GSNet, 5 mm in EconomicGrasp; crop centre: seed or matched label point).
 
 ### 8.6 Ownership of constants
 
@@ -519,7 +585,12 @@ Ground truth enters only at step 3 and only through the `Supervision` argument o
 | Suction (SuctionNet-1B) | Same scenes and readers; a `SuctionGroup` output type and its evaluator sit beside `GraspGroup`. |
 | Simulated clearing (GSR / DR) | Evaluators consume either dumped predictions or a policy callable; `GraspInferencer` is that callable. |
 
+</details>
+
 ## 9. Operators, backends and dependencies
+
+<details markdown="1">
+<summary>§9 in full: 9.1 grasppanda.ops · 9.2 Sparse convolution · 9.3 Dependency policy</summary>
 
 ### 9.1 `grasppanda.ops`
 
@@ -565,7 +636,12 @@ Sparse backbones are written against a thin facade (`SubMConv3d`, `SparseConv3d`
 
 Mesh and SDF readers needed by the evaluator are implemented in-tree with NumPy so that evaluation stays in the core install. Forbidden: committed CUDA installers; vendored top-level packages named `pointnet2` or `knn_pytorch` (each upstream installs one under the same global name and the last install silently wins); any `sys.path` manipulation; import-time side effects such as argument parsing.
 
+</details>
+
 ## 10. Datasets and derived assets
+
+<details markdown="1">
+<summary>§10 in full: 10.1 GraspNet-1Billion reader · 10.2 Derived assets and grasppanda prepare · 10.3 Transforms · 10.4 GraspClutter6D reader</summary>
 
 ### 10.1 GraspNet-1Billion reader
 
@@ -593,7 +669,7 @@ Design:
 
 The existing upstream-format labels on disk can be imported (`prepare graspness --import-legacy`), re-keyed to pixels by recomputing the mask and asserting row counts. Imported assets are marked `legacy-import` because their generator version is unknown; they are for parity debugging, not for zoo runs.
 
-Other assets use the same store: compact per-scene labels for EconomicGrasp, tolerance labels for GraspNet-baseline and SBG, 2-D targets for HGGD, GraspClutter6D graspness.
+Other assets use the same store: tolerance labels for GraspNet-baseline and SBG, compact per-scene labels for EconomicGrasp, 2-D targets for HGGD, GraspClutter6D graspness.
 
 ### 10.3 Transforms
 
@@ -617,7 +693,12 @@ Facts below were read from the dataset itself and from `SeungBack/graspclutter6d
 
 Reader requirements that follow: camera is selected by image-id arithmetic, never by directory; depth scale and intrinsics are read per image; instances, not object ids, key the labels; nothing is ever written into the dataset tree (the official tool writes cache pickles there when they are missing).
 
+</details>
+
 ## 11. Evaluation
+
+<details markdown="1">
+<summary>§11 in full: 11.1 The evaluator is re-implemented, not vendored · 11.2 Parity gate · 11.3 Protocols · 11.4 Result records and post-processing variants · 11.5 Validation, statistics and latency</summary>
 
 ### 11.1 The evaluator is re-implemented, not vendored
 
@@ -691,7 +772,12 @@ Documented data caveats: `test_novel` scenes 188 and 189 contain only seen or si
 - **Latency** is reported per stage (preprocessing, encoder, proposal, view, grouping, head, decode, each post-processor) at batch size 1 after warm-up with CUDA synchronisation; device and precision are recorded.
 - **Optional metric.** SBG's scale-wise evaluation is available as `ScaleAP` under its own name. It buckets by predicted width and uses top-5 per object and 20 ranks, so it is never shown in an AP column.
 
+</details>
+
 ## 12. Engine, CLI and Python API
+
+<details markdown="1">
+<summary>§12 in full: 12.1 Trainer · 12.2 CLI · 12.3 Python API · 12.4 First result in five commands</summary>
 
 ### 12.1 Trainer
 
@@ -768,7 +854,12 @@ grasppanda test  gsnet_sunet14_g1b-realsense_10e --opts data.test.dataset.split=
 
 The sample-split result is labelled as partial coverage and prints no headline AP (§11.4).
 
+</details>
+
 ## 13. Model zoo, weights, documentation and brand
+
+<details markdown="1">
+<summary>§13 in full: 13.1 Admission gate · 13.2 Per-method files · 13.3 Weights · 13.4 Documentation · 13.5 Brand and README</summary>
 
 ### 13.1 Admission gate
 
@@ -824,7 +915,12 @@ English is the source language. `README_zh-CN.md` mirrors `README.md`; CI fails 
 - Assets in `resources/`: logo (SVG source, PNG export, light and dark variants), README banner, architecture overview diagram, demo GIF of predictions on a cluttered scene.
 - README order: language switch · logo and tagline · badges (CI, PyPI, docs, license, Python) · quick links · demo GIF · news · features · overview table (methods, components, datasets) · model-zoo summary · install and quick start · tutorials · citation (BibTeX + `CITATION.cff`) · acknowledgements · license.
 
+</details>
+
 ## 14. Engineering quality
+
+<details markdown="1">
+<summary>§14 in full: 14.1 Tests (pytest, CPU) · 14.2 Continuous integration · 14.3 Licensing and clean-room policy · 14.4 Project files</summary>
 
 ### 14.1 Tests (pytest, CPU)
 
@@ -864,7 +960,12 @@ English is the source language. `README_zh-CN.md` mirrors `README.md`; CI fails 
 
 `CONTRIBUTING.md`, issue forms, PR template, `CHANGELOG.md` (Keep a Changelog), `CITATION.cff`, `projects/example_project/` (a minimal out-of-tree head bundle with its config and test).
 
+</details>
+
 ## Appendix A. Sources and upstream facts
+
+<details markdown="1">
+<summary>Appendix A in full: A.1 Pinned sources · A.2 Upstream behaviours a reproduction must replicate or consciously change</summary>
 
 ### A.1 Pinned sources
 
@@ -886,13 +987,13 @@ The reference implementations were read at these commits; they are never copied 
 
 | Method | Behaviour | Where | Handling |
 |---|---|---|---|
-| GSNet, EconomicGrasp, baseline, SBG | Workspace crop is built from the GT segmentation mask at test time. | `dataset/graspnet_dataset.py` (`get_data`), `utils/data_utils.py:121-156` | Explicit workspace transform with `ground_truth` provenance; `gt_assisted` on results. |
+| GraspNet-baseline, GSNet, SBG, EconomicGrasp | Workspace crop is built from the GT segmentation mask at test time. | `dataset/graspnet_dataset.py` (`get_data`), `utils/data_utils.py:121-156` | Explicit workspace transform with `ground_truth` provenance; `gt_assisted` on results. |
 | GSNet | Train/eval is a constructor flag; a training-mode model cannot decode. | `models/graspnet.py:24-35,84-88` | `loss()` / `predict()` on one instance. |
 | GSNet | Training view is sampled by multinomial from detached, min-max-normalised predicted scores. | `models/modules.py:45-58` | View-stage option `train_selection: multinomial`. |
 | GSNet | Score targets are `log(u_max / μ) / log(u_max / u_min)` with extrema taken over the whole batch. | `utils/label_generation.py:133-138` | Named target option; per-dataset constants as a controlled variant. |
 | GSNet | Seed → label matching has no distance threshold; a seed on the table still receives a full label grid. | `utils/label_generation.py:73-81` | Assigner parameter `max_match_distance: null`. |
 | GSNet | Stored graspness covers every masked point including table and background (nearest object point, no threshold), min-max normalised per frame without epsilon. | `dataset/generate_graspness.py:102-118` | Generator parameters; loss mask stays as upstream. |
-| GSNet, EconomicGrasp, SBG | Decoder multiplies predicted width by 1.2; the loss target has no such factor. | `models/graspnet.py:109` and equivalents | Codec option `width_decode_gain`. |
+| GSNet, SBG, EconomicGrasp | Decoder multiplies predicted width by 1.2; the loss target has no such factor. | `models/graspnet.py:109` and equivalents | Codec option `width_decode_gain`. |
 | GSNet | `test.py` enables collision filtering by default (voxel 0.01 m), while the shipped command and README numbers disable it. | `test.py:29,89-93`, `command_test.sh` | Both variants always reported. |
 | GSNet | Augmentation comment says z-axis; the matrix rotates about the camera x-axis. | `dataset/graspnet_dataset.py:71-91` | Follow the code; axis named in config. |
 | GSNet, EconomicGrasp | FPS starts at index 0 and ignores points with squared norm ≤ 1e-3. | `pointnet2/_ext_src/src/sampling_gpu.cu:90-106` | Reference operator flag. |
@@ -901,7 +1002,7 @@ The reference implementations were read at these commits; they are never copied 
 | EconomicGrasp | "Economic" labels keep all 300 views; only angle × depth is collapsed to the best pair per (point, view). Scores are quantised to 0.1 and widths to truncated millimetres (uint8). | `dataset/generate_economic.py:96-120` | Asset generator parameters. |
 | EconomicGrasp | A seed is a valid training sample only within 5 mm of its matched label point; the literal 0.005 is unrelated to the voxel size. | `utils/label_generation.py:152-158` | Assigner parameter with its own name. |
 | EconomicGrasp | Collision filter reuses the sparse-conv voxel size (0.005 m); the test dataset ignores `--voxel_size`. | `test.py:28-38,87-91` (HEAD) | Separate, separately named parameters. |
-| SBG, baseline | Training crops are centred at the matched GT grasp point, inference crops at the seed. | `models/graspnet.py:106-111` | Assigner output `crop_centre`. |
+| GraspNet-baseline, SBG | Training crops are centred at the matched GT grasp point, inference crops at the seed. | `models/graspnet.py:106-111` | Assigner output `crop_centre`. |
 | SBG | In-training "validation" runs on `test_seen`. | `train.py:78-79,200-235` (HEAD) | Not replicated; scene-level hold-out (§11.5). |
 | SBG | `test_similar` is defined as scenes 130–190 in its dataset class. | `dataset/graspnet_dataset.py:45-46` | Not replicated; official manifests. |
 | SBG | Scale-balanced weight: bin of the best grasp over all views; widths outside every bin silently fall into bin 0; prior loaded from a relative path at import. | `models/loss.py:22-46` | Prior becomes a hashed statistic asset computed from training labels. |
@@ -911,3 +1012,5 @@ The reference implementations were read at these commits; they are never copied 
 | HGGD | "Joint training" sums two losses into one optimizer step; image features are detached, so no gradient crosses from the local network to the image network. | `models/anchornet.py:216`, `dataset/evaluation.py:28-38` | Gradient boundary is part of the recipe; removing it is a named variant. |
 | HGGD | Shipped shell script and argparse defaults disagree (loss weights, learning rate, batch size, `local_k`). | `train_graspnet.sh`, `train_utils.py` | Reference config follows the shell script; stated in the method README. |
 | HGGD | The test loop needs label files for test scenes and writes no dump for a frame without 2-D proposals. | `dataset/base_grasp_dataset.py:287`, `test_graspnet.py:197-199` | `predict()` needs no labels; an empty result is an explicit empty `GraspGroup`. |
+
+</details>

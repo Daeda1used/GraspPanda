@@ -11,7 +11,8 @@
 # * concat_stages: null concatenates all five stages, 992 channels (32 + 64 + 128 + 256
 #   + 512); proposal, view stage and grouper are built that wide. 1 keeps the coarsest
 #   stage alone (512 channels, one feature per 16 x 16 x 16 voxels, copied to its points).
-# * grid_size: 0.005 m, GSNet's (the class default is 0.02 m).
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp (the class default
+#   is 0.02 m).
 # * in_channels: 3 constant ones, as the base methods feed them.
 # * optimizer and schedule: the base method's, tuned for its own encoder; transformers
 #   are usually trained with AdamW, weight decay and warm-up.

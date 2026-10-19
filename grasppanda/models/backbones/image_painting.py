@@ -99,7 +99,8 @@ class _Painted(Backbone):
         fusion: ``input`` or ``output``; see the module docstring.
         paint_channels: Width the sampled image features are projected to (``input``).
             The wrapped encoder's ``in_channels`` must be that much larger than what the
-            detector feeds (3 constant ones for GSNet: ``in_channels: 35`` with 32).
+            detector feeds: 3 constant ones under GSNet and EconomicGrasp
+            (``in_channels: 35`` with 32), 6 under FineGrasp (38).
         image_scale: The colour image is resampled by this factor before it is encoded
             (0.5 turns a 1280 x 720 sensor image into 640 x 360: a quarter of the memory).
     """

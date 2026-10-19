@@ -1,4 +1,5 @@
-# ImagePainted: the sparse U-Net of GSNet with image features painted onto its input points.
+# Point painting: image features painted onto the input points of a sparse U-Net
+# (ImagePainted around SparseUNet14, the encoder of GSNet, EconomicGrasp and FineGrasp).
 #
 # An adapter around a `dense` scene encoder and an image encoder: the colour image is
 # encoded once (here by an ImageNet ResNet-18, strides 4 and 8), every point is projected

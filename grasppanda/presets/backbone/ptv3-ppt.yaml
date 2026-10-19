@@ -16,7 +16,8 @@
 # * sizes: the widths, heads, patch size 128 and relative position bias below are those
 #   of the checkpoint (they differ from the class defaults); change them and the
 #   weights no longer fit.
-# * grid_size: 0.005 m, GSNet's; the weights were trained on rooms at 0.02 m.
+# * grid_size: 0.005 m, the grid of GSNet, EconomicGrasp and FineGrasp; the weights were
+#   trained on rooms at 0.02 m.
 # * output width: 64 channels; proposal, view stage and grouper are built that wide.
 # * optimizer and schedule: fine-tuning a transformer usually takes AdamW, a lower rate
 #   and warm-up; the base method's recipe was tuned for its own encoder.

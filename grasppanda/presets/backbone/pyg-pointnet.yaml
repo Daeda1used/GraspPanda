@@ -5,6 +5,8 @@
 # norm and residuals, 256-channel output) is GraspPanda's and is not a published
 # network. Needs `pip install -e ".[torch_geometric]"`. No AP is claimed.
 #
+# Source: PyTorch Geometric's PointNetConv, the layer of PointNet++ (NeurIPS 2017).
+#
 # What must be re-tuned, and why:
 # * k: 16 neighbours on one spatial graph per frame. There is no subsampling, so three
 #   layers reach three hops: a few centimetres at 5 mm point spacing.

@@ -5,7 +5,7 @@
 # It expects crop features with a depth axis (DepthCylinderGroup) and supervises a grasp
 # tolerance, a derived label the training dataset must serve: the `tolerance` section,
 # built with
-#   grasppanda prepare graspnet1b --tolerance --config <this config>
+#   grasppanda prepare <dataset> --tolerance --config <this config>
 # A base config that has the section keeps its own.
 #
 # What must be re-tuned, and why:
