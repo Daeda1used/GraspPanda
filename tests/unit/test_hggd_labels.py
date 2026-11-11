@@ -1326,7 +1326,10 @@ def test_prepare_generates_resumes_and_reports(tree, config, capsys):  # noqa: F
     assert main([*base, "--check"]) == 1
     out = capsys.readouterr().out
     assert "grasp labels 0/5 shards" in out and "view grasps 0/2 scenes" in out
-    assert "--labels / --graspness / --compact-labels / --view-grasps" in out
+    # the exact command of each missing asset, the label store first
+    labels = "grasppanda prepare tinygraspnet --labels"
+    views = f"grasppanda prepare tinygraspnet --view-grasps --camera realsense --config {config}"
+    assert out.index(labels) < out.index(views)
 
     assert main([*base, "--view-grasps", "--workers", "1"]) == 1  # labels come first
     assert "grasppanda prepare tinygraspnet --labels" in capsys.readouterr().err
