@@ -93,6 +93,29 @@ def test_summary_prints_headlines_of_complete_variants_only():
     assert summarize({}) == "no variant was scored"
 
 
+def test_fractions_are_printed_in_percent_and_kept_in_the_record(tmp_path):
+    """A benchmark evaluator states its metrics as fractions; the console prints what a
+    paper prints (68.75) with all its digits, and the record file keeps the fraction."""
+    fraction = "fraction in [0, 1]; multiply by 100 for the figures papers print"
+    scored = EvaluationResult(
+        {key: np.full((2, 3), 0.5) for key in KEYS},
+        {"AP": 0.6875, "AP0.8": 0.8123},
+        len(KEYS),
+        [],
+        {"version": "t1", "metric_unit": fraction},
+    )
+    kwargs = {"keys": KEYS, "protocol": "proto-v1", "dataset": "d", "split": "test_seen"}
+    raw = ResultRecord.from_result(scored, variant="raw", **kwargs)
+    text = summarize({"raw": raw})
+    assert text.splitlines()[0].endswith("· metrics in percent")
+    line = next(line for line in text.splitlines() if line.startswith("raw "))
+    assert line.split() == ["raw", "4/4", "68.75", "81.23"]
+    written = json.loads(raw.write(tmp_path / "raw.json").read_text())
+    assert written["metrics"] == {"AP": 0.6875, "AP0.8": 0.8123}
+    # an evaluator that states no unit is printed as it reports
+    assert "metrics in percent" not in summarize({"raw": record()})
+
+
 def test_per_scene_metrics_group_frames_by_scene_and_camera():
     precision = {
         SampleKey("d", 1, "a", 0): np.full((2, 3), 1.0),

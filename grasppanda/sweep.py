@@ -14,24 +14,44 @@ is reported at planning time rather than hours into the sweep.
       seeds_per_frame:
         "1024": []
         "2048": ["model.proposal.num_seeds=2048"]
+
+The cells of a plan are independent runs. :func:`run_cells` runs them one after the other
+in this process, or, given GPUs, one process per cell with one cell per GPU at a time.
 """
 
 from __future__ import annotations
 
 import itertools
 import json
+import os
+import queue
 import statistics
-from collections.abc import Sequence
+import subprocess
+import sys
+import time
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from grasppanda.config import Config, ConfigError, Issue, parse_yaml, resolve_config_path
 
-__all__ = ["Cell", "Sweep", "aggregate", "load_sweep", "render_table", "run_cell"]
+__all__ = [
+    "Cell",
+    "Sweep",
+    "aggregate",
+    "cell_record",
+    "load_sweep",
+    "render_table",
+    "run_cell",
+    "run_cells",
+]
 
 #: Written into a cell's work directory when it has finished; makes a sweep resumable.
 CELL_RECORD = "sweep_cell.json"
+#: The console output of a cell that ran in a process of its own, in its work directory.
+CELL_LOG = "sweep_cell.log"
 
 
 @dataclass
@@ -137,6 +157,20 @@ def load_sweep(path: str | Path) -> Sweep:
 # ------------------------------------------------------------------------ execution
 
 
+def cell_record(cell: Cell) -> dict[str, Any] | None:
+    """The record of a finished cell, or ``None`` when the cell has to run.
+
+    A record written for another config hash (the sweep file changed) does not count.
+    """
+    if cell.config is None:
+        raise ValueError(f"cell {cell.name} has no valid config")
+    path = Path(cell.config.select("runtime.work_dir")) / CELL_RECORD
+    if not path.is_file():
+        return None
+    record = json.loads(path.read_text(encoding="utf-8"))
+    return record if record.get("config_hash") == cell.config.digest() else None
+
+
 def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
     """Train one cell, score it on the test split when one is configured, record the outcome.
 
@@ -144,15 +178,13 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
     """
     from grasppanda.engine import commands
 
-    if cell.config is None:
-        raise ValueError(f"cell {cell.name} has no valid config")
+    finished = cell_record(cell)
+    if finished is not None:
+        return finished
+    assert cell.config is not None
     work_dir = Path(cell.config.select("runtime.work_dir"))
     record_path = work_dir / CELL_RECORD
     digest = cell.config.digest()
-    if record_path.is_file():
-        record = json.loads(record_path.read_text(encoding="utf-8"))
-        if record.get("config_hash") == digest:
-            return record
     state = commands.train(cell.config)
     record: dict[str, Any] = {
         "cell": cell.name,
@@ -180,6 +212,81 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
     temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(record_path)
     return record
+
+
+def _run_in_process(sweep: Sweep, cell: Cell, gpu: str) -> dict[str, Any]:
+    """Run one cell in a process of its own that sees only ``gpu``; its output goes to a log."""
+    assert cell.config is not None and sweep.path is not None
+    work_dir = Path(cell.config.select("runtime.work_dir"))
+    work_dir.mkdir(parents=True, exist_ok=True)
+    log = work_dir / CELL_LOG
+    command = [sys.executable, "-m", "grasppanda.cli.main", "sweep", str(sweep.path)]
+    command += ["--cell", cell.name]
+    with open(log, "w", encoding="utf-8") as handle:
+        status = subprocess.run(
+            command,
+            env={**os.environ, "CUDA_VISIBLE_DEVICES": gpu},
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            check=False,
+        ).returncode
+    record = cell_record(cell) if status == 0 else None
+    if record is None:
+        return {"cell": cell.name, "choices": cell.choices, "seed": cell.seed, "failed": str(log)}
+    return record
+
+
+def run_cells(
+    sweep: Sweep,
+    cells: Sequence[Cell],
+    *,
+    gpus: Sequence[str] = (),
+    report: Callable[[str], None] = print,
+) -> list[dict[str, Any]]:
+    """Run every cell of a plan and return their records, in plan order.
+
+    Without ``gpus`` the cells run one after the other in this process. With ``gpus``
+    every cell runs in a process of its own that sees one GPU (``CUDA_VISIBLE_DEVICES``),
+    and as many cells run at a time as GPUs were named: four runs on four GPUs take the
+    time of the longest, not the sum. A GPU named twice takes two cells at a time. The
+    console output of such a cell is in ``<its work directory>/sweep_cell.log``.
+
+    A cell that fails does not stop the others. Its record is
+    ``{"cell", "choices", "seed", "failed": <log>}`` and carries no metric, so its variant
+    reports none; running the sweep again runs the failed cells only.
+    """
+    total = len(cells)
+    if not gpus:
+        records = []
+        for index, cell in enumerate(cells, start=1):
+            report(f"\n[{index}/{total}] {cell.name}")
+            records.append(run_cell(sweep, cell))
+        return records
+
+    free: queue.Queue[str] = queue.Queue()
+    for gpu in gpus:
+        free.put(gpu)
+
+    def work(item: tuple[int, Cell]) -> dict[str, Any]:
+        index, cell = item
+        finished = cell_record(cell)
+        if finished is not None:
+            report(f"[{index}/{total}] {cell.name}: already recorded")
+            return finished
+        gpu = free.get()
+        try:
+            report(f"[{index}/{total}] {cell.name}: started on GPU {gpu}")
+            started = time.perf_counter()
+            record = _run_in_process(sweep, cell, gpu)
+            took = time.perf_counter() - started
+            outcome = f"FAILED, see {record['failed']}" if "failed" in record else "done"
+            report(f"[{index}/{total}] {cell.name}: {outcome} on GPU {gpu} in {took:.0f} s")
+            return record
+        finally:
+            free.put(gpu)
+
+    with ThreadPoolExecutor(len(gpus)) as pool:
+        return list(pool.map(work, enumerate(cells, start=1)))
 
 
 def aggregate(records: Sequence[dict[str, Any]], *, source: str = "test") -> list[dict[str, Any]]:
