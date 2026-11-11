@@ -23,6 +23,7 @@ none of their code is part of this history. Each line below has its full account
 - **Model zoo.** Released weights scored on whole test splits, GSNet trained here, each number backed by a committed result record.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
+- **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one.
 
@@ -36,7 +37,7 @@ none of their code is part of this history. Each line below has its full account
 - **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
 - **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
 - **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
-- **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. This changes what HGGD computes on such a GPU, not the seed-based methods.
+- **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. This changes what HGGD computes on such a GPU, and GraspNet-baseline and Scale-Balanced-Grasp by under 0.1 AP; earlier records of the three were computed with TF32.
 - **One typeface.** The documentation site, the page of `grasppanda explore` and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.
 - **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
 - **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
@@ -449,7 +450,8 @@ Classes now count levels, and every method lists the options of each of its slot
   PyTorch 2.7.1 with CUDA 11.8) and with a current one (Python 3.11, PyTorch 2.14.1 with
   CUDA 12.6, the package installed as a wheel). The released checkpoints of the five
   seed-based methods score the same AP within 0.01 on all three; every method page states
-  its numbers per machine.
+  its numbers per machine. A fresh clone was also taken through the quick start with
+  Python 3.10 and a plain `pip install torch`.
 - HGGD's checkpoint did not: 58.16 and 64.14 AP (without and with the collision filter)
   on the RTX A6000, 58.52 and 64.66 on the RTX 3090, 58.79 and 65.05 there with the newer
   stack, with identical weights, config and frames, and the same numbers on every repeat on
@@ -457,7 +459,11 @@ Classes now count levels, and every method lists the options of each of its slot
   10-bit mantissa on Ampere and newer GPUs by default, what that loses depends on the GPU
   model and the cuDNN version, and HGGD thresholds the heat map of a convolutional network.
   With TF32 off the two stacks of the RTX 3090 give 57.99 and 64.46 against 57.98 and
-  64.44, and the same number of grasps on all 120 frames (on 38 with TF32).
+  64.44, and the same number of grasps on all 120 frames (on 38 with TF32). The sparse
+  convolutions of GSNet, EconomicGrasp and FineGrasp are not cuDNN's, and their AP is the
+  same with and without TF32. The 1 × 1 convolutions of PointNet++ are: GraspNet-baseline
+  moves from 32.60 and 48.67 to 32.51 and 48.65, Scale-Balanced-Grasp from 57.87 and 62.84
+  to 57.96 and 62.87, by the same amount on every machine tried.
 - `runtime.tf32` (default `false`) sets both switches of PyTorch for a run, a probe and
   `GraspInferencer`, and puts them back afterwards; `env.json` of a run records what it
   computed in, and the header of a run says when TF32 is on. At its default the option

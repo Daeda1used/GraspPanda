@@ -481,13 +481,17 @@ into a directory that already holds a run.
 
     What has been exercised: two CPU processes with the gloo backend, in the unit suite
     (training, in-training evaluation, `test`, identical weights on both processes) and, by
-    hand, an exact resume. Also by hand: the wrapper, synchronised batch norm and mixed
-    precision on one GPU in a one-process NCCL group. **Not tested: several GPUs.** The
-    development machine has one. While the main process scores an evaluation the others
-    wait in a collective; its timeout is raised to 24 hours for that reason, which has not
-    been observed under NCCL. `DistributedDataParallel` runs with its defaults: a detector
-    with parameters that receive no gradient in some iterations needs
+    hand, an exact resume. On GPUs, by hand, with NCCL: GSNet on two RTX 3090 (a short
+    epoch, the evaluation merged from both processes with every frame scored once, the
+    checkpoint), and synchronised batch norm and mixed precision in a one-process group.
+    While the main process scores an evaluation the others wait in a collective; its
+    timeout is raised to 24 hours for that reason. `DistributedDataParallel` runs with its
+    defaults: a detector with parameters that receive no gradient in some iterations needs
     `find_unused_parameters`, which is not exposed yet.
+
+    A recipe written for more GPUs than you have keeps its step with `train.accumulate`:
+    eight processes of four frames are four processes with `train.accumulate=2`, or one
+    with `train.accumulate=8`. The schedule counts optimizer steps, so its numbers stay.
 
 ??? note "Reproducibility"
 
@@ -503,14 +507,16 @@ into a directory that already holds a run.
       warns where it has none. It costs speed.
     - `runtime.tf32: false` (the default) keeps CUDA convolutions and matrix products in
       float32. PyTorch's own default lets convolutions round to TF32 on Ampere and newer
-      GPUs, and what that rounding loses depends on the GPU model and the cuDNN version. A
-      detector that thresholds the output of a convolutional network turns it into other
-      grasps: HGGD's released checkpoint on the same 120 frames scored 58.16 AP on an RTX
-      A6000, 58.52 on an RTX 3090 and 58.79 on that RTX 3090 with a newer PyTorch, and 57.99
-      and 57.98 on the two stacks of the RTX 3090 in float32. The four seed-based methods
-      measured there gave the same AP to two decimals either way. `tf32: true` is the faster
-      setting where a model is mostly convolutions; it is part of the config hash, and
-      `env.json` of a run records what the run computed in.
+      GPUs. Measured on 120 frames with the released checkpoints: GSNet, EconomicGrasp and
+      FineGrasp compute with sparse convolutions, which TF32 does not touch, and score the
+      same either way. GraspNet-baseline and Scale-Balanced-Grasp (1 × 1 convolutions) move
+      by up to 0.09 AP, by the same amount on every machine tried. HGGD's image network
+      does not: with TF32 it scored 58.16 AP on an RTX A6000, 58.52 on an RTX 3090 and
+      58.79 on that RTX 3090 with a newer PyTorch, because what TF32 loses depends on the
+      GPU model and the cuDNN version and HGGD thresholds a heat map; in float32 it scored
+      57.99 and 57.98 on the two stacks. `tf32: true` is the faster setting where a model is
+      mostly convolutions; it is part of the config hash, and `env.json` of a run records
+      what the run computed in.
     - With `deterministic: true`, training N epochs and training N/2, stopping and resuming
       give bit-identical weights. This is a unit test on CPU (with dropout, augmentation
       noise, batch norm, Adam, a one-cycle schedule, the weight average, clipping and

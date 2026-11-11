@@ -111,3 +111,26 @@ def test_snapshot_records_config_code_and_environment(tmp_path):
     if git["available"] and (run_dir / "code.tar.gz").exists():
         with tarfile.open(run_dir / "code.tar.gz") as archive:
             assert "grasppanda/registry.py" in archive.getnames()
+
+
+def test_env_says_what_keeps_a_method_from_running(capsys, monkeypatch):
+    """Below the report: the two things a plain ``pip install torch`` gets wrong today."""
+    from grasppanda.cli import env as command
+
+    base = {"cuda_build": "12.6", "cuda_available": True, "optional": {"spconv": "2.3.8"}}
+    assert command.notes(base) == []
+    # a PyTorch built for a CUDA version the driver does not run: no GPU, and the fix
+    newer = {**base, "cuda_build": "13.0", "cuda_available": False}
+    (note,) = command.notes(newer)
+    assert "built for CUDA 13.0 and sees no GPU" in note and "whl/cu126" in note
+    # no sparse convolution: which methods need it, and the command for this PyTorch
+    monkeypatch.setattr("grasppanda.utils.imports._torch_cuda", lambda: "12.6")
+    (note,) = command.notes({**base, "optional": {"spconv": None}})
+    assert "GSNet, EconomicGrasp, FineGrasp" in note and "spconv-cu126" in note
+    assert command.notes({**base, "cuda_build": None, "cuda_available": False}) == []  # CPU only
+
+    assert main(["env"]) == 0
+    out = capsys.readouterr().out
+    assert ("✓ " in out) != ("! " in out)  # one verdict below the table
+    assert main(["env", "--json"]) == 0
+    assert isinstance(json.loads(capsys.readouterr().out)["notes"], list)

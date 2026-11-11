@@ -92,8 +92,26 @@ grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkp
 ```
 
 The compact labels are EconomicGrasp's asset; if that exists, nothing is generated. The
-graspness asset is a new one, as large as the scene-normalised asset; so far it has been
-built for one scene.
+graspness asset is a new one, as large as the scene-normalised asset: 100 training scenes
+took 70 minutes with 14 worker processes.
+
+**Memory decides how to launch it.** Training takes about 1.5 GB of GPU memory per frame
+(6.0 GB allocated with 4 frames in a batch, 11.7 GB with 8), so the config as written, one
+process with 32 frames, needs a 48 GB card. The published recipe is eight processes with
+four frames each. With fewer GPUs, sum the gradients of several batches: a step still sees
+32 frames, batch norm 4, and the learning rate and the step counts of the schedule stay.
+
+```bash
+# 8 GPUs: the published recipe
+torchrun --nproc_per_node=8 -m grasppanda.cli.main train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
+    --opts data.train.batch_size=4
+# 4 GPUs of 24 GB
+torchrun --nproc_per_node=4 -m grasppanda.cli.main train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
+    --opts data.train.batch_size=4 train.accumulate=2
+# 1 GPU of 24 GB
+grasppanda train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
+    --opts data.train.batch_size=4 train.accumulate=8
+```
 
 ## Notes
 
@@ -252,10 +270,10 @@ listed in [its README](../economicgrasp/README.md) and have the same values here
   set are not published. Both are generated here from the paper's equations; the normals
   are checked through the AP of the released weights, the graspness labels cannot be
   checked against the authors' at all.
-- The published recipe uses eight processes with four frames each; the runnable config
+- The published recipe uses eight processes with four frames each; the config as written
   uses one process with 32, which keeps the learning rate and the number of steps but
-  gives batch norm 32 frames instead of 4. With fewer frames per step, scale the rate and
-  the two step counts of the scheduler. None of this has been run beyond a smoke test.
+  gives batch norm 32 frames instead of 4 and needs 48 GB. *Train and test* above gives
+  the launch that keeps both on the GPUs you have.
 - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
   repeats, and a frame with none yields an empty result (as for EconomicGrasp).
 - The released inference processor also drops grasps as wide as the gripper, applies

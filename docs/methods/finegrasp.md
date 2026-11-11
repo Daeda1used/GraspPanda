@@ -37,7 +37,7 @@ grasppanda demo finegrasp/finegrasp_sunet14_g1b-realsense_10e \
     --weights finegrasp_realsense.pth --example --collision-filter
 ```
 
-`--example` is a synthetic table-top scene shipped with GraspPanda: no dataset, no download. **14.8 s** for the whole command, 613 grasps kept (one NVIDIA RTX A6000 shared with other jobs).
+`--example` is a synthetic table-top scene shipped with GraspPanda: no dataset, no download. **15.1 s** for the whole command, 613 grasps kept (one NVIDIA GeForce RTX 3090 shared with other jobs).
 
 ??? note "What it prints and writes, and every measured run"
 
@@ -47,9 +47,11 @@ grasppanda demo finegrasp/finegrasp_sunet14_g1b-realsense_10e \
     - `grasps.png` and `grasps.gif`: the cloud with the 30 best grasps, still and swinging around the scene;
     - `example/`: the scene as files (`depth.png`, `rgb.png`, `mask.png`, `intrinsics.txt`).
 
-    Measured with the authors' checkpoint, converted: **14.8 s** for the whole command; 20,000 points to the model, sampled from 316,254 in the workspace; 1024 grasps predicted, 613 left after ModelFreeCollisionFilter (2026-10-15, commit `ea6268b`, one NVIDIA RTX A6000 shared with other jobs). Run again at commit `0ddca31` (2026-10-15): the same counts, 15.5 s.
+    Measured with the authors' checkpoint, converted: **15.1 s** for the whole command; 20,000 points to the model, sampled from 316,254 in the workspace; 1024 grasps predicted, 613 left after ModelFreeCollisionFilter (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs). At commit `ea6268b` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): the same counts, 14.8 s. At commit `0ddca31` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): the same counts, 15.5 s.
 
-    From Python (step 3): 613 grasps, 11.4 s for the script (2026-10-15, commit `0ddca31`, one NVIDIA RTX A6000 shared with other jobs).
+    From Python (step 3): 613 grasps, 11.3 s for the script (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs).
+
+    From Python (step 3): 613 grasps, 11.4 s for the script (2026-10-15, commit `0ddca31`, one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions).
 
 
 ### 3. From Python, a browser or your camera {#run-anywhere}
@@ -116,14 +118,16 @@ Measured with the authors' checkpoint, converted: AP 71.21 without the collision
 
     | Weights, provenance | Collision filter | AP, 120 frames of test_seen | AP, whole seen split | Difference | Wall time, commit |
     |---|---|---|---|---|---|
-    | the authors' checkpoint, converted, `author-ckpt` | off | 71.21 | 71.56 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) | −0.35 | 44 s, `ea6268b` |
+    | the authors' checkpoint, converted, `author-ckpt` | off | 71.21 | 71.56 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) | −0.35 | 82 s, `400b733` |
     |  | on | 72.99 | 73.69 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) | −0.70 |  |
 
     </div>
 
-    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: the workspace is cropped around the ground-truth segmentation (`gt_assisted: workspace`), as in the reference. On these 120 frames the AP is within 0.70 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-10-15 on one NVIDIA RTX A6000 shared with other jobs.
+    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: the workspace is cropped around the ground-truth segmentation (`gt_assisted: workspace`), as in the reference. On these 120 frames the AP is within 0.70 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-11-11 on one NVIDIA GeForce RTX 3090 shared with other jobs.
 
-    The machine: one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8.
+    **The same test elsewhere.** On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`): AP 71.21 and 72.99, the same to two decimals. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `ea6268b`): AP 71.21 and 72.99, the same to two decimals.
+
+    The machines: one NVIDIA GeForce RTX 3090 (24 GB) of six, shared with training jobs, an AMD Ryzen Threadripper PRO 3975WX; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions in float32 (`runtime.tf32: false`, the default); one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions rounded to TF32, PyTorch's default, before `runtime.tf32` existed; the same RTX 3090 with Python 3.11, PyTorch 2.14.1 with CUDA 12.6, spconv 2.3.8; convolutions in float32.
 
 ## Numbers
 
@@ -726,10 +730,10 @@ Every option that fits FineGrasp, except `target-mask`, was composed under it; t
       set are not published. Both are generated here from the paper's equations; the normals
       are checked through the AP of the released weights, the graspness labels cannot be
       checked against the authors' at all.
-    - The published recipe uses eight processes with four frames each; the runnable config
+    - The published recipe uses eight processes with four frames each; the config as written
       uses one process with 32, which keeps the learning rate and the number of steps but
-      gives batch norm 32 frames instead of 4. With fewer frames per step, scale the rate and
-      the two step counts of the scheduler. None of this has been run beyond a smoke test.
+      gives batch norm 32 frames instead of 4 and needs 48 GB. *Train and test* above gives
+      the launch that keeps both on the GPUs you have.
     - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
       repeats, and a frame with none yields an empty result (as for EconomicGrasp).
     - The released inference processor also drops grasps as wide as the gripper, applies
