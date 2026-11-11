@@ -27,11 +27,11 @@ states the same collision filter; a line *not stated* is paired with nothing.
 
 | Method | Camera | Filter | `author-ckpt` | `reported` | Difference |
 |---|---|:---:|---|---|---|
-| GraspNet-baseline | RealSense | off | 32.64 / 27.48 / 10.42 | — | — |
-| GraspNet-baseline | RealSense | on | 47.90 / 42.70 / 16.98 | 47.47 / 42.27 / 16.61 | +0.43 / +0.43 / +0.37 |
+| GraspNet-baseline | RealSense | off | 32.63 / 27.48 / 10.42 | — | — |
+| GraspNet-baseline | RealSense | on | 47.90 / 42.70 / 16.97 | 47.47 / 42.27 / 16.61 | +0.43 / +0.43 / +0.36 |
 | GraspNet-baseline | RealSense | not stated | — | 27.56 / 26.11 / 10.55 | — |
-| Scale-Balanced-Grasp | RealSense | off | 57.78 / 51.66 / 22.12 | 58.95 / 52.97 / 22.63 | −1.17 / −1.31 / −0.51 |
-| Scale-Balanced-Grasp | RealSense | on | 62.29 / 56.80 / 24.00 | 63.83 / 58.46 / 24.63 | −1.54 / −1.66 / −0.63 |
+| Scale-Balanced-Grasp | RealSense | off | 57.78 / 51.67 / 22.12 | 58.95 / 52.97 / 22.63 | −1.17 / −1.30 / −0.51 |
+| Scale-Balanced-Grasp | RealSense | on | 62.29 / 56.81 / 23.99 | 63.83 / 58.46 / 24.63 | −1.54 / −1.65 / −0.64 |
 | EconomicGrasp | RealSense | off | 69.28 / 61.50 / 25.17 | 68.21 / 61.19 / 25.48 | +1.07 / +0.31 / −0.31 |
 | EconomicGrasp | RealSense | on | 70.83 / 62.56 / 25.80 | — | — |
 | EconomicGrasp | Kinect | off | 63.71 / 52.28 / 19.73 | 62.59 / 51.73 / 19.54 | +1.12 / +0.55 / +0.19 |
@@ -129,11 +129,11 @@ collision filter nor the checkpoints, so it is paired with no line.
 
 | Method | Camera | Filter | `author-ckpt` | `reported` | Difference |
 |---|---|:---:|---|---|---|
-| GraspNet-baseline | RealSense D435 | off | 8.69 / 10.35 / 6.96 | — | — |
-| GraspNet-baseline | RealSense D435 | on | 17.14 / 20.60 / 12.86 | — | — |
+| GraspNet-baseline | RealSense D435 | off | 8.70 / 10.35 / 6.97 | — | — |
+| GraspNet-baseline | RealSense D435 | on | 17.14 / 20.60 / 12.87 | — | — |
 | GraspNet-baseline | RealSense D435 | not stated | — | 17.95 / 21.54 / 13.53 | — |
-| Scale-Balanced-Grasp | RealSense D435 | off | 21.77 / 26.49 / 16.46 | — | — |
-| Scale-Balanced-Grasp | RealSense D435 | on | 22.71 / 27.61 / 17.01 | — | — |
+| Scale-Balanced-Grasp | RealSense D435 | off | 21.76 / 26.48 / 16.45 | — | — |
+| Scale-Balanced-Grasp | RealSense D435 | on | 22.69 / 27.59 / 17.00 | — | — |
 | Scale-Balanced-Grasp | RealSense D435 | not stated | — | 22.69 / 27.57 / 16.95 | — |
 | EconomicGrasp | RealSense D435 | off | 21.69 / 26.64 / 15.79 | — | — |
 | EconomicGrasp | RealSense D435 | on | 22.25 / 27.30 / 16.06 | — | — |
@@ -153,8 +153,8 @@ collision filter nor the checkpoints, so it is paired with no line.
       the whole image (`gt_assisted` is empty) and its `on` lines add NMS to the filter, as
       on GraspNet-1Billion: its lines are not like-for-like with the others.
     - **Which measured line the reported number is close to differs by method**: `on` for
-      GraspNet-baseline (0.81 AP below the reported value; `off` is 9.26 below) and for
-      Scale-Balanced-Grasp (0.02 above; `off` is 0.92 below), `off` for EconomicGrasp (0.02
+      GraspNet-baseline (0.81 AP below the reported value; `off` is 9.25 below) and for
+      Scale-Balanced-Grasp (0.00 apart; `off` is 0.93 below), `off` for EconomicGrasp (0.02
       above; `on` is 0.58 above). Whether the paper applied a collision filter for some
       methods and not for others was not investigated and cannot be read from the paper.
     - **One run each**, with seed 0, as above. The paper has no row for HGGD.

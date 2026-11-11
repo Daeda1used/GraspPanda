@@ -285,9 +285,9 @@ D435; the rows, with the reported numbers beside them, stand in the
 
 | Method | Weights | `raw` | `cd` | Reported |
 |---|---|---|---|---|
-| GraspNet-baseline | `author-ckpt` | 8.69 / 10.35 / 6.96 | 17.14 / 20.60 / 12.86 | 17.95 / 21.54 / 13.53 |
+| GraspNet-baseline | `author-ckpt` | 8.70 / 10.35 / 6.97 | 17.14 / 20.60 / 12.87 | 17.95 / 21.54 / 13.53 |
 | GSNet | `reproduced` | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | none published |
-| Scale-Balanced-Grasp | `author-ckpt` | 21.77 / 26.49 / 16.46 | 22.71 / 27.61 / 17.01 | 22.69 / 27.57 / 16.95 |
+| Scale-Balanced-Grasp | `author-ckpt` | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 / 27.57 / 16.95 |
 | EconomicGrasp | `author-ckpt` | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 / 26.62 / 15.90 |
 | HGGD | `author-ckpt` | 14.25 / 17.41 / 9.23 | 14.56 / 17.79 / 9.33 | none published |
 
@@ -296,8 +296,8 @@ tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads
 image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. The GSNet row is one training run with one seed; its
 weights are another model than the `local` checkpoint of the subset numbers above.
 
-The reported value lies 0.81 AP above `cd` and 9.26 above `raw` for GraspNet-baseline,
-0.02 AP below `cd` and 0.92 above `raw` for Scale-Balanced-Grasp, and 0.02 AP below `raw`
+The reported value lies 0.81 AP above `cd` and 9.25 above `raw` for GraspNet-baseline,
+0.00 AP from `cd` and 0.93 above `raw` for Scale-Balanced-Grasp, and 0.02 AP below `raw`
 and 0.58 below `cd` for EconomicGrasp. So the reported table is closest to the filtered run
 for two methods and to the unfiltered run for the third. The paper does not state the
 collision filter, and whether it was applied to some methods and not to others was not
