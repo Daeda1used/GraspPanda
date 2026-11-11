@@ -170,6 +170,7 @@ into a directory that already holds a run.
     | `evaluation.num_workers` | Worker processes of the evaluator. |
     | `runtime.work_dir`, `runtime.run_id` | Where the run lives. Neither enters the config hash. |
     | `runtime.device` | `auto`, `cpu`, `cuda`, `cuda:N`. |
+    | `runtime.gpu_memory_fraction` | Share of the GPU's memory the process may take (`0.45` for two runs on one card); `null` sets no limit. Not hashed. |
     | `runtime.seed`, `runtime.deterministic`, `runtime.tf32` | See *Reproducibility* below. |
     | `runtime.resume`, `runtime.allow_config_mismatch` | See *Checkpoints and resuming* below. |
     | `runtime.load_from`, `runtime.allow_weight_mismatch` | See *Loading weights* below. |
@@ -448,7 +449,11 @@ into a directory that already holds a run.
 
     Without `--gpus` the runs follow each other in one process. With it every run is a
     process of its own that sees one GPU, and as many run at a time as GPUs are named: the
-    six runs above take the time of two on four GPUs. Each run trains, tests its last
+    six runs above take the time of two on four GPUs. A GPU named twice takes two runs;
+    give each a share of its memory then (`overrides: ["runtime.gpu_memory_fraction=0.45"]`
+    in the file, applied to every cell). `base` may also name several configs
+    (`base: {sunet14: ..., ptv3: gsnet_ptv3.yaml}`), which become the axis `config`: the way
+    to compare configs that `grasppanda compose` wrote. Each run trains, tests its last
     checkpoint when the config has a test section, and writes into
     `work_dirs/<sweep>/<variant>/seed<k>/` (its console output in `sweep_cell.log`). The
     table of mean and spread over the seeds is written to `work_dirs/<sweep>/summary_test.md`
@@ -481,9 +486,10 @@ into a directory that already holds a run.
 
     What has been exercised: two CPU processes with the gloo backend, in the unit suite
     (training, in-training evaluation, `test`, identical weights on both processes) and, by
-    hand, an exact resume. On GPUs, by hand, with NCCL: GSNet on two RTX 3090 (a short
-    epoch, the evaluation merged from both processes with every frame scored once, the
-    checkpoint), and synchronised batch norm and mixed precision in a one-process group.
+    hand, an exact resume. On GPUs, with NCCL: GSNet on two RTX 3090 (a short epoch, the
+    evaluation merged from both processes with every frame scored once, the checkpoint),
+    FineGrasp's whole training on four (four frames a process, two batches a step), and
+    synchronised batch norm and mixed precision in a one-process group.
     While the main process scores an evaluation the others wait in a collective; its
     timeout is raised to 24 hours for that reason. `DistributedDataParallel` runs with its
     defaults: a detector with parameters that receive no gradient in some iterations needs

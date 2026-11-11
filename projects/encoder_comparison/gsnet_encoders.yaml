@@ -1,0 +1,16 @@
+# Four scene encoders under GSNet: the one it ships and three swaps. Every other stage, the
+# training recipe, the data and the evaluator are the same; each run trains for the ten
+# epochs of the recipe and is scored on the whole test split.
+#
+#   grasppanda sweep projects/encoder_comparison/gsnet_encoders.yaml --dry-run
+#   grasppanda sweep projects/encoder_comparison/gsnet_encoders.yaml --gpus 0,1,2,3 \
+#       --opts evaluation.num_workers=8
+#
+# The three swaps are files of configs/experimental/, each what `grasppanda compose` writes
+# for `--set backbone=<name>`; add a config of your own under a name of your own.
+base:
+  sunet14: gsnet/gsnet_sunet14_g1b-realsense_10e
+  ptv3: experimental/gsnet_ptv3_g1b-realsense_10e
+  spunet: experimental/gsnet_spunet_g1b-realsense_10e
+  litept: experimental/gsnet_litept_g1b-realsense_10e
+seeds: [0]

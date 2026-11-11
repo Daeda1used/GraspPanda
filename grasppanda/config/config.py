@@ -32,6 +32,7 @@ _VOLATILE: tuple[KeyPath, ...] = (
     ("runtime", "run_id"),
     ("runtime", "resume"),
     ("runtime", "allow_config_mismatch"),
+    ("runtime", "gpu_memory_fraction"),
 )
 #: Keys added to the schema after hashes were recorded, with the value that leaves a hash
 #: as it was: a config that does not use the new option is the experiment it was before.

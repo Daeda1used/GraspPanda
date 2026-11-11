@@ -168,6 +168,17 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     assert main(["sweep", str(path), "--gpus", "7,8"]) == 0  # everything is recorded
     assert capsys.readouterr().out.count("already recorded") == 3
 
+    # --opts reach every cell, also one that runs in a process of its own: another
+    # experiment (another hash), so the cells run again
+    assert main(["sweep", str(path), "--gpus", "7", "--opts", "model.grouper.radius=0.07"]) == 0
+    assert capsys.readouterr().out.count("done on GPU 7") == 3
+    record = json.loads((cells / "s32/seed0" / CELL_RECORD).read_text())
+    from grasppanda.sweep import load_sweep as load
+
+    planned = load(path, ["model.grouper.radius=0.07"]).plan(command="train")[0]
+    assert planned.config.select("model.grouper.radius") == 0.07
+    assert record["config_hash"] == planned.config.digest()
+
 
 def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     """A cell whose process fails is reported with its log and carries no metric."""
@@ -196,3 +207,64 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     assert any("y/seed0: done on GPU 0" in line for line in lines)
     rows = {row["choices"]["a"]: row["metrics"] for row in aggregate(records)}
     assert rows["x"] == {} and rows["y"]["raw/AP"]["mean"] == 0.5
+
+
+def test_several_base_configs_are_the_axis_config(write):
+    """Configs that compose wrote are compared with the same seeds: `base` names them."""
+    other = write("sweeps/wider.yaml", f"_base_: ['{TOY}']\nmodel: {{num_seeds: 128}}\n")
+    path = write(
+        "sweeps/compare.yaml",
+        f"base:\n  toy: {TOY}\n  wider: {other.name}\nseeds: [0, 1]\n"
+        "axes:\n  radius:\n    r5: []\n    r8: ['model.grouper.radius=0.08']\n",
+    )
+    sweep = load_sweep(path)
+    assert list(sweep.bases) == ["toy", "wider"] and sweep.bases["wider"] == other
+    cells = sweep.plan()
+    assert len(cells) == 2 * 2 * 2 and all(cell.valid for cell in cells)
+    assert [cell.name for cell in cells[::2]] == [
+        "toy_r5/seed0",
+        "toy_r8/seed0",
+        "wider_r5/seed0",
+        "wider_r8/seed0",
+    ]
+    last = cells[-1]
+    assert last.choices == {"config": "wider", "radius": "r8"} and last.base == other
+    assert last.config.select("model.num_seeds") == 128
+    assert last.config.select("model.grouper.radius") == 0.08
+    assert last.config.select("runtime.work_dir") == "work_dirs/compare/wider_r8/seed1"
+
+    from grasppanda.sweep import aggregate
+
+    records = [
+        {"choices": cell.choices, "seed": cell.seed, "test": {"raw/AP": 0.5 + 0.1 * index}}
+        for index, cell in enumerate(cells)
+    ]
+    rows = aggregate(records)
+    assert [row["choices"]["config"] for row in rows] == ["toy", "toy", "wider", "wider"]
+    assert all(row["seeds"] == 2 for row in rows)
+
+    clash = write(
+        "sweeps/clash.yaml",
+        f"base:\n  toy: {TOY}\nseeds: [0]\naxes:\n  config:\n    a: []\n",
+    )
+    with pytest.raises(ConfigError, match="the several `base` configs form"):
+        load_sweep(clash)
+
+
+def test_overrides_of_the_sweep_reach_every_cell_and_an_alternative_wins(write):
+    path = write(
+        "sweeps/shared.yaml",
+        f"base: {TOY}\nseeds: [0]\noverrides: ['model.num_seeds=96', 'runtime.gpu_memory_fraction=0.4']\n"
+        "axes:\n  seeds_per_frame:\n    same: []\n    more: ['model.num_seeds=128']\n",
+    )
+    same, more = load_sweep(path).plan()
+    assert (
+        same.config.select("model.num_seeds") == 96 and more.config.select("model.num_seeds") == 128
+    )
+    assert same.config.select("runtime.gpu_memory_fraction") == 0.4
+    plain = load_sweep(sweep_file(write, "  a:\n    x: ['model.num_seeds=96']\n", seeds="[0]"))
+    # a memory limit says how a run lives on a machine: it is not part of the experiment
+    assert same.config.digest() == plain.plan()[0].config.digest()
+    bad = write("sweeps/bad.yaml", f"base: {TOY}\noverrides: model.num_seeds=96\n")
+    with pytest.raises(ConfigError, match="must be a list"):
+        load_sweep(bad)

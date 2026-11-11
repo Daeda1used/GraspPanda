@@ -47,6 +47,7 @@ __all__ = [
     "LOGGER_NAME",
     "Run",
     "find_latest_checkpoint",
+    "limit_gpu_memory",
     "resolve_device",
     "start_run",
     "write_json",
@@ -141,6 +142,24 @@ def resolve_device(name: str) -> torch.device:
 
 
 # ------------------------------------------------------------------- run directory
+
+
+def limit_gpu_memory(fraction: float | None, device: torch.device) -> None:
+    """Cap what this process may allocate on its GPU (``runtime.gpu_memory_fraction``).
+
+    The cap is PyTorch's: an allocation beyond it first frees the cached blocks and fails
+    only then, with the usual out-of-memory error that names the limit. Nothing happens on
+    the CPU.
+    """
+    if fraction is None:
+        return
+    if not 0.0 < fraction <= 1.0:
+        raise EngineError(
+            f"runtime.gpu_memory_fraction is {fraction}: it is a share of the GPU's memory, "
+            "above 0 and at most 1 (0.45 leaves room for a second run on the card)."
+        )
+    if device.type == "cuda":
+        torch.cuda.set_per_process_memory_fraction(fraction, device)
 
 
 def find_latest_checkpoint(work_dir: str | Path, run_id: str | None = None) -> Path | None:
@@ -268,6 +287,7 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
             # The snapshot records which operator backend this run uses, which is settled per
             # device; it has to look at the device of the run, not at GPU 0.
             torch.cuda.set_device(device)
+        limit_gpu_memory(cfg["runtime"]["gpu_memory_fraction"], device)
         joined = dist.is_distributed() and not torch.distributed.is_initialized()
         dist.init(device)
         try:
