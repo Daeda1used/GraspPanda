@@ -125,6 +125,17 @@ A run continues in its own directory when the config hash is unchanged.
 training from them; any mismatch of keys is an error unless
 `runtime.allow_weight_mismatch: true`.
 
+## 5. Use several GPUs
+
+| You have | Run |
+|---|---|
+| several experiments | `grasppanda sweep <file> --gpus 0,1,2,3`: one run per GPU, side by side, and one table at the end |
+| one experiment | `torchrun --nproc_per_node=4 -m grasppanda.cli.main train <method config>`: one process per GPU |
+| two runs and one card | `--opts runtime.gpu_memory_fraction=0.45` on each, so neither takes the card |
+
+*Several runs at once: sweeps* and *Distributed training* under [Reference](#reference) say
+what each does and what was run that way.
+
 ## The run directory
 
 Every invocation works in `<runtime.work_dir>/<run id>/`. The run id is
