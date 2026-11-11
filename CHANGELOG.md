@@ -64,6 +64,7 @@ none of their code is part of this history. Each line below has its full account
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
 - Point painting is not written by `compose` and has no probe record.
 - Most combinations of two or more swapped options have no record.
+- The whole-split records of GraspNet-baseline, Scale-Balanced-Grasp and HGGD were computed with TF32 convolutions, before `runtime.tf32`; on 120 frames the same checkpoints score up to 0.09, 0.09 and 0.32 AP differently in float32.
 
 ### In detail
 
