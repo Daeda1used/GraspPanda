@@ -63,14 +63,13 @@ the test suite runs on CPU. Training a grasp detector does need one.
 
 ## Does a number depend on the GPU?
 
-Not for the seed-based methods. The released checkpoints of GraspNet-baseline, GSNet,
-Scale-Balanced-Grasp, EconomicGrasp and FineGrasp score the same AP within 0.01 on an RTX
-A6000 and an RTX 3090, and on the RTX 3090 with PyTorch 2.7 (CUDA 11.8) and with PyTorch
-2.14 (CUDA 12.6), on 120 frames of the seen test split. HGGD runs a convolutional image
-network, and on recent GPUs PyTorch lets convolutions round to TF32 unless told otherwise:
-its AP on those frames moved by up to 0.9 between the three. A run therefore computes in
-float32 unless its config says `runtime.tf32: true`, and HGGD then agrees within 0.02 AP
-([Reproducibility](user_guides/train_test.md#reference)).
+Not since a run states its precision. On recent GPUs PyTorch lets convolutions round to
+TF32 unless told otherwise, and with it HGGD's released checkpoint scored up to 0.9 AP
+apart on an RTX A6000, an RTX 3090 and that RTX 3090 with a newer PyTorch (120 frames of the
+seen test split). A run therefore computes in float32 unless its config says
+`runtime.tf32: true`, and HGGD then agrees within 0.02 AP on the two stacks tried. The
+checkpoints of the five seed-based methods scored the same within 0.01 AP wherever the
+setting was the same ([Reproducibility](user_guides/train_test.md#reference)).
 
 ## Why is `num_workers` refused below my `TMPDIR`?
 

@@ -36,7 +36,7 @@ grasppanda demo hggd/hggd_r34w8_g1b-realsense_15e \
     --weights hggd_realsense.pth --example --collision-filter
 ```
 
-`--example` is a synthetic table-top scene shipped with GraspPanda: no dataset, no download. **14.5 s** for the whole command, 72 grasps kept (one NVIDIA RTX A6000 shared with other jobs).
+`--example` is a synthetic table-top scene shipped with GraspPanda: no dataset, no download. **15.2 s** for the whole command, 68 grasps kept (one NVIDIA GeForce RTX 3090 shared with other jobs).
 
 ??? note "What it prints and writes, and every measured run"
 
@@ -46,9 +46,11 @@ grasppanda demo hggd/hggd_r34w8_g1b-realsense_15e \
     - `grasps.png` and `grasps.gif`: the cloud with the 30 best grasps, still and swinging around the scene;
     - `example/`: the scene as files (`depth.png`, `rgb.png`, `mask.png`, `intrinsics.txt`).
 
-    Measured with the authors' checkpoint, converted: **14.5 s** for the whole command; 25,600 points to the model; 470 grasps predicted, then 287 after ModelFreeCollisionFilter → 72 after GraspNMS (2026-10-15, commit `ea6268b`, one NVIDIA RTX A6000 shared with other jobs). Run again at commit `0ddca31` (2026-10-15): the same counts, 16.9 s.
+    Measured with the authors' checkpoint, converted: **15.2 s** for the whole command; 25,600 points to the model; 470 grasps predicted, then 288 after ModelFreeCollisionFilter → 68 after GraspNMS (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs). At commit `ea6268b` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): 470 grasps predicted, then 287 after ModelFreeCollisionFilter → 72 after GraspNMS, 14.5 s. At commit `0ddca31` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): 470 grasps predicted, then 287 after ModelFreeCollisionFilter → 72 after GraspNMS, 16.9 s.
 
-    From Python (step 3): 72 grasps, 8.2 s for the script (2026-10-15, commit `0ddca31`, one NVIDIA RTX A6000 shared with other jobs).
+    From Python (step 3): 68 grasps, 5.8 s for the script (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs).
+
+    From Python (step 3): 72 grasps, 8.2 s for the script (2026-10-15, commit `0ddca31`, one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions).
 
 
 ### 3. From Python, a browser or your camera {#run-anywhere}
@@ -69,7 +71,7 @@ grasppanda demo hggd/hggd_r34w8_g1b-realsense_15e \
     print(len(grasps), grasps.sort_by_score().to_graspnet_array()[:3])
     ```
 
-    It runs the demo's pipeline on the demo's scene and returns its 72 grasps. HGGD reads the colour image (`rgb=`) and takes no mask. More: [From Python](../user_guides/inference.md#from-python).
+    It runs the demo's pipeline on the demo's scene and returns its 68 grasps. HGGD reads the colour image (`rgb=`) and takes no mask. More: [From Python](../user_guides/inference.md#from-python).
 
 === "Browser"
 
@@ -104,7 +106,7 @@ grasppanda test hggd/hggd_r34w8_g1b-realsense_15e \
     evaluation.num_workers=4
 ```
 
-Measured with the authors' checkpoint, converted: AP 58.16 without the collision filter and 64.14 with it, within 0.44 AP of the whole split.
+Measured with the authors' checkpoint, converted: AP 57.99 without the collision filter and 64.46 with it, within 0.76 AP of the whole split.
 
 ??? note "What it prints, and every measured run against the whole split"
 
@@ -114,14 +116,16 @@ Measured with the authors' checkpoint, converted: AP 58.16 without the collision
 
     | Weights, provenance | Collision filter | AP, 120 frames of test_seen | AP, whole seen split | Difference | Wall time, commit |
     |---|---|---|---|---|---|
-    | the authors' checkpoint, converted, `author-ckpt` | off | 58.16 | 58.33 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | −0.17 | 53 s, `ea6268b` |
-    |  | on | 64.14 | 63.70 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | +0.44 |  |
+    | the authors' checkpoint, converted, `author-ckpt` | off | 57.99 | 58.33 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | −0.34 | 85 s, `400b733` |
+    |  | on | 64.46 | 63.70 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | +0.76 |  |
 
     </div>
 
-    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: no input is derived from ground truth (the config crops no workspace). On these 120 frames the AP is within 0.44 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-10-15 on one NVIDIA RTX A6000 shared with other jobs.
+    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: no input is derived from ground truth (the config crops no workspace). On these 120 frames the AP is within 0.76 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-11-11 on one NVIDIA GeForce RTX 3090 shared with other jobs.
 
-    The machine: one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8.
+    **The same test elsewhere.** On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`): AP 57.98 and 64.44, −0.01 and −0.02 AP from the first measurement. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `ea6268b`): AP 58.16 and 64.14, +0.17 and −0.32 AP from the first measurement.
+
+    The machines: one NVIDIA GeForce RTX 3090 (24 GB) of six, shared with training jobs, an AMD Ryzen Threadripper PRO 3975WX; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions in float32 (`runtime.tf32: false`, the default); one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions rounded to TF32, PyTorch's default, before `runtime.tf32` existed; the same RTX 3090 with Python 3.11, PyTorch 2.14.1 with CUDA 12.6, spconv 2.3.8; convolutions in float32.
 
 ## Numbers
 

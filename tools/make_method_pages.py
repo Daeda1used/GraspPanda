@@ -1312,8 +1312,13 @@ def _demo_step(
         )
         for later in again:
             same = later["predicted"] == first["predicted"] and later["after"] == first["after"]
+            where = (
+                f"At commit `{later['commit']}` on {machines[later['machine']]['gpu']}"
+                if later["machine"] != first["machine"]
+                else f"Run again at commit `{later['commit']}`"
+            )
             text += (
-                f" Run again at commit `{later['commit']}` ({later['date']}): "
+                f" {where} ({later['date']}): "
                 + ("the same counts" if same else _counts(later))
                 + f", {later['wall_s']:.1f} s."
             )
@@ -1429,9 +1434,10 @@ def _elsewhere(
             else:
                 shown = " and ".join(f"{gap:+.2f}".replace("-", "−") for gap in gaps)
                 verdict = f"{shown} AP from the first measurement"
+            which = f", with {label}" if len(runs) > 1 else ""
             sentence = (
-                f"{label[0].upper()}{label[1:]} on {machines[other['machine']]['gpu']} "
-                f"({other['date']}, `{other['commit']}`): AP {other['AP']['raw']:.2f} and "
+                f"On {machines[other['machine']]['gpu']} ({other['date']}, "
+                f"`{other['commit']}`){which}: AP {other['AP']['raw']:.2f} and "
                 f"{other['AP'][variant]:.2f}, {verdict}."
             )
             sentences.append(sentence + (f" {other['note']}" if other.get("note") else ""))

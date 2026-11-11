@@ -54,7 +54,7 @@ GraspPanda 的回答是：一条流程，每个数据集一个锁定版本的评
 
 ## 🚀 快速上手
 
-先装一个为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新版本的构建），再装 GraspPanda 和下面示例要用的可选扩展，用一个极简示例检测器检查安装：
+先装为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新的构建），再装 GraspPanda 和下面示例要用的可选扩展，用一个极简示例检测器检查安装：
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
@@ -159,14 +159,15 @@ grasppanda probe hggd_dinov2.yaml
 
 ## 📰 新闻
 
+- **2026-11** — 换一台机器复测：运行[声明计算精度](https://daeda1used.github.io/GraspPanda/user_guides/train_test/#reference)，各显卡数字一致；`grasppanda sweep --gpus` 多卡并行跑对比实验。
 - **2026-10** — 会训练的替换还和原装组件对照着训练，看它是否[训练得和原装组件一样](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/)。
-- **2026-10** — 文档按任务重新组织：运行一个方法、替换一个组件、查看证据。
 
 <details>
 <summary>更早的新闻</summary>
 
 <br>
 
+- **2026-10** — 文档按任务重新组织：运行一个方法、替换一个组件、查看证据。
 - **2026-10** — 拒绝都会说明原因：每次拒绝标明类别，适配器或某个设置能解决的，`compose` 会自动处理。
 - **2026-10** — [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：选一个方法、换一个槽位，查看实测记录和拒绝的原因。`grasppanda explore` 可以在本地运行它。
 - **2026-10** — 每个槽位都有了可选组件，取自已发表的代码和模型库，每个都在它适用的方法下试跑过。

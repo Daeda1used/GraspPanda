@@ -199,14 +199,15 @@ the methods run from their released weights
 
 ## 📰 News
 
+- **2026-11** — Run on a second machine: a run [states its precision](https://daeda1used.github.io/GraspPanda/user_guides/train_test/#reference), so the same weights give the same numbers on every GPU, and `grasppanda sweep --gpus` runs a grid of experiments side by side.
 - **2026-10** — Swaps that train were also trained beside the component the method ships, to see whether they [train like shipped](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/).
-- **2026-10** — The documentation is rebuilt around tasks: run a method, swap a component, read the evidence.
 
 <details>
 <summary>Older news</summary>
 
 <br>
 
+- **2026-10** — The documentation is rebuilt around tasks: run a method, swap a component, read the evidence.
 - **2026-10** — Refusals say why: each one names its kind, and `compose` lifts the ones an adapter or a setting can fix.
 - **2026-10** — The [combination explorer](https://daeda1used.github.io/GraspPanda/explorer/): pick a method, swap a slot, read the measured record and the reason of a refusal. `grasppanda explore` serves it locally.
 - **2026-10** — Options for every slot, taken from published code and model libraries, each probed under the methods it fits.

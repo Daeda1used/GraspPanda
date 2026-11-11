@@ -65,13 +65,14 @@ An option from another library, such as an image encoder from timm, needs its ex
     |---|---|---|---|
     | RTX A6000 (48 GB) | 3.12 | 2.7.1, CUDA 11.8 | development: every record of this site |
     | RTX 3090 (24 GB) | 3.12 | 2.7.1, CUDA 11.8 | the unit suite, the first-number test of every method, training |
-    | RTX 3090 (24 GB) | 3.11 | 2.14.1, CUDA 12.6 | the unit suite and the first-number test, installed as a wheel |
+    | RTX 3090 (24 GB) | 3.11 | 2.14.1, CUDA 12.6 | the unit suite, the first-number test of every method |
     | no GPU | 3.10 | 2.14.1, CUDA 13.0 | the quick start from a fresh clone: everything but sparse convolution |
 
-    The released checkpoints of the five seed-based methods score the same AP within 0.01
-    on the first three; HGGD needs `runtime.tf32: false`, the default, to do so
+    At one precision setting the released checkpoints of the five seed-based methods score
+    the same AP within 0.01 on the first three; HGGD does so only in float32, the default
     ([Reproducibility](../user_guides/train_test.md#reference)). 24 GB is enough for every
-    shipped recipe except FineGrasp's batch of 32.
+    shipped recipe; FineGrasp's needs its 32 frames spread over processes or accumulated
+    steps there ([its README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#train-and-test)).
 
 ??? note "spconv on a CPU-only machine"
 
@@ -95,8 +96,9 @@ grasppanda env
 grasppanda train projects/example_project/configs/toy_train.yaml
 ```
 
-`env` prints the interpreter, the PyTorch build, the GPUs and the optional backends; paste it
-into bug reports. `train` trains a toy detector on synthetic scenes, on the CPU, in under a
+`env` prints the interpreter, the PyTorch build, the GPUs and the optional backends, and ends
+with `✓` or with what keeps a method from running here and the command that fixes it; paste
+it into bug reports. `train` trains a toy detector on synthetic scenes, on the CPU, in under a
 minute.
 It ends with `✓ trained`: everything is wired. The toy's grasps mean nothing.
 

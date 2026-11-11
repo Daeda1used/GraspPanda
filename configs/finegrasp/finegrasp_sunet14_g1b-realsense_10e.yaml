@@ -60,7 +60,9 @@ data:
         - {type: RandomSample, num_points: 20000}
         - {type: RandomFlip, axis: x, prob: 0.5}
         - {type: CoordinateFeatures}
-    batch_size: 32                    # the paper's 8 processes x 4; the schedule counts on it
+    batch_size: 32                    # the paper's 8 processes x 4; the schedule counts on it.
+                                      # One process with 32 frames needs 48 GB: README.md
+                                      # (Train and test) has the launch for the GPUs you have
   val:
     dataset:
       images: [depth]
