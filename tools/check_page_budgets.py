@@ -141,12 +141,15 @@ def expand(text: str, depth: int = 0) -> str:
 def words(line: str) -> float:
     plain = re.sub(r"<[^>]+>", " ", line)
     plain = re.sub(r"\]\([^)]*\)", "]", plain)  # link targets are not read
+    plain = re.sub(r":(?:material|octicons|fontawesome|simple)-[a-z0-9-]+:", " ", plain)  # icons
+    plain = re.sub(r"\{[ :][^{}]*\}", " ", plain)  # attribute lists: { .lg .middle }, {: #id }
     return len(WORD.findall(plain)) + len(CJK.findall(plain)) / 2
 
 
 def count(text: str) -> Count:
     """Visible and total words and rows of a Markdown page."""
     text = re.sub(r"<!--.*?-->", "", expand(text), flags=re.S)
+    text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)  # front matter is not read
     result = Count()
     words_visible = words_total = 0.0
     fence = ""  # the fence of the open code block

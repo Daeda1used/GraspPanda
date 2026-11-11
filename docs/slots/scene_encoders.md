@@ -1,4 +1,5 @@
 ---
+title: Scene encoders
 hide: [toc]
 ---
 

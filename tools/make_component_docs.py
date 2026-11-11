@@ -153,7 +153,9 @@ def _registry_head(registry: str) -> str:
     if slot is None:
         return text
     chips = _chips()
-    return f"{text} {chips.scope_chip(slot)} [Options]({chips.SLOT_PAGES[slot]})"
+    # the chip and the link stay together when the sentence fills the line
+    scope = f"{chips.scope_chip(slot)} [Options]({chips.SLOT_PAGES[slot]})"
+    return f'{text} <span class="gp-nowrap">{scope}</span>'
 
 
 def components_page() -> str:

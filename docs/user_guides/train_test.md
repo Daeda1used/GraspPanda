@@ -116,8 +116,10 @@ record with `grasppanda analyze` ([Read an analysis](analysis.md)).
 ## 4. Resume or reuse a run
 
 ```bash
-grasppanda train <method config> --opts runtime.run_id=first --resume  # its newest checkpoint
-grasppanda train <method config> --resume path/to/epoch_0004.pth       # a given checkpoint
+# from the newest checkpoint of the run
+grasppanda train <method config> --opts runtime.run_id=first --resume
+# from a given checkpoint
+grasppanda train <method config> --resume path/to/epoch_0004.pth
 ```
 
 A run continues in its own directory when the config hash is unchanged.
@@ -127,11 +129,15 @@ training from them; any mismatch of keys is an error unless
 
 ## 5. Use several GPUs
 
+<div class="gp-keys" markdown>
+
 | You have | Run |
 |---|---|
 | several experiments | `grasppanda sweep <file> --gpus 0,1,2,3`: one run per GPU, side by side, and one table at the end |
 | one experiment | `torchrun --nproc_per_node=4 -m grasppanda.cli.main train <method config>`: one process per GPU |
 | two runs and one card | `--opts runtime.gpu_memory_fraction=0.45` on each, so neither takes the card |
+
+</div>
 
 *Several runs at once: sweeps* and *Distributed training* under [Reference](#reference) say
 what each does and what was run that way.
@@ -276,7 +282,7 @@ into a directory that already holds a run.
         def __init__(self, epochs: int = 1) -> None:
             self.epochs = epochs
 
-        def before_epoch(self, state) -> None:          # state.epoch: index of the epoch to run
+        def before_epoch(self, state) -> None:  # state.epoch: index of the epoch to run
             state.model.backbone.requires_grad_(state.epoch >= self.epochs)
     ```
 
@@ -454,8 +460,8 @@ into a directory that already holds a run.
     ```
 
     ```bash
-    grasppanda sweep encoders.yaml --dry-run         # the plan: 2 x 3 runs, each config checked
-    grasppanda sweep encoders.yaml --gpus 0,1,2,3    # one run per GPU at a time
+    grasppanda sweep encoders.yaml --dry-run        # the plan: 2 x 3 runs, all checked
+    grasppanda sweep encoders.yaml --gpus 0,1,2,3   # one run per GPU at a time
     ```
 
     Without `--gpus` the runs follow each other in one process. With it every run is a

@@ -17,7 +17,9 @@ README's alt text stays true. The frames are written as an animated WebP, light 
 
 The README shows the picture 820 px wide. The page is recorded 744 CSS px wide (at device
 scale 1.5), so its smallest text (11 px) reads at 12 px there; a few rules keep the two columns
-of the desktop layout at that width (the page itself stacks them under 960 px).
+of the desktop layout at that width (the page itself stacks them under 960 px), and drop what
+would be cut there: a card keeps its whole sentence, an option its whole name (the class
+beside it is left out).
 
 It needs Playwright with Chromium (``pip install playwright && playwright install chromium``,
 or ``--channel chrome`` for an installed Chrome), which is not a dependency of GraspPanda. What the page shows comes from the measured records
@@ -42,13 +44,14 @@ CSS = """
 .gx-side-inner { position: sticky !important; top: 12px !important; }
 .gx-bar { display: none !important; }
 .gpx .gx-mtile { padding: 0 9px !important; }
-.gpx .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) auto !important; }
-.gx-row.is-mod .gx-row-main { grid-template-columns: 100px minmax(0, 1fr) 28px auto !important; }
+.gpx .gx-row-main { grid-template-columns: 112px minmax(0, 1fr) auto !important; }
+.gx-row.is-mod .gx-row-main { grid-template-columns: 112px minmax(0, 1fr) 28px auto !important; }
 .gx-result { padding: 16px 18px 4px !important; }
 .gx-ggroup-head { min-height: 0 !important; }
 .gx-ggroup.is-seed-based .gx-ggroup-sub { display: none !important; }
 .gpx .gx-gcard { min-height: 0 !important; padding: 10px 12px !important; }
-.gx-gcard-line { -webkit-line-clamp: 2 !important; }
+.gx-gcard-line { -webkit-line-clamp: 3 !important; min-height: 54px !important; }
+.gx-opt-comp { display: none !important; }
 .gx-start-head { margin-bottom: 12px !important; }
 .gx-gallery { gap: 10px !important; }
 .gx-matrix .gx-m-opt { min-width: 128px !important; max-width: 150px !important; padding: 6px 6px 6px 10px !important; }
@@ -351,9 +354,13 @@ def main(argv: list[str] | None = None) -> int:
             method=6,
             minimize_size=True,
         )
-    size = args.output.stat().st_size // 1024
+    size = args.output.stat().st_size
+    if size == 0:  # seen once: the file was replaced while the frames were recorded
+        print(f"{args.output} is empty: nothing was written. Record it again.")
+        return 1
     print(
-        f"wrote {args.output}: {len(frames)} frames, {sum(rec.durations) / 1000:.1f} s, {size} KiB"
+        f"wrote {args.output}: {len(frames)} frames, {sum(rec.durations) / 1000:.1f} s, "
+        f"{size // 1024} KiB"
     )
     return 0
 

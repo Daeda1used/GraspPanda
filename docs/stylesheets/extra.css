@@ -48,6 +48,8 @@
   --md-typeset-color: var(--gp-ink);
   --md-code-bg-color: var(--gp-surface);
   --md-code-fg-color: var(--gp-ink);
+  --md-code-hl-keyword-color: #0550ae;
+  --md-code-hl-string-color: #116329;
 }
 
 /* The dark scheme stands on the surfaces of the explorer, so a page, a figure and the
@@ -79,6 +81,19 @@
   --gp-no-bg: #2d1416;
   --gp-hero-bg: linear-gradient(180deg, #151b23 0%, var(--md-default-bg-color) 100%);
   --gp-bar-bg: rgba(13, 17, 23, 0.82);
+  --md-code-hl-keyword-color: #79c0ff;
+  --md-code-hl-string-color: #7ee787;
+}
+/* Highlighting in two colours and a grey: keywords and keys in blue, strings in green,
+ * comments muted. Numbers, built-ins, escapes and names stay in ink, so a command line
+ * shows no accidental red (a backslash, `test`, 0.35). */
+[data-md-color-scheme] {
+  --md-code-hl-number-color: var(--md-code-fg-color);
+  --md-code-hl-special-color: var(--md-code-fg-color);
+  --md-code-hl-constant-color: var(--md-code-fg-color);
+  --md-code-hl-function-color: var(--md-code-fg-color);
+  --md-code-hl-variable-color: var(--md-code-fg-color);
+  --md-code-hl-comment-color: var(--gp-muted);
 }
 
 body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
@@ -156,14 +171,18 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .md-typeset pre > code { border-radius: var(--gp-radius); box-shadow: inset 0 0 0 1px var(--gp-line-soft); font-size: 0.8em; line-height: 1.6; }
 .md-typeset .highlight span.filename { border-radius: var(--gp-radius) var(--gp-radius) 0 0; border-bottom: 0; box-shadow: inset 0 0 0 1px var(--gp-line-soft); font-weight: 600; }
 .md-typeset .md-code__button, .md-typeset .md-clipboard { color: var(--gp-muted); }
-.md-typeset .tabbed-labels > label { font-weight: 600; font-size: 0.7rem; color: var(--gp-muted); }
+/* The copy button stands on the block's own colour: a long line ends under it instead of
+ * showing through. */
+.md-typeset .md-code__nav, .md-typeset :hover > .md-code__nav { background-color: var(--md-code-bg-color); }
+/* Six method names fit the column without a scroller. */
+.md-typeset .tabbed-labels > label { padding-left: 0.85em; padding-right: 0.85em; font-weight: 600; font-size: 0.66rem; color: var(--gp-muted); }
 .md-typeset .tabbed-labels > label:hover { color: var(--gp-ink); }
 .md-typeset kbd { box-shadow: 0 0 0 1px var(--gp-line), 0 1px 0 1px var(--gp-line); border-radius: 0.25rem; }
 
-/* The repository widget of the header asks GitHub for the latest release. Until the
- * rebuild has a release of its own that is a tag of the earlier, unrelated code base
- * (v0.56), so the version is hidden; stars and forks stay. */
-.md-source__fact--version { display: none; }
+/* The repository widget of the header names the repository and nothing else: the release
+ * GitHub reports is a tag of the earlier, unrelated code base (v0.56), and star and fork
+ * counters say nothing a reader of the documentation came for. */
+.md-source__facts { display: none; }
 
 /* A measured combination that predicted no grasp on any probed frame
  * (tools/make_combination_docs.py, tools/make_method_pages.py). */
@@ -243,6 +262,20 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .md-typeset .gp-matrix table:not([class]) th { min-width: 0; white-space: normal; }
 .md-typeset .gp-matrix table:not([class]) th,
 .md-typeset .gp-matrix table:not([class]) td { padding: 0.5em 0.6em; }
+/* ... and the name that leads a row stays on one line (Post-processing). */
+.md-typeset .gp-matrix table:not([class]) td:first-child { white-space: nowrap; }
+
+/* Tables of figures (<div class="gp-figures" markdown>, the model zoo): tables of one
+ * schema share one width, a row stays on one line and its figures line up. On a phone the
+ * table scrolls sideways instead of folding every number onto three lines. */
+.md-typeset .gp-figures .md-typeset__table { min-width: 100%; }
+.md-typeset .gp-figures table:not([class]) { display: table; }
+.md-typeset .gp-figures table:not([class]) td { white-space: nowrap; }
+.md-typeset .gp-figures table:not([class]) td:nth-child(n+4) { font-variant-numeric: tabular-nums; }
+
+/* A table whose first column is a short label (<div class="gp-keys" markdown>): the label
+ * stays on one line. */
+.md-typeset .gp-keys table:not([class]) td:first-child { white-space: nowrap; }
 
 /* Identifiers in tables keep their shape: a column grows instead of breaking a name. */
 .md-typeset table:not([class]) td code { word-break: normal; overflow-wrap: normal; }
@@ -272,6 +305,14 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .md-typeset details:is(.info, .example) > summary::after { color: var(--gp-muted); }
 .md-typeset details > summary { font-weight: 600; }
 .md-typeset details[open] > summary { border-bottom: 1px solid var(--gp-line-soft); }
+/* A fold says what it is by its chevron; the note icon (a pencil) read as "edit". */
+.md-typeset details > summary::before { display: none; }
+[dir="ltr"] .md-typeset details > summary { padding-left: 0.6rem; }
+[dir="rtl"] .md-typeset details > summary { padding-right: 0.6rem; }
+/* Folds that follow each other are one list, not a ladder of boxes. */
+.md-typeset details { margin: 1.2em 0; }
+.md-typeset details + details { margin-top: calc(-1.2em - 1px); border-top-left-radius: 0; border-top-right-radius: 0; }
+.md-typeset details:has(+ details) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 /* The option tables give their description room; on a phone the chips may wrap. */
 .md-typeset .gp-options td:nth-child(2) { min-width: 15rem; }
 @media screen and (max-width: 44.9375em) {

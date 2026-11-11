@@ -4,7 +4,7 @@ GraspNet-baseline, Scale-Balanced-Grasp and HGGD need no extra install. HGGD rea
 
 <div class="gp-matrix" markdown>
 
-| Method | Reads | Extra | Weights<br>from | Licence | Demo |
+| Method | Reads | Extra | Weights | Licence | Demo |
 |---|---|---|---|---|---|
 | [GraspNet-baseline](../methods/graspnet_baseline.md) | depth | none | Google Drive | <span title="GraspNet-Baseline Software License Agreement (non-commercial research use only)">non-commercial</span> | 10.2 s |
 | [GSNet](../methods/gsnet.md) | depth | `spconv` | Google Drive | <span title="academic, non-commercial (SJTU), as the reference repository; trained on GraspNet-1Billion (CC BY-NC-SA 4.0)">non-commercial</span> | 15.0 s |

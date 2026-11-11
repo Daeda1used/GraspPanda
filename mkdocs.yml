@@ -47,6 +47,9 @@ extra:
 extra_css:
   - stylesheets/extra.css
 
+hooks:
+  - tools/mkdocs_hooks.py
+
 exclude_docs: |
   includes/
 

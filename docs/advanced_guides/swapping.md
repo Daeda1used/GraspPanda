@@ -52,7 +52,8 @@ dataset is opened, with the fix.
     ```yaml
     _base_: [../economicgrasp/economicgrasp_sunet14_g1b-realsense_10e.yaml]
     model:
-      backbone: {type: PTv3, in_channels: 3, grid_size: 0.005}   # the options of the old type are dropped
+      # the options of the old type are dropped
+      backbone: {type: PTv3, in_channels: 3, grid_size: 0.005}
     ```
 
 ## What the checker compares

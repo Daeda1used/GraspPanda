@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import shutil
 import subprocess
 import sys
@@ -186,6 +187,22 @@ DARK = {
 }
 
 
+def centred_dashes(w: float, h: float, rx: float, period: float = 9.0) -> str:
+    """Stroke attributes of a dashed rounded box whose dashes are centred on the middle of
+    its left and right edges.
+
+    A connector that meets a dashed border at the start of a dash reads as a hook. The
+    period is adjusted so that half the outline holds a whole number of dashes, and the
+    pattern is shifted so that a dash sits across each of the two points a connector meets.
+    """
+    outline = 2 * (w - 2 * rx) + 2 * (h - 2 * rx) + 2 * math.pi * rx
+    step = outline / 2 / max(1, round(outline / 2 / period))
+    dash = step * 5 / 9
+    right_middle = (w - 2 * rx) + math.pi * rx / 2 + (h - 2 * rx) / 2  # a rect starts top left
+    offset = (dash / 2 - right_middle) % step
+    return f'stroke-dasharray="{dash:.3f} {step - dash:.3f}" stroke-dashoffset="{offset:.3f}"'
+
+
 def _text(x: float, y: float, words: str, size: float, fill: str, **extra: str) -> str:
     attributes = "".join(f' {name.replace("_", "-")}="{value}"' for name, value in extra.items())
     return (
@@ -201,248 +218,234 @@ def _key(x: float, y: float, words: str, size: float, fill: str) -> str:
     )
 
 
-def _box(
-    parts: list[str],
-    c: dict[str, str],
-    box: Box,
-    x: float,
-    y: float,
-    w: float,
-    h: float,
-    shared: bool = False,
-) -> None:
-    """A slot (its key in green), a shared slot (green) or a fixed part (grey, dashed)."""
-    if shared:
-        fill, line, dash = c["shared"], c["shared_line"], ""
-    elif box.key:
-        fill, line, dash = c["box"], c["box_line"], ""
-    else:
-        fill, line, dash = c["fixed"], c["fixed_line"], ' stroke-dasharray="7 5"'
-    parts.append(
-        f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="12" fill="{fill}" '
-        f'stroke="{line}" stroke-width="2"{dash}/>'
-    )
-    centre, lines = x + w / 2, len(box.lines)
-    if box.key:  # the label above, the key at the bottom
-        first = y + 27 if h < 70 else y + (34 if lines == 2 else 44)
-    else:  # the label in the middle
-        first = y + h / 2 + 7 - (lines - 1) * 11.5
-    for index, words in enumerate(box.lines):
-        parts.append(
+def pipeline_svg(dark: bool = False) -> str:
+    """The figure of the README and the FAQ: the datasets on a rail into two lanes (the
+    seed-based skeleton with its losses, HGGD), a rail from both lanes into the
+    post-processing all methods share, and the training recipe beside it.
+
+    It is the picture of the docs home hero (:func:`hero_html`) with the key of every slot
+    written out. The canvas is narrow on purpose: at the width a README shows it, the
+    smallest text (the slot keys) is still 11 px.
+    """
+    c = DARK if dark else LIGHT
+    found = lanes()
+    every = len(found.seed_methods) + len(found.own_methods)
+    width = 680
+    rail_left, rail_right = 14, 666  # the rails run outside the lanes
+    lane_x, lane_w = 26, 628
+    inner = lane_x + 10
+    box_w, box_h, gap = 93, 70, 10
+    seed_y, seed_h = 122, 160
+    own_y, own_h = 294, 114
+    shared_y, shared_h = 420, 98
+    legend_y = 546
+    height = 568
+    seed_top, own_top, shared_top = seed_y + 32, own_y + 32, shared_y + 32
+    seed_mid, own_mid = seed_top + box_h / 2, own_top + box_h / 2
+
+    def line(d: str, arrow: bool = False) -> str:
+        end = ' marker-end="url(#a)"' if arrow else ""
+        return (
+            f'<path d="{d}" fill="none" stroke="{c["arrow"]}" stroke-width="1.4" '
+            f'stroke-linejoin="round"{end}/>'
+        )
+
+    def lane(y: float, h: float, title: str, note: str = "") -> str:
+        tail = (
+            f'<tspan dx="10" font-size="12" font-weight="400" fill="{c["muted"]}">'
+            f"{html.escape(note)}</tspan>"
+        )
+        return (
+            f'<rect x="{lane_x}" y="{y}" width="{lane_w}" height="{h}" rx="11" '
+            f'fill="{c["lane"]}" stroke="{c["lane_line"]}" stroke-width="1.2"/>'
+            f'<text x="{inner + 2}" y="{y + 21}" font-family="{SANS}" font-size="14" '
+            f'font-weight="700" fill="{c["ink"]}">{html.escape(title)}{tail if note else ""}</text>'
+        )
+
+    def box(item: Box, x: float, y: float, w: float = box_w, h: float = box_h) -> str:
+        """A slot (ink outline, its key in green) or a fixed part (grey, dashed)."""
+        centre = x + w / 2
+        if not item.key:
+            first = y + h / 2 + 4.5 - (len(item.lines) - 1) * 8
+            label = "".join(
+                _text(centre, first + i * 16, words, 13, c["muted"], text_anchor="middle")
+                for i, words in enumerate(item.lines)
+            )
+            return (
+                f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="9" '
+                f'fill="{c["fixed"]}" stroke="{c["fixed_line"]}" stroke-width="1.4" '
+                f"{centred_dashes(w, h, 9)}/>" + label
+            )
+        compact = h < 60  # the losses: one line and the key
+        first = y + 17 if compact else y + (23 if len(item.lines) == 2 else 31)
+        label = "".join(
             _text(
                 centre,
-                first + index * 23,
+                first + i * 16,
                 words,
-                18.5 if box.key else 17,
-                c["ink"] if box.key else c["muted"],
+                13.5,
+                c["ink"],
                 text_anchor="middle",
                 font_weight="600",
             )
+            for i, words in enumerate(item.lines)
         )
-    if box.key:
-        parts.append(_key(centre, y + h - (12 if h < 70 else 16), box.key, 12, c["key"]))
+        return (
+            f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="9" fill="{c["box"]}" '
+            f'stroke="{c["box_line"]}" stroke-width="1.6"/>'
+            + label
+            + _key(centre, y + h - (8 if compact else 11), item.key, 10.5, c["key"])
+        )
 
-
-def _arrow(parts: list[str], c: dict[str, str], points: list[tuple[float, float]]) -> None:
-    path = " ".join(f"{'M' if i == 0 else 'L'}{x:g} {y:g}" for i, (x, y) in enumerate(points))
-    parts.append(
-        f'<path d="{path}" fill="none" stroke="{c["arrow"]}" stroke-width="2" '
-        'stroke-linejoin="round" marker-end="url(#a)"/>'
-    )
-
-
-def pipeline_svg(dark: bool = False) -> str:
-    """The two lanes (seed-based skeleton, HGGD), the parts all six share, the datasets."""
-    c = DARK if dark else LIGHT
-    found = lanes()
-    width = 1280
-    lane_x, lane_w = 228, 802
-    box_w, box_h, gap = 110, 100, 22
-    inner = lane_x + 16
-    post_x, post_w = 1058, 198
-    seed_y, seed_h = 118, 256
-    own_y, own_h = 394, 190
-    recipe_y, recipe_h = 604, 64
-    legend_y = 712
-    height = 744
-    seed_box_y, own_box_y = seed_y + 72, own_y + 72
-    seed_mid, own_mid = seed_box_y + box_h / 2, own_box_y + box_h / 2
+    def row(items: tuple[Box, ...], top: float) -> float:
+        """Boxes left to right with a connector between each; returns the right edge."""
+        for index, item in enumerate(items):
+            x = inner + index * (box_w + gap)
+            parts.append(box(item, x, top))
+            if index:
+                parts.append(line(f"M{x - gap} {top + box_h / 2:g} H{x}"))
+        return inner + len(items) * (box_w + gap) - gap
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" '
         f'height="{height}" role="img" aria-label="{html.escape(alt_text(found), quote=True)}">',
-        f'<defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="11" '
-        f'markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse">'
+        f'<defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" '
+        f'markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">'
         f'<path d="M1.5 1.6 L9.6 5 L1.5 8.4 z" fill="{c["arrow"]}"/></marker></defs>',
-        f'<rect x="1" y="1" width="{width - 2}" height="{height - 2}" rx="16" fill="{c["card"]}" '
-        f'stroke="{c["card_line"]}" stroke-width="2"/>',
+        f'<rect x="1" y="1" width="{width - 2}" height="{height - 2}" rx="14" fill="{c["card"]}" '
+        f'stroke="{c["card_line"]}" stroke-width="1.5"/>',
         _text(
-            32,
-            56,
+            24,
+            40,
             "Two detector families, one toolbox",
-            28,
+            22,
             c["ink"],
             font_weight="700",
-            letter_spacing="-0.6",
+            letter_spacing="-0.5",
         ),
-        _text(
-            32,
-            90,
-            "A box with a green name is a slot: swap it with one line, "
-            "--set <slot>=<option>. Grey boxes are fixed parts of a method.",
-            18,
-            c["muted"],
-        ),
+        f'<text x="24" y="63" font-family="{SANS}" font-size="13" fill="{c["muted"]}">'
+        "A box with a green key is a slot: swap it with one line, "
+        f'<tspan font-family="{MONO}" font-size="12">--set &lt;slot&gt;=&lt;option&gt;</tspan>'
+        "</text>",
     ]
 
-    # the datasets, feeding both lanes
-    pill_x, pill_w, pill_h = 24, 180, 44
-    mid = (seed_mid + own_mid) / 2
-    parts.append(
-        _text(
-            pill_x + pill_w / 2,
-            mid - 62,
-            "Datasets",
-            16,
-            c["muted"],
-            text_anchor="middle",
-            font_weight="600",
-        )
-    )
-    for index, name in enumerate(DATASETS):
-        y = mid - 46 + index * 56
+    # the datasets, joined on a rail that runs down the left into both lanes
+    x, centres = float(inner), []
+    for name in DATASETS:
+        pill_w = 26 + 7.3 * len(name)
         parts.append(
-            f'<rect x="{pill_x}" y="{y:g}" width="{pill_w}" height="{pill_h}" rx="22" '
-            f'fill="{c["pill"]}" stroke="{c["card_line"]}" stroke-width="2"/>'
+            f'<rect x="{x:g}" y="78" width="{pill_w:g}" height="26" rx="13" fill="{c["pill"]}" '
+            f'stroke="{c["card_line"]}" stroke-width="1.4"/>'
         )
         parts.append(
             _text(
-                pill_x + pill_w / 2,
-                y + 28,
+                x + pill_w / 2,
+                95.5,
                 name,
-                16,
+                12.5,
                 c["ink"],
                 text_anchor="middle",
                 font_weight="600",
             )
         )
-    fork = pill_x + pill_w + 12
-    _arrow(parts, c, [(pill_x + pill_w, mid), (fork, mid), (fork, seed_mid), (inner, seed_mid)])
-    _arrow(parts, c, [(fork, mid), (fork, own_mid), (inner, own_mid)])
+        centres.append(x + pill_w / 2)
+        x += pill_w + 10
 
-    # lane 1: the seed-based skeleton
-    parts.append(
-        f'<rect x="{lane_x}" y="{seed_y}" width="{lane_w}" height="{seed_h}" rx="14" '
-        f'fill="{c["lane"]}" stroke="{c["lane_line"]}" stroke-width="2"/>'
-    )
-    parts.append(
-        _text(
-            inner,
-            seed_y + 32,
-            f"Seed-based skeleton · {len(found.seed_methods)} methods",
-            19,
-            c["ink"],
-            font_weight="600",
-        )
-    )
-    parts.append(_text(inner, seed_y + 56, " · ".join(found.seed_methods), 15, c["muted"]))
-    for index, box in enumerate(found.seed_boxes):
-        x = inner + index * (box_w + gap)
-        _box(parts, c, box, x, seed_box_y, box_w, box_h)
-        if index:
-            _arrow(parts, c, [(x - gap, seed_mid), (x, seed_mid)])
-    seed_end = inner + len(found.seed_boxes) * (box_w + gap) - gap
+    # the lanes first: the rails run into them and would be covered by a lane drawn later
+    own = " · ".join(found.own_methods)
+    parts.append(lane(seed_y, seed_h, f"Seed-based skeleton · {len(found.seed_methods)} methods"))
+    parts.append(lane(own_y, own_h, f"{own} · own family", "reads a colour image and its depth"))
+    parts.append(lane(shared_y, shared_h, f"Shared by all {every} methods"))
+    parts += [line(f"M{centre:g} 104 V112") for centre in centres]
+    parts.append(line(f"M{centres[-1]:g} 112 H{rail_left} V{own_mid:g} H{inner}", arrow=True))
+    parts.append(line(f"M{rail_left} {seed_mid:g} H{inner}", arrow=True))
+
+    # lane 1: the seed-based skeleton; its losses hang under the head bundle, its methods
+    # are named beside them
+    seed_end = row(found.seed_boxes, seed_top)
     if found.losses is not None:
-        x = seed_end - box_w
-        y = seed_box_y + box_h + 16
-        _box(parts, c, found.losses, x, y, box_w, 60)
-        parts.append(
-            f'<line x1="{x + box_w / 2:g}" y1="{seed_box_y + box_h:g}" x2="{x + box_w / 2:g}" '
-            f'y2="{y:g}" stroke="{c["arrow"]}" stroke-width="2"/>'
-        )
+        x, y = seed_end - box_w, seed_top + box_h + 10
+        parts.append(line(f"M{x + box_w / 2:g} {seed_top + box_h} V{y}"))
+        parts.append(box(found.losses, x, y, h=40))
+    names_y = seed_top + box_h + 34
+    parts.append(_text(inner + 2, names_y, " · ".join(found.seed_methods), 12, c["muted"]))
 
     # lane 2: HGGD, a family of its own
-    parts.append(
-        f'<rect x="{lane_x}" y="{own_y}" width="{lane_w}" height="{own_h}" rx="14" '
-        f'fill="{c["lane"]}" stroke="{c["lane_line"]}" stroke-width="2"/>'
-    )
-    own = " · ".join(found.own_methods)
-    parts.append(_text(inner, own_y + 32, f"{own} · own family", 19, c["ink"], font_weight="600"))
-    parts.append(_text(inner, own_y + 56, "reads a colour image and its depth", 15, c["muted"]))
-    for index, box in enumerate(found.own_boxes):
-        x = inner + index * (box_w + gap)
-        _box(parts, c, box, x, own_box_y, box_w, box_h)
-        if index:
-            _arrow(parts, c, [(x - gap, own_mid), (x, own_mid)])
-    own_end = inner + len(found.own_boxes) * (box_w + gap) - gap
+    own_end = row(found.own_boxes, own_top)
 
-    # what all six share: post-processing, then the grasps; the recipe under both lanes
-    post_h = 108
-    post_y = mid - post_h / 2
-    turn = post_x - 14
-    _arrow(parts, c, [(seed_end, seed_mid), (turn, seed_mid), (turn, mid - 20), (post_x, mid - 20)])
-    _arrow(parts, c, [(own_end, own_mid), (turn, own_mid), (turn, mid + 20), (post_x, mid + 20)])
-    _box(parts, c, Box(LABELS["post"], "post"), post_x, post_y, post_w, post_h, shared=True)
+    # what every method shares: the recipe, and the post-processing both lanes run into
+    recipe = [slot for slot in RECIPE if slot in found.shared]
+    recipe_w, post_w, shared_box_h = 318, 160, 54
+    post_x = inner + recipe_w + gap
+    for x, w, title, keys in (
+        (inner, recipe_w, "Training recipe", " · ".join(recipe)),
+        (post_x, post_w, LABELS["post"][0], "post"),
+    ):
+        parts.append(
+            f'<rect x="{x:g}" y="{shared_top}" width="{w}" height="{shared_box_h}" rx="9" '
+            f'fill="{c["shared"]}" stroke="{c["shared_line"]}" stroke-width="1.6"/>'
+        )
+        parts.append(
+            _text(
+                x + w / 2,
+                shared_top + 23,
+                title,
+                13.5,
+                c["ink"],
+                text_anchor="middle",
+                font_weight="600",
+            )
+        )
+        parts.append(_key(x + w / 2, shared_top + 41, keys, 10.5, c["key"]))
+    gutter = (own_y + own_h + shared_y) / 2  # between the lanes
     parts.append(
-        _text(
-            post_x + post_w / 2,
-            post_y + 66,
-            f"all {len(found.seed_methods) + len(found.own_methods)} methods",
-            14,
-            c["muted"],
-            text_anchor="middle",
+        line(
+            f"M{seed_end} {seed_mid:g} H{rail_right} V{gutter:g} H{post_x + post_w / 2:g} "
+            f"V{shared_top}",
+            arrow=True,
         )
     )
-    out_y = post_y + post_h + 64
-    _arrow(parts, c, [(post_x + post_w / 2, post_y + post_h), (post_x + post_w / 2, out_y)])
+    parts.append(line(f"M{own_end} {own_mid:g} H{rail_right}"))
+    out_x = post_x + post_w + 22
+    out_w = seed_end - out_x
+    out_mid = shared_top + shared_box_h / 2
+    parts.append(line(f"M{post_x + post_w} {out_mid:g} H{out_x:g}", arrow=True))
     parts.append(
-        f'<rect x="{post_x + 14}" y="{out_y:g}" width="{post_w - 28}" height="44" rx="22" '
-        f'fill="{c["pill"]}" stroke="{c["card_line"]}" stroke-width="2"/>'
+        f'<rect x="{out_x:g}" y="{out_mid - 14:g}" width="{out_w:g}" height="28" rx="14" '
+        f'fill="{c["pill"]}" stroke="{c["card_line"]}" stroke-width="1.4"/>'
     )
     parts.append(
         _text(
-            post_x + post_w / 2,
-            out_y + 28,
+            out_x + out_w / 2,
+            out_mid + 4.5,
             "6-DoF grasps",
-            17,
+            12.5,
             c["ink"],
             text_anchor="middle",
             font_weight="600",
         )
     )
 
-    every = len(found.seed_methods) + len(found.own_methods)
-    recipe = [slot for slot in RECIPE if slot in found.shared]
-    parts.append(
-        f'<rect x="{lane_x}" y="{recipe_y}" width="{post_x + post_w - lane_x}" '
-        f'height="{recipe_h}" rx="14" fill="{c["shared"]}" stroke="{c["shared_line"]}" '
-        'stroke-width="2"/>'
-    )
-    parts.append(
-        f'<text x="{inner}" y="{recipe_y + 40}" font-family="{SANS}">'
-        f'<tspan font-size="18.5" font-weight="600" fill="{c["ink"]}">Training recipe</tspan>'
-        f'<tspan dx="12" font-size="14" fill="{c["muted"]}">all {every} methods</tspan></text>'
-    )
-    parts.append(
-        f'<text x="{post_x + post_w - 20}" y="{recipe_y + 40}" text-anchor="end" '
-        f'font-family="{MONO}" font-size="13.5" fill="{c["key"]}">'
-        f"{html.escape(' · '.join(recipe))}</text>"
-    )
-
-    # legend
+    # legend, in the words of the hero
     entries = [
-        ("slot", c["box"], c["box_line"], ""),
-        (f"shared by all {every} methods", c["shared"], c["shared_line"], ""),
-        ("fixed part of a method", c["fixed"], c["fixed_line"], ' stroke-dasharray="5 4"'),
+        ("a slot", f'fill="{c["box"]}" stroke="{c["box_line"]}" stroke-width="1.6"'),
+        (
+            f"shared by all {every} methods",
+            f'fill="{c["shared"]}" stroke="{c["shared_line"]}" stroke-width="1.6"',
+        ),
+        (
+            "a fixed part of the method",
+            f'fill="{c["fixed"]}" stroke="{c["fixed_line"]}" stroke-width="1.4" '
+            'stroke-dasharray="4 3"',
+        ),
     ]
-    x = lane_x
-    for label, fill, line, dash in entries:
+    x = float(lane_x)
+    for label, style in entries:
         parts.append(
-            f'<rect x="{x:g}" y="{legend_y - 15}" width="26" height="18" rx="5" fill="{fill}" '
-            f'stroke="{line}" stroke-width="2"{dash}/>'
+            f'<rect x="{x:g}" y="{legend_y - 10}" width="18" height="12" rx="3.5" {style}/>'
         )
-        parts.append(_text(x + 36, legend_y, label, 15, c["muted"]))
-        x += 62 + len(label) * 7.4
+        parts.append(_text(x + 26, legend_y, label, 12, c["muted"]))
+        x += 26 + 5.9 * len(label) + 20
     parts.append("</svg>\n")
     return "\n".join(parts)
 
@@ -494,8 +497,7 @@ def hero_html() -> str:
         ".gp-hf-card{fill:var(--md-default-bg-color);stroke:var(--gp-line)}",
         ".gp-hf-lane{fill:var(--gp-surface);stroke:var(--gp-line)}",
         ".gp-hf-box{fill:var(--md-default-bg-color);stroke:var(--gp-ink);stroke-width:1.6}",
-        ".gp-hf-fixed{fill:var(--gp-surface);stroke:var(--gp-muted);stroke-width:1.4;"
-        "stroke-dasharray:5 4}",
+        ".gp-hf-fixed{fill:var(--gp-surface);stroke:var(--gp-muted);stroke-width:1.4}",
         ".gp-hf-shared{fill:var(--gp-ok-bg);stroke:var(--gp-ok);stroke-width:1.6}",
         ".gp-hf-swapped{fill:var(--md-default-bg-color);stroke:var(--md-typeset-a-color);"
         "stroke-width:2}",
@@ -548,7 +550,10 @@ def hero_html() -> str:
         )
     ):
         y = 10 + index * 14
-        parts.append(f'<rect class="{kind}" x="{legend_x}" y="{y}" width="18" height="10" rx="3"/>')
+        dashes = ' stroke-dasharray="4 3"' if kind == "gp-hf-fixed" else ""
+        parts.append(
+            f'<rect class="{kind}" x="{legend_x}" y="{y}" width="18" height="10" rx="3"{dashes}/>'
+        )
         parts.append(f'<text class="gp-hf-m" x="{legend_x + 26}" y="{y + 9}">{words}</text>')
 
     def lane(y: float, h: float, title: str) -> None:
@@ -561,8 +566,9 @@ def hero_html() -> str:
 
     def box(item: Box, x: float, top: float, h: float, late: bool = False) -> None:
         kind = "gp-hf-box" if item.key else "gp-hf-fixed"
+        dashes = "" if item.key else " " + centred_dashes(box_w, h, 8)
         parts.append(
-            f'<rect class="{kind}" x="{x}" y="{top}" width="{box_w}" height="{h}" rx="8"/>'
+            f'<rect class="{kind}" x="{x}" y="{top}" width="{box_w}" height="{h}" rx="8"{dashes}/>'
         )
         centre = x + box_w / 2
         label = "".join(
@@ -604,6 +610,13 @@ def hero_html() -> str:
             f'<path class="gp-hf-a" d="M{x + box_w / 2:g} {seed_top + box_h} V{seed_top + box_h + 10}"/>'
         )
         box(found.losses, x, seed_top + box_h + 10, 26)
+    # the methods of the lane, beside the losses
+    names = list(found.seed_methods)
+    for index, words in enumerate((" · ".join(names[:3]), " · ".join(names[3:]))):
+        parts.append(
+            f'<text class="gp-hf-m" x="{inner + 2}" y="{seed_top + box_h + 20 + index * 14}">'
+            f"{html.escape(words)}</text>"
+        )
 
     # lane 2: HGGD, a family of its own
     lane(own_y, own_h, " · ".join(found.own_methods) + " · own family")
@@ -611,26 +624,30 @@ def hero_html() -> str:
 
     # what every method shares; both lanes run into its post-processing down the right rail
     lane(shared_y, shared_h, f"Shared by all {every} methods")
-    half = (lane_w - 12 - gap) / 2
+    recipe = " · ".join(slot for slot in RECIPE if slot in found.shared)
+    recipe_w = 300  # wide enough for the keys of the recipe, written out
+    post_w = lane_w - 12 - gap - recipe_w
     top = shared_y + 28
-    post_x = inner + half + gap
-    for x, title, keys in (
-        (inner, "Training recipe", "optimizer · schedule · …"),
-        (post_x, "Post-processing", "post"),
+    post_x = inner + recipe_w + gap
+    for x, w, title, keys in (
+        (inner, recipe_w, "Training recipe", recipe),
+        (post_x, post_w, "Post-processing", "post"),
     ):
         parts.append(
-            f'<rect class="gp-hf-shared" x="{x:g}" y="{top}" width="{half:g}" height="48" rx="9"/>'
+            f'<rect class="gp-hf-shared" x="{x:g}" y="{top}" width="{w:g}" height="48" rx="9"/>'
         )
         parts.append(
-            f'<text class="gp-hf-t" x="{x + half / 2:g}" y="{top + 20}" text-anchor="middle">{title}</text>'
+            f'<text class="gp-hf-t" x="{x + w / 2:g}" y="{top + 20}" text-anchor="middle">'
+            f"{title}</text>"
         )
         parts.append(
-            f'<text class="gp-hf-k" x="{x + half / 2:g}" y="{top + 37}" text-anchor="middle">{html.escape(keys)}</text>'
+            f'<text class="gp-hf-k" x="{x + w / 2:g}" y="{top + 37}" text-anchor="middle">'
+            f"{html.escape(keys)}</text>"
         )
     post_mid = top + 24
     parts.append(
         f'<path class="gp-hf-a" d="M{seed_end} {seed_mid:g} H{rail_right} V{post_mid} '
-        f'H{post_x + half:g}"/>'
+        f'H{post_x + post_w:g}"/>'
         f'<path class="gp-hf-a" d="M{own_end} {own_mid:g} H{rail_right}"/>'
     )
     parts.append("</svg>")
@@ -712,8 +729,8 @@ def main(argv: list[str] | None = None) -> int:
         "logo-dark.svg": 512,
         "banner-light.svg": 2560,
         "banner-dark.svg": 2560,
-        "pipeline.svg": 2560,
-        "pipeline-dark.svg": 2560,
+        "pipeline.svg": 2040,
+        "pipeline-dark.svg": 2040,
     }
     for name, width in exports.items():
         target = OUT / name.replace(".svg", ".png")

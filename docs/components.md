@@ -45,7 +45,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Scene encoders
 
-`model.backbone` — Scene encoder: points to features, on every point or on a subsample. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/scene_encoders.md)
+`model.backbone` — Scene encoder: points to features, on every point or on a subsample. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/scene_encoders.md)</span>
 
 ??? note "33 registered classes"
 
@@ -93,7 +93,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Image encoders
 
-`model.image_encoder` — Image encoder: an RGB or RGB-D image to feature maps (HGGD, point painting). <span class="gp-chip">HGGD only</span> [Options](slots/image_encoders.md)
+`model.image_encoder` — Image encoder: an RGB or RGB-D image to feature maps (HGGD, point painting). <span class="gp-nowrap"><span class="gp-chip">HGGD only</span> [Options](slots/image_encoders.md)</span>
 
 ??? note "4 registered classes"
 
@@ -110,7 +110,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Seed proposals
 
-`model.proposal` — Scene features to seeds. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/proposal.md)
+`model.proposal` — Scene features to seeds. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/proposal.md)</span>
 
 ??? note "4 registered classes"
 
@@ -131,7 +131,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Seed samplers
 
-`model.proposal.sampler` — Part of a proposal: which of the candidate points become seeds. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/proposal.md)
+`model.proposal.sampler` — Part of a proposal: which of the candidate points become seeds. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/proposal.md)</span>
 
 ??? note "11 registered classes"
 
@@ -157,7 +157,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## View stages
 
-`model.view` — One approach direction per seed. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/view.md)
+`model.view` — One approach direction per seed. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/view.md)</span>
 
 ??? note "8 registered classes"
 
@@ -183,7 +183,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Assigners
 
-`model.assigner` — Training only: seeds and chosen views to matched grasp labels. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/head_loss.md)
+`model.assigner` — Training only: seeds and chosen views to matched grasp labels. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/head_loss.md)</span>
 
 ??? note "3 registered classes"
 
@@ -203,7 +203,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Groupers
 
-`model.grouper` — A local crop per seed, aligned with its approach. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/grouper.md)
+`model.grouper` — A local crop per seed, aligned with its approach. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/grouper.md)</span>
 
 ??? note "14 registered classes"
 
@@ -233,7 +233,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Head bundles
 
-`model.head` — Head bundle: prediction layers, target encoder, loss and decoder as one unit. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/head_loss.md)
+`model.head` — Head bundle: prediction layers, target encoder, loss and decoder as one unit. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/head_loss.md)</span>
 
 ??? note "4 registered classes"
 
@@ -256,7 +256,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Primitive losses
 
-`<stage>.<name>_loss` — Primitive loss inside a stage. <span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/losses.md)
+`<stage>.<name>_loss` — Primitive loss inside a stage. <span class="gp-nowrap"><span class="gp-chip">Seed-based · 5 methods</span> [Options](slots/losses.md)</span>
 
 ??? note "22 registered classes"
 
@@ -294,7 +294,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Post-processors
 
-`evaluation.variants.<name>[i]` — Predictions to predictions at inference time. <span class="gp-chip">All 6 methods</span> [Options](slots/post.md)
+`evaluation.variants.<name>[i]` — Predictions to predictions at inference time. <span class="gp-nowrap"><span class="gp-chip">All 6 methods</span> [Options](slots/post.md)</span>
 
 ??? note "14 registered classes"
 
@@ -380,7 +380,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Hooks
 
-`hooks[i]` — Extra behaviour around the training loop. <span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)
+`hooks[i]` — Extra behaviour around the training loop. <span class="gp-nowrap"><span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)</span>
 
 ??? note "13 registered classes"
 
@@ -406,7 +406,7 @@ Which class can replace which: [Swap rules](advanced_guides/swapping.md). What w
 
 ## Optimizers
 
-`optimizer` — Every optimizer of torch.optim, by its class name. <span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)
+`optimizer` — Every optimizer of torch.optim, by its class name. <span class="gp-nowrap"><span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)</span>
 
 Named by class, whatever the installed PyTorch provides; `grasppanda components --slot optimizers` lists them.
 
@@ -425,7 +425,7 @@ Named by class, whatever the installed PyTorch provides; `grasppanda components 
 
 ## Schedulers
 
-`scheduler` — Every scheduler of torch.optim.lr_scheduler, by its class name. <span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)
+`scheduler` — Every scheduler of torch.optim.lr_scheduler, by its class name. <span class="gp-nowrap"><span class="gp-chip">All 6 methods</span> [Options](slots/recipe.md)</span>
 
 Named by class, whatever the installed PyTorch provides; `grasppanda components --slot schedulers` lists them.
 

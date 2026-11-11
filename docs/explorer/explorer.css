@@ -88,7 +88,7 @@
   --gx-fails: #a371f7;
   --gx-fails-bg: rgba(163, 113, 247, 0.15);
   --gx-none: #6e7681;
-  --gx-term-bg: #0d1117;
+  --gx-term-bg: #151b23;  /* a step above the card, which is the page's own colour here */
   --gx-term-hover: rgba(240, 246, 252, 0.1);
   --gx-tip-bg: #3d444d;
   --gx-tip-text: #f0f6fc;
@@ -102,6 +102,7 @@
   .gx-appbar .gx-ear { stroke: var(--gx-text-2); stroke-width: 10px; }
   .gx-standalone,
   .gx-standalone .gpx {
+    --gx-term-bg: #151b23;
     --gx-bg: #0d1117;
     --gx-pop-bg: #161b22;
     --gx-surface: rgba(255, 255, 255, 0.04);
@@ -296,10 +297,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 24px;  /* the page's title: above the section headings (18 px) and the questions (20 px) */
+  line-height: 32px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 .gx-head-sub { margin-top: 2px; font-size: 13px; line-height: 20px; color: var(--gx-text-2); }
 .gx-head-data { display: flex; align-items: flex-start; gap: 8px; flex: none; }
@@ -949,7 +950,7 @@
 
 .gx-start-foot {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: 32px;
   margin-top: 28px;
   padding-top: 20px;
@@ -993,10 +994,11 @@
 .gx-examples-row { display: flex; flex-direction: column; margin-top: 6px; }
 .gpx .gx-example {
   display: flex;
+  flex-wrap: wrap;  /* the option is the point of the row: it is never cut, the method wraps */
   align-items: center;
-  gap: 10px;
+  gap: 0 10px;
   min-height: 36px;
-  padding: 0 8px;
+  padding: 6px 8px;
   margin: 0 -8px;
   border-radius: 6px;
   font-size: 13px;
@@ -1004,7 +1006,7 @@
   transition: background-color 120ms ease-out;
 }
 .gpx .gx-example:hover { background: var(--gx-surface); }
-.gx-example-what { min-width: 0; color: var(--gx-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gx-example-what { flex: none; color: var(--gx-text); white-space: nowrap; }
 .gpx .gx-example-what code { font-size: 12px; }
 .gx-example-who { margin-left: auto; flex: none; font-size: 12px; color: var(--gx-text-2); }
 .gx-example > .gx-i { color: var(--gx-text-3); }
@@ -1139,7 +1141,7 @@
 .gpx .gx-row-main {
   position: relative;
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr) auto;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -1149,7 +1151,7 @@
   text-align: left;
   transition: background-color 120ms ease-out;
 }
-.gx-row.is-mod .gx-row-main { grid-template-columns: 104px minmax(0, 1fr) 28px auto; }
+.gx-row.is-mod .gx-row-main { grid-template-columns: 112px minmax(0, 1fr) 28px auto; }
 .gpx .gx-row-main:hover,
 .gx-row.is-open .gx-row-main { background: var(--gx-surface); }
 .gx-node {
