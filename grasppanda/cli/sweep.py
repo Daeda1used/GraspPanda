@@ -24,7 +24,10 @@ def register(commands: Any) -> None:
             "are spread over GPUs, one run per GPU at a time."
         ),
     )
-    parser.add_argument("sweep", help="sweep file (YAML with `base`, `axes`, `seeds`)")
+    parser.add_argument(
+        "sweep",
+        help="sweep file (YAML with `base`: one config, or several by name; `axes`; `seeds`)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="validate and print the plan only")
     parser.add_argument(
         "--gpus",
@@ -39,11 +42,19 @@ def register(commands: Any) -> None:
         help="run only this cell of the plan, in this process (what --gpus starts per "
         "cell; also for a job scheduler), e.g. ptv3/seed0",
     )
+    parser.add_argument(
+        "--opts",
+        nargs="+",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override config values in every cell, e.g. runtime.gpu_memory_fraction=0.45 "
+        "evaluation.num_workers=8 (after the file's `overrides`, before its axes)",
+    )
     parser.set_defaults(handler=run)
 
 
 def run(args: argparse.Namespace) -> int:
-    sweep = load_sweep(args.sweep)
+    sweep = load_sweep(args.sweep, args.opts)
     cells = sweep.plan(command="train")
     rows = [
         [
@@ -53,7 +64,8 @@ def run(args: argparse.Namespace) -> int:
         ]
         for cell in cells
     ]
-    print(f"sweep {sweep.name}: {len(cells)} runs from {sweep.base}")
+    source = f"{len(sweep.bases)} configs" if sweep.bases else str(sweep.base)
+    print(f"sweep {sweep.name}: {len(cells)} runs from {source}")
     print(table(["run", "config", "hash"], rows))
     invalid = [cell for cell in cells if not cell.valid]
     if invalid:

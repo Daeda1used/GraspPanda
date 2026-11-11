@@ -25,7 +25,8 @@ none of their code is part of this history. Each line below has its full account
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU.
-- **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one.
+- **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides.
+- **`runtime.gpu_memory_fraction`** caps what a run takes of its GPU, so two runs can share a 24 GB card.
 
 ### Changed
 
@@ -464,6 +465,10 @@ Classes now count levels, and every method lists the options of each of its slot
   same with and without TF32. The 1 × 1 convolutions of PointNet++ are: GraspNet-baseline
   moves from 32.60 and 48.67 to 32.51 and 48.65, Scale-Balanced-Grasp from 57.87 and 62.84
   to 57.96 and 62.87, by the same amount on every machine tried.
+- Distributed training ran on GPUs for the first time: GSNet on two RTX 3090 and
+  FineGrasp on four, with NCCL. FineGrasp's recipe takes 1.5 GB of GPU memory per frame;
+  its README gives the launch for eight, four and one GPU that keeps 32 frames per step and
+  4 per batch norm.
 - `runtime.tf32` (default `false`) sets both switches of PyTorch for a run, a probe and
   `GraspInferencer`, and puts them back afterwards; `env.json` of a run records what it
   computed in, and the header of a run says when TF32 is on. At its default the option

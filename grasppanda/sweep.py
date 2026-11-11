@@ -15,6 +15,17 @@ is reported at planning time rather than hours into the sweep.
         "1024": []
         "2048": ["model.proposal.num_seeds=2048"]
 
+``base`` may also name several configs, each under a short name. They become the first
+axis, ``config``: the way to compare configs that ``grasppanda compose`` wrote, with the
+same seeds, side by side.
+
+    base:
+      shipped: scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e
+      ptv3: sbg_ptv3.yaml          # written by: grasppanda compose <the shipped config>
+                                   #     --set backbone=ptv3 -o sbg_ptv3.yaml
+    seeds: [0, 1, 2]
+    overrides: ["runtime.gpu_memory_fraction=0.45"]   # for every cell, before the axes
+
 The cells of a plan are independent runs. :func:`run_cells` runs them one after the other
 in this process, or, given GPUs, one process per cell with one cell per GPU at a time.
 """
@@ -31,7 +42,7 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -64,10 +75,16 @@ class Cell:
     overrides: list[str]
     config: Config | None = None
     error: ConfigError | None = None
+    #: The config this cell overrides: the sweep's base, or one of its bases.
+    base: Path | None = None
 
     @property
     def valid(self) -> bool:
         return self.config is not None
+
+
+#: The axis that several base configs form.
+CONFIG_AXIS = "config"
 
 
 @dataclass
@@ -77,14 +94,25 @@ class Sweep:
     axes: dict[str, dict[str, list[str]]]
     seeds: list[int]
     path: Path | None = None
+    #: Several base configs by name, the axis ``config``; empty for a sweep with one base.
+    bases: dict[str, Path] = field(default_factory=dict)
+    #: Overrides of every cell, applied before those of its alternatives.
+    overrides: list[str] = field(default_factory=list)
+    #: Those of ``overrides`` that came from the command line (``--opts``), not the file:
+    #: a cell that runs in a process of its own is started with them again.
+    extra: list[str] = field(default_factory=list)
 
     def variants(self) -> list[dict[str, str]]:
-        """Every combination of one alternative per axis, in file order."""
+        """Every combination of one alternative per axis, in file order; with several base
+        configs, their names lead as the axis ``config``."""
         names = list(self.axes)
-        return [
+        products = [
             dict(zip(names, combo))
             for combo in itertools.product(*(self.axes[name] for name in names))
         ]
+        if not self.bases:
+            return products
+        return [{CONFIG_AXIS: base, **choices} for base in self.bases for choices in products]
 
     def plan(self, command: str | None = None) -> list[Cell]:
         """Build and validate the config of every cell.
@@ -98,15 +126,22 @@ class Sweep:
             label = "_".join(choices.values()) or "base"
             for seed in self.seeds:
                 overrides = [
-                    item for axis, pick in choices.items() for item in self.axes[axis][pick]
+                    *self.overrides,
+                    *(
+                        item
+                        for axis, pick in choices.items()
+                        if axis in self.axes
+                        for item in self.axes[axis][pick]
+                    ),
                 ]
                 overrides += [
                     f"runtime.seed={seed}",
                     f"runtime.work_dir=work_dirs/{self.name}/{label}/seed{seed}",
                 ]
-                cell = Cell(f"{label}/seed{seed}", choices, seed, overrides)
+                base = self.bases[choices[CONFIG_AXIS]] if self.bases else self.base
+                cell = Cell(f"{label}/seed{seed}", choices, seed, overrides, base=base)
                 try:
-                    cell.config = Config.load(self.base, overrides, command=command)
+                    cell.config = Config.load(base, overrides, command=command)
                 except ConfigError as error:
                     cell.error = error
                 cells.append(cell)
@@ -117,24 +152,55 @@ def _fail(path: Path, where: str, message: str) -> ConfigError:
     return ConfigError([Issue(where, message)], str(path))
 
 
-def load_sweep(path: str | Path) -> Sweep:
-    """Read a sweep file. Paths in ``base`` are relative to the sweep file."""
+def load_sweep(path: str | Path, extra: Sequence[str] = ()) -> Sweep:
+    """Read a sweep file. Paths in ``base`` are relative to the sweep file.
+
+    ``extra`` overrides are added to those of the file for every cell (``--opts`` of the
+    command).
+    """
     path = Path(path)
     raw: Any = parse_yaml(path.read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
         raise _fail(path, "", "a sweep file must be a mapping")
-    unknown = set(raw) - {"base", "seeds", "axes"}
+    unknown = set(raw) - {"base", "seeds", "axes", "overrides"}
     if unknown:
         raise _fail(
-            path, sorted(unknown)[0], "unknown key; a sweep file has `base`, `seeds` and `axes`"
+            path,
+            sorted(unknown)[0],
+            "unknown key; a sweep file has `base`, `seeds`, `axes` and `overrides`",
         )
-    if not isinstance(raw.get("base"), str):
-        raise _fail(path, "base", "is required: a config file or the name of a shipped config")
-    local = path.parent / raw["base"]
-    base = local if local.is_file() else resolve_config_path(raw["base"])
+    shared = raw.get("overrides") or []
+    if not isinstance(shared, list) or not all(isinstance(item, str) for item in shared):
+        raise _fail(path, "overrides", 'must be a list of "key.path=value" strings')
+
+    def resolve(name: str) -> Path:
+        local = path.parent / name
+        return local if local.is_file() else resolve_config_path(name)
+
+    given = raw.get("base")
+    bases: dict[str, Path] = {}
+    if isinstance(given, dict) and given:
+        for label, name in given.items():
+            if not isinstance(name, str):
+                raise _fail(path, f"base.{label}", "must be a config file or a shipped config")
+            bases[str(label)] = resolve(name)
+        base = next(iter(bases.values()))
+    elif isinstance(given, str):
+        base = resolve(given)
+    else:
+        raise _fail(
+            path,
+            "base",
+            "is required: a config file or the name of a shipped config, or several of them "
+            "by name (`base: {a: one.yaml, b: two.yaml}`)",
+        )
     axes = raw.get("axes") or {}
     if not isinstance(axes, dict):
         raise _fail(path, "axes", "must map axis names to alternatives")
+    if bases and CONFIG_AXIS in axes:
+        raise _fail(
+            path, f"axes.{CONFIG_AXIS}", "is the axis the several `base` configs form: rename it"
+        )
     for axis, alternatives in axes.items():
         if not isinstance(alternatives, dict) or not alternatives:
             raise _fail(path, f"axes.{axis}", "must map alternative names to lists of overrides")
@@ -151,7 +217,16 @@ def load_sweep(path: str | Path) -> Sweep:
     seeds = raw.get("seeds", [0])
     if not isinstance(seeds, list) or not seeds or not all(isinstance(s, int) for s in seeds):
         raise _fail(path, "seeds", "must be a non-empty list of integers")
-    return Sweep(name=path.stem, base=base, axes=axes, seeds=seeds, path=path)
+    return Sweep(
+        name=path.stem,
+        base=base,
+        axes=axes,
+        seeds=seeds,
+        path=path,
+        bases=bases,
+        overrides=[*shared, *extra],
+        extra=list(extra),
+    )
 
 
 # ------------------------------------------------------------------------ execution
@@ -204,7 +279,7 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
             f"runtime.load_from={json.dumps(str(checkpoints[-1]))}",
             "evaluation.split=test",
         ]
-        evaluation = commands.test(Config.load(sweep.base, overrides, command="test"))
+        evaluation = commands.test(Config.load(cell.base or sweep.base, overrides, command="test"))
         record["test"] = dict(evaluation.metrics)
         record["partial"] = list(evaluation.partial)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -222,6 +297,8 @@ def _run_in_process(sweep: Sweep, cell: Cell, gpu: str) -> dict[str, Any]:
     log = work_dir / CELL_LOG
     command = [sys.executable, "-m", "grasppanda.cli.main", "sweep", str(sweep.path)]
     command += ["--cell", cell.name]
+    if sweep.extra:
+        command += ["--opts", *sweep.extra]
     with open(log, "w", encoding="utf-8") as handle:
         status = subprocess.run(
             command,

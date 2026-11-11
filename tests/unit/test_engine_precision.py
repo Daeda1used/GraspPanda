@@ -102,3 +102,18 @@ def test_start_run_restores_the_switches_when_the_run_fails(tmp_path, pytorch_de
         assert switches() == (False, False)
         raise RuntimeError("stop")
     assert switches() == (True, False)
+
+
+def test_a_memory_limit_is_checked_and_does_nothing_on_the_cpu(tmp_path):
+    from grasppanda.engine.errors import EngineError
+    from grasppanda.engine.run import limit_gpu_memory
+
+    limit_gpu_memory(None, torch.device("cpu"))
+    limit_gpu_memory(0.5, torch.device("cpu"))  # a share of a GPU: nothing to do here
+    for wrong in (0.0, -0.2, 1.5):
+        with pytest.raises(EngineError, match="share of the GPU's memory"):
+            limit_gpu_memory(wrong, torch.device("cpu"))
+    config = tiny_config(tmp_path, {"runtime.gpu_memory_fraction": 0.5})
+    assert config.digest() == tiny_config(tmp_path).digest()  # where a run lives, not what it is
+    with start_run(config, "train") as run:
+        assert run.cfg["runtime"]["gpu_memory_fraction"] == 0.5

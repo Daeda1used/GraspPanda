@@ -107,6 +107,11 @@ class RuntimeConfig:
     #: ``auto`` (CUDA when available), ``cpu``, ``cuda`` or ``cuda:N``. Under ``torchrun``
     #: each process uses the GPU of its local rank.
     device: str = "auto"
+    #: Share of the GPU's memory this process may take, e.g. ``0.45`` for two runs on one
+    #: card; ``null`` sets no limit. PyTorch keeps freed memory in a cache other processes
+    #: cannot use, and a limit makes it trim that cache instead of taking the card. Like
+    #: ``work_dir`` it says how a run lives on a machine and is not hashed.
+    gpu_memory_fraction: float | None = None
     seed: int = 0
     deterministic: bool = False
     #: Let CUDA convolutions and matrix products round to TF32 (faster on Ampere and newer
