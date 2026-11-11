@@ -38,7 +38,7 @@ none of their code is part of this history. Each line below has its full account
 - **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
 - **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
 - **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
-- **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. This changes what HGGD computes on such a GPU, and GraspNet-baseline and Scale-Balanced-Grasp by under 0.1 AP; earlier records of the three were computed with TF32.
+- **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. Three released checkpoints compute convolutions that this touches: their whole-split records were scored again in float32, and no number moved by more than 0.05 AP (HGGD) or 0.02 AP (GraspNet-baseline, Scale-Balanced-Grasp).
 - **One typeface.** The documentation site, the page of `grasppanda explore` and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.
 - **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
 - **A quieter site.** Code is highlighted in two colours, folds that follow each other form one list, a short identifier no longer breaks at its hyphen, the tables of the model zoo share one width with aligned figures, and method pages give their option tables the whole column.
@@ -65,7 +65,7 @@ none of their code is part of this history. Each line below has its full account
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
 - Point painting is not written by `compose` and has no probe record.
 - Most combinations of two or more swapped options have no record.
-- The whole-split records of GraspNet-baseline, Scale-Balanced-Grasp and HGGD were computed with TF32 convolutions, before `runtime.tf32`; on 120 frames the same checkpoints score up to 0.09, 0.09 and 0.32 AP differently in float32.
+- HGGD's two Kinect records were computed with TF32 convolutions, before `runtime.tf32`; every other record of a checkpoint that TF32 touches was scored again in float32.
 
 ### In detail
 

@@ -38,8 +38,8 @@ states the same collision filter; a line *not stated* is paired with nothing.
 | EconomicGrasp | Kinect | on | 65.47 / 53.64 / 20.36 | — | — |
 | FineGrasp | RealSense | off | 71.56 / 62.80 / 27.42 | 71.67 / 62.83 / 27.40 | −0.11 / −0.03 / +0.02 |
 | FineGrasp | RealSense | on | 73.69 / 64.62 / 28.18 | 73.71 / 64.56 / 28.14 | −0.02 / +0.06 / +0.04 |
-| HGGD | RealSense | off | 58.33 / 47.96 / 22.03 | — | — |
-| HGGD | RealSense | on | 63.70 / 52.90 / 24.18 | — | — |
+| HGGD | RealSense | off | 58.36 / 47.95 / 22.08 | — | — |
+| HGGD | RealSense | on | 63.72 / 52.91 / 24.16 | — | — |
 | HGGD | RealSense | not stated | — | 59.36 / 51.20 / 22.17 | — |
 | HGGD | RealSense | not stated | — | 64.45 / 53.59 / 24.59 | — |
 | HGGD | Kinect | off | 56.98 / 43.97 / 18.63 | — | — |
@@ -138,8 +138,8 @@ collision filter nor the checkpoints, so it is paired with no line.
 | EconomicGrasp | RealSense D435 | off | 21.69 / 26.64 / 15.79 | — | — |
 | EconomicGrasp | RealSense D435 | on | 22.25 / 27.30 / 16.06 | — | — |
 | EconomicGrasp | RealSense D435 | not stated | — | 21.67 / 26.62 / 15.90 | — |
-| HGGD | RealSense D435 | off | 14.25 / 17.41 / 9.23 | — | — |
-| HGGD | RealSense D435 | on | 14.56 / 17.79 / 9.33 | — | — |
+| HGGD | RealSense D435 | off | 14.24 / 17.40 / 9.24 | — | — |
+| HGGD | RealSense D435 | on | 14.56 / 17.75 / 9.38 | — | — |
 
 </div>
 

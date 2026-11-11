@@ -37,15 +37,17 @@ ground truth (`gt_assisted` is empty in all four records).
 |---|---|---|:---:|---:|---:|---:|
 | [hggd_r34w8_g1b-realsense_15e](hggd_r34w8_g1b-realsense_15e.yaml) | RealSense | `reported` (paper; README row "In paper") | not stated | 59.36 | 51.20 | 22.17 |
 | | | `reported` (README row "In repo") | not stated | 64.45 | 53.59 | 24.59 |
-| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | off | 58.33 | 47.96 | 22.03 |
-| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.70 | 52.90 | 24.18 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | off | 58.36 | 47.95 | 22.08 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.72 | 52.91 | 24.16 |
 | [hggd_r34w8_g1b-kinect_15e](hggd_r34w8_g1b-kinect_15e.yaml) | Kinect | `reported` (paper; README row "In paper") | not stated | 60.26 | 48.59 | 18.43 |
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.63 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.34 | 46.83 | 19.27 |
 
 `author-ckpt` is the authors' checkpoint of each camera, converted and run through
-`grasppanda test` at commit `4bc5333`, one run each with seed 0. `off` is every decoded
+`grasppanda test`, one run each with seed 0: the RealSense rows at commit `400b733` in
+float32 on an RTX 3090, the Kinect rows at commit `4bc5333` with PyTorch's TF32
+convolutions, which a run computed in then. `off` is every decoded
 grasp (variant `raw`); `on, then NMS` is what the released test script dumps (variant
 `cd`). No model has been trained here yet. Neither source states the collision filter;
 the closest pair is `cd` with "In repo", within 0.83 AP on every split and below it on
@@ -57,8 +59,8 @@ Measured minus reported, on seen / similar / novel:
 
 | Camera | Measured | minus "In paper" | minus "In repo" |
 |---|---|---|---|
-| RealSense | `cd` | +4.34 / +1.70 / +2.01 | −0.75 / −0.69 / −0.41 |
-| RealSense | `raw` | −1.03 / −3.24 / −0.14 | −6.12 / −5.63 / −2.56 |
+| RealSense | `cd` | +4.36 / +1.71 / +1.99 | −0.73 / −0.68 / −0.43 |
+| RealSense | `raw` | −1.00 / −3.25 / −0.09 | −6.09 / −5.64 / −2.51 |
 | Kinect | `cd` | +0.08 / −1.76 / +0.84 | −0.83 / −0.19 / −0.10 |
 | Kinect | `raw` | −3.28 / −4.62 / +0.20 | −4.19 / −3.05 / −0.74 |
 
@@ -101,8 +103,8 @@ of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 
 | Collision filter | AP | AP0.8 | AP0.4 | Provenance |
 |---|---|---|---|---|
-| off | 14.25 | 17.41 | 9.23 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json)) |
-| on, then NMS | 14.56 | 17.79 | 9.33 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json)) |
+| off | 14.24 | 17.40 | 9.24 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json)) |
+| on, then NMS | 14.56 | 17.75 | 9.38 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json)) |
 
 No number is published for HGGD on this dataset, so there is nothing to compare with.
 

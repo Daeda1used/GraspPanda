@@ -110,7 +110,7 @@ grasppanda test hggd/hggd_r34w8_g1b-realsense_15e \
     evaluation.num_workers=4
 ```
 
-Measured with the authors' checkpoint, converted: AP 57.99 without the collision filter and 64.46 with it, within 0.76 AP of the whole split.
+Measured with the authors' checkpoint, converted: AP 57.99 without the collision filter and 64.46 with it, within 0.74 AP of the whole split.
 
 ??? note "What it prints, and every measured run against the whole split"
 
@@ -120,12 +120,12 @@ Measured with the authors' checkpoint, converted: AP 57.99 without the collision
 
     | Weights, provenance | Collision filter | AP, 120 frames of test_seen | AP, whole seen split | Difference | Wall time, commit |
     |---|---|---|---|---|---|
-    | the authors' checkpoint, converted, `author-ckpt` | off | 57.99 | 58.33 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | −0.34 | 85 s, `400b733` |
-    |  | on | 64.46 | 63.70 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | +0.76 |  |
+    | the authors' checkpoint, converted, `author-ckpt` | off | 57.99 | 58.36 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | −0.37 | 85 s, `400b733` |
+    |  | on | 64.46 | 63.72 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | +0.74 |  |
 
     </div>
 
-    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: no input is derived from ground truth (the config crops no workspace). On these 120 frames the AP is within 0.76 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-11-11 on one NVIDIA GeForce RTX 3090 shared with other jobs.
+    Provenance: `author-ckpt`, the authors' checkpoint, evaluated by GraspPanda. Inputs: no input is derived from ground truth (the config crops no workspace). On these 120 frames the AP is within 0.74 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-11-11 on one NVIDIA GeForce RTX 3090 shared with other jobs.
 
     **The same test elsewhere.** On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`): AP 57.98 and 64.44, −0.01 and −0.02 AP from the first measurement. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `ea6268b`): AP 58.16 and 64.14, +0.17 and −0.32 AP from the first measurement.
 
@@ -141,8 +141,8 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 |---|---|---|---|---|---|
 | reported (paper) | not stated | 59.36 | 51.20 | 22.17 | — |
 | reported (repository README) | not stated | 64.45 | 53.59 | 24.59 | — |
-| authors' weights | off | 58.33 | 47.96 | 22.03 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json) |
-| authors' weights | on | 63.70 | 52.90 | 24.18 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json) |
+| authors' weights | off | 58.36 | 47.95 | 22.08 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json) |
+| authors' weights | on | 63.72 | 52.91 | 24.16 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json) |
 
 </div>
 
