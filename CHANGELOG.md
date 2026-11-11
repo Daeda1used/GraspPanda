@@ -45,6 +45,7 @@ none of their code is part of this history. Each line below has its full account
 - Combinations that used to fail in the first iteration are refused by the config check with the fix.
 - `ASSANet` no longer returns zeros for constant input features.
 - Image-encoder bridges say when their library downloads weights, and under which licence.
+- `prepare --check --config` reports the camera of that config and every asset it reads, the scale statistic too, and prints the exact command for each one that is missing.
 
 ### Known limits
 
@@ -521,6 +522,13 @@ Classes now count levels, and every method lists the options of each of its slot
   `spconv-cu118`.
 - `tools/probe_grid.py` refuses to record from a working tree with uncommitted changes
   (`--allow-dirty` overrides) and records the versions of the optional libraries of a run.
+- `grasppanda prepare <dataset> --check --config <config>` used to report every camera of
+  the dataset, so a complete RealSense setup ended with a red line for Kinect and exit
+  status 1, and it did not look at the scale statistic of Scale-Balanced-Grasp, so its
+  check was green and its training stopped at the first line. The check now reports the
+  camera the config names (`--camera` asks for another), includes the scale statistic, and
+  ends with the exact command for every asset that is not complete, in build order,
+  instead of the list of all flags.
 - `approach_to_rotation` was rewritten independently (cross products and a turn about the
   approach axis); the convention and its tests are unchanged.
 

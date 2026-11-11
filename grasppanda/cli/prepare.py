@@ -164,6 +164,13 @@ def _scenes(args: argparse.Namespace, dataset: Any) -> list[int]:
     return list(dataset.scenes())
 
 
+def _scope(args: argparse.Namespace) -> str:
+    """The ``--split`` or ``--scenes`` of this call, to repeat in a command it prints."""
+    if args.scenes:
+        return f" --scenes {args.scenes}"
+    return f" --split {args.split}" if args.split else ""
+
+
 def _progress(total: int, unit: str) -> Any:
     from tqdm import tqdm
 
@@ -186,6 +193,11 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
     from grasppanda.utils.paths import cache_root, dataset_root
 
     cameras = [args.camera] if args.camera else list(cls.cameras)
+    if args.config and not args.camera:
+        # a config reads one camera: report that one, not every camera of the dataset
+        named = _node(args, cls, None).get("camera")
+        if named in cls.cameras:
+            cameras = [named]
     nodes: dict[str, dict[str, Any]] = {}
     for camera in cameras:
         try:
@@ -206,7 +218,14 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
         return 1
     _ok(f"tree is complete for {', '.join(cameras)}")
     print(style(f"derived assets under {cache_root()}", "bold"))
-    incomplete = False
+    builds: list[str] = []  # the command for every asset that is not complete, in build order
+
+    def lacks(flags: str) -> None:
+        command = f"grasppanda prepare {cls.name} {flags}" + _scope(args)
+        if command not in builds:
+            builds.append(command)
+
+    config = f" --config {args.config}" if args.config else ""
     for camera in cameras:
         if camera not in nodes:
             print(f"  {camera}: no shipped dataset config; pass --config to report its assets")
@@ -222,7 +241,8 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
             f"{where}: grasp labels {total - len(missing)}/{total} shards "
             f"({dataset.label_store.asset.spec.hash})"
         )
-        incomplete |= bool(missing)
+        if missing:
+            lacks("--labels")
         maps = dataset.graspness
         if maps is not None and hasattr(maps, "asset"):
             from grasppanda.datasets.graspness import scene_shard
@@ -235,7 +255,8 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
                 f"({maps.asset.spec.hash}, {maps.asset.spec.provenance}, preprocessing "
                 f"{dataset.fingerprint})"
             )
-            incomplete |= bool(lacking)
+            if lacking:
+                lacks(f"--graspness --camera {camera}{config}")
         compact = dataset.compact_labels
         if compact is not None:
             from grasppanda.datasets.compact_labels import scene_shard as compact_shard
@@ -247,7 +268,8 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
                 f"{where}: compact grasp labels {len(shards) - len(lacking)}/{len(shards)} "
                 f"scenes ({compact.asset.spec.hash})"
             )
-            incomplete |= bool(lacking)
+            if lacking:
+                lacks(f"--compact-labels --camera {camera}{config}")
         views = dataset.view_grasps
         if views is not None:
             from grasppanda.datasets.view_grasps import scene_shard as view_shard
@@ -259,7 +281,8 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
                 f"{where}: view grasps {len(shards) - len(lacking)}/{len(shards)} scenes "
                 f"({views.asset.spec.hash})"
             )
-            incomplete |= bool(lacking)
+            if lacking:
+                lacks(f"--view-grasps --camera {camera}{config}")
         if dataset.tolerance is not None:
             absent = dataset.tolerance.missing(objects)
             report = _ok if not absent else _bad
@@ -267,12 +290,27 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
                 f"{where}: tolerance {len(objects) - len(absent)}/{len(objects)} objects "
                 f"({dataset.tolerance.asset.spec.hash})"
             )
-            incomplete |= bool(absent)
-    if incomplete:
-        print(
-            f"build what is missing with: grasppanda prepare {cls.name} " + " / ".join(_ASSET_FLAGS)
-        )
-    return 1 if incomplete else 0
+            if absent:
+                lacks(f"--tolerance --camera {camera}{config}")
+        statistic = dataset.scale_statistic
+        if statistic is not None:
+            built = statistic.exists()
+            report = _ok if built else _bad
+            report(
+                f"{where}: scale statistic {'built' if built else 'not built'} "
+                f"({statistic.asset.spec.hash}, {statistic.asset.spec.provenance})"
+            )
+            if not built:
+                legacy = statistic.config.source == "legacy_import"
+                source = (
+                    " --import-legacy --scale-statistic-file <reference file>" if legacy else ""
+                )
+                lacks(f"--scale-statistic{source} --camera {camera}{config}")
+    if builds:
+        print(style("build what is missing, in this order:", "bold"))
+        for command in builds:
+            print(f"    {command}")
+    return 1 if builds else 0
 
 
 # ----------------------------------------------------------------------------- labels
