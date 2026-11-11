@@ -54,14 +54,19 @@ from typing import Any
 from grasppanda.config import ConfigError
 from grasppanda.datasets.manifest import SplitManifest
 from grasppanda.evaluation.records import RECORD_SCHEMA
-from grasppanda.hub import PROTOCOL_SPLITS, ModelEntry, Weights, load_metafile, sha256_of
+from grasppanda.hub import (
+    PROTOCOL_SPLITS,
+    WEIGHT_SOURCES,
+    ModelEntry,
+    Weights,
+    load_metafile,
+    sha256_of,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 
 #: What ``inputs`` says for each name a record lists under ``gt_assisted``.
 GT_ASSISTED = {"workspace": "workspace crop from the ground-truth segmentation"}
-#: The sources a weights entry may have, by the provenance of the rows they back.
-WEIGHT_SOURCES = {"author-ckpt": "author", "reproduced": "grasppanda"}
 _DATASETS = {"graspnet1b": "GraspNet-1Billion", "graspclutter6d": "GraspClutter6D"}
 #: Fields of a record this tool reads beside the ones it checks one by one.
 _FIELDS = ("variant", "dataset", "per_scene", "postprocessing", "gt_assisted", "evaluator")
@@ -418,10 +423,14 @@ def check_weights(
         run: The run.
         models: Every model of the method's metafile.
         model: The model of the run's config, or ``None`` when the metafile does not
-            list it. Without a weights entry of its own (a transfer config that is not
-            listed yet), the run takes the entry of another model of the method whose
-            file is the one that was evaluated.
-        provenance: What the user said the weights are, or ``None``.
+            list it. Of its entries (``weights``, ``author_weights``) the run belongs to
+            the one whose file was evaluated or converted into the evaluated file.
+            Without an entry of its own (a transfer config that is not listed yet), the
+            run takes the entry of another model of the method that names that file.
+        provenance: What the user said the weights are, or ``None``. It selects the
+            entry to compare with when the evaluated file is none of the model's, and it
+            is how weights trained here are recorded for a model that lists only the
+            authors' checkpoint so far.
         allow_unverified: Accept an author checkpoint whose origin cannot be read.
     """
     weights = run.first.get("weights") or {}
@@ -431,13 +440,22 @@ def check_weights(
     readable = path.is_file() and sha256_of(path) == evaluated
     if readable:
         check.note = conversion_note(path)
-    entry = model.weights if model else None
-    if entry is None:
-        origin = {evaluated, check.note["source_sha256"] if check.note else evaluated}
-        owner = next((m for m in models if m.weights and m.weights.sha256 in origin), None)
-        if owner is not None:
-            entry = owner.weights
-            check.notes.append(f"the weights are those of the metafile's model {owner.name}")
+    origin = {evaluated, check.note["source_sha256"] if check.note else evaluated}
+    own = [w for w in ((model.weights, model.author_weights) if model else ()) if w is not None]
+    entry = next((w for w in own if w.sha256 in origin), None)
+    if entry is None and own:
+        # None of the model's files: compare with the entry of the kind the user named
+        # (its first entry without one). Weights trained here for a model that lists
+        # only the authors' checkpoint have no entry yet.
+        wanted = WEIGHT_SOURCES.get(str(provenance))
+        entry = next((w for w in own if wanted is None or w.source == wanted), None)
+    elif entry is None:
+        for other in models:
+            shared = (other.weights, other.author_weights)
+            entry = next((w for w in shared if w is not None and w.sha256 in origin), None)
+            if entry is not None:
+                check.notes.append(f"the weights are those of the metafile's model {other.name}")
+                break
     check.entry = entry
     if not readable and (entry is None or entry.source == "author"):
         text = (
@@ -452,6 +470,11 @@ def check_weights(
                 "to record the run without that check"
             )
     if entry is None:
+        if own and provenance == "reproduced" and check.note is not None:
+            check.problems.append(
+                f"the evaluated weights were converted from {check.note.get('source_file')}: "
+                "a released checkpoint, not weights trained here"
+            )
         if provenance is None:
             check.problems.append(
                 "the metafile has no weights entry for these weights: say what they are "
@@ -723,8 +746,14 @@ def main(argv: list[str] | None = None) -> int:
             f"  - name: {name}\n    config: {run.config}\n    protocol: {first['protocol']}\n"
             f"    camera: {first['cameras'][0]}"
         )
-    if model is None or model.weights is None:
+    if model is None or weights.entry is None or model.backing(provenance) is None:
         print(weights_yaml(run, provenance, weights.note, weights.entry), end="")
+        if model is not None and model.weights is not None and weights.entry is None:
+            print(
+                "      # The model lists the authors' checkpoint as `weights:` so far. Rename that\n"
+                "      # entry to `author_weights:` and put this one in its place: `reproduced`\n"
+                "      # rows are measured with `weights`, `author-ckpt` rows with `author_weights`."
+            )
     if model is None:
         print("    results:")
     print(rows_yaml(run, provenance, stem))

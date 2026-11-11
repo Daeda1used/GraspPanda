@@ -224,6 +224,34 @@ def test_the_authors_file_may_be_listed_beside_weights_trained_here(write):
     )
     issues = _issues(metafile("not_theirs", source="grasppanda"))
     assert "must be 'author'" in issues["models.0.author_weights.source"]
+    # such a model states the rows of both files, each measured with its own
+    assert model.backing("reproduced") is model.weights
+    assert model.backing("author-ckpt") is model.author_weights
+    assert model.backing("reported") is None
+
+
+def test_a_measured_row_needs_the_weights_of_its_kind(write):
+    """A `reproduced` row beside the authors' checkpoint alone has nothing it was measured
+    with, and neither has an `author-ckpt` row beside weights trained here alone."""
+    row = (
+        "      - {{provenance: {provenance}, collision_filter: false, evaluator: E, "
+        "record: records/r.json, AP: {{seen: 1.0, similar: 1.0, novel: 1.0}}}}"
+    )
+    authors = (
+        "    weights: {url: 'https://example.org/a.tar', sha256: " + "a" * 64 + ", "
+        f"license: MIT, source: author, convert: '{CONVERT}'}}\n    results:"
+    )
+    trained = UNPUBLISHED.format(
+        sha="b" * 64, source="grasppanda", note="      note: 'Not published yet.'\n"
+    )
+    for name, weights, provenance, fragment in (
+        ("no_training", authors, "reproduced", "needs weights trained here"),
+        ("no_checkpoint", trained, "author-ckpt", "needs the authors' checkpoint"),
+    ):
+        text = VALID.replace("    results:", weights) + row.format(provenance=provenance) + "\n"
+        write(f"{name}/records/r.json", "{}")
+        path = write(f"{name}/metafile.yaml", text)
+        assert fragment in _issues(path)["models.0.results.1"], name
 
 
 def test_fetch_refuses_an_entry_without_a_url_with_a_reason(tmp_path):

@@ -440,6 +440,66 @@ def test_weights_trained_here_are_recorded_before_they_are_published(cache, tmp_
     assert '      note: "Not published yet."\n' in entry
 
 
+def test_one_model_holds_the_rows_of_the_authors_file_and_of_a_training_here(
+    cache, tmp_path, capsys
+):
+    """One config, two files: the released checkpoint, converted, and the weights of a
+    training of that config here. Each run finds the entry it was measured with."""
+    converted = make_run(cache)
+    trained = make_run(tmp_path / "trained_cache", converted_from=None)
+    evaluated = sha256_of(tmp_path / "trained_cache" / "weights" / "converted" / "demo.pth")
+
+    # The metafile lists the authors' checkpoint only. A checkpoint of ours is not a
+    # converted copy of it; said to be trained here, it is recorded, and the tool prints
+    # the entry to add and where the present one goes.
+    configs = write_metafile(tmp_path / "authors_only")
+    assert record(trained, configs, "--dry-run") == 1
+    assert "carry no note of tools/convert_checkpoint.py" in capsys.readouterr().err
+    assert record(trained, configs, "--provenance", "reproduced", "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert out.count("provenance: reproduced") == 2
+    assert f"      sha256: {evaluated}\n" in out and "      source: grasppanda\n" in out
+    assert "Rename that\n      # entry to `author_weights:`" in out
+    assert "demo_model_reproduced_test_raw.json" in out
+
+    # The metafile lists both files.
+    block = (
+        f"    weights:\n      url: null\n      sha256: {evaluated}\n      license: null\n"
+        "      source: grasppanda\n      note: 'Not published yet.'\n"
+        "    author_weights: {url: 'https://example.org/authors.tar', "
+        f"sha256: {SOURCE_SHA}, license: MIT, source: author}}\n"
+    )
+    path = tmp_path / "both" / "configs" / "demo" / "metafile.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        METAFILE.format(
+            protocol="graspnet1b-sv-v1",
+            camera="realsense",
+            weights=block,
+            reported="{seen: 60.0, similar: 40.0, novel: 20.0}",
+        )
+    )
+    configs = path.parent.parent
+    assert record(trained, configs, "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert out.count("provenance: reproduced") == 2 and "    weights:" not in out
+    assert "the file of the metafile's entry, not published yet" in out
+    assert record(converted, configs, "--dry-run") == 0
+    out = capsys.readouterr().out
+    assert out.count("provenance: author-ckpt") == 2 and "    weights:" not in out
+    assert "demo_model_author-ckpt_test_cd.json" in out
+    # a flag cannot turn the converted checkpoint into weights trained here, or back
+    assert record(converted, configs, "--provenance", "reproduced", "--dry-run") == 1
+    assert "which makes these rows 'author-ckpt'" in capsys.readouterr().err
+    assert record(trained, configs, "--provenance", "author-ckpt", "--dry-run") == 1
+    assert "which makes these rows 'reproduced'" in capsys.readouterr().err
+
+    # A converted checkpoint of another release is no training either.
+    other = make_run(tmp_path / "other_cache", converted_from="7" * 64)
+    assert record(other, write_metafile(tmp_path / "x"), "--provenance", "reproduced") == 1
+    assert "a released checkpoint, not weights trained here" in capsys.readouterr().err
+
+
 def test_a_record_file_with_other_content_is_not_overwritten(cache, tmp_path, capsys):
     run, configs = make_run(cache), write_metafile(tmp_path)
     assert record(run, configs) == 0
