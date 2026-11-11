@@ -289,7 +289,7 @@ D435; the rows, with the reported numbers beside them, stand in the
 | GSNet | `reproduced` | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | none published |
 | Scale-Balanced-Grasp | `author-ckpt` | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 / 27.57 / 16.95 |
 | EconomicGrasp | `author-ckpt` | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 / 26.62 / 15.90 |
-| HGGD | `author-ckpt` | 14.25 / 17.41 / 9.23 | 14.56 / 17.79 / 9.33 | none published |
+| HGGD | `author-ckpt` | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | none published |
 
 The four seed-based rows read the cloud inside the ground-truth rectangle of the official
 tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads the whole
