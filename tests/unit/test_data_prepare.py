@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -50,9 +51,14 @@ def test_check_labels_graspness_then_train(tree, config, capsys):  # noqa: F811
     assert "kinect" not in out
     assert "grasp labels 0/5 shards" in out and "graspness 0/2 scenes" in out
     # the exact commands, labels first
-    labels = "grasppanda prepare tinygraspnet --labels"
+    labels = f"grasppanda prepare tinygraspnet --labels --config {config}\n"
     graspness = f"grasppanda prepare tinygraspnet --graspness --camera realsense --config {config}"
     assert out.index(labels) < out.index(graspness)
+    # ... which repeat where the tree is and which loader of the config was read
+    assert main([*base, "--check", "--root", str(tree["root"])]) == 1
+    out = capsys.readouterr().out
+    assert f"--labels --config {config} --root {tree['root']}\n" in out
+    assert f"--graspness --camera realsense --config {config} --root {tree['root']}\n" in out
 
     assert main([*base, "--graspness", "--workers", "1"]) == 1  # labels come first
     assert "grasppanda prepare tinygraspnet --labels" in capsys.readouterr().err
@@ -97,10 +103,18 @@ def test_check_reports_a_broken_tree(tree, config, capsys):  # noqa: F811
     assert "scenes/scene_0000/realsense/meta/: 1 of 3 .mat files missing, e.g. 0001.mat" in out
 
 
-def test_import_legacy_builds_a_marked_asset(tree, config, capsys):  # noqa: F811
+def test_import_legacy_builds_a_marked_asset(tree, config, tmp_path, capsys):  # noqa: F811
     probe = build(tree, transforms=[])
     write_legacy(probe, tree, [0, 1])
     base = ["prepare", "tinygraspnet", "--config", config]
+    # a config that reads the imported maps is told to import them, not to generate
+    document = yaml.safe_load(Path(config).read_text())
+    document["data"]["train"]["dataset"]["graspness"] = {"source": "legacy_import"}
+    legacy = str(tmp_path / "tiny_legacy.yaml")
+    Path(legacy).write_text(yaml.safe_dump(document))
+    assert main(["prepare", "tinygraspnet", "--config", legacy, "--check"]) == 1
+    out = capsys.readouterr().out
+    assert f"--graspness --import-legacy --camera realsense --config {legacy}\n" in out
     assert main([*base, "--graspness", "--import-legacy", "--workers", "1"]) == 0
     assert "legacy-import" in capsys.readouterr().out
     imported = build(tree, graspness={"source": "legacy_import"})

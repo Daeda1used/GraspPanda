@@ -468,8 +468,9 @@ into a directory that already holds a run.
     checkpoint when the config has a test section, and writes into
     `work_dirs/<sweep>/<variant>/seed<k>/` (its console output in `sweep_cell.log`). The
     table of mean and spread over the seeds is written to `work_dirs/<sweep>/summary_test.md`
-    and `.csv`. A finished run is not repeated, a failed one does not stop the others and is
-    the only one that runs again. `--cell ptv3/seed0` runs one cell, for a job scheduler.
+    and `.csv`, in percent for a benchmark's AP. A finished run is not repeated, a failed one
+    does not stop the others and is the only one that runs again; stopping the sweep stops
+    its runs. `--cell ptv3/seed0` runs one cell, for a job scheduler.
 
     Several GPUs serve two purposes: a sweep runs *different* experiments side by side, and
     distributed training (next fold) makes *one* experiment faster.

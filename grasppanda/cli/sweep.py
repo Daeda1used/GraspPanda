@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -53,6 +54,32 @@ def register(commands: Any) -> None:
     parser.set_defaults(handler=run)
 
 
+def _unknown_gpus(gpus: list[str]) -> str | None:
+    """What is wrong with the ids of ``--gpus``, or ``None``.
+
+    A cell started with an id this machine does not have would see no GPU at all, and a
+    config with ``device: auto`` would then train on the CPU without a word.
+    """
+    if not gpus:
+        return None
+    import torch
+
+    count = torch.cuda.device_count()
+    if count == 0:
+        return "--gpus spreads cells over GPUs, and PyTorch sees none here (grasppanda env)."
+    if os.environ.get("CUDA_VISIBLE_DEVICES"):
+        scope = f"of the {count} that CUDA_VISIBLE_DEVICES leaves visible"
+    else:
+        scope = f"of this machine's {count}"
+    wrong = [gpu for gpu in gpus if not gpu.isdigit() or int(gpu) >= count]
+    if not wrong:
+        return None
+    return (
+        f"--gpus names {', '.join(wrong)}: not a GPU {scope} "
+        f"(ids 0 to {count - 1}, as nvidia-smi numbers them)."
+    )
+
+
 def run(args: argparse.Namespace) -> int:
     sweep = load_sweep(args.sweep, args.opts)
     cells = sweep.plan(command="train")
@@ -89,6 +116,10 @@ def run(args: argparse.Namespace) -> int:
     gpus = [part.strip() for part in (args.gpus or "").split(",") if part.strip()]
     if args.gpus is not None and not gpus:
         print("--gpus needs at least one GPU id, e.g. --gpus 0,1", file=sys.stderr)
+        return 2
+    unknown = _unknown_gpus(gpus)
+    if unknown:
+        print(unknown, file=sys.stderr)
         return 2
     if gpus:
         print(f"{len(cells)} runs on GPUs {', '.join(gpus)}, {len(gpus)} at a time")

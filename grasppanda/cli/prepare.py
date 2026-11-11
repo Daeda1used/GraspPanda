@@ -166,10 +166,13 @@ def _scenes(args: argparse.Namespace, dataset: Any) -> list[int]:
 
 
 def _scope(args: argparse.Namespace) -> str:
-    """The ``--split`` or ``--scenes`` of this call, to repeat in a command it prints."""
+    """What this call said about where and which scenes, to repeat in a command it prints."""
+    scope = f" --root {args.root}" if args.root else ""
+    if args.loader != "train":
+        scope += f" --loader {args.loader}"
     if args.scenes:
-        return f" --scenes {args.scenes}"
-    return f" --split {args.split}" if args.split else ""
+        return scope + f" --scenes {args.scenes}"
+    return scope + (f" --split {args.split}" if args.split else "")
 
 
 class _Lines:
@@ -275,7 +278,7 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
             f"({dataset.label_store.asset.spec.hash})"
         )
         if missing:
-            lacks("--labels")
+            lacks(f"--labels{config}")
         maps = dataset.graspness
         if maps is not None and hasattr(maps, "asset"):
             from grasppanda.datasets.graspness import scene_shard
@@ -289,7 +292,10 @@ def _check(args: argparse.Namespace, cls: Any) -> int:
                 f"{dataset.fingerprint})"
             )
             if lacking:
-                lacks(f"--graspness --camera {camera}{config}")
+                # the flag decides the source of what is built, so it has to match the config's
+                legacy = dataset.graspness_config.source == "legacy_import"
+                source = " --import-legacy" if legacy else ""
+                lacks(f"--graspness{source} --camera {camera}{config}")
         compact = dataset.compact_labels
         if compact is not None:
             from grasppanda.datasets.compact_labels import scene_shard as compact_shard
