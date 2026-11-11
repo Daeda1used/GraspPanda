@@ -80,13 +80,14 @@ def test_a_composed_swap_with_an_adapter_runs(graspnet1b_root, cuda, tmp_path):
     assert min(report.real_seeds) == 1.0  # a furthest-point subsample has no padding
 
 
-def test_a_stage_set_runs_under_a_recipe_that_serves_its_labels_and_is_refused_elsewhere(
+def test_a_stage_set_runs_under_a_recipe_that_serves_its_labels_and_is_lifted_elsewhere(
     graspnet1b_root, cuda, tmp_path
 ):
     """GSNet's five stages composed onto GraspNet-baseline's recipe: compose adds the
     graspness section the proposal reads, and the config trains on real frames. Onto
-    EconomicGrasp's recipe, which serves compact labels, the same stages are refused by
-    the config check; before that rule they failed at the first loss."""
+    EconomicGrasp's recipe, which serves compact labels, compose rewrites the data recipe to
+    serve the dense labels these stages read and says so; with ``adapters=False`` the pair
+    stays refused by the config check (before that rule it failed at the first loss)."""
     stages = [
         "backbone=sparse-unet14",
         "proposal=graspness-fps",
@@ -104,7 +105,14 @@ def test_a_stage_set_runs_under_a_recipe_that_serves_its_labels_and_is_refused_e
     assert report.verdict in ("runs", "runs-empty", "runs-unstable"), report.detail
     assert {"loss/graspness", "loss/view", "loss/score", "loss/width"} <= set(report.losses)
     assert report.batch_size == 2  # the recipe is GraspNet-baseline's
-    refused = compose("economicgrasp/economicgrasp_sunet14_g1b-realsense_10e", stages)
+    economic = "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e"
+    lifted = compose(economic, stages)
+    assert lifted.accepted
+    served = lifted.body["data"]["train"]["dataset"]
+    assert served["compact_labels"] is None
+    assert "SampleGraspLabels" in [step["type"] for step in served["transforms"]]
+    assert any(action.startswith("labels: dense.") for action in lifted.actions)
+    refused = compose(economic, stages, adapters=False)
     assert not refused.accepted and not refused.problems
     assert "NearestLabelAssigner reads `supervision.objects`" in refused.issues[0].message
 
@@ -146,7 +154,7 @@ def test_the_runner_records_a_cell_with_its_commands_and_resumes(graspnet1b_root
         "--only",
         "reference/GSNet",
         "encoder/GSNet/SparseUNet14",
-        "stage/GSNet/head/economic",
+        "stage/GSNet/grouper/depth-embed",
     ]
     try:
         assert runner.main(arguments) == 0
@@ -154,11 +162,11 @@ def test_the_runner_records_a_cell_with_its_commands_and_resumes(graspnet1b_root
         assert set(records) == {
             "reference/GSNet",
             "encoder/GSNet/SparseUNet14",
-            "stage/GSNet/head/economic",
+            "stage/GSNet/grouper/depth-embed",
         }
         reference = records["reference/GSNet"]
         own = records["encoder/GSNet/SparseUNet14"]
-        refused = records["stage/GSNet/head/economic"]
+        refused = records["stage/GSNet/grouper/depth-embed"]
         if reference["probe"].get("fallback"):
             pytest.skip(
                 f"real frames cannot be probed here: {reference['probe']['fallback'][:200]}"
@@ -175,7 +183,7 @@ def test_the_runner_records_a_cell_with_its_commands_and_resumes(graspnet1b_root
         assert own["probed_as"] == "reference/GSNet" and own["probe"] == reference["probe"]
         assert own["compose_command"] == f"grasppanda compose {GSNET} --set backbone=sparse-unet14"
         assert refused["verdict"] == "refused" and refused["refused_by"] == "compose"
-        assert any("must agree on the label set" in message for message in refused["refusal"])
+        assert any("but SWADHead expects ('seed', 'channel')" in m for m in refused["refusal"])
         # A second run finds everything recorded and probes nothing.
         before = (runner.directory(name) / "results.jsonl").read_text(encoding="utf-8")
         assert runner.main(arguments) == 0

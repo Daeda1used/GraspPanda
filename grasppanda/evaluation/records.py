@@ -212,11 +212,23 @@ class ResultRecord:
         return cls(metrics=metrics, **data)
 
 
+def in_percent(record: ResultRecord) -> bool:
+    """Whether the evaluator of ``record`` states its metrics as fractions in [0, 1].
+
+    The benchmark evaluators do (``metric_unit`` of their info), and papers print such a
+    metric times 100: a reader is shown the percentage, the record keeps the fraction.
+    """
+    unit = (record.evaluator.get("info") or {}).get("metric_unit", "")
+    return isinstance(unit, str) and unit.startswith("fraction")
+
+
 def summarize(records: Mapping[str, ResultRecord]) -> str:
     """Console summary of the variants of one evaluation.
 
-    Complete variants show their metrics. A partial variant shows its coverage and, below
-    the table, per-scene numbers; its aggregate metrics are withheld.
+    Complete variants show their metrics, in percent with two decimals where the evaluator
+    states them as fractions (68.75, as papers and the model zoo print them; the record
+    file keeps 0.6875). A partial variant shows its coverage and, below the table,
+    per-scene numbers; its aggregate metrics are withheld.
     """
     if not records:
         return "no variant was scored"
@@ -224,17 +236,22 @@ def summarize(records: Mapping[str, ResultRecord]) -> str:
     complete = [record for record in records.values() if not record.partial]
     columns = list(dict.fromkeys(name for record in complete for name in record.metrics))
     columns = columns or ["metrics"]
+    percent = bool(complete) and all(in_percent(record) for record in complete)
+    scale = 100.0 if percent else 1.0
     rows = []
     for name, record in records.items():
         if record.partial:
             cells = ["withheld (partial)"] + [""] * (len(columns) - 1)
         else:
-            cells = [f"{record.metrics[c]:.2f}" if c in record.metrics else "-" for c in columns]
+            cells = [
+                f"{scale * record.metrics[c]:.2f}" if c in record.metrics else "-" for c in columns
+            ]
         rows.append([name, f"{record.scored}/{record.requested}", *cells])
     assisted = ", ".join(first.gt_assisted) or "none"
     lines = [
         f"protocol {first.protocol} · dataset {first.dataset} · split {first.split} · "
-        f"cameras {', '.join(first.cameras) or '-'} · ground-truth-assisted inputs: {assisted}",
+        f"cameras {', '.join(first.cameras) or '-'} · ground-truth-assisted inputs: {assisted}"
+        + (" · metrics in percent" if percent else ""),
         table(["variant", "frames", *columns], rows, enabled=False),
     ]
     for record in records.values():

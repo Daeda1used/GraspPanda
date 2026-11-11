@@ -157,9 +157,13 @@
   font-family: var(--gx-font);
   font-size: 14px;
   line-height: 20px;
-  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   scroll-margin-top: 4rem;
+}
+/* Figures line up where they stand in a column. Not on running text: the tabular figures
+   of Inter come with tabular hyphens, points and spaces. */
+.gpx :is(.gx-frac, .gx-sec-count, .gx-slotnav-count, .gx-num, .gx-stat-value, .gx-step-n, .gx-run-time) {
+  font-variant-numeric: tabular-nums;
 }
 .gpx *,
 .gpx *::before,

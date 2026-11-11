@@ -23,6 +23,7 @@ none of their code is part of this history. Each line below has its full account
 - **Model zoo.** Released weights scored on whole test splits, GSNet trained here, each number backed by a committed result record.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
+- **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one.
 
 ### Changed
 
@@ -34,6 +35,7 @@ none of their code is part of this history. Each line below has its full account
 - **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
 - **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
 - **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
+- **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
 
 ### Fixed
 

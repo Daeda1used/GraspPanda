@@ -426,6 +426,38 @@ into a directory that already holds a run.
     For frames of your own camera: [Your own camera](inference.md#your-own-camera) and
     [From Python](inference.md#from-python).
 
+??? note "Several runs at once: sweeps"
+
+    A sweep file names a base config, a few axes and the seeds; every cell of the grid is a
+    complete config, checked before anything starts:
+
+    ```yaml
+    # encoders.yaml
+    base: gsnet/gsnet_sunet14_g1b-realsense_10e
+    seeds: [0, 1, 2]
+    axes:
+      backbone:
+        sunet14: []
+        ptv3: ["model.backbone={type: PTv3}"]
+    ```
+
+    ```bash
+    grasppanda sweep encoders.yaml --dry-run         # the plan: 2 x 3 runs, each config checked
+    grasppanda sweep encoders.yaml --gpus 0,1,2,3    # one run per GPU at a time
+    ```
+
+    Without `--gpus` the runs follow each other in one process. With it every run is a
+    process of its own that sees one GPU, and as many run at a time as GPUs are named: the
+    six runs above take the time of two on four GPUs. Each run trains, tests its last
+    checkpoint when the config has a test section, and writes into
+    `work_dirs/<sweep>/<variant>/seed<k>/` (its console output in `sweep_cell.log`). The
+    table of mean and spread over the seeds is written to `work_dirs/<sweep>/summary_test.md`
+    and `.csv`. A finished run is not repeated, a failed one does not stop the others and is
+    the only one that runs again. `--cell ptv3/seed0` runs one cell, for a job scheduler.
+
+    Several GPUs serve two purposes: a sweep runs *different* experiments side by side, and
+    distributed training (next fold) makes *one* experiment faster.
+
 ??? note "Distributed training"
 
     ```bash

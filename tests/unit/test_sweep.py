@@ -116,3 +116,83 @@ def test_sweep_command_trains_tests_and_tabulates(write, tmp_path, monkeypatch, 
     assert (
         len(list((tmp_path / "work_dirs/tiny").glob("*/seed0/2*"))) == 4
     )  # 2 cells x (train + test)
+
+
+@pytest.mark.slow
+def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, capsys):
+    """``--gpus``: a process per cell that sees one GPU, as many at a time as GPUs named;
+    the records, the summaries and the resume are those of a sequential sweep."""
+    import json
+
+    from grasppanda.cli.main import main
+    from grasppanda.sweep import CELL_LOG, CELL_RECORD
+
+    train = REPO / "projects/example_project/configs/toy_train.yaml"
+    shrink = "train.epochs=1"
+    path = write(
+        "sweeps/wide.yaml",
+        f"base: {train}\nseeds: [0]\naxes:\n  seeds_per_frame:\n"
+        f"    s32: ['model.num_seeds=32', '{shrink}']\n    s64: ['{shrink}']\n"
+        f"    s96: ['model.num_seeds=96', '{shrink}']\n",
+    )
+    monkeypatch.chdir(tmp_path)
+    assert main(["sweep", str(path), "--gpus", ","]) == 2  # no id named
+    assert "--gpus needs at least one GPU id" in capsys.readouterr().err
+    assert main(["sweep", str(path), "--cell", "s128/seed0"]) == 2
+    assert "no cell 's128/seed0'" in capsys.readouterr().err
+
+    # one cell alone, in this process: what the parallel runner starts for each cell
+    assert main(["sweep", str(path), "--cell", "s64/seed0"]) == 0
+    capsys.readouterr()
+    cells = tmp_path / "work_dirs/wide"
+    assert (cells / "s64/seed0" / CELL_RECORD).is_file()
+
+    assert main(["sweep", str(path), "--gpus", "7,8"]) == 0
+    out = capsys.readouterr().out
+    assert "3 runs on GPUs 7, 8, 2 at a time" in out
+    assert "s64/seed0: already recorded" in out
+    started = {
+        line.split(": started on GPU ")[0].split("] ")[1]: line.rsplit(" ", 1)[1]
+        for line in out.splitlines()
+        if ": started on GPU " in line
+    }
+    assert set(started) == {"s32/seed0", "s96/seed0"} and set(started.values()) <= {"7", "8"}
+    for name in started:
+        log = (cells / name / CELL_LOG).read_text()
+        assert "✓ trained epochs 1-1" in log  # the cell's own console output
+        record = json.loads((cells / name / CELL_RECORD).read_text())
+        assert record["cell"] == name and "raw/AP" in record["test"]
+    summary = (cells / "summary_test.md").read_text()
+    assert all(f"| {name} | 1 |" in summary for name in ("s32", "s64", "s96"))
+
+    assert main(["sweep", str(path), "--gpus", "7,8"]) == 0  # everything is recorded
+    assert capsys.readouterr().out.count("already recorded") == 3
+
+
+def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
+    """A cell whose process fails is reported with its log and carries no metric."""
+    from grasppanda import sweep as module
+    from grasppanda.sweep import aggregate, run_cells
+
+    train = REPO / "projects/example_project/configs/toy_train.yaml"
+    path = write(
+        "sweeps/two.yaml", f"base: {train}\nseeds: [0]\naxes:\n  a:\n    x: []\n    y: []\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    sweep = module.load_sweep(path)
+    cells = sweep.plan(command="train")
+    done = {"cell": "y/seed0", "choices": {"a": "y"}, "seed": 0, "test": {"raw/AP": 0.5}}
+
+    def fake(sweep, cell, gpu):  # no process: x fails, y succeeds
+        if cell.name == "x/seed0":
+            return {"cell": cell.name, "choices": cell.choices, "seed": 0, "failed": "x.log"}
+        return done
+
+    monkeypatch.setattr(module, "_run_in_process", fake)
+    lines: list[str] = []
+    records = run_cells(sweep, cells, gpus=["0"], report=lines.append)
+    assert [record["cell"] for record in records] == ["x/seed0", "y/seed0"]  # plan order
+    assert any("x/seed0: FAILED, see x.log on GPU 0" in line for line in lines)
+    assert any("y/seed0: done on GPU 0" in line for line in lines)
+    rows = {row["choices"]["a"]: row["metrics"] for row in aggregate(records)}
+    assert rows["x"] == {} and rows["y"]["raw/AP"]["mean"] == 0.5
