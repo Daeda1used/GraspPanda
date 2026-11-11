@@ -134,3 +134,12 @@ def test_env_says_what_keeps_a_method_from_running(capsys, monkeypatch):
     assert ("✓ " in out) != ("! " in out)  # one verdict below the table
     assert main(["env", "--json"]) == 0
     assert isinstance(json.loads(capsys.readouterr().out)["notes"], list)
+
+
+def test_env_counts_gpus_of_a_kind():
+    from grasppanda.cli.env import _gpus
+
+    assert _gpus([]) == ""
+    assert _gpus(["RTX A6000"]) == "RTX A6000"
+    assert _gpus(["RTX 3090"] * 6) == "6 x RTX 3090"
+    assert _gpus(["RTX 3090", "RTX A6000", "RTX 3090"]) == "2 x RTX 3090, RTX A6000"

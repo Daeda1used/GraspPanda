@@ -53,6 +53,14 @@ def register(commands: Any) -> None:
     parser.set_defaults(handler=run)
 
 
+def _gpus(names: list[str]) -> str:
+    """``6 x NVIDIA GeForce RTX 3090`` for six of a kind, each kind once, in order."""
+    kinds = dict.fromkeys(names)
+    return ", ".join(
+        name if names.count(name) == 1 else f"{names.count(name)} x {name}" for name in kinds
+    )
+
+
 def run(args: argparse.Namespace) -> int:
     env = collect_env()
     found = notes(env)
@@ -67,7 +75,7 @@ def run(args: argparse.Namespace) -> int:
             f"{env['torch']} (CUDA build {env['cuda_build'] or 'none'}, cuDNN {env['cudnn'] or 'none'})",
         ],
         ["numpy", env["numpy"]],
-        ["GPUs", ", ".join(env["gpus"]) or ("none visible" if not env["cuda_available"] else "?")],
+        ["GPUs", _gpus(env["gpus"]) or ("none visible" if not env["cuda_available"] else "?")],
     ]
     rows += [[name, version or "not installed"] for name, version in env["optional"].items()]
     library = env["ops"].pop("library", {})
