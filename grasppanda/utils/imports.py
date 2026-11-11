@@ -81,8 +81,17 @@ def install_hint(extra: str) -> str:
     cuda = _torch_cuda() if builds else None
     choice = ""
     if " | " in name:  # one extra per build, none of them for this PyTorch
-        choice = f". Choose <build> to match your PyTorch (CUDA {cuda or 'none'}): {name}."
-        name = "<build>"
+        # No build is published for this CUDA version (spconv ends at CUDA 12.6, a plain
+        # `pip install torch` may bring a newer one): the way out is another PyTorch build.
+        newest = [build for build in builds if "-cu" in build][-1]
+        tag = newest.rsplit("-", 1)[1]
+        choice = (
+            f". {_family(extra)} has no build for your PyTorch (CUDA {cuda or 'none'}); its "
+            f"builds: {name}. Install a PyTorch built for one of them first, for example "
+            f"`pip install torch --index-url https://download.pytorch.org/whl/{tag}`, then "
+            f"{newest} as above."
+        )
+        name = newest
     elif builds:
         others = " | ".join(build for build in builds if build != name)
         built = f"CUDA {cuda}" if cuda else "CPU only"

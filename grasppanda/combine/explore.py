@@ -28,7 +28,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-__all__ = ["HOST", "check", "explorer_root", "page", "save", "serve", "server"]
+__all__ = [
+    "HOST",
+    "check",
+    "explorer_root",
+    "favicon",
+    "fonts_root",
+    "page",
+    "save",
+    "serve",
+    "server",
+]
 
 if TYPE_CHECKING:
     from .explore_run import Runner
@@ -45,6 +55,15 @@ STATIC = {
     "explorer_contracts.json": "application/json; charset=utf-8",
     "explorer_learns.json": "application/json; charset=utf-8",
 }
+#: The faces of the documentation site, served to the live page too, so both read alike.
+#: Without the files (a build that left them out) the page falls back to the system face.
+FONTS = ("Inter.var.woff2", "Inter-Italic.var.woff2", "JetBrainsMono.var.woff2")
+_FACES = """<style>
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url("fonts/Inter.var.woff2") format("woff2")}
+@font-face{font-family:"Inter";font-style:italic;font-weight:100 900;font-display:swap;src:url("fonts/Inter-Italic.var.woff2") format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:100 800;font-display:swap;src:url("fonts/JetBrainsMono.var.woff2") format("woff2")}
+:root{--md-text-font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--md-code-font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+</style>"""
 #: The logo of resources/logo.svg, inline (the page loads nothing from elsewhere).
 _LOGO = (
     '<svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">'
@@ -74,6 +93,18 @@ def explorer_root() -> Path:
     return packaged if packaged.is_dir() else package.parent / "docs" / "explorer"
 
 
+def fonts_root() -> Path:
+    """Directory of the font files: packaged in a wheel, ``docs/assets/fonts`` in a checkout."""
+    package = Path(__file__).resolve().parents[1]
+    packaged = package / "_explorer" / "fonts"
+    return packaged if packaged.is_dir() else package.parent / "docs" / "assets" / "fonts"
+
+
+def favicon() -> str:
+    """The logo as a stand-alone SVG, for the tab of the browser."""
+    return _LOGO.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ', 1)
+
+
 def page(view: str = "") -> str:
     """The page of the live explorer: the files of the documentation page, on their own.
 
@@ -87,6 +118,8 @@ def page(view: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>GraspPanda explorer (live)</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+{_FACES}
 <link rel="stylesheet" href="explorer.css">
 </head>
 <body class="gx-standalone">
@@ -229,6 +262,12 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.OK, page(view).encode("utf-8"), "text/html; charset=utf-8")
         elif name in STATIC and (explorer_root() / name).is_file():
             self._send(HTTPStatus.OK, (explorer_root() / name).read_bytes(), STATIC[name])
+        elif name == "favicon.svg":
+            self._send(HTTPStatus.OK, favicon().encode("utf-8"), "image/svg+xml")
+        elif (
+            name.startswith("fonts/") and name[6:] in FONTS and (fonts_root() / name[6:]).is_file()
+        ):
+            self._send(HTTPStatus.OK, (fonts_root() / name[6:]).read_bytes(), "font/woff2")
         elif name == "api/run/setup":
             self._json(HTTPStatus.OK, self.runner.setup())
         elif name.startswith("api/run/"):

@@ -97,8 +97,10 @@ packages = ["grasppanda"]
 # so `grasppanda <command> <config-name>` works after a plain `pip install`.
 [tool.hatch.build.targets.wheel.force-include]
 "configs" = "grasppanda/_configs"
-# The combination explorer is a page of the docs and is served by `grasppanda explore`.
+# The combination explorer is a page of the docs and is served by `grasppanda explore`,
+# in the faces of the documentation site.
 "docs/explorer" = "grasppanda/_explorer"
+"docs/assets/fonts" = "grasppanda/_explorer/fonts"
 # The measured records, read by `grasppanda compose <method config> --list`.
 "docs/advanced_guides/measured_combinations.json" = "grasppanda/_measured/measured_combinations.json"
 # The level-2 summary, read by the same listing for "learns like the method's own component".
@@ -109,6 +111,7 @@ include = [
     "/grasppanda",
     "/configs",
     "/docs/explorer",
+    "/docs/assets/fonts",
     "/docs/advanced_guides/measured_combinations.json",
     "/docs/advanced_guides/learns_like_reference.json",
     "/tests",

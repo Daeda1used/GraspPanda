@@ -47,7 +47,15 @@ def test_fit_camera_frames_the_subject_and_no_more():
     assert inside(close, corner).mean() >= 0.98
     assert inside(close, table).mean() < 0.6  # it moved in: most of the table is out of view
     assert np.linalg.norm(close.eye - close.target) < np.linalg.norm(whole.eye - whole.target)
-    assert np.allclose(close.target, np.median(corner, axis=0))
+    # It looks at the middle of what the subject spans across the view, so a subject that
+    # is dense on one side still sits in the middle of the picture (its median would not).
+    lopsided = np.concatenate([corner, table[(table[:, 0] < -0.3) & (table[:, 1] > 0.1)][:12]])
+    view = fit_camera(table, lopsided)
+    pixels, _ = view.project(lopsided, (400, 300))
+    low, high = np.percentile(pixels, [1, 99], axis=0)
+    assert np.abs((low + high) / 2 - [200, 150]).max() < 30
+    off_centre, _ = view.project(np.median(lopsided, axis=0)[None], (400, 300))
+    assert abs(off_centre[0, 0] - 200) > 60  # the median is well to one side
     swing = orbit_cameras(table, frames=4, base=close)
     assert np.allclose(swing[0].eye, close.eye) and np.allclose(swing[2].target, close.target)
     assert not np.allclose(swing[1].eye, close.eye)

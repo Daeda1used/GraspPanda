@@ -33,6 +33,11 @@ _VOLATILE: tuple[KeyPath, ...] = (
     ("runtime", "resume"),
     ("runtime", "allow_config_mismatch"),
 )
+#: Keys added to the schema after hashes were recorded, with the value that leaves a hash
+#: as it was: a config that does not use the new option is the experiment it was before.
+_NEUTRAL: dict[KeyPath, Any] = {
+    ("runtime", "tf32"): False,
+}
 
 
 class _Dumper(yaml.SafeDumper):
@@ -225,6 +230,12 @@ class Config(Mapping[str, Any]):
             for key in path[:-1]:
                 node = node.get(key, {}) if isinstance(node, dict) else {}
             if isinstance(node, dict):
+                node.pop(path[-1], None)
+        for path, neutral in _NEUTRAL.items():
+            node = data
+            for key in path[:-1]:
+                node = node.get(key, {}) if isinstance(node, dict) else {}
+            if isinstance(node, dict) and node.get(path[-1], neutral) == neutral:
                 node.pop(path[-1], None)
         canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), default=str)
         return hashlib.sha256(canonical.encode()).hexdigest()

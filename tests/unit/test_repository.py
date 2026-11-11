@@ -225,6 +225,11 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     reruns = [(paper, arxiv) for paper, (arxiv, _) in HGGD_RERUNS.items()]
     rerun_ap = " and ".join(f"{value:.2f}" for _, value in HGGD_RERUNS.values())
     frames = f"{evaluator_parity_frames():,}"
+    # the newest CUDA version sparse convolution has a build for: the PyTorch to install
+    from grasppanda.utils.imports import EXTRA_BUILDS
+
+    build = max(int(name.rsplit("cu", 1)[1]) for name in EXTRA_BUILDS["spconv"] if "-cu" in name)
+    cuda = f"CUDA {build // 10}.{build % 10}"
     shared = {
         # PTv3 reaches every seed-based method at runs; trains like shipped except where worse
         "ptv3 runs everywhere": ptv3.fraction == f"{seed}/{seed}" and ptv3.tone == "ok",
@@ -261,6 +266,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             "and 64.45 as its repository result": shared["hggd sets"],
             f"{words[len(reruns)]} later papers that re-ran it": shared["hggd re-runs"],
             f"report {rerun_ap}": shared["hggd re-runs"],
+            f"built for {cuda} or older": f"spconv-cu{build}" in text("README.md"),
         },
         "README_zh-CN.md": {
             f"{chinese[every]}个已发表的方法": True,
@@ -280,6 +286,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             "把 59.36 AP": shared["hggd sets"],
             "把 64.45 列为代码仓库的结果": shared["hggd sets"],
             f"给出的是 {rerun_ap.replace(' and ', ' 和 ')}": shared["hggd re-runs"],
+            f"为 {cuda} 或更早版本构建": f"spconv-cu{build}" in text("README_zh-CN.md"),
         },
     }
 

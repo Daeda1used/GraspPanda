@@ -23,6 +23,7 @@ none of their code is part of this history. Each line below has its full account
 - **Model zoo.** Released weights scored on whole test splits, GSNet trained here, each number backed by a committed result record.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
+- **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one.
 
 ### Changed
@@ -35,6 +36,9 @@ none of their code is part of this history. Each line below has its full account
 - **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
 - **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
 - **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
+- **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. This changes what HGGD computes on such a GPU, not the seed-based methods.
+- **One typeface.** The documentation site, the page of `grasppanda explore` and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.
+- **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
 - **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
 
 ### Fixed
@@ -434,6 +438,30 @@ Classes now count levels, and every method lists the options of each of its slot
   method, and the measured runs agree with the metafiles and the configs.
 - The README quick start, `docs/get_started/quickstart.md`, the inference guide and every
   method README link the six sections.
+
+</details>
+
+<details markdown="1">
+<summary>Added: tested on a second machine, and the precision of a run</summary>
+
+- The unit suite and the first-number test of every method page were run on a machine
+  with six RTX 3090 (24 GB), with the stack of the development machine (Python 3.12,
+  PyTorch 2.7.1 with CUDA 11.8) and with a current one (Python 3.11, PyTorch 2.14.1 with
+  CUDA 12.6, the package installed as a wheel). The released checkpoints of the five
+  seed-based methods score the same AP within 0.01 on all three; every method page states
+  its numbers per machine.
+- HGGD's checkpoint did not: 58.16 and 64.14 AP (without and with the collision filter)
+  on the RTX A6000, 58.52 and 64.66 on the RTX 3090, 58.79 and 65.05 there with the newer
+  stack, with identical weights, config and frames, and the same numbers on every repeat on
+  one machine. The cause is TF32: PyTorch lets cuDNN convolutions round their products to a
+  10-bit mantissa on Ampere and newer GPUs by default, what that loses depends on the GPU
+  model and the cuDNN version, and HGGD thresholds the heat map of a convolutional network.
+  With TF32 off the two stacks of the RTX 3090 give 57.99 and 64.46 against 57.98 and
+  64.44, and the same number of grasps on all 120 frames (on 38 with TF32).
+- `runtime.tf32` (default `false`) sets both switches of PyTorch for a run, a probe and
+  `GraspInferencer`, and puts them back afterwards; `env.json` of a run records what it
+  computed in, and the header of a run says when TF32 is on. At its default the option
+  leaves every config hash as it was; `tf32: true` is another hash.
 
 </details>
 

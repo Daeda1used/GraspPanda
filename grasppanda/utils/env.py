@@ -50,6 +50,12 @@ def collect_env(*, packages: bool = False) -> dict[str, Any]:
         "cuda_available": torch.cuda.is_available(),
         "cuda_build": torch.version.cuda,
         "cudnn": torch.backends.cudnn.version() if torch.backends.cudnn.is_available() else None,
+        # what this process computes in now: a run sets it from `runtime.tf32` before its
+        # snapshot is written; PyTorch's own default is TF32 for convolutions
+        "tf32": {
+            "convolutions": bool(torch.backends.cudnn.allow_tf32),
+            "matmul": bool(torch.backends.cuda.matmul.allow_tf32),
+        },
         "gpus": [],
         "optional": {
             name: next((v for n, v in installed.items() if n.startswith(name.lower())), None)

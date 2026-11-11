@@ -208,7 +208,7 @@ class GraspInferencer:
         from grasppanda.engine.checkpoint import load_weights
         from grasppanda.engine.errors import EngineError
         from grasppanda.engine.run import resolve_device
-        from grasppanda.engine.seeding import determinism_restored, preserved_rng
+        from grasppanda.engine.seeding import determinism_restored, preserved_rng, set_precision
         from grasppanda.ops import backends
 
         if isinstance(config, Config):
@@ -225,6 +225,7 @@ class GraspInferencer:
 
         backends.configure(runtime["ops"])
         with determinism_restored(), preserved_rng(self.seed):
+            set_precision(runtime["tf32"])
             self.model: BaseGraspDetector = build_model(cfg).to(self.device)
         try:
             self.weights_report = load_weights(
@@ -716,7 +717,12 @@ class GraspInferencer:
             post: Further steps, applied after the variant or the collision filter:
                 ``"nms+top-k=20"`` (see :meth:`chain`).
         """
-        from grasppanda.engine.seeding import determinism_restored, preserved_rng, seed_everything
+        from grasppanda.engine.seeding import (
+            determinism_restored,
+            preserved_rng,
+            seed_everything,
+            set_precision,
+        )
 
         if len(observation) != 1:
             raise InputError(f"predict() takes one frame, got a batch of {len(observation)}")
@@ -724,6 +730,7 @@ class GraspInferencer:
         observation = observation.to(self.device)
         seed = self.seed if seed is None else seed
         with determinism_restored(), preserved_rng(seed):
+            set_precision(self.cfg["runtime"]["tf32"])  # as a run of this config computes
             if self.cfg["runtime"]["deterministic"]:  # as a run of this config would predict
                 seed_everything(seed, deterministic=True)
             groups = self.model.predict(observation)

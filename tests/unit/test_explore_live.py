@@ -59,6 +59,16 @@ def test_it_serves_the_page_and_the_files_of_the_documentation_page(live):
         assert status == 200 and body == (explore.explorer_root() / name).read_bytes()
     assert call(base, "/../pyproject.toml")[0] == 404
     assert call(base, "/index.md")[0] == 404
+    # the faces of the documentation site and the icon of the tab, from this server too
+    for name in explore.FONTS:
+        assert f'url("fonts/{name}")' in page
+        status, kind, body = call(base, "/fonts/" + name)
+        assert status == 200 and kind == "font/woff2" and body[:4] == b"wOF2"
+    assert call(base, "/fonts/../explorer.css")[0] == 404
+    assert call(base, "/fonts/LICENSE.txt")[0] == 404  # only the files the page names
+    status, kind, body = call(base, "/favicon.svg")
+    assert status == 200 and kind == "image/svg+xml" and body.startswith(b"<svg xmlns=")
+    assert 'href="favicon.svg"' in page
 
 
 def test_a_selection_gets_the_verdict_of_the_real_compose(live):

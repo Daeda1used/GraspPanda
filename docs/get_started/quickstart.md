@@ -65,6 +65,7 @@ written out. This is exactly what a run stores as `config.resolved.yaml`.
         - text
       run_id: null
       device: auto
+      tf32: false
       resume: false
       allow_config_mismatch: false
       load_from: null

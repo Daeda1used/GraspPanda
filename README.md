@@ -67,12 +67,14 @@ advertise what has been verified.
 
 ## 🚀 Quick start
 
-Install PyTorch for your CUDA version, then GraspPanda with the extras the examples below
-use, and check it with a toy detector:
+Install a PyTorch built for CUDA 12.6 or older (sparse convolution has no build for a
+newer one), then GraspPanda with the extras the examples below use, and check it with a toy
+detector:
 
 ```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
-pip install -e ".[spconv-cu118,timm]"   # match spconv to your CUDA
+pip install -e ".[spconv-cu126,timm]"   # the spconv build of your PyTorch's CUDA
 grasppanda env                                                     # what is installed
 grasppanda train projects/example_project/configs/toy_train.yaml   # a toy detector, trained on the CPU in under a minute
 ```
