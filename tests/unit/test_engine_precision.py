@@ -117,3 +117,23 @@ def test_a_memory_limit_is_checked_and_does_nothing_on_the_cpu(tmp_path):
     assert config.digest() == tiny_config(tmp_path).digest()  # where a run lives, not what it is
     with start_run(config, "train") as run:
         assert run.cfg["runtime"]["gpu_memory_fraction"] == 0.5
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("name", ["cuda", "cuda:0"])
+def test_a_memory_limit_holds_on_a_gpu_named_with_or_without_its_index(name):
+    """`runtime.device: cuda` names no index; the limit applies to the current device."""
+    if not torch.cuda.is_available():
+        pytest.skip("needs a CUDA device")
+    from grasppanda.engine.run import limit_gpu_memory
+
+    device = torch.device(name)
+    total = torch.cuda.get_device_properties(0).total_memory
+    try:
+        limit_gpu_memory(0.01, device)  # about 240 MB of a 24 GB card
+        with pytest.raises(torch.cuda.OutOfMemoryError):
+            torch.empty(int(0.05 * total), dtype=torch.uint8, device=device)
+    finally:
+        limit_gpu_memory(1.0, device)
+        torch.cuda.empty_cache()
+    torch.empty(1024, device=device)  # the limit is lifted again
