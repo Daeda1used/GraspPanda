@@ -97,14 +97,24 @@ class start_run_free_precision:
 
 
 def test_the_context_restores_a_matmul_precision_the_switch_cannot_express(pytorch_defaults):
-    """`medium` is a third value behind the boolean switch; a run leaves it as it found it."""
+    """`medium` is a third value behind the boolean switch; a run leaves it as it found it.
+
+    Inside the run the switch is off while `medium` is still on record, a state in which
+    PyTorch 2.9 and newer refuse to name the precision: a context entered there (prediction
+    inside a run, post-processing inside prediction) still has to work.
+    """
     before = torch.get_float32_matmul_precision()
     try:
         torch.set_float32_matmul_precision("medium")
         with determinism_restored():
             set_precision(False)
-            assert torch.get_float32_matmul_precision() == "highest"
+            assert switches() == (False, False)
+            with determinism_restored():  # nested, in the state described above
+                set_precision(True)
+                assert switches() == (True, True)
+            assert switches() == (False, False)
         assert torch.get_float32_matmul_precision() == "medium"
+        assert switches() == (True, True)
     finally:
         torch.set_float32_matmul_precision(before)
 
