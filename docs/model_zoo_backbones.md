@@ -147,7 +147,8 @@ encoder and weight file, on CPU and CUDA, with the fixtures that pin it.
 
     One caveat for anyone repeating this on a GPU: PyTorch lets cuDNN compute convolutions in
     TF32 by default. On the A6000 that alone moves the `PointNet2` features by 4.6e-3, in the
-    official implementation too. The comparisons switch it off; normal use does not.
+    official implementation too. The comparisons switch it off, and so does a run unless its
+    config says `runtime.tf32: true` ([Reproducibility](user_guides/train_test.md#reference)).
 
 ??? note "LitePT: two reference outputs"
 
