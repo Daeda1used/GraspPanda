@@ -73,13 +73,16 @@ def determinism_restored() -> Iterator[None]:
     algorithms = torch.are_deterministic_algorithms_enabled()
     warn_only = torch.is_deterministic_algorithms_warn_only_enabled()
     cudnn = (torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark)
-    tf32 = (torch.backends.cudnn.allow_tf32, torch.backends.cuda.matmul.allow_tf32)
+    convolutions = torch.backends.cudnn.allow_tf32
+    # the matmul switch is a view of this setting, which has a third value ("medium")
+    matmul = torch.get_float32_matmul_precision()
     try:
         yield
     finally:
         torch.use_deterministic_algorithms(algorithms, warn_only=warn_only)
         torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = cudnn
-        torch.backends.cudnn.allow_tf32, torch.backends.cuda.matmul.allow_tf32 = tf32
+        torch.backends.cudnn.allow_tf32 = convolutions
+        torch.set_float32_matmul_precision(matmul)
 
 
 def rng_state() -> dict[str, Any]:

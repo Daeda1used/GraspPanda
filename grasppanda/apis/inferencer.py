@@ -747,9 +747,13 @@ class GraspInferencer:
         self, grasps: GraspGroup, observation: Observation, steps: Sequence[PostProcessor]
     ) -> GraspGroup:
         """Apply post-processors (see :meth:`chain`) to the grasps of one observation."""
+        from grasppanda.engine.seeding import determinism_restored, set_precision
+
         observation = observation.to(self.device)
-        for step in steps:
-            grasps = step(grasps, observation)
+        with determinism_restored():
+            set_precision(self.cfg["runtime"]["tf32"])  # as a run of this config computes
+            for step in steps:
+                grasps = step(grasps, observation)
         return grasps
 
     def __call__(

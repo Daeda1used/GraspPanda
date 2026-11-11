@@ -112,6 +112,23 @@ def test_fractions_are_printed_in_percent_and_kept_in_the_record(tmp_path):
     assert line.split() == ["raw", "4/4", "68.75", "81.23"]
     written = json.loads(raw.write(tmp_path / "raw.json").read_text())
     assert written["metrics"] == {"AP": 0.6875, "AP0.8": 0.8123}
+    # the per-scene lines of a partial variant are in the unit of the table above them
+    partial = ResultRecord.from_result(
+        EvaluationResult(
+            {key: np.full((2, 3), 0.5) for key in KEYS[:3]},
+            {"AP": 0.5},
+            len(KEYS),
+            list(KEYS[3:]),
+            {"version": "t1", "metric_unit": fraction},
+        ),
+        variant="cd",
+        **kwargs,
+    )
+    text = summarize({"raw": raw, "cd": partial})
+    assert text.splitlines()[0].endswith("· metrics in percent")
+    scenes = [line for line in text.splitlines() if line.startswith("  ") and "frames" in line]
+    assert scenes and all(line.endswith(" 50.00") for line in scenes)
+    assert summarize({"cd": partial}).splitlines()[0].endswith("· metrics in percent")
     # an evaluator that states no unit is printed as it reports
     assert "metrics in percent" not in summarize({"raw": record()})
 

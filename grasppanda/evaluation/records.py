@@ -228,7 +228,7 @@ def summarize(records: Mapping[str, ResultRecord]) -> str:
     Complete variants show their metrics, in percent with two decimals where the evaluator
     states them as fractions (68.75, as papers and the model zoo print them; the record
     file keeps 0.6875). A partial variant shows its coverage and, below the table,
-    per-scene numbers; its aggregate metrics are withheld.
+    per-scene numbers in the same unit; its aggregate metrics are withheld.
     """
     if not records:
         return "no variant was scored"
@@ -236,7 +236,7 @@ def summarize(records: Mapping[str, ResultRecord]) -> str:
     complete = [record for record in records.values() if not record.partial]
     columns = list(dict.fromkeys(name for record in complete for name in record.metrics))
     columns = columns or ["metrics"]
-    percent = bool(complete) and all(in_percent(record) for record in complete)
+    percent = all(in_percent(record) for record in records.values())  # one unit for all lines
     scale = 100.0 if percent else 1.0
     rows = []
     for name, record in records.items():
@@ -263,7 +263,12 @@ def summarize(records: Mapping[str, ResultRecord]) -> str:
             "Per-scene mean precision only:"
         )
         lines += [
-            f"  {scene}  frames {numbers['frames']}  {numbers['mean_precision']:.4f}"
+            f"  {scene}  frames {numbers['frames']}  "
+            + (
+                f"{scale * numbers['mean_precision']:.2f}"
+                if percent
+                else f"{numbers['mean_precision']:.4f}"
+            )
             for scene, numbers in record.per_scene.items()
         ]
     return "\n".join(lines)

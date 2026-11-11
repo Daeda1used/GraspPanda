@@ -144,24 +144,27 @@ def resolve_device(name: str) -> torch.device:
 # ------------------------------------------------------------------- run directory
 
 
-def limit_gpu_memory(fraction: float | None, device: torch.device) -> None:
+def limit_gpu_memory(fraction: float | None, device: torch.device) -> int | None:
     """Cap what this process may allocate on its GPU (``runtime.gpu_memory_fraction``).
 
     The cap is PyTorch's: an allocation beyond it first frees the cached blocks and fails
     only then, with the usual out-of-memory error that names the limit. Nothing happens on
-    the CPU.
+    the CPU. Returns the index of the GPU that was capped, or ``None``.
     """
     if fraction is None:
-        return
+        return None
+    fraction = float(fraction)  # `1` in a config is an integer, which PyTorch refuses
     if not 0.0 < fraction <= 1.0:
         raise EngineError(
             f"runtime.gpu_memory_fraction is {fraction}: it is a share of the GPU's memory, "
             "above 0 and at most 1 (0.45 leaves room for a second run on the card)."
         )
-    if device.type == "cuda":
-        # `cuda` without an index is the current device; PyTorch wants the index here
-        index = device.index if device.index is not None else torch.cuda.current_device()
-        torch.cuda.set_per_process_memory_fraction(fraction, index)
+    if device.type != "cuda":
+        return None
+    # `cuda` without an index is the current device; PyTorch wants the index here
+    index = device.index if device.index is not None else torch.cuda.current_device()
+    torch.cuda.set_per_process_memory_fraction(fraction, index)
+    return index
 
 
 def find_latest_checkpoint(work_dir: str | Path, run_id: str | None = None) -> Path | None:
@@ -289,7 +292,7 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
             # The snapshot records which operator backend this run uses, which is settled per
             # device; it has to look at the device of the run, not at GPU 0.
             torch.cuda.set_device(device)
-        limit_gpu_memory(cfg["runtime"]["gpu_memory_fraction"], device)
+        capped = limit_gpu_memory(cfg["runtime"]["gpu_memory_fraction"], device)
         joined = dist.is_distributed() and not torch.distributed.is_initialized()
         dist.init(device)
         try:
@@ -325,3 +328,6 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
         finally:
             if joined:
                 dist.shutdown()
+            if capped is not None:
+                # the cap is this run's: the next run of the process sets its own or none
+                torch.cuda.set_per_process_memory_fraction(1.0, capped)

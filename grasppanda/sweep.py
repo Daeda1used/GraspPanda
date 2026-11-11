@@ -36,9 +36,11 @@ import itertools
 import json
 import os
 import queue
+import signal
 import statistics
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -235,15 +237,23 @@ def load_sweep(path: str | Path, extra: Sequence[str] = ()) -> Sweep:
 def cell_record(cell: Cell) -> dict[str, Any] | None:
     """The record of a finished cell, or ``None`` when the cell has to run.
 
-    A record written for another config hash (the sweep file changed) does not count.
+    A record written for another config hash (the sweep file changed) does not count, nor
+    does a file that cannot be read. The choices come back in the order of the plan, not in
+    the sorted order of the file, so that records read and records just made tabulate alike.
     """
     if cell.config is None:
         raise ValueError(f"cell {cell.name} has no valid config")
     path = Path(cell.config.select("runtime.work_dir")) / CELL_RECORD
     if not path.is_file():
         return None
-    record = json.loads(path.read_text(encoding="utf-8"))
-    return record if record.get("config_hash") == cell.config.digest() else None
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(record, dict) or record.get("config_hash") != cell.config.digest():
+        return None
+    record["choices"] = dict(cell.choices)
+    return record
 
 
 def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
@@ -252,6 +262,7 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
     A cell whose record exists for the same config hash is not run again.
     """
     from grasppanda.engine import commands
+    from grasppanda.evaluation.records import in_percent
 
     finished = cell_record(cell)
     if finished is not None:
@@ -282,6 +293,9 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
         evaluation = commands.test(Config.load(cell.base or sweep.base, overrides, command="test"))
         record["test"] = dict(evaluation.metrics)
         record["partial"] = list(evaluation.partial)
+        # the evaluator states its metrics as fractions: tables print them in percent
+        scored = list(evaluation.records.values())
+        record["percent"] = bool(scored) and all(in_percent(entry) for entry in scored)
     work_dir.mkdir(parents=True, exist_ok=True)
     temporary = record_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -289,8 +303,30 @@ def run_cell(sweep: Sweep, cell: Cell) -> dict[str, Any]:
     return record
 
 
-def _run_in_process(sweep: Sweep, cell: Cell, gpu: str) -> dict[str, Any]:
-    """Run one cell in a process of its own that sees only ``gpu``; its output goes to a log."""
+def _device_mask(gpu: str) -> str:
+    """What a cell's ``CUDA_VISIBLE_DEVICES`` has to say for the GPU this process calls ``gpu``.
+
+    A process that is itself restricted to some GPUs numbers them from 0: its GPU 1 is the
+    second entry of its own mask, not the machine's GPU 1.
+    """
+    mask = [part.strip() for part in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",")]
+    mask = [part for part in mask if part]
+    if mask and gpu.isdigit() and int(gpu) < len(mask):
+        return mask[int(gpu)]
+    return gpu
+
+
+def _failed(cell: Cell, why: str) -> dict[str, Any]:
+    return {"cell": cell.name, "choices": dict(cell.choices), "seed": cell.seed, "failed": why}
+
+
+def _run_in_process(
+    sweep: Sweep, cell: Cell, gpu: str, children: set[subprocess.Popen[bytes]] | None = None
+) -> dict[str, Any]:
+    """Run one cell in a process of its own that sees only ``gpu``; its output goes to a log.
+
+    ``children`` receives the process while it runs, for a caller that has to stop it.
+    """
     assert cell.config is not None and sweep.path is not None
     work_dir = Path(cell.config.select("runtime.work_dir"))
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -300,17 +336,21 @@ def _run_in_process(sweep: Sweep, cell: Cell, gpu: str) -> dict[str, Any]:
     if sweep.extra:
         command += ["--opts", *sweep.extra]
     with open(log, "w", encoding="utf-8") as handle:
-        status = subprocess.run(
+        process = subprocess.Popen(
             command,
-            env={**os.environ, "CUDA_VISIBLE_DEVICES": gpu},
+            env={**os.environ, "CUDA_VISIBLE_DEVICES": _device_mask(gpu)},
             stdout=handle,
             stderr=subprocess.STDOUT,
-            check=False,
-        ).returncode
+        )
+        if children is not None:
+            children.add(process)
+        try:
+            status = process.wait()
+        finally:
+            if children is not None:
+                children.discard(process)
     record = cell_record(cell) if status == 0 else None
-    if record is None:
-        return {"cell": cell.name, "choices": cell.choices, "seed": cell.seed, "failed": str(log)}
-    return record
+    return record if record is not None else _failed(cell, str(log))
 
 
 def run_cells(
@@ -325,12 +365,16 @@ def run_cells(
     Without ``gpus`` the cells run one after the other in this process. With ``gpus``
     every cell runs in a process of its own that sees one GPU (``CUDA_VISIBLE_DEVICES``),
     and as many cells run at a time as GPUs were named: four runs on four GPUs take the
-    time of the longest, not the sum. A GPU named twice takes two cells at a time. The
-    console output of such a cell is in ``<its work directory>/sweep_cell.log``.
+    time of the longest, not the sum. A GPU named twice takes two cells at a time. The ids
+    are those of this process: ``nvidia-smi``'s, or positions in its own
+    ``CUDA_VISIBLE_DEVICES`` when that is set. The console output of such a cell is in
+    ``<its work directory>/sweep_cell.log``.
 
     A cell that fails does not stop the others. Its record is
-    ``{"cell", "choices", "seed", "failed": <log>}`` and carries no metric, so its variant
-    reports none; running the sweep again runs the failed cells only.
+    ``{"cell", "choices", "seed", "failed": <the log, or the error>}`` and carries no
+    metric, so its variant reports none; running the sweep again runs the failed cells
+    only. When this process is interrupted or terminated, the cells it started are
+    terminated with it.
     """
     total = len(cells)
     if not gpus:
@@ -339,45 +383,75 @@ def run_cells(
             report(f"\n[{index}/{total}] {cell.name}")
             records.append(run_cell(sweep, cell))
         return records
+    if sweep.path is None:
+        raise ValueError("cells run in processes of their own from the sweep's file: it has none")
 
     free: queue.Queue[str] = queue.Queue()
     for gpu in gpus:
         free.put(gpu)
+    children: set[subprocess.Popen[bytes]] = set()
+    stopping = threading.Event()
 
     def work(item: tuple[int, Cell]) -> dict[str, Any]:
         index, cell = item
-        finished = cell_record(cell)
-        if finished is not None:
-            report(f"[{index}/{total}] {cell.name}: already recorded")
-            return finished
-        gpu = free.get()
         try:
-            report(f"[{index}/{total}] {cell.name}: started on GPU {gpu}")
-            started = time.perf_counter()
-            record = _run_in_process(sweep, cell, gpu)
-            took = time.perf_counter() - started
-            outcome = f"FAILED, see {record['failed']}" if "failed" in record else "done"
-            report(f"[{index}/{total}] {cell.name}: {outcome} on GPU {gpu} in {took:.0f} s")
-            return record
-        finally:
-            free.put(gpu)
+            finished = cell_record(cell)
+            if finished is not None:
+                report(f"[{index}/{total}] {cell.name}: already recorded")
+                return finished
+            gpu = free.get()
+            try:
+                if stopping.is_set():
+                    return _failed(cell, "not started: the sweep was stopped")
+                report(f"[{index}/{total}] {cell.name}: started on GPU {gpu}")
+                started = time.perf_counter()
+                record = _run_in_process(sweep, cell, gpu, children)
+                took = time.perf_counter() - started
+                outcome = f"FAILED, see {record['failed']}" if "failed" in record else "done"
+                report(f"[{index}/{total}] {cell.name}: {outcome} on GPU {gpu} in {took:.0f} s")
+                return record
+            finally:
+                free.put(gpu)
+        except Exception as error:  # one cell's trouble (its log, its record) is its own
+            report(f"[{index}/{total}] {cell.name}: FAILED, {type(error).__name__}: {error}")
+            return _failed(cell, f"{type(error).__name__}: {error}")
 
-    with ThreadPoolExecutor(len(gpus)) as pool:
-        return list(pool.map(work, enumerate(cells, start=1)))
+    def terminated(signum: int, frame: Any) -> None:
+        raise SystemExit(128 + signum)
+
+    # A terminated parent would leave its cells training on the GPUs: stop them with it.
+    main = threading.current_thread() is threading.main_thread()
+    previous = signal.signal(signal.SIGTERM, terminated) if main else None
+    try:
+        with ThreadPoolExecutor(len(gpus)) as pool:
+            try:
+                return list(pool.map(work, enumerate(cells, start=1)))
+            except BaseException:
+                stopping.set()
+                for child in list(children):
+                    child.terminate()
+                raise
+    finally:
+        if main:
+            signal.signal(signal.SIGTERM, previous)
 
 
 def aggregate(records: Sequence[dict[str, Any]], *, source: str = "test") -> list[dict[str, Any]]:
     """Mean and sample standard deviation over seeds, per variant of the grid.
 
     ``source`` is ``"test"`` or ``"validation"``. A variant whose runs miss a metric
-    (for example because a run was only partially scored) does not report it: a mean
-    over fewer runs than seeds would not be comparable with its neighbours.
+    (for example because a run failed or was only partially scored) does not report it: a
+    mean over fewer runs than seeds would not be comparable with its neighbours. A row is
+    marked ``percent`` when every run of it that has metrics states them as fractions.
     """
     groups: dict[tuple[tuple[str, str], ...], list[dict[str, Any]]] = {}
+    shown: dict[tuple[tuple[str, str], ...], dict[str, str]] = {}
     for record in records:
-        groups.setdefault(tuple(record["choices"].items()), []).append(record)
+        key = tuple(sorted(record["choices"].items()))  # the order of the keys is no choice
+        groups.setdefault(key, []).append(record)
+        shown.setdefault(key, dict(record["choices"]))
     rows = []
-    for choices, members in groups.items():
+    for key, members in groups.items():
         measured = [member.get(source) or {} for member in members]
         names = sorted(set.intersection(*(set(m) for m in measured))) if measured else []
         metrics = {}
@@ -385,24 +459,38 @@ def aggregate(records: Sequence[dict[str, Any]], *, source: str = "test") -> lis
             values = [float(m[name]) for m in measured]
             spread = statistics.stdev(values) if len(values) > 1 else None
             metrics[name] = {"mean": statistics.fmean(values), "std": spread, "n": len(values)}
-        rows.append({"choices": dict(choices), "seeds": len(members), "metrics": metrics})
+        with_metrics = [member for member in members if member.get(source)]
+        rows.append(
+            {
+                "choices": shown[key],
+                "seeds": len(members),
+                "metrics": metrics,
+                "percent": bool(with_metrics) and all(m.get("percent") for m in with_metrics),
+            }
+        )
     return rows
 
 
 def render_table(rows: Sequence[dict[str, Any]], *, fmt: str = "markdown") -> str:
-    """Render aggregated rows as a Markdown table or as CSV."""
+    """Render aggregated rows as a Markdown table or as CSV.
+
+    Metrics that every row states as fractions are printed in percent (68.75, as
+    ``grasppanda test`` prints them), others as they were reported.
+    """
     if not rows:
         return ""
     axes = list(rows[0]["choices"])
     names = sorted({name for row in rows for name in row["metrics"]})
+    measured = [row for row in rows if row["metrics"]]
+    scale = 100.0 if measured and all(row.get("percent") for row in measured) else 1.0
 
     def cell(row: dict[str, Any], name: str) -> str:
         stat = row["metrics"].get(name)
         if stat is None:
             return "—" if fmt == "markdown" else ""
         if stat["std"] is None or fmt != "markdown":
-            return f"{stat['mean']:.2f}"
-        return f"{stat['mean']:.2f} ± {stat['std']:.2f}"
+            return f"{scale * stat['mean']:.2f}"
+        return f"{scale * stat['mean']:.2f} ± {scale * stat['std']:.2f}"
 
     header = [*axes, "seeds", *names]
     body = [
@@ -416,7 +504,7 @@ def render_table(rows: Sequence[dict[str, Any]], *, fmt: str = "markdown") -> st
             spreads = [
                 ""
                 if (s := row["metrics"].get(n)) is None or s["std"] is None
-                else f"{s['std']:.4f}"
+                else f"{scale * s['std']:.4f}"
                 for n in names
             ]
             lines.append(",".join([*line, *spreads]))

@@ -96,6 +96,19 @@ class start_run_free_precision:
         self.context.__exit__(*error)
 
 
+def test_the_context_restores_a_matmul_precision_the_switch_cannot_express(pytorch_defaults):
+    """`medium` is a third value behind the boolean switch; a run leaves it as it found it."""
+    before = torch.get_float32_matmul_precision()
+    try:
+        torch.set_float32_matmul_precision("medium")
+        with determinism_restored():
+            set_precision(False)
+            assert torch.get_float32_matmul_precision() == "highest"
+        assert torch.get_float32_matmul_precision() == "medium"
+    finally:
+        torch.set_float32_matmul_precision(before)
+
+
 def test_start_run_restores_the_switches_when_the_run_fails(tmp_path, pytorch_defaults):
     config = tiny_config(tmp_path)
     with pytest.raises(RuntimeError, match="stop"), start_run(config, "train"):
@@ -108,8 +121,9 @@ def test_a_memory_limit_is_checked_and_does_nothing_on_the_cpu(tmp_path):
     from grasppanda.engine.errors import EngineError
     from grasppanda.engine.run import limit_gpu_memory
 
-    limit_gpu_memory(None, torch.device("cpu"))
-    limit_gpu_memory(0.5, torch.device("cpu"))  # a share of a GPU: nothing to do here
+    assert limit_gpu_memory(None, torch.device("cpu")) is None
+    assert limit_gpu_memory(0.5, torch.device("cpu")) is None  # a share of a GPU: nothing to do
+    assert limit_gpu_memory(1, torch.device("cpu")) is None  # `1` in a config is an integer
     for wrong in (0.0, -0.2, 1.5):
         with pytest.raises(EngineError, match="share of the GPU's memory"):
             limit_gpu_memory(wrong, torch.device("cpu"))
@@ -130,10 +144,30 @@ def test_a_memory_limit_holds_on_a_gpu_named_with_or_without_its_index(name):
     device = torch.device(name)
     total = torch.cuda.get_device_properties(0).total_memory
     try:
-        limit_gpu_memory(0.01, device)  # about 240 MB of a 24 GB card
+        assert limit_gpu_memory(1, device) == 0  # an integer share, as `1` in a config is
+        assert limit_gpu_memory(0.01, device) == 0  # about 240 MB of a 24 GB card
         with pytest.raises(torch.cuda.OutOfMemoryError):
             torch.empty(int(0.05 * total), dtype=torch.uint8, device=device)
     finally:
         limit_gpu_memory(1.0, device)
         torch.cuda.empty_cache()
     torch.empty(1024, device=device)  # the limit is lifted again
+
+
+@pytest.mark.gpu
+def test_the_memory_limit_of_a_run_ends_with_the_run(tmp_path):
+    """The next run of the same process (the next cell of a sweep) is not held to it."""
+    if not torch.cuda.is_available():
+        pytest.skip("needs a CUDA device")
+    total = torch.cuda.get_device_properties(0).total_memory
+    wanted = int(0.05 * total)
+    config = tiny_config(
+        tmp_path, {"runtime.gpu_memory_fraction": 0.01, "runtime.device": "cuda:0"}
+    )
+    try:
+        with start_run(config, "train"), pytest.raises(torch.cuda.OutOfMemoryError):
+            torch.empty(wanted, dtype=torch.uint8, device="cuda:0")
+        torch.empty(wanted, dtype=torch.uint8, device="cuda:0")
+    finally:
+        torch.cuda.set_per_process_memory_fraction(1.0, 0)
+        torch.cuda.empty_cache()

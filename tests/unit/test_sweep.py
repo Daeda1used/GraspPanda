@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import torch
 
 from grasppanda.config import ConfigError
 from grasppanda.sweep import load_sweep
@@ -138,6 +141,15 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     monkeypatch.chdir(tmp_path)
     assert main(["sweep", str(path), "--gpus", ","]) == 2  # no id named
     assert "--gpus needs at least one GPU id" in capsys.readouterr().err
+    # an id this machine does not have would start a cell that sees no GPU: refused
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 0)
+    assert main(["sweep", str(path), "--gpus", "0"]) == 2
+    assert "PyTorch sees none here" in capsys.readouterr().err
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 9)  # the cells see none of them
+    assert main(["sweep", str(path), "--gpus", "7,9,a"]) == 2
+    assert "--gpus names 9, a: not a GPU of this machine's 9 (ids 0 to 8" in capsys.readouterr().err
+    assert not (tmp_path / "work_dirs").exists()  # nothing ran
     assert main(["sweep", str(path), "--cell", "s128/seed0"]) == 2
     assert "no cell 's128/seed0'" in capsys.readouterr().err
 
@@ -194,7 +206,7 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     cells = sweep.plan(command="train")
     done = {"cell": "y/seed0", "choices": {"a": "y"}, "seed": 0, "test": {"raw/AP": 0.5}}
 
-    def fake(sweep, cell, gpu):  # no process: x fails, y succeeds
+    def fake(sweep, cell, gpu, children=None):  # no process: x fails, y succeeds
         if cell.name == "x/seed0":
             return {"cell": cell.name, "choices": cell.choices, "seed": 0, "failed": "x.log"}
         return done
@@ -207,6 +219,116 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     assert any("y/seed0: done on GPU 0" in line for line in lines)
     rows = {row["choices"]["a"]: row["metrics"] for row in aggregate(records)}
     assert rows["x"] == {} and rows["y"]["raw/AP"]["mean"] == 0.5
+
+    def broken(sweep, cell, gpu, children=None):  # the runner itself fails for x
+        if cell.name == "x/seed0":
+            raise OSError("no space left on device")
+        return done
+
+    monkeypatch.setattr(module, "_run_in_process", broken)
+    lines.clear()
+    records = run_cells(sweep, cells, gpus=["0"], report=lines.append)
+    assert records[0]["failed"] == "OSError: no space left on device" and records[1] == done
+    assert any("x/seed0: FAILED, OSError: no space left on device" in line for line in lines)
+
+    sweep.path = None  # built in code, not loaded: there is no file to start a cell from
+    with pytest.raises(ValueError, match="from the sweep's file"):
+        run_cells(sweep, cells, gpus=["0"], report=lines.append)
+
+
+def test_a_terminated_sweep_takes_its_cells_with_it(write, tmp_path, monkeypatch):
+    """SIGTERM to the sweep stops the cells it started, and starts no further one."""
+    import os
+    import signal
+    import threading
+
+    from grasppanda import sweep as module
+
+    if threading.current_thread() is not threading.main_thread():
+        pytest.skip("signals are delivered to the main thread")
+    train = REPO / "projects/example_project/configs/toy_train.yaml"
+    path = write(
+        "sweeps/three.yaml",
+        f"base: {train}\nseeds: [0]\naxes:\n  a:\n    x: []\n    y: []\n    z: []\n",
+    )
+    monkeypatch.chdir(tmp_path)
+    sweep = module.load_sweep(path)
+    cells = sweep.plan(command="train")
+    started: list[Child] = []
+    running = threading.Event()
+
+    class Child:  # a cell that trains until it is told to stop
+        def __init__(self, command, **options):
+            self.stopped = threading.Event()
+            self.mask = options["env"]["CUDA_VISIBLE_DEVICES"]
+            started.append(self)
+            running.set()
+
+        def wait(self):
+            assert self.stopped.wait(30)
+            return -signal.SIGTERM
+
+        def terminate(self):
+            self.stopped.set()
+
+    monkeypatch.setattr(module.subprocess, "Popen", Child)
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "4,5")  # this process's GPU 1 is the machine's 5
+    before = signal.getsignal(signal.SIGTERM)
+
+    def terminate():
+        assert running.wait(30)
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Thread(target=terminate, daemon=True).start()
+    with pytest.raises(SystemExit) as stopped:
+        module.run_cells(sweep, cells, gpus=["1"], report=lambda line: None)
+    assert stopped.value.code == 128 + signal.SIGTERM
+    assert len(started) == 1 and started[0].stopped.is_set()  # y and z were never started
+    assert started[0].mask == "5"
+    assert signal.getsignal(signal.SIGTERM) is before
+
+
+def test_records_tabulate_alike_whatever_their_key_order_and_in_percent(
+    write, tmp_path, monkeypatch
+):
+    """A record read back from disk has sorted keys; it is the same variant, in plan order.
+    Metrics that the evaluator states as fractions are tabulated in percent."""
+    import json
+
+    from grasppanda import sweep as module
+    from grasppanda.sweep import CELL_RECORD, aggregate, cell_record, render_table
+
+    train = REPO / "projects/example_project/configs/toy_train.yaml"
+    path = write(
+        "sweeps/order.yaml",
+        f"base: {train}\nseeds: [0, 1]\naxes:\n  width:\n    w: []\n  attention:\n    a: []\n",
+    )
+    monkeypatch.chdir(tmp_path)
+    first, second = module.load_sweep(path).plan(command="train")
+    assert list(first.choices) == ["width", "attention"]
+    on_disk = {
+        "cell": first.name,
+        "choices": {"attention": "a", "width": "w"},  # as json.dumps(sort_keys=True) wrote it
+        "seed": 0,
+        "config_hash": first.config.digest(),
+        "test": {"raw/AP": 0.6875},
+        "percent": True,
+    }
+    work_dir = Path(first.config.select("runtime.work_dir"))
+    work_dir.mkdir(parents=True)
+    (work_dir / CELL_RECORD).write_text(json.dumps(on_disk, sort_keys=True))
+    read = cell_record(first)
+    assert list(read["choices"]) == ["width", "attention"]
+    fresh = {**on_disk, "cell": second.name, "seed": 1, "test": {"raw/AP": 0.6925}}
+    for records in ([read, fresh], [fresh, read], [on_disk, fresh]):
+        rows = aggregate(records)
+        assert len(rows) == 1 and rows[0]["seeds"] == 2 and rows[0]["percent"]
+    rows = aggregate([read, fresh])
+    assert "| w | a | 2 | 69.00 ± 0.35 |" in render_table(rows)
+    assert render_table(rows, fmt="csv").splitlines()[1] == "w,a,2,69.00,0.3536"
+    # a variant in another unit beside it: nothing is rescaled
+    other = {"cell": "b", "choices": {"width": "v", "attention": "a"}, "test": {"raw/AP": 61.0}}
+    assert "| w | a | 2 | 0.69 ± 0.00 |" in render_table(aggregate([read, fresh, other]))
 
 
 def test_several_base_configs_are_the_axis_config(write):
