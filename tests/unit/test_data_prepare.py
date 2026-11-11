@@ -147,3 +147,22 @@ def test_usage_errors(tree, config, capsys):  # noqa: F811
     assert main(["prepare", "graspnet1b", "--check", "--root", str(tree["root"] / "none")]) == 1
     assert "does not exist" in capsys.readouterr().out
     assert TinyGraspNet.default_config("kinect") == "_base_/datasets/tinygraspnet_kinect.yaml"
+
+
+def test_progress_is_printed_as_lines_where_there_is_no_terminal(capsys):
+    """Generation that runs for an hour under nohup or in a job log shows that it lives."""
+    from grasppanda.cli import prepare
+
+    with prepare._progress(3, "scene") as bar:  # pytest's captured output is no terminal
+        assert isinstance(bar, prepare._Lines)
+        bar.every = 0.0
+        bar.set_postfix_str("scene_000000")
+        bar.update(1)
+        bar.update(2)
+    lines = capsys.readouterr().out.splitlines()
+    assert [line.split(" after ")[0] for line in lines] == ["  1/3 scenes", "  3/3 scenes"]
+    with prepare._progress(5, "object") as quiet:  # a line a minute, and the last one
+        quiet.update(2)
+        assert capsys.readouterr().out == ""
+        quiet.update(3)
+    assert capsys.readouterr().out.startswith("  5/5 objects after ")

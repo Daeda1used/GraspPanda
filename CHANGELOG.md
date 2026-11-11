@@ -53,6 +53,7 @@ none of their code is part of this history. Each line below has its full account
 - Combinations that used to fail in the first iteration are refused by the config check with the fix.
 - `ASSANet` no longer returns zeros for constant input features.
 - Image-encoder bridges say when their library downloads weights, and under which licence.
+- `prepare` prints a progress line a minute where its output is not a terminal, instead of nothing for an hour.
 - `prepare --check --config` reports the camera of that config and every asset it reads, the scale statistic too, and prints the exact command for each one that is missing.
 
 ### Known limits

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import get_context
@@ -171,10 +172,42 @@ def _scope(args: argparse.Namespace) -> str:
     return f" --split {args.split}" if args.split else ""
 
 
+class _Lines:
+    """Progress as plain lines, for output that is not a terminal (a log file, a pipe).
+
+    A bar redraws one line and is switched off there, which leaves an hour of generation
+    without a sign of life. This prints at most one line a minute, and the last one.
+    """
+
+    def __init__(self, total: int, unit: str, every: float = 60.0) -> None:
+        self.total, self.unit, self.every = total, unit, every
+        self.n, self.started, self.printed = 0, time.monotonic(), time.monotonic()
+
+    def __enter__(self) -> _Lines:
+        return self
+
+    def __exit__(self, *error: object) -> None:
+        return None
+
+    def set_postfix_str(self, text: str) -> None:
+        return None
+
+    def update(self, count: int = 1) -> None:
+        self.n += count
+        now = time.monotonic()
+        if self.n >= self.total or now - self.printed >= self.every:
+            self.printed = now
+            minutes = (now - self.started) / 60.0
+            print(f"  {self.n}/{self.total} {self.unit}s after {minutes:.1f} min", flush=True)
+
+
 def _progress(total: int, unit: str) -> Any:
+    """A bar on a terminal, a line a minute elsewhere."""
+    if not sys.stdout.isatty():
+        return _Lines(total, unit)
     from tqdm import tqdm
 
-    return tqdm(total=total, unit=unit, dynamic_ncols=True, disable=None)
+    return tqdm(total=total, unit=unit, dynamic_ncols=True)
 
 
 def _ok(text: str) -> None:
