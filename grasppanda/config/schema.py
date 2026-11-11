@@ -109,6 +109,11 @@ class RuntimeConfig:
     device: str = "auto"
     seed: int = 0
     deterministic: bool = False
+    #: Let CUDA convolutions and matrix products round to TF32 (faster on Ampere and newer
+    #: GPUs, PyTorch's default for convolutions). ``false`` computes in float32, so that
+    #: the same weights give the same numbers on every GPU and cuDNN
+    #: (:func:`grasppanda.engine.seeding.set_precision`).
+    tf32: bool = False
     #: ``true`` resumes from the latest checkpoint in ``work_dir``; a path resumes from that file.
     resume: bool | str = False
     #: Resuming a checkpoint written under a different config hash is refused unless this is set.

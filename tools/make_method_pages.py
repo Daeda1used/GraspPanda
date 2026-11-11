@@ -1409,6 +1409,37 @@ def _anywhere_step(
     ]
 
 
+def _elsewhere(
+    method: str,
+    model: ModelEntry,
+    runs: list[dict[str, Any]],
+    machines: dict[str, Any],
+    variant: str,
+) -> str:
+    """The test repeated on other machines or library versions (the measurements of a run
+    after its first): one sentence each, saying whether the number is the same."""
+    sentences = []
+    for run in runs:
+        first = run["test"][0]
+        label = _weights_label(method, weights_of(model, run["weights"]), run["weights"])
+        for other in run["test"][1:]:
+            gaps = [other["AP"][name] - first["AP"][name] for name in ("raw", variant)]
+            if all(abs(gap) < 0.005 for gap in gaps):
+                verdict = "the same to two decimals"
+            else:
+                shown = " and ".join(f"{gap:+.2f}".replace("-", "−") for gap in gaps)
+                verdict = f"{shown} AP from the first measurement"
+            sentence = (
+                f"{label[0].upper()}{label[1:]} on {machines[other['machine']]['gpu']} "
+                f"({other['date']}, `{other['commit']}`): AP {other['AP']['raw']:.2f} and "
+                f"{other['AP'][variant]:.2f}, {verdict}."
+            )
+            sentences.append(sentence + (f" {other['note']}" if other.get("note") else ""))
+    if not sentences:
+        return ""
+    return "**The same test elsewhere.** " + " ".join(sentences)
+
+
 def _test_step(
     method: str,
     config: str,
@@ -1490,7 +1521,9 @@ def _test_step(
         }
     )
     text += f"Measured on {'; '.join(when)}."
-    details = sorted({machines[m["machine"]]["details"] for run in runs for m in run["demo"]})
+    elsewhere = _elsewhere(method, model, runs, machines, variant)
+    used_machines = [m["machine"] for run in runs for m in (*run["demo"], *run["test"])]
+    details = [machines[name]["details"] for name in dict.fromkeys(used_machines)]
     body = [
         "It prints AP, AP0.8 and AP0.4 for every variant of the config, `raw` (the "
         f"predictions as they are) and `{variant}` (with the collision filter), and writes a "
@@ -1513,8 +1546,9 @@ def _test_step(
         ),
         "",
         text,
+        *(["", elsewhere] if elsewhere else []),
         "",
-        f"The machine: {'; '.join(details)}.",
+        f"{'The machines' if len(details) > 1 else 'The machine'}: {'; '.join(details)}.",
     ]
     return [
         "### 4. A first number on the benchmark {#run-test}",

@@ -28,7 +28,7 @@ from .checkpoint import checkpoint_name, file_sha256, load_weights
 from .errors import EngineError
 from .evaluation import Dump, EvalJob, Evaluation, build_job, evaluate, predict
 from .run import Run, start_run
-from .seeding import seed_everything
+from .seeding import seed_everything, set_precision
 from .state import TrainState
 from .trainer import Trainer
 
@@ -63,7 +63,8 @@ def _header(run: Run, model: nn.Module, lines: list[tuple[str, str]]) -> str:
         (
             "device",
             f"{run.device} · {processes} process{'es' if processes > 1 else ''} · seed "
-            f"{runtime['seed']} · deterministic {'on' if runtime['deterministic'] else 'off'}",
+            f"{runtime['seed']} · deterministic {'on' if runtime['deterministic'] else 'off'}"
+            + (" · TF32 on" if runtime["tf32"] else ""),
         ),
         ("model", f"{type(model).__name__} · {parameters:,} parameters ({trainable:,} trainable)"),
         *lines,
@@ -97,6 +98,7 @@ def _prepare(run: Run, *, with_evaluator: bool) -> tuple[nn.Module, EvalJob, dic
             f"`grasppanda {run.command}` needs weights: pass --weights or set runtime.load_from. "
             "An untrained model is never scored."
         )
+    set_precision(runtime["tf32"])
     seed_everything(runtime["seed"], deterministic=runtime["deterministic"])
     model = build_model(cfg).to(run.device)
     job = build_job(cfg, section, with_evaluator=with_evaluator)

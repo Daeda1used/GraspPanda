@@ -192,5 +192,6 @@ copyright line that the licence requires to be kept.
 - JetBrains Mono 2.304: https://github.com/JetBrains/JetBrainsMono. Licence: OFL-1.1.
   `Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)`
 - Files: `docs/assets/fonts/*.woff2`, subsets of the released files converted to WOFF2;
-  the licence text is beside them (`docs/assets/fonts/LICENSE.txt`). They are served by the
-  documentation site only and are not part of the Python package.
+  the licence text is beside them (`docs/assets/fonts/LICENSE.txt`). The documentation site
+  serves them, and the wheel carries them with that licence text for the page of
+  `grasppanda explore` (`grasppanda/_explorer/fonts/`).

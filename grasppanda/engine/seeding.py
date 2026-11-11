@@ -8,6 +8,9 @@ Three rules keep runs repeatable:
 * prediction runs under its own seed and puts the previous state back afterwards
   (:func:`preserved_rng`), so that evaluating during training neither changes what is
   trained nor differs from evaluating the same weights later with ``grasppanda test``.
+
+And one keeps them comparable across machines: convolutions and matrix products run in
+float32 unless the config asks for TF32 (:func:`set_precision`).
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ __all__ = [
     "preserved_rng",
     "rng_state",
     "seed_everything",
+    "set_precision",
     "set_rng_state",
 ]
 
@@ -46,17 +50,36 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
         torch.use_deterministic_algorithms(True, warn_only=True)
 
 
+def set_precision(tf32: bool) -> None:
+    """Keep CUDA convolutions and matrix products in float32, or let them round to TF32.
+
+    On Ampere and newer GPUs PyTorch lets cuDNN convolutions use TF32 by default: the
+    products are rounded to a 10-bit mantissa, which is faster and loses three decimal
+    digits. How much is lost depends on the algorithm cuDNN picks, so the same weights give
+    different activations on another GPU model or another cuDNN. A detector that thresholds
+    what a convolutional network emits turns that into different grasps: the checkpoint of
+    HGGD scored 58.2, 58.5 and 58.8 AP on the same 120 frames on an RTX A6000, an RTX 3090
+    and the RTX 3090 with a newer PyTorch, and 57.99 and 57.98 on the two stacks of the
+    RTX 3090 with TF32 off. A run therefore states its precision (``runtime.tf32``), and
+    the default is float32. A GPU without TF32 computes in float32 either way.
+    """
+    torch.backends.cudnn.allow_tf32 = tf32
+    torch.backends.cuda.matmul.allow_tf32 = tf32
+
+
 @contextmanager
 def determinism_restored() -> Iterator[None]:
-    """Leave PyTorch's process-wide determinism switches as they were found."""
+    """Leave PyTorch's process-wide determinism and precision switches as they were found."""
     algorithms = torch.are_deterministic_algorithms_enabled()
     warn_only = torch.is_deterministic_algorithms_warn_only_enabled()
     cudnn = (torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark)
+    tf32 = (torch.backends.cudnn.allow_tf32, torch.backends.cuda.matmul.allow_tf32)
     try:
         yield
     finally:
         torch.use_deterministic_algorithms(algorithms, warn_only=warn_only)
         torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = cudnn
+        torch.backends.cudnn.allow_tf32, torch.backends.cuda.matmul.allow_tf32 = tf32
 
 
 def rng_state() -> dict[str, Any]:

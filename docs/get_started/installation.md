@@ -5,7 +5,14 @@ takes a few minutes; checking it takes under a minute and needs no dataset.
 
 ## 1. Install PyTorch
 
-Install PyTorch for your CUDA version, following [pytorch.org](https://pytorch.org/get-started/locally/).
+Install a PyTorch built for CUDA 12.6 or older ([pytorch.org](https://pytorch.org/get-started/locally/)):
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu126
+```
+
+A plain `pip install torch` now brings a build for CUDA 13, for which sparse convolution
+(step 3) has no build, and which a driver older than CUDA 13 does not run on a GPU.
 
 ## 2. Install GraspPanda
 
@@ -24,9 +31,9 @@ EconomicGrasp and FineGrasp use sparse convolution: add the spconv extra that ma
 build of your PyTorch.
 
 ```bash
-# prints your CUDA build: 11.8 means spconv-cu118
+# prints your CUDA build: 12.6 means spconv-cu126
 python -c "import torch; print(torch.version.cuda)"
-pip install -e ".[spconv-cu118]"
+pip install -e ".[spconv-cu126]"
 ```
 
 A CPU-only PyTorch prints `None`: use `spconv-cpu`.
@@ -49,8 +56,22 @@ An option from another library, such as an image encoder from timm, needs its ex
     | `tensorboard`, `wandb` | a logger | logging to that service |
     | `dev`, `docs` | test, lint and docs tools | contributing, building this site |
 
-    Extras combine: `pip install -e ".[spconv-cu118,timm]"`. From an installed wheel the
-    same extras install with `pip install "grasppanda[spconv-cu118]"`.
+    Extras combine: `pip install -e ".[spconv-cu126,timm]"`. From an installed wheel the
+    same extras install with `pip install "grasppanda[spconv-cu126]"`.
+
+??? note "Where it was run"
+
+    | Machine | Python | PyTorch | What was run |
+    |---|---|---|---|
+    | RTX A6000 (48 GB) | 3.12 | 2.7.1, CUDA 11.8 | development: every record of this site |
+    | RTX 3090 (24 GB) | 3.12 | 2.7.1, CUDA 11.8 | the unit suite, the first-number test of every method, training |
+    | RTX 3090 (24 GB) | 3.11 | 2.14.1, CUDA 12.6 | the unit suite and the first-number test, installed as a wheel |
+    | no GPU | 3.10 | 2.14.1, CUDA 13.0 | the quick start from a fresh clone: everything but sparse convolution |
+
+    The released checkpoints of the five seed-based methods score the same AP within 0.01
+    on the first three; HGGD needs `runtime.tf32: false`, the default, to do so
+    ([Reproducibility](../user_guides/train_test.md#reference)). 24 GB is enough for every
+    shipped recipe except FineGrasp's batch of 32.
 
 ??? note "spconv on a CPU-only machine"
 

@@ -40,7 +40,7 @@ from .optim import (
     scheduler_steps,
 )
 from .run import Run
-from .seeding import seed_everything
+from .seeding import seed_everything, set_precision
 from .state import Meters, TrainState
 
 __all__ = ["Trainer", "total_loss"]
@@ -87,6 +87,7 @@ class Trainer:
         self.grad_clip, self.clip_mode = train["grad_clip"], train["grad_clip_mode"]
         self.scheduler_unit = train["scheduler_unit"]
 
+        set_precision(runtime["tf32"])
         # Every process builds the model from the same seed: replicas must start equal.
         seed_everything(runtime["seed"], deterministic=runtime["deterministic"])
         model = build_model(cfg)

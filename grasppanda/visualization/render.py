@@ -96,9 +96,18 @@ def fit_camera(
     subject = points if focus is None or len(focus) == 0 else np.asarray(focus, dtype=np.float64)
     if len(subject) == 0:
         return base
-    target = np.median(subject, axis=0)
     direction = base.eye - base.target
     direction = direction / np.linalg.norm(direction)
+    # Look at the middle of what the subject spans across the view, not at its median: a
+    # subject that is dense on one side would otherwise leave the other half of the picture
+    # empty. Along the line of sight the median stays, so the distance means the same.
+    target = np.median(subject, axis=0)
+    across = base.rotation()[:2]  # the picture's right and down, as rows
+    spread = (subject - target) @ across.T
+    low, high = np.percentile(
+        spread, [100.0 * (1.0 - coverage) / 2.0, 100.0 * (1.0 + coverage) / 2.0], axis=0
+    )
+    target = target + (0.5 * (low + high)) @ across
     size = (round(1000 * aspect), 1000)
 
     def enough(distance: float) -> bool:

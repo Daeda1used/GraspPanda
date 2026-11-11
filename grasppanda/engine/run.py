@@ -41,7 +41,7 @@ from grasppanda.ops import backends
 from . import distributed as dist
 from .checkpoint import MISMATCH_ADVICE, checkpoint_config_hash, config_mismatch
 from .errors import EngineError, ResumeError
-from .seeding import determinism_restored
+from .seeding import determinism_restored, set_precision
 
 __all__ = [
     "LOGGER_NAME",
@@ -259,44 +259,47 @@ def start_run(config: Config, command: str) -> Iterator[Run]:
     follow; only the main process writes.
     """
     cfg = config.resolved()
-    device = resolve_device(cfg["runtime"]["device"])
-    backends.configure(cfg["runtime"]["ops"])
-    if device.type == "cuda" and device.index is not None:
-        # The snapshot records which operator backend this run uses, which is settled per
-        # device; it has to look at the device of the run, not at GPU 0.
-        torch.cuda.set_device(device)
-    joined = dist.is_distributed() and not torch.distributed.is_initialized()
-    dist.init(device)
-    try:
-        located = _locate(cfg, command, config.digest()) if dist.is_main() else None
-        run_dir, checkpoint, fresh, note = dist.broadcast(located)
-        run = Run(
-            dir=run_dir,
-            id=run_dir.name,
-            command=command,
-            config=config,
-            cfg=cfg,
-            device=device,
-            git=git_info(),
-            resume_from=checkpoint,
-        )
-        if run.is_main:
-            run_dir.mkdir(parents=True, exist_ok=True)
-            facts = {"run_id": run.id, "command_name": command, "world_size": dist.world_size()}
-            if fresh:
-                write_snapshot(config, run_dir)
-                if checkpoint is not None:
-                    facts["resumed_from"] = str(checkpoint)
-                run.stamp(**facts, device=str(device))
-            else:  # keep the original snapshot; record this invocation beside it
-                stamp = time.strftime("%Y%m%d-%H%M%S")
-                write_snapshot(config, run_dir / "resumes" / stamp)
-                run.stamp(last_resume={"time": stamp, "checkpoint": str(checkpoint)})
-        dist.barrier()
-        with _logging(run_dir), determinism_restored():
-            if note:
-                run.log.info(note)
-            yield run
-    finally:
-        if joined:
-            dist.shutdown()
+    with determinism_restored():
+        # before the snapshot, which records the precision this run computes in
+        set_precision(cfg["runtime"]["tf32"])
+        device = resolve_device(cfg["runtime"]["device"])
+        backends.configure(cfg["runtime"]["ops"])
+        if device.type == "cuda" and device.index is not None:
+            # The snapshot records which operator backend this run uses, which is settled per
+            # device; it has to look at the device of the run, not at GPU 0.
+            torch.cuda.set_device(device)
+        joined = dist.is_distributed() and not torch.distributed.is_initialized()
+        dist.init(device)
+        try:
+            located = _locate(cfg, command, config.digest()) if dist.is_main() else None
+            run_dir, checkpoint, fresh, note = dist.broadcast(located)
+            run = Run(
+                dir=run_dir,
+                id=run_dir.name,
+                command=command,
+                config=config,
+                cfg=cfg,
+                device=device,
+                git=git_info(),
+                resume_from=checkpoint,
+            )
+            if run.is_main:
+                run_dir.mkdir(parents=True, exist_ok=True)
+                facts = {"run_id": run.id, "command_name": command, "world_size": dist.world_size()}
+                if fresh:
+                    write_snapshot(config, run_dir)
+                    if checkpoint is not None:
+                        facts["resumed_from"] = str(checkpoint)
+                    run.stamp(**facts, device=str(device))
+                else:  # keep the original snapshot; record this invocation beside it
+                    stamp = time.strftime("%Y%m%d-%H%M%S")
+                    write_snapshot(config, run_dir / "resumes" / stamp)
+                    run.stamp(last_resume={"time": stamp, "checkpoint": str(checkpoint)})
+            dist.barrier()
+            with _logging(run_dir):
+                if note:
+                    run.log.info(note)
+                yield run
+        finally:
+            if joined:
+                dist.shutdown()

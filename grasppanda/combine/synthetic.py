@@ -384,7 +384,7 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
     from grasppanda.engine.builders import build_model
     from grasppanda.engine.optim import build_optimizers
     from grasppanda.engine.run import resolve_device
-    from grasppanda.engine.seeding import determinism_restored, seed_everything
+    from grasppanda.engine.seeding import determinism_restored, seed_everything, set_precision
     from grasppanda.engine.trainer import total_loss
 
     from .probe import _count_grasps, _Enough, _fail, _judge, _Recorder, _summarise, dead_parts
@@ -394,6 +394,7 @@ def wiring_check(report: Any, config: Any, *, iters: int, device: str | None) ->
     report.device, report.data, report.iterations_requested = str(target), "synthetic", iters
     recorder = _Recorder(iters, target)
     with determinism_restored():
+        set_precision(cfg["runtime"]["tf32"])
         seed_everything(cfg["runtime"]["seed"])
         phase = "build"
         try:

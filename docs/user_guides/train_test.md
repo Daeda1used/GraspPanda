@@ -170,7 +170,7 @@ into a directory that already holds a run.
     | `evaluation.num_workers` | Worker processes of the evaluator. |
     | `runtime.work_dir`, `runtime.run_id` | Where the run lives. Neither enters the config hash. |
     | `runtime.device` | `auto`, `cpu`, `cuda`, `cuda:N`. |
-    | `runtime.seed`, `runtime.deterministic` | See *Reproducibility* below. |
+    | `runtime.seed`, `runtime.deterministic`, `runtime.tf32` | See *Reproducibility* below. |
     | `runtime.resume`, `runtime.allow_config_mismatch` | See *Checkpoints and resuming* below. |
     | `runtime.load_from`, `runtime.allow_weight_mismatch` | See *Loading weights* below. |
     | `runtime.checkpoint` | `{interval, keep_last}`. |
@@ -501,6 +501,16 @@ into a directory that already holds a run.
       pipeline or the detector draws random numbers at inference time.
     - `runtime.deterministic: true` selects deterministic kernels where PyTorch has them and
       warns where it has none. It costs speed.
+    - `runtime.tf32: false` (the default) keeps CUDA convolutions and matrix products in
+      float32. PyTorch's own default lets convolutions round to TF32 on Ampere and newer
+      GPUs, and what that rounding loses depends on the GPU model and the cuDNN version. A
+      detector that thresholds the output of a convolutional network turns it into other
+      grasps: HGGD's released checkpoint on the same 120 frames scored 58.16 AP on an RTX
+      A6000, 58.52 on an RTX 3090 and 58.79 on that RTX 3090 with a newer PyTorch, and 57.99
+      and 57.98 on the two stacks of the RTX 3090 in float32. The four seed-based methods
+      measured there gave the same AP to two decimals either way. `tf32: true` is the faster
+      setting where a model is mostly convolutions; it is part of the config hash, and
+      `env.json` of a run records what the run computed in.
     - With `deterministic: true`, training N epochs and training N/2, stopping and resuming
       give bit-identical weights. This is a unit test on CPU (with dropout, augmentation
       noise, batch norm, Adam, a one-cycle schedule, the weight average, clipping and

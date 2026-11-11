@@ -305,15 +305,20 @@ def _picture_cloud(observation: Any, info: dict[str, Any]) -> tuple[np.ndarray, 
 
 
 def _caption(image: Any, text: str) -> Any:
-    from PIL import ImageDraw
+    from PIL import ImageDraw, ImageFont
 
+    try:  # the scalable face of Pillow 10.1 and newer, sized with the picture
+        font = ImageFont.load_default(size=max(12, round(image.height / 52)))
+    except TypeError:  # an older Pillow has the small bitmap face only
+        font = ImageFont.load_default()
     draw = ImageDraw.Draw(image)
-    left, top, right, bottom = draw.textbbox((0, 0), text)
-    x, y = 10, image.height - (bottom - top) - 14
+    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+    pad = max(4, (bottom - top) // 2)
+    x, y = 2 * pad, image.height - (bottom - top) - 3 * pad
     draw.rectangle(
-        [x - 4, y - 3, x + (right - left) + 4, y + (bottom - top) + 5], fill=(255, 255, 255)
+        [x - pad, y - pad + top, x + (right - left) + pad, y + bottom + pad], fill=(255, 255, 255)
     )
-    draw.text((x, y), text, fill=(60, 60, 60))
+    draw.text((x, y), text, fill=(89, 99, 110), font=font)
     return image
 
 

@@ -54,11 +54,12 @@ GraspPanda 的回答是：一条流程，每个数据集一个锁定版本的评
 
 ## 🚀 快速上手
 
-先按你的 CUDA 版本装好 PyTorch，再装 GraspPanda 和下面示例要用的可选扩展，用一个极简示例检测器检查安装：
+先装一个为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新版本的构建），再装 GraspPanda 和下面示例要用的可选扩展，用一个极简示例检测器检查安装：
 
 ```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
-pip install -e ".[spconv-cu118,timm]"   # spconv 要与你的 CUDA 版本匹配
+pip install -e ".[spconv-cu126,timm]"   # 与 PyTorch 的 CUDA 版本对应的 spconv 构建
 grasppanda env                                                     # 查看安装了什么
 grasppanda train projects/example_project/configs/toy_train.yaml   # 极简示例检测器，CPU 上一分钟内训完
 ```

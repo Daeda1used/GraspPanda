@@ -171,7 +171,7 @@ def test_an_installed_wheel_is_told_the_wheel_command(monkeypatch):
 
 @pytest.mark.parametrize(
     ("cuda", "build"),
-    [("11.8", "spconv-cu118"), ("12.4", "spconv-cu124"), (None, "spconv-cpu"), ("12.8", None)],
+    [("11.8", "spconv-cu118"), ("12.4", "spconv-cu124"), (None, "spconv-cpu"), ("13.0", None)],
 )
 def test_spconv_hints_name_the_build_of_the_installed_pytorch(monkeypatch, cuda, build):
     from grasppanda.utils import imports
@@ -188,11 +188,14 @@ def test_spconv_hints_name_the_build_of_the_installed_pytorch(monkeypatch, cuda,
                 f'Install it with: pip install "grasppanda[{build}]". That is the build for your '
                 f"PyTorch ({f'CUDA {cuda}' if cuda else 'CPU only'}); the others: {others}."
             )
-        else:  # no build for this CUDA version: the choice, with the version to match
+        else:  # no build for this CUDA version (a plain `pip install torch` today): the
+            # way out is a PyTorch built for a CUDA version spconv has a build for
             assert imports.installable(extra, this_machine=True) == everything
             assert hint == (
-                'Install it with: pip install "grasppanda[<build>]". Choose <build> to match '
-                f"your PyTorch (CUDA 12.8): {everything}."
+                'Install it with: pip install "grasppanda[spconv-cu126]". spconv has no build '
+                f"for your PyTorch (CUDA 13.0); its builds: {everything}. Install a PyTorch "
+                "built for one of them first, for example `pip install torch --index-url "
+                "https://download.pytorch.org/whl/cu126`, then spconv-cu126 as above."
             )
     assert imports.installable("spconv") == everything  # the catalogue lists every build
 
