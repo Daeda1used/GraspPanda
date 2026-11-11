@@ -159,7 +159,9 @@ def limit_gpu_memory(fraction: float | None, device: torch.device) -> None:
             "above 0 and at most 1 (0.45 leaves room for a second run on the card)."
         )
     if device.type == "cuda":
-        torch.cuda.set_per_process_memory_fraction(fraction, device)
+        # `cuda` without an index is the current device; PyTorch wants the index here
+        index = device.index if device.index is not None else torch.cuda.current_device()
+        torch.cuda.set_per_process_memory_fraction(fraction, index)
 
 
 def find_latest_checkpoint(work_dir: str | Path, run_id: str | None = None) -> Path | None:
