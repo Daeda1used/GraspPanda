@@ -51,9 +51,9 @@ export GRASPPANDA_CACHE=/data/grasppanda_cache          # where derived assets g
 grasppanda prepare graspnet1b --check
 ```
 
-It reports what the tree lacks, then which derived assets exist, and prints the command
-for whatever is missing. Add `--config <method config>` to report the assets that config
-reads.
+It reports what the tree lacks, then which derived assets exist, and ends with the exact
+command for each one that is missing. Add `--config <method config>` to report the camera
+and the assets that config reads.
 
 ## 3. Build the grasp-label store
 

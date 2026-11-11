@@ -46,8 +46,13 @@ def test_check_labels_graspness_then_train(tree, config, capsys):  # noqa: F811
     base = ["prepare", "tinygraspnet", "--config", config]
     assert main([*base, "--check"]) == 1
     out = capsys.readouterr().out
-    assert "tree is complete for realsense, kinect" in out
+    assert "tree is complete for realsense\n" in out  # the camera of the config, not every camera
+    assert "kinect" not in out
     assert "grasp labels 0/5 shards" in out and "graspness 0/2 scenes" in out
+    # the exact commands, labels first
+    labels = "grasppanda prepare tinygraspnet --labels"
+    graspness = f"grasppanda prepare tinygraspnet --graspness --camera realsense --config {config}"
+    assert out.index(labels) < out.index(graspness)
 
     assert main([*base, "--graspness", "--workers", "1"]) == 1  # labels come first
     assert "grasppanda prepare tinygraspnet --labels" in capsys.readouterr().err
@@ -65,9 +70,15 @@ def test_check_labels_graspness_then_train(tree, config, capsys):  # noqa: F811
     assert main([*base, "--graspness", "--workers", "1"]) == 0
     assert "nothing to do" in capsys.readouterr().out
 
-    assert main([*base, "--check", "--camera", "realsense"]) == 0
+    assert main([*base, "--check", "--scenes", "0"]) == 0  # a subset keeps its scope in the hint
+    capsys.readouterr()
+    assert main([*base, "--check"]) == 0  # complete for the config's camera: nothing to build
     out = capsys.readouterr().out
     assert "grasp labels 5/5 shards" in out and "graspness 2/2 scenes" in out and "native" in out
+    assert "build what is missing" not in out
+    assert main([*base, "--check", "--camera", "kinect"]) == 1  # another camera on request
+    out = capsys.readouterr().out
+    assert "--graspness --camera kinect" in out
 
     dataset = build(tree, graspness=NATIVE)  # what the config describes can now be read
     batch = dataset[0]
