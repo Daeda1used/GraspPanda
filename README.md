@@ -8,15 +8,15 @@
 **English** | [简体中文](README_zh-CN.md)
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
-[![docs](https://img.shields.io/badge/docs-mkdocs--material-2da44e)](https://daeda1used.github.io/GraspPanda)
-[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776ab)](pyproject.toml)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![status](https://img.shields.io/badge/status-alpha-orange)](#-roadmap)
+[![docs](https://img.shields.io/badge/docs-online-0969da)](https://daeda1used.github.io/GraspPanda)
+[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-0969da)](pyproject.toml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-0969da)](LICENSE)
+[![status](https://img.shields.io/badge/status-alpha-0969da)](#roadmap)
 
 [Documentation](https://daeda1used.github.io/GraspPanda) ·
 [Get started](https://daeda1used.github.io/GraspPanda/get_started/) ·
 [Explorer](https://daeda1used.github.io/GraspPanda/explorer/) ·
-[Model zoo](#-model-zoo) ·
+[Model zoo](#model-zoo) ·
 [Design](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) ·
 [Contributing](CONTRIBUTING.md)
 
@@ -28,11 +28,12 @@
 </div>
 
 **GraspPanda is an open toolbox for 6-DoF parallel-jaw grasp detection in cluttered scenes.**
-It starts from GraspNet-1Billion and also reads GraspClutter6D. Six published methods are
-ported and match their reference code stage by stage. The stages of the seed-based skeleton,
-HGGD's image encoder, post-processing and the training recipe are slots you can swap with one
-line. Each option was composed under every method it fits, those accepted were
-probed on real frames, and the few without a record say why.
+It is built around GraspNet-1Billion and also evaluates on GraspClutter6D. Six published
+methods are ported and match their reference code stage by stage. The stages of the seed-based
+skeleton, HGGD's image encoder, post-processing and the training recipe are slots you can swap
+with one line. Each option was tried under every method it fits: checked, then trained
+briefly on real frames. A refused combination says why, and so do the few options without a
+record. The methods run from the weights released with their reference code.
 
 <details>
 <summary>Why GraspPanda</summary>
@@ -57,26 +58,34 @@ advertise what has been verified.
 
 </details>
 
-## ✨ Features
+## Features
 
-| | |
-|---|---|
-| 🧩 **Swap any stage**<br>Encoders, seed proposal, view, grouper, heads, losses, post-processing and the training recipe are slots. | 🔬 **Measured, not assumed**<br>Each option shows under how many methods it runs and learns, and why the others are left out. |
-| 🎯 **Faithful ports**<br>Six methods in two families, each equal to its reference stage by stage with converted weights. | 📏 **Pinned evaluators**<br>GraspNet-1Billion and GraspClutter6D, equal to the official tools; collision filter on and off. The GraspNet-1Billion one equals `graspnetAPI` value for value on 1,592 recorded frames ([test](tests/integration/test_eval_parity.py)). |
-| 🛡️ **Wrong swaps stop early**<br>Most wrong combinations are refused before anything is built, with the conflict and the fix; a short probe catches the rest. | 📦 **Small core**<br>`torch`, `numpy`, `scipy`, `pyyaml`, `pillow` and `tqdm`; sparse convolution and model libraries are extras. |
+- **Swap any stage.** Encoders, seed proposal, view, grouper, heads, losses, post-processing
+  and the training recipe are slots.
+- **Measured, not assumed.** Each option shows under how many methods it runs and learns, and
+  why the others are left out.
+- **Faithful ports.** Six methods in two families, each equal to its reference stage by stage
+  with converted weights.
+- **Pinned evaluators.** GraspNet-1Billion and GraspClutter6D, equal to the official tools,
+  collision filter on and off. The GraspNet-1Billion one equals `graspnetAPI` value for value
+  on 1,592 recorded frames ([test](tests/integration/test_eval_parity.py)).
+- **Wrong swaps stop early.** Most wrong combinations are refused before anything is built,
+  with the conflict and the fix; a short probe catches the rest.
+- **Small core.** `torch`, `numpy`, `scipy`, `pyyaml`, `pillow` and `tqdm`; sparse convolution
+  and model libraries are extras.
 
-## 🚀 Quick start
+## Quick start
 
 Install a PyTorch built for CUDA 12.6 or older (sparse convolution has no build for a
-newer one), then GraspPanda with the extras the examples below use, and check it with a toy
-detector:
+newer one), then GraspPanda with the extras used below, and check it with a toy detector:
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
 pip install -e ".[spconv-cu126,timm]"   # the spconv build of your PyTorch's CUDA
-grasppanda env                                                     # what is installed
-grasppanda train projects/example_project/configs/toy_train.yaml   # a toy detector, trained on the CPU in under a minute
+grasppanda env                          # what is installed, and what to fix
+# a toy detector, trained on the CPU in under a minute
+grasppanda train projects/example_project/configs/toy_train.yaml
 ```
 
 Swap a stage with one line: a scene encoder from another paper under GraspNet-baseline, and a
@@ -87,7 +96,8 @@ grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_1
     --set backbone=ptv3 -o baseline_ptv3.yaml
 grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
     --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
-# each probe trains briefly on GraspNet-1Billion if it is set up; otherwise a synthetic check: `wired`
+# a probe trains briefly on GraspNet-1Billion when it is set up;
+# otherwise it runs a synthetic check and says `wired`
 grasppanda probe baseline_ptv3.yaml
 grasppanda probe hggd_dinov2.yaml
 ```
@@ -102,7 +112,7 @@ a swapped model has no weights until you train it.
 [swap a component](https://daeda1used.github.io/GraspPanda/get_started/swap/) ·
 [open the explorer](https://daeda1used.github.io/GraspPanda/explorer/)
 
-## 🧩 What's inside
+## What's inside
 
 | Method | Venue | Family | Reads |
 |---|---|---|---|
@@ -129,7 +139,7 @@ evaluator equal to the official one. **Slots**, and the methods each applies to:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/pipeline-dark.png">
-  <img src="resources/pipeline.png" alt="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses; HGGD has its own family with an image encoder slot and fixed heat-map and region stages. Post-processing and the training recipe are shared by all methods." width="820">
+  <img src="resources/pipeline.png" alt="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses; HGGD has its own family with an image encoder slot and fixed heat-map and region stages. Post-processing and the training recipe are shared by all methods." width="720">
 </picture>
 
 | Slot | `--set` key | What goes in |
@@ -151,7 +161,7 @@ Where each option runs, under which method and why not elsewhere: the
 
 </details>
 
-## 🏆 Model zoo
+## Model zoo
 
 Targets: what the authors report on GraspNet-1Billion (RealSense, AP on seen / similar /
 novel), and in the last column the model trained here, where there is one.
@@ -197,7 +207,7 @@ the methods run from their released weights
 
 </details>
 
-## 📰 News
+## News
 
 - **2026-11** — Run on a second machine: a run [states its precision](https://daeda1used.github.io/GraspPanda/user_guides/train_test/#reference), so the same weights give the same numbers on every GPU, and `grasppanda sweep --gpus` runs a grid of experiments side by side.
 - **2026-10** — Swaps that train were also trained beside the component the method ships, to see whether they [train like shipped](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/).
@@ -216,7 +226,7 @@ the methods run from their released weights
 
 </details>
 
-## 🧭 Roadmap
+## Roadmap
 
 <details>
 <summary>Milestones</summary>
@@ -224,15 +234,15 @@ the methods run from their released weights
 <br>
 
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
-- [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** ✅ Evaluator equal to the official one. ✅ GSNet equal to its reference stage by stage, trained here and scored on the whole test split. 🚧 Its gap to the paper is not explained; its weights are not published.
-- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** ✅ EconomicGrasp and HGGD equal to their reference stage by stage with the authors' weights. 🚧 Training here.
-- [ ] **M3 — The other seed-based methods.** ✅ GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal to their reference. 📅 A controlled comparison: same encoder, budget, inputs and evaluator.
-- [ ] **M4 — GraspClutter6D.** ✅ Reader, evaluator equal to the official one, label assets, transfer configs. 📅 Training on GraspClutter6D; Contact-GraspNet.
+- [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** Done: the evaluator equals the official one; GSNet equals its reference stage by stage, is trained here and scored on the whole test split. Open: its gap to the paper is not explained, and its weights are not published.
+- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights. In progress: training here.
+- [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
+- [ ] **M4 — GraspClutter6D.** Done: reader, evaluator equal to the official one, label assets, transfer configs. Planned: training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.
 
 </details>
 
-## 📝 Citation
+## Citation
 
 <details>
 <summary>BibTeX</summary>
@@ -250,7 +260,7 @@ Please also cite the methods and datasets you use; each method page lists its re
 
 </details>
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 GraspPanda borrows ideas from [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg),
 [MMEngine](https://github.com/open-mmlab/mmengine),
@@ -266,7 +276,7 @@ upstream code and released weights are licensed.
 
 🐼 *The panda is the animal, not the robot arm: GraspPanda is not tied to any robot.*
 
-## 📄 License
+## License
 
 [Apache License 2.0](LICENSE). Datasets, upstream repositories and released weights keep
 their own licences, stated per method.

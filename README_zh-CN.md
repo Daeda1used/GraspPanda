@@ -8,15 +8,15 @@
 [English](README.md) | **简体中文**
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
-[![docs](https://img.shields.io/badge/docs-mkdocs--material-2da44e)](https://daeda1used.github.io/GraspPanda)
-[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776ab)](pyproject.toml)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![status](https://img.shields.io/badge/status-alpha-orange)](#-路线图)
+[![docs](https://img.shields.io/badge/docs-online-0969da)](https://daeda1used.github.io/GraspPanda)
+[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-0969da)](pyproject.toml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-0969da)](LICENSE)
+[![status](https://img.shields.io/badge/status-alpha-0969da)](#路线图)
 
 [文档](https://daeda1used.github.io/GraspPanda) ·
 [快速上手](https://daeda1used.github.io/GraspPanda/get_started/) ·
 [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/) ·
-[模型库](#-模型库) ·
+[模型库](#模型库) ·
 [设计](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) ·
 [参与贡献](CONTRIBUTING.md)
 
@@ -27,7 +27,7 @@
 
 </div>
 
-**GraspPanda 是一个开源工具箱，用于杂乱场景中的 6-DoF 平行夹爪抓取检测。** 它从 GraspNet-1Billion 出发，也能读取 GraspClutter6D。六个已发表的方法已经移植进来，并与各自的参考代码逐阶段一致。基于种子点的骨架的各个阶段、HGGD 的图像编码器、后处理和训练方案都是槽位，一行命令就能替换。每个选项都在它适用的每个方法下组合过，被接受的组合都用真实帧试跑过；少数没有记录的选项会说明原因。
+**GraspPanda 是一个开源工具箱，用于杂乱场景的 6-DoF 平行夹爪抓取检测。** 它围绕 GraspNet-1Billion 构建，也能在 GraspClutter6D 上评测。已移植六个已发表的方法，与各自的参考代码逐阶段一致。基于种子点的骨架的各个阶段、HGGD 的图像编码器、后处理和训练方案都是槽位，一行命令就能替换。每个选项都在它适用的每个方法下试过：先检查，再用真实帧短暂训练；被拒绝的组合和少数没有记录的选项都会说明原因。各方法可直接用参考代码发布的权重运行。
 
 <details>
 <summary>为什么做 GraspPanda</summary>
@@ -44,24 +44,26 @@ GraspPanda 的回答是：一条流程，每个数据集一个锁定版本的评
 
 </details>
 
-## ✨ 特性
+## 特性
 
-| | |
-|---|---|
-| 🧩 **任何阶段都能换**<br>编码器、种子点提议、视角、分组、检测头、损失、后处理和训练方案都是槽位。 | 🔬 **实测，而非假设**<br>每个选项都标明它在几个方法下能跑、能学，以及为什么不适用于其余方法或没有记录。 |
-| 🎯 **忠实移植**<br>两个家族共六个方法，用转换后的权重与各自的参考实现逐阶段一致。 | 📏 **锁定版本的评测器**<br>GraspNet-1Billion 和 GraspClutter6D，与官方工具一致；碰撞过滤开、关都报告。GraspNet-1Billion 的评测器在 1,592 个记录帧上与 `graspnetAPI` 逐值一致（[测试](tests/integration/test_eval_parity.py)）。 |
-| 🛡️ **错误的替换尽早拦下**<br>大多数错误的组合在构建任何东西之前就被拒绝，并指出冲突和改法；剩下的由一次短暂的 probe 发现。 | 📦 **核心很小**<br>只依赖 `torch`、`numpy`、`scipy`、`pyyaml`、`pillow` 和 `tqdm`；稀疏卷积和模型库都是可选扩展。 |
+- **任何阶段都能换。** 编码器、种子点提议、视角、分组、检测头、损失、后处理和训练方案都是槽位。
+- **实测，而非假设。** 每个选项都标明它在几个方法下能跑、能学，以及其余方法为什么不行。
+- **忠实移植。** 两个家族共六个方法，用转换后的权重与参考实现逐阶段一致。
+- **锁定版本的评测器。** GraspNet-1Billion 和 GraspClutter6D，与官方工具一致；碰撞过滤开、关都报告。GraspNet-1Billion 的评测器在 1,592 个记录帧上与 `graspnetAPI` 逐值一致（[测试](tests/integration/test_eval_parity.py)）。
+- **错误的替换尽早拦下。** 大多数错误的组合在构建之前就被拒绝，并指出冲突和改法；其余由一次短暂的 probe 发现。
+- **核心很小。** 只依赖 `torch`、`numpy`、`scipy`、`pyyaml`、`pillow` 和 `tqdm`；稀疏卷积和模型库是可选扩展。
 
-## 🚀 快速上手
+## 快速上手
 
-先装为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新的构建），再装 GraspPanda 和下面示例要用的可选扩展，用一个极简示例检测器检查安装：
+先装为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新的构建），再装 GraspPanda 和下文用到的可选扩展，用一个极简示例检测器检查安装：
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
 pip install -e ".[spconv-cu126,timm]"   # 与 PyTorch 的 CUDA 版本对应的 spconv 构建
-grasppanda env                                                     # 查看安装了什么
-grasppanda train projects/example_project/configs/toy_train.yaml   # 极简示例检测器，CPU 上一分钟内训完
+grasppanda env                          # 查看安装了什么、还需要修什么
+# 极简示例检测器，CPU 上一分钟内训完
+grasppanda train projects/example_project/configs/toy_train.yaml
 ```
 
 一行命令替换一个阶段：给 GraspNet-baseline 换上另一篇论文的场景编码器，给 HGGD 换上预训练的图像编码器。
@@ -71,16 +73,17 @@ grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_1
     --set backbone=ptv3 -o baseline_ptv3.yaml
 grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
     --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
-# 准备好 GraspNet-1Billion 时，每次 probe 都在真实帧上短暂训练；否则只做合成场景检查，结果为 `wired`
+# 准备好 GraspNet-1Billion 时，probe 在真实帧上短暂训练；
+# 否则只做合成场景检查，结果为 `wired`
 grasppanda probe baseline_ptv3.yaml
 grasppanda probe hggd_dinov2.yaml
 ```
 
-`compose` 检查各阶段之间的契约并写出配置，需要时自动插入适配器。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明一个组合能训练，不说明它有多好；替换后的模型在你训练之前没有权重。
+`compose` 检查各阶段间的契约并写出配置，需要时插入适配器。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明一个组合能训练，不说明它有多好；替换后的模型训练前没有权重。
 
 **下一步：** [运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)（用已发布的权重，几分钟就能拿到第一批抓取）· [替换一个组件](https://daeda1used.github.io/GraspPanda/get_started/swap/) · [打开组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)
 
-## 🧩 内容一览
+## 内容一览
 
 | 方法 | 发表 | 家族 | 输入 |
 |---|---|---|---|
@@ -106,7 +109,7 @@ grasppanda probe hggd_dinov2.yaml
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/pipeline-dark.png">
-  <img src="resources/pipeline.png" alt="GraspNet-1Billion 和 GraspClutter6D 为两个检测器家族提供数据。基于种子点的骨架有场景编码器、种子点提议、视角、分配器、分组、检测头和损失这些槽位；HGGD 自成一族，有一个图像编码器槽位，热力图阶段和区域阶段是固定的。后处理和训练方案为所有方法共用。" width="820">
+  <img src="resources/pipeline.png" alt="GraspNet-1Billion 和 GraspClutter6D 为两个检测器家族提供数据。基于种子点的骨架有场景编码器、种子点提议、视角、分配器、分组、检测头和损失这些槽位；HGGD 自成一族，有一个图像编码器槽位，热力图阶段和区域阶段是固定的。后处理和训练方案为所有方法共用。" width="720">
 </picture>
 
 | 槽位 | `--set` 键 | 可以放什么 |
@@ -126,7 +129,7 @@ grasppanda probe hggd_dinov2.yaml
 
 </details>
 
-## 🏆 模型库
+## 模型库
 
 目标：原作者在 GraspNet-1Billion 上报告的数字（RealSense，seen / similar / novel 的 AP）；最后一列是在本工具箱内训练出的模型，如果有的话。
 
@@ -157,7 +160,7 @@ grasppanda probe hggd_dinov2.yaml
 
 </details>
 
-## 📰 新闻
+## 新闻
 
 - **2026-11** — 换一台机器复测：运行[声明计算精度](https://daeda1used.github.io/GraspPanda/user_guides/train_test/#reference)，各显卡数字一致；`grasppanda sweep --gpus` 多卡并行跑对比实验。
 - **2026-10** — 会训练的替换还和原装组件对照着训练，看它是否[训练得和原装组件一样](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/)。
@@ -176,7 +179,7 @@ grasppanda probe hggd_dinov2.yaml
 
 </details>
 
-## 🧭 路线图
+## 路线图
 
 <details>
 <summary>里程碑</summary>
@@ -184,15 +187,15 @@ grasppanda probe hggd_dinov2.yaml
 <br>
 
 - [x] **M0 — 核心。** 配置系统、注册表、数据契约、参考算子、命令行、CI、文档、品牌。
-- [ ] **M1 — GraspNet-1Billion、它的评测器、第一个方法。** ✅ 评测器与官方一致。✅ GSNet 与参考实现逐阶段一致，已在本工具箱内训练并在整个测试集上评测。🚧 与论文的差距尚未解释；权重暂未发布。
-- [ ] **M2 — EconomicGrasp，以及作为第二个家族的 HGGD。** ✅ EconomicGrasp 和 HGGD 用作者的权重与参考实现逐阶段一致。🚧 在本工具箱内训练。
-- [ ] **M3 — 其余基于种子点的方法。** ✅ GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致。📅 受控对比：相同的编码器、训练预算、输入和评测器。
-- [ ] **M4 — GraspClutter6D。** ✅ 读取器、与官方一致的评测器、标签资产、迁移配置。📅 在 GraspClutter6D 上训练；Contact-GraspNet。
+- [ ] **M1 — GraspNet-1Billion、它的评测器、第一个方法。** 已完成：评测器与官方一致；GSNet 与参考实现逐阶段一致，已在本工具箱内训练并在整个测试集上评测。未解决：与论文的差距尚未解释，权重暂未发布。
+- [ ] **M2 — EconomicGrasp，以及作为第二个家族的 HGGD。** 已完成：两者用作者的权重与参考实现逐阶段一致。进行中：在本工具箱内训练。
+- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致。计划：受控对比，相同的编码器、训练预算、输入和评测器。
+- [ ] **M4 — GraspClutter6D。** 已完成：读取器、与官方一致的评测器、标签资产、迁移配置。计划：在 GraspClutter6D 上训练；Contact-GraspNet。
 - [ ] **M5 — 发布。** PyPI、模型库、文档网站。
 
 </details>
 
-## 📝 引用
+## 引用
 
 <details>
 <summary>BibTeX</summary>
@@ -210,12 +213,12 @@ grasppanda probe hggd_dinov2.yaml
 
 </details>
 
-## 🙏 致谢
+## 致谢
 
 GraspPanda 借鉴了 [PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg)、[MMEngine](https://github.com/open-mmlab/mmengine)、[Detectron2](https://github.com/facebookresearch/detectron2) 和 [Pointcept](https://github.com/Pointcept/Pointcept) 的思路，建立在 [GraspNet-1Billion](https://graspnet.net) 和 [GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) 基准以及所移植方法的作者的工作之上。方法和评测器依据论文和参考代码的行为编写，没有复制那些仓库的任何文件。改编自 MIT、BSD 或 Apache-2.0 项目的代码列在 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中；[NOTICE](NOTICE) 说明数据集、上游代码和已发布权重各自的许可证。
 
 🐼 *Panda 指的是熊猫这种动物，不是那款机械臂：GraspPanda 不绑定任何机器人。*
 
-## 📄 许可证
+## 许可证
 
 [Apache License 2.0](LICENSE)。数据集、上游仓库和已发布的权重保留各自的许可证，按方法分别注明。

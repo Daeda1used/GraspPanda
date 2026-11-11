@@ -18,10 +18,10 @@ from grasppanda.registry import BACKBONES
 class MyBackbone(Backbone):
     """One sentence that says what it is: the Registered classes page shows it."""
 
-    output = "dense"                      # the contract: features live on the input points
+    output = "dense"   # the contract: features live on the input points
 
     def __init__(self, in_channels: int = 3, out_channels: int = 256, depth: int = 4) -> None:
-        ...                               # the whole class: see the fold below
+        ...            # the whole class: see the fold below
 ```
 
 Subclass the base class of the slot (`Backbone`, `Grouper`, `HeadBundle`, …): it decides
@@ -42,10 +42,10 @@ annotations are what config values are validated against.
     class MyBackbone(Backbone):
         """One sentence that says what it is: the Registered classes page shows it."""
 
-        output = "dense"                      # the contract: features live on the input points
-        status = "tested"                     # what you proved, not what you hope
-        source = "My method (Me et al., 2026)"  # the paper, method or library it implements
-        extras = ("spconv",)                  # optional dependencies, if any
+        output = "dense"        # the contract: features live on the input points
+        status = "tested"       # what you proved, not what you hope
+        source = "My method (Me et al., 2026)"  # the paper or library it implements
+        extras = ("spconv",)    # optional dependencies, if any
 
         def __init__(self, in_channels: int = 3, out_channels: int = 256, depth: int = 4) -> None:
             super().__init__()

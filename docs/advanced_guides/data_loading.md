@@ -275,9 +275,9 @@ function and does not care how they are stored:
 from grasppanda.structures.observation import gather_grids
 
 # request k reads label point rows[k] of objects[owner[k]]
-scores = gather_grids(objects, "scores", owner, rows)             # (K, V, A, D)
-widths = gather_grids(objects, "widths", owner, rows, views)      # (K, A, D) at views[k]
-mask = gather_grids(objects, "collision", owner, rows)            # (K, V, A, D) or None
+scores = gather_grids(objects, "scores", owner, rows)          # (K, V, A, D)
+widths = gather_grids(objects, "widths", owner, rows, views)   # (K, A, D) at views[k]
+mask = gather_grids(objects, "collision", owner, rows)         # (K, V, A, D) or None
 ```
 
 `objects` can be the objects of every frame of a batch; one call reads them all. For a

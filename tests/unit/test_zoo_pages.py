@@ -199,8 +199,8 @@ def reproduced_by_target() -> dict[tuple[str, bool], str]:
     ("page", "heading"),
     [
         ("docs/model_zoo.md", "## Targets"),
-        ("README.md", "## 🏆 Model zoo"),
-        ("README_zh-CN.md", "## 🏆 模型库"),
+        ("README.md", "## Model zoo"),
+        ("README_zh-CN.md", "## 模型库"),
     ],
 )
 def test_the_reproduced_column_of_the_targets_shows_exactly_the_reproduced_rows(page, heading):

@@ -25,8 +25,8 @@ except ModuleNotFoundError:  # Python 3.10: the backport, which pip and pytest b
 from .conftest import REPO
 
 READMES = ("README.md", "README_zh-CN.md")
-#: The heading of the model zoo in each README (GitHub anchors ``#-model-zoo``, ``#-模型库``).
-ZOO = {"README.md": "## 🏆 Model zoo", "README_zh-CN.md": "## 🏆 模型库"}
+#: The heading of the model zoo in each README (GitHub anchors ``#model-zoo``, ``#模型库``).
+ZOO = {"README.md": "## Model zoo", "README_zh-CN.md": "## 模型库"}
 #: The documentation site the READMEs link: on GitHub a page of ``docs/`` is MkDocs source
 #: (folds, tabs and chips do not render), so the READMEs link the built page.
 SITE = "https://daeda1used.github.io/GraspPanda/"
@@ -353,7 +353,7 @@ def test_the_methods_of_the_readme_are_those_of_the_metafiles_in_page_order(name
         ]
         for info in chips.methods()
     ]
-    heading = {"README.md": "## 🧩 What's inside", "README_zh-CN.md": "## 🧩 内容一览"}[name]
+    heading = {"README.md": "## What's inside", "README_zh-CN.md": "## 内容一览"}[name]
     assert table(text(name), heading) == expected, f"{name}: the methods table"
 
 
@@ -478,9 +478,10 @@ def test_the_targets_of_the_readme_are_the_reported_rows_of_the_metafiles(name, 
 def test_the_core_dependencies_named_by_the_readmes_are_those_of_the_package():
     project = tomllib.loads(text("pyproject.toml"))["project"]
     names = {re.split(r"[<>=!~ \[]", spec)[0] for spec in project["dependencies"]}
+    lead = {"README.md": "**Small core.**", "README_zh-CN.md": "**核心很小。**"}
     for name in READMES:
-        cell = next(line for line in text(name).splitlines() if "📦" in line).split("📦")[1]
-        assert set(re.findall(r"`([a-z_-]+)`", cell)) == names, name
+        item = text(name).split(lead[name])[1].split("\n\n")[0]  # the rest of that feature
+        assert set(re.findall(r"`([a-z_-]+)`", item)) == names, name
 
 
 def test_every_option_is_probed_under_each_method_it_applies_to_or_says_why():

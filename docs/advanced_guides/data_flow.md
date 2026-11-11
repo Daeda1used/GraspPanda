@@ -15,8 +15,8 @@ Which structures a method uses depends on its family:
 ## Observation and Supervision
 
 ```python
-losses = model.loss(observation, supervision)     # training
-grasps = model.predict(observation)               # inference: no ground truth in reach
+losses = model.loss(observation, supervision)   # training
+grasps = model.predict(observation)             # inference: no ground truth in reach
 ```
 
 - [`Observation`](../api/structures.md) holds what a model may see: depth, RGB,
@@ -75,9 +75,9 @@ Geometry follows GraspNet-1Billion; all lengths are metres.
 | `frame`, `gripper`, `key` | Reference frame, gripper geometry, sample identity. |
 
 ```python
-grasps.validate()                       # finite, orthonormal, det +1, widths ≥ 0
-grasps.sort_by_score()                  # stable: ties keep their order on every platform
-grasps.to_graspnet_array()              # (G, 17), only at the I/O boundary
+grasps.validate()              # finite, orthonormal, det +1, widths ≥ 0
+grasps.sort_by_score()         # stable: ties keep their order on every platform
+grasps.to_graspnet_array()     # (G, 17), only at the I/O boundary
 ```
 
 GraspNet label scores are friction coefficients: lower is better and −1 means invalid.

@@ -34,13 +34,14 @@ none of their code is part of this history. Each line below has its full account
 - **The README** is short: one picture, a quick start, what is inside and the targets; the rest is folded or in the documentation.
 - **Method order** is by family, then year, on every page, table and list.
 - **Where an option works** is shown as a fraction of the methods it applies to, with the reason for each method left out, instead of a class word.
-- **The pipeline figure** shows both detector families and the parts they share.
+- **The pipeline figure** shows both detector families and the parts they share, drawn like the picture of the home page and readable at the width a README shows it.
 - **The toy example** inherits a method-neutral recipe, `_base_/schedules/adam_10e.yaml`.
 - **The config hash** leaves out the defaults of library classes, so one config hashes the same on every machine.
 - **`compose --help` and `probe --help`** name the slots, examples, verdicts and exit statuses.
 - **Float32 by default.** PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless `runtime.tf32: true`. This changes what HGGD computes on such a GPU, and GraspNet-baseline and Scale-Balanced-Grasp by under 0.1 AP; earlier records of the three were computed with TF32.
 - **One typeface.** The documentation site, the page of `grasppanda explore` and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.
 - **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
+- **A quieter site.** Code is highlighted in two colours, folds that follow each other form one list, a short identifier no longer breaks at its hyphen, the tables of the model zoo share one width with aligned figures, and method pages give their option tables the whole column.
 - **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
 
 ### Fixed

@@ -187,7 +187,8 @@ needs a setting compose adds (`fixed-by-compose`), needs a preset's settings
           in_channels: 3              # constant ones; geometry enters through the grid
           grid_size: 0.005
       grouper:
-        type: DepthCylinderProjectionGroup   # the same crop with a linear layer in front of its seed residual
+        # the same crop, with a linear layer in front of its seed residual
+        type: DepthCylinderProjectionGroup
         radius: 0.08
         ...
     ```
@@ -368,14 +369,18 @@ turn the config into that miniature.
     ```bash
     grasppanda prepare graspnet1b --labels --split sample
     grasppanda prepare graspnet1b --graspness --camera realsense --split sample
+    # EconomicGrasp and FineGrasp
     grasppanda prepare graspnet1b --compact-labels --split sample \
-        --config economicgrasp/economicgrasp_sunet14_g1b-realsense_10e     # EconomicGrasp, FineGrasp
+        --config economicgrasp/economicgrasp_sunet14_g1b-realsense_10e
+    # FineGrasp
     grasppanda prepare graspnet1b --graspness --camera realsense --split sample \
-        --config finegrasp/finegrasp_sunet14_g1b-realsense_10e             # FineGrasp
+        --config finegrasp/finegrasp_sunet14_g1b-realsense_10e
+    # GraspNet-baseline and Scale-Balanced-Grasp
     grasppanda prepare graspnet1b --tolerance --split sample \
         --config graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e
+    # HGGD
     grasppanda prepare graspnet1b --view-grasps --camera realsense --split sample \
-        --config hggd/hggd_r34w8_g1b-realsense_15e                         # HGGD
+        --config hggd/hggd_r34w8_g1b-realsense_15e
     ```
 
     **The width histogram of Scale-Balanced-Grasp** is the exception. It is a statistic of a
@@ -386,7 +391,7 @@ turn the config into that miniature.
     file by its SHA-256:
 
     ```bash
-    sha256sum <reference repository>/statistic/scale_distribution.npy    # the <sha256> below
+    sha256sum <reference repository>/statistic/scale_distribution.npy   # the <sha256> below
     grasppanda compose scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e \
         --opts data.train.dataset.scale_statistic.source=legacy_import \
                data.train.dataset.scale_statistic.reference_sha256=<sha256> -o sbg_reference_histogram.yaml

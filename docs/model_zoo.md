@@ -23,6 +23,8 @@ frames per camera. Each checkpoint was converted with `tools/convert_checkpoint.
 through `grasppanda test`. `reported` stands beside a measured number only where its source
 states the same collision filter; a line *not stated* is paired with nothing.
 
+<div class="gp-figures" markdown>
+
 | Method | Camera | Filter | `author-ckpt` | `reported` | Difference |
 |---|---|:---:|---|---|---|
 | GraspNet-baseline | RealSense | off | 32.64 / 27.48 / 10.42 | — | — |
@@ -44,6 +46,8 @@ states the same collision filter; a line *not stated* is paired with nothing.
 | HGGD | Kinect | on | 60.34 / 46.83 / 19.27 | — | — |
 | HGGD | Kinect | not stated | — | 60.26 / 48.59 / 18.43 | — |
 | HGGD | Kinect | not stated | — | 61.17 / 47.02 / 19.37 | — |
+
+</div>
 
 ??? note "What to know when reading it"
 
@@ -80,10 +84,14 @@ GraspNet-1Billion, protocol `graspnet1b-sv-v1`: the whole test split, 90 scenes 
 frames of the RealSense. `reproduced` is a model trained from scratch by this toolbox with the
 recipe of its config and scored through `grasppanda test`.
 
+<div class="gp-figures" markdown>
+
 | Method | Camera | Filter | `reproduced` | `reported` | Difference |
 |---|---|:---:|---|---|---|
 | GSNet | RealSense | off | 68.83 / 60.35 / 25.20 | 65.70 / 53.75 / 23.98 | +3.13 / +6.60 / +1.22 |
 | GSNet | RealSense | on | 71.23 / 62.29 / 26.42 | 67.12 / 54.81 / 24.31 | +4.11 / +7.48 / +2.11 |
+
+</div>
 
 ??? note "Against the admission gate, and what is known about the gap"
 
@@ -117,6 +125,8 @@ frames of the RealSense D435. AP / AP0.8 / AP0.4. `reported` is Table IX of the 
 paper ([arXiv 2504.06866](https://arxiv.org/abs/2504.06866) v3), which states neither the
 collision filter nor the checkpoints, so it is paired with no line.
 
+<div class="gp-figures" markdown>
+
 | Method | Camera | Filter | `author-ckpt` | `reported` | Difference |
 |---|---|:---:|---|---|---|
 | GraspNet-baseline | RealSense D435 | off | 8.69 / 10.35 / 6.96 | — | — |
@@ -130,6 +140,8 @@ collision filter nor the checkpoints, so it is paired with no line.
 | EconomicGrasp | RealSense D435 | not stated | — | 21.67 / 26.62 / 15.90 | — |
 | HGGD | RealSense D435 | off | 14.25 / 17.41 / 9.23 | — | — |
 | HGGD | RealSense D435 | on | 14.56 / 17.79 / 9.33 | — | — |
+
+</div>
 
 ??? note "What to know when reading it"
 
@@ -157,10 +169,14 @@ The GSNet model of [Trained and evaluated here](#trained-and-evaluated-here), on
 test split, crop and variants as the lines above. The GraspClutter6D paper reports no GSNet
 number, so nothing stands beside it. One training run with one seed.
 
+<div class="gp-figures" markdown>
+
 | Method | Camera | Filter | `reproduced` | `reported` | Difference |
 |---|---|:---:|---|---|---|
 | GSNet | RealSense D435 | off | 25.58 / 31.38 / 19.42 | — | — |
 | GSNet | RealSense D435 | on | 26.87 / 33.00 / 20.04 | — | — |
+
+</div>
 
 ## Targets
 
