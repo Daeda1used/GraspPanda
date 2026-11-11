@@ -3,6 +3,7 @@
 from .metafile import (
     PROTOCOL_SPLITS,
     PROVENANCES,
+    WEIGHT_SOURCES,
     Metafile,
     ModelEntry,
     Result,
@@ -16,6 +17,7 @@ from .zoo import find_model, zoo_weights
 __all__ = [
     "PROTOCOL_SPLITS",
     "PROVENANCES",
+    "WEIGHT_SOURCES",
     "ChecksumError",
     "Metafile",
     "ModelEntry",

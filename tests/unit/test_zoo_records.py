@@ -79,9 +79,11 @@ def test_every_measured_row_has_a_whole_split_record_that_gives_its_numbers(meta
     )
     assert re.fullmatch(r"[0-9a-f]{64}", record["weights"]["sha256"])
     assert record["weights"]["clean_load"] is True
-    assert model.weights is not None and model.weights.source == WEIGHT_SOURCE[result.provenance]
+    # the model lists the weights of this kind of row (trained here, or the authors' file)
+    weights = model.backing(result.provenance)
+    assert weights is not None and weights.source == WEIGHT_SOURCE[result.provenance]
     if result.provenance == "reproduced":  # the released file is the evaluated file
-        assert model.weights.sha256 == record["weights"]["sha256"]
+        assert weights is model.weights and weights.sha256 == record["weights"]["sha256"]
 
     # the row says what the record says about post-processing and ground-truth inputs
     filtered = any("Collision" in step["type"] for step in record["postprocessing"])
@@ -125,15 +127,20 @@ def test_records_and_rows_correspond_one_to_one_and_hold_no_machine_path():
         assert text == json.dumps(record, indent=2, sort_keys=True) + "\n", path.name
 
 
-def test_the_rows_of_one_model_are_one_per_variant_from_one_run():
+def test_the_rows_of_one_kind_of_a_model_are_one_per_variant_from_one_run():
+    """A model states the rows of one run per kind of weights: the authors' checkpoint
+    (``author-ckpt``) and, where it was trained here, the weights of that training
+    (``reproduced``)."""
     for meta in METAFILES:
         for model in meta.models:
-            rows = [result for result in model.results if result.provenance != "reported"]
-            if not rows:
-                continue
-            assert sorted(variant_of(result) for result in rows) == ["cd", "raw"], model.name
-            records = [json.loads((meta.path.parent / r.record).read_text()) for r in rows]
-            for key in ("config_hash", "seed", "split", "cameras", "gt_assisted"):
-                assert records[0][key] == records[1][key], (model.name, key)
-            assert records[0]["weights"]["sha256"] == records[1]["weights"]["sha256"], model.name
-            assert records[0]["code"]["commit"] == records[1]["code"]["commit"], model.name
+            for provenance in ("author-ckpt", "reproduced"):
+                rows = [result for result in model.results if result.provenance == provenance]
+                if not rows:
+                    continue
+                where = (model.name, provenance)
+                assert sorted(variant_of(result) for result in rows) == ["cd", "raw"], where
+                records = [json.loads((meta.path.parent / r.record).read_text()) for r in rows]
+                for key in ("config_hash", "seed", "split", "cameras", "gt_assisted"):
+                    assert records[0][key] == records[1][key], (*where, key)
+                assert records[0]["weights"]["sha256"] == records[1]["weights"]["sha256"], where
+                assert records[0]["code"]["commit"] == records[1]["code"]["commit"], where

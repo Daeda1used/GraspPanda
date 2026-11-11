@@ -41,7 +41,9 @@ the converted file::
 
 Where ``weights`` names another file (weights trained here), ``author_weights`` lists the
 checkpoint the authors released for the same config, in the same form, with a ``note``
-on what it gives.
+on what it gives. Such a model may state both kinds of measured row: ``reproduced`` rows
+were measured with ``weights``, ``author-ckpt`` rows with ``author_weights``
+(:meth:`ModelEntry.backing`).
 """
 
 from __future__ import annotations
@@ -56,6 +58,7 @@ from grasppanda.config import ConfigError, Issue, configs_root, parse_yaml
 __all__ = [
     "PROTOCOL_SPLITS",
     "PROVENANCES",
+    "WEIGHT_SOURCES",
     "Metafile",
     "ModelEntry",
     "Result",
@@ -68,6 +71,8 @@ __all__ = [
 #: ``author-ckpt``: the authors' weights, evaluated by this toolbox.
 #: ``reproduced``: trained and evaluated by this toolbox.
 PROVENANCES = ("reported", "author-ckpt", "reproduced")
+#: The provenance of a measured row → the ``source`` of the weights it was measured with.
+WEIGHT_SOURCES = {"author-ckpt": "author", "reproduced": "grasppanda"}
 #: The splits a result of each pinned protocol is stated for. GraspNet-1Billion papers
 #: print one AP per object-novelty split of the test scenes; GraspClutter6D has one test
 #: split, for which AP, AP0.8 and AP0.4 are printed.
@@ -161,6 +166,13 @@ class ModelEntry:
     #: another file (weights trained here).
     author_weights: Weights | None = None
 
+    def backing(self, provenance: str) -> Weights | None:
+        """The weights a measured row of ``provenance`` was produced with: the entry of
+        this model whose source is that of the provenance, or ``None``."""
+        wanted = WEIGHT_SOURCES.get(provenance)
+        entries = (self.weights, self.author_weights)
+        return next((w for w in entries if w is not None and w.source == wanted), None)
+
 
 @dataclass(frozen=True)
 class Metafile:
@@ -240,10 +252,11 @@ def _result(
     raw: Any,
     where: str,
     issues: list[Issue],
-    has_weights: bool,
+    sources: frozenset[str],
     splits: tuple[str, ...],
     directory: Path,
 ) -> Result | None:
+    """One result of a model. ``sources`` are the sources of the model's weights entries."""
     if not isinstance(raw, dict):
         issues.append(Issue(where, "a result must be a mapping"))
         return None
@@ -298,13 +311,22 @@ def _result(
                     f"no such result record next to the metafile: {raw['record']}",
                 )
             )
-        if not has_weights:
+        if not sources:
             issues.append(
                 Issue(
                     where,
                     f"a '{provenance}' result needs the model's weights entry: the sha256 "
                     "of the file it was measured with",
                 )
+            )
+        elif WEIGHT_SOURCES[provenance] not in sources:
+            wanted = (
+                "the authors' checkpoint (`weights` with `source: author`, or `author_weights`)"
+                if provenance == "author-ckpt"
+                else "weights trained here (`weights` with `source: grasppanda`)"
+            )
+            issues.append(
+                Issue(where, f"a '{provenance}' result needs {wanted}: the model lists neither")
             )
     return Result(
         provenance=str(provenance),
@@ -382,7 +404,7 @@ def load_metafile(path: str | Path) -> Metafile:
                     r,
                     f"{where}.results.{r_index}",
                     issues,
-                    weights is not None,
+                    frozenset(w.source for w in (weights, author_weights) if w is not None),
                     splits,
                     path.parent,
                 )
