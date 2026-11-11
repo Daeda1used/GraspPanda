@@ -119,7 +119,7 @@ Measured with the authors' checkpoint, converted: AP 32.51 without the collision
 
     | Weights, provenance | Collision filter | AP, 120 frames of test_seen | AP, whole seen split | Difference | Wall time, commit |
     |---|---|---|---|---|---|
-    | the authors' checkpoint, converted, `author-ckpt` | off | 32.51 | 32.64 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json)) | −0.13 | 66 s, `400b733` |
+    | the authors' checkpoint, converted, `author-ckpt` | off | 32.51 | 32.63 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json)) | −0.12 | 66 s, `400b733` |
     |  | on | 48.65 | 47.90 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json)) | +0.75 |  |
 
     </div>
@@ -140,8 +140,8 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 |---|---|---|---|---|---|
 | reported (reference repository README) | on | 47.47 | 42.27 | 16.61 | — |
 | reported (paper) | not stated | 27.56 | 26.11 | 10.55 | — |
-| authors' weights | off | 32.64 | 27.48 | 10.42 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json) |
-| authors' weights | on | 47.90 | 42.70 | 16.98 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| authors' weights | off | 32.63 | 27.48 | 10.42 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json) |
+| authors' weights | on | 47.90 | 42.70 | 16.97 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json) |
 
 </div>
 

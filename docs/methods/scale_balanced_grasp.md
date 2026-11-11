@@ -140,8 +140,8 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 |---|---|---|---|---|---|
 | reported (paper) | off | 58.95 | 52.97 | 22.63 | — |
 | reported (paper) | on | 63.83 | 58.46 | 24.63 | — |
-| authors' weights | off | 57.78 | 51.66 | 22.12 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
-| authors' weights | on | 62.29 | 56.80 | 24.00 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| authors' weights | off | 57.78 | 51.67 | 22.12 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
+| authors' weights | on | 62.29 | 56.81 | 23.99 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
 
 </div>
 

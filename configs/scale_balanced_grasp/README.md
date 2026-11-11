@@ -36,14 +36,14 @@ ground-truth segmentation, as in the reference (`gt_assisted: workspace`).
 | Provenance | Collision filter | AP | Source |
 |---|---|---|---|
 | `reported` | off | 58.95 / 52.97 / 22.63 | paper, Table 2, "Ours" |
-| `author-ckpt` | off | 57.78 / 51.66 / 22.12 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
+| `author-ckpt` | off | 57.78 / 51.67 / 22.12 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
 | `reported` | on | 63.83 / 58.46 / 24.63 | paper, Table 2, "Ours + CD" |
-| `author-ckpt` | on | 62.29 / 56.80 / 24.00 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| `author-ckpt` | on | 62.29 / 56.81 / 23.99 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
 
 `author-ckpt` is the authors' `checkpoint-rs.tar`, converted and run through
-`grasppanda test` at commit `4bc5333`, one run with seed 0. No model has been trained here
-yet. **Measured minus reported**: −1.17 / −1.31 / −0.51 AP without the collision filter
-and −1.54 / −1.66 / −0.63 AP with it, below the paper by more than 1 AP on seen and
+`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0. No model
+has been trained here yet. **Measured minus reported**: −1.17 / −1.30 / −0.51 AP without the
+collision filter and −1.54 / −1.65 / −0.64 AP with it, below the paper by more than 1 AP on seen and
 similar. The gap is not explained.
 
 <details markdown="1"><summary>What is known about the gap, and a 20-frame check with the reference code</summary>
@@ -85,16 +85,16 @@ the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 | Collision filter | AP | AP0.8 | AP0.4 | Provenance |
 |---|---|---|---|---|
 | not stated | 22.69 | 27.57 | 16.95 | reported |
-| off | 21.77 | 26.49 | 16.46 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json)) |
-| on | 22.71 | 27.61 | 17.01 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json)) |
+| off | 21.76 | 26.48 | 16.45 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json)) |
+| on | 22.69 | 27.59 | 17.00 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json)) |
 
-The filtered run matches the reported row to 0.06 AP.
+The filtered run matches the reported row to 0.05 AP.
 
 <details markdown="1"><summary>Against the reported row</summary>
 
 `reported` is Table IX of the GraspClutter6D paper (arXiv 2504.06866 v3), which states
 neither the collision filter nor which checkpoint was scored. Measured minus reported
-(AP / AP0.8 / AP0.4): −0.92 / −1.08 / −0.49 without the filter, +0.02 / +0.04 / +0.06 with
+(AP / AP0.8 / AP0.4): −0.93 / −1.09 / −0.50 without the filter, 0.00 / +0.02 / +0.05 with
 it. Whether the paper ran with a filter was not investigated and cannot be read from it.
 The input is cropped to the image rectangle around the ground-truth segmentation, as the
 official tool does (`gt_assisted: workspace`); this is not the crop the weights were
