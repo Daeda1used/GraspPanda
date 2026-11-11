@@ -184,3 +184,13 @@ copyright line that the licence requires to be kept.
   of the file: the region is a gripper-aligned box, the CUDA extensions are replaced by
   operators of this package, and a linear layer per cell stands in for the sparse
   convolutions of Part-A².
+
+## Fonts of the documentation site
+
+- Inter 4.1: https://github.com/rsms/inter. Licence: OFL-1.1.
+  `Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)`
+- JetBrains Mono 2.304: https://github.com/JetBrains/JetBrainsMono. Licence: OFL-1.1.
+  `Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)`
+- Files: `docs/assets/fonts/*.woff2`, subsets of the released files converted to WOFF2;
+  the licence text is beside them (`docs/assets/fonts/LICENSE.txt`). They are served by the
+  documentation site only and are not part of the Python package.

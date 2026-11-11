@@ -10,6 +10,11 @@ slots each method has), so the picture changes when a method or a slot does.
 
     python -m tools.make_brand_assets            # needs: pip install cairosvg
     python -m tools.make_brand_assets --check    # exit 1 when a committed SVG is stale
+
+The PNG exports are drawn with Inter and JetBrains Mono (the faces of the documentation
+site). Install both before exporting (https://rsms.me/inter, https://jetbrains.com/mono):
+without them the exporter falls back to another face and refuses to write, so that a
+picture never changes its typeface by accident.
 """
 
 from __future__ import annotations
@@ -17,6 +22,7 @@ from __future__ import annotations
 import argparse
 import html
 import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -63,7 +69,7 @@ def banner_svg(dark: bool) -> str:
     text, muted = ("#e6edf3", "#8b949e") if dark else (INK, "#57606a")
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="GraspPanda: {TAGLINE}">
   <g transform="translate(70 28) scale(0.515)">{logo_body(dark)}</g>
-  <text x="372" y="158" font-family="{SANS}" font-size="104" font-weight="700" letter-spacing="-2">
+  <text x="372" y="158" font-family="{SANS}" font-size="104" font-weight="700" letter-spacing="-3.5">
     <tspan fill="{GREEN}">Grasp</tspan><tspan fill="{text}">Panda</tspan>
   </text>
   <text x="378" y="210" font-family="{SANS}" font-size="28" fill="{text}">{TAGLINE}</text>
@@ -214,7 +220,7 @@ def _box(
         fill, line, dash = c["fixed"], c["fixed_line"], ' stroke-dasharray="7 5"'
     parts.append(
         f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" rx="12" fill="{fill}" '
-        f'stroke="{line}" stroke-width="2.5"{dash}/>'
+        f'stroke="{line}" stroke-width="2"{dash}/>'
     )
     centre, lines = x + w / 2, len(box.lines)
     if box.key:  # the label above, the key at the bottom
@@ -227,20 +233,20 @@ def _box(
                 centre,
                 first + index * 23,
                 words,
-                19 if box.key else 17,
+                18.5 if box.key else 17,
                 c["ink"] if box.key else c["muted"],
                 text_anchor="middle",
-                font_weight="700",
+                font_weight="600",
             )
         )
     if box.key:
-        parts.append(_key(centre, y + h - (12 if h < 70 else 16), box.key, 13, c["key"]))
+        parts.append(_key(centre, y + h - (12 if h < 70 else 16), box.key, 12, c["key"]))
 
 
 def _arrow(parts: list[str], c: dict[str, str], points: list[tuple[float, float]]) -> None:
     path = " ".join(f"{'M' if i == 0 else 'L'}{x:g} {y:g}" for i, (x, y) in enumerate(points))
     parts.append(
-        f'<path d="{path}" fill="none" stroke="{c["arrow"]}" stroke-width="2.5" '
+        f'<path d="{path}" fill="none" stroke="{c["arrow"]}" stroke-width="2" '
         'stroke-linejoin="round" marker-end="url(#a)"/>'
     )
 
@@ -251,7 +257,7 @@ def pipeline_svg(dark: bool = False) -> str:
     found = lanes()
     width = 1280
     lane_x, lane_w = 228, 802
-    box_w, box_h, gap = 113, 100, 18
+    box_w, box_h, gap = 110, 100, 22
     inner = lane_x + 16
     post_x, post_w = 1058, 198
     seed_y, seed_h = 118, 256
@@ -265,12 +271,20 @@ def pipeline_svg(dark: bool = False) -> str:
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" '
         f'height="{height}" role="img" aria-label="{html.escape(alt_text(found), quote=True)}">',
-        f'<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" '
-        f'markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" '
-        f'fill="{c["arrow"]}"/></marker></defs>',
+        f'<defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="11" '
+        f'markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse">'
+        f'<path d="M1.5 1.6 L9.6 5 L1.5 8.4 z" fill="{c["arrow"]}"/></marker></defs>',
         f'<rect x="1" y="1" width="{width - 2}" height="{height - 2}" rx="16" fill="{c["card"]}" '
         f'stroke="{c["card_line"]}" stroke-width="2"/>',
-        _text(32, 56, "Two detector families, one toolbox", 28, c["ink"], font_weight="700"),
+        _text(
+            32,
+            56,
+            "Two detector families, one toolbox",
+            28,
+            c["ink"],
+            font_weight="700",
+            letter_spacing="-0.6",
+        ),
         _text(
             32,
             90,
@@ -292,7 +306,7 @@ def pipeline_svg(dark: bool = False) -> str:
             16,
             c["muted"],
             text_anchor="middle",
-            font_weight="700",
+            font_weight="600",
         )
     )
     for index, name in enumerate(DATASETS):
@@ -309,7 +323,7 @@ def pipeline_svg(dark: bool = False) -> str:
                 16,
                 c["ink"],
                 text_anchor="middle",
-                font_weight="700",
+                font_weight="600",
             )
         )
     fork = pill_x + pill_w + 12
@@ -326,9 +340,9 @@ def pipeline_svg(dark: bool = False) -> str:
             inner,
             seed_y + 32,
             f"Seed-based skeleton · {len(found.seed_methods)} methods",
-            20,
+            19,
             c["ink"],
-            font_weight="700",
+            font_weight="600",
         )
     )
     parts.append(_text(inner, seed_y + 56, " · ".join(found.seed_methods), 15, c["muted"]))
@@ -344,7 +358,7 @@ def pipeline_svg(dark: bool = False) -> str:
         _box(parts, c, found.losses, x, y, box_w, 60)
         parts.append(
             f'<line x1="{x + box_w / 2:g}" y1="{seed_box_y + box_h:g}" x2="{x + box_w / 2:g}" '
-            f'y2="{y:g}" stroke="{c["arrow"]}" stroke-width="2.5"/>'
+            f'y2="{y:g}" stroke="{c["arrow"]}" stroke-width="2"/>'
         )
 
     # lane 2: HGGD, a family of its own
@@ -353,7 +367,7 @@ def pipeline_svg(dark: bool = False) -> str:
         f'fill="{c["lane"]}" stroke="{c["lane_line"]}" stroke-width="2"/>'
     )
     own = " · ".join(found.own_methods)
-    parts.append(_text(inner, own_y + 32, f"{own} · own family", 20, c["ink"], font_weight="700"))
+    parts.append(_text(inner, own_y + 32, f"{own} · own family", 19, c["ink"], font_weight="600"))
     parts.append(_text(inner, own_y + 56, "reads a colour image and its depth", 15, c["muted"]))
     for index, box in enumerate(found.own_boxes):
         x = inner + index * (box_w + gap)
@@ -393,7 +407,7 @@ def pipeline_svg(dark: bool = False) -> str:
             17,
             c["ink"],
             text_anchor="middle",
-            font_weight="700",
+            font_weight="600",
         )
     )
 
@@ -402,13 +416,16 @@ def pipeline_svg(dark: bool = False) -> str:
     parts.append(
         f'<rect x="{lane_x}" y="{recipe_y}" width="{post_x + post_w - lane_x}" '
         f'height="{recipe_h}" rx="14" fill="{c["shared"]}" stroke="{c["shared_line"]}" '
-        'stroke-width="2.5"/>'
+        'stroke-width="2"/>'
     )
-    parts.append(_text(inner, recipe_y + 40, "Training recipe", 19, c["ink"], font_weight="700"))
-    parts.append(_text(inner + 172, recipe_y + 40, f"all {every} methods", 15, c["muted"]))
+    parts.append(
+        f'<text x="{inner}" y="{recipe_y + 40}" font-family="{SANS}">'
+        f'<tspan font-size="18.5" font-weight="600" fill="{c["ink"]}">Training recipe</tspan>'
+        f'<tspan dx="12" font-size="14" fill="{c["muted"]}">all {every} methods</tspan></text>'
+    )
     parts.append(
         f'<text x="{post_x + post_w - 20}" y="{recipe_y + 40}" text-anchor="end" '
-        f'font-family="{MONO}" font-size="15" fill="{c["key"]}">'
+        f'font-family="{MONO}" font-size="13.5" fill="{c["key"]}">'
         f"{html.escape(' · '.join(recipe))}</text>"
     )
 
@@ -421,11 +438,11 @@ def pipeline_svg(dark: bool = False) -> str:
     x = lane_x
     for label, fill, line, dash in entries:
         parts.append(
-            f'<rect x="{x}" y="{legend_y - 15}" width="26" height="18" rx="5" fill="{fill}" '
+            f'<rect x="{x:g}" y="{legend_y - 15}" width="26" height="18" rx="5" fill="{fill}" '
             f'stroke="{line}" stroke-width="2"{dash}/>'
         )
         parts.append(_text(x + 36, legend_y, label, 15, c["muted"]))
-        x += 60 + len(label) * 8
+        x += 62 + len(label) * 7.4
     parts.append("</svg>\n")
     return "\n".join(parts)
 
@@ -623,6 +640,22 @@ def hero_html() -> str:
 # ----------------------------------------------------------------------------- main
 
 
+#: The faces the PNG exports are drawn with (the first names of SANS and MONO).
+FACES = ("Inter", "JetBrains Mono")
+
+
+def missing_faces() -> list[str]:
+    """The faces of :data:`FACES` that fontconfig does not know on this machine."""
+    listing = shutil.which("fc-list")
+    if listing is None:
+        return []  # no fontconfig to ask: the exporter decides
+    known = subprocess.run(
+        [listing, ":", "family"], capture_output=True, text=True, check=False
+    ).stdout
+    families = {name.strip() for line in known.splitlines() for name in line.split(",")}
+    return [face for face in FACES if face not in families]
+
+
 def svgs() -> dict[Path, str]:
     """Every generated text file and its content."""
     return {
@@ -647,6 +680,11 @@ def stale() -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true", help="exit 1 when an SVG is stale")
+    parser.add_argument(
+        "--allow-fallback-font",
+        action="store_true",
+        help="export the PNG files even when Inter or JetBrains Mono is not installed",
+    )
     args = parser.parse_args(argv)
     if args.check:
         found = stale()
@@ -655,6 +693,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if found else 0
 
     import cairosvg
+
+    missing = missing_faces()
+    if missing and not args.allow_fallback_font:
+        print(
+            f"not installed: {', '.join(missing)}. The PNG exports would be drawn with a "
+            "fallback face. Install the faces (see the top of this file) or pass "
+            "--allow-fallback-font.",
+            file=sys.stderr,
+        )
+        return 2
 
     for path, content in svgs().items():
         path.parent.mkdir(parents=True, exist_ok=True)

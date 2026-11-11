@@ -20,7 +20,7 @@
   <ellipse cx="256" cy="374" rx="24" ry="16" fill="#1f2328"/>
   <path d="M232 408 q24 22 48 0" fill="none" stroke="#1f2328" stroke-width="10" stroke-linecap="round"/>
 </g>
-  <text x="372" y="158" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-2">
+  <text x="372" y="158" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="104" font-weight="700" letter-spacing="-3.5">
     <tspan fill="#2da44e">Grasp</tspan><tspan fill="#e6edf3">Panda</tspan>
   </text>
   <text x="378" y="210" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" fill="#e6edf3">A toolbox for 6-DoF grasp detection in cluttered scenes</text>

@@ -11,6 +11,7 @@ theme:
   custom_dir: overrides
   logo: assets/logo.svg
   favicon: assets/logo.svg
+  font: false          # Inter and JetBrains Mono are served by the site: docs/stylesheets/extra.css
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
