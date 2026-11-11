@@ -67,6 +67,21 @@ def set_precision(tf32: bool) -> None:
     torch.backends.cuda.matmul.allow_tf32 = tf32
 
 
+def _matmul_precision() -> str | bool:
+    """The precision of float32 matrix products, to put back later.
+
+    It is the name PyTorch keeps (``highest``, ``high`` or ``medium``): the boolean switch
+    cannot express the third. PyTorch 2.9 and newer refuse to name it while the switch
+    disagrees with a ``medium`` set earlier, which is the state inside a run that computes
+    in float32 for a caller who asked for ``medium``; the switch itself is what there is
+    to put back then.
+    """
+    try:
+        return torch.get_float32_matmul_precision()
+    except RuntimeError:
+        return bool(torch.backends.cuda.matmul.allow_tf32)
+
+
 @contextmanager
 def determinism_restored() -> Iterator[None]:
     """Leave PyTorch's process-wide determinism and precision switches as they were found."""
@@ -74,15 +89,17 @@ def determinism_restored() -> Iterator[None]:
     warn_only = torch.is_deterministic_algorithms_warn_only_enabled()
     cudnn = (torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark)
     convolutions = torch.backends.cudnn.allow_tf32
-    # the matmul switch is a view of this setting, which has a third value ("medium")
-    matmul = torch.get_float32_matmul_precision()
+    matmul = _matmul_precision()
     try:
         yield
     finally:
         torch.use_deterministic_algorithms(algorithms, warn_only=warn_only)
         torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = cudnn
         torch.backends.cudnn.allow_tf32 = convolutions
-        torch.set_float32_matmul_precision(matmul)
+        if isinstance(matmul, str):
+            torch.set_float32_matmul_precision(matmul)
+        else:
+            torch.backends.cuda.matmul.allow_tf32 = matmul
 
 
 def rng_state() -> dict[str, Any]:
