@@ -37,7 +37,7 @@ Six published methods, each ported stage by stage and checked against its refere
 
     Small grasps not drowned out: four crop radii and width-balanced losses.
 
-    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_sbg_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span>
+    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_sbg_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span>
 
 -   **[EconomicGrasp](economicgrasp.md)** · ECCV 2024 · depth
 
@@ -81,7 +81,7 @@ Computed from the configs and the metafiles.
 |---|---|---|---|---|
 | [GraspNet-baseline](graspnet_baseline.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [GSNet](gsnet.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense; training |
-| [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | — | RealSense | transfer from RealSense |
+| [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [EconomicGrasp](economicgrasp.md) | Kinect, RealSense | RealSense, not published | Kinect, RealSense | transfer from Kinect, RealSense; training |
 | [FineGrasp](finegrasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [HGGD](hggd.md) | RealSense, Kinect | — | Kinect, RealSense | transfer from RealSense |

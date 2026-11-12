@@ -655,7 +655,7 @@
       "config": "scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e",
       "runs": [
         {
-          "weights": "weights",
+          "weights": "author_weights",
           "demo": [
             {
               "date": "2026-11-11",

@@ -20,7 +20,7 @@ none of their code is part of this history. Each line below has its full account
 - **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
 - **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
 - **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
-- **Model zoo.** Released weights scored on whole test splits; GraspNet-baseline, GSNet, EconomicGrasp and FineGrasp trained here, GSNet three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
+- **Model zoo.** Released weights scored on whole test splits; GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp and FineGrasp trained here, GSNet three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
@@ -62,8 +62,8 @@ none of their code is part of this history. Each line below has its full account
 
 ### Known limits
 
-- The zoo has no weights to download yet. Trained here, GraspNet-baseline passes the admission gate and EconomicGrasp reaches its authors' checkpoint, 0.13 AP outside the gate on seen; where trained weights are published is not decided. GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
-- No option beside the ported methods has been trained and evaluated: a probe says a combination trains, not how good it is.
+- The zoo has no weights to download yet. Trained here, GraspNet-baseline passes the admission gate; Scale-Balanced-Grasp and EconomicGrasp reach their authors' checkpoints, which are themselves outside the gate; where trained weights are published is not decided. GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
+- Of the options beside the ported methods, two scene encoders under GSNet have been trained in full and evaluated, once each. For every other option a probe says a combination trains, not how good it is.
 - Mixed precision is refused for the shipped detectors; `optimizer=soap` under HGGD is not verified (one CUDA illegal memory access on a shared GPU).
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
 - Point painting is not written by `compose` and has no probe record.
@@ -508,6 +508,12 @@ Classes now count levels, and every method lists the options of each of its slot
   1 AP below the authors' checkpoint on seen, and transfers worse to GraspClutter6D:
   7.44 / 8.87 / 5.99 and 14.09 / 16.90 / 10.73 (AP / AP0.8 / AP0.4), 3.05 AP below the
   checkpoint with the filter.
+- Scale-Balanced-Grasp was trained from scratch on one RTX 3090 with the recipe of its
+  config: 57.23 / 51.13 / 21.98 AP without and 62.00 / 56.28 / 23.74 with the collision
+  filter, within 0.55 AP of the authors' checkpoint on every split and, like it, 1.2 to 2.2
+  AP below the paper on seen and similar: the gap to the paper is not one of training. On
+  GraspClutter6D it scores 21.90 / 26.54 / 16.30 and 22.75 / 27.61 / 16.64 (AP / AP0.8 /
+  AP0.4), within 0.14 AP of the checkpoint.
 - EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
   69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
   within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on
@@ -668,16 +674,19 @@ Classes now count levels, and every method lists the options of each of its slot
 <details markdown="1">
 <summary>Known limits, in full</summary>
 
-- The zoo has no weights to download yet. Of the four models trained here,
+- The zoo has no weights to download yet. Of the five models trained here,
   GraspNet-baseline is within the admission gate on every split; EconomicGrasp reaches
   its authors' checkpoint and is 0.13 AP outside the gate on seen, where that checkpoint
-  is 0.07 outside it; GSNet is above its paper by more than 1 AP and FineGrasp below, both
-  unexplained. None of their weights is published: where is not decided. A training with
+  is 0.07 outside it; Scale-Balanced-Grasp reaches its authors' checkpoint, and both are
+  1.2 to 2.2 AP below the paper on seen and similar; GSNet is above its paper by more than
+  1 AP and FineGrasp below, both unexplained. None of their weights is published: where is not decided. A training with
   unmodified reference code was not run here. The other numbers are `author-ckpt` (see
   above): each is one run with seed 0, and where a number differs from the reported one
   the cause is not known.
-- No option added beside the six ported methods has been trained and evaluated: a
-  measured verdict says that a combination builds, trains for 20 iterations and predicts.
+- Of the options added beside the six ported methods, two scene encoders under GSNet have
+  been trained in full and evaluated, once each (`projects/encoder_comparison`). For every
+  other option a measured verdict says that a combination builds, trains for 20 iterations
+  and predicts, and no more.
 - Mixed precision (`train.amp`, preset `hooks=amp`) does not work with the shipped
   detectors and is refused by the config check: GSNet stopped at a half/float mismatch in
   the label assigner, HGGD's first loss was not finite. `optimizer=soap` under HGGD is not
