@@ -44,6 +44,8 @@ from typing import TYPE_CHECKING, Any, Literal
 import torch
 from torch import Tensor
 
+from grasppanda.utils.precision import set_tf32, tf32_restored
+
 if TYPE_CHECKING:
     from grasppanda._ops.library import Kernels
 
@@ -332,13 +334,10 @@ def _full_precision(kind: str) -> Iterator[None]:
     reduced precision (see ``_rotation_is_float32`` in ``query.py``); the kernels are
     judged against the full-precision reference.
     """
-    tf32 = torch.backends.cuda.matmul.allow_tf32
-    torch.backends.cuda.matmul.allow_tf32 = False
-    try:
+    with tf32_restored():
+        set_tf32(matmul=False)
         with torch.autocast(device_type=kind, enabled=False):
             yield
-    finally:
-        torch.backends.cuda.matmul.allow_tf32 = tf32
 
 
 def _cloud(count: int, seed: int, device: torch.device, *, lattice: bool = False) -> Tensor:

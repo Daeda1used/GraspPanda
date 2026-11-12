@@ -119,6 +119,74 @@ def test_the_context_restores_a_matmul_precision_the_switch_cannot_express(pytor
         torch.set_float32_matmul_precision(before)
 
 
+def test_one_switch_can_be_set_alone_and_what_is_in_effect_is_read(pytorch_defaults):
+    from grasppanda.utils.precision import Tf32, set_tf32, tf32, tf32_restored
+
+    assert tf32() == Tf32(convolutions=True, matmul=False)
+    with tf32_restored():
+        set_tf32(matmul=True)
+        assert tf32() == Tf32(True, True) and switches() == (True, True)
+        set_tf32(convolutions=False)
+        assert tf32() == Tf32(False, True) and switches() == (False, True)
+    assert tf32() == Tf32(True, False) and switches() == (True, False)
+
+
+#: What a host process may have done through the interface of PyTorch 2.9 and newer before
+#: it uses this package; the booleans cannot be read in any of these states.
+HOSTS = {
+    "all-tf32": "torch.backends.fp32_precision = 'tf32'",
+    "all-ieee": "torch.backends.fp32_precision = 'ieee'",
+    "conv-ieee": "torch.backends.cudnn.conv.fp32_precision = 'ieee'",
+    "both": "torch.set_float32_matmul_precision('high'); torch.backends.fp32_precision = 'tf32'",
+}
+IN_A_HOST = """
+import torch
+{host}
+from grasppanda.engine.seeding import determinism_restored, set_precision
+from grasppanda.utils.precision import tf32
+
+def in_effect():
+    backends = torch.backends
+    operators = (backends.cudnn.conv, backends.cudnn.rnn, backends.cuda.matmul)
+    return [operator.fp32_precision for operator in operators]
+
+before = in_effect()
+for wanted in (False, True):
+    with determinism_restored():
+        set_precision(wanted)
+        assert tuple(tf32()) == (wanted, wanted), (wanted, in_effect())
+        with determinism_restored():  # prediction inside a run
+            set_precision(not wanted)
+            assert tuple(tf32()) == (not wanted, not wanted), (wanted, in_effect())
+        assert tuple(tf32()) == (wanted, wanted), (wanted, in_effect())
+    assert in_effect() == before, (wanted, before, in_effect())
+print("held")
+"""
+
+
+@pytest.mark.skipif(
+    not hasattr(torch.backends.cudnn, "conv"), reason="the interface of PyTorch 2.9 and newer"
+)
+@pytest.mark.parametrize("host", list(HOSTS))
+def test_a_run_sets_and_restores_its_precision_in_a_host_that_used_the_newer_interface(host):
+    """A notebook that set ``fp32_precision`` leaves the booleans unreadable: a run still
+    computes in the precision of its config, TF32 inherited from the backend included, and
+    puts back what was in effect. In a process of its own: the switches are global."""
+    import subprocess
+    import sys
+
+    from .conftest import REPO
+
+    done = subprocess.run(
+        [sys.executable, "-c", IN_A_HOST.format(host=HOSTS[host])],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert done.returncode == 0 and done.stdout.strip() == "held", done.stderr[-2000:]
+
+
 def test_start_run_restores_the_switches_when_the_run_fails(tmp_path, pytorch_defaults):
     config = tiny_config(tmp_path)
     with pytest.raises(RuntimeError, match="stop"), start_run(config, "train"):
