@@ -271,7 +271,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .md-typeset .gp-figures .md-typeset__table { min-width: 100%; }
 .md-typeset .gp-figures table:not([class]) { display: table; }
 .md-typeset .gp-figures table:not([class]) td { white-space: nowrap; }
-.md-typeset .gp-figures table:not([class]) td:nth-child(n+4) { font-variant-numeric: tabular-nums; }
+.md-typeset .gp-figures table:not([class]) td:nth-child(n+2) { font-variant-numeric: tabular-nums; }
 
 /* A table whose first column is a short label (<div class="gp-keys" markdown>): the label
  * stays on one line. */

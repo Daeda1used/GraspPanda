@@ -27,6 +27,7 @@ none of their code is part of this history. Each line below has its full account
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; stopping the sweep stops its runs.
 - **`runtime.gpu_memory_fraction`** caps what a run takes of its GPU, so two runs can share a 24 GB card.
+- **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
 
@@ -495,6 +496,27 @@ Classes now count levels, and every method lists the options of each of its slot
   (`author_weights`) and state the measured rows of both, each kind backed by its file.
   A method page then shows every row of the shipped config, and its *trained here* chip
   turns into *reproduced ✓* only within the 1 AP of the admission gate.
+
+</details>
+
+<details markdown="1">
+<summary>Added: FineGrasp on GraspClutter6D, and the camera distance its features carry</summary>
+
+- `finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e` scores FineGrasp on
+  GraspClutter6D, so all six methods have a transfer config. With the authors' weights
+  the whole test split gives 12.56 AP without and 13.14 AP with the collision filter, far
+  below EconomicGrasp (21.69), the model FineGrasp extends.
+- The cause is an input: FineGrasp feeds the coordinates of every point to its encoder.
+  The clouds it was trained on have a median depth of 0.34 to 0.46 m, those of this split
+  of 0.51 to 1.61 m. `CoordinateFeatures.median_depth` (default none, the reference) moves
+  the depth coordinate of the features so that the median of a frame is the given value
+  and leaves points, voxels and grasps where they are; at 0.42 m the same weights score
+  24.39 and 25.02 AP. The zoo rows are the method as published; the records of the
+  variant are in `configs/finegrasp/variants/`. The other five methods read no
+  coordinates (HGGD centres its depth image).
+- A component may name the arguments it gained after config hashes were recorded
+  (`hash_neutral`): at the value that keeps the behaviour they are left out of the hash,
+  as `runtime.tf32` is, so every FineGrasp config hashes as it did.
 
 </details>
 

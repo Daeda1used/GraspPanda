@@ -28,6 +28,8 @@ python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
     --source-format finegrasp --camera realsense
 ```
 
+**Before you use it:** These weights read the coordinates of every point and were trained on clouds 0.34 to 0.46 m from the camera. Farther away they lose accuracy unless the depth of the features is moved back: add `--opts data.test.dataset.transforms.2.median_depth=0.42` (the README, Results on GraspClutter6D).
+
 ??? note "Licence, checksum and what the converter writes"
 
     - **Licence**: apache-2.0 on the model card; trained on GraspNet-1Billion, whose data and labels are CC BY-NC-SA 4.0

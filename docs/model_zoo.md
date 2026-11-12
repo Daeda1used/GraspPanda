@@ -148,6 +148,8 @@ collision filter nor the checkpoints, so it is paired with no line.
 | EconomicGrasp | RealSense D435 | off | 21.69 / 26.64 / 15.79 | — | — |
 | EconomicGrasp | RealSense D435 | on | 22.25 / 27.30 / 16.06 | — | — |
 | EconomicGrasp | RealSense D435 | not stated | — | 21.67 / 26.62 / 15.90 | — |
+| FineGrasp | RealSense D435 | off | 12.56 / 15.47 / 9.01 | — | — |
+| FineGrasp | RealSense D435 | on | 13.14 / 16.20 / 9.19 | — | — |
 | HGGD | RealSense D435 | off | 14.24 / 17.40 / 9.24 | — | — |
 | HGGD | RealSense D435 | on | 14.56 / 17.75 / 9.38 | — | — |
 
@@ -155,8 +157,8 @@ collision filter nor the checkpoints, so it is paired with no line.
 
 ??? note "What to know when reading it"
 
-    - **Inputs derived from ground truth.** GraspNet-baseline, Scale-Balanced-Grasp and
-      EconomicGrasp crop the workspace to the image rectangle around the ground-truth
+    - **Inputs derived from ground truth.** GraspNet-baseline, Scale-Balanced-Grasp,
+      EconomicGrasp and FineGrasp crop the workspace to the image rectangle around the ground-truth
       segmentation, the crop of the official GraspClutter6D tool (`gt_assisted: workspace`).
       It is not the crop the weights were trained with; what that costs was measured on a
       subset only, see [Cross-dataset evaluation](user_guides/cross_dataset.md). HGGD reads
@@ -167,7 +169,13 @@ collision filter nor the checkpoints, so it is paired with no line.
       Scale-Balanced-Grasp (0.00 apart; `off` is 0.93 below), `off` for EconomicGrasp (0.02
       above; `on` is 0.58 above). Whether the paper applied a collision filter for some
       methods and not for others was not investigated and cannot be read from the paper.
-    - **One run each**, with seed 0, as above. The paper has no row for HGGD.
+    - **FineGrasp knows its camera distance.** Its encoder reads the coordinates of every
+      point, and this split lies farther from the camera than any training cloud (0.75 m
+      in the median against 0.42 m). With the depth coordinate of the features moved to
+      the training distance, and nothing else changed, the same weights score 24.39 AP
+      without the filter and 25.02 with it; the lines above are the method as published
+      ([its README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)).
+    - **One run each**, with seed 0, as above. The paper has no row for FineGrasp or HGGD.
     - **GSNet** has no line here, because no checkpoint of its authors has been scored; the
       model trained here has a table of its own, below. Everything else on that page of the
       user guide (other cameras, other crops, the Kinect weights) was measured on the
