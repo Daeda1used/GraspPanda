@@ -42,8 +42,8 @@ states the same collision filter; a line *not stated* is paired with nothing.
 | HGGD | RealSense | on | 63.72 / 52.91 / 24.16 | — | — |
 | HGGD | RealSense | not stated | — | 59.36 / 51.20 / 22.17 | — |
 | HGGD | RealSense | not stated | — | 64.45 / 53.59 / 24.59 | — |
-| HGGD | Kinect | off | 56.98 / 43.97 / 18.63 | — | — |
-| HGGD | Kinect | on | 60.34 / 46.83 / 19.27 | — | — |
+| HGGD | Kinect | off | 56.98 / 43.97 / 18.56 | — | — |
+| HGGD | Kinect | on | 60.30 / 46.85 / 19.22 | — | — |
 | HGGD | Kinect | not stated | — | 60.26 / 48.59 / 18.43 | — |
 | HGGD | Kinect | not stated | — | 61.17 / 47.02 / 19.37 | — |
 

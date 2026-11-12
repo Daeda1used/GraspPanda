@@ -41,16 +41,14 @@ ground truth (`gt_assisted` is empty in all four records).
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.72 | 52.91 | 24.16 |
 | [hggd_r34w8_g1b-kinect_15e](hggd_r34w8_g1b-kinect_15e.yaml) | Kinect | `reported` (paper; README row "In paper") | not stated | 60.26 | 48.59 | 18.43 |
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
-| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.63 |
-| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.34 | 46.83 | 19.27 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.56 |
+| | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.30 | 46.85 | 19.22 |
 
 `author-ckpt` is the authors' checkpoint of each camera, converted and run through
-`grasppanda test`, one run each with seed 0: the RealSense rows at commit `400b733` in
-float32 on an RTX 3090, the Kinect rows at commit `4bc5333` with PyTorch's TF32
-convolutions, which a run computed in then. `off` is every decoded
-grasp (variant `raw`); `on, then NMS` is what the released test script dumps (variant
-`cd`). No model has been trained here yet. Neither source states the collision filter;
-the closest pair is `cd` with "In repo", within 0.83 AP on every split and below it on
+`grasppanda test` at commit `400b733` in float32 on an RTX 3090, one run each with seed 0.
+`off` is every decoded grasp (variant `raw`); `on, then NMS` is what the released test
+script dumps (variant `cd`). No model has been trained here yet. Neither source states the collision filter;
+the closest pair is `cd` with "In repo", within 0.87 AP on every split and below it on
 all six.
 
 <details markdown="1"><summary>Against the reported rows, and a 20-frame check with the reference code</summary>
@@ -61,8 +59,8 @@ Measured minus reported, on seen / similar / novel:
 |---|---|---|---|
 | RealSense | `cd` | +4.36 / +1.71 / +1.99 | −0.73 / −0.68 / −0.43 |
 | RealSense | `raw` | −1.00 / −3.25 / −0.09 | −6.09 / −5.64 / −2.51 |
-| Kinect | `cd` | +0.08 / −1.76 / +0.84 | −0.83 / −0.19 / −0.10 |
-| Kinect | `raw` | −3.28 / −4.62 / +0.20 | −4.19 / −3.05 / −0.74 |
+| Kinect | `cd` | +0.04 / −1.74 / +0.79 | −0.87 / −0.17 / −0.15 |
+| Kinect | `raw` | −3.28 / −4.62 / +0.13 | −4.19 / −3.05 / −0.81 |
 
 That fits a test script that dumps filtered grasps, but it does not establish how the
 "In repo" row was produced. Why `cd` lies below it was not investigated. The network draws
