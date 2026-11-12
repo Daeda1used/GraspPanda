@@ -158,7 +158,12 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     capsys.readouterr()
     cells = tmp_path / "work_dirs/wide"
     assert (cells / "s64/seed0" / CELL_RECORD).is_file()
+    assert main(["sweep", str(path), "--cell", "s64/seed0", "--gpus", "7"]) == 2
+    assert "choose its GPU with CUDA_VISIBLE_DEVICES" in capsys.readouterr().err
 
+    # another `grasppanda` in the working directory is not what a cell runs
+    (tmp_path / "grasppanda").mkdir()
+    (tmp_path / "grasppanda/__init__.py").write_text("raise SystemExit('another GraspPanda')\n")
     assert main(["sweep", str(path), "--gpus", "7,8"]) == 0
     out = capsys.readouterr().out
     assert "3 runs on GPUs 7, 8, 2 at a time" in out
@@ -192,26 +197,54 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     assert record["config_hash"] == planned.config.digest()
 
 
-def test_a_cell_process_imports_the_code_of_the_sweep_that_started_it(monkeypatch):
-    """A cell's interpreter may find another GraspPanda first (a release installed beside
-    the source tree this process runs from): the tree leads the cell's path. An installed
-    package is found by the cell as it was by this process, and gets no entry."""
-    import os
-    import site
+def test_a_cell_gets_one_gpu_and_the_modules_of_the_sweep_that_started_it(monkeypatch):
+    """The cell's process searches modules where this process does, whatever its working
+    directory or interpreter would find first, and its GPU is the one meant: nvidia-smi's
+    number, or a position in this process's own mask."""
+    import json
+    import sys
 
     from grasppanda import sweep
 
-    root = Path(sweep.__file__).resolve().parent.parent
-    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
-    monkeypatch.setenv("PYTHONPATH", os.pathsep.join(["/elsewhere", str(root), "/elsewhere"]))
-    monkeypatch.setattr(site, "getsitepackages", lambda: ["/no/such/site-packages"])
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    monkeypatch.delenv("CUDA_DEVICE_ORDER", raising=False)
     environment = sweep._cell_environment("3")
     assert environment["CUDA_VISIBLE_DEVICES"] == "3"
-    assert environment["PYTHONPATH"].split(os.pathsep) == [str(root), "/elsewhere"]
-    monkeypatch.delenv("PYTHONPATH")
-    assert sweep._cell_environment("3")["PYTHONPATH"] == str(root)
-    monkeypatch.setattr(site, "getsitepackages", lambda: [str(root)])
-    assert "PYTHONPATH" not in sweep._cell_environment("3")
+    assert environment["CUDA_DEVICE_ORDER"] == "PCI_BUS_ID"  # as nvidia-smi numbers them
+    assert json.loads(environment[sweep.CELL_PATH]) == sys.path
+    assert sweep.CELL_PATH in sweep._CELL and "sys.path[:]" in sweep._CELL
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "4,5")  # a mask of its own: its numbering
+    environment = sweep._cell_environment("1")
+    assert environment["CUDA_VISIBLE_DEVICES"] == "5" and "CUDA_DEVICE_ORDER" not in environment
+    with pytest.raises(ValueError, match="GPU 2 is not one of the 2 that CUDA_VISIBLE_DEVICES"):
+        sweep._cell_environment("2")
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")  # every GPU hidden from this process
+    with pytest.raises(ValueError, match="GPU 0 is not one of the 0"):
+        sweep._cell_environment("0")
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES")
+    monkeypatch.setenv("CUDA_DEVICE_ORDER", "FASTEST_FIRST")  # an order of its own
+    assert sweep._cell_environment("3")["CUDA_DEVICE_ORDER"] == "FASTEST_FIRST"
+
+
+def test_no_cell_starts_once_the_sweep_is_stopped(monkeypatch):
+    """Stopping terminates what runs and refuses what would start, under one lock."""
+    from grasppanda import sweep
+
+    class Child:
+        def __init__(self, command, **options):
+            self.terminated = False
+
+        def terminate(self):
+            self.terminated = True
+
+    monkeypatch.setattr(sweep.subprocess, "Popen", Child)
+    cells = sweep._Cells()
+    first, second = cells.start(["a"]), cells.start(["b"])
+    cells.finished(second)
+    cells.stop()
+    assert first.terminated and not second.terminated
+    assert cells.start(["c"]) is None
 
 
 def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
@@ -224,11 +257,12 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
         "sweeps/two.yaml", f"base: {train}\nseeds: [0]\naxes:\n  a:\n    x: []\n    y: []\n"
     )
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)  # GPU 0 is the machine's
     sweep = module.load_sweep(path)
     cells = sweep.plan(command="train")
     done = {"cell": "y/seed0", "choices": {"a": "y"}, "seed": 0, "test": {"raw/AP": 0.5}}
 
-    def fake(sweep, cell, gpu, children=None):  # no process: x fails, y succeeds
+    def fake(sweep, cell, gpu, cells=None):  # no process: x fails, y succeeds
         if cell.name == "x/seed0":
             return {"cell": cell.name, "choices": cell.choices, "seed": 0, "failed": "x.log"}
         return done
@@ -242,7 +276,7 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     rows = {row["choices"]["a"]: row["metrics"] for row in aggregate(records)}
     assert rows["x"] == {} and rows["y"]["raw/AP"]["mean"] == 0.5
 
-    def broken(sweep, cell, gpu, children=None):  # the runner itself fails for x
+    def broken(sweep, cell, gpu, cells=None):  # the runner itself fails for x
         if cell.name == "x/seed0":
             raise OSError("no space left on device")
         return done
@@ -252,6 +286,23 @@ def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     records = run_cells(sweep, cells, gpus=["0"], report=lines.append)
     assert records[0]["failed"] == "OSError: no space left on device" and records[1] == done
     assert any("x/seed0: FAILED, OSError: no space left on device" in line for line in lines)
+
+    # one after the other in this process: the same
+    def train(sweep, cell):
+        if cell.name == "x/seed0":
+            raise RuntimeError("CUDA out of memory")
+        return done
+
+    monkeypatch.setattr(module, "run_cell", train)
+    lines.clear()
+    records = run_cells(sweep, cells, report=lines.append)
+    assert records[0]["failed"] == "RuntimeError: CUDA out of memory" and records[1] == done
+    assert any("x/seed0: FAILED, RuntimeError: CUDA out of memory" in line for line in lines)
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "4")  # GPU 1 is not this process's
+    with pytest.raises(ValueError, match="GPU 1 is not one of the 1"):
+        run_cells(sweep, cells, gpus=["0", "1"], report=lines.append)
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES")
 
     sweep.path = None  # built in code, not loaded: there is no file to start a cell from
     with pytest.raises(ValueError, match="from the sweep's file"):
