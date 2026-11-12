@@ -284,8 +284,8 @@ width.
 
 Run for the six methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
-checkpoints (`author-ckpt`), and GSNet with the model trained from scratch by this toolbox
-(`reproduced`; its weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+checkpoints (`author-ckpt`), GSNet and FineGrasp with the models trained from scratch by
+this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
 D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
 [model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
 `configs/<method>/records/` the result records.
@@ -299,21 +299,23 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | Scale-Balanced-Grasp | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 |
 | EconomicGrasp | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 |
 | FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
+| FineGrasp, trained here | 16.12 / 19.78 / 11.53 | 17.00 / 20.85 / 11.86 | — |
 | HGGD | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | — |
 
 </div>
 
 The five seed-based rows read the cloud inside the ground-truth rectangle of the official
 tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads the whole
-image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. The GSNet row
-is one training run with one seed; its weights are another model than the `local`
-checkpoint of the subset numbers above.
+image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. A row
+*trained here* is one training run with one seed; GSNet's weights are another model than
+the `local` checkpoint of the subset numbers above.
 
 **FineGrasp is the method as published, and it knows its camera distance.** Its encoder
 reads the coordinates of every point; the clouds it was trained on lie 0.34 to 0.46 m from
 the camera, those of this split 0.51 to 1.61 m. Moving the depth coordinate of the
 features to the training distance, and nothing else, gives 24.39 AP without the filter
-and 25.02 with it, above EconomicGrasp, the model it extends:
+and 25.02 with it (23.90 and 25.18 for the weights trained here), above EconomicGrasp, the
+model it extends:
 
 ```bash
 grasppanda test finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e \

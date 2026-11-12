@@ -173,19 +173,21 @@ collision filter nor the checkpoints, so it is paired with no line.
       point, and this split lies farther from the camera than any training cloud (0.75 m
       in the median against 0.42 m). With the depth coordinate of the features moved to
       the training distance, and nothing else changed, the same weights score 24.39 AP
-      without the filter and 25.02 with it; the lines above are the method as published
+      without the filter and 25.02 with it, and the model trained here does alike; the
+      lines above are the method as published
       ([its README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)).
     - **One run each**, with seed 0, as above. The paper has no row for FineGrasp or HGGD.
     - **GSNet** has no line here, because no checkpoint of its authors has been scored; the
-      model trained here has a table of its own, below. Everything else on that page of the
+      models trained here have a table of their own, below. Everything else on that page of the
       user guide (other cameras, other crops, the Kinect weights) was measured on the
       24-scene subset and is not a benchmark number.
 
-### The model trained here, on GraspClutter6D
+### The models trained here, on GraspClutter6D
 
-The GSNet model of [Trained and evaluated here](#trained-and-evaluated-here), on the same whole
-test split, crop and variants as the lines above. The GraspClutter6D paper reports no GSNet
-number, so nothing stands beside it. One training run with one seed.
+The GSNet and FineGrasp models of [Trained and evaluated here](#trained-and-evaluated-here),
+on the same whole test split, crop and variants as the lines above. The GraspClutter6D paper
+reports neither, so nothing stands beside them. One training run with one seed each;
+FineGrasp is the method as published, with the camera distance it knows.
 
 <div class="gp-figures" markdown>
 
@@ -193,6 +195,8 @@ number, so nothing stands beside it. One training run with one seed.
 |---|---|:---:|---|---|---|
 | GSNet | RealSense D435 | off | 25.58 / 31.38 / 19.42 | — | — |
 | GSNet | RealSense D435 | on | 26.87 / 33.00 / 20.04 | — | — |
+| FineGrasp | RealSense D435 | off | 16.12 / 19.78 / 11.53 | — | — |
+| FineGrasp | RealSense D435 | on | 17.00 / 20.85 / 11.86 | — | — |
 
 </div>
 

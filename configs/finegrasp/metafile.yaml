@@ -111,3 +111,19 @@ models:
         AP: {test: 13.14}
         AP0.8: {test: 16.20}
         AP0.4: {test: 9.19}
+      - provenance: reproduced
+        collision_filter: false
+        evaluator: GraspClutter6DEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_raw.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 16.12}
+        AP0.8: {test: 19.78}
+        AP0.4: {test: 11.53}
+      - provenance: reproduced
+        collision_filter: true
+        evaluator: GraspClutter6DEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_cd.json
+        inputs: "workspace crop: the image rectangle around the ground-truth segmentation, the crop of the official GraspClutter6D tool (gt_assisted: workspace)"
+        AP: {test: 17.00}
+        AP0.8: {test: 20.85}
+        AP0.4: {test: 11.86}
