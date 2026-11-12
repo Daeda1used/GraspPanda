@@ -20,7 +20,11 @@ GSNet with another scene encoder and nothing else changed: the recipe, the data 
 evaluator are GSNet's. AP on RealSense, 23,040 frames, as seen / similar / novel; *Loss* is
 the total training loss over the last epoch. `sunet14` is the encoder GSNet ships.
 
+<div class="gp-figures" markdown>
+
 --8<-- "docs/includes/trained_encoders.md"
+
+</div>
 
 - **SpUNet: no difference shown.** With 2.6 times the parameters it ends 0.2 to 0.7 AP below
   the shipped encoder, inside what one seed moves.
