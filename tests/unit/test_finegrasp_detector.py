@@ -269,7 +269,7 @@ def test_the_metafile_is_valid_and_states_the_reported_numbers():
     assert meta.method == "FineGrasp" and meta.implementation == "clean-room"
     assert meta.upstream["repository"] == "HorizonRobotics/robo_orchard_lab"
     assert meta.upstream["commit"].startswith("221ec0e")
-    (model,) = meta.models
+    model, transfer = meta.models
     assert model.config == f"{RUN_CONFIG}.yaml" and model.camera == "realsense"
     assert model.weights is not None and model.weights.source == "grasppanda"
     assert model.author_weights.sha256.startswith("30c1f335")
@@ -285,6 +285,12 @@ def test_the_metafile_is_valid_and_states_the_reported_numbers():
     ]
     assert model.results[0].ap == {"seen": 71.67, "similar": 62.83, "novel": 27.40}
     assert model.results[1].ap == {"seen": 73.71, "similar": 64.56, "novel": 28.14}
+    # the transfer config takes the same two files and is scored under the other
+    # protocol; the paper of that dataset has no FineGrasp row
+    assert transfer.config == "finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml"
+    assert transfer.protocol == "graspclutter6d-sv-v1"
+    assert (transfer.weights, transfer.author_weights) == (model.weights, model.author_weights)
+    assert "reported" not in {result.provenance for result in transfer.results}
 
 
 # --------------------------------------------------------------- tiny end to end

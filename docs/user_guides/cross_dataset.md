@@ -47,9 +47,14 @@ needs no derived asset.
 
 === "FineGrasp"
 
-    No transfer config ships for FineGrasp yet, and FineGrasp has not been tested on
-    GraspClutter6D here. A transfer config is a short child of the method config; the fold
-    *Why a config and not a list of overrides* below shows one.
+    ```bash
+    grasppanda test \
+        finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e \
+        --weights <weights of finegrasp_sunet14_g1b-realsense_10e>
+    ```
+
+    These weights know their camera distance: see
+    [the whole test split](#the-whole-test-split) before you read the number.
 
 === "HGGD"
 
@@ -107,7 +112,9 @@ A number measured on `test_mini` is a subset number, not a benchmark result.
       0.44 m (0.31 to 0.52 m) in GraspNet-1Billion. The image is larger, so a pixel covers
       about the same length on an object (0.50 mm against 0.47 mm); how much noisier the
       depth is at that distance was not measured. No depth range is clipped on either
-      dataset.
+      dataset. Five methods do not see the distance: four encoders read constant features
+      and HGGD centres its depth image. FineGrasp's encoder reads the coordinates of every
+      point, and the shift halves its AP: [the whole test split](#the-whole-test-split).
     - **Extent and density.** The reference crop here spans 0.91 × 0.57 × 0.81 m, about twice
       that of GraspNet-1Billion in each direction (0.48 × 0.35 × 0.26 m), and a scene holds
       14.5 object instances instead of 9.0. With the same point budget an object gets
@@ -275,26 +282,48 @@ width.
 
 ## The whole test split
 
-Run so far for five methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
-Scale-Balanced-Grasp, EconomicGrasp and HGGD with the authors' converted checkpoints
-(`author-ckpt`), and GSNet with the model trained from scratch by this toolbox
+Run for the six methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
+Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
+checkpoints (`author-ckpt`), and GSNet with the model trained from scratch by this toolbox
 (`reproduced`; its weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
-D435; the rows, with the reported numbers beside them, stand in the
-[model zoo](../model_zoo.md#graspclutter6d-transfers) and the result records in
-`configs/<method>/records/`.
+D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
+[model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
+`configs/<method>/records/` the result records.
 
-| Method | Weights | `raw` | `cd` | Reported |
-|---|---|---|---|---|
-| GraspNet-baseline | `author-ckpt` | 8.70 / 10.35 / 6.97 | 17.14 / 20.60 / 12.87 | 17.95 / 21.54 / 13.53 |
-| GSNet | `reproduced` | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | none published |
-| Scale-Balanced-Grasp | `author-ckpt` | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 / 27.57 / 16.95 |
-| EconomicGrasp | `author-ckpt` | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 / 26.62 / 15.90 |
-| HGGD | `author-ckpt` | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | none published |
+<div class="gp-figures" markdown>
 
-The four seed-based rows read the cloud inside the ground-truth rectangle of the official
+| Method | `raw` | `cd` | Reported AP |
+|---|---|---|---|
+| GraspNet-baseline | 8.70 / 10.35 / 6.97 | 17.14 / 20.60 / 12.87 | 17.95 |
+| GSNet, trained here | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | — |
+| Scale-Balanced-Grasp | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 |
+| EconomicGrasp | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 |
+| FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
+| HGGD | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | — |
+
+</div>
+
+The five seed-based rows read the cloud inside the ground-truth rectangle of the official
 tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads the whole
-image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. The GSNet row is one training run with one seed; its
-weights are another model than the `local` checkpoint of the subset numbers above.
+image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. The GSNet row
+is one training run with one seed; its weights are another model than the `local`
+checkpoint of the subset numbers above.
+
+**FineGrasp is the method as published, and it knows its camera distance.** Its encoder
+reads the coordinates of every point; the clouds it was trained on lie 0.34 to 0.46 m from
+the camera, those of this split 0.51 to 1.61 m. Moving the depth coordinate of the
+features to the training distance, and nothing else, gives 24.39 AP without the filter
+and 25.02 with it, above EconomicGrasp, the model it extends:
+
+```bash
+grasppanda test finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e \
+    --weights finegrasp_realsense.pth \
+    --opts data.test.dataset.transforms.2.median_depth=0.42
+```
+
+The same override serves `demo`, `infer` and `GraspInferencer` on a camera of your own
+([FineGrasp's README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)
+has the records).
 
 The reported value lies 0.81 AP above `cd` and 9.25 above `raw` for GraspNet-baseline,
 0.00 AP from `cd` and 0.93 above `raw` for Scale-Balanced-Grasp, and 0.02 AP below `raw`

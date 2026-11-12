@@ -127,30 +127,50 @@ def test_records_and_rows_correspond_one_to_one_and_hold_no_machine_path():
         assert text == json.dumps(record, indent=2, sort_keys=True) + "\n", path.name
 
 
-def test_a_repeat_is_another_training_of_a_zoo_model_and_its_readme_states_it():
-    """``configs/<method>/repeats/`` holds the records of a zoo model trained again: the
-    whole split of the zoo row, other weights. The method's README states their numbers
-    and links them; the zoo keeps the rows of the first training."""
-    for path in sorted((REPO / "configs").glob("*/repeats/*")):
+#: Whole-split records that stand beside the rows of the zoo, per directory of a method.
+BESIDE_THE_ZOO = {
+    "repeats": "the config of a zoo row trained again: other weights",
+    "variants": "the weights of a zoo row under a changed option: another config hash",
+}
+
+
+@pytest.mark.parametrize("kind", list(BESIDE_THE_ZOO))
+def test_a_record_beside_the_zoo_belongs_to_a_zoo_model_and_its_readme_states_it(kind):
+    """``configs/<method>/repeats/`` and ``variants/`` hold records no zoo row states: a
+    second training, or the same weights with one option changed. Each is the whole split
+    of a zoo row; the method's README states its numbers and links it."""
+    for path in sorted((REPO / "configs").glob(f"*/{kind}/*")):
         text = path.read_text(encoding="utf-8")
         record = json.loads(text)
         assert record_result.absolute_paths(record) == [], path.name
         assert text == json.dumps(record, indent=2, sort_keys=True) + "\n", path.name
-        meta = next(meta for meta in METAFILES if meta.path.parent == path.parent.parent)
-        model = next(model for model in meta.models if path.name.startswith(f"{model.name}_run"))
-        row = next(
-            result
-            for result in model.results
-            if result.provenance == "reproduced" and variant_of(result) == record["variant"]
-        )
-        first = json.loads((meta.path.parent / row.record).read_text(encoding="utf-8"))
         assert not record["partial"] and record["scored"] == record["requested"], path.name
+        meta = next(meta for meta in METAFILES if meta.path.parent == path.parent.parent)
+        model = max(
+            (model for model in meta.models if path.name.startswith(f"{model.name}_")),
+            key=lambda model: len(model.name),
+        )
+        rows = [
+            json.loads((meta.path.parent / result.record).read_text(encoding="utf-8"))
+            for result in model.results
+            if result.provenance != "reported" and variant_of(result) == record["variant"]
+        ]
         for key in ("protocol", "split", "cameras", "seed", "gt_assisted", "scored"):
-            assert record[key] == first[key], (path.name, key)
-        assert record["weights"]["sha256"] != first["weights"]["sha256"], path.name
-        numbers = " / ".join(f"{n:.2f}" for n in record_result.headline(record)["AP"].values())
+            assert record[key] == rows[0][key], (path.name, key)
+        same_weights = [
+            row for row in rows if row["weights"]["sha256"] == record["weights"]["sha256"]
+        ]
+        if kind == "repeats":
+            assert not same_weights, path.name
+        else:
+            assert len(same_weights) == 1, path.name
+            assert same_weights[0]["config_hash"] != record["config_hash"], path.name
+            assert same_weights[0]["code"]["commit"] == record["code"]["commit"], path.name
         readme = (path.parent.parent / "README.md").read_text(encoding="utf-8")
-        assert numbers in readme and f"(repeats/{path.name})" in readme, path.name
+        assert f"({kind}/{path.name})" in readme, path.name
+        for metric in record_result.headline(record).values():
+            for number in metric.values():
+                assert f"{number:.2f}" in readme, (path.name, number)
 
 
 def test_the_rows_of_one_kind_of_a_model_are_one_per_variant_from_one_run():

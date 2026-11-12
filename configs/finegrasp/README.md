@@ -36,8 +36,8 @@ The options of every slot, with what was measured for each:
 
 ## Results on GraspNet-1Billion
 
-AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames, all
-scored), protocol `graspnet1b-sv-v1`. The workspace is cropped with the ground-truth
+AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames),
+protocol `graspnet1b-sv-v1`. The workspace is cropped with the ground-truth
 segmentation, as in the reference (`gt_assisted: workspace`).
 
 | Config | Camera | Collision filter | Seen | Similar | Novel | Provenance |
@@ -49,23 +49,20 @@ segmentation, as in the reference (`gt_assisted: workspace`).
 | | RealSense | on | 73.69 | 64.62 | 28.18 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) |
 | | RealSense | on | 72.43 | 61.87 | 26.94 | reproduced ([record](records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_cd.json)) |
 
-`reported` is Table I of the paper; the model card of the released weights repeats it and
-names the weight file used here. `author-ckpt` is that file, converted and run through
-`grasppanda test` at commit `4bc5333`, one run with seed 0. **Measured minus reported**:
-−0.11 / −0.03 / +0.02 AP without the collision filter and −0.02 / +0.06 / +0.04 AP with
-it: every split is within 0.11 AP of the paper.
+`reported` is Table I of the paper. `author-ckpt` is the weight file its model card names,
+converted and run through `grasppanda test` at commit `4bc5333`, one run with seed 0.
+**Measured minus reported**: −0.11 / −0.03 / +0.02 AP without the collision filter and
+−0.02 / +0.06 / +0.04 AP with it.
 
-`reproduced` is a model trained from scratch here. **Measured minus reported**:
-−1.90 / −3.11 / −1.63 AP without the collision filter and −1.28 / −2.69 / −1.20 AP with
-it, outside the 1 AP of the zoo's admission gate on every split. The gap is not explained:
-run this method from the authors' weights.
+`reproduced` is a model trained from scratch here: −1.90 / −3.11 / −1.63 AP and
+−1.28 / −2.69 / −1.20 AP from the paper, outside the 1 AP of the zoo's admission gate on
+every split. The gap is not explained: run the method from the authors' weights.
 
 <details markdown="1"><summary>What the authors' weights show, and what is known about the training</summary>
 
 **The authors' weights.** The normal images they were trained on are not published and
 are reconstructed here (*The normals* under Notes); their agreement with the paper is the
-whole-split evidence for that reconstruction. Whether the remaining tenth of an AP is the
-seed of the point sampling was not investigated.
+whole-split evidence for that reconstruction.
 
 **The training.** At commit `400b733` with the four-GPU command of *Train and test*: four
 processes of four frames and the gradients of two batches per step, 32 frames a step as
@@ -83,14 +80,43 @@ of these, or the seed, accounts for it was not investigated: one run, one seed.
 
 ## Results on GraspClutter6D
 
-Not scored yet on the whole split.
+The authors' weights on the whole test split (235 scenes, 3,055 frames of the RealSense
+D435), protocol `graspclutter6d-sv-v1`, config
+[finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e](finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml).
+Percent.
+
+| Features | Collision filter | AP | AP0.8 | AP0.4 | Provenance |
+|---|---|---|---|---|---|
+| as published | off | 12.56 | 15.47 | 9.01 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json)) |
+| as published | on | 13.14 | 16.20 | 9.19 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json)) |
+| depth moved | off | 24.39 | 29.95 | 17.40 | [record](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_raw.json) |
+| depth moved | on | 25.02 | 30.75 | 17.60 | [record](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_cd.json) |
+
+**The weights know their camera distance.** The encoder reads coordinates, and this split
+lies farther from the camera than any training cloud. Moving the depth coordinate of the
+features back, and nothing else, doubles the AP:
+`--opts data.test.dataset.transforms.2.median_depth=0.42`.
+
+<details markdown="1"><summary>The camera distance: what was measured, and your own camera</summary>
+
+The cloud the model is fed has a median depth of 0.42 m on GraspNet-1Billion (0.34 to
+0.46 m over 300 training frames) and of 0.75 m on this split (0.51 to 1.61 m over 200
+test frames). `CoordinateFeatures.median_depth` shifts the depth coordinate of the
+features so that the median of a frame is the given value; points, voxels and grasps stay.
+It is a setting of the test, not of the published method: the zoo lists the rows *as
+published*. One run each, seed 0; the dataset's paper has no FineGrasp row.
+
+The override also serves `demo`, `infer` and `GraspInferencer(..., overrides=[...])` on a
+camera of your own. EconomicGrasp, the same model with constant input features, scores
+21.69 AP here; the other methods read no coordinates either (HGGD centres its depth).
+
+</details>
 
 ## Weights
 
-GraspPanda publishes no weights for this method: those trained here are below the paper,
-and the [metafile](metafile.yaml) lists them without a link. Download
-`finegrasp_pipeline/model.safetensors` from the authors' model repository (link and
-SHA-256 in the metafile) and convert it once; testing needs no asset:
+GraspPanda publishes no weights for this method; those trained here are below the paper.
+Download `finegrasp_pipeline/model.safetensors` from the authors' model repository (link
+and SHA-256 in the [metafile](metafile.yaml)) and convert it once; testing needs no asset:
 
 ```bash
 python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
@@ -111,14 +137,13 @@ grasppanda train finegrasp/finegrasp_sunet14_g1b-realsense_10e
 grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkpoint>
 ```
 
-The compact labels are EconomicGrasp's asset; if that exists, nothing is generated. The
-graspness asset is a new one: 100 training scenes took 70 minutes with 14 worker processes.
+The compact labels are EconomicGrasp's asset. The graspness asset is new: 100 training
+scenes took 70 minutes with 14 worker processes.
 
-**Memory decides how to launch it.** Training takes about 1.5 GB of GPU memory per frame
-(6.0 GB allocated with 4 frames in a batch, 11.7 GB with 8), so the config as written, one
-process with 32 frames, needs a 48 GB card. The published recipe is eight processes with
-four frames each. With fewer GPUs, sum the gradients of several batches: a step still sees
-32 frames, batch norm 4, and the learning rate and the step counts of the schedule stay.
+**Memory decides how to launch it.** At about 1.5 GB of GPU memory per frame the config
+as written, one process with 32 frames, needs a 48 GB card. The published recipe is eight
+processes of four frames; with fewer GPUs, accumulate the gradients of several batches: a
+step still sees 32 frames, batch norm 4, and the schedule stays.
 
 ```bash
 # 8 GPUs: the published recipe
@@ -138,8 +163,7 @@ grasppanda train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
 
 Read from the code of both references (`robo_orchard_lab` at `221ec0e`,
 `iSEE-Laboratory/EconomicGrasp` at `7361bb6`). "Same component" means the same class with
-the same values in both model configs (`tests/unit/test_finegrasp_detector.py` compares
-the two files); what is the same is interchangeable between the two methods.
+the same values in both model configs (compared by `tests/unit/test_finegrasp_detector.py`).
 
 | Stage | EconomicGrasp | FineGrasp | Here |
 |---|---|---|---|
@@ -168,23 +192,15 @@ axes of a single cylinder, so it fits other seed-based heads. Neither variant ha
 trained here. What each method ships:
 [Methods](https://daeda1used.github.io/GraspPanda/methods/#what-each-method-ships).
 
-What the label change acts on, in the first 20 training scenes (192 objects): the best
-label point of an object reaches, on the median, 54 % of the graspness of the best point
-of its scene, and for 37 objects less than a quarter. Instance normalisation sets every
-such ratio to 1. In scene 0, scene normalisation leaves one or two of the seven to nine
-visible objects without a point above the seed threshold of 0.1; instance normalisation
-leaves none.
-
 </details>
 
 <details markdown="1"><summary>The normals: what the released weights expect</summary>
 
-The reference dataset reads `scenes/<scene>/<camera>/normal/<frame>.npy` and divides it by
-255. Neither these files nor the code that made them are published. The paper gives the
-estimator (its equation 5, the cross product of the two tangents of the organised cloud);
-the orientation and the value range had to be identified. The released weights were run
-in the reference code on 20 test frames (scenes 100 to 104, every 64th frame) with
-different normal inputs:
+The reference dataset reads normal files (`normal/<frame>.npy`, divided by 255) that are
+not published, nor is the code that made them. The paper gives the estimator (its
+equation 5, the cross product of the two tangents of the organised cloud); orientation
+and value range were identified by running the released weights in the reference code on
+20 test frames (scenes 100 to 104, every 64th frame) with different normal inputs:
 
 | Normal input | AP, 20 frames, no collision filter |
 |---|---|
@@ -197,12 +213,11 @@ different normal inputs:
 | unit vectors in [−1, 1], away from / towards the camera | 36.8 / 31.7 |
 | what the released inference processor feeds: Open3D normals of the sampled cloud, unit vectors, sign as returned | **35.0** |
 
-`DepthNormals` with `towards_camera: true` and `encoding: image8` is the first row; with it
-the reference reaches the reported AP on a sample of the benchmark. The upper rows cannot
-be told apart on 20 frames, and the paper's estimator was chosen. The last row is a
-finding about the reference: its inference processor (`FineGraspProcessor`) feeds normals
-in another range and orientation than the dataset class the weights were trained with,
-which costs half of the AP here. It is not reproduced.
+`DepthNormals` with `towards_camera: true` and `encoding: image8` is the first row. The
+upper rows cannot be told apart on 20 frames; the paper's estimator was chosen. The last
+row is a finding about the reference: its inference processor (`FineGraspProcessor`) feeds
+normals in another range and orientation than the weights were trained with, which costs
+half of the AP.
 
 </details>
 
@@ -244,10 +259,9 @@ RealSense, AP without / with the collision filter; not an `author-ckpt` result.
 | `grasppanda test`, its own point sampling | 71.21 / 72.99 |
 | Reported, whole split, for orientation | 71.67 / 73.71 |
 
-Fed the same input, one frame scores differently without the filter (0.1 AP, the arg-max
-above). With it 52 frames differ, by −0.02 AP on average: the evaluation engine hands the
-filter the cloud in single precision, the reference voxelises it in double; given the
-double-precision cloud, the result is the reference's on all 120 frames (73.87).
+Fed the same input, the two differ on one frame without the filter (the arg-max above)
+and by −0.02 AP on average with it: the evaluation engine hands the filter a
+single-precision cloud, the reference voxelises in double (given that cloud: 73.87).
 
 Not verified: that a training reaches the paper (the run of *Results* ends below it), the
 Kinect camera (the authors publish RealSense only), the weights trained with simulation
