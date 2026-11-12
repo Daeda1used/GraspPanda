@@ -155,6 +155,9 @@ collision filter nor the checkpoints, so it is paired with no line.
 
 </div>
 
+FineGrasp's lines are the method as published: its weights know the camera distance of
+their training frames, and one setting moves them from 12.56 to 24.39 AP (see the note).
+
 ??? note "What to know when reading it"
 
     - **Inputs derived from ground truth.** GraspNet-baseline, Scale-Balanced-Grasp,
