@@ -127,6 +127,32 @@ def test_records_and_rows_correspond_one_to_one_and_hold_no_machine_path():
         assert text == json.dumps(record, indent=2, sort_keys=True) + "\n", path.name
 
 
+def test_a_repeat_is_another_training_of_a_zoo_model_and_its_readme_states_it():
+    """``configs/<method>/repeats/`` holds the records of a zoo model trained again: the
+    whole split of the zoo row, other weights. The method's README states their numbers
+    and links them; the zoo keeps the rows of the first training."""
+    for path in sorted((REPO / "configs").glob("*/repeats/*")):
+        text = path.read_text(encoding="utf-8")
+        record = json.loads(text)
+        assert record_result.absolute_paths(record) == [], path.name
+        assert text == json.dumps(record, indent=2, sort_keys=True) + "\n", path.name
+        meta = next(meta for meta in METAFILES if meta.path.parent == path.parent.parent)
+        model = next(model for model in meta.models if path.name.startswith(f"{model.name}_run"))
+        row = next(
+            result
+            for result in model.results
+            if result.provenance == "reproduced" and variant_of(result) == record["variant"]
+        )
+        first = json.loads((meta.path.parent / row.record).read_text(encoding="utf-8"))
+        assert not record["partial"] and record["scored"] == record["requested"], path.name
+        for key in ("protocol", "split", "cameras", "seed", "gt_assisted", "scored"):
+            assert record[key] == first[key], (path.name, key)
+        assert record["weights"]["sha256"] != first["weights"]["sha256"], path.name
+        numbers = " / ".join(f"{n:.2f}" for n in record_result.headline(record)["AP"].values())
+        readme = (path.parent.parent / "README.md").read_text(encoding="utf-8")
+        assert numbers in readme and f"(repeats/{path.name})" in readme, path.name
+
+
 def test_the_rows_of_one_kind_of_a_model_are_one_per_variant_from_one_run():
     """A model states the rows of one run per kind of weights: the authors' checkpoint
     (``author-ckpt``) and, where it was trained here, the weights of that training
