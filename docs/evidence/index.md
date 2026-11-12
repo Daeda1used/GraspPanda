@@ -29,6 +29,12 @@ Every option was composed under each method it fits; those accepted were probed 
 
     Each swap that ran, trained 250 iterations beside the shipped component.
 
+-   :material-flag-checkered:{ .lg .middle } **[How good does it become?](../advanced_guides/trained_swaps.md)**
+
+    ---
+
+    Swaps trained to the end and scored on the whole test split.
+
 -   :material-swap-horizontal:{ .lg .middle } **[Swap rules](../advanced_guides/swapping.md)**
 
     ---
@@ -41,13 +47,9 @@ Every option was composed under each method it fits; those accepted were probed 
 
     5 encoders with released weights loaded and outputs compared; 3 compared on synthetic weights; 4 unit-tested only.
 
--   :material-compass-outline:{ .lg .middle } **[Explorer](../explorer/index.md)**
-
-    ---
-
-    Every record behind these pages, option by option.
-
 </div>
+
+The [explorer](../explorer/index.md) shows every record behind these pages.
 
 --8<-- "docs/includes/caveat_probe.md"
 
@@ -150,8 +152,6 @@ Level 2: a swap that ran trains 250 iterations beside the shipped component, and
 - **diverging**: a loss rises at the end, a value became non-finite, or no grasp was predicted.
 - **did not train**: the run did not finish (record value `fails`).
 
-Level 2 needs `runs`, not `learns`: a term flat after 20 iterations can fall by iteration 250.
-
 ??? note "Exact definitions, and what level 2 leaves out"
 
     - `fails`: the run did not finish: an exception, a crash, a timeout, or no real frame read. A run that died of GPU memory is not recorded (it says nothing about the config) and is run again.
@@ -160,6 +160,8 @@ Level 2 needs `runs`, not `learns`: a term flat after 20 iterations can fall by 
     - `worse`: not diverging, and a comparable loss term ends above the tolerance of the method times the shipped method's (mean of the last 25 iterations), or a part of the model that holds trainable parameters received no gradient in any iteration.
     - `not comparable`: not diverging, nothing worse, but the cell changes the definition of every term the method as shipped has: there is no term to compare.
     - `on a par`: every comparable loss term ends within the tolerance of the method, at least one term is comparable, nothing rises, every value is finite and a frame has a grasp. A term far below the shipped method's is reported (`lower`), not judged.
+
+    Level 2 needs `runs`, not `learns`: a term flat after 20 iterations can fall by iteration 250.
 
     Not compared, on every page:
 

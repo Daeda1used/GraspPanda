@@ -56,9 +56,13 @@ rate is still 6.3e-4 when training stops: tuned for a sparse CNN. The row measur
 encoder with a recipe made for another one, which is what the header of a composed config
 says under *what must be re-tuned*.
 
-Records: [`records/`](records/), and
-[`run3`](../../configs/gsnet/repeats/) of GSNet for `sunet14`. A unit test holds the table
-to them.
+The 250-iteration check of the documentation had called all three swaps on a par with
+the shipped encoder: it sorts out what fails or diverges and does not rank what passes
+([How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)).
+
+Records: [`records/`](records/), with the loss of every epoch, and
+[`run3`](../../configs/gsnet/repeats/) of GSNet for `sunet14`. Unit tests hold the table and
+these sentences to them.
 
 ## Encoder or recipe
 

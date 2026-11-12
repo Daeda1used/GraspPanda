@@ -92,6 +92,7 @@ KINDS: dict[str, str] = {
     "model_zoo.md": "evidence",
     "advanced_guides/measured_combinations.md": "evidence",
     "advanced_guides/learns_like_reference.md": "evidence",
+    "advanced_guides/trained_swaps.md": "evidence",
     "advanced_guides/swapping.md": "evidence",
     "model_zoo_backbones.md": "evidence",
     "components.md": "long-reference",

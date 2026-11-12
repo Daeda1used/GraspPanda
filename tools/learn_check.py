@@ -1616,7 +1616,8 @@ def page(summary: Mapping[str, Any], path: Path | None = None) -> str:
         f"**One run per cell, {settings['iterations']} iterations on {settings['frames']} "
         "frames of one scene.** An outcome is about training dynamics, **not an accuracy "
         "measurement**: a cell on a par may still detect worse grasps, and one that is worse "
-        "here may catch up over a full schedule.",
+        "here may catch up over a full schedule. [How good does it become?](trained_swaps.md) "
+        "has swaps trained in full, one of them on a par here and 10 AP lower there.",
         "",
         "## The answer, kind by method {#the-answer}",
         "",
