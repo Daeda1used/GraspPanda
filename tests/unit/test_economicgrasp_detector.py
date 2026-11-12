@@ -290,8 +290,13 @@ def test_the_metafile_is_valid_and_states_the_reported_numbers():
         assert model.results[0].collision_filter is False
         # the authors' file; what was measured with it is held to its records, for all
         # methods, in test_zoo_records.py
-        assert model.weights.source == "author" and len(model.weights.sha256) == 64
-        assert "reproduced" not in {result.provenance for result in model.results}  # not trained
+        authors = model.backing("author-ckpt")
+        assert authors.source == "author" and len(authors.sha256) == 64
+        # RealSense was trained here too: those weights come first, the authors' beside them
+        trained = "reproduced" in {result.provenance for result in model.results}
+        assert trained is (camera == "realsense")
+        assert model.weights.source == ("grasppanda" if trained else "author")
+        assert (model.author_weights is not None) is trained
     assert by_camera["kinect"].results[0].ap == {"seen": 62.59, "similar": 51.73, "novel": 19.54}
     assert by_camera["realsense"].results[0].ap == {"seen": 68.21, "similar": 61.19, "novel": 25.48}
     # the transfer config takes the RealSense weights and is scored under the other protocol
@@ -299,7 +304,11 @@ def test_the_metafile_is_valid_and_states_the_reported_numbers():
     assert transfer.name == "economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e"
     assert transfer.config == f"economicgrasp/{transfer.name}.yaml"
     assert transfer.protocol == "graspclutter6d-sv-v1"
-    assert transfer.weights == by_camera["realsense"].weights
+    realsense = by_camera["realsense"]
+    assert (transfer.weights, transfer.author_weights) == (
+        realsense.weights,
+        realsense.author_weights,
+    )
     assert transfer.results[0].numbers() == {
         "AP": {"test": 21.67},
         "AP0.8": {"test": 26.62},

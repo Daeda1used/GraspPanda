@@ -20,13 +20,14 @@ none of their code is part of this history. Each line below has its full account
 - **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
 - **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
 - **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
-- **Model zoo.** Released weights scored on whole test splits; GSNet and FineGrasp trained here, GSNet three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
+- **Model zoo.** Released weights scored on whole test splits; GSNet, EconomicGrasp and FineGrasp trained here, GSNet three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
-- **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory.
+- **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file; results are not in yet.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
@@ -43,6 +44,7 @@ none of their code is part of this history. Each line below has its full account
 - **One typeface.** The documentation site, the page of `grasppanda explore` and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.
 - **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
 - **A quieter site.** Code is highlighted in two colours, folds that follow each other form one list, a short identifier no longer breaks at its hyphen, the tables of the model zoo share one width with aligned figures, and method pages give their option tables the whole column.
+- **The model zoo page** has one table per benchmark: the reported number, the authors' weights and the model trained here side by side, with measured minus reported in a fold. A training adds no line.
 - **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
 
 ### Fixed
@@ -60,7 +62,7 @@ none of their code is part of this history. Each line below has its full account
 
 ### Known limits
 
-- No method has passed the admission rule of the zoo yet, so the zoo has no weights to download: trained here, GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
+- No method has passed the admission rule of the zoo yet, so the zoo has no weights to download: trained here, EconomicGrasp reaches its authors' checkpoint and is, like it, 0.13 AP outside the gate on seen; GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
 - No option beside the ported methods has been trained and evaluated: a probe says a combination trains, not how good it is.
 - Mixed precision is refused for the shipped detectors; `optimizer=soap` under HGGD is not verified (one CUDA illegal memory access on a shared GPU).
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
@@ -491,6 +493,15 @@ Classes now count levels, and every method lists the options of each of its slot
   60.71 / 25.42 AP without and 71.69 / 62.77 / 26.59 with the collision filter. The three
   trainings of one config and seed span 1.12 / 0.36 / 0.37 AP without the filter, on seen
   about as much as the admission gate allows; its records are in `repeats/` as well.
+- EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
+  69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
+  within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on
+  novel. Against the published table that is +1.13 AP on seen, 0.13 outside the admission
+  gate, where the authors' checkpoint stands as well (+1.07). On GraspClutter6D the model
+  scores 23.24 / 28.58 / 17.04 and 23.72 / 29.16 / 17.20 (AP / AP0.8 / AP0.4), about 1.5 AP
+  above the authors' checkpoint. With the detector underneath FineGrasp reproduced, what
+  is left of FineGrasp's gap lies in its three changes as generated here or in its recipe
+  as run here; `projects/finegrasp_ablation` trains each change alone to tell which.
 - FineGrasp was trained from scratch on four RTX 3090 (four processes with four frames
   each, the gradients of two batches per step): 69.77 / 59.72 / 25.77 AP without and
   72.43 / 61.87 / 26.94 with the collision filter, below the paper by 1.2 to 3.1 AP on
@@ -643,10 +654,13 @@ Classes now count levels, and every method lists the options of each of its slot
 <summary>Known limits, in full</summary>
 
 - No method has passed the admission rule of the zoo yet, and the zoo has no weights to
-  download. GSNet, the one model trained here, is above the paper by more than 1 AP and
-  its weights are not published; a training with the unmodified reference code was not
-  run here. The other numbers are `author-ckpt` (see above): each is one run with seed 0,
-  and where a number differs from the reported one the cause is not known.
+  download. Of the three models trained here, EconomicGrasp reaches its authors'
+  checkpoint and is 0.13 AP outside the gate on seen, where that checkpoint is 0.07
+  outside it; GSNet is above its paper by more than 1 AP and FineGrasp below, both
+  unexplained. None of their weights is published, and a training with unmodified
+  reference code was not run here. The other numbers are `author-ckpt` (see above): each
+  is one run with seed 0, and where a number differs from the reported one the cause is
+  not known.
 - No option added beside the six ported methods has been trained and evaluated: a
   measured verdict says that a combination builds, trains for 20 iterations and predicts.
 - Mixed precision (`train.amp`, preset `hooks=amp`) does not work with the shipped

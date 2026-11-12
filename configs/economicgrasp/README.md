@@ -37,8 +37,8 @@ terminal `grasppanda compose economicgrasp/economicgrasp_sunet14_g1b-realsense_1
 
 ## Results on GraspNet-1Billion
 
-AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames, all
-scored), protocol `graspnet1b-sv-v1`. The workspace is cropped with the ground-truth
+AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames),
+protocol `graspnet1b-sv-v1`. The workspace is cropped with the ground-truth
 segmentation, as in the reference (`gt_assisted: workspace`).
 
 | Config | Camera | Collision filter | Seen | Similar | Novel | Provenance |
@@ -46,18 +46,33 @@ segmentation, as in the reference (`gt_assisted: workspace`).
 | [economicgrasp_sunet14_g1b-realsense_10e](economicgrasp_sunet14_g1b-realsense_10e.yaml) | RealSense | off | 68.21 | 61.19 | 25.48 | reported |
 | | RealSense | off | 69.28 | 61.50 | 25.17 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) |
 | | RealSense | on | 70.83 | 62.56 | 25.80 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) |
+| | RealSense | off | 69.34 | 61.41 | 26.21 | reproduced ([record](records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test_raw.json)) |
+| | RealSense | on | 71.05 | 62.54 | 26.81 | reproduced ([record](records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test_cd.json)) |
 | [economicgrasp_sunet14_g1b-kinect_10e](economicgrasp_sunet14_g1b-kinect_10e.yaml) | Kinect | off | 62.59 | 51.73 | 19.54 | reported |
 | | Kinect | off | 63.71 | 52.28 | 19.73 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_raw.json)) |
 | | Kinect | on | 65.47 | 53.64 | 20.36 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-kinect_10e_author-ckpt_test_cd.json)) |
 
 `author-ckpt` is the authors' checkpoint of upstream release `v1` for each camera,
-converted and run through `grasppanda test` (Kinect at commit `ccb8704`, RealSense at
-`4bc5333`), one run each with seed 0. No model has been trained here yet. **Measured minus
+converted and run through `grasppanda test`, one run each with seed 0. **Measured minus
 reported, filter off**: Kinect +1.12 / +0.55 / +0.19 AP, RealSense +1.07 / +0.31 / −0.31
-AP: both checkpoints score about 1.1 AP above the published table on the seen split. The
-gap is not explained.
+AP: both are about 1.1 AP above the published table on seen, which is not explained.
 
-<details markdown="1"><summary>What is known about the gap</summary>
+`reproduced` is a model trained here from scratch with the config's recipe. **It lands on
+the authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it (filter off) and
++0.22 / −0.02 / +1.01 (on). From the table: +1.13 / +0.22 / +0.73, on seen 0.13 AP outside
+the zoo's 1 AP gate, like the checkpoint.
+
+<details markdown="1"><summary>How it was trained, and what is known about the gap</summary>
+
+**The training.** `grasppanda train economicgrasp/economicgrasp_sunet14_g1b-realsense_10e`
+at commit `7ac91b5`, nothing overridden: 10 epochs, batch size 4, seed 0, 17.0 hours on one
+RTX 3090 shared with other jobs. The checkpoint of epoch 10 (SHA-256 `22f17fd571a2…`) was
+scored at commit `400b733`. One run, one seed: whether a second training keeps the 1.0 AP
+on novel was not measured (GSNet, trained three times with one seed, moves by 0.4 AP
+there).
+
+**The gap to the published table.** The checkpoints were scored at commit `ccb8704`
+(Kinect) and `4bc5333` (RealSense).
 
 The `reported` numbers are those of the upstream README. Neither it nor the paper says
 whether a collision filter was applied; the shipped test command leaves it off, and the
@@ -72,6 +87,8 @@ table above takes that reading. No number with the filter is reported.
   1.0, but averaging the five levels up to 1.0 instead of the benchmark's six gives
   60.90 / 49.34 / 17.23 (Kinect) and 66.57 / 58.50 / 21.81 (RealSense) from the same
   records, further from the reported values, not closer.
+- It is not the released RealSense file: the model trained here is above the table by as
+  much on seen (+1.13) as that checkpoint (+1.07).
 - Not investigated: whether the released checkpoints are the ones behind the published
   table, and how much a number moves with the seed of the point sampling.
 
@@ -79,7 +96,7 @@ table above takes that reading. No number with the filter is reported.
 
 ## Results on GraspClutter6D
 
-The RealSense checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames
+The RealSense weights on the whole GraspClutter6D test split (235 scenes, 3,055 frames
 of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 [economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e](economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml).
 Percent.
@@ -89,8 +106,11 @@ Percent.
 | not stated | 21.67 | 26.62 | 15.90 | reported |
 | off | 21.69 | 26.64 | 15.79 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json)) |
 | on | 22.25 | 27.30 | 16.06 | author-ckpt ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json)) |
+| off | 23.24 | 28.58 | 17.04 | reproduced ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_raw.json)) |
+| on | 23.72 | 29.16 | 17.20 | reproduced ([record](records/economicgrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_cd.json)) |
 
-The unfiltered run matches the reported row to 0.11 AP.
+The authors' checkpoint matches the reported row unfiltered (0.11 AP); the model trained
+here is 1.5 AP above it.
 
 <details markdown="1"><summary>Against the reported row</summary>
 
@@ -107,7 +127,8 @@ the weights were trained with. What else changes with the dataset is described i
 
 ## Weights
 
-GraspPanda publishes no weights for this method. Download the authors' files of upstream
+GraspPanda publishes no weights for this method yet; for those trained here that is not
+decided (the training data is CC BY-NC-SA 4.0). Download the authors' files of upstream
 release `v1` (links and SHA-256 in the [metafile](metafile.yaml)) and convert them once:
 
 ```bash
@@ -129,9 +150,8 @@ grasppanda test  economicgrasp/economicgrasp_sunet14_g1b-kinect_10e --weights <c
 ```
 
 The compact labels are one asset for both cameras: 1.2 GB for the 100 training scenes,
-generated from the dense label store in about four minutes on the development machine;
-39 % of the annotated points are kept. Once the asset exists the dense store is no
-longer read during training.
+generated from the dense label store in about four minutes; 39 % of the annotated points
+are kept, and training no longer reads the dense store.
 
 ## Notes
 
@@ -194,8 +214,8 @@ are discontinuous in the grasp parameters, so a difference in the seventh digit 
 change the verdict on a top-ranked grasp. Parity is therefore established on activations
 and grasps; an AP comparison can only confirm it up to that noise.
 
-Not verified: any complete training run (two epochs on eight frames ran through
-`grasppanda train` as a smoke test), and the upstream code with the RealSense checkpoint.
+Not verified: the upstream code with the RealSense checkpoint. The complete training run
+is the `reproduced` row of *Results on GraspNet-1Billion*.
 
 </details>
 

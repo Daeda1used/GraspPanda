@@ -164,7 +164,7 @@ Where each option runs, under which method and why not elsewhere: the
 ## Model zoo
 
 Targets: what the authors report on GraspNet-1Billion (RealSense, AP on seen / similar /
-novel), and in the last column the model trained here.
+novel); last column: the model trained here.
 
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
@@ -174,14 +174,14 @@ novel), and in the last column the model trained here.
 | GSNet | ICCV 2021 | on | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | Scale-Balanced-Grasp | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | — |
 | Scale-Balanced-Grasp | CoRL 2022 | on | 63.83 / 58.46 / 24.63 | — |
-| EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | — |
+| EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
 | FineGrasp | arXiv 2025 | off | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
 | FineGrasp | arXiv 2025 | on | 73.71 / 64.56 / 28.14 | 72.43 / 61.87 / 26.94 |
 | HGGD | RA-L 2023 | not stated | 59.36 / 51.20 / 22.17 (paper) · 64.45 / 53.59 / 24.59 (repository) | — |
 
 A method enters the zoo when it is trained here within 1 AP of the reported number, or with
-the gap explained. None has passed so far, so GraspPanda publishes no trained weights yet;
-the methods run from their released weights
+the gap explained. Trained here, EconomicGrasp reaches its authors' checkpoint. No trained
+weights are published yet; the methods run from their released weights
 ([Run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)).
 
 <details>
@@ -194,7 +194,11 @@ the methods run from their released weights
   more than the gate allows, and why is not known. What is known: the port equals the reference
   implementation stage by stage, a model trained with the reference code (on a modified
   label set) is also above the paper, and the authors' original code is not public
-  ([details](https://daeda1used.github.io/GraspPanda/model_zoo/#trained-and-evaluated-here)).
+  ([details](https://daeda1used.github.io/GraspPanda/model_zoo/#graspnet-1billion)).
+  Its weights are not published yet.
+- **EconomicGrasp** was trained here once and scores what its authors' checkpoint scores
+  here on the seen and similar splits, and more on novel. Both are above the published
+  table on seen by slightly more than the gate allows; why the table is lower is not known.
   Its weights are not published yet.
 - **FineGrasp** was trained here once and is below the paper by more than the gate allows,
   which is not explained either. The authors' weights give the paper's numbers through the
@@ -239,7 +243,7 @@ the methods run from their released weights
 
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
 - [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** Done: the evaluator equals the official one; GSNet equals its reference stage by stage, is trained here and scored on the whole test split. Open: its gap to the paper is not explained, and its weights are not published.
-- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights. In progress: training here.
+- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights; EconomicGrasp, trained here, reaches its authors' checkpoint. In progress: training HGGD.
 - [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference; FineGrasp is trained here. Open: its gap to the paper. In progress: training the others. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
 - [ ] **M4 — GraspClutter6D.** Done: reader, evaluator equal to the official one, label assets, transfer configs. Planned: training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.

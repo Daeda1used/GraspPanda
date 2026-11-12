@@ -69,11 +69,13 @@ in the published recipe; 10 epochs, seed 0, 5.1 hours on four RTX 3090 shared wi
 jobs. The checkpoint of epoch 10 (SHA-256 `e8b99d4390d9…`) was scored at the same commit.
 
 **The gap.** The authors' weights reach the paper through the same test path, so it comes
-from the training. On a recorded batch the losses and gradients equal the reference's
-(*Equivalence with the reference code*). What a training here does not share with the
-authors': their normal images and graspness labels, generated here from the paper's
-equations, and their eight processes, replaced by four with accumulated gradients. Which
-of these, or the seed, accounts for it was not investigated: one run, one seed.
+from the training. A recorded batch gives the reference's losses and gradients, and
+EconomicGrasp, the detector underneath, trained here lands on its authors' checkpoint:
+what the two share trains as it should. That leaves what FineGrasp adds, the normal images
+and graspness labels generated here from the paper's equations, and its recipe on four
+processes in place of eight. Trained here FineGrasp is +0.43 / −1.69 / −0.44 AP from
+EconomicGrasp (filter off); with both authors' weights,
++2.28 / +1.30 / +2.25. One run, one seed.
 
 </details>
 
@@ -261,9 +263,8 @@ Fed the same input, the two differ on one frame without the filter (the arg-max 
 and by −0.02 AP on average with it: the evaluation engine hands the filter a
 single-precision cloud, the reference voxelises in double (given that cloud: 73.87).
 
-Not verified: that a training reaches the paper (the run of *Results* ends below it), the
-Kinect camera (the authors publish RealSense only), the weights trained with simulation
-data (`finegrasp_pipeline_sim`, no normals), and GraspClutter6D.
+Not verified: the Kinect camera (the authors publish RealSense only), the weights trained
+with simulation data (`finegrasp_pipeline_sim`, no normals), and GraspClutter6D.
 
 </details>
 
