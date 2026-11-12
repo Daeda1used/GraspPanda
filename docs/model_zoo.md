@@ -105,8 +105,9 @@ recipe of its config and scored through `grasppanda test`.
       original code, which is not public. No `author-ckpt` number stands beside it: the file
       released with the reference code does not reach the paper's numbers in either
       implementation (`configs/gsnet/README.md`).
-    - **One run.** One training run with one seed, scored once. A training with the
-      unmodified reference code was not run here, and the spread over seeds was not measured.
+    - **Two trainings, one seed.** The rows are the first training. A second one, on
+      another GPU, is within 0.5 AP of it on every split (`configs/gsnet/README.md`). Other
+      seeds were not trained, and a training with the unmodified reference code was not run.
     - **The variants.** `off` is the prediction as emitted (variant `raw`), `on` the
       model-free collision filter of the reference (variant `cd`). The workspace crop is
       derived from the ground-truth segmentation, as in the reference (`gt_assisted:
