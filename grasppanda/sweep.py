@@ -15,6 +15,9 @@ is reported at planning time rather than hours into the sweep.
         "1024": []
         "2048": ["model.proposal.num_seeds=2048"]
 
+An alternative may splice in others by YAML anchor, a list inside its list
+(``both: [*ptv3, *more_seeds]``): the way to write "these changes together" once.
+
 ``base`` may also name several configs, each under a short name. They become the first
 axis, ``config``: the way to compare configs that ``grasppanda compose`` wrote, with the
 same seeds, side by side.
@@ -209,7 +212,14 @@ def load_sweep(path: str | Path, extra: Sequence[str] = ()) -> Sweep:
             raise _fail(path, f"axes.{axis}", "must map alternative names to lists of overrides")
         for name, overrides in list(alternatives.items()):
             if overrides is None:
-                alternatives[name] = overrides = []
+                overrides = []
+            if isinstance(overrides, list):  # a list in the list: another alternative, by anchor
+                overrides = [
+                    item
+                    for part in overrides
+                    for item in (part if isinstance(part, list) else [part])
+                ]
+            alternatives[name] = overrides
             if not isinstance(overrides, list) or not all(
                 isinstance(item, str) for item in overrides
             ):

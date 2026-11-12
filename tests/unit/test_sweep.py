@@ -463,3 +463,72 @@ def test_overrides_of_the_sweep_reach_every_cell_and_an_alternative_wins(write):
     bad = write("sweeps/bad.yaml", f"base: {TOY}\noverrides: model.num_seeds=96\n")
     with pytest.raises(ConfigError, match="must be a list"):
         load_sweep(bad)
+
+
+def test_an_alternative_splices_in_other_alternatives_by_anchor(write):
+    """``both: [*more, *wide]``: a list inside the list of an alternative is spliced in."""
+    sweep = load_sweep(
+        sweep_file(
+            write,
+            "  change:\n    more: &more ['model.num_seeds=128']\n"
+            "    wide: &wide ['model.grouper.radius=0.08']\n"
+            "    both: [*more, *wide, 'model.grouper.nsample=8']\n",
+            seeds="[0]",
+        )
+    )
+    assert sweep.axes["change"]["both"] == [
+        "model.num_seeds=128",
+        "model.grouper.radius=0.08",
+        "model.grouper.nsample=8",
+    ]
+    more, wide, both = sweep.plan()
+    assert more.config.select("model.grouper.radius") != 0.08
+    assert wide.config.select("model.num_seeds") != 128
+    assert both.config.select("model.num_seeds") == 128
+    assert both.config.select("model.grouper.radius") == 0.08
+    deeper = sweep_file(write, "  a:\n    x: [[['model.num_seeds=1']]]\n", seeds="[0]")
+    with pytest.raises(ConfigError, match="must be a list"):  # one level, not a tree
+        load_sweep(deeper)
+
+
+#: The sweeps of ``projects/``: file → the runs it plans.
+PROJECT_SWEEPS = {
+    "encoder_comparison/gsnet_encoders.yaml": ["sunet14", "ptv3", "spunet", "litept"],
+    "finegrasp_ablation/changes.yaml": ["graspness", "normals", "multi-scale", "all"],
+}
+
+
+@pytest.mark.parametrize("name", PROJECT_SWEEPS)
+def test_the_sweeps_of_the_projects_plan_valid_runs(name):
+    cells = load_sweep(REPO / "projects" / name).plan(command="train")
+    assert [cell.name for cell in cells] == [f"{run}/seed0" for run in PROJECT_SWEEPS[name]]
+    assert all(cell.valid for cell in cells), [str(cell.error) for cell in cells if not cell.valid]
+    assert len({cell.config.digest() for cell in cells}) == len(cells)
+
+
+def test_the_ablation_adds_up_to_finegrasp_under_the_recipe_of_economicgrasp():
+    """Its cell ``all`` is FineGrasp's model and data, trained as EconomicGrasp is: every
+    other cell differs from EconomicGrasp in the entries of its one change."""
+    from grasppanda.config import Config, resolve_config_path
+
+    def shipped(name: str) -> Config:
+        return Config.load(resolve_config_path(f"{name}_sunet14_g1b-realsense_10e"))
+
+    economic, fine = shipped("economicgrasp/economicgrasp"), shipped("finegrasp/finegrasp")
+    cells = {
+        cell.choices["change"]: cell.config
+        for cell in load_sweep(REPO / "projects/finegrasp_ablation/changes.yaml").plan()
+    }
+    together = cells["all"]
+    assert together.select("model") == fine.select("model")
+    assert together.select("data.train.dataset") == fine.select("data.train.dataset")
+    assert together.select("data.test.dataset") == fine.select("data.test.dataset")
+    for key in ("optimizer", "scheduler", "train", "data.train.batch_size", "evaluation"):
+        assert together.select(key) == economic.select(key), key
+    # one change each: the label asset, the input features, the crop
+    assert cells["graspness"].select("model") == economic.select("model")
+    assert cells["graspness"].select("data.train.dataset.graspness.normalization") == "instance"
+    assert cells["normals"].select("model.grouper") == economic.select("model.grouper")
+    assert cells["normals"].select("model.backbone.in_channels") == 6
+    assert cells["multi-scale"].select("model.grouper") == fine.select("model.grouper")
+    assert cells["multi-scale"].select("data") == economic.select("data")
