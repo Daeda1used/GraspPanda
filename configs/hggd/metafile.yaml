@@ -105,19 +105,18 @@ models:
         AP: {seen: 61.17, similar: 47.02, novel: 19.37}
         source: "repository README, row 'In repo'"
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 4bc5333, scored by GraspNet1BEvaluator, with
-      # PyTorch's TF32 convolutions (what a run computed in then; the RealSense rows are
-      # float32). One run with seed 0, as for the RealSense rows.
+      # through `grasppanda test` at commit 400b733 in float32 on an RTX 3090, scored by
+      # GraspNet1BEvaluator. One run with seed 0, as for the RealSense rows.
       - provenance: author-ckpt
         collision_filter: false
         evaluator: GraspNet1BEvaluator
         record: records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json
         inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
-        AP: {seen: 56.98, similar: 43.97, novel: 18.63}
+        AP: {seen: 56.98, similar: 43.97, novel: 18.56}
       # Post-processing of 'cd': ModelFreeCollisionFilter, then GraspNMS.
       - provenance: author-ckpt
         collision_filter: true
         evaluator: GraspNet1BEvaluator
         record: records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json
         inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
-        AP: {seen: 60.34, similar: 46.83, novel: 19.27}
+        AP: {seen: 60.30, similar: 46.85, novel: 19.22}
