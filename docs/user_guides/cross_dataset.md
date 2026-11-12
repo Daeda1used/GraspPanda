@@ -284,8 +284,8 @@ width.
 
 Run for the six methods, 3,055 of 3,055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
-checkpoints (`author-ckpt`), GSNet and FineGrasp with the models trained from scratch by
-this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+checkpoints (`author-ckpt`), GSNet, EconomicGrasp and FineGrasp with the models trained from
+scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
 D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
 [model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
 `configs/<method>/records/` the result records.
@@ -298,14 +298,15 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | GSNet, trained here | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | — |
 | Scale-Balanced-Grasp | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 |
 | EconomicGrasp | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 |
+| EconomicGrasp, trained here | 23.24 / 28.58 / 17.04 | 23.72 / 29.16 / 17.20 | — |
 | FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
 | FineGrasp, trained here | 16.12 / 19.78 / 11.53 | 17.00 / 20.85 / 11.86 | — |
 | HGGD | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | — |
 
 </div>
 
-The five seed-based rows read the cloud inside the ground-truth rectangle of the official
-tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads the whole
+The rows of the five seed-based methods read the cloud inside the ground-truth rectangle
+of the official tool (`gt_assisted: [workspace]`). HGGD is not like-for-like with them: it reads the whole
 image (`gt_assisted: none`), and its `cd` is its own filter followed by NMS. A row
 *trained here* is one training run with one seed; GSNet's weights are another model than
 the `local` checkpoint of the subset numbers above.
@@ -329,7 +330,7 @@ has the records).
 
 The reported value lies 0.81 AP above `cd` and 9.25 above `raw` for GraspNet-baseline,
 0.00 AP from `cd` and 0.93 above `raw` for Scale-Balanced-Grasp, and 0.02 AP below `raw`
-and 0.58 below `cd` for EconomicGrasp. So the reported table is closest to the filtered run
+and 0.58 below `cd` for EconomicGrasp (the authors' checkpoints). So the reported table is closest to the filtered run
 for two methods and to the unfiltered run for the third. The paper does not state the
 collision filter, and whether it was applied to some methods and not to others was not
 investigated.

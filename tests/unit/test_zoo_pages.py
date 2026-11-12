@@ -54,63 +54,103 @@ def table_under(page: str, heading: str) -> list[list[str]]:
 CAMERAS = {"realsense": "RealSense", "kinect": "Kinect", "realsense-d435": "RealSense D435"}
 
 
-def expected_rows(protocol: str, provenance: str = "author-ckpt") -> list[list[str]]:
-    """The lines of a zoo table of one measured provenance, from the metafiles alone.
+#: The measured provenances, in the order of their columns on the zoo page.
+MEASURED_COLUMNS = ("author-ckpt", "reproduced")
 
-    Per model with a measured row: one line per collision-filter state (off, on) with
-    the measured numbers, the reported numbers of that state beside them and measured
-    minus reported; then one line per reported row whose source does not state the
-    filter, which is paired with no measured number.
+
+def expected_rows(protocol: str) -> list[list[str]]:
+    """The lines of the zoo table of one benchmark, from the metafiles alone.
+
+    Per model with a measured row: one line per collision-filter state (off, on) with the
+    reported numbers of that state, what the released weights score and what the model
+    trained here scores; then one line per reported row whose source does not state the
+    filter, which stands beside no measured number.
     """
     lines = []
     for meta in METAFILES:
         for model in meta.models:
-            rows = {provenance: {}, "reported": {}}
+            rows: dict[tuple[str, bool | None], list] = {}
             for result in model.results:
-                if result.provenance in rows:
-                    rows[result.provenance].setdefault(result.collision_filter, []).append(result)
-            if model.protocol != protocol or not rows[provenance]:
+                rows.setdefault((result.provenance, result.collision_filter), []).append(result)
+            measured = any(provenance in MEASURED_COLUMNS for provenance, _ in rows)
+            if model.protocol != protocol or not measured:
                 continue
             head = [meta.method, CAMERAS[model.camera]]
             for state, word in ((False, "off"), (True, "on")):
-                measured = rows[provenance].get(state, [])
-                reported = rows["reported"].get(state, [])
-                assert len(measured) <= 1 and len(reported) <= 1, model.name
-                if not measured and not reported:
-                    continue
-                ours = numbers_text(measured[0]) if measured else "—"
-                theirs = numbers_text(reported[0]) if reported else "—"
-                delta = difference(ours, theirs) if measured and reported else "—"
-                lines.append([*head, word, ours, theirs, delta])
-            for result in rows["reported"].get(None, []):
-                lines.append([*head, "not stated", "—", numbers_text(result), "—"])
+                cells = []
+                for provenance in ("reported", *MEASURED_COLUMNS):
+                    found = rows.get((provenance, state), [])
+                    assert len(found) <= 1, model.name
+                    cells.append(numbers_text(found[0]) if found else "—")
+                if set(cells) != {"—"}:
+                    lines.append([*head, word, *cells])
+            for result in rows.get(("reported", None), []):
+                lines.append([*head, "not stated", numbers_text(result), "—", "—"])
     return lines
 
 
-@pytest.mark.parametrize(
-    ("heading", "protocol", "provenance"),
-    [
-        ("## Trained and evaluated here", "graspnet1b-sv-v1", "reproduced"),
-        ("## Authors' checkpoints scored by this toolbox", "graspnet1b-sv-v1", "author-ckpt"),
-        ("## GraspClutter6D transfers", "graspclutter6d-sv-v1", "author-ckpt"),
-        ("### The models trained here, on GraspClutter6D", "graspclutter6d-sv-v1", "reproduced"),
-    ],
-)
-def test_the_zoo_page_shows_exactly_the_measured_rows_of_the_metafiles(
-    heading, protocol, provenance
-):
-    page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
-    shown = table_under(page, heading)
-    expected = expected_rows(protocol, provenance)
+def expected_differences(protocol: str) -> list[list[str]]:
+    """Measured minus reported, for every line whose reported number states the filter."""
+    lines = []
+    for *head, reported, author, trained in expected_rows(protocol):
+        if reported == "—" or head[-1] == "not stated":
+            continue
+        cells = [difference(m, reported) if m != "—" else "—" for m in (author, trained)]
+        lines.append([*head, *cells])
+    return lines
+
+
+def disagreement(shown: list[list[str]], expected: list[list[str]]) -> str:
+    """The lines to add to a page and the lines to take from it, as Markdown."""
     missing = [line for line in expected if line not in shown]
     extra = [line for line in shown if line not in expected]
-    assert not missing and not extra, (
+    if not missing and not extra and len(shown) == len(expected):
+        return ""
+    return (
         "docs/model_zoo.md and the metafiles disagree.\nLines the metafiles ask for:\n"
         + "\n".join("| " + " | ".join(line) + " |" for line in missing)
         + "\nLines of the page without a metafile row:\n"
         + "\n".join("| " + " | ".join(line) + " |" for line in extra)
     )
-    assert len(shown) == len(expected)
+
+
+#: Heading of each benchmark's table on the zoo page → its protocol.
+ZOO_TABLES = {
+    "## GraspNet-1Billion": "graspnet1b-sv-v1",
+    "## GraspClutter6D transfers": "graspclutter6d-sv-v1",
+}
+#: The fold of the zoo page with measured minus reported.
+DIFFERENCES = '??? note "Measured minus reported"'
+
+
+@pytest.mark.parametrize(("heading", "protocol"), ZOO_TABLES.items())
+def test_the_zoo_page_shows_exactly_the_rows_of_the_metafiles(heading, protocol):
+    """One line per model and filter state: reported, released weights, trained here.
+
+    A benchmark scored with one camera names it above its table instead of on every line.
+    """
+    page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
+    expected = expected_rows(protocol)
+    cameras = {line[1] for line in expected}
+    if len(cameras) == 1:
+        start = page.index(heading)
+        assert cameras.pop() in " ".join(page[start : page.index("\n|", start)].split()), heading
+        expected = [[line[0], *line[2:]] for line in expected]
+    problem = disagreement(table_under(page, heading), expected)
+    assert not problem, problem
+
+
+def test_the_differences_on_the_zoo_page_are_measured_minus_reported():
+    """The fold below the GraspNet-1Billion table, computed from the same rows. No
+    GraspClutter6D number is reported with its collision filter, so nothing is paired."""
+    page = (REPO / "docs" / "model_zoo.md").read_text(encoding="utf-8")
+    assert page.count(DIFFERENCES) == 1
+    assert page.index("## GraspNet-1Billion") < page.index(DIFFERENCES)
+    assert page.index(DIFFERENCES) < page.index("## GraspClutter6D transfers")
+    expected = expected_differences("graspnet1b-sv-v1")
+    problem = disagreement(table_under(page, DIFFERENCES), expected)
+    assert not problem, problem
+    assert expected_differences("graspclutter6d-sv-v1") == []
 
 
 def test_every_number_on_the_zoo_page_is_stated_by_a_metafile():
@@ -151,7 +191,11 @@ def test_the_transfer_differences_stated_in_prose_are_those_of_the_metafiles():
         for model in meta.models:
             if model.protocol != "graspclutter6d-sv-v1":
                 continue
-            rows = {r.collision_filter: r.ap["test"] for r in model.results}
+            rows = {
+                r.collision_filter: r.ap["test"]
+                for r in model.results
+                if r.provenance in ("reported", "author-ckpt")
+            }
             if not {None, False, True} <= set(rows):
                 continue
             for state in (False, True):
@@ -182,26 +226,28 @@ def test_the_whole_split_table_of_the_transfer_guide_is_that_of_the_metafiles():
     )
 
 
-#: How the zoo tables of the READMEs and of the "Targets" write the collision filter.
+#: How the zoo tables of the READMEs write the collision filter.
 FILTER_WORDS = {"off": False, "on": True, "关": False, "开": True}
 
 
 def reproduced_by_target() -> dict[tuple[str, bool], str]:
-    """``(method, collision filter)`` -> numbers of every GraspNet-1Billion reproduced row."""
+    """``(method, collision filter)`` -> numbers of every GraspNet-1Billion reproduced row
+    that has a target: a reported row of its model with the same collision filter."""
     return {
         (meta.method, result.collision_filter): numbers_text(result)
         for meta, model, result in MEASURED
-        if result.provenance == "reproduced" and model.protocol == "graspnet1b-sv-v1"
+        if result.provenance == "reproduced"
+        and model.protocol == "graspnet1b-sv-v1"
+        and any(
+            r.provenance == "reported" and r.collision_filter is result.collision_filter
+            for r in model.results
+        )
     }
 
 
 @pytest.mark.parametrize(
     ("page", "heading"),
-    [
-        ("docs/model_zoo.md", "## Targets"),
-        ("README.md", "## Model zoo"),
-        ("README_zh-CN.md", "## 模型库"),
-    ],
+    [("README.md", "## Model zoo"), ("README_zh-CN.md", "## 模型库")],
 )
 def test_the_reproduced_column_of_the_targets_shows_exactly_the_reproduced_rows(page, heading):
     """A target line shows the reproduced numbers of its method and filter, and only those."""
@@ -220,7 +266,7 @@ def test_the_zoo_page_says_how_each_reproduction_stands_against_the_admission_ru
     assert "Gate: `|reproduced − reported| ≤ 1.0 AP` on each of seen / similar / novel" in page
     assert "No method has been trained and evaluated here" not in page
     assert "provenance `author-ckpt`; they are not reproductions" in page
-    start = page.index("## Trained and evaluated here")
+    start = page.index("## GraspNet-1Billion")
     section = page[start : page.index("\n## ", start + 1)]
     for meta, model, result in MEASURED:
         if result.provenance != "reproduced" or model.protocol != "graspnet1b-sv-v1":
