@@ -58,6 +58,13 @@ def single_thread() -> Iterator[None]:
     torch.set_num_threads(threads)
 
 
+def toy_class(registry, name: str):
+    """A class of the example project. Loading the project's config imports it, so a test
+    does not rely on another one having done so earlier in the same worker."""
+    Config.load(TOY)
+    return registry.get(name)
+
+
 def write(tmp_path: Path, name: str, content: dict) -> str:
     path = tmp_path / name
     path.write_text(yaml.safe_dump(content, sort_keys=False), encoding="utf-8")
@@ -287,7 +294,7 @@ def test_the_real_probe_notes_a_part_that_received_no_gradient(monkeypatch):
     the probe on real frames says which part learned nothing."""
     from grasppanda.registry import DETECTORS
 
-    toy = DETECTORS.get("ToyDetector")
+    toy = toy_class(DETECTORS, "ToyDetector")
     original = toy.__init__
 
     def with_idle_part(self, *args, **kwargs):
@@ -313,7 +320,7 @@ def test_a_module_whose_output_is_constant_is_flagged(monkeypatch):
     def constant(self, points, feats):
         return PointFeatures(self.mlp(feats) * 0.0 + 1.0, points)
 
-    monkeypatch.setattr(BACKBONES.get("ToyBackbone"), "forward", constant)
+    monkeypatch.setattr(toy_class(BACKBONES, "ToyBackbone"), "forward", constant)
     report = probe(TOY, iters=4, predict_frames=1)
     assert report.no_gradient == ["backbone"] and report.unchanged == ["backbone"]
     assert report.units_checked == 3 and report.parts_checked == 2  # backbone.mlp, head.*
@@ -325,7 +332,7 @@ def test_a_sub_module_without_a_gradient_is_named_at_depth_two(monkeypatch, caps
     probe names the layer, not the head, and reports it without changing the verdict."""
     from grasppanda.registry import HEADS
 
-    toy = HEADS.get("ToyHead")
+    toy = toy_class(HEADS, "ToyHead")
     original = toy.forward
 
     def detached_width(self, groups):
@@ -345,7 +352,7 @@ def test_a_head_term_that_does_not_move_is_flagged_flat(monkeypatch, capsys):
     move is flat (and constant), a term that is 0.0 throughout is never active."""
     from grasppanda.registry import HEADS
 
-    toy = HEADS.get("ToyHead")
+    toy = toy_class(HEADS, "ToyHead")
     original = toy.loss
 
     def with_dead_terms(self, raw, cell, width):
@@ -383,7 +390,7 @@ def test_a_head_term_that_does_not_move_is_flagged_flat(monkeypatch, capsys):
 def test_an_empty_prediction_is_runs_empty(monkeypatch, capsys):
     from grasppanda.registry import DETECTORS
 
-    toy = DETECTORS.get("ToyDetector")
+    toy = toy_class(DETECTORS, "ToyDetector")
     original = toy.predict
 
     def nothing(self, observation):
