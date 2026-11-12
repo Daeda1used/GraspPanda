@@ -21,7 +21,7 @@ from .loader import (
     load_tree,
     resolve_interpolations,
 )
-from .validate import fill_defaults, validate_config
+from .validate import fill_defaults, iter_components, validate_config
 
 __all__ = ["Config", "available_configs", "configs_root", "resolve_config_path"]
 
@@ -39,6 +39,10 @@ _VOLATILE: tuple[KeyPath, ...] = (
 _NEUTRAL: dict[KeyPath, Any] = {
     ("runtime", "tf32"): False,
 }
+#: The same for an argument a component gained later: the class names it, with the value
+#: that leaves a hash as it was, in a class attribute of this name
+#: (``hash_neutral = {"median_depth": None}``).
+NEUTRAL_ARGUMENTS = "hash_neutral"
 
 
 class _Dumper(yaml.SafeDumper):
@@ -211,7 +215,8 @@ class Config(Mapping[str, Any]):
         """Hash of what the experiment *is*: resolved config minus run-location keys.
 
         Defaults of GraspPanda's own schema and components are part of it, so a changed
-        default changes the hash. Defaults of classes of an installed library (an optimizer
+        default changes the hash; an option added later is left out while it has the value
+        that keeps the behaviour (:data:`_NEUTRAL`, :data:`NEUTRAL_ARGUMENTS`). Defaults of classes of an installed library (an optimizer
         or a scheduler of PyTorch named by class) are not: they differ between versions of
         the library, and the hash of one config must be the same on every machine. The
         environment a run used is recorded next to it (``env.json``).
@@ -238,5 +243,15 @@ class Config(Mapping[str, Any]):
                 node = node.get(key, {}) if isinstance(node, dict) else {}
             if isinstance(node, dict) and node.get(path[-1], neutral) == neutral:
                 node.pop(path[-1], None)
+        for path, registry, name in list(iter_components(data)):
+            arguments = getattr(registry.get(name), NEUTRAL_ARGUMENTS, None)
+            if not arguments:
+                continue
+            node = data
+            for key in path:
+                node = node[key]
+            for argument, neutral in arguments.items():
+                if argument in node and node[argument] == neutral:
+                    del node[argument]
         canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), default=str)
         return hashlib.sha256(canonical.encode()).hexdigest()
