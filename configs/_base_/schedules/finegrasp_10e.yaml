@@ -13,8 +13,9 @@
 # The scheduler counts optimizer steps, so its two lengths belong to this batch size:
 # 25 600 training frames / 32 = 800 steps per epoch. With another total batch size or
 # number of epochs, set warmup_steps to one epoch and cosine_steps to the whole run.
-# The runnable config sets the batch size (32 in one process). Not verified here: no
-# training run has been made with this recipe.
+# The runnable config sets the batch size (32 in one process). Trained here once, as four
+# processes of four frames with the gradients of two batches per step: 1.2 to 3.1 AP below
+# the paper, which is not explained (configs/finegrasp/README.md, "Results").
 
 # options of this slot, measured: grasppanda compose finegrasp/finegrasp_sunet14_g1b-realsense_10e --list optimizer
 optimizer:
