@@ -470,7 +470,10 @@ into a directory that already holds a run.
     give each a share of its memory then (`overrides: ["runtime.gpu_memory_fraction=0.45"]`
     in the file, applied to every cell). `base` may also name several configs
     (`base: {sunet14: ..., ptv3: gsnet_ptv3.yaml}`), which become the axis `config`: the way
-    to compare configs that `grasppanda compose` wrote. Each run trains, tests its last
+    to compare configs that `grasppanda compose` wrote. An alternative may splice in others
+    by YAML anchor (`both: [*ptv3, *more_seeds]`), as the
+    [ablation of FineGrasp](https://github.com/Daeda1used/GraspPanda/tree/main/projects/finegrasp_ablation)
+    does. Each run trains, tests its last
     checkpoint when the config has a test section, and writes into
     `work_dirs/<sweep>/<variant>/seed<k>/` (its console output in `sweep_cell.log`). The
     table of mean and spread over the seeds is written to `work_dirs/<sweep>/summary_test.md`
