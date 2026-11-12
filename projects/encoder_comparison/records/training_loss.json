@@ -1,5 +1,5 @@
 {
-  "about": "Total training loss of the runs of gsnet_encoders.yaml, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run.",
+  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run. `runs` holds the runs of gsnet_encoders.yaml, `recipe_runs` those of gsnet_recipe.yaml by the encoder of the run.",
   "epochs": 10,
   "runs": {
     "sunet14": [
@@ -37,6 +37,20 @@
       0.9872,
       0.9701,
       0.9563
+    ]
+  },
+  "recipe_runs": {
+    "sunet14": [
+      1.4139,
+      1.0646,
+      0.9552,
+      0.8955,
+      0.8519,
+      0.8159,
+      0.7846,
+      0.7601,
+      0.7438,
+      0.7366
     ]
   }
 }

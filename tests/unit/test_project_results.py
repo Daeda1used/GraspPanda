@@ -18,6 +18,10 @@ ENCODER_RECORDS = {
     "spunet": "projects/encoder_comparison/records/spunet_test",
     "ptv3": "projects/encoder_comparison/records/ptv3_test",
 }
+#: Encoder of a run of ``gsnet_recipe.yaml`` → stem of its two records.
+RECIPE_RECORDS = {
+    "sunet14": "projects/encoder_comparison/records/sunet14_adamw-onecycle_test",
+}
 
 
 def test_the_encoder_comparison_prints_what_its_records_hold():
@@ -140,6 +144,79 @@ def test_the_evidence_page_quotes_the_cheaper_checks_from_their_records():
             assert row[3].startswith(f"−{below_shipped(name)[0]:.2f} AP"), name
         else:
             assert row[3] == "training", name
+
+
+# -------------------------------------------------------------------- encoder or recipe
+
+
+def recipe_ap(name: str, variant: str) -> dict[str, float]:
+    """Seen / similar / novel AP of a recorded run of ``gsnet_recipe.yaml``."""
+    path = REPO / f"{RECIPE_RECORDS[name]}_{variant}.json"
+    return record_result.headline(json.loads(path.read_text(encoding="utf-8")))["AP"]
+
+
+def test_the_two_by_two_of_encoder_and_recipe_prints_what_its_records_hold():
+    """A row under GSNet's recipe repeats the row of the results; a row under the preset is
+    a run of ``gsnet_recipe.yaml`` scored on the whole test split, with the weights that
+    sweep trained and the loss of its last epoch; a run without records shows no number."""
+    planned = {
+        cell.choices["config"]: cell.config.select("runtime.work_dir")
+        for cell in load_sweep(PROJECT / "gsnet_recipe.yaml").plan()
+    }
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    results = {row[0].strip("`"): row for row in table_under(readme, "## Results")}
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    assert set(losses["recipe_runs"]) == set(RECIPE_RECORDS)
+    rows = table_under(readme, "## Encoder or recipe")
+    assert [(row[0].strip("`"), row[1].strip("`")) for row in rows] == [
+        (name, recipe) for name in planned for recipe in ("GSNet's", "adamw-onecycle")
+    ]
+    for row in rows:
+        name, recipe = row[0].strip("`"), row[1].strip("`")
+        if recipe == "GSNet's":
+            assert row[2:] == results[name][2:], name
+        elif name not in RECIPE_RECORDS:
+            assert not any(character.isdigit() for cell in row[2:] for character in cell), name
+        else:
+            for cell, variant in zip(row[2:4], ("raw", "cd")):
+                path = REPO / f"{RECIPE_RECORDS[name]}_{variant}.json"
+                record = json.loads(path.read_text(encoding="utf-8"))
+                assert record["variant"] == variant and not record["partial"], path
+                assert record["scored"] == record["requested"] == 23040, path
+                assert record["weights"]["path"].startswith(f"{planned[name]}/"), path
+                numbers = record_result.headline(record)["AP"]
+                assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), path
+            assert len(losses["recipe_runs"][name]) == losses["epochs"]
+            assert row[4] == f"{losses['recipe_runs'][name][-1]:.2f}", name
+
+
+def test_what_the_two_by_two_says_is_computed_from_its_records():
+    """What the recipe does to the shipped encoder, in the project and on the evidence
+    page."""
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    shipped = [
+        value - encoder_ap("sunet14", variant)[split]
+        for variant in ("raw", "cd")
+        for split, value in recipe_ap("sunet14", variant).items()
+    ]
+    assert max(abs(value) for value in shipped) < 1.12, "inside what one seed moves"
+    project = " ".join((PROJECT / "README.md").read_text(encoding="utf-8").split())
+    page = " ".join(
+        (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8").split()
+    )
+    moved = f"{signed(shipped[0])} AP on seen and {signed(shipped[2])} on novel scenes"
+    assert moved in project and moved in page
+    fitted = f"({losses['recipe_runs']['sunet14'][-1]:.2f} against {losses['runs']['sunet14'][-1]:.2f})"
+    assert fitted in project
+
+
+def test_the_evidence_page_shows_the_two_by_two_of_the_project():
+    include = (REPO / "docs/includes/trained_recipes.md").read_text(encoding="utf-8")
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    assert include.strip() in readme
+    assert table_under(include, "|") == table_under(readme, "## Encoder or recipe")
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    assert page.count('--8<-- "docs/includes/trained_recipes.md"') == 1
 
 
 # ------------------------------------------------------------------ FineGrasp's changes
