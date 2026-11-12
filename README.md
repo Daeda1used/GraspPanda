@@ -189,9 +189,9 @@ the methods run from their released weights
 
 <br>
 
-- **GSNet** was trained here from scratch with the recipe of its config, twice with the
-  same seed; both trainings score alike, within half an AP. It is above the paper by more
-  than the gate allows, and why is not known. What is known: the port equals the reference
+- **GSNet** was trained here from scratch with the recipe of its config, three times with
+  the same seed; the trainings differ by about one AP at most. It is above the paper by
+  more than the gate allows, and why is not known. What is known: the port equals the reference
   implementation stage by stage, a model trained with the reference code (on a modified
   label set) is also above the paper, and the authors' original code is not public
   ([details](https://daeda1used.github.io/GraspPanda/model_zoo/#trained-and-evaluated-here)).

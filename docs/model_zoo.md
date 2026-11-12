@@ -114,8 +114,8 @@ recipe of its config and scored through `grasppanda test`.
       and graspness labels are not published, so a training here generates both from the
       paper's equations, and it ran as four processes with accumulated gradients in place of
       the eight of the published recipe (`configs/finegrasp/README.md`).
-    - **One seed.** GSNet was trained twice, on two GPUs; the rows are the first training,
-      and the second is within 0.5 AP of it on every split. FineGrasp was trained once.
+    - **One seed.** GSNet was trained three times with it; the rows are the first training,
+      and the three lie within 1.12 AP of one another on every split. FineGrasp was trained once.
       Other seeds were not trained, nor was a training with unmodified reference code run.
     - **The variants.** `off` is the prediction as emitted (variant `raw`), `on` the
       model-free collision filter of each method's reference (variant `cd`). The workspace

@@ -167,6 +167,34 @@ def reported_seen(method: str) -> list[tuple[bool | None, float]]:
     ]
 
 
+def trainings(method_dir: str, model: str) -> list[dict[str, dict[str, float]]]:
+    """Every training of ``model`` scored on the whole test split, as ``{variant: {split:
+    AP}}``: the ``reproduced`` rows of the zoo first, then the records of ``repeats/``."""
+    import json
+
+    from tools import record_result
+
+    folder = REPO / "configs" / method_dir
+    runs: dict[str, dict[str, dict[str, float]]] = {}
+    for path in sorted(folder.glob(f"records/{model}_reproduced_test_*.json")) + sorted(
+        folder.glob(f"repeats/{model}_run*_test_*.json")
+    ):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        run = runs.setdefault(record["weights"]["sha256"], {})
+        run[record["variant"]] = record_result.headline(record)["AP"]
+    assert all(set(run) == {"raw", "cd"} for run in runs.values()), "a training lacks a variant"
+    return list(runs.values())
+
+
+def spread(runs: list[dict[str, dict[str, float]]]) -> float:
+    """The largest difference between two trainings on one split of one variant, in AP."""
+    return max(
+        max(run[variant][split] for run in runs) - min(run[variant][split] for run in runs)
+        for variant in runs[0]
+        for split in runs[0][variant]
+    )
+
+
 #: What ``tests/integration/test_eval_parity.py::test_recorded_frames_match_stage_by_stage``
 #: holds the GraspNet-1Billion evaluator to. Its recordings of ``graspnetAPI`` live in the
 #: dataset cache, not in the repository, so two facts of the last run (2026-10-18: 13 suites
@@ -213,11 +241,13 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     dino = reach("image_encoder", "dinov2-small-reg-depth-stem")
     dino_learns = level2("image_encoder", "dinov2-small-reg-depth-stem")
     par = len(ptv3_learns.on_a_par)
-    words = {2: "two", 5: "five", 6: "six"}
-    chinese = {2: "两", 5: "五", 6: "六"}
+    words = {2: "two", 3: "three", 5: "five", 6: "six"}
+    chinese = {2: "两", 3: "三", 5: "五", 6: "六"}
     ap = f"{gate():g} AP"
     hggd = reported_seen("HGGD")
     gsnet = dict(reported_seen("GSNet"))
+    gsnet_runs = trainings("gsnet", "gsnet_sunet14_g1b-realsense_10e")
+    about_one = abs(spread(gsnet_runs) - 1.0) <= 0.25  # "about one AP at most"
     papers = {
         name: re.findall(r"\[(\w+)\]\(https://arxiv\.org/abs/([\d.]+)\)", text(name))
         for name in READMES
@@ -260,6 +290,8 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"within {ap} on each split": True,
             f"HGGD** publishes {words[len(hggd)]} sets of numbers": True,
             f"value for value on {frames} recorded frames": True,
+            f"{words[len(gsnet_runs)]} times with the same seed": True,
+            "the trainings differ by about one AP at most": about_one,
             "GSNet reports 65.70 AP": shared["gsnet off"],
             "without the filter and 67.12 with it": shared["gsnet on"],
             "lists 59.36 AP": shared["hggd sets"],
@@ -281,6 +313,8 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"相差不超过 {ap}": True,
             f"**HGGD** 公开了{chinese[len(hggd)]}组数字": True,
             f"在 {frames} 个记录帧上": True,
+            f"从零训练了{chinese[len(gsnet_runs)]}次（同一个随机种子）": True,
+            f"{chinese[len(gsnet_runs)]}次的成绩最多相差约一个 AP": about_one,
             "不加过滤是 65.70 AP": shared["gsnet off"],
             "加了是 67.12": shared["gsnet on"],
             "把 59.36 AP": shared["hggd sets"],
