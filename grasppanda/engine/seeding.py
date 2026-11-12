@@ -24,6 +24,8 @@ from typing import Any
 import numpy as np
 import torch
 
+from grasppanda.utils.precision import set_tf32, tf32_restored
+
 __all__ = [
     "determinism_restored",
     "preserved_rng",
@@ -63,23 +65,7 @@ def set_precision(tf32: bool) -> None:
     RTX 3090 with TF32 off. A run therefore states its precision (``runtime.tf32``), and
     the default is float32. A GPU without TF32 computes in float32 either way.
     """
-    torch.backends.cudnn.allow_tf32 = tf32
-    torch.backends.cuda.matmul.allow_tf32 = tf32
-
-
-def _matmul_precision() -> str | bool:
-    """The precision of float32 matrix products, to put back later.
-
-    It is the name PyTorch keeps (``highest``, ``high`` or ``medium``): the boolean switch
-    cannot express the third. PyTorch 2.9 and newer refuse to name it while the switch
-    disagrees with a ``medium`` set earlier, which is the state inside a run that computes
-    in float32 for a caller who asked for ``medium``; the switch itself is what there is
-    to put back then.
-    """
-    try:
-        return torch.get_float32_matmul_precision()
-    except RuntimeError:
-        return bool(torch.backends.cuda.matmul.allow_tf32)
+    set_tf32(convolutions=tf32, matmul=tf32)
 
 
 @contextmanager
@@ -88,18 +74,12 @@ def determinism_restored() -> Iterator[None]:
     algorithms = torch.are_deterministic_algorithms_enabled()
     warn_only = torch.is_deterministic_algorithms_warn_only_enabled()
     cudnn = (torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark)
-    convolutions = torch.backends.cudnn.allow_tf32
-    matmul = _matmul_precision()
     try:
-        yield
+        with tf32_restored():
+            yield
     finally:
         torch.use_deterministic_algorithms(algorithms, warn_only=warn_only)
         torch.backends.cudnn.deterministic, torch.backends.cudnn.benchmark = cudnn
-        torch.backends.cudnn.allow_tf32 = convolutions
-        if isinstance(matmul, str):
-            torch.set_float32_matmul_precision(matmul)
-        else:
-            torch.backends.cuda.matmul.allow_tf32 = matmul
 
 
 def rng_state() -> dict[str, Any]:

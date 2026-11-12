@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING
 import torch
 from torch import Tensor
 
+from grasppanda.utils.precision import tf32
+
 from . import backends
 
 if TYPE_CHECKING:
@@ -265,7 +267,7 @@ def _rotation_is_float32(like: Tensor) -> bool:
         autocast = torch.is_autocast_enabled(kind)
     except TypeError:  # torch < 2.4 has one query per device type
         autocast = torch.is_autocast_enabled() if like.is_cuda else torch.is_autocast_cpu_enabled()
-    return not (autocast or (like.is_cuda and torch.backends.cuda.matmul.allow_tf32))
+    return not (autocast or (like.is_cuda and tf32().matmul))
 
 
 def _cylinder_query_compiled(
