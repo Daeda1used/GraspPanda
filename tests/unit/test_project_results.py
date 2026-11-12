@@ -140,3 +140,75 @@ def test_the_evidence_page_quotes_the_cheaper_checks_from_their_records():
             assert row[3].startswith(f"−{below_shipped(name)[0]:.2f} AP"), name
         else:
             assert row[3] == "training", name
+
+
+# ------------------------------------------------------------------ FineGrasp's changes
+
+ABLATION = REPO / "projects/finegrasp_ablation"
+#: Run of ``changes.yaml`` → stem of its two records. The run without a change is the
+#: model trained here of EconomicGrasp, whose records are the model zoo's.
+ABLATION_RECORDS = {
+    "none": "configs/economicgrasp/records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test",
+    "graspness": "projects/finegrasp_ablation/records/graspness_test",
+}
+
+
+def ablation_record(name: str, variant: str) -> dict:
+    path = REPO / f"{ABLATION_RECORDS[name]}_{variant}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def ablation_rows() -> dict[str, list[str]]:
+    """Rows of the project's results by the name of the change."""
+    rows = table_under((ABLATION / "README.md").read_text(encoding="utf-8"), "## Results")
+    return {row[0].partition(":")[0].strip("`"): row for row in rows}
+
+
+def test_the_ablation_prints_what_its_records_hold():
+    """Every row of its results is a training scored on the whole test split with seed 0:
+    the runs of the sweep by the weights in their work directory, the run without a change
+    by the records of EconomicGrasp; a run without records shows no AP."""
+    planned = {
+        cell.choices["change"]: cell.config.select("runtime.work_dir")
+        for cell in load_sweep(ABLATION / "changes.yaml").plan()
+    }
+    rows = ablation_rows()
+    assert list(rows) == ["none", *planned]
+    for name, row in rows.items():
+        if name not in ABLATION_RECORDS:
+            assert not any(character.isdigit() for cell in row[1:] for character in cell), name
+            continue
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            record = ablation_record(name, variant)
+            assert record["variant"] == variant and not record["partial"], name
+            assert record["scored"] == record["requested"] == 23040, name
+            assert record["seed"] == 0, name
+            if name in planned:
+                assert record["weights"]["path"].startswith(f"{planned[name]}/"), name
+            numbers = record_result.headline(record)["AP"]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
+
+
+def from_no_change(name: str) -> list[float]:
+    """What a change adds to EconomicGrasp: seen, similar, novel without the collision
+    filter, then with it."""
+    return [
+        value - record_result.headline(ablation_record("none", variant))["AP"][split]
+        for variant in ("raw", "cd")
+        for split, value in record_result.headline(ablation_record(name, variant))["AP"].items()
+    ]
+
+
+def signed(value: float) -> str:
+    return f"{'+' if value >= 0 else '−'}{abs(value):.2f}"
+
+
+def test_what_the_ablation_says_is_computed_from_its_records():
+    readme = " ".join((ABLATION / "README.md").read_text(encoding="utf-8").split())
+    graspness = from_no_change("graspness")
+    assert max(abs(value) for value in graspness) < 1.12, "inside what one seed moves"
+    for sentence in (
+        f"by more than {max(abs(value) for value in graspness):.1f} AP",
+        f"{signed(graspness[0])} on seen and {signed(graspness[1])} on similar",
+    ):
+        assert sentence in readme, sentence

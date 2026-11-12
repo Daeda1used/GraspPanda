@@ -44,7 +44,21 @@ it does not, in the three changes as they are generated here.
 
 ## Results
 
-Not measured yet. When the runs are in, this section holds the AP of each change on seen,
-similar and novel scenes, with and without the collision filter, from result records of
-the whole test split, and what one seed can and cannot say: GSNet, trained three times
-with one seed, moved by up to 1.12 AP.
+AP on the whole GraspNet-1Billion test split (RealSense, 23,040 frames) as seen / similar /
+novel. GSNet, trained three times from one config and seed, moved by up to 1.12 AP
+([its README](../../configs/gsnet/README.md)): a smaller difference is not a finding.
+
+| Change | Collision filter off | On |
+|---|---|---|
+| none: EconomicGrasp | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 |
+| `graspness` | 70.03 / 61.03 / 26.21 | 71.47 / 62.12 / 26.73 |
+| `normals` | training | |
+| `multi-scale` | training | |
+| `all` | training | |
+
+**No difference is shown for `graspness`.** Normalising graspness per object moves no split
+by more than 0.7 AP: +0.69 on seen and −0.38 on similar without the collision filter.
+
+Records: [`records/`](records/), and EconomicGrasp's
+[reproduced records](../../configs/economicgrasp/records/) for the first row. Unit tests
+hold the table and these sentences to them.
