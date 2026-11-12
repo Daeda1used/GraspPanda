@@ -287,7 +287,7 @@ class Composition:
         )
         lines = [
             "EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes",
-            "the config check; it has not been trained to convergence or evaluated.",
+            "the config check; composing trains and evaluates nothing.",
             "",
             f"  base  {self.base} ({_method_label(self.base_path, self.detector)})",
             f"  set   {changed or 'nothing; only overrides'}",

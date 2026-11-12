@@ -1,5 +1,5 @@
 # EXPERIMENTAL. No AP is claimed. Composed by `grasppanda compose`: this config passes
-# the config check; it has not been trained to convergence or evaluated.
+# the config check; composing trains and evaluates nothing.
 #
 #   base  gsnet/gsnet_sunet14_g1b-realsense_10e (GSNet)
 #   set   backbone `pointnext`
