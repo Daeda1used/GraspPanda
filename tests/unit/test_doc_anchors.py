@@ -226,6 +226,36 @@ def test_a_movable_anchor_exists_while_a_page_links_it(page, anchor):
         assert anchor in site_anchors(page), f"{linking[:3]} link docs/{page}#{anchor}: gone"
 
 
+# ------------------------------------------------- files of the repository in a page
+
+
+def included_from_outside() -> list:
+    """``(page, file)`` for every file outside ``docs/`` that a page includes as a snippet."""
+    cases = []
+    for page in sorted(DOCS.rglob("*.md")):
+        for match in SNIPPET.finditer(page.read_text(encoding="utf-8")):
+            included = (REPO / match.group(2)).resolve()
+            if included.suffix == ".md" and DOCS not in included.parents:
+                name = page.relative_to(DOCS).as_posix()
+                cases.append(pytest.param(page, included, id=f"{name}<-{match.group(2)}"))
+    return cases
+
+
+@pytest.mark.parametrize(("page", "included"), included_from_outside())
+def test_a_file_included_into_a_page_links_what_the_page_can_reach(page, included):
+    """An include pastes the file into the page, so its relative links are read from the
+    page's folder: a path of the repository leads nowhere there. ``mkdocs build --strict``
+    says so, unless it runs with ``--quiet``, which silences the warning and passes."""
+    for match in LINK.finditer(outside_code(included.read_text(encoding="utf-8"))):
+        target = (match.group(1) or match.group(2)).partition("#")[0]
+        if not target or target.startswith(("http://", "https://", "mailto:")):
+            continue
+        assert (page.parent / target).is_file(), (
+            f"{included.name} links {target}: docs/{page.relative_to(DOCS)} includes the "
+            "file and cannot reach it. Link the page of the site by its full address."
+        )
+
+
 # ------------------------------------------------------------------- READMEs on GitHub
 
 
