@@ -37,18 +37,32 @@ ground-truth segmentation, as in the reference (`gt_assisted: workspace`).
 |---|---|---|---|
 | `reported` | off | 58.95 / 52.97 / 22.63 | paper, Table 2, "Ours" |
 | `author-ckpt` | off | 57.78 / 51.67 / 22.12 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
+| `reproduced` | off | 57.23 / 51.13 / 21.98 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_reproduced_test_raw.json) |
 | `reported` | on | 63.83 / 58.46 / 24.63 | paper, Table 2, "Ours + CD" |
 | `author-ckpt` | on | 62.29 / 56.81 / 23.99 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| `reproduced` | on | 62.00 / 56.28 / 23.74 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_reproduced_test_cd.json) |
 
 `author-ckpt` is the authors' `checkpoint-rs.tar`, converted and run through
-`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0. No model
-has been trained here yet. **Measured minus reported**: −1.17 / −1.30 / −0.51 AP without the
-collision filter and −1.54 / −1.65 / −0.64 AP with it, below the paper by more than 1 AP on seen and
-similar. The gap is not explained.
+`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0.
+**Measured minus reported**: −1.17 / −1.30 / −0.51 AP without the collision filter and
+−1.54 / −1.65 / −0.64 AP with it, below the paper by more than 1 AP on seen and similar.
 
-<details markdown="1"><summary>What is known about the gap, and a 20-frame check with the reference code</summary>
+`reproduced` is a model trained here from scratch with the config's recipe. **It lands on
+the authors' checkpoint**: −0.55 / −0.54 / −0.14 AP from it without the filter and
+−0.29 / −0.53 / −0.25 with it. So it is below the paper as the checkpoint is, by
+−1.72 / −1.84 / −0.65 and −1.83 / −2.18 / −0.89 AP: outside the zoo's 1 AP gate on seen and
+similar. Training is not where the gap to the paper comes from; what remains is how the
+paper's rows were produced.
 
-The paper's rows are quoted from Table 2 of the paper (arXiv 2212.05275); whether they
+<details markdown="1"><summary>The training, what is known about the gap, and a 20-frame check with the reference code</summary>
+
+**The training.** `grasppanda train scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e`
+at commit `7ac91b5`, nothing overridden: 18 epochs, batch size 2, seed 0, 24.1 hours on one
+RTX 3090 shared with other jobs. The checkpoint of epoch 18 (SHA-256 `572ce817b173…`) was
+scored at commit `400b733`. One run, one seed: GSNet, trained three times from one config
+and seed, moved by up to 1.12 AP, so the half point to the checkpoint is not a finding.
+
+**The gap to the paper.** Its rows are quoted from Table 2 (arXiv 2212.05275); whether they
 use object-balanced sampling is not stated in the table.
 
 - On the 20 frames below, the pristine reference code and this implementation score the
@@ -78,7 +92,7 @@ The subset is not a benchmark number and must not be quoted as one.
 
 ## Results on GraspClutter6D
 
-The same checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames of
+The RealSense weights on the whole GraspClutter6D test split (235 scenes, 3,055 frames of
 the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 [sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e](sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e.yaml). Percent.
 
@@ -87,8 +101,11 @@ the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 | not stated | 22.69 | 27.57 | 16.95 | reported |
 | off | 21.76 | 26.48 | 16.45 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json)) |
 | on | 22.69 | 27.59 | 17.00 | author-ckpt ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json)) |
+| off | 21.90 | 26.54 | 16.30 | reproduced ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_reproduced_test_raw.json)) |
+| on | 22.75 | 27.61 | 16.64 | reproduced ([record](records/sbg_pointnet2-transformer_g1b-realsense-to-gc6d-d435_18e_reproduced_test_cd.json)) |
 
-The filtered run matches the reported row to 0.05 AP.
+The filtered run of the authors' checkpoint matches the reported row to 0.05 AP, and the
+model trained here transfers as the checkpoint does, within 0.14 AP.
 
 <details markdown="1"><summary>Against the reported row</summary>
 
@@ -105,7 +122,8 @@ without the filter (`docs/user_guides/cross_dataset.md`).
 
 ## Weights
 
-GraspPanda publishes no weights for this method. Download the authors' `checkpoint-rs.tar`
+GraspPanda publishes no weights for this method yet; for those trained here that is not
+decided (the training data is CC BY-NC-SA 4.0). Download the authors' `checkpoint-rs.tar`
 (link and SHA-256 in the [metafile](metafile.yaml)) and convert it once:
 
 ```bash
@@ -128,8 +146,8 @@ grasppanda train scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18
 
 Training follows the reference recipe: Adam, one-cycle learning rate with peak 1e-3 over
 18 epochs, batch 2, batch-norm momentum 0.5 halved every 2 epochs. The native width
-statistic reads 3200 training frames, about 1.3 s each on the development machine, so the
-step takes roughly 70 minutes; it has not been run at that setting here. Both evaluation
+statistic reads 3200 training frames; on an RTX 3090 shared with other jobs the step took
+19 minutes. Both evaluation
 variants are always reported: `raw` (the reference's shipped test command turns its
 collision filter off) and `cd`.
 

@@ -481,14 +481,13 @@ FILTER = {"on": True, "off": False, "not stated": None, "开": True, "关": Fals
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_targets_of_the_readme_are_the_reported_rows_of_the_metafiles(name, chips):
-    """Every reported RealSense row on GraspNet-1Billion, once, in page order, with the venue
-    and the collision filter its metafile states."""
+    """Every reported RealSense row on GraspNet-1Billion, once, in page order, with the
+    collision filter its metafile states (the venues are in the table of methods above)."""
     from grasppanda.hub import load_metafiles
 
     from .test_zoo_pages import numbers_text
 
     order = [info.name for info in chips.methods()]
-    venue = {info.name: info.venue for info in chips.methods()}
     expected = set()
     for meta in load_metafiles():
         for model in meta.models:
@@ -500,9 +499,9 @@ def test_the_targets_of_the_readme_are_the_reported_rows_of_the_metafiles(name, 
     shown, positions = set(), []
     for cells in table(text(name), ZOO[name]):
         method = cells[0]
-        assert cells[1] == venue[method], (name, method)
-        state = FILTER[cells[2]]
-        for numbers in re.findall(r"\d+\.\d\d / \d+\.\d\d / \d+\.\d\d", cells[3]):
+        assert len(cells) == 4, (name, cells)
+        state = FILTER[cells[1]]
+        for numbers in re.findall(r"\d+\.\d\d / \d+\.\d\d / \d+\.\d\d", cells[2]):
             shown.add((method, state, numbers))
         positions.append(order.index(method))
     assert shown == expected, f"{name}: the targets table and the metafiles disagree"

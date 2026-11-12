@@ -11,12 +11,12 @@ percent; *Filter* says whether each method's own collision filter was off or on.
 - **Authors' weights scored here** (`author-ckpt`): GraspNet-baseline, Scale-Balanced-Grasp,
   EconomicGrasp, FineGrasp, HGGD.
   Those numbers have the provenance `author-ckpt`; they are not reproductions.
-- **Trained here** (`reproduced`): GraspNet-baseline, GSNet, EconomicGrasp and FineGrasp,
-  from scratch with the recipe of their configs. GraspNet-baseline is within the
-  [admission gate](#admission-gate) on every split. EconomicGrasp lands on its authors'
-  checkpoint, and with it just outside the gate on seen; GSNet is above its paper by more
-  than 1 AP on every split, FineGrasp below it. Their weights are not published yet, so the
-  zoo cannot download them.
+- **Trained here** (`reproduced`): GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
+  EconomicGrasp and FineGrasp, from scratch with the recipe of their configs.
+  GraspNet-baseline is within the [admission gate](#admission-gate) on every split.
+  Scale-Balanced-Grasp and EconomicGrasp land on their authors' checkpoints, and with them
+  outside the gate; GSNet is above its paper by more than 1 AP on every split, FineGrasp
+  below it. Their weights are not published yet, so the zoo cannot download them.
 
 ## GraspNet-1Billion
 
@@ -36,8 +36,8 @@ has a line *not stated*.
 | GraspNet-baseline | RealSense | not stated | 27.56 / 26.11 / 10.55 | — | — |
 | GSNet | RealSense | off | 65.70 / 53.75 / 23.98 | — | 68.83 / 60.35 / 25.20 |
 | GSNet | RealSense | on | 67.12 / 54.81 / 24.31 | — | 71.23 / 62.29 / 26.42 |
-| Scale-Balanced-Grasp | RealSense | off | 58.95 / 52.97 / 22.63 | 57.78 / 51.67 / 22.12 | — |
-| Scale-Balanced-Grasp | RealSense | on | 63.83 / 58.46 / 24.63 | 62.29 / 56.81 / 23.99 | — |
+| Scale-Balanced-Grasp | RealSense | off | 58.95 / 52.97 / 22.63 | 57.78 / 51.67 / 22.12 | 57.23 / 51.13 / 21.98 |
+| Scale-Balanced-Grasp | RealSense | on | 63.83 / 58.46 / 24.63 | 62.29 / 56.81 / 23.99 | 62.00 / 56.28 / 23.74 |
 | EconomicGrasp | RealSense | off | 68.21 / 61.19 / 25.48 | 69.28 / 61.50 / 25.17 | 69.34 / 61.41 / 26.21 |
 | EconomicGrasp | RealSense | on | — | 70.83 / 62.56 / 25.80 | 71.05 / 62.54 / 26.81 |
 | EconomicGrasp | Kinect | off | 62.59 / 51.73 / 19.54 | 63.71 / 52.28 / 19.73 | — |
@@ -64,8 +64,8 @@ has a line *not stated*.
     | GraspNet-baseline | RealSense | on | +0.43 / +0.43 / +0.36 | −0.66 / −0.37 / +0.13 |
     | GSNet | RealSense | off | — | +3.13 / +6.60 / +1.22 |
     | GSNet | RealSense | on | — | +4.11 / +7.48 / +2.11 |
-    | Scale-Balanced-Grasp | RealSense | off | −1.17 / −1.30 / −0.51 | — |
-    | Scale-Balanced-Grasp | RealSense | on | −1.54 / −1.65 / −0.64 | — |
+    | Scale-Balanced-Grasp | RealSense | off | −1.17 / −1.30 / −0.51 | −1.72 / −1.84 / −0.65 |
+    | Scale-Balanced-Grasp | RealSense | on | −1.54 / −1.65 / −0.64 | −1.83 / −2.18 / −0.89 |
     | EconomicGrasp | RealSense | off | +1.07 / +0.31 / −0.31 | +1.13 / +0.22 / +0.73 |
     | EconomicGrasp | Kinect | off | +1.12 / +0.55 / +0.19 | — |
     | FineGrasp | RealSense | off | −0.11 / −0.03 / +0.02 | −1.90 / −3.11 / −1.63 |
@@ -106,11 +106,16 @@ has a line *not stated*.
     - **Against the admission gate.** The gate asks for at most 1.0 AP between `reproduced`
       and `reported` on each split. GraspNet-baseline meets it, with the collision filter:
       the one setting its repository reports. EconomicGrasp meets it on similar and novel and
-      is 0.13 AP outside it on seen. GSNet and FineGrasp are outside it on every split, and
-      neither gap is explained.
+      is 0.13 AP outside it on seen; Scale-Balanced-Grasp meets it on novel only. GSNet and
+      FineGrasp are outside it on every split, and neither gap is explained.
     - **GraspNet-baseline is a little below its authors' checkpoint**: −0.87 / −1.30 / −0.23
       AP from it without the filter and −1.09 / −0.80 / −0.23 with it. Whether that is the
       spread between trainings was not measured.
+    - **Scale-Balanced-Grasp lands on its authors' checkpoint**: −0.55 / −0.54 / −0.14 AP
+      from it without the filter, −0.29 / −0.53 / −0.25 with it. The checkpoint is itself
+      1.2 to 1.7 AP below the paper on seen and similar, so the gap to the paper is not one
+      of training; object-balanced sampling, which the paper describes, is not implemented
+      (`configs/scale_balanced_grasp/README.md`).
     - **EconomicGrasp lands on its authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it
       without the filter, +0.22 / −0.02 / +1.01 with it. That checkpoint is itself 1.07 AP
       above the reported number on seen, so what separates the training here from the
@@ -130,8 +135,9 @@ has a line *not stated*.
       the eight of the published recipe (`configs/finegrasp/README.md`).
     - **One seed.** GSNet was trained three times with it; its line is the first training,
       and the three lie within 1.12 AP of one another on every split. GraspNet-baseline,
-      EconomicGrasp and FineGrasp were trained once. Other seeds were not trained, nor was a training with
-      unmodified reference code run. Each training run is described in its method's README.
+      Scale-Balanced-Grasp, EconomicGrasp and FineGrasp were trained once. Other seeds were
+      not trained, nor was a training with unmodified reference code run. Each training run
+      is described in its method's README.
     - **The weights are not published yet.** They were trained on GraspNet-1Billion (CC
       BY-NC-SA 4.0), and whether and where they are published has not been decided. The
       metafile lists them with their sha256 and no url, so the zoo, `GraspInferencer` and
@@ -155,8 +161,8 @@ collision filter nor the checkpoints, so it stands beside no measured number.
 | GraspNet-baseline | not stated | 17.95 / 21.54 / 13.53 | — | — |
 | GSNet | off | — | — | 25.58 / 31.38 / 19.42 |
 | GSNet | on | — | — | 26.87 / 33.00 / 20.04 |
-| Scale-Balanced-Grasp | off | — | 21.76 / 26.48 / 16.45 | — |
-| Scale-Balanced-Grasp | on | — | 22.69 / 27.59 / 17.00 | — |
+| Scale-Balanced-Grasp | off | — | 21.76 / 26.48 / 16.45 | 21.90 / 26.54 / 16.30 |
+| Scale-Balanced-Grasp | on | — | 22.69 / 27.59 / 17.00 | 22.75 / 27.61 / 16.64 |
 | Scale-Balanced-Grasp | not stated | 22.69 / 27.57 / 16.95 | — | — |
 | EconomicGrasp | off | — | 21.69 / 26.64 / 15.79 | 23.24 / 28.58 / 17.04 |
 | EconomicGrasp | on | — | 22.25 / 27.30 / 16.06 | 23.72 / 29.16 / 17.20 |
@@ -195,12 +201,12 @@ note).
       ([its README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)).
     - **One run each**, with seed 0, and one training with one seed behind every
       `reproduced` number, as above. The paper has no row for GSNet, FineGrasp or HGGD.
-    - **A model trained here does not transfer like its authors' checkpoint.**
-      EconomicGrasp is 1.55 AP above its checkpoint without the filter and 1.47 with it;
-      GraspNet-baseline is 1.26 AP below without and 3.05 below with it. On
-      GraspNet-1Billion each differs from its checkpoint by about 1 AP at most, in the same
-      direction. One training each: how much of this a second training would keep was not
-      measured.
+    - **Whether a model trained here transfers like its authors' checkpoint differs by
+      method.** Scale-Balanced-Grasp is within 0.14 AP of its checkpoint, with and without
+      the filter. EconomicGrasp is 1.55 AP above its checkpoint without the filter and 1.47
+      with it; GraspNet-baseline is 1.26 AP below without and 3.05 below with it. On
+      GraspNet-1Billion each differs from its checkpoint by about 1 AP at most. One
+      training each: how much of this a second training would keep was not measured.
     - **The subset numbers of the user guide** (other cameras, other crops, the Kinect
       weights) were measured on 24 scenes and are not benchmark numbers.
 

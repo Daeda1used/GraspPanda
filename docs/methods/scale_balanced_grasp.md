@@ -8,7 +8,7 @@ hide: [toc]
 
 # Scale-Balanced-Grasp
 
-<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="Towards Scale Balanced 6-DoF Grasp Detection in Cluttered Scenes">CoRL 2022</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_sbg_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span></div>
+<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="Towards Scale Balanced 6-DoF Grasp Detection in Cluttered Scenes">CoRL 2022</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_sbg_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span></div>
 
 From the point cloud of a depth image, it predicts grasps as GraspNet-baseline does, with point-transformer layers, crops at four radii and loss weights that favour rare grasp widths.
 
@@ -20,7 +20,7 @@ Four steps from the authors' checkpoint to grasps. A [test](https://github.com/D
 
 ### 1. Get the weights {#run-weights}
 
-GraspPanda publishes no weights for Scale-Balanced-Grasp: the file to download is the authors' checkpoint, under its licence. Download [`checkpoint-rs.tar`](https://drive.google.com/drive/folders/1Y2o0uAbhS6-yZhPkKMAAnL0tCpbiJfk0?usp=share_link) (Google Drive) and convert it once, from the root of a GraspPanda checkout:
+GraspPanda trained Scale-Balanced-Grasp once, but those weights are not published yet: the file to download is the authors' checkpoint. Download [`checkpoint-rs.tar`](https://drive.google.com/drive/folders/1Y2o0uAbhS6-yZhPkKMAAnL0tCpbiJfk0?usp=share_link) (Google Drive) and convert it once, from the root of a GraspPanda checkout:
 
 ```bash
 python -m tools.convert_checkpoint checkpoint-rs.tar sbg_realsense.pth \
@@ -32,6 +32,7 @@ python -m tools.convert_checkpoint checkpoint-rs.tar sbg_realsense.pth \
     - **Licence**: as the upstream repository (MIT file; derived from non-commercial code)
     - **SHA-256** of the download: `ebf63c146a7dfd8ced4543b9b9e5b9506cff320bb4b8157cab0c78b3e6ce5aef`
     - **What the converter writes**: `sbg_realsense.pth`, every tensor of the downloaded file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially. The converter is a tool of the repository; it is not installed with the package.
+    - **The weights trained here** (the `reproduced` rows of [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/README.md)): trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided.
 
 ### 2. Grasps on the example scene {#run-demo}
 
@@ -142,14 +143,17 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 | reported (paper) | on | 63.83 | 58.46 | 24.63 | — |
 | authors' weights | off | 57.78 | 51.67 | 22.12 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_raw.json) |
 | authors' weights | on | 62.29 | 56.81 | 23.99 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| trained here | off | 57.23 | 51.13 | 21.98 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_reproduced_test_raw.json) |
+| trained here | on | 62.00 | 56.28 | 23.74 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/records/sbg_pointnet2-transformer_g1b-realsense_18e_reproduced_test_cd.json) |
 
 </div>
 
 ??? note "Where these numbers come from"
 
-    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; nothing trained here yet.
+    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; trained here, a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers.
     - **reported**: paper (arXiv 2212.05275), Table 2, "Ours"; paper (arXiv 2212.05275), Table 2, "Ours + CD".
     - **authors' weights, scored here**: the authors' checkpoint, converted and run through `grasppanda test` on every frame of the test split; the record holds the per-scene values, the config hash and the hashes of code and weights.
+    - **trained here**: a model trained from scratch by GraspPanda with the config's recipe, scored the same way.
     - **Inputs**: workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace).
     - Other cameras, GraspClutter6D and what is known about each gap: [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/scale_balanced_grasp/README.md#results-on-graspnet-1billion); every method side by side: [Model zoo](../model_zoo.md).
 

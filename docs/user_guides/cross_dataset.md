@@ -284,8 +284,8 @@ width.
 
 Run for the six methods, 3,055 of 3,055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
-checkpoints (`author-ckpt`), GraspNet-baseline, GSNet, EconomicGrasp and FineGrasp with the
-models trained from scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+checkpoints (`author-ckpt`), GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp
+and FineGrasp with the models trained from scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
 D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
 [model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
 `configs/<method>/records/` the result records.
@@ -298,6 +298,7 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | GraspNet-baseline, trained here | 7.44 / 8.87 / 5.99 | 14.09 / 16.90 / 10.73 | — |
 | GSNet, trained here | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | — |
 | Scale-Balanced-Grasp | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 |
+| Scale-Balanced-Grasp, trained here | 21.90 / 26.54 / 16.30 | 22.75 / 27.61 / 16.64 | — |
 | EconomicGrasp | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 |
 | EconomicGrasp, trained here | 23.24 / 28.58 / 17.04 | 23.72 / 29.16 / 17.20 | — |
 | FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
@@ -336,9 +337,9 @@ the reported table is closest to the filtered run for two methods and to the unf
 run for the third. The paper does not state the collision filter, and whether it was
 applied to some methods and not to others was not investigated.
 
-A model trained here does not transfer like its authors' checkpoint: EconomicGrasp scores
-1.55 AP above its checkpoint, GraspNet-baseline 3.05 below with the filter, each from one
-training.
+Whether a model trained here transfers like its authors' checkpoint differs by method:
+Scale-Balanced-Grasp scores within 0.14 AP of its checkpoint, EconomicGrasp 1.55 AP above,
+GraspNet-baseline 3.05 below with the filter, each from one training.
 
 ??? note "Entering a result into the model zoo"
 
