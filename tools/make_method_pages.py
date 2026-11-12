@@ -388,7 +388,9 @@ def numbers_status(method: str) -> list[tuple[str, str, str]]:
         meaning = "a model trained by GraspPanda, scored on whole test splits"
         within = within_gate(method)
         if within:
-            status.append(("reproduced ✓", "ok", f"{meaning}: within {GATE:g} AP of the paper"))
+            status.append(
+                ("reproduced ✓", "ok", f"{meaning}: within {GATE:g} AP of the reported numbers")
+            )
         else:
             if within is False:
                 meaning += f"; not within {GATE:g} AP of the reported numbers"

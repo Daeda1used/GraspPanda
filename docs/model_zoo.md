@@ -11,9 +11,10 @@ percent; *Filter* says whether each method's own collision filter was off or on.
 - **Authors' weights scored here** (`author-ckpt`): GraspNet-baseline, Scale-Balanced-Grasp,
   EconomicGrasp, FineGrasp, HGGD.
   Those numbers have the provenance `author-ckpt`; they are not reproductions.
-- **Trained here** (`reproduced`): GSNet, EconomicGrasp and FineGrasp, from scratch with the
-  recipe of their configs. EconomicGrasp lands on its authors' checkpoint, and with it just
-  outside the [admission gate](#admission-gate) on seen; GSNet is above its paper by more
+- **Trained here** (`reproduced`): GraspNet-baseline, GSNet, EconomicGrasp and FineGrasp,
+  from scratch with the recipe of their configs. GraspNet-baseline is within the
+  [admission gate](#admission-gate) on every split. EconomicGrasp lands on its authors'
+  checkpoint, and with it just outside the gate on seen; GSNet is above its paper by more
   than 1 AP on every split, FineGrasp below it. Their weights are not published yet, so the
   zoo cannot download them.
 
@@ -30,8 +31,8 @@ has a line *not stated*.
 
 | Method | Camera | Filter | `reported` | `author-ckpt` | `reproduced` |
 |---|---|:---:|---|---|---|
-| GraspNet-baseline | RealSense | off | — | 32.63 / 27.48 / 10.42 | — |
-| GraspNet-baseline | RealSense | on | 47.47 / 42.27 / 16.61 | 47.90 / 42.70 / 16.97 | — |
+| GraspNet-baseline | RealSense | off | — | 32.63 / 27.48 / 10.42 | 31.76 / 26.18 / 10.19 |
+| GraspNet-baseline | RealSense | on | 47.47 / 42.27 / 16.61 | 47.90 / 42.70 / 16.97 | 46.81 / 41.90 / 16.74 |
 | GraspNet-baseline | RealSense | not stated | 27.56 / 26.11 / 10.55 | — | — |
 | GSNet | RealSense | off | 65.70 / 53.75 / 23.98 | — | 68.83 / 60.35 / 25.20 |
 | GSNet | RealSense | on | 67.12 / 54.81 / 24.31 | — | 71.23 / 62.29 / 26.42 |
@@ -60,7 +61,7 @@ has a line *not stated*.
 
     | Method | Camera | Filter | `author-ckpt` | `reproduced` |
     |---|---|:---:|---|---|
-    | GraspNet-baseline | RealSense | on | +0.43 / +0.43 / +0.36 | — |
+    | GraspNet-baseline | RealSense | on | +0.43 / +0.43 / +0.36 | −0.66 / −0.37 / +0.13 |
     | GSNet | RealSense | off | — | +3.13 / +6.60 / +1.22 |
     | GSNet | RealSense | on | — | +4.11 / +7.48 / +2.11 |
     | Scale-Balanced-Grasp | RealSense | off | −1.17 / −1.30 / −0.51 | — |
@@ -103,9 +104,13 @@ has a line *not stated*.
 ??? note "The models trained here: the admission gate, and what is known about each gap"
 
     - **Against the admission gate.** The gate asks for at most 1.0 AP between `reproduced`
-      and `reported` on each split. EconomicGrasp meets it on similar and novel and is 0.13 AP
-      outside it on seen. GSNet and FineGrasp are outside it on every split, and neither gap
-      is explained.
+      and `reported` on each split. GraspNet-baseline meets it, with the collision filter:
+      the one setting its repository reports. EconomicGrasp meets it on similar and novel and
+      is 0.13 AP outside it on seen. GSNet and FineGrasp are outside it on every split, and
+      neither gap is explained.
+    - **GraspNet-baseline is a little below its authors' checkpoint**: −0.87 / −1.30 / −0.23
+      AP from it without the filter and −1.09 / −0.80 / −0.23 with it. Whether that is the
+      spread between trainings was not measured.
     - **EconomicGrasp lands on its authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it
       without the filter, +0.22 / −0.02 / +1.01 with it. That checkpoint is itself 1.07 AP
       above the reported number on seen, so what separates the training here from the
@@ -124,8 +129,8 @@ has a line *not stated*.
       paper's equations, and it ran as four processes with accumulated gradients in place of
       the eight of the published recipe (`configs/finegrasp/README.md`).
     - **One seed.** GSNet was trained three times with it; its line is the first training,
-      and the three lie within 1.12 AP of one another on every split. EconomicGrasp and
-      FineGrasp were trained once. Other seeds were not trained, nor was a training with
+      and the three lie within 1.12 AP of one another on every split. GraspNet-baseline,
+      EconomicGrasp and FineGrasp were trained once. Other seeds were not trained, nor was a training with
       unmodified reference code run. Each training run is described in its method's README.
     - **The weights are not published yet.** They were trained on GraspNet-1Billion (CC
       BY-NC-SA 4.0), and whether and where they are published has not been decided. The
@@ -145,8 +150,8 @@ collision filter nor the checkpoints, so it stands beside no measured number.
 
 | Method | Filter | `reported` | `author-ckpt` | `reproduced` |
 |---|:---:|---|---|---|
-| GraspNet-baseline | off | — | 8.70 / 10.35 / 6.97 | — |
-| GraspNet-baseline | on | — | 17.14 / 20.60 / 12.87 | — |
+| GraspNet-baseline | off | — | 8.70 / 10.35 / 6.97 | 7.44 / 8.87 / 5.99 |
+| GraspNet-baseline | on | — | 17.14 / 20.60 / 12.87 | 14.09 / 16.90 / 10.73 |
 | GraspNet-baseline | not stated | 17.95 / 21.54 / 13.53 | — | — |
 | GSNet | off | — | — | 25.58 / 31.38 / 19.42 |
 | GSNet | on | — | — | 26.87 / 33.00 / 20.04 |
@@ -190,9 +195,12 @@ note).
       ([its README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)).
     - **One run each**, with seed 0, and one training with one seed behind every
       `reproduced` number, as above. The paper has no row for GSNet, FineGrasp or HGGD.
-    - **EconomicGrasp trained here transfers better than its authors' checkpoint**, by
-      1.55 AP without the filter and 1.47 with it; on GraspNet-1Billion the two differ on
-      novel scenes only, by about 1 AP in the same direction.
+    - **A model trained here does not transfer like its authors' checkpoint.**
+      EconomicGrasp is 1.55 AP above its checkpoint without the filter and 1.47 with it;
+      GraspNet-baseline is 1.26 AP below without and 3.05 below with it. On
+      GraspNet-1Billion each differs from its checkpoint by about 1 AP at most, in the same
+      direction. One training each: how much of this a second training would keep was not
+      measured.
     - **The subset numbers of the user guide** (other cameras, other crops, the Kinect
       weights) were measured on 24 scenes and are not benchmark numbers.
 

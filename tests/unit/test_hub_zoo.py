@@ -27,16 +27,17 @@ CONFIG = configs_root() / "_base_/default_runtime.yaml"
 
 
 def test_shipped_configs_are_found_and_none_has_ready_weights_yet():
-    name = "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e.yaml"
+    # a model that only its authors trained: the Kinect camera of EconomicGrasp
+    name = "economicgrasp/economicgrasp_sunet14_g1b-kinect_10e.yaml"
     metafile, model = find_model(configs_root() / name)
-    assert metafile.method == "GraspNet-baseline" and model.camera == "realsense"
-    assert model.weights.source == "author"
+    assert metafile.method == "EconomicGrasp" and model.camera == "kinect"
+    assert model.weights.source == "author" and model.author_weights is None
     path, note = zoo_weights(configs_root() / name)
     assert path is None  # the authors' file is in the authors' format and under their licence
     assert "not downloaded for you" in note and "tools.convert_checkpoint" in note
     assert "non-commercial" in note and str(metafile.path.parent / "README.md") in note
     # the exact command of the metafile, and the file to pass
-    assert f"`{model.weights.convert}`" in note and "--weights baseline_realsense.pth" in note
+    assert f"`{model.weights.convert}`" in note and "--weights economicgrasp_kinect.pth" in note
     for config in configs_root().glob("*/*.yaml"):  # nothing can be downloaded yet
         if config.name != "metafile.yaml":
             assert zoo_weights(config)[0] is None, config

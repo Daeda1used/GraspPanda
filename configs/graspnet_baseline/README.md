@@ -26,23 +26,36 @@ in a terminal `grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_
 
 ## Results on GraspNet-1Billion
 
-AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames, all
-scored), RealSense, protocol `graspnet1b-sv-v1`. The workspace is cropped with the
+AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames),
+RealSense, protocol `graspnet1b-sv-v1`. The workspace is cropped with the
 ground-truth segmentation, as in the reference (`gt_assisted: workspace`).
 
 | Provenance | Collision filter | AP | Source |
 |---|---|---|---|
 | `reported` | not stated | 27.56 / 26.11 / 10.55 | paper, as quoted in the reference README ("In paper") |
 | `author-ckpt` | off | 32.63 / 27.48 / 10.42 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json) |
+| `reproduced` | off | 31.76 / 26.18 / 10.19 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test_raw.json) |
 | `reported` | on | 47.47 / 42.27 / 16.61 | reference README, "In repo" |
 | `author-ckpt` | on | 47.90 / 42.70 / 16.97 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| `reproduced` | on | 46.81 / 41.90 / 16.74 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test_cd.json) |
 
 `author-ckpt` is the authors' `checkpoint-rs.tar`, converted and run through
-`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0. No model
-has been trained here yet. **Measured minus reported, with the collision filter**: +0.43 / +0.43 / +0.36 AP
-against the "In repo" row, the setting of the `cd` variant.
+`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0.
+`reproduced` is a model trained here from scratch with the config's recipe. **Measured
+minus reported, with the collision filter**, against the "In repo" row, the setting of
+the `cd` variant: +0.43 / +0.43 / +0.36 AP for the authors' checkpoint and
+−0.66 / −0.37 / +0.13 AP for the model trained here, **within the zoo's gate of 1 AP on
+every split**.
 
-<details markdown="1"><summary>Without the filter, and a 20-frame check with the reference code</summary>
+<details markdown="1"><summary>The training, the run without the filter, and a 20-frame check with the reference code</summary>
+
+**The training.** `grasppanda train graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e`
+at commit `7ac91b5`, nothing overridden: 18 epochs, batch size 2, seed 0, 18.8 hours on one
+RTX 3090 shared with other jobs. The checkpoint of epoch 18 (SHA-256 `5a2434279c1a…`) was
+scored at commit `400b733`. It is −0.87 / −1.30 / −0.23 AP from the authors' checkpoint
+without the filter and −1.09 / −0.80 / −0.23 with it. Whether that is the spread between
+trainings was not measured: one run, one seed (GSNet's three trainings with one seed span
+1.12 AP on seen and 0.36 on similar).
 
 The "In repo" row is described by the reference README as the model with collision
 detection at threshold 0.01. The released checkpoint scores slightly above it on every
@@ -70,7 +83,7 @@ frames. The subset is not a benchmark number and must not be quoted as one.
 
 ## Results on GraspClutter6D
 
-The same checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames of
+The same weights on the whole GraspClutter6D test split (235 scenes, 3,055 frames of
 the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 [graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e](graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e.yaml). Percent.
 
@@ -79,8 +92,12 @@ the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 | not stated | 17.95 | 21.54 | 13.53 | reported |
 | off | 8.70 | 10.35 | 6.97 | author-ckpt ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_raw.json)) |
 | on | 17.14 | 20.60 | 12.87 | author-ckpt ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_author-ckpt_test_cd.json)) |
+| off | 7.44 | 8.87 | 5.99 | reproduced ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_reproduced_test_raw.json)) |
+| on | 14.09 | 16.90 | 10.73 | reproduced ([record](records/graspnet-baseline_pointnet2_g1b-realsense-to-gc6d-d435_18e_reproduced_test_cd.json)) |
 
-Only the filtered run comes near the reported row (−0.81 / −0.94 / −0.66).
+Only the authors' filtered run comes near the reported row (−0.81 / −0.94 / −0.66). The
+model trained here transfers worse than their checkpoint: −3.05 AP with the filter, where
+it is −1.09 AP on the seen scenes of GraspNet-1Billion.
 
 <details markdown="1"><summary>Against the reported row</summary>
 
@@ -103,7 +120,8 @@ trained with (`docs/user_guides/cross_dataset.md`).
 
 ## Weights
 
-GraspPanda publishes no weights for this method. Download the authors' `checkpoint-rs.tar`
+GraspPanda publishes no weights for this method yet; for those trained here that is not
+decided (the training data is CC BY-NC-SA 4.0). Download the authors' `checkpoint-rs.tar`
 (link and SHA-256 in the [metafile](metafile.yaml)) and convert it once:
 
 ```bash
