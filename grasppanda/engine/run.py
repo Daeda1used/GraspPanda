@@ -47,6 +47,7 @@ __all__ = [
     "LOGGER_NAME",
     "Run",
     "find_latest_checkpoint",
+    "gpu_memory_limited",
     "limit_gpu_memory",
     "resolve_device",
     "start_run",
@@ -165,6 +166,18 @@ def limit_gpu_memory(fraction: float | None, device: torch.device) -> int | None
     index = device.index if device.index is not None else torch.cuda.current_device()
     torch.cuda.set_per_process_memory_fraction(fraction, index)
     return index
+
+
+@contextmanager
+def gpu_memory_limited(fraction: float | None, device: torch.device) -> Iterator[None]:
+    """:func:`limit_gpu_memory` for a block: the cap ends with the block, so the next run
+    of the process sets its own or none."""
+    capped = limit_gpu_memory(fraction, device)
+    try:
+        yield
+    finally:
+        if capped is not None:
+            torch.cuda.set_per_process_memory_fraction(1.0, capped)
 
 
 def find_latest_checkpoint(work_dir: str | Path, run_id: str | None = None) -> Path | None:

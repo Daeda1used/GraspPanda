@@ -600,6 +600,25 @@ def test_the_probe_is_the_trainer_of_the_config_not_a_loop_of_its_own(monkeypatc
     assert all(torch.equal(probed[name], seen[name]) for name in probed)
 
 
+def test_the_probe_takes_the_share_of_the_gpu_its_config_allows(monkeypatch, capsys):
+    """``runtime.gpu_memory_fraction`` caps a probe as it caps a run, and ends with it."""
+    from contextlib import contextmanager
+
+    from grasppanda.engine import run
+
+    seen = []
+
+    @contextmanager
+    def limited(fraction, device):
+        seen.append(("on", fraction, device.type))
+        yield
+        seen.append(("off", fraction, device.type))
+
+    monkeypatch.setattr(run, "gpu_memory_limited", limited)
+    report = probe(TOY, ["runtime.gpu_memory_fraction=0.45"], iters=2, predict_frames=1)
+    assert report.verdict.startswith("runs") and seen == [("on", 0.45, "cpu"), ("off", 0.45, "cpu")]
+
+
 def test_a_refused_config_is_refused_before_anything_is_built(capsys):
     report = probe(TOY, ["model.head.num_angles=6"])
     assert report.verdict == "refused" and report.parameters is None and report.iterations == 0
