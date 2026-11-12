@@ -27,6 +27,7 @@ parameter of a label asset and two data transforms. There is no `FineGrasp` clas
 | Config | Trains on | Tests on |
 |---|---|---|
 | [finegrasp_sunet14_g1b-realsense_10e](finegrasp_sunet14_g1b-realsense_10e.yaml) | GraspNet-1Billion, RealSense | GraspNet-1Billion, RealSense |
+| [finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e](finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml) | GraspNet-1Billion, RealSense | GraspClutter6D, RealSense D435 |
 
 The options of every slot, with what was measured for each:
 [the method page](https://daeda1used.github.io/GraspPanda/methods/finegrasp/#the-slots), or in a terminal
@@ -82,7 +83,7 @@ of these, or the seed, accounts for it was not investigated: one run, one seed.
 
 ## Results on GraspClutter6D
 
-Not scored yet: there is no FineGrasp config for GraspClutter6D.
+Not scored yet on the whole split.
 
 ## Weights
 
@@ -188,8 +189,7 @@ different normal inputs:
 | Normal input | AP, 20 frames, no collision filter |
 |---|---|
 | paper's estimator, towards the camera, as an 8-bit normal image: `(n + 1) / 2` in [0, 1] | **69.4** |
-| the same without rounding to 8 bits | 69.0 |
-| the same with neighbours 2 pixels apart / with forward differences | 69.3 / 68.6 |
+| the same unrounded / neighbours 2 pixels apart / forward differences | 69.0 / 69.3 / 68.6 |
 | Open3D normals of the full cloud, oriented to the camera, same encoding | 68.9 |
 | paper's estimator, *away* from the camera, same encoding | 59.5 |
 | paper's estimator, towards the camera, colour channels reversed | 58.7 |

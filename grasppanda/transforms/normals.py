@@ -20,7 +20,7 @@ the weights expect camera-facing normals in the value range of an 8-bit normal i
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 
@@ -149,16 +149,29 @@ class CoordinateFeatures(PointTransform):
     ``feats ← [x, y, z | feats]`` in float32, or the coordinates alone when the sample
     has no features yet. Placed after the augmentations, the coordinates are those of
     the cloud the model sees.
+
+    Args:
+        median_depth: Move the depth coordinate of the features so that its median over
+            the frame is this value, in metres; the points themselves stay where they
+            are. A model that reads coordinates learns the camera distance of its
+            training frames: this puts a frame taken from another distance back into
+            that range. ``None`` (the reference) feeds the coordinates as they are.
     """
 
     status = "tested"
     source = "FineGrasp (arXiv 2507.05978)"
+    #: Added after config hashes were recorded: at ``None`` a config hashes as before.
+    hash_neutral: ClassVar[Mapping[str, Any]] = {"median_depth": None}
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, median_depth: float | None = None) -> None:
+        if median_depth is not None and not median_depth > 0:
+            raise ValueError(f"median_depth must be positive, got {median_depth}")
+        self.median_depth = None if median_depth is None else float(median_depth)
 
     def __call__(self, sample: PointSample) -> PointSample:
         coords = sample.points.astype(np.float32)
+        if self.median_depth is not None and len(coords):
+            coords[:, 2] += np.float32(self.median_depth - float(np.median(coords[:, 2])))
         if sample.feats is None:
             sample.feats = coords
         else:

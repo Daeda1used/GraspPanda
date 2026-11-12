@@ -336,6 +336,9 @@ TRANSFER = {
         "sbg_pointnet2-transformer_g1b-realsense_18e"
     ),
     "hggd/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e": "hggd_r34w8_g1b-realsense_15e",
+    "finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e": (
+        "finegrasp_sunet14_g1b-realsense_10e"
+    ),
 }
 
 

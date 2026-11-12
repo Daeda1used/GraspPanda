@@ -203,6 +203,42 @@ def test_coordinate_features_go_in_front_of_whatever_is_there():
         CoordinateFeatures()(alone)
 
 
+def test_the_depth_of_the_features_can_be_moved_to_the_distance_of_the_training_frames():
+    """A model that reads coordinates has seen one camera distance. ``median_depth`` moves
+    the depth coordinate of the features there and leaves the cloud where it is."""
+    sample = DepthNormals()(sample_of(random_depth(6)))
+    points, normals = sample.points.copy(), sample.feats.copy()
+    moved = CoordinateFeatures(median_depth=0.42)(sample)
+    assert np.array_equal(moved.points, points), "the geometry is untouched"
+    assert np.array_equal(moved.feats[:, :2], points[:, :2].astype(np.float32))
+    assert np.array_equal(moved.feats[:, 3:], normals)
+    assert np.median(moved.feats[:, 2]) == pytest.approx(0.42, abs=1e-6)
+    shift = moved.feats[:, 2] - points[:, 2].astype(np.float32)
+    assert np.ptp(shift) < 1e-6, "one shift for the whole frame"
+    with pytest.raises(ValueError, match="median_depth must be positive"):
+        CoordinateFeatures(median_depth=0.0)
+
+
+def test_the_new_option_leaves_the_hash_of_every_config_that_does_not_use_it():
+    """An argument a component gained after hashes were recorded is left out of the hash
+    at the value that keeps the behaviour (``hash_neutral`` of the class)."""
+    from grasppanda.config import Config
+
+    name = "finegrasp/finegrasp_sunet14_g1b-realsense_10e"
+    key = "data.test.dataset.transforms.2.median_depth"
+    plain = Config.load(name, command="test")
+    assert plain.resolved()["data"]["test"]["dataset"]["transforms"][2] == {
+        "type": "CoordinateFeatures",
+        "median_depth": None,
+    }
+    stated = Config.load(name, command="test", overrides=[f"{key}=null"])
+    moved = Config.load(name, command="test", overrides=[f"{key}=0.42"])
+    assert plain.digest() == stated.digest()
+    assert moved.digest() != plain.digest(), "another input is another experiment"
+    # the hash of this config before the option existed
+    assert plain.digest().startswith("254815dc944e")
+
+
 def test_the_parity_recorder_writes_the_normal_image_this_transform_computes():
     """The reference dataset reads normal files that are not published; the recorder of
     the parity fixtures writes them itself, with code of its own (it cannot import this
@@ -237,4 +273,5 @@ def test_both_are_registered_and_describe_themselves():
     assert TRANSFORMS.build({"type": "CoordinateFeatures"}).config() == {
         "type": "CoordinateFeatures",
         "version": 1,
+        "median_depth": None,
     }
