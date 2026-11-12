@@ -417,7 +417,7 @@ Read from source at the pinned commits (Appendix A). This table, not the papers'
 
 | | GraspNet-baseline / SBG | GSNet (graspness_unofficial) | EconomicGrasp | HGGD |
 |---|---|---|---|---|
-| Input | Depth → cloud, xyz | Depth → cloud, constant-ones features | Same as GSNet | 4-channel RGB-D image 640×360 + 25 600-point cloud |
+| Input | Depth → cloud, xyz | Depth → cloud, constant-ones features | Same as GSNet | 4-channel RGB-D image 640×360 + 25,600-point cloud |
 | Workspace crop | Box around **GT segmentation** in table frame, ±2 cm, also at test time | Same | Same | None |
 | Scene encoder | PointNet++ (baseline) / 2 SA + 2 transformer blocks (SBG) → 1024 seeds, 256-d | Sparse U-Net, per-point 512-d | Same architecture as GSNet | 2-D encoder-decoder; no 3-D scene network |
 | Proposal | 2-way "objectness" on the 1024 seeds; optional OBS needs a second segmentation network at test time (SBG) | Objectness + graspness per point → mask → FPS to 1024 | Same code as GSNet | Heat-map peaks → up to 48 **partial grasps** `(u, v, θ, width, Δz)` |
@@ -427,7 +427,7 @@ Read from source at the pinned commits (Appendix A). This table, not the papers'
 | GT inside the training forward | Label matching runs mid-forward; the **crop rotation comes from the labels** (object pose × template); crops are centred at the matched **GT grasp point** rather than the seed | Same, but crops are centred at the seed | Same as GSNet | None; targets are computed after the forward from the network's own proposals |
 | Output score | `score × P(objectness) × tolerance / 0.05` (SBG) | Max of regressed grid (unbounded) | Bin-centre-weighted sum of **raw logits** (no softmax) | Anchor sigmoid |
 | Collision filter in shipped test path | Shipped command turns it off (SBG) | Default on in `test.py`, shipped command turns it off | Off | **On**, and also rejects grasps with ≤ 2 points between the fingers |
-| Recipe | SBG: Adam 1e-3, OneCycle, 18 epochs, batch 2, BN-momentum decay; "validation" on `test_seen` | Adam 1e-3, ×0.95/epoch, 10 epochs, batch 4, 15 000 points, flip + x-rotation | Adam 1e-3, cosine, 20 epochs by default (README command: 10), batch 4, 20 000 points, flip | AdamW 1e-2, StepLR, 15 epochs, batch 4 × 2 accumulation, value clipping, BN-momentum decay; one optimizer over two networks |
+| Recipe | SBG: Adam 1e-3, OneCycle, 18 epochs, batch 2, BN-momentum decay; "validation" on `test_seen` | Adam 1e-3, ×0.95/epoch, 10 epochs, batch 4, 15,000 points, flip + x-rotation | Adam 1e-3, cosine, 20 epochs by default (README command: 10), batch 4, 20,000 points, flip | AdamW 1e-2, StepLR, 15 epochs, batch 4 × 2 accumulation, value clipping, BN-momentum decay; one optimizer over two networks |
 
 Consequences:
 
@@ -567,7 +567,7 @@ Ground truth enters only at step 3 and only through the `Supervision` argument o
 | 1024 seeds, graspness threshold 0.1 | module globals | proposal stage |
 | Max width 0.1 m, finger height 0.02 m | label generation, decoder clamp, evaluator clip | `Gripper` |
 | Voxel size 0.005 m | dataset default, `train.py`, `test.py` | sparse backbone |
-| Points per frame | dataset default 20 000, CLI 15 000 | sampling transform |
+| Points per frame | dataset default 20,000, CLI 15,000 | sampling transform |
 | Workspace margin 0.02 m | four files | workspace transform (fingerprinted) |
 | Friction thresholds 0.8 (point graspness), 0.6 (view graspness) | generator script, label matching | asset generator parameters; view-stage target encoder |
 | Cylinder 0.05 / −0.02 / 0.04 / 16 | two files | grouper |
@@ -606,7 +606,7 @@ Every operator has a pure-PyTorch reference implementation that runs on CPU and 
 
 `runtime.ops: {fps: auto}` selects per operator; `auto` means the fastest installed backend that passed parity. The choice is recorded in `env.json`.
 
-A pure-PyTorch cylinder query over 1024 seeds × 20 000 points is on the order of 10⁷–10⁸ pairwise tests per batch, which is practical on a GPU with chunking; no compiled extension is assumed for v1.
+A pure-PyTorch cylinder query over 1024 seeds × 20,000 points is on the order of 10⁷–10⁸ pairwise tests per batch, which is practical on a GPU with chunking; no compiled extension is assumed for v1.
 
 ### 9.2 Sparse convolution
 

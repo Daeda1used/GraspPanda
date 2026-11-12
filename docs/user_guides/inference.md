@@ -160,7 +160,7 @@ truth. The inferencer does what the input allows and says what it did:
 
     `--frame graspnet1b:scene_0100/realsense/0000` reads a frame of the dataset the config
     names, through the config's own dataset reader. With the GSNet config (its recipe
-    samples 15 000 points):
+    samples 15,000 points):
 
     ```text
       input     dataset frame graspnet1b:scene_0100/realsense/0000, read by the config's dataset reader

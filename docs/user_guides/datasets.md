@@ -159,7 +159,7 @@ to the dataset sections of the six method configs.
 
 [GraspClutter6D](https://huggingface.co/datasets/GraspClutter6D/GraspClutter6D) (RA-L 2025,
 [arXiv 2504.06866](https://arxiv.org/abs/2504.06866), data licence CC BY-SA 4.0) holds
-1 000 scenes in BOP layout, 648 of them in its grasp splits. Every label generator of this
+1,000 scenes in BOP layout, 648 of them in its grasp splits. Every label generator of this
 toolbox runs on it unchanged. Download and unpack it as its README says, set
 `GRASPPANDA_GRASPCLUTTER6D_ROOT`, then run `grasppanda prepare graspclutter6d --check`.
 Testing a GraspNet-1Billion model on it is the subject of
@@ -196,20 +196,20 @@ Testing a GraspNet-1Billion model on it is the subject of
     Intrinsics and depth scale are read per image from `scene_camera.json`. Three of the
     cameras have two calibrations in the grasp splits (in the scenes inspected, view 0 has
     one and views 1 to 12 the other), so one constant camera matrix per camera would be
-    wrong here. The depth scale was the same on all 8 424 images of each camera. The paper
+    wrong here. The depth scale was the same on all 8,424 images of each camera. The paper
     reports its benchmark on the RealSense D435.
 
 ??? note "Splits"
 
     | Split | Scenes | Frames per camera | Object models | Source |
     |---|---|---|---|---|
-    | `train` | 413 | 5 369 | 123 (ids 69 to 198) | `split_info/grasp_train_scene_ids.json` |
-    | `test` | 235 | 3 055 | 68 (ids 1 to 68) | `split_info/grasp_test_scene_ids.json` |
-    | `all` | 648 | 8 424 | 191 | union of the two |
+    | `train` | 413 | 5,369 | 123 (ids 69 to 198) | `split_info/grasp_train_scene_ids.json` |
+    | `test` | 235 | 3,055 | 68 (ids 1 to 68) | `split_info/grasp_test_scene_ids.json` |
+    | `all` | 648 | 8,424 | 191 | union of the two |
     | `sample` | 1 (scene 5) | 13 | 6 | first training scene, for smoke tests |
     | `test_mini` | 24 | 312 | 66 of the 68 | every tenth test scene by rank; shipped |
     | `val_dev` | 41 | 533 | 110 of the 123 | every tenth training scene by rank; shipped |
-    | `train_dev` | 372 | 4 836 | 123 | `train` without `val_dev` |
+    | `train_dev` | 372 | 4,836 | 123 | `train` without `val_dev` |
 
     - **The test objects are all unseen.** No object model occurs in both splits: the
       benchmark has no "seen" part, unlike GraspNet-1Billion.
@@ -261,19 +261,19 @@ Testing a GraspNet-1Billion model on it is the subject of
     Two facts measured on those scenes that matter for training:
 
     - Only 9.6 % of the annotated grasp points keep a collision-free grasp of friction
-      ≤ 0.4 (10 401 of 108 094); on GraspNet-1Billion 39 % do. The scenes are far more
+      ≤ 0.4 (10,401 of 108,094); on GraspNet-1Billion 39 % do. The scenes are far more
       cluttered, so compact labels supervise far fewer seeds per frame.
     - The per-view labels of HGGD come to 17 to 67 per frame (GraspNet-1Billion scene 0:
-      59), from 471 to 1 964 candidate grasps per scene.
+      59), from 471 to 1,964 candidate grasps per scene.
 
 ??? note "Dataset configs for GraspClutter6D"
 
     | Config | Data recipe carried over from | Cloud | Assets it reads for training |
     |---|---|---|---|
-    | `_base_/datasets/graspclutter6d_d435_tolerance.yaml` | GraspNet-baseline, Scale-Balanced-Grasp | 20 000 points, official workspace crop | label store, tolerance |
-    | `_base_/datasets/graspclutter6d_{d415,d435,kinect,zivid}.yaml` | the graspness recipe of GSNet, EconomicGrasp and FineGrasp | 15 000 points, official workspace crop | label store, graspness |
-    | `economicgrasp/economicgrasp_sunet14_gc6d-d435_10e.yaml` (on the D435 base) | EconomicGrasp | 20 000 points, official workspace crop | compact labels, graspness |
-    | `_base_/datasets/graspclutter6d_d435_hggd.yaml` | HGGD | colour and depth images, 25 600 points, no crop | per-view grasps |
+    | `_base_/datasets/graspclutter6d_d435_tolerance.yaml` | GraspNet-baseline, Scale-Balanced-Grasp | 20,000 points, official workspace crop | label store, tolerance |
+    | `_base_/datasets/graspclutter6d_{d415,d435,kinect,zivid}.yaml` | the graspness recipe of GSNet, EconomicGrasp and FineGrasp | 15,000 points, official workspace crop | label store, graspness |
+    | `economicgrasp/economicgrasp_sunet14_gc6d-d435_10e.yaml` (on the D435 base) | EconomicGrasp | 20,000 points, official workspace crop | compact labels, graspness |
+    | `_base_/datasets/graspclutter6d_d435_hggd.yaml` | HGGD | colour and depth images, 25,600 points, no crop | per-view grasps |
 
     These carry the GraspNet-1Billion recipe of each method over and change only what the
     dataset fixes. None reproduces a published GraspClutter6D training recipe: none exists
@@ -304,7 +304,7 @@ Testing a GraspNet-1Billion model on it is the subject of
     | Object poses | `meta/*.mat` or `annotations/*.xml` | `scene_gt.json` (millimetres) |
     | Table frame | `cam0_wrt_table.npy`, z up, origin on the table | the rig's world frame; the table is not at z = 0 |
     | Reference workspace crop | 3-D box around the ground-truth segmentation, 2 cm margin (`SegmentationBoxWorkspace`) | image rectangle around the ground-truth segmentation, 10 % margin (`SegmentationRectWorkspace`) |
-    | Cloud in that crop | 554 000 points, 0.48 × 0.35 × 0.26 m, 39 % on objects | 908 000 points, 0.91 × 0.57 × 0.81 m, 32 % on objects (D435) |
+    | Cloud in that crop | 554,000 points, 0.48 × 0.35 × 0.26 m, 39 % on objects | 908,000 points, 0.91 × 0.57 × 0.81 m, 32 % on objects (D435) |
     | Splits | train / seen / similar / novel | train / test, disjoint objects |
     | Evaluator | `GraspNet1BEvaluator`, protocol `graspnet1b-sv-v1` | `GraspClutter6DEvaluator`, protocol `graspclutter6d-sv-v1` |
     | Ranks and frictions | top 50; μ = 0.2, 0.4, …, 1.2 | the same |

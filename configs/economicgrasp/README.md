@@ -163,11 +163,11 @@ results.
 
 | What | Result |
 |---|---|
-| Checkpoint conversion | strict: 260 of 260 tensors, 15 750 238 parameters, the same per stage as upstream |
+| Checkpoint conversion | strict: 260 of 260 tensors, 15,750,238 parameters, the same per stage as upstream |
 | Inference, 4 frames | identical voxels, candidates, seeds and views; activations within 2.7e-6 of the largest value of a stage; decoded grasps identical up to 1.5e-6 (score) |
-| Inference, 32 further frames | identical seeds on 32 of 32; of 32 768 grasps, one angle class was decided by round-off (the two best logits of the reference were within 2e-5) |
+| Inference, 32 further frames | identical seeds on 32 of 32; of 32,768 grasps, one angle class was decided by round-off (the two best logits of the reference were within 2e-5) |
 | Training batch (4 frames) | activations within 2.3e-6, identical seeds; every loss term within 2e-8 relative and their sum within 6e-8, total gradient norm within 2.8e-6 |
-| Compact labels, 2 scenes | every value equal to the output of the upstream generator (18 objects, 8 297 kept points) |
+| Compact labels, 2 scenes | every value equal to the output of the upstream generator (18 objects, 8,297 kept points) |
 | Dataset reader, 4 frames | poses and per-object labels equal to those of the upstream loader |
 | Collision filter of the `cd` variant | the same decisions as the upstream detector on the 4 frames |
 
@@ -208,7 +208,7 @@ is a controlled variant with its own experiment name, not a fix to apply silentl
 |---|---|---|
 | `view.train_selection` | `multinomial` | The training view of a seed is sampled from the predicted scores. |
 | `assigner.max_match_distance` | `0.005` | A seed further than 5 mm from its label point is not supervised by the grasp losses (the view loss still uses it). |
-| `assigner.shared_views` | `lowest` | The object pose maps the 300 template views onto the labelled views, and the map is not one-to-one: for six random poses, 44 to 64 template views shared a labelled view with a neighbour. Upstream supervises only one view of such a pair and picks it with an indexed assignment that has repeated indices, whose result is undefined on a GPU. In a recorded batch the lower view won for 737 of the 773 seeds concerned (95 %), and 14 of 4 096 seeds changed between two runs on the same input. `lowest` makes that a rule; `all` supervises both views. |
+| `assigner.shared_views` | `lowest` | The object pose maps the 300 template views onto the labelled views, and the map is not one-to-one: for six random poses, 44 to 64 template views shared a labelled view with a neighbour. Upstream supervises only one view of such a pair and picks it with an indexed assignment that has repeated indices, whose result is undefined on a GPU. In a recorded batch the lower view won for 737 of the 773 seeds concerned (95 %), and 14 of 4,096 seeds changed between two runs on the same input. `lowest` makes that a rule; `all` supervises both views. |
 | `head.unmatched_class` | `true` | The angle and depth classifiers have 13 and 5 outputs. The extra class is the label of seeds without a label, which the loss mask excludes, so it is never a target. |
 | `head.decode_argmax` | `all_logits` | At `7361bb6` the extra class takes part in the decoder's arg-max; upstream `4119bdc` (2026-04-12) restricts it to the real bins (`supervised`). With the Kinect checkpoint the extra class did not win once on the 396 test frames we looked at, so there the two decode alike. |
 | `head.score_decode` | `logit_weighted` | The decoded score is `Σ class value × raw logit`, without a softmax: unbounded, and not an expectation. |

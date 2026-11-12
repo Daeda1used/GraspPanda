@@ -92,14 +92,14 @@ grasppanda train experimental/<name> --opts \
 
 | Config | Parameters | Iterations | Total loss, first → last | Supervised seeds, last iteration | Wall time |
 |---|---|---|---|---|---|
-| `graspnet-baseline_sunet14-fps_g1b-realsense_18e` | 14 981 516 | 20 (batch 2) | 3.18 → 1.58 | 0.49 | 107 s |
-| `gsnet_ptv3_g1b-realsense_10e` | 46 352 303 | 10 (batch 4) | 17.37 → 2.44 | 1.00 | 171 s |
-| `economicgrasp_ptv3_g1b-realsense_10e` | 46 748 766 | 10 (batch 4) | 20.98 → 5.45 | 0.10 | 78 s |
-| `gsnet_litept_g1b-realsense_10e` | 12 903 031 | 10 (batch 4) | 9.68 → 2.46 | 1.00 | 86 s |
-| `gsnet_oacnns_g1b-realsense_10e` | 52 317 519 | 10 (batch 4) | 5.63 → 3.01, not monotonic (see below) | 1.00 | 105 s |
-| `gsnet_spunet_g1b-realsense_10e` | 39 900 527 | 10 (batch 4) | 6.01 → 1.65 (see below) | 1.00 | 86 s |
-| `gsnet_pointnet2-fp_g1b-realsense_10e` | 1 140 943 | 10 (batch 4) | 5.78 → 2.17 | 1.00 | 80 s |
-| `gsnet_pointnext_g1b-realsense_10e` | 967 727 | 10 (batch 4) | 8.31 → 2.73 | 1.00 | 75 s |
+| `graspnet-baseline_sunet14-fps_g1b-realsense_18e` | 14,981,516 | 20 (batch 2) | 3.18 → 1.58 | 0.49 | 107 s |
+| `gsnet_ptv3_g1b-realsense_10e` | 46,352,303 | 10 (batch 4) | 17.37 → 2.44 | 1.00 | 171 s |
+| `economicgrasp_ptv3_g1b-realsense_10e` | 46,748,766 | 10 (batch 4) | 20.98 → 5.45 | 0.10 | 78 s |
+| `gsnet_litept_g1b-realsense_10e` | 12,903,031 | 10 (batch 4) | 9.68 → 2.46 | 1.00 | 86 s |
+| `gsnet_oacnns_g1b-realsense_10e` | 52,317,519 | 10 (batch 4) | 5.63 → 3.01, not monotonic (see below) | 1.00 | 105 s |
+| `gsnet_spunet_g1b-realsense_10e` | 39,900,527 | 10 (batch 4) | 6.01 → 1.65 (see below) | 1.00 | 86 s |
+| `gsnet_pointnet2-fp_g1b-realsense_10e` | 1,140,943 | 10 (batch 4) | 5.78 → 2.17 | 1.00 | 80 s |
+| `gsnet_pointnext_g1b-realsense_10e` | 967,727 | 10 (batch 4) | 8.31 → 2.73 | 1.00 | 75 s |
 
 What this shows: the config, the data pipeline, the label assets and the model fit together;
 losses are finite and fall on eight frames; a checkpoint is written; prediction, both
