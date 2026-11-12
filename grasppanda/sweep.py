@@ -37,6 +37,7 @@ import json
 import os
 import queue
 import signal
+import site
 import statistics
 import subprocess
 import sys
@@ -320,6 +321,24 @@ def _failed(cell: Cell, why: str) -> dict[str, Any]:
     return {"cell": cell.name, "choices": dict(cell.choices), "seed": cell.seed, "failed": why}
 
 
+def _cell_environment(gpu: str) -> dict[str, str]:
+    """The environment of a cell's process: it sees only ``gpu`` and imports this code.
+
+    A cell runs the code of the sweep that started it. Its interpreter would otherwise
+    import the first ``grasppanda`` on its own path, which is another one when this
+    process runs from a source tree and a release is installed beside it. An installed
+    package needs no entry: the cell's interpreter finds the same installation.
+    """
+    environment = {**os.environ, "CUDA_VISIBLE_DEVICES": _device_mask(gpu)}
+    root = Path(__file__).resolve().parent.parent
+    packages = (*site.getsitepackages(), site.getusersitepackages())
+    installed = {Path(path).resolve() for path in packages}
+    if root not in installed:
+        inherited = filter(None, os.environ.get("PYTHONPATH", "").split(os.pathsep))
+        environment["PYTHONPATH"] = os.pathsep.join(dict.fromkeys([str(root), *inherited]))
+    return environment
+
+
 def _run_in_process(
     sweep: Sweep, cell: Cell, gpu: str, children: set[subprocess.Popen[bytes]] | None = None
 ) -> dict[str, Any]:
@@ -338,7 +357,7 @@ def _run_in_process(
     with open(log, "w", encoding="utf-8") as handle:
         process = subprocess.Popen(
             command,
-            env={**os.environ, "CUDA_VISIBLE_DEVICES": _device_mask(gpu)},
+            env=_cell_environment(gpu),
             stdout=handle,
             stderr=subprocess.STDOUT,
         )

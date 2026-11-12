@@ -192,6 +192,28 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     assert record["config_hash"] == planned.config.digest()
 
 
+def test_a_cell_process_imports_the_code_of_the_sweep_that_started_it(monkeypatch):
+    """A cell's interpreter may find another GraspPanda first (a release installed beside
+    the source tree this process runs from): the tree leads the cell's path. An installed
+    package is found by the cell as it was by this process, and gets no entry."""
+    import os
+    import site
+
+    from grasppanda import sweep
+
+    root = Path(sweep.__file__).resolve().parent.parent
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join(["/elsewhere", str(root), "/elsewhere"]))
+    monkeypatch.setattr(site, "getsitepackages", lambda: ["/no/such/site-packages"])
+    environment = sweep._cell_environment("3")
+    assert environment["CUDA_VISIBLE_DEVICES"] == "3"
+    assert environment["PYTHONPATH"].split(os.pathsep) == [str(root), "/elsewhere"]
+    monkeypatch.delenv("PYTHONPATH")
+    assert sweep._cell_environment("3")["PYTHONPATH"] == str(root)
+    monkeypatch.setattr(site, "getsitepackages", lambda: [str(root)])
+    assert "PYTHONPATH" not in sweep._cell_environment("3")
+
+
 def test_a_failed_cell_does_not_stop_the_others(write, tmp_path, monkeypatch):
     """A cell whose process fails is reported with its log and carries no metric."""
     from grasppanda import sweep as module
