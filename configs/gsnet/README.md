@@ -39,7 +39,8 @@ segmentation, as in the reference (`gt_assisted: workspace`).
 `reproduced` is a model trained from scratch by this toolbox. **Measured minus reported**:
 +3.13 / +6.60 / +1.22 AP without the collision filter, +4.11 / +7.48 / +2.11 AP with it,
 above the paper on every split by more than the 1 AP of the zoo's admission gate. The gap
-is not explained; a second training lands within 0.5 AP of the first on every split.
+is not explained; three trainings of the config lie within 1.12 AP of one another on
+every split.
 
 <details markdown="1"><summary>How it was trained, and what is known about the gap</summary>
 
@@ -60,19 +61,21 @@ as well, at 69.79 / 60.83 / 25.52 without the filter. The paper's numbers come f
 authors' original code, which is not public, so what separates the two cannot be checked
 from here. A training with the unmodified reference code was not run here.
 
-**Trained twice.** The same config and seed were trained again at commit `7ac91b5` on an
-RTX 3090 (the first run: an RTX A6000), and the checkpoint of epoch 10 (SHA-256
-`69d8c76f59b9…`) was scored at commit `400b733`:
+**Trained three times.** The same config and seed were trained twice more on an RTX 3090
+(the first run: an RTX A6000), and each checkpoint of epoch 10 was scored on the whole
+test split:
 
 | Training | Collision filter off | on |
 |---|---|---|
 | first, the rows above | 68.83 / 60.35 / 25.20 | 71.23 / 62.29 / 26.42 |
-| second (records: [off](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 68.34 / 60.35 / 25.57 | 70.89 / 62.71 / 26.83 |
+| second: trained at `7ac91b5`, `69d8c76f59b9…`, scored at `400b733` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 68.34 / 60.35 / 25.57 | 70.89 / 62.71 / 26.83 |
+| third: the `sunet14` run of `projects/encoder_comparison` at `b890dd9`, `e1a5b662c072…` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 |
 
-Second minus first: −0.49 / 0.00 / +0.37 AP and −0.34 / +0.42 / +0.41 AP. A training is
-not bit-reproducible from one GPU to another, so one seed gives two models; both are above
-the paper by more than 1 AP on every split, so the gap is not the spread between
-trainings. Other seeds were not trained.
+Highest minus lowest: 1.12 / 0.36 / 0.37 AP without the filter, 0.80 / 0.48 / 0.41 AP with
+it. One config and one seed gave three models, so a training here is not bit-reproducible
+from run to run, and on seen the three differ by about as much as the admission gate
+allows. All three are above the paper by more than 1 AP on every split, so the gap is not
+the spread between trainings. Other seeds were not trained.
 
 </details>
 

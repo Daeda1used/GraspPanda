@@ -20,7 +20,7 @@ none of their code is part of this history. Each line below has its full account
 - **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
 - **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
 - **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
-- **Model zoo.** Released weights scored on whole test splits; GSNet and FineGrasp trained here, GSNet twice; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
+- **Model zoo.** Released weights scored on whole test splits; GSNet and FineGrasp trained here, GSNet three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
@@ -487,6 +487,10 @@ Classes now count levels, and every method lists the options of each of its slot
   the whole test split, within 0.5 AP of the first training on every split and, like it,
   above the paper by more than 1 AP. The zoo keeps the rows of the first training; the
   records of the second are in `configs/gsnet/repeats/` and its README states them.
+- A third GSNet training, the `sunet14` run of `projects/encoder_comparison`: 69.46 /
+  60.71 / 25.42 AP without and 71.69 / 62.77 / 26.59 with the collision filter. The three
+  trainings of one config and seed span 1.12 / 0.36 / 0.37 AP without the filter, on seen
+  about as much as the admission gate allows; its records are in `repeats/` as well.
 - FineGrasp was trained from scratch on four RTX 3090 (four processes with four frames
   each, the gradients of two batches per step): 69.77 / 59.72 / 25.77 AP without and
   72.43 / 61.87 / 26.94 with the collision filter, below the paper by 1.2 to 3.1 AP on
