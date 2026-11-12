@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 from typing import Any
 
 from grasppanda import __version__
 from grasppanda.utils.console import banner, style, table
 from grasppanda.utils.env import collect_env
-from grasppanda.utils.imports import install_hint
+from grasppanda.utils.imports import EXTRA_BUILDS, install_hint
 
 __all__ = ["notes", "register"]
 
@@ -28,15 +29,20 @@ def notes(env: dict[str, Any]) -> list[str]:
     """
     found = []
     build = env["cuda_build"]
-    if build and not env["cuda_available"]:
-        present = (
-            " (`nvidia-smi` is installed, so there is one)" if shutil.which("nvidia-smi") else ""
-        )
+    # A machine without `nvidia-smi` has no GPU to miss, and a mask that hides every GPU
+    # (`CUDA_VISIBLE_DEVICES=`) was set on purpose: neither is something to fix.
+    if build and not env["cuda_available"] and shutil.which("nvidia-smi") and not _hidden():
+        index = "https://download.pytorch.org/whl"
+        newest = max(name.rsplit("cu", 1)[1] for name in EXTRA_BUILDS["spconv"] if "-cu" in name)
+        if _version(build) > (int(newest[:-1]), int(newest[-1])):
+            example = f"for example `pip install torch --index-url {index}/cu{newest}`"
+        else:
+            example = f"`pip install torch --index-url {index}/cu<version>` (`cu118` for 11.8)"
         found.append(
-            f"PyTorch is built for CUDA {build} and sees no GPU{present}. A driver older than "
-            f"CUDA {build} does not run it: the header of `nvidia-smi` names the newest CUDA "
-            "version yours does. Install a PyTorch built for that version or an older one, "
-            "for example `pip install torch --index-url https://download.pytorch.org/whl/cu126`."
+            f"PyTorch is built for CUDA {build} and sees no GPU (`nvidia-smi` is installed, so "
+            f"there is one). A driver older than CUDA {build} does not run it: the header of "
+            "`nvidia-smi` names the newest CUDA version yours does. Install a PyTorch built "
+            f"for that version or an older one, {example}."
         )
     if not env["optional"].get("spconv"):
         found.append(
@@ -45,6 +51,17 @@ def notes(env: dict[str, Any]) -> list[str]:
             f"HGGD do not). {install_hint('spconv')}"
         )
     return found
+
+
+def _hidden() -> bool:
+    """Whether ``CUDA_VISIBLE_DEVICES`` hides every GPU from this process."""
+    mask = os.environ.get("CUDA_VISIBLE_DEVICES")
+    return mask is not None and mask.strip() in ("", "-1")
+
+
+def _version(build: str) -> tuple[int, ...]:
+    """``"12.6"`` as ``(12, 6)``."""
+    return tuple(int(part) for part in build.split(".") if part.isdigit())
 
 
 def register(commands: Any) -> None:
@@ -90,7 +107,12 @@ def run(args: argparse.Namespace) -> int:
     print(table(["component", "value"], rows))
     print()
     if not found:
-        ready = "a GPU is visible" if env["cuda_available"] else "no GPU: the CPU runs everything"
+        hidden = " visible (CUDA_VISIBLE_DEVICES hides them)" if _hidden() else ""
+        ready = (
+            "a GPU is visible"
+            if env["cuda_available"]
+            else f"no GPU{hidden}: the CPU runs everything"
+        )
         print(style("✓ ", "bold", "green") + f"{ready}, and sparse convolution is installed")
     for note in found:
         print(style("! ", "bold", "yellow") + note)
