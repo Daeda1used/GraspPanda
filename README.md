@@ -164,7 +164,7 @@ Where each option runs, under which method and why not elsewhere: the
 ## Model zoo
 
 Targets: what the authors report on GraspNet-1Billion (RealSense, AP on seen / similar /
-novel), and in the last column the model trained here, where there is one.
+novel), and in the last column the model trained here.
 
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
@@ -175,8 +175,8 @@ novel), and in the last column the model trained here, where there is one.
 | Scale-Balanced-Grasp | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | — |
 | Scale-Balanced-Grasp | CoRL 2022 | on | 63.83 / 58.46 / 24.63 | — |
 | EconomicGrasp | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | — |
-| FineGrasp | arXiv 2025 | off | 71.67 / 62.83 / 27.40 | — |
-| FineGrasp | arXiv 2025 | on | 73.71 / 64.56 / 28.14 | — |
+| FineGrasp | arXiv 2025 | off | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
+| FineGrasp | arXiv 2025 | on | 73.71 / 64.56 / 28.14 | 72.43 / 61.87 / 26.94 |
 | HGGD | RA-L 2023 | not stated | 59.36 / 51.20 / 22.17 (paper) · 64.45 / 53.59 / 24.59 (repository) | — |
 
 A method enters the zoo when it is trained here within 1 AP of the reported number, or with
@@ -189,14 +189,18 @@ the methods run from their released weights
 
 <br>
 
-- **GSNet** was trained here from scratch with the recipe of its config: one run, one seed.
-  It scores above the paper by more than the gate allows, and why is not known. What is
-  known: the port equals the reference implementation stage by stage, a model trained with
-  the reference code (on a modified label set) is also above the paper, and the authors'
-  original code is not public
+- **GSNet** was trained here from scratch with the recipe of its config, twice with the
+  same seed; both trainings score alike, within half an AP. It is above the paper by more
+  than the gate allows, and why is not known. What is known: the port equals the reference
+  implementation stage by stage, a model trained with the reference code (on a modified
+  label set) is also above the paper, and the authors' original code is not public
   ([details](https://daeda1used.github.io/GraspPanda/model_zoo/#trained-and-evaluated-here)).
   Its weights are not published yet.
-- **The authors' released weights** of the other methods were scored on the whole test splits
+- **FineGrasp** was trained here once and is below the paper by more than the gate allows,
+  which is not explained either. The authors' weights give the paper's numbers through the
+  same test, so the gap comes from training; their normal images and graspness labels are
+  not published and are generated here. Its weights are not published yet.
+- **The authors' released weights** of every method but GSNet were scored on the whole test splits
   here, with and without the collision filter. Those `author-ckpt` numbers are in the
   [model zoo](https://daeda1used.github.io/GraspPanda/model_zoo/), each backed by a committed
   result record. They are not reproductions.
@@ -236,7 +240,7 @@ the methods run from their released weights
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
 - [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** Done: the evaluator equals the official one; GSNet equals its reference stage by stage, is trained here and scored on the whole test split. Open: its gap to the paper is not explained, and its weights are not published.
 - [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights. In progress: training here.
-- [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
+- [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference; FineGrasp is trained here. Open: its gap to the paper. In progress: training the others. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
 - [ ] **M4 — GraspClutter6D.** Done: reader, evaluator equal to the official one, label assets, transfer configs. Planned: training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.
 

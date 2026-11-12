@@ -1,9 +1,9 @@
 # Machine-readable source of the FineGrasp zoo entry; validated by grasppanda.hub.load_metafile.
 #
-# Reported numbers, and the authors' weights scored by this toolbox on the whole test
-# split (`author-ckpt`, each row with its result record). Nothing has been trained here,
-# so there is no `reproduced` result. The 120-frame sample of README.md is not a split AP
-# and is not listed.
+# Reported numbers, the authors' weights scored by this toolbox on the whole test split
+# (`author-ckpt`) and the model trained here from scratch (`reproduced`), each measured
+# row with its result record. The 120-frame sample of README.md is not a split AP and is
+# not listed.
 method: FineGrasp
 title: "FineGrasp: Towards Robust Grasping for Delicate Objects"
 venue: arXiv 2025
@@ -21,6 +21,17 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights:
+      # Trained here from scratch: the config at commit 400b733 with the README's command
+      # for four 24 GB GPUs (4 processes, 4 frames each, the gradients of 2 batches per
+      # step: 32 frames a step as in the published recipe), 10 epochs, seed 0, about 5.1
+      # hours on four RTX 3090; the file is the checkpoint of epoch 10 (230,240,145
+      # bytes). One training run with one seed.
+      url: null
+      sha256: e8b99d4390d908abb4cfc5ed51958bd1608124add3c1d26d7f54d5f5f7e2dea8
+      license: null
+      source: grasppanda
+      note: "Not published yet: trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided."
+    author_weights:
       # finegrasp_pipeline/model.safetensors of the authors' model repository, converted
       # with `convert` (the command of README.md).
       # The digest is the one the model hub lists for the file and the one of the copy
@@ -54,3 +65,19 @@ models:
         record: records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 73.69, similar: 64.62, novel: 28.18}
+      # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
+      # through `grasppanda test` at commit 400b733, scored by GraspNet1BEvaluator.
+      # Below the paper by 1.90 / 3.11 / 1.63 AP (off) and 1.28 / 2.69 / 1.20 (on); see
+      # README.md, "Results", for what is known about the gap.
+      - provenance: reproduced
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_raw.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 69.77, similar: 59.72, novel: 25.77}
+      - provenance: reproduced
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_cd.json
+        inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
+        AP: {seen: 72.43, similar: 61.87, novel: 26.94}

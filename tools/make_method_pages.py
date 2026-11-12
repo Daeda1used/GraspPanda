@@ -157,6 +157,8 @@ PROVENANCE_WORDS = {
     "reproduced": "trained here",
 }
 FILTER_WORDS = {False: "off", True: "on", None: "not stated"}
+#: The admission gate of the zoo: AP between a model trained here and the reported number.
+GATE = 1.0
 #: The same, short, for the table of a method page.
 SHORT_PROVENANCE = {
     "reported": "reported",
@@ -338,8 +340,8 @@ def upstream_words(method: str) -> dict[str, str]:
     third-party implementation (:data:`THIRD_PARTY` in its licence).
 
     Keys: ``code`` (the reference code), ``weights`` (the released checkpoint, said in
-    full), ``checkpoint`` and ``file`` (the same, short, once the page has said whose it
-    is), ``short`` (for a chip or a table label), ``repository`` (``owner/name``) and
+    full), ``checkpoint`` (the same, short, once the page has said whose it is),
+    ``short`` (for a chip or a table label), ``repository`` (``owner/name``) and
     ``third_party`` (``"yes"`` or ``""``).
     """
     upstream = metafile_of(method).upstream
@@ -351,7 +353,6 @@ def upstream_words(method: str) -> dict[str, str]:
             "code": where,
             "weights": f"the checkpoint of {where}",
             "checkpoint": "the released checkpoint",
-            "file": "the released file",
             "short": "released weights",
             "repository": repository,
             "third_party": "yes",
@@ -360,7 +361,6 @@ def upstream_words(method: str) -> dict[str, str]:
         "code": "the authors' code",
         "weights": "the authors' checkpoint",
         "checkpoint": "the authors' checkpoint",
-        "file": "the authors' released file",
         "short": "authors' weights",
         "repository": repository,
         "third_party": "",
@@ -373,25 +373,50 @@ def provenance_words(method: str, provenance: str, short: bool = False) -> str:
     return text.format(short=upstream_words(method)["short"])
 
 
-def numbers_status(method: str) -> tuple[str, str, str]:
-    """The status of a method's numbers, from the provenance of its metafile rows: the
-    chip text, its tone and what it means."""
+def numbers_status(method: str) -> list[tuple[str, str, str]]:
+    """The status of a method's numbers, from the provenance of its metafile rows: per
+    kind of weights that was scored here, the chip text, its tone and what it means."""
     found = {result.provenance for model in metafile_of(method).models for result in model.results}
-    if "reproduced" in found:
-        return (
-            "trained here",
-            "ok",
-            "a model trained by GraspPanda, scored on whole test splits",
-        )
+    status = []
     if "author-ckpt" in found:
         words = upstream_words(method)
-        return (
-            f"{words['short']} scored here",
-            "ok",
-            f"{words['weights']}, converted and scored on whole test splits; nothing trained "
-            "here yet",
-        )
-    return ("reported only", "muted", "only the numbers of the paper; nothing scored here")
+        meaning = f"{words['weights']}, converted and scored on whole test splits"
+        if "reproduced" not in found:
+            meaning += "; nothing trained here yet"
+        status.append((f"{words['short']} scored here", "ok", meaning))
+    if "reproduced" in found:
+        meaning = "a model trained by GraspPanda, scored on whole test splits"
+        within = within_gate(method)
+        if within:
+            status.append(("reproduced ✓", "ok", f"{meaning}: within {GATE:g} AP of the paper"))
+        else:
+            if within is False:
+                meaning += f"; not within {GATE:g} AP of the reported numbers"
+            status.append(("trained here", "", meaning))
+    return status or [
+        ("reported only", "muted", "only the numbers of the paper; nothing scored here")
+    ]
+
+
+def within_gate(method: str) -> bool | None:
+    """Whether every row trained here is within :data:`GATE` AP of the reported row with
+    the same collision filter, on every split; ``None`` where no such pair exists."""
+    pairs = [
+        (measured, reported)
+        for model in metafile_of(method).models
+        for measured in model.results
+        if measured.provenance == "reproduced"
+        for reported in model.results
+        if reported.provenance == "reported"
+        and reported.collision_filter is measured.collision_filter
+    ]
+    if not pairs:
+        return None
+    return all(
+        abs(measured.ap[split] - reported.ap[split]) <= GATE
+        for measured, reported in pairs
+        for split in measured.ap
+    )
 
 
 def equal_chip(method: str) -> str:
@@ -413,14 +438,13 @@ def head_chips(method: str) -> str:
     info = dc.method(method)
     if info.inputs != ("RGB-D" if pipeline_facts(info.config)["rgb"] else "depth"):
         raise ValueError(f"{method}: docs_chips says {info.inputs}, the config says otherwise")
-    status, tone, meaning = numbers_status(method)
     family = dc.FAMILY_NAMES[info.family]
     items = [
         dc.chip(family, "", f"{family}: {', '.join(_family_members(info.family))}"),
         dc.chip(info.venue, "", info.title),
         dc.chip(f"{info.inputs} input"),
         equal_chip(method),
-        dc.chip(status, tone, meaning),
+        *(dc.chip(*status) for status in numbers_status(method)),
     ]
     return '<div class="gp-chips">' + " ".join(items) + "</div>"
 
@@ -1213,12 +1237,11 @@ def _whole_split(model: ModelEntry, provenance: str, collision: bool) -> Result 
     )
 
 
-def _weights_label(method: str, weights: Weights, entry: str) -> str:
+def _weights_label(method: str, weights: Weights) -> str:
     """The weights a measured run used, in the words of a page."""
     if weights.source == "grasppanda":
         return "the weights trained here (not published)"
-    words = upstream_words(method)
-    return f"{words['file' if entry == 'author_weights' else 'checkpoint']}, converted"
+    return f"{upstream_words(method)['checkpoint']}, converted"
 
 
 def _shell(lines: list[str]) -> list[str]:
@@ -1305,7 +1328,7 @@ def _demo_step(
     for run in runs:
         weights = weights_of(model, run["weights"])
         first, *again = run["demo"]
-        who = _weights_label(method, weights, run["weights"])
+        who = _weights_label(method, weights)
         text = (
             f"Measured with {who}: **{first['wall_s']:.1f} s** for the whole command; "
             f"{_cloud(first)}; {_counts(first)} ({_when(first, machines)})."
@@ -1426,7 +1449,7 @@ def _elsewhere(
     sentences = []
     for run in runs:
         first = run["test"][0]
-        label = _weights_label(method, weights_of(model, run["weights"]), run["weights"])
+        label = _weights_label(method, weights_of(model, run["weights"]))
         for other in run["test"][1:]:
             gaps = [other["AP"][name] - first["AP"][name] for name in ("raw", variant)]
             if all(abs(gap) < 0.005 for gap in gaps):
@@ -1477,7 +1500,7 @@ def _test_step(
                 if index == 0:
                     lead_gaps.append(abs(subset - value))
                 gap = f"{subset - value:+.2f}".replace("-", "−")
-            label = f"{_weights_label(method, weights, run['weights'])}, `{provenance}`"
+            label = f"{_weights_label(method, weights)}, `{provenance}`"
             rows.append(
                 [
                     label if name == "raw" else "",
@@ -1489,7 +1512,7 @@ def _test_step(
                 ]
             )
     lead = runs[0]["test"][0]["AP"]
-    used = _weights_label(method, weights_of(model, runs[0]["weights"]), runs[0]["weights"])
+    used = _weights_label(method, weights_of(model, runs[0]["weights"]))
     measured = (
         f"Measured with {used}: "
         f"AP {lead['raw']:.2f} without the collision filter and {lead[variant]:.2f} with it"
@@ -1603,7 +1626,8 @@ def _short_source(source: str) -> str:
 
 
 def numbers_section(method: str) -> list[str]:
-    """At most four whole-split rows of the shipped config, and where they come from."""
+    """The whole-split rows of the shipped config (reported, the released weights, trained
+    here), and where they come from."""
     _, model = zoo_entry(method)
     order = list(PROVENANCE_WORDS)
     filters = [False, True, None]
@@ -1611,10 +1635,6 @@ def numbers_section(method: str) -> list[str]:
         (r for r in model.results if "seen" in r.ap),
         key=lambda r: (order.index(r.provenance), filters.index(r.collision_filter)),
     )
-    if len(results) > 4:  # the measured rows first, then the reported ones
-        keep = [r for r in results if r.provenance != "reported"][:4]
-        keep += [r for r in results if r.provenance == "reported"][: 4 - len(keep)]
-        results = [r for r in results if r in keep]
     rows = []
     for result in results:
         label = provenance_words(method, result.provenance, short=True)
@@ -1633,8 +1653,8 @@ def numbers_section(method: str) -> list[str]:
         dict.fromkeys(r.source for r in results if r.provenance == "reported" and r.source)
     )
     inputs = sorted({r.inputs for r in results if r.provenance != "reported" and r.inputs})
-    status, _, meaning = numbers_status(method)
-    body = [f"- **The status of these numbers**: {status}, {meaning}."]
+    status = "; ".join(f"{text}, {meaning}" for text, _, meaning in numbers_status(method))
+    body = [f"- **The status of these numbers**: {status}."]
     if sources:
         body.append("- **reported**: " + "; ".join(sources) + ".")
     if any(r.provenance == "author-ckpt" for r in results):
@@ -1944,7 +1964,7 @@ def index_page(records: option_lists.Measured) -> str:
             title += f" · {len(members)} methods"
         lines += [f"## {title}", "", '<div class="grid cards" markdown>', ""]
         for info in members:
-            status, tone, meaning = numbers_status(info.name)
+            status = " ".join(dc.chip(*status) for status in numbers_status(info.name))
             lines += [
                 f"-   **[{info.name}]({info.folder}.md)** · {info.venue} · {info.inputs}",
                 "",
@@ -1952,7 +1972,7 @@ def index_page(records: option_lists.Measured) -> str:
                 "",
                 f"    {WHAT[info.name][1]}",
                 "",
-                f"    {equal_chip(info.name)} {dc.chip(status, tone, meaning)}",
+                f"    {equal_chip(info.name)} {status}",
                 "",
             ]
         lines += ["</div>", ""]

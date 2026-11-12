@@ -8,7 +8,7 @@ hide: [toc]
 
 # GSNet
 
-<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="Graspness Discovery in Clutters for Fast and Accurate Grasp Detection">ICCV 2021</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the reference implementation (graspness_unofficial, third-party), the same weights loaded into both: tests/integration/test_gsnet_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="a model trained by GraspPanda, scored on whole test splits">trained here</span></div>
+<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="Graspness Discovery in Clutters for Fast and Accurate Grasp Detection">ICCV 2021</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the reference implementation (graspness_unofficial, third-party), the same weights loaded into both: tests/integration/test_gsnet_parity.py">equal to the reference ✓</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span></div>
 
 From the point cloud of a depth image, it scores the graspness of every point, keeps 1024 seeds where it is high, picks one of 300 approach views per seed and regresses score and width over a grid of angles and depths.
 
@@ -53,7 +53,7 @@ grasppanda demo gsnet/gsnet_sunet14_g1b-realsense_10e \
     - `grasps.png` and `grasps.gif`: the cloud with the 30 best grasps, still and swinging around the scene;
     - `example/`: the scene as files (`depth.png`, `rgb.png`, `mask.png`, `intrinsics.txt`).
 
-    Measured with the released file, converted: **15.0 s** for the whole command; 15,000 points to the model, sampled from 316,254 in the workspace; 1024 grasps predicted, 418 left after ModelFreeCollisionFilter (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs). At commit `0ddca31` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): the same counts, 14.8 s.
+    Measured with the released checkpoint, converted: **15.0 s** for the whole command; 15,000 points to the model, sampled from 316,254 in the workspace; 1024 grasps predicted, 418 left after ModelFreeCollisionFilter (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs). At commit `0ddca31` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): the same counts, 14.8 s.
 
     Measured with the weights trained here (not published): **15.0 s** for the whole command; 15,000 points to the model, sampled from 316,254 in the workspace; 1024 grasps predicted, 689 left after ModelFreeCollisionFilter (2026-11-11, commit `400b733`, one NVIDIA GeForce RTX 3090 shared with other jobs). At commit `ea6268b` on one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15): the same counts, 16.6 s.
 
@@ -116,7 +116,7 @@ grasppanda test gsnet/gsnet_sunet14_g1b-realsense_10e \
     evaluation.num_workers=4
 ```
 
-Measured with the released file, converted: AP 19.23 without the collision filter and 39.75 with it (this file was not scored on the whole split).
+Measured with the released checkpoint, converted: AP 19.23 without the collision filter and 39.75 with it (this file was not scored on the whole split).
 
 ??? note "What it prints, and every measured run against the whole split"
 
@@ -126,7 +126,7 @@ Measured with the released file, converted: AP 19.23 without the collision filte
 
     | Weights, provenance | Collision filter | AP, 120 frames of test_seen | AP, whole seen split | Difference | Wall time, commit |
     |---|---|---|---|---|---|
-    | the released file, converted, `author-ckpt` | off | 19.23 | not scored on the whole split | — | 67 s, `400b733` |
+    | the released checkpoint, converted, `author-ckpt` | off | 19.23 | not scored on the whole split | — | 67 s, `400b733` |
     |  | on | 39.75 | not scored on the whole split | — |  |
     | the weights trained here (not published), `reproduced` | off | 67.82 | 68.83 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/gsnet/records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_raw.json)) | −1.01 | 88 s, `400b733` |
     |  | on | 70.74 | 71.23 ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/gsnet/records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_cd.json)) | −0.49 |  |
@@ -135,7 +135,7 @@ Measured with the released file, converted: AP 19.23 without the collision filte
 
     Provenance: `author-ckpt`, the checkpoint of the reference implementation (graspness_unofficial, third-party), evaluated by GraspPanda; `reproduced`, trained and evaluated by GraspPanda. Inputs: the workspace is cropped around the ground-truth segmentation (`gt_assisted: workspace`), as in the reference. On these 120 frames the AP is within 1.01 AP of the whole split, so the subset tells you quickly whether your installation gives what the records say; it is not a benchmark number. Measured on 2026-11-11 on one NVIDIA GeForce RTX 3090 shared with other jobs.
 
-    **The same test elsewhere.** On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`), with the released file, converted: AP 19.23 and 39.75, the same to two decimals. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `0ddca31`), with the released file, converted: AP 19.23 and 39.75, the same to two decimals. On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`), with the weights trained here (not published): AP 67.82 and 70.74, the same to two decimals. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `ea6268b`), with the weights trained here (not published): AP 67.82 and 70.74, the same to two decimals.
+    **The same test elsewhere.** On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`), with the released checkpoint, converted: AP 19.23 and 39.75, the same to two decimals. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `0ddca31`), with the released checkpoint, converted: AP 19.23 and 39.75, the same to two decimals. On that RTX 3090 with PyTorch 2.14.1 and CUDA 12.6 (2026-11-11, `400b733`), with the weights trained here (not published): AP 67.82 and 70.74, the same to two decimals. On one NVIDIA RTX A6000 shared with other jobs, with TF32 convolutions (2026-10-15, `ea6268b`), with the weights trained here (not published): AP 67.82 and 70.74, the same to two decimals.
 
     The machines: one NVIDIA GeForce RTX 3090 (24 GB) of six, shared with training jobs, an AMD Ryzen Threadripper PRO 3975WX; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions in float32 (`runtime.tf32: false`, the default); one NVIDIA RTX A6000 (48 GB) shared with other jobs, an AMD EPYC 7262 with OMP_NUM_THREADS=3; Python 3.12, PyTorch 2.7.1 with CUDA 11.8, spconv 2.3.8; convolutions rounded to TF32, PyTorch's default, before `runtime.tf32` existed; the same RTX 3090 with Python 3.11, PyTorch 2.14.1 with CUDA 12.6, spconv 2.3.8; convolutions in float32.
 
@@ -156,7 +156,7 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 
 ??? note "Where these numbers come from"
 
-    - **The status of these numbers**: trained here, a model trained by GraspPanda, scored on whole test splits.
+    - **The status of these numbers**: trained here, a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers.
     - **reported**: paper.
     - **trained here**: a model trained from scratch by GraspPanda with the config's recipe, scored the same way.
     - **Inputs**: workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace).
