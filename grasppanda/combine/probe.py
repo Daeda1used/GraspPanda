@@ -986,6 +986,7 @@ def _real(
     """Train ``iters`` iterations with the real trainer, then predict. ``hold`` holds the
     recipe's scheduler node and the frames per batch (of the probe, of the recipe) under
     the schedule ``constant`` (``None``: the recipe's schedule)."""
+    from grasppanda.engine import run as engine
     from grasppanda.engine.run import Run, resolve_device
     from grasppanda.engine.seeding import determinism_restored
     from grasppanda.ops import backends
@@ -996,7 +997,13 @@ def _real(
     backends.configure(cfg["runtime"]["ops"])
     if target.type == "cuda":
         torch.cuda.reset_peak_memory_stats(target)
-    with tempfile.TemporaryDirectory(prefix="grasppanda-probe-") as scratch, determinism_restored():
+    # the share of the GPU a run of this config may take holds for its probe too
+    capped = engine.gpu_memory_limited(cfg["runtime"]["gpu_memory_fraction"], target)
+    with (
+        tempfile.TemporaryDirectory(prefix="grasppanda-probe-") as scratch,
+        determinism_restored(),
+        capped,
+    ):
         run = Run(Path(scratch), "probe", "train", planned, cfg, target)
         try:
             finished = _train_and_predict(
