@@ -1,0 +1,216 @@
+{
+  "about": "Training loss of HGGD weights on training frames whose per-view labels were suppressed at the given distance (metres) and angle (degrees), by tools/hggd_label_fit.py: no gradient, batch-norm on its running statistics, anchors fixed. Counts are per frame: labels, (cell, angle class) entries with a label, and those that are positives of the angle loss.",
+  "config": "hggd/hggd_r34w8_g1b-realsense_15e",
+  "split": "val_dev",
+  "frame_step": 16,
+  "rows": [
+    {
+      "nms_distance": 0.02,
+      "nms_angle": 60.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 1.2932,
+          "loss/angle": 1.983,
+          "loss/offsets": 0.19,
+          "loss/anchor": 0.5375,
+          "loss/anchor_offset": 0.1449,
+          "loss": 4.1485
+        },
+        "trained": {
+          "loss/heatmap": 1.0003,
+          "loss/angle": 0.4113,
+          "loss/offsets": 0.1768,
+          "loss/anchor": 0.4161,
+          "loss/anchor_offset": 0.1471,
+          "loss": 2.1516
+        }
+      },
+      "frames": 160,
+      "labels": 131.23,
+      "supervised": 124.16,
+      "positive": 6.67
+    },
+    {
+      "nms_distance": 0.015,
+      "nms_angle": 45.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 1.0527,
+          "loss/angle": 0.8525,
+          "loss/offsets": 0.1866,
+          "loss/anchor": 0.3729,
+          "loss/anchor_offset": 0.1444,
+          "loss": 2.609
+        },
+        "trained": {
+          "loss/heatmap": 0.9422,
+          "loss/angle": 0.4621,
+          "loss/offsets": 0.177,
+          "loss/anchor": 0.3774,
+          "loss/anchor_offset": 0.1467,
+          "loss": 2.1054
+        }
+      },
+      "frames": 160,
+      "labels": 211.05,
+      "supervised": 190.79,
+      "positive": 17.77
+    },
+    {
+      "nms_distance": 0.02,
+      "nms_angle": 30.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 1.0362,
+          "loss/angle": 0.6512,
+          "loss/offsets": 0.181,
+          "loss/anchor": 0.3236,
+          "loss/anchor_offset": 0.1283,
+          "loss": 2.3204
+        },
+        "trained": {
+          "loss/heatmap": 0.9322,
+          "loss/angle": 0.5032,
+          "loss/offsets": 0.1721,
+          "loss/anchor": 0.3705,
+          "loss/anchor_offset": 0.1346,
+          "loss": 2.1125
+        }
+      },
+      "frames": 160,
+      "labels": 249.6,
+      "supervised": 218.96,
+      "positive": 26.34
+    },
+    {
+      "nms_distance": 0.01,
+      "nms_angle": 60.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 0.9313,
+          "loss/angle": 0.5482,
+          "loss/offsets": 0.1836,
+          "loss/anchor": 0.3143,
+          "loss/anchor_offset": 0.1428,
+          "loss": 2.1202
+        },
+        "trained": {
+          "loss/heatmap": 0.9171,
+          "loss/angle": 0.4749,
+          "loss/offsets": 0.1764,
+          "loss/anchor": 0.3596,
+          "loss/anchor_offset": 0.1463,
+          "loss": 2.0742
+        }
+      },
+      "frames": 160,
+      "labels": 294.41,
+      "supervised": 258.44,
+      "positive": 31.13
+    },
+    {
+      "nms_distance": 0.01,
+      "nms_angle": 30.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 0.8993,
+          "loss/angle": 0.3773,
+          "loss/offsets": 0.1783,
+          "loss/anchor": 0.2632,
+          "loss/anchor_offset": 0.1341,
+          "loss": 1.8522
+        },
+        "trained": {
+          "loss/heatmap": 0.9064,
+          "loss/angle": 0.5242,
+          "loss/offsets": 0.1722,
+          "loss/anchor": 0.3548,
+          "loss/anchor_offset": 0.1391,
+          "loss": 2.0967
+        }
+      },
+      "frames": 160,
+      "labels": 419.21,
+      "supervised": 333.6,
+      "positive": 65.72
+    },
+    {
+      "nms_distance": 0.01,
+      "nms_angle": 15.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 0.8575,
+          "loss/angle": 0.3207,
+          "loss/offsets": 0.1652,
+          "loss/anchor": 0.2355,
+          "loss/anchor_offset": 0.1218,
+          "loss": 1.7007
+        },
+        "trained": {
+          "loss/heatmap": 0.8961,
+          "loss/angle": 0.6086,
+          "loss/offsets": 0.161,
+          "loss/anchor": 0.3608,
+          "loss/anchor_offset": 0.1307,
+          "loss": 2.1572
+        }
+      },
+      "frames": 160,
+      "labels": 795.31,
+      "supervised": 482.87,
+      "positive": 180.82
+    },
+    {
+      "nms_distance": 0.005,
+      "nms_angle": 30.0,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 0.8376,
+          "loss/angle": 0.3094,
+          "loss/offsets": 0.1664,
+          "loss/anchor": 0.2339,
+          "loss/anchor_offset": 0.1248,
+          "loss": 1.6721
+        },
+        "trained": {
+          "loss/heatmap": 0.8952,
+          "loss/angle": 0.6224,
+          "loss/offsets": 0.1639,
+          "loss/anchor": 0.3599,
+          "loss/anchor_offset": 0.1333,
+          "loss": 2.1747
+        }
+      },
+      "frames": 160,
+      "labels": 1013.45,
+      "supervised": 550.21,
+      "positive": 234.33
+    },
+    {
+      "nms_distance": 1e-06,
+      "nms_angle": 0.001,
+      "weights": {
+        "authors": {
+          "loss/heatmap": 0.8135,
+          "loss/angle": 0.3604,
+          "loss/offsets": 0.1476,
+          "loss/anchor": 0.2369,
+          "loss/anchor_offset": 0.1117,
+          "loss": 1.6701
+        },
+        "trained": {
+          "loss/heatmap": 0.8886,
+          "loss/angle": 0.7096,
+          "loss/offsets": 0.1476,
+          "loss/anchor": 0.3745,
+          "loss/anchor_offset": 0.1248,
+          "loss": 2.2452
+        }
+      },
+      "frames": 160,
+      "labels": 4610.71,
+      "supervised": 735.67,
+      "positive": 512.92
+    }
+  ]
+}

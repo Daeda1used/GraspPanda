@@ -8,7 +8,7 @@ hide: [toc]
 
 # HGGD
 
-<div class="gp-chips"><span class="gp-chip" title="Own family: HGGD">Own family</span> <span class="gp-chip" title="Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes">RA-L 2023</span> <span class="gp-chip">RGB-D input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_hggd_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span></div>
+<div class="gp-chips"><span class="gp-chip" title="Own family: HGGD">Own family</span> <span class="gp-chip" title="Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes">RA-L 2023</span> <span class="gp-chip">RGB-D input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_hggd_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits">trained here</span></div>
 
 From an RGB-D image, it predicts a heat-map of grasp centres in 2-D, lifts each peak to 3-D and completes the grasp with a PointNet over a ball of scene points.
 
@@ -20,7 +20,7 @@ Four steps from the authors' checkpoint to grasps. A [test](https://github.com/D
 
 ### 1. Get the weights {#run-weights}
 
-GraspPanda publishes no weights for HGGD: the file to download is the authors' checkpoint, under its licence. Download [`HGGD_realsense_checkpoint`](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/) (Tsinghua Cloud) and convert it once, from the root of a GraspPanda checkout:
+GraspPanda trained HGGD once, but those weights are not published yet: the file to download is the authors' checkpoint. Download [`HGGD_realsense_checkpoint`](https://cloud.tsinghua.edu.cn/d/e3edfc2c8b114513b7eb/) (Tsinghua Cloud) and convert it once, from the root of a GraspPanda checkout:
 
 ```bash
 python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth \
@@ -32,6 +32,7 @@ python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth 
     - **Licence**: MIT (the upstream repository); trained on GraspNet-1Billion (CC BY-NC-SA 4.0)
     - **SHA-256** of the download: `b95da06d8723298ad28e4c720c3a6a8af73dfe6f2e8126f43de8845bf62ad6df`
     - **What the converter writes**: `hggd_realsense.pth`, every tensor of the downloaded file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially. The converter is a tool of the repository; it is not installed with the package.
+    - **The weights trained here** (the `reproduced` rows of [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/README.md)): trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided.
 
 ### 2. Grasps on the example scene {#run-demo}
 
@@ -143,14 +144,17 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 | reported (repository README) | not stated | 64.45 | 53.59 | 24.59 | — |
 | authors' weights | off | 58.36 | 47.95 | 22.08 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json) |
 | authors' weights | on | 63.72 | 52.91 | 24.16 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json) |
+| trained here | off | 48.01 | 41.42 | 18.88 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json) |
+| trained here | on | 55.30 | 48.60 | 21.70 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json) |
 
 </div>
 
 ??? note "Where these numbers come from"
 
-    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; nothing trained here yet.
+    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; trained here, a model trained by GraspPanda, scored on whole test splits.
     - **reported**: paper; row 'In paper' of the repository README; repository README, row 'In repo' (also the arXiv version).
     - **authors' weights, scored here**: the authors' checkpoint, converted and run through `grasppanda test` on every frame of the test split; the record holds the per-scene values, the config hash and the hashes of code and weights.
+    - **trained here**: a model trained from scratch by GraspPanda with the config's recipe, scored the same way.
     - **Inputs**: nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none).
     - Other cameras, GraspClutter6D and what is known about each gap: [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/README.md#results-on-graspnet-1billion); every method side by side: [Model zoo](../model_zoo.md).
 
