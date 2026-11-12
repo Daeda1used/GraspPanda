@@ -65,8 +65,8 @@ first call on a device, and in the test suite.
        used; one log line says so.
     3. **In the test-suite.** `tests/unit/test_ops.py` runs every oracle test on both
        backends; `tests/unit/test_ops_equivalence.py` and
-       `tests/integration/test_ops_cuda.py` compare the backends on some 2 700 (CPU) and
-       4 700 (CUDA) randomized calls; the stage-parity tests of all six ported methods
+       `tests/integration/test_ops_cuda.py` compare the backends on some 2,700 (CPU) and
+       4,700 (CUDA) randomized calls; the stage-parity tests of all six ported methods
        (`tests/integration/test_<method>_parity.py`) and the backbone-oracle tests run with
        the default backend, `auto`, so with the kernels wherever they are built.
 
@@ -80,7 +80,7 @@ first call on a device, and in the test suite.
     cylinder surface than that bound. A query that meets a point inside the band before it
     is complete is handed back and answered by the reference itself. On recorded
     GraspNet-1Billion frames that happens to 2 of 4096 queries, on synthetic table tops to
-    13 of 65 536; the result is the reference's in every case.
+    13 of 65,536; the result is the reference's in every case.
 
     Under autocast, or with `torch.backends.cuda.matmul.allow_tf32`, the reference's
     matrix product runs in half precision or TF32. The kernel is then not used, because a
@@ -256,7 +256,7 @@ end.
 
     End to end on the same GPU (`python tools/bench_ops.py --models`, 7 runs): the PointNet++
     encoder of GraspNet-baseline alone, and the whole of GSNet on recorded GraspNet-1Billion
-    test frames with a checkpoint of the reference code (5 713 graspable candidates in the
+    test frames with a checkpoint of the reference code (5,713 graspable candidates in the
     first):
 
     | case | batch | reference (ms) | compiled (ms) | ratio |
@@ -278,7 +278,7 @@ end.
     | GSNet.predict, batch 4 | 235.2 / 260.9 | 126.2 / 143.4 | 37.4 / 60.1 | 4.5x |
 
     What is left of a GSNet frame with the kernels is the sparse U-Net (17 to 20 ms of
-    26 ms); seed selection takes 6 ms, of which sampling 1024 of 5 713 candidates is about
+    26 ms); seed selection takes 6 ms, of which sampling 1024 of 5,713 candidates is about
     3.5 ms. The CUDA sampling kernel runs one block per cloud, which occupies a single
     multiprocessor of the GPU: its time grows linearly with the number of candidates
     (about 0.55 ns per point and sample) and is the first thing to improve if sampling

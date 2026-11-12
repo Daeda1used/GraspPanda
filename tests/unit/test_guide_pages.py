@@ -214,9 +214,9 @@ def test_the_methods_named_for_sparse_voxels_points_and_the_extra_are_those_of_t
     cross = page("cross_dataset.md").replace("\n    ", " ")
     assert f"the 5 mm voxels of the sparse U-Net ({', '.join(voxel)})" in cross
     budgets = list(points)  # in the order of the first method that samples each budget
-    phrase = f"{budgets[0]:,}".replace(",", " ") + f" points for {joined(points[budgets[0]])}"
+    phrase = f"{budgets[0]:,} points for {joined(points[budgets[0]])}"
     for budget in budgets[1:]:
-        phrase += ", " + f"{budget:,}".replace(",", " ") + f" for {joined(points[budget])}"
+        phrase += f", {budget:,} for {joined(points[budget])}"
     assert phrase in cross, phrase
     train = page("train_test.md").replace("\n", " ")
     assert f"for {joined(sparse)} the sparse-convolution extra" in train

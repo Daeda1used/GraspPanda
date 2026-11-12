@@ -174,19 +174,19 @@ checkpoints (four RealSense and two Kinect test frames, one training batch per c
 
 | Stage | Result on the recorded frames (both cameras together) |
 |---|---|
-| Checkpoint conversion | strict and complete: 375 tensors; 1 618 921 + 1 806 669 parameters, as the reference; anchors included |
+| Checkpoint conversion | strict and complete: 375 tensors; 1,618,921 + 1,806,669 parameters, as the reference; anchors included |
 | Network input from the dataset reader | colour identical, depth within 5e-7 |
 | Image network, blurred heat-map | within 2e-6 of the largest value |
-| Candidate pixels, partial grasps | identical pixels (2 880 of 2 880 candidates, 288 of 288 grasps); angle, width and offsets within 2e-6 |
-| Image features on points | identical for all but 20 of 153 600 points (a near-tie for the 8th neighbour) |
+| Candidate pixels, partial grasps | identical pixels (2,880 of 2,880 candidates, 288 of 288 grasps); angle, width and offsets within 2e-6 |
+| Image features on points | identical for all but 20 of 153,600 points (a near-tie for the 8th neighbour) |
 | Lifted centres | within 1e-7 m, including 13 centres on pixels without depth |
-| Regions, with the reference's random draws replayed | the same points in 1 294 of 1 295 regions, the same sample order in 1 292 |
+| Regions, with the reference's random draws replayed | the same points in 1,294 of 1,295 regions, the same sample order in 1,292 |
 | Region network | within 1e-6 of the largest value |
 | Decoding | equal to 1e-15 in double precision |
-| Collision filter | 32 680 of 32 681 voxels identical after half-float rounding; 2 603 of 2 603 decisions identical |
+| Collision filter | 32,680 of 32,681 voxels identical after half-float rounding; 2,603 of 2,603 decisions identical |
 | NMS and the final dump | identical |
 | Dense 2-D targets | heat-map, label counts and width offsets identical; angle and depth offsets within 4e-6 |
-| Label matching, anchor targets | the same 2 957 matches; targets within 4e-6; the same positive anchors |
+| Label matching, anchor targets | the same 2,957 matches; targets within 4e-6; the same positive anchors |
 | Loss terms of both networks | within 2e-7; total loss within 4e-6 |
 | Gradients (six tensors) | within 8e-3 of each tensor's largest entry |
 | Anchor shift | within 3e-16 |
@@ -212,7 +212,7 @@ Each default is the reference value; the alternative is a controlled variant.
 | `region.zero_depth_centres: append` | Centres of pixels without depth move to the end of the centre list while the grasp attributes keep their order. |
 | `anchors.frame: pixel_keypoints` | The in-plane axes are orthogonal only up to `\|fx² − fy²\| / (fx² + fy²)` (2e-4 RealSense, 5e-4 Kinect). |
 | `anchors.max_gamma: 60` | With the released RealSense anchors the steepest `gamma` anchor (−61°) is never decoded. |
-| collision filter `precision: float16`, `cloud: points` | The filter works in half floats on the 25 600 sampled points, voxelised with cupoch's single-precision arithmetic. |
+| collision filter `precision: float16`, `cloud: points` | The filter works in half floats on the 25,600 sampled points, voxelised with cupoch's single-precision arithmetic. |
 
 Also as in the reference: the last row and column of the heat-map are never searched for
 a centre; the width offset is clamped to ±0.5 in the loss and to ±1 in the decoder; the

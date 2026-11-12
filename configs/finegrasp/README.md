@@ -230,11 +230,11 @@ measurements, not benchmark results.
 
 | What | Result |
 |---|---|
-| Checkpoint conversion | strict: 388 of 388 tensors consumed, 396 of 396 filled (the stacked query / key / value projections of the two fusion layers become three tensors each), 19 145 441 parameters as counted in the reference |
+| Checkpoint conversion | strict: 388 of 388 tensors consumed, 396 of 396 filled (the stacked query / key / value projections of the two fusion layers become three tensors each), 19,145,441 parameters as counted in the reference |
 | Normals, 4 test frames | `DepthNormals` equals the recorded normal image at every point of the frame |
 | Inference, 4 frames | identical voxels, voxel representatives, candidates, seeds and views; activations at every level of the backbone, of the four crops, of both fusion layers, of the fusion weights and of the head within 3.7e-6 of the largest value of a stage; decoded grasps identical up to 2.2e-5 (score) |
-| Inference, 32 further frames | identical seeds on 32 of 32; all 32 768 grasps decoded alike |
-| Inference, the 120 frames of the sample below | identical seeds on 120 of 120; of 122 880 grasps, one arg-max was decided by round-off |
+| Inference, 32 further frames | identical seeds on 32 of 32; all 32,768 grasps decoded alike |
+| Inference, the 120 frames of the sample below | identical seeds on 120 of 120; of 122,880 grasps, one arg-max was decided by round-off |
 | Training inputs, 4 frames (two mirrored) | the runnable config builds the reference loader's points and features: mirrored coordinates, unmirrored normals |
 | Training batch (4 frames) | activations within 3.3e-6, identical seeds; every loss term within 7.2e-8 relative and their sum within 2.6e-8; total gradient norm within 3.5e-7, the 19 compared gradients within 1.4e-3 of their largest entry |
 | Collision filter of the `cd` variant | the same decisions as the reference detector on the 4 frames |

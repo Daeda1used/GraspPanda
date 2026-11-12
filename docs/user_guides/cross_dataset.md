@@ -67,7 +67,7 @@ needs no derived asset.
     HGGD reads the whole image, as in training: no ground truth shapes its input.
 
 Each transfer config scores the RealSense D435 frames of the `test` split: 235 scenes ×
-13 views = 3 055 frames. A run took 8 to 12 minutes per method on the development machine
+13 views = 3,055 frames. A run took 8 to 12 minutes per method on the development machine
 (one GPU, shared with other jobs). The result records say
 `protocol: graspclutter6d-sv-v1`, the camera, the variant and `gt_assisted`.
 
@@ -101,7 +101,7 @@ A number measured on `test_mini` is a subset number, not a benchmark result.
     | Evaluator | **changes** to `GraspClutter6DEvaluator` | Width clip 0.14 m, foreground filter, no table: the protocol of the benchmark. |
     | Model, including every length | **fixed** | The units the weights were trained in: the ball-query radii of the PointNet++ encoders (GraspNet-baseline, Scale-Balanced-Grasp), the 5 mm voxels of the sparse U-Net (GSNet, EconomicGrasp, FineGrasp), the crop radius of every seed-based grouper, the 300 views and 4 depth bins of the five seed-based methods, HGGD's anchors and grid. |
     | Gripper of the model (0.10 m) | **fixed** | It bounds the labels the model learnt from and clamps its decoded widths. See "The gripper" below. |
-    | Points per cloud, input features | **fixed** | Part of the recipe (20 000 points for GraspNet-baseline, Scale-Balanced-Grasp, EconomicGrasp and FineGrasp, 15 000 for GSNet, 25 600 for HGGD); fewer or more points change the density the encoder was trained on. |
+    | Points per cloud, input features | **fixed** | Part of the recipe (20,000 points for GraspNet-baseline, Scale-Balanced-Grasp, EconomicGrasp and FineGrasp, 15,000 for GSNet, 25,600 for HGGD); fewer or more points change the density the encoder was trained on. |
     | HGGD network image (640 × 360) | **fixed** | The 1920 × 1080 image is reduced by 3 instead of 2; the focal length of the network image comes out nearly the same (465 to 472 px against 464 px). |
     | Post-processing (`raw`, `cd`) | **fixed** | The collision filter of each reference, with its own voxel size, approach distance and threshold. |
     | Point-sampling seed | **fixed** (0) | The same points every run. |
@@ -282,7 +282,7 @@ width.
 
 ## The whole test split
 
-Run for the six methods, 3 055 of 3 055 frames scored each: GraspNet-baseline,
+Run for the six methods, 3,055 of 3,055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
 checkpoints (`author-ckpt`), GSNet and FineGrasp with the models trained from scratch by
 this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense

@@ -6,7 +6,7 @@ EconomicGrasp and FineGrasp train on compact labels and HGGD on per-view grasps;
 the three reads these grids during training ([Datasets](../user_guides/datasets.md)).
 
 A dense label holds, for every annotated point of an object, a friction score and a
-gripper width for each of 300 views × 12 angles × 4 depths: 14 400 grasps and 57.6 kB
+gripper width for each of 300 views × 12 angles × 4 depths: 14,400 grasps and 57.6 kB
 per grid and point. This page explains what a training batch used to carry, what it
 carries now, why nothing changed in the numbers, and what the change is worth on a clock.
 
@@ -19,15 +19,15 @@ iteration spends its time.
 A training frame of GraspNet-1Billion shows about nine objects. The three recipes keep a
 quarter of each object's annotated points, at least 300 (GraspNet-baseline and
 Scale-Balanced-Grasp only of the points near the visible surface). With GSNet's recipe that
-is about 3 300 label points per frame, each with a score grid and a width grid. The
+is about 3,300 label points per frame, each with a score grid and a width grid. The
 reference pipelines copy all of them into the sample, and so did `SampleGraspLabels`
 (GSNet, batches of 4):
 
 | | per frame | per batch of 4 |
 |---|---:|---:|
-| label points kept | 3 300 | 13 300 |
+| label points kept | 3,300 | 13,300 |
 | their score and width grids | 350 MiB | 1.4 GiB |
-| label points the 1024 seeds of a frame are matched to | 600 | 2 500 |
+| label points the 1024 seeds of a frame are matched to | 600 | 2,500 |
 | what label matching reads of them | 34 MiB of scores, 0.2 MiB of widths | 140 MiB |
 
 The grids were read from the label store in a dataloader worker, pickled to the
@@ -212,7 +212,7 @@ iteration; before, an iteration waited for the loader and for the copy to the de
     (60 to 75 ms per iteration instead of 20 to 50) while the workers share their cores
     with the model and with other jobs.
 
-    Ten epochs of GSNet on GraspNet-1Billion are 64 000 iterations: about 15 hours at
+    Ten epochs of GSNet on GraspNet-1Billion are 64,000 iterations: about 15 hours at
     0.87 s, about 4.5 hours at 0.25 s. These totals follow from the iteration times above;
     a full run was not timed.
 
@@ -304,14 +304,14 @@ alone.
 
     **Why not read in the workers?** A worker knows the label points but not the seeds. It
     could ship the rows of every label point that is the nearest one of *some* scene point,
-    a superset of whatever the seeds will match. Measured on 24 training frames: 3 300
-    label points sampled, 1 390 in that superset, 610 matched by 1024 furthest-point seeds;
+    a superset of whatever the seeds will match. Measured on 24 training frames: 3,300
+    label points sampled, 1,390 in that superset, 610 matched by 1024 furthest-point seeds;
     the nearest-neighbour search costs a worker 15 ms per frame. The superset would still
     put 150 MiB of scores and widths per frame through the loader and onto the device (the
     deferred path reads 34 MiB and ships 0.04), and it needs a fallback for a seed whose
     float32 match on the GPU falls outside a float64 superset. Not worth its complexity.
 
-    **Distinct rows, expanded on the device.** Of 4096 seeds about 2 500 distinct label
+    **Distinct rows, expanded on the device.** Of 4096 seeds about 2,500 distinct label
     points are matched. Reading per seed, or per object with a transfer each, loses to
     reading each row once into one buffer: with one transfer per object the assigner took
     110 to 500 ms on a GPU that other jobs share, because every small transfer waits for

@@ -152,7 +152,7 @@ Objectness is predicted by the view stage, not by a proposal: the reference comp
 with the view scores from one shared trunk and one output layer, and never selects seeds
 with it. It masks losses and, at inference, drops seeds classified as background.
 
-The data (`configs/_base_/datasets/graspnet1b_realsense_tolerance.yaml`): 20 000 points,
+The data (`configs/_base_/datasets/graspnet1b_realsense_tolerance.yaml`): 20,000 points,
 workspace crop from the ground-truth segmentation (results are stamped
 `gt_assisted: [workspace]`), label points drawn from the visible side of each object
 (within 1 cm of its visible points), object 18 never supervised, flip and ±30° rotation
@@ -167,16 +167,16 @@ machine 23 of the 40 objects of the training scenes took 54 s with four workers.
 `tests/integration/test_baseline_parity.py` compares this implementation with activations
 recorded from the pristine reference (`tools/make_baseline_fixtures.py`), in true float32:
 
-- conversion is strict and complete: 162 tensors, 1 025 964 parameters on both sides;
+- conversion is strict and complete: 162 tensors, 1,025,964 parameters on both sides;
 - four test frames: identical seeds, views and objectness decisions; every activation
   within 3e-6 of the stage's largest value; decoded grasps within 1e-6;
-- 1 of 16 384 crops holds a point on a cylinder surface on which the two float32
+- 1 of 16,384 crops holds a point on a cylinder surface on which the two float32
   implementations disagree; it is checked in double precision and everything after the
   crop is compared with the reference's neighbour lists as well;
 - one training batch of four frames: label matching exact (score, width, tolerance and
   view targets differ by 0), all six loss terms within 1e-7 relative, total gradient norm
   within 1e-6 relative;
-- tolerance labels: identical to the reference generator on 1 036 800 grasps of three
+- tolerance labels: identical to the reference generator on 1,036,800 grasps of three
   objects (`tests/integration/test_baseline_data.py`).
 
 For scale: with PyTorch's default TF32 convolutions the reference differs from itself by
