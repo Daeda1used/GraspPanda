@@ -1,0 +1,42 @@
+{
+  "about": "Total training loss of the runs of gsnet_encoders.yaml, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run.",
+  "epochs": 10,
+  "runs": {
+    "sunet14": [
+      1.3255,
+      1.0475,
+      0.9462,
+      0.8891,
+      0.852,
+      0.8247,
+      0.8039,
+      0.7876,
+      0.7744,
+      0.7631
+    ],
+    "spunet": [
+      1.3079,
+      1.0709,
+      0.9751,
+      0.9189,
+      0.8824,
+      0.8559,
+      0.8352,
+      0.8186,
+      0.8054,
+      0.7939
+    ],
+    "ptv3": [
+      1.4663,
+      1.2663,
+      1.1713,
+      1.1093,
+      1.0674,
+      1.0334,
+      1.0087,
+      0.9872,
+      0.9701,
+      0.9563
+    ]
+  }
+}

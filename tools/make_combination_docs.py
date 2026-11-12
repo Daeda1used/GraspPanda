@@ -1352,6 +1352,12 @@ EVIDENCE_PAGES = (
         "chart-line",
     ),
     (
+        "How good does it become?",
+        "../advanced_guides/trained_swaps.md",
+        "Swaps trained to the end and scored on the whole test split.",
+        "flag-checkered",
+    ),
+    (
         "Swap rules",
         "../advanced_guides/swapping.md",
         "Which stages fit together, and why a request is refused.",
@@ -1363,13 +1369,9 @@ EVIDENCE_PAGES = (
         "{encoders}.",
         "check-decagram-outline",
     ),
-    (
-        "Explorer",
-        "../explorer/index.md",
-        "Every record behind these pages, option by option.",
-        "compass-outline",
-    ),
 )
+#: Below the cards: the explorer is an entry of the navigation, not a page of this section.
+EXPLORER_LINE = "The [explorer](../explorer/index.md) shows every record behind these pages."
 #: The page of the scene encoders checked against their authors' code (written by hand), and
 #: the heading of its table.
 BACKBONES_PAGE = REPO / "docs" / "model_zoo_backbones.md"
@@ -1545,6 +1547,8 @@ def evidence_index() -> str:
         *[line for card in cards for line in (card, "")],
         "</div>",
         "",
+        EXPLORER_LINE,
+        "",
         CAVEAT_SNIPPET,
         "",
         "## Slot by slot {#the-answer}",
@@ -1585,13 +1589,17 @@ def evidence_index() -> str:
         "",
         *[f"- **{name}**: {text}." for name, text in LEVEL2_LINES.items()],
         "",
-        "Level 2 needs `runs`, not `learns`: a term flat after "
-        f"{level1_iterations(records)} iterations can fall by iteration {iterations}.",
-        "",
         '??? note "Exact definitions, and what level 2 leaves out"',
         "",
         *_indent([f"- `{name}`: {as_shipped(meaning)}." for name, meaning in outcomes.items()]),
         "",
+        *_indent(
+            [
+                "Level 2 needs `runs`, not `learns`: a term flat after "
+                f"{level1_iterations(records)} iterations can fall by iteration {iterations}.",
+                "",
+            ]
+        ),
         *_indent(["Not compared, on every page:", "", *level2_left_out()]),
         "",
         "## Why a request is refused {#refusals}",

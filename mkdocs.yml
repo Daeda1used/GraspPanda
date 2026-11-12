@@ -136,6 +136,7 @@ nav:
       - Model zoo: model_zoo.md
       - Does it run?: advanced_guides/measured_combinations.md
       - Does it train like the shipped component?: advanced_guides/learns_like_reference.md
+      - How good does it become?: advanced_guides/trained_swaps.md
       - Swap rules: advanced_guides/swapping.md
       - Encoders checked against their authors' code: model_zoo_backbones.md
   - Reference:

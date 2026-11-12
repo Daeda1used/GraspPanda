@@ -47,3 +47,96 @@ def test_the_encoder_comparison_prints_what_its_records_hold():
             assert record["weights"]["path"].startswith(f"{planned[name]}/"), path
             numbers = record_result.headline(record)["AP"]
             assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), path
+
+
+def encoder_ap(name: str, variant: str) -> dict[str, float]:
+    """Seen / similar / novel AP of a recorded run of the encoder comparison."""
+    path = REPO / f"{ENCODER_RECORDS[name]}_{variant}.json"
+    return record_result.headline(json.loads(path.read_text(encoding="utf-8")))["AP"]
+
+
+def below_shipped(name: str) -> list[float]:
+    """How far a run ends below the shipped encoder, on every split of both variants."""
+    return [
+        encoder_ap("sunet14", variant)[split] - value
+        for variant in ("raw", "cd")
+        for split, value in encoder_ap(name, variant).items()
+    ]
+
+
+def test_the_loss_column_of_the_encoder_comparison_is_the_recorded_last_epoch():
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    rows = table_under((PROJECT / "README.md").read_text(encoding="utf-8"), "## Results")
+    assert set(losses["runs"]) == set(ENCODER_RECORDS)
+    for row in rows:
+        name = row[0].strip("`")
+        if name in ENCODER_RECORDS:
+            assert len(losses["runs"][name]) == losses["epochs"] == 10
+            assert row[4] == f"{losses['runs'][name][-1]:.2f}", name
+
+
+def test_what_the_encoder_comparison_says_is_computed_from_its_records():
+    """The sentences of the project and of the evidence page: how far SpUNet and PTv3 end
+    from the shipped encoder, the parameters, and the two losses that show PTv3 has not
+    fitted the training scenes."""
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["runs"]
+    spunet, ptv3 = below_shipped("spunet"), below_shipped("ptv3")
+    rows = {
+        row[0].strip("`"): row
+        for row in table_under((PROJECT / "README.md").read_text(encoding="utf-8"), "## Results")
+    }
+    parameters = {name: float(row[1].removesuffix(" M")) for name, row in rows.items()}
+    sentences = [
+        f"{parameters['spunet'] / parameters['sunet14']:.1f} times the parameters",
+        f"{min(spunet):.1f} to {max(spunet):.1f} AP",
+        f"{ptv3[0]:.1f} AP lower on seen scenes",
+    ]
+    assert max(spunet) < 1.12 < min(ptv3), "what one seed moves separates the two findings"
+    assert runs["ptv3"][-1] > runs["sunet14"][4], "PTv3 after ten epochs, the shipped after five"
+    pages = {
+        "the project": (PROJECT / "README.md").read_text(encoding="utf-8"),
+        "the evidence page": (REPO / "docs/advanced_guides/trained_swaps.md").read_text(
+            encoding="utf-8"
+        ),
+    }
+    for where, page in pages.items():
+        flat = " ".join(page.split())
+        for sentence in [*sentences, f"{runs['ptv3'][-1]:.2f}", f"{runs['sunet14'][4]:.2f}"]:
+            assert sentence in flat, f"{where} does not say: {sentence}"
+    # the page of the 250-iteration check points at the swap it called on a par
+    short = (REPO / "docs/advanced_guides/learns_like_reference.md").read_text(encoding="utf-8")
+    assert f"on a par here and {ptv3[0]:.0f} AP lower there" in short
+
+
+def test_the_evidence_page_shows_the_results_of_the_project():
+    """The table of the docs page (an include) is the table of the project's README."""
+    include = (REPO / "docs/includes/trained_encoders.md").read_text(encoding="utf-8")
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    assert include.strip() in readme
+    assert table_under(include, "|") == table_under(readme, "## Results")
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    assert page.count('--8<-- "docs/includes/trained_encoders.md"') == 1
+
+
+def test_the_evidence_page_quotes_the_cheaper_checks_from_their_records():
+    """Each swap trained in full, with what the probe and the 250-iteration check had said
+    about it and how far it ended from the shipped encoder on seen scenes."""
+    cells = {
+        cell["option"]: cell
+        for cell in json.loads(
+            (REPO / "docs/advanced_guides/learns_like_reference.json").read_text(encoding="utf-8")
+        )["cells"]
+        if cell["method"] == "GSNet" and cell["kind"] == "encoder"
+    }
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    rows = table_under(page, "## What the cheaper checks had said")
+    assert [row[0].strip("`") for row in rows] == ["spunet", "ptv3", "litept"]
+    for row in rows:
+        name = row[0].strip("`")
+        cell = cells[f"backbone={name}"]
+        assert row[1:3] == [cell["level1"], cell["outcome"]], name
+        if name in ENCODER_RECORDS:
+            assert row[3].startswith(f"−{below_shipped(name)[0]:.2f} AP"), name
+        else:
+            assert row[3] == "training", name
