@@ -106,6 +106,13 @@ def run(args: argparse.Namespace) -> int:
     if args.dry_run:
         return 0
     if args.cell:
+        if args.gpus is not None:
+            print(
+                "--cell runs one cell in this process: choose its GPU with "
+                "CUDA_VISIBLE_DEVICES, not with --gpus.",
+                file=sys.stderr,
+            )
+            return 2
         chosen = [cell for cell in cells if cell.name == args.cell]
         if not chosen:
             names = ", ".join(cell.name for cell in cells)

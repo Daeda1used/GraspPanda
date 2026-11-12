@@ -37,12 +37,12 @@ import json
 import os
 import queue
 import signal
-import site
 import statistics
 import subprocess
 import sys
 import threading
 import time
+import traceback
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -310,64 +310,109 @@ def _device_mask(gpu: str) -> str:
     A process that is itself restricted to some GPUs numbers them from 0: its GPU 1 is the
     second entry of its own mask, not the machine's GPU 1.
     """
-    mask = [part.strip() for part in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",")]
+    if "CUDA_VISIBLE_DEVICES" not in os.environ or not gpu.isdigit():
+        return gpu
+    mask = [part.strip() for part in os.environ["CUDA_VISIBLE_DEVICES"].split(",")]
     mask = [part for part in mask if part]
-    if mask and gpu.isdigit() and int(gpu) < len(mask):
-        return mask[int(gpu)]
-    return gpu
+    if int(gpu) >= len(mask):
+        raise ValueError(
+            f"GPU {gpu} is not one of the {len(mask)} that CUDA_VISIBLE_DEVICES leaves to "
+            "this process"
+        )
+    return mask[int(gpu)]
 
 
 def _failed(cell: Cell, why: str) -> dict[str, Any]:
     return {"cell": cell.name, "choices": dict(cell.choices), "seed": cell.seed, "failed": why}
 
 
-def _cell_environment(gpu: str) -> dict[str, str]:
-    """The environment of a cell's process: it sees only ``gpu`` and imports this code.
+#: The variable that hands a cell the module search path of the sweep that started it.
+CELL_PATH = "GRASPPANDA_SWEEP_PATH"
+#: What a cell's interpreter runs. ``python -m grasppanda.cli.main`` would search the
+#: working directory and the interpreter's own packages first, and so could run another
+#: GraspPanda than the sweep's: a checkout the sweep was started in, a release installed
+#: beside the source tree this process runs from.
+_CELL = (
+    f"import json, os, sys; sys.path[:] = json.loads(os.environ.pop({CELL_PATH!r})); "
+    "from grasppanda.cli.main import main; sys.exit(main(sys.argv[1:]))"
+)
 
-    A cell runs the code of the sweep that started it. Its interpreter would otherwise
-    import the first ``grasppanda`` on its own path, which is another one when this
-    process runs from a source tree and a release is installed beside it. An installed
-    package needs no entry: the cell's interpreter finds the same installation.
+
+def _cell_environment(gpu: str) -> dict[str, str]:
+    """The environment of a cell's process: one GPU, and the modules of this process.
+
+    ``gpu`` is nvidia-smi's number where this process has no mask of its own. CUDA numbers
+    the fastest GPU first unless told otherwise, which differs from nvidia-smi on a machine
+    with two kinds of GPU; a process that set its own mask or order keeps its numbering.
     """
     environment = {**os.environ, "CUDA_VISIBLE_DEVICES": _device_mask(gpu)}
-    root = Path(__file__).resolve().parent.parent
-    packages = (*site.getsitepackages(), site.getusersitepackages())
-    installed = {Path(path).resolve() for path in packages}
-    if root not in installed:
-        inherited = filter(None, os.environ.get("PYTHONPATH", "").split(os.pathsep))
-        environment["PYTHONPATH"] = os.pathsep.join(dict.fromkeys([str(root), *inherited]))
+    if not {"CUDA_VISIBLE_DEVICES", "CUDA_DEVICE_ORDER"} & set(os.environ):
+        environment["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    environment[CELL_PATH] = json.dumps(sys.path)
     return environment
 
 
+class _Cells:
+    """The processes of a running sweep: started, and stopped together.
+
+    Starting a process and noting it happen under one lock, as does stopping, so no cell
+    starts unnoticed while the sweep is being stopped.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._running: set[subprocess.Popen[bytes]] = set()
+        self.stopped = False
+
+    def start(self, command: Sequence[str], **options: Any) -> subprocess.Popen[bytes] | None:
+        """Start a process, or return ``None`` when the sweep was stopped."""
+        with self._lock:
+            if self.stopped:
+                return None
+            process = subprocess.Popen(command, **options)
+            self._running.add(process)
+            return process
+
+    def finished(self, process: subprocess.Popen[bytes]) -> None:
+        with self._lock:
+            self._running.discard(process)
+
+    def stop(self) -> None:
+        """Terminate every running process; none starts afterwards."""
+        with self._lock:
+            self.stopped = True
+            for process in self._running:
+                process.terminate()
+
+
+NOT_STARTED = "not started: the sweep was stopped"
+
+
 def _run_in_process(
-    sweep: Sweep, cell: Cell, gpu: str, children: set[subprocess.Popen[bytes]] | None = None
+    sweep: Sweep, cell: Cell, gpu: str, cells: _Cells | None = None
 ) -> dict[str, Any]:
     """Run one cell in a process of its own that sees only ``gpu``; its output goes to a log.
 
-    ``children`` receives the process while it runs, for a caller that has to stop it.
+    ``cells`` starts the process for a caller that may have to stop it.
     """
     assert cell.config is not None and sweep.path is not None
+    cells = cells if cells is not None else _Cells()
     work_dir = Path(cell.config.select("runtime.work_dir"))
     work_dir.mkdir(parents=True, exist_ok=True)
     log = work_dir / CELL_LOG
-    command = [sys.executable, "-m", "grasppanda.cli.main", "sweep", str(sweep.path)]
-    command += ["--cell", cell.name]
+    command = [sys.executable, "-c", _CELL, "sweep", str(sweep.path), "--cell", cell.name]
     if sweep.extra:
         command += ["--opts", *sweep.extra]
     with open(log, "w", encoding="utf-8") as handle:
-        process = subprocess.Popen(
-            command,
-            env=_cell_environment(gpu),
-            stdout=handle,
-            stderr=subprocess.STDOUT,
+        process = cells.start(
+            command, env=_cell_environment(gpu), stdout=handle, stderr=subprocess.STDOUT
         )
-        if children is not None:
-            children.add(process)
+        if process is None:
+            return _failed(cell, NOT_STARTED)
         try:
             status = process.wait()
         finally:
-            if children is not None:
-                children.discard(process)
+            cells.finished(process)
     record = cell_record(cell) if status == 0 else None
     return record if record is not None else _failed(cell, str(log))
 
@@ -389,27 +434,37 @@ def run_cells(
     ``CUDA_VISIBLE_DEVICES`` when that is set. The console output of such a cell is in
     ``<its work directory>/sweep_cell.log``.
 
-    A cell that fails does not stop the others. Its record is
+    A cell that fails does not stop the others, with or without ``gpus``. Its record is
     ``{"cell", "choices", "seed", "failed": <the log, or the error>}`` and carries no
     metric, so its variant reports none; running the sweep again runs the failed cells
     only. When this process is interrupted or terminated, the cells it started are
     terminated with it.
+
+    Raises:
+        ValueError: ``gpus`` names a GPU outside this process's own
+            ``CUDA_VISIBLE_DEVICES``, or the sweep has no file to start cells from.
     """
     total = len(cells)
     if not gpus:
         records = []
         for index, cell in enumerate(cells, start=1):
             report(f"\n[{index}/{total}] {cell.name}")
-            records.append(run_cell(sweep, cell))
+            try:
+                records.append(run_cell(sweep, cell))
+            except Exception as error:  # the next cell may well run
+                traceback.print_exc()
+                report(f"[{index}/{total}] {cell.name}: FAILED, {type(error).__name__}: {error}")
+                records.append(_failed(cell, f"{type(error).__name__}: {error}"))
         return records
     if sweep.path is None:
         raise ValueError("cells run in processes of their own from the sweep's file: it has none")
+    for gpu in gpus:
+        _device_mask(gpu)  # refused before anything starts
 
     free: queue.Queue[str] = queue.Queue()
     for gpu in gpus:
         free.put(gpu)
-    children: set[subprocess.Popen[bytes]] = set()
-    stopping = threading.Event()
+    running = _Cells()
 
     def work(item: tuple[int, Cell]) -> dict[str, Any]:
         index, cell = item
@@ -420,11 +475,13 @@ def run_cells(
                 return finished
             gpu = free.get()
             try:
-                if stopping.is_set():
-                    return _failed(cell, "not started: the sweep was stopped")
+                if running.stopped:
+                    return _failed(cell, NOT_STARTED)
                 report(f"[{index}/{total}] {cell.name}: started on GPU {gpu}")
                 started = time.perf_counter()
-                record = _run_in_process(sweep, cell, gpu, children)
+                record = _run_in_process(sweep, cell, gpu, running)
+                if record.get("failed") == NOT_STARTED:
+                    return record
                 took = time.perf_counter() - started
                 outcome = f"FAILED, see {record['failed']}" if "failed" in record else "done"
                 report(f"[{index}/{total}] {cell.name}: {outcome} on GPU {gpu} in {took:.0f} s")
@@ -446,9 +503,7 @@ def run_cells(
             try:
                 return list(pool.map(work, enumerate(cells, start=1)))
             except BaseException:
-                stopping.set()
-                for child in list(children):
-                    child.terminate()
+                running.stop()
                 raise
     finally:
         if main:
