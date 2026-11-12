@@ -494,6 +494,7 @@ def test_an_alternative_splices_in_other_alternatives_by_anchor(write):
 #: The sweeps of ``projects/``: file → the runs it plans.
 PROJECT_SWEEPS = {
     "encoder_comparison/gsnet_encoders.yaml": ["sunet14", "ptv3", "spunet", "litept"],
+    "encoder_comparison/gsnet_recipe.yaml": ["sunet14_adamw-onecycle", "ptv3_adamw-onecycle"],
     "finegrasp_ablation/changes.yaml": ["graspness", "normals", "multi-scale", "all"],
 }
 
@@ -504,6 +505,22 @@ def test_the_sweeps_of_the_projects_plan_valid_runs(name):
     assert [cell.name for cell in cells] == [f"{run}/seed0" for run in PROJECT_SWEEPS[name]]
     assert all(cell.valid for cell in cells), [str(cell.error) for cell in cells if not cell.valid]
     assert len({cell.config.digest() for cell in cells}) == len(cells)
+
+
+def test_the_recipe_of_the_encoder_comparison_is_the_recipe_preset():
+    """Its overrides are what ``grasppanda compose --set recipe=adamw-onecycle`` writes, for
+    the shipped encoder and for PTv3: the sweep and the preset cannot drift apart."""
+    from grasppanda.combine.compose import compose
+
+    gsnet = "gsnet/gsnet_sunet14_g1b-realsense_10e"
+    cells = {
+        cell.choices["config"]: cell.config.digest()
+        for cell in load_sweep(REPO / "projects/encoder_comparison/gsnet_recipe.yaml").plan()
+    }
+    assert cells == {
+        "sunet14": compose(gsnet, ["recipe=adamw-onecycle"]).config_hash,
+        "ptv3": compose(gsnet, ["backbone=ptv3", "recipe=adamw-onecycle"]).config_hash,
+    }
 
 
 def test_the_ablation_adds_up_to_finegrasp_under_the_recipe_of_economicgrasp():

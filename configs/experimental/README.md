@@ -4,8 +4,10 @@
 
 Each file is one method's shipped config with one stage swapped and nothing else changed. It
 shows what a swap looks like when it is written down, and it starts from a combination that
-trained on real frames. None has been trained to convergence or evaluated on a benchmark split,
-and no paper reports a number for any of these combinations.
+trained on real frames. No paper reports a number for any of these combinations. A few have
+since been trained in full and scored on the whole test split, once each: the numbers, and
+what one run can say, are in
+[`projects/encoder_comparison`](../../projects/encoder_comparison/).
 
 ## One per method
 
@@ -127,8 +129,10 @@ first number to compare with a run of the reference encoder.
 
 <details markdown="1"><summary>Full runs</summary>
 
-Not run here: each is a multi-hour job. The commands are the ones in the header of each file;
-the assets are those of the method (`grasppanda prepare graspnet1b --labels`, plus what the
+Run for the GSNet swaps `gsnet_ptv3` and `gsnet_spunet` by
+[`projects/encoder_comparison`](../../projects/encoder_comparison/), which has their AP; the
+other files have not been run in full. Each is a multi-hour job. The commands are the ones in
+the header of each file; the assets are those of the method (`grasppanda prepare graspnet1b --labels`, plus what the
 method's README lists: `--graspness --camera realsense`, `--compact-labels`, `--tolerance`,
 `--scale-statistic`, `--view-grasps`). A number from such a run has no paper to be compared
 with: report it as trained here, over three seeds (`docs/design/ARCHITECTURE.md` §11.5), next to
