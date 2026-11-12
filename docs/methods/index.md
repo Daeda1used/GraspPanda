@@ -67,7 +67,7 @@ Six published methods, each ported stage by stage and checked against its refere
 
     A 2-D heat-map of grasp centres, completed in 3-D by a PointNet over local regions.
 
-    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_hggd_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span>
+    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_hggd_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits">trained here</span>
 
 </div>
 
@@ -84,7 +84,7 @@ Computed from the configs and the metafiles.
 | [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [EconomicGrasp](economicgrasp.md) | Kinect, RealSense | RealSense, not published | Kinect, RealSense | transfer from Kinect, RealSense; training |
 | [FineGrasp](finegrasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
-| [HGGD](hggd.md) | RealSense, Kinect | — | Kinect, RealSense | transfer from RealSense |
+| [HGGD](hggd.md) | RealSense, Kinect | RealSense, not published | Kinect, RealSense | transfer from RealSense |
 
 </div>
 

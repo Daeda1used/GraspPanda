@@ -31,7 +31,7 @@ The options of every slot, with what was measured for each:
 
 AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames per
 camera, all scored), protocol `graspnet1b-sv-v1`. Nothing in HGGD's input is derived from
-ground truth (`gt_assisted` is empty in all four records).
+ground truth (`gt_assisted` is empty in every record).
 
 | Config | Camera | Provenance | Collision filter | Seen | Similar | Novel |
 |---|---|---|:---:|---:|---:|---:|
@@ -39,21 +39,62 @@ ground truth (`gt_assisted` is empty in all four records).
 | | | `reported` (README row "In repo") | not stated | 64.45 | 53.59 | 24.59 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | off | 58.36 | 47.95 | 22.08 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.72 | 52.91 | 24.16 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json)) | off | 48.01 | 41.42 | 18.88 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json)) | on, then NMS | 55.30 | 48.60 | 21.70 |
 | [hggd_r34w8_g1b-kinect_15e](hggd_r34w8_g1b-kinect_15e.yaml) | Kinect | `reported` (paper; README row "In paper") | not stated | 60.26 | 48.59 | 18.43 |
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.56 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.30 | 46.85 | 19.22 |
 
 `author-ckpt` is the authors' checkpoint of each camera, converted and run through
-`grasppanda test` at commit `400b733` in float32 on an RTX 3090, one run each with seed 0.
-`off` is every decoded grasp (variant `raw`); `on, then NMS` is what the released test
-script dumps (variant `cd`). No model has been trained here yet. Neither source states the collision filter;
-the closest pair is `cd` with "In repo", within 0.87 AP on every split and below it on
-all six.
+`grasppanda test`, one run each with seed 0. `off` is every decoded grasp (variant `raw`);
+`on, then NMS` is what the released test script dumps (variant `cd`). Neither source
+states the collision filter; the closest pair is `cd` with "In repo", within 0.87 AP on
+every split and below it on all six.
+
+`reproduced`, trained from scratch with the config's recipe, is **8 to 10 AP below
+the authors' checkpoint on seen**: −10.35 / −6.53 / −3.20 AP without the filter,
+−8.42 / −4.31 / −2.46 with it. The cause is the labels: the released converter writes
+sparser ones than the checkpoint fits. A training on denser labels is running.
+
+<details markdown="1"><summary>Why the model trained here is below the checkpoint: the labels</summary>
+
+**The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `400b733`,
+nothing overridden: 15 epochs, batches of 4 with two per optimizer step, seed 0, float32,
+23.6 hours on one RTX 3090 shared with other jobs. The checkpoint of epoch 15 (SHA-256
+`0d774db966c3…`) was scored at the same commit. One run, one seed.
+
+**What was ruled out.** The training step: on a recorded batch its loss terms and
+gradients equal the reference's (*Equivalence with the reference code*, below). The label
+converter: the labels are those the released `convert_grasp.py` writes, grasp by grasp
+(`tests/integration/test_hggd_labels.py`).
+
+**What was found.** The converter thins the grasps of a frame by a suppression at 2 cm and
+60°, and a cell of the heat-map is a positive of an angle class only from two labels on:
+these labels leave 7 positives a frame. The authors' checkpoint does not fit
+them. Its training loss on them is 4.15, where the model trained on them
+reaches 2.15 and scores 10 AP less. On denser labels the checkpoint's loss
+falls and the other model's does not:
+
+| Suppression of the labels | Labels a frame | Positives a frame | Loss, authors' checkpoint | Loss, trained here |
+|---|---|---|---|---|
+| 2 cm, 60°: the released converter | 131 | 7 | 4.15 | 2.15 |
+| 1 cm, 30°: a line the converter has commented out | 419 | 66 | 1.85 | 2.10 |
+| 0.5 cm, 30° | 1013 | 234 | 1.67 | 2.17 |
+| none | 4611 | 513 | 1.67 | 2.25 |
+
+Training loss on 160 frames of ten training scenes, the weights frozen:
+`python -m tools.hggd_label_fit`, [record](diagnostics/label_fit.json) with every setting
+tried. So the checkpoint was trained on denser labels than the released converter writes.
+Which ones is not published; the reference loader's cap on the labels of an image,
+`--grasp-count`, defaults to 5000, where the released converter leaves about 130.
+
+</details>
 
 <details markdown="1"><summary>Against the reported rows, and a 20-frame check with the reference code</summary>
 
-Measured minus reported, on seen / similar / novel:
+The checkpoints were scored at commit `400b733` in float32 on an RTX 3090. Measured minus
+reported, on seen / similar / novel:
 
 | Camera | Measured | minus "In paper" | minus "In repo" |
 |---|---|---|---|
@@ -95,7 +136,7 @@ against 35.25 on two Kinect frames; `tests/integration/test_hggd_data.py`).
 
 ## Results on GraspClutter6D
 
-The RealSense checkpoint on the whole GraspClutter6D test split (235 scenes, 3,055 frames
+The RealSense weights on the whole GraspClutter6D test split (235 scenes, 3,055 frames
 of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 [hggd_r34w8_g1b-realsense-to-gc6d-d435_15e](hggd_r34w8_g1b-realsense-to-gc6d-d435_15e.yaml). Percent.
 
@@ -103,8 +144,11 @@ of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 |---|---|---|---|---|
 | off | 14.24 | 17.40 | 9.24 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json)) |
 | on, then NMS | 14.56 | 17.75 | 9.38 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json)) |
+| off | 12.95 | 16.00 | 8.16 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_raw.json)) |
+| on, then NMS | 14.49 | 17.88 | 8.95 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_cd.json)) |
 
-No number is published for HGGD on this dataset, so there is nothing to compare with.
+No number is published for HGGD on this dataset. The model trained here is 1.29 AP below
+the checkpoint without the filter and 0.07 with it.
 
 <details markdown="1"><summary>The input on this dataset</summary>
 
@@ -117,7 +161,8 @@ What changes with the dataset is described in `docs/user_guides/cross_dataset.md
 
 ## Weights
 
-GraspPanda publishes no weights for this method. Download `HGGD_realsense_checkpoint` and
+GraspPanda publishes no weights for this method yet; for those trained here that is not
+decided (the training data is CC BY-NC-SA 4.0). Download `HGGD_realsense_checkpoint` and
 `HGGD_kinect_checkpoint` from the authors' folder (link and SHA-256 in the
 [metafile](metafile.yaml)): each holds two networks and the learned anchors. Convert them
 once:
@@ -140,9 +185,8 @@ grasppanda test  hggd/hggd_r34w8_g1b-realsense_15e --weights hggd_realsense.pth
 grasppanda test  hggd/hggd_r34w8_g1b-kinect_15e --weights hggd_kinect.pth
 ```
 
-Every run reports two variants. `raw` is every decoded grasp. `cd` is what the released
-test script dumps: its collision filter, which also drops grasps with at most two points
-between the fingers, followed by NMS.
+Every run reports both variants. The collision filter of `cd` also drops grasps with at
+most two points between the fingers.
 
 ## Notes
 
@@ -178,17 +222,13 @@ checkpoints (four RealSense and two Kinect test frames, one training batch per c
 | Network input from the dataset reader | colour identical, depth within 5e-7 |
 | Image network, blurred heat-map | within 2e-6 of the largest value |
 | Candidate pixels, partial grasps | identical pixels (2,880 of 2,880 candidates, 288 of 288 grasps); angle, width and offsets within 2e-6 |
-| Image features on points | identical for all but 20 of 153,600 points (a near-tie for the 8th neighbour) |
-| Lifted centres | within 1e-7 m, including 13 centres on pixels without depth |
+| Image features on points, lifted centres | features identical for all but 20 of 153,600 points (a near-tie for the 8th neighbour); centres within 1e-7 m, including 13 on pixels without depth |
 | Regions, with the reference's random draws replayed | the same points in 1,294 of 1,295 regions, the same sample order in 1,292 |
 | Region network | within 1e-6 of the largest value |
 | Decoding | equal to 1e-15 in double precision |
-| Collision filter | 32,680 of 32,681 voxels identical after half-float rounding; 2,603 of 2,603 decisions identical |
-| NMS and the final dump | identical |
-| Dense 2-D targets | heat-map, label counts and width offsets identical; angle and depth offsets within 4e-6 |
-| Label matching, anchor targets | the same 2,957 matches; targets within 4e-6; the same positive anchors |
-| Loss terms of both networks | within 2e-7; total loss within 4e-6 |
-| Gradients (six tensors) | within 8e-3 of each tensor's largest entry |
+| Collision filter, NMS, final dump | 32,680 of 32,681 voxels identical after half-float rounding; 2,603 of 2,603 decisions, the NMS and the dump identical |
+| Training targets | heat-map, label counts and width offsets identical; angle, depth and anchor targets within 4e-6; the same 2,957 matches and positive anchors |
+| Loss terms and gradients of both networks | terms within 2e-7, total within 4e-6; six gradient tensors within 8e-3 of each one's largest entry |
 | Anchor shift | within 3e-16 |
 
 Not reproducible bit for bit, by construction: the reference draws random numbers *at

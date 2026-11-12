@@ -218,7 +218,10 @@ released weights.
   [model zoo](https://daeda1used.github.io/GraspPanda/model_zoo/), each backed by a committed
   result record. They are not reproductions.
 - **HGGD** publishes two sets of numbers and does not state the collision filter; its
-  released test script filters collisions before it saves the grasps.
+  released test script filters collisions before it saves the grasps. Trained here on the labels its released converter writes, it
+  is far below its authors' checkpoint on seen scenes: that checkpoint fits denser labels
+  than the converter writes, and a training on denser labels is running. Its weights are
+  not published yet.
 - **Admission rule:** config, weights with sha256, training log and a result record of the
   pinned evaluator, within 1 AP on each split or with the gap documented.
 
@@ -252,7 +255,7 @@ released weights.
 
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
 - [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** Done: the evaluator equals the official one; GSNet equals its reference stage by stage, is trained here and scored on the whole test split. Open: its gap to the paper is not explained, and its weights are not published.
-- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights; EconomicGrasp, trained here, reaches its authors' checkpoint. In progress: training HGGD.
+- [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights; EconomicGrasp, trained here, reaches its authors' checkpoint; HGGD, trained here on the labels of its released converter, falls far short of its checkpoint, and the labels are why. In progress: training HGGD on denser labels.
 - [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference; GraspNet-baseline, trained here, passes the zoo's gate; Scale-Balanced-Grasp, trained here, reaches its authors' checkpoint; FineGrasp is trained here. Open: FineGrasp's gap to the paper. In progress: FineGrasp's changes one at a time. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
 - [ ] **M4 — GraspClutter6D.** Done: reader, evaluator equal to the official one, label assets, transfer configs. Planned: training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.

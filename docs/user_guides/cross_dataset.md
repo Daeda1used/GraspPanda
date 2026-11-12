@@ -284,8 +284,8 @@ width.
 
 Run for the six methods, 3,055 of 3,055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
-checkpoints (`author-ckpt`), GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp
-and FineGrasp with the models trained from scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+checkpoints (`author-ckpt`), and all six with the models trained from scratch by this
+toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
 D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
 [model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
 `configs/<method>/records/` the result records.
@@ -304,6 +304,7 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
 | FineGrasp, trained here | 16.12 / 19.78 / 11.53 | 17.00 / 20.85 / 11.86 | — |
 | HGGD | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | — |
+| HGGD, trained here | 12.95 / 16.00 / 8.16 | 14.49 / 17.88 / 8.95 | — |
 
 </div>
 
@@ -339,7 +340,9 @@ applied to some methods and not to others was not investigated.
 
 Whether a model trained here transfers like its authors' checkpoint differs by method:
 Scale-Balanced-Grasp scores within 0.14 AP of its checkpoint, EconomicGrasp 1.55 AP above,
-GraspNet-baseline 3.05 below with the filter, each from one training.
+GraspNet-baseline 3.05 below with the filter, each from one training. HGGD, which the
+released label converter leaves 8 to 10 AP below its checkpoint on GraspNet-1Billion, is
+1.29 AP below it here without the filter and 0.07 with it.
 
 ??? note "Entering a result into the model zoo"
 
