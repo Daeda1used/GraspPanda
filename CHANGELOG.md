@@ -511,9 +511,10 @@ Classes now count levels, and every method lists the options of each of its slot
   of 0.51 to 1.61 m. `CoordinateFeatures.median_depth` (default none, the reference) moves
   the depth coordinate of the features so that the median of a frame is the given value
   and leaves points, voxels and grasps where they are; at 0.42 m the same weights score
-  24.39 and 25.02 AP. The zoo rows are the method as published; the records of the
-  variant are in `configs/finegrasp/variants/`. The other five methods read no
-  coordinates (HGGD centres its depth image).
+  24.39 and 25.02 AP. The model trained here does alike: 16.12 and 17.00 AP as published,
+  23.90 and 25.18 with the depth moved. The zoo rows are the method as published; the
+  records of the variant are in `configs/finegrasp/variants/`. The other five methods
+  read no coordinates (HGGD centres its depth image).
 - A component may name the arguments it gained after config hashes were recorded
   (`hash_neutral`): at the value that keeps the behaviour they are left out of the hash,
   as `runtime.tf32` is, so every FineGrasp config hashes as it did.

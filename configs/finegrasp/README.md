@@ -12,9 +12,8 @@ FineGrasp is [EconomicGrasp](../economicgrasp/README.md) with three changes, and
 implemented here as exactly that: the EconomicGrasp detector, one new component, one new
 parameter of a label asset and two data transforms. There is no `FineGrasp` class.
 
-- **Instance-normalised graspness.** Point-wise graspness is normalised within every
-  object before it is normalised over the frame, so that a small object next to an easy
-  one is not pushed under the seed threshold.
+- **Instance-normalised graspness.** Graspness is normalised within every object before
+  the frame, so a small object next to an easy one stays above the seed threshold.
 - **Multi-range attention.** Every seed is cropped at four radii instead of one; the
   four crop features are fused by attention over the scales.
 - **Normal prior.** The encoder is fed `[x, y, z | surface normal]` per point instead
@@ -55,7 +54,7 @@ converted and run through `grasppanda test` at commit `4bc5333`, one run with se
 −0.02 / +0.06 / +0.04 AP with it.
 
 `reproduced` is a model trained from scratch here: −1.90 / −3.11 / −1.63 AP and
-−1.28 / −2.69 / −1.20 AP from the paper, outside the 1 AP of the zoo's admission gate on
+−1.28 / −2.69 / −1.20 AP from the paper, outside the zoo's admission gate of 1 AP on
 every split. The gap is not explained: run the method from the authors' weights.
 
 <details markdown="1"><summary>What the authors' weights show, and what is known about the training</summary>
@@ -80,22 +79,21 @@ of these, or the seed, accounts for it was not investigated: one run, one seed.
 
 ## Results on GraspClutter6D
 
-The authors' weights on the whole test split (235 scenes, 3,055 frames of the RealSense
-D435), protocol `graspclutter6d-sv-v1`, config
+The whole test split (235 scenes, 3,055 frames of the RealSense D435), protocol
+`graspclutter6d-sv-v1`, config
 [finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e](finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e.yaml).
-Percent.
+AP / AP0.8 / AP0.4.
 
-| Features | Collision filter | AP | AP0.8 | AP0.4 | Provenance |
-|---|---|---|---|---|---|
-| as published | off | 12.56 | 15.47 | 9.01 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json)) |
-| as published | on | 13.14 | 16.20 | 9.19 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json)) |
-| depth moved | off | 24.39 | 29.95 | 17.40 | [record](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_raw.json) |
-| depth moved | on | 25.02 | 30.75 | 17.60 | [record](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_cd.json) |
+| Weights | Features | Collision filter off | on | Records |
+|---|---|---|---|---|
+| authors' | as published | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | author-ckpt: [off](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_raw.json), [on](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_test_cd.json) |
+| | depth moved | 24.39 / 29.95 / 17.40 | 25.02 / 30.75 / 17.60 | [off](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_raw.json), [on](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_author-ckpt_median-depth-0.42_test_cd.json) |
+| trained here | as published | 16.12 / 19.78 / 11.53 | 17.00 / 20.85 / 11.86 | reproduced: [off](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_raw.json), [on](records/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_test_cd.json) |
+| | depth moved | 23.90 / 29.13 / 17.62 | 25.18 / 30.73 / 18.17 | [off](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_median-depth-0.42_test_raw.json), [on](variants/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e_reproduced_median-depth-0.42_test_cd.json) |
 
 **The weights know their camera distance.** The encoder reads coordinates, and this split
-lies farther from the camera than any training cloud. Moving the depth coordinate of the
-features back, and nothing else, doubles the AP:
-`--opts data.test.dataset.transforms.2.median_depth=0.42`.
+lies farther from the camera than any training cloud. *Depth moved* shifts the depth of
+the features back, nothing else: `--opts data.test.dataset.transforms.2.median_depth=0.42`.
 
 <details markdown="1"><summary>The camera distance: what was measured, and your own camera</summary>
 
@@ -137,8 +135,8 @@ grasppanda train finegrasp/finegrasp_sunet14_g1b-realsense_10e
 grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkpoint>
 ```
 
-The compact labels are EconomicGrasp's asset. The graspness asset is new: 100 training
-scenes took 70 minutes with 14 worker processes.
+The compact labels are EconomicGrasp's asset; the graspness asset is new (100 training
+scenes: 70 minutes with 14 worker processes).
 
 **Memory decides how to launch it.** At about 1.5 GB of GPU memory per frame the config
 as written, one process with 32 frames, needs a 48 GB card. The published recipe is eight

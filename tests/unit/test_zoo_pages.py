@@ -93,7 +93,7 @@ def expected_rows(protocol: str, provenance: str = "author-ckpt") -> list[list[s
         ("## Trained and evaluated here", "graspnet1b-sv-v1", "reproduced"),
         ("## Authors' checkpoints scored by this toolbox", "graspnet1b-sv-v1", "author-ckpt"),
         ("## GraspClutter6D transfers", "graspclutter6d-sv-v1", "author-ckpt"),
-        ("### The model trained here, on GraspClutter6D", "graspclutter6d-sv-v1", "reproduced"),
+        ("### The models trained here, on GraspClutter6D", "graspclutter6d-sv-v1", "reproduced"),
     ],
 )
 def test_the_zoo_page_shows_exactly_the_measured_rows_of_the_metafiles(
