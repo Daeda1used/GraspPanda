@@ -33,8 +33,21 @@ the total training loss over the last epoch. `sunet14` is the encoder GSNet ship
   from the first step, without weight decay, tuned for a sparse CNN: the row measures an
   encoder under a recipe made for another one.
 
-Whether PTv3 closes the gap under the recipe it is trained with elsewhere is being measured:
-both encoders under the recipe preset [`adamw-onecycle`](../slots/recipe.md).
+### Encoder or recipe {#recipe}
+
+Both encoders again under the recipe PTv3 is trained with elsewhere, the preset
+[`adamw-onecycle`](../slots/recipe.md): AdamW with weight decay, a warm-up, then a cosine
+down to almost zero.
+
+<div class="gp-figures" markdown>
+
+--8<-- "docs/includes/trained_recipes.md"
+
+</div>
+
+- **Shipped encoder: the recipe is not shown to matter.** +0.95 AP on seen and −0.59 on
+  novel scenes without the collision filter, inside what one seed moves.
+- **PTv3:** training.
 
 ## What the cheaper checks had said {#cheaper-checks}
 
