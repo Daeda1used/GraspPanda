@@ -31,8 +31,9 @@ predicts. Accuracy needs a training on the whole split and `grasppanda test`; th
 
 Not from this project yet. Every method runs from weights released with its reference code:
 you download them yourself, under their licence, and convert them once
-([Run a method](get_started/run_a_method.md)). GSNet was trained here, but its weights are not
-published yet. A method enters the model zoo only after it has been trained and evaluated here.
+([Run a method](get_started/run_a_method.md)). The methods are being trained here one by
+one, and the [model zoo](model_zoo.md) has their numbers beside the authors'; where those
+weights are published is not decided.
 
 ## Is GraspPanda tied to the Franka Panda robot?
 

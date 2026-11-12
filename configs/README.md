@@ -25,7 +25,8 @@ Rules of the config language are in the
 A method gets a folder when its port equals the reference implementation stage by stage,
 checked with weights released with that implementation. The folder does not mean the method passed the model-zoo
 gate. Admission needs a training here and a whole-split evaluation within 1 AP of the reported
-number, or with the gap explained; no method has passed yet, so the zoo has no weights to
+number, or with the gap explained. The [model zoo](../docs/model_zoo.md) says where each
+training here stands; no trained weights are published yet, so the zoo has none to
 download.
 
 A number of a metafile that was measured here (`author-ckpt`, `reproduced`) names its result
