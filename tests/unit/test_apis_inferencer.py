@@ -321,11 +321,16 @@ def test_weights_are_required_and_must_fit(workdir):
 
 
 def test_the_zoo_is_asked_when_no_weights_are_given():
-    with pytest.raises(EngineError) as raised:
-        GraspInferencer("graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e")
+    with pytest.raises(EngineError) as raised:  # a model that only its authors trained
+        GraspInferencer("economicgrasp/economicgrasp_sunet14_g1b-kinect_10e")
     message = str(raised.value)
     assert "no weights trained by GraspPanda" in message and "not downloaded for you" in message
     assert "tools.convert_checkpoint" in message and "README.md" in message
+    with pytest.raises(EngineError) as raised:  # one trained here whose weights wait
+        GraspInferencer("graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e")
+    message = str(raised.value)
+    assert "are not published yet" in message and "not downloaded for you" in message
+    assert "tools.convert_checkpoint" in message
 
 
 # -------------------------------------------------------------------- dataset frames

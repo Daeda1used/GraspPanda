@@ -169,7 +169,7 @@ novel); last column: the model trained here.
 | Method | Venue | Collision filter | Reported AP (seen / similar / novel) | Reproduced here |
 |---|---|:---:|---|:---:|
 | GraspNet-baseline | CVPR 2020 | not stated | 27.56 / 26.11 / 10.55 (paper) | — |
-| GraspNet-baseline | CVPR 2020 | on | 47.47 / 42.27 / 16.61 (repository) | — |
+| GraspNet-baseline | CVPR 2020 | on | 47.47 / 42.27 / 16.61 (repository) | 46.81 / 41.90 / 16.74 |
 | GSNet | ICCV 2021 | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
 | GSNet | ICCV 2021 | on | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | Scale-Balanced-Grasp | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | — |
@@ -180,15 +180,19 @@ novel); last column: the model trained here.
 | HGGD | RA-L 2023 | not stated | 59.36 / 51.20 / 22.17 (paper) · 64.45 / 53.59 / 24.59 (repository) | — |
 
 A method enters the zoo when it is trained here within 1 AP of the reported number, or with
-the gap explained. Trained here, EconomicGrasp reaches its authors' checkpoint. No trained
-weights are published yet; the methods run from their released weights
-([Run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)).
+the gap explained. GraspNet-baseline passes; EconomicGrasp reaches its authors' checkpoint.
+No trained weights are published yet:
+[run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/) from its
+released weights.
 
 <details>
 <summary>Notes on these numbers</summary>
 
 <br>
 
+- **GraspNet-baseline** was trained here once and is within the gate on every split
+  against its repository's numbers, the row that states the collision filter. Its weights
+  are not published yet.
 - **GSNet** was trained here from scratch with the recipe of its config, three times with
   the same seed; the trainings differ by about one AP at most. It is above the paper by
   more than the gate allows, and why is not known. What is known: the port equals the reference
@@ -244,7 +248,7 @@ weights are published yet; the methods run from their released weights
 - [x] **M0 — Core.** Config system, registries, data contracts, reference operators, CLI, CI, docs, brand.
 - [ ] **M1 — GraspNet-1Billion, its evaluator, a first method.** Done: the evaluator equals the official one; GSNet equals its reference stage by stage, is trained here and scored on the whole test split. Open: its gap to the paper is not explained, and its weights are not published.
 - [ ] **M2 — EconomicGrasp, and HGGD as a second family.** Done: both equal their reference stage by stage with the authors' weights; EconomicGrasp, trained here, reaches its authors' checkpoint. In progress: training HGGD.
-- [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference; FineGrasp is trained here. Open: its gap to the paper. In progress: training the others. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
+- [ ] **M3 — The other seed-based methods.** Done: GraspNet-baseline, Scale-Balanced-Grasp and FineGrasp equal their reference; GraspNet-baseline, trained here, passes the zoo's gate; FineGrasp is trained here. Open: FineGrasp's gap to the paper. In progress: training Scale-Balanced-Grasp, and FineGrasp's changes one at a time. Planned: a controlled comparison with the same encoder, budget, inputs and evaluator.
 - [ ] **M4 — GraspClutter6D.** Done: reader, evaluator equal to the official one, label assets, transfer configs. Planned: training on GraspClutter6D; Contact-GraspNet.
 - [ ] **M5 — Release.** PyPI, model zoo, documentation site.
 

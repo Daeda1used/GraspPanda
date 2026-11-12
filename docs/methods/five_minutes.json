@@ -532,7 +532,7 @@
       "config": "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
       "runs": [
         {
-          "weights": "weights",
+          "weights": "author_weights",
           "demo": [
             {
               "date": "2026-11-11",

@@ -284,8 +284,8 @@ width.
 
 Run for the six methods, 3,055 of 3,055 frames scored each: GraspNet-baseline,
 Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD with the authors' converted
-checkpoints (`author-ckpt`), GSNet, EconomicGrasp and FineGrasp with the models trained from
-scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
+checkpoints (`author-ckpt`), GraspNet-baseline, GSNet, EconomicGrasp and FineGrasp with the
+models trained from scratch by this toolbox (`reproduced`; their weights are not published yet). AP / AP0.8 / AP0.4 in percent, RealSense
 D435; the last column is the AP of the GraspClutter6D paper where it has a row. The
 [model zoo](../model_zoo.md#graspclutter6d-transfers) has every reported number, and
 `configs/<method>/records/` the result records.
@@ -295,6 +295,7 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | Method | `raw` | `cd` | Reported AP |
 |---|---|---|---|
 | GraspNet-baseline | 8.70 / 10.35 / 6.97 | 17.14 / 20.60 / 12.87 | 17.95 |
+| GraspNet-baseline, trained here | 7.44 / 8.87 / 5.99 | 14.09 / 16.90 / 10.73 | — |
 | GSNet, trained here | 25.58 / 31.38 / 19.42 | 26.87 / 33.00 / 20.04 | — |
 | Scale-Balanced-Grasp | 21.76 / 26.48 / 16.45 | 22.69 / 27.59 / 17.00 | 22.69 |
 | EconomicGrasp | 21.69 / 26.64 / 15.79 | 22.25 / 27.30 / 16.06 | 21.67 |
@@ -328,12 +329,16 @@ The same override serves `demo`, `infer` and `GraspInferencer` on a camera of yo
 ([FineGrasp's README](https://github.com/Daeda1used/GraspPanda/tree/main/configs/finegrasp#results-on-graspclutter6d)
 has the records).
 
-The reported value lies 0.81 AP above `cd` and 9.25 above `raw` for GraspNet-baseline,
-0.00 AP from `cd` and 0.93 above `raw` for Scale-Balanced-Grasp, and 0.02 AP below `raw`
-and 0.58 below `cd` for EconomicGrasp (the authors' checkpoints). So the reported table is closest to the filtered run
-for two methods and to the unfiltered run for the third. The paper does not state the
-collision filter, and whether it was applied to some methods and not to others was not
-investigated.
+Against the authors' checkpoints, the reported value lies 0.81 AP above `cd` and 9.25
+above `raw` for GraspNet-baseline, 0.00 AP from `cd` and 0.93 above `raw` for
+Scale-Balanced-Grasp, and 0.02 AP below `raw` and 0.58 below `cd` for EconomicGrasp. So
+the reported table is closest to the filtered run for two methods and to the unfiltered
+run for the third. The paper does not state the collision filter, and whether it was
+applied to some methods and not to others was not investigated.
+
+A model trained here does not transfer like its authors' checkpoint: EconomicGrasp scores
+1.55 AP above its checkpoint, GraspNet-baseline 3.05 below with the filter, each from one
+training.
 
 ??? note "Entering a result into the model zoo"
 

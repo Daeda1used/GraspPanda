@@ -8,7 +8,7 @@ hide: [toc]
 
 # GraspNet-baseline
 
-<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping">CVPR 2020</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_baseline_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span></div>
+<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="GraspNet-1Billion: A Large-Scale Benchmark for General Object Grasping">CVPR 2020</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_baseline_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip gp-chip--ok" title="a model trained by GraspPanda, scored on whole test splits: within 1 AP of the reported numbers">reproduced ✓</span></div>
 
 From the point cloud of a depth image, it keeps 1024 PointNet++ seeds, scores 300 approach views per seed and predicts score, in-plane angle, width and tolerance at four depths along the best one.
 
@@ -20,7 +20,7 @@ Four steps from the authors' checkpoint to grasps. A [test](https://github.com/D
 
 ### 1. Get the weights {#run-weights}
 
-GraspPanda publishes no weights for GraspNet-baseline: the file to download is the authors' checkpoint, under its licence. Download [`checkpoint-rs.tar`](https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view?usp=sharing) (Google Drive) and convert it once, from the root of a GraspPanda checkout:
+GraspPanda trained GraspNet-baseline once, but those weights are not published yet: the file to download is the authors' checkpoint. Download [`checkpoint-rs.tar`](https://drive.google.com/file/d/1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk/view?usp=sharing) (Google Drive) and convert it once, from the root of a GraspPanda checkout:
 
 ```bash
 python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
@@ -32,6 +32,7 @@ python -m tools.convert_checkpoint checkpoint-rs.tar baseline_realsense.pth \
     - **Licence**: GraspNet-Baseline Software License Agreement (non-commercial research use only)
     - **SHA-256** of the download: `60680087c61cba2b6791614fef1519071e294f6dcaf99b3f581bb95f7c51a868`
     - **What the converter writes**: `baseline_realsense.pth`, every tensor of the downloaded file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially. The converter is a tool of the repository; it is not installed with the package.
+    - **The weights trained here** (the `reproduced` rows of [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/README.md)): trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided.
 
 ### 2. Grasps on the example scene {#run-demo}
 
@@ -142,14 +143,17 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 | reported (paper) | not stated | 27.56 | 26.11 | 10.55 | — |
 | authors' weights | off | 32.63 | 27.48 | 10.42 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_raw.json) |
 | authors' weights | on | 47.90 | 42.70 | 16.97 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_author-ckpt_test_cd.json) |
+| trained here | off | 31.76 | 26.18 | 10.19 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test_raw.json) |
+| trained here | on | 46.81 | 41.90 | 16.74 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/records/graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test_cd.json) |
 
 </div>
 
 ??? note "Where these numbers come from"
 
-    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; nothing trained here yet.
+    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; reproduced ✓, a model trained by GraspPanda, scored on whole test splits: within 1 AP of the reported numbers.
     - **reported**: reference repository README, "In repo" (collision threshold 0.01); paper, as quoted in the reference repository README ("In paper").
     - **authors' weights, scored here**: the authors' checkpoint, converted and run through `grasppanda test` on every frame of the test split; the record holds the per-scene values, the config hash and the hashes of code and weights.
+    - **trained here**: a model trained from scratch by GraspPanda with the config's recipe, scored the same way.
     - **Inputs**: workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace).
     - Other cameras, GraspClutter6D and what is known about each gap: [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/graspnet_baseline/README.md#results-on-graspnet-1billion); every method side by side: [Model zoo](../model_zoo.md).
 

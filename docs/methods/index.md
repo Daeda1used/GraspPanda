@@ -21,7 +21,7 @@ Six published methods, each ported stage by stage and checked against its refere
 
     The baseline released with GraspNet-1Billion: PointNet++ seeds, 300 views, four depths.
 
-    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_baseline_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span>
+    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_baseline_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip gp-chip--ok" title="a model trained by GraspPanda, scored on whole test splits: within 1 AP of the reported numbers">reproduced ✓</span>
 
 -   **[GSNet](gsnet.md)** · ICCV 2021 · depth
 
@@ -79,7 +79,7 @@ Computed from the configs and the metafiles.
 
 | Method | Released<br>weights | Trained<br>here | GraspNet-1Billion<br>configs | GraspClutter6D<br>configs |
 |---|---|---|---|---|
-| [GraspNet-baseline](graspnet_baseline.md) | RealSense | — | RealSense | transfer from RealSense |
+| [GraspNet-baseline](graspnet_baseline.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [GSNet](gsnet.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense; training |
 | [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | — | RealSense | transfer from RealSense |
 | [EconomicGrasp](economicgrasp.md) | Kinect, RealSense | RealSense, not published | Kinect, RealSense | transfer from Kinect, RealSense; training |

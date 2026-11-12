@@ -136,7 +136,7 @@ grasppanda probe hggd_dinov2.yaml
 | 方法 | 发表 | 碰撞过滤 | 作者报告的 AP（seen / similar / novel） | 本工具箱复现 |
 |---|---|:---:|---|:---:|
 | GraspNet-baseline | CVPR 2020 | 未说明 | 27.56 / 26.11 / 10.55（论文） | — |
-| GraspNet-baseline | CVPR 2020 | 开 | 47.47 / 42.27 / 16.61（代码仓库） | — |
+| GraspNet-baseline | CVPR 2020 | 开 | 47.47 / 42.27 / 16.61（代码仓库） | 46.81 / 41.90 / 16.74 |
 | GSNet | ICCV 2021 | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
 | GSNet | ICCV 2021 | 开 | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
 | Scale-Balanced-Grasp | CoRL 2022 | 关 | 58.95 / 52.97 / 22.63 | — |
@@ -146,13 +146,14 @@ grasppanda probe hggd_dinov2.yaml
 | FineGrasp | arXiv 2025 | 开 | 73.71 / 64.56 / 28.14 | 72.43 / 61.87 / 26.94 |
 | HGGD | RA-L 2023 | 未说明 | 59.36 / 51.20 / 22.17（论文）· 64.45 / 53.59 / 24.59（代码仓库） | — |
 
-方法要在这里训练、成绩与报告数字相差不超过 1 AP（或把差距解释清楚），才能进入模型库。EconomicGrasp 在这里训练后达到作者权重的成绩；训练的权重暂未发布，各方法用已发布的权重运行（[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)）。
+方法要在这里训练、成绩与报告数字相差不超过 1 AP（或把差距解释清楚），才能进入模型库。GraspNet-baseline 已通过，EconomicGrasp 达到作者权重的成绩；训练的权重暂未发布，请用已发布的权重[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)。
 
 <details>
 <summary>关于这些数字</summary>
 
 <br>
 
+- **GraspNet-baseline** 在本工具箱内训练了一次，与官方仓库公布的数字（说明了碰撞过滤的那一组）相比，每个 split 都在准入规则的允许范围内。它的权重暂未发布。
 - **GSNet** 按其配置中的训练方案在本工具箱内从零训练了三次（同一个随机种子），三次的成绩最多相差约一个 AP。它比论文数字高出的幅度超过了准入规则的允许范围，原因尚不清楚。已知的是：移植版与参考实现逐阶段一致；用参考代码训练的模型（标签集有改动）同样高于论文；作者的原始代码没有公开（[详情](https://daeda1used.github.io/GraspPanda/model_zoo/#graspnet-1billion)）。它的权重暂未发布。
 - **EconomicGrasp** 在本工具箱内训练了一次：seen 和 similar 上与作者权重在这里测得的成绩一致，novel 上更高。两者在 seen 上都比论文表格高，幅度略超准入规则的允许范围；表格为什么偏低尚不清楚。它的权重暂未发布。
 - **FineGrasp** 在本工具箱内训练了一次，成绩低于论文，差距同样超出准入规则的允许范围，原因也尚不清楚。作者的权重在同一套评测下能得到论文的数字，所以差距来自训练；作者训练用的法向图和 graspness 标签没有公开，这里是按论文重新生成的。它的权重暂未发布。
@@ -191,7 +192,7 @@ grasppanda probe hggd_dinov2.yaml
 - [x] **M0 — 核心。** 配置系统、注册表、数据契约、参考算子、命令行、CI、文档、品牌。
 - [ ] **M1 — GraspNet-1Billion、它的评测器、第一个方法。** 已完成：评测器与官方一致；GSNet 与参考实现逐阶段一致，已在本工具箱内训练并在整个测试集上评测。未解决：与论文的差距尚未解释，权重暂未发布。
 - [ ] **M2 — EconomicGrasp，以及作为第二个家族的 HGGD。** 已完成：两者用作者的权重与参考实现逐阶段一致；EconomicGrasp 在本工具箱内训练后达到作者权重的成绩。进行中：训练 HGGD。
-- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致；FineGrasp 已在本工具箱内训练。未解决：它与论文的差距。进行中：训练其余方法。计划：受控对比，相同的编码器、训练预算、输入和评测器。
+- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致；GraspNet-baseline 在本工具箱内训练后通过了准入规则；FineGrasp 已在本工具箱内训练。未解决：FineGrasp 与论文的差距。进行中：训练 Scale-Balanced-Grasp，以及逐个打开 FineGrasp 的改动。计划：受控对比，相同的编码器、训练预算、输入和评测器。
 - [ ] **M4 — GraspClutter6D。** 已完成：读取器、与官方一致的评测器、标签资产、迁移配置。计划：在 GraspClutter6D 上训练；Contact-GraspNet。
 - [ ] **M5 — 发布。** PyPI、模型库、文档网站。
 
