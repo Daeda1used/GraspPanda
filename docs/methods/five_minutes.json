@@ -383,7 +383,7 @@
       "config": "finegrasp/finegrasp_sunet14_g1b-realsense_10e",
       "runs": [
         {
-          "weights": "weights",
+          "weights": "author_weights",
           "demo": [
             {
               "date": "2026-11-11",

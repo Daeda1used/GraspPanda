@@ -360,17 +360,16 @@ def test_a_method_page_says_where_each_option_runs_and_what_happened_under_it():
     assert onecycle.rstrip(" |").endswith(
         "it needs `--set backbone=ptv3` in the same request, and HGGD has no slot `backbone`."
     )
-    # the numbers: at most four rows, from the metafile
+    # the numbers: the rows of the shipped config (reported, released weights, trained here)
     for method in (*METHODS, *FAMILIES):
         page = (REPO / "docs" / "methods" / f"{generator.page_of(method)}.md").read_text(
             encoding="utf-8"
         )
         numbers = page.split("## Numbers")[1].split("??? note")[0]
         rows = [line for line in numbers.splitlines() if line.startswith("| ")][1:]
-        assert 1 <= len(rows) <= 4, method
         _, model = generator.zoo_entry(method)
-        shown = {line.split(" | ")[2] for line in rows}
-        assert shown <= {f"{r.ap['seen']:.2f}" for r in model.results if "seen" in r.ap}
+        shown = sorted(line.split(" | ")[2] for line in rows)
+        assert shown == sorted(f"{r.ap['seen']:.2f}" for r in model.results if "seen" in r.ap)
 
 
 def does_it_run() -> dict[tuple[str, str], str]:

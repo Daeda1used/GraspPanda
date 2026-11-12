@@ -12,9 +12,10 @@ percent; *Filter* says whether each method's own collision filter was off or on,
 - **Authors' weights scored here** (`author-ckpt`): GraspNet-baseline, Scale-Balanced-Grasp,
   EconomicGrasp, FineGrasp, HGGD.
   Those numbers have the provenance `author-ckpt`; they are not reproductions.
-- **Trained here** (`reproduced`): GSNet, from scratch with the recipe of its config. Its
-  weights are not published yet, so the zoo cannot download them, and it does not meet the
-  [admission gate](#admission-gate): it is above the paper by more than 1 AP on every split.
+- **Trained here** (`reproduced`): GSNet and FineGrasp, from scratch with the recipe of
+  their configs. Neither meets the [admission gate](#admission-gate): GSNet is above the
+  paper by more than 1 AP on every split, FineGrasp below it. Their weights are not
+  published yet, so the zoo cannot download them.
 
 ## Authors' checkpoints scored by this toolbox
 
@@ -90,14 +91,16 @@ recipe of its config and scored through `grasppanda test`.
 |---|---|:---:|---|---|---|
 | GSNet | RealSense | off | 68.83 / 60.35 / 25.20 | 65.70 / 53.75 / 23.98 | +3.13 / +6.60 / +1.22 |
 | GSNet | RealSense | on | 71.23 / 62.29 / 26.42 | 67.12 / 54.81 / 24.31 | +4.11 / +7.48 / +2.11 |
+| FineGrasp | RealSense | off | 69.77 / 59.72 / 25.77 | 71.67 / 62.83 / 27.40 | −1.90 / −3.11 / −1.63 |
+| FineGrasp | RealSense | on | 72.43 / 61.87 / 26.94 | 73.71 / 64.56 / 28.14 | −1.28 / −2.69 / −1.20 |
 
 </div>
 
-??? note "Against the admission gate, and what is known about the gap"
+??? note "Against the admission gate, and what is known about each gap"
 
     - **Against the admission gate.** The gate asks for at most 1.0 AP between `reproduced`
-      and `reported` on each split. GSNet is above the paper by more than that on every
-      split, most on similar, and the gap is not explained. What is known: this
+      and `reported` on each split. Neither model meets it, and neither gap is explained.
+    - **GSNet is above the paper** on every split, most on similar. What is known: this
       implementation equals the public reference implementation stage by stage, including
       every loss term of a recorded training batch, so its training step is the reference's;
       a model trained independently with the reference code, on a modified graspness label
@@ -105,13 +108,19 @@ recipe of its config and scored through `grasppanda test`.
       original code, which is not public. No `author-ckpt` number stands beside it: the file
       released with the reference code does not reach the paper's numbers in either
       implementation (`configs/gsnet/README.md`).
-    - **Two trainings, one seed.** The rows are the first training. A second one, on
-      another GPU, is within 0.5 AP of it on every split (`configs/gsnet/README.md`). Other
-      seeds were not trained, and a training with the unmodified reference code was not run.
+    - **FineGrasp is below the paper** on every split, most on similar. What is known: the
+      authors' weights score the paper's numbers through the same test path, and a recorded
+      training batch gives the reference's losses and gradients. The authors' normal images
+      and graspness labels are not published, so a training here generates both from the
+      paper's equations, and it ran as four processes with accumulated gradients in place of
+      the eight of the published recipe (`configs/finegrasp/README.md`).
+    - **One seed.** GSNet was trained twice, on two GPUs; the rows are the first training,
+      and the second is within 0.5 AP of it on every split. FineGrasp was trained once.
+      Other seeds were not trained, nor was a training with unmodified reference code run.
     - **The variants.** `off` is the prediction as emitted (variant `raw`), `on` the
-      model-free collision filter of the reference (variant `cd`). The workspace crop is
-      derived from the ground-truth segmentation, as in the reference (`gt_assisted:
-      workspace`). The training run is described in `configs/gsnet/README.md`.
+      model-free collision filter of each method's reference (variant `cd`). The workspace
+      crop is derived from the ground-truth segmentation, as in the references
+      (`gt_assisted: workspace`). Each training run is described in its method's README.
     - **The weights are not published yet.** They were trained on GraspNet-1Billion (CC
       BY-NC-SA 4.0), and whether and where they are published has not been decided. The
       metafile lists them with their sha256 and no url, so the zoo, `GraspInferencer` and
@@ -195,8 +204,8 @@ novel, beside the reproduced ones where a method was trained here.
     | Scale-Balanced-Grasp (CoRL 2022) | off | 58.95 / 52.97 / 22.63 | — |
     | Scale-Balanced-Grasp (CoRL 2022) | on | 63.83 / 58.46 / 24.63 | — |
     | EconomicGrasp (ECCV 2024) | off | 68.21 / 61.19 / 25.48 | — |
-    | FineGrasp (arXiv 2025) | off | 71.67 / 62.83 / 27.40 | — |
-    | FineGrasp (arXiv 2025) | on | 73.71 / 64.56 / 28.14 | — |
+    | FineGrasp (arXiv 2025) | off | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
+    | FineGrasp (arXiv 2025) | on | 73.71 / 64.56 / 28.14 | 72.43 / 61.87 / 26.94 |
     | HGGD (RA-L 2023), "In paper" row of its README | unstated | 59.36 / 51.20 / 22.17 | — |
     | HGGD (RA-L 2023), "In repo" row and arXiv version | unstated | 64.45 / 53.59 / 24.59 | — |
 

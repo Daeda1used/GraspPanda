@@ -20,7 +20,7 @@ none of their code is part of this history. Each line below has its full account
 - **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
 - **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
 - **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
-- **Model zoo.** Released weights scored on whole test splits, GSNet trained here, each number backed by a committed result record.
+- **Model zoo.** Released weights scored on whole test splits; GSNet and FineGrasp trained here, GSNet twice; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
@@ -59,7 +59,7 @@ none of their code is part of this history. Each line below has its full account
 
 ### Known limits
 
-- No method has passed the admission rule of the zoo yet, so the zoo has no weights to download.
+- No method has passed the admission rule of the zoo yet, so the zoo has no weights to download: trained here, GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
 - No option beside the ported methods has been trained and evaluated: a probe says a combination trains, not how good it is.
 - Mixed precision is refused for the shipped detectors; `optimizer=soap` under HGGD is not verified (one CUDA illegal memory access on a shared GPU).
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
@@ -475,6 +475,26 @@ Classes now count levels, and every method lists the options of each of its slot
   `GraspInferencer`, and puts them back afterwards; `env.json` of a run records what it
   computed in, and the header of a run says when TF32 is on. At its default the option
   leaves every config hash as it was; `tf32: true` is another hash.
+
+</details>
+
+<details markdown="1">
+<summary>Added: trainings on the second machine</summary>
+
+- GSNet was trained a second time, with the config and seed of the zoo row, on an RTX 3090:
+  68.34 / 60.35 / 25.57 AP without and 70.89 / 62.71 / 26.83 with the collision filter on
+  the whole test split, within 0.5 AP of the first training on every split and, like it,
+  above the paper by more than 1 AP. The zoo keeps the rows of the first training; the
+  records of the second are in `configs/gsnet/repeats/` and its README states them.
+- FineGrasp was trained from scratch on four RTX 3090 (four processes with four frames
+  each, the gradients of two batches per step): 69.77 / 59.72 / 25.77 AP without and
+  72.43 / 61.87 / 26.94 with the collision filter, below the paper by 1.2 to 3.1 AP on
+  every split. The authors' weights give the paper's numbers through the same test path;
+  the gap of the training is not explained (`configs/finegrasp/README.md`).
+- A zoo model may list the weights trained here (`weights`) beside the authors' checkpoint
+  (`author_weights`) and state the measured rows of both, each kind backed by its file.
+  A method page then shows every row of the shipped config, and its *trained here* chip
+  turns into *reproduced ✓* only within the 1 AP of the admission gate.
 
 </details>
 

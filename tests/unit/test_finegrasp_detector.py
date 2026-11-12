@@ -271,15 +271,17 @@ def test_the_metafile_is_valid_and_states_the_reported_numbers():
     assert meta.upstream["commit"].startswith("221ec0e")
     (model,) = meta.models
     assert model.config == f"{RUN_CONFIG}.yaml" and model.camera == "realsense"
-    assert model.weights is not None and model.weights.source == "author"
-    assert model.weights.sha256.startswith("30c1f335")
-    # the paper's two rows, then what the authors' weights score here (held to its
-    # records, for all methods, in test_zoo_records.py); nothing has been trained
+    assert model.weights is not None and model.weights.source == "grasppanda"
+    assert model.author_weights.sha256.startswith("30c1f335")
+    # the paper's two rows, what the authors' weights score here and what a training here
+    # does (each held to its records, for all methods, in test_zoo_records.py)
     assert [(r.provenance, r.collision_filter) for r in model.results] == [
         ("reported", False),
         ("reported", True),
         ("author-ckpt", False),
         ("author-ckpt", True),
+        ("reproduced", False),
+        ("reproduced", True),
     ]
     assert model.results[0].ap == {"seen": 71.67, "similar": 62.83, "novel": 27.40}
     assert model.results[1].ap == {"seen": 73.71, "similar": 64.56, "novel": 28.14}

@@ -43,22 +43,40 @@ segmentation, as in the reference (`gt_assisted: workspace`).
 |---|---|---|---|---|---|---|
 | [finegrasp_sunet14_g1b-realsense_10e](finegrasp_sunet14_g1b-realsense_10e.yaml) | RealSense | off | 71.67 | 62.83 | 27.40 | reported |
 | | RealSense | off | 71.56 | 62.80 | 27.42 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json)) |
+| | RealSense | off | 69.77 | 59.72 | 25.77 | reproduced ([record](records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_raw.json)) |
 | | RealSense | on | 73.71 | 64.56 | 28.14 | reported |
 | | RealSense | on | 73.69 | 64.62 | 28.18 | author-ckpt ([record](records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json)) |
+| | RealSense | on | 72.43 | 61.87 | 26.94 | reproduced ([record](records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_cd.json)) |
 
 `reported` is Table I of the paper; the model card of the released weights repeats it and
 names the weight file used here. `author-ckpt` is that file, converted and run through
-`grasppanda test` at commit `4bc5333`, one run with seed 0. No model has been trained here
-yet. **Measured minus reported**: −0.11 / −0.03 / +0.02 AP without the collision filter
-and −0.02 / +0.06 / +0.04 AP with it: every split is within 0.11 AP of the paper.
+`grasppanda test` at commit `4bc5333`, one run with seed 0. **Measured minus reported**:
+−0.11 / −0.03 / +0.02 AP without the collision filter and −0.02 / +0.06 / +0.04 AP with
+it: every split is within 0.11 AP of the paper.
 
-<details markdown="1"><summary>What this agreement shows</summary>
+`reproduced` is a model trained from scratch here. **Measured minus reported**:
+−1.90 / −3.11 / −1.63 AP without the collision filter and −1.28 / −2.69 / −1.20 AP with
+it, outside the 1 AP of the zoo's admission gate on every split. The gap is not explained:
+run this method from the authors' weights.
 
-The normal images the weights were trained on are not published and are reconstructed
-here (*The normals* under Notes), so this is also the whole-split evidence for that
-reconstruction. Not investigated: how much of the remaining tenth of an AP is the seed of
-the point sampling. The result records hold the per-scene values, the config hash and the
-hashes of code and weights.
+<details markdown="1"><summary>What the authors' weights show, and what is known about the training</summary>
+
+**The authors' weights.** The normal images they were trained on are not published and
+are reconstructed here (*The normals* under Notes); their agreement with the paper is the
+whole-split evidence for that reconstruction. Whether the remaining tenth of an AP is the
+seed of the point sampling was not investigated.
+
+**The training.** At commit `400b733` with the four-GPU command of *Train and test*: four
+processes of four frames and the gradients of two batches per step, 32 frames a step as
+in the published recipe; 10 epochs, seed 0, 5.1 hours on four RTX 3090 shared with other
+jobs. The checkpoint of epoch 10 (SHA-256 `e8b99d4390d9…`) was scored at the same commit.
+
+**The gap.** The authors' weights reach the paper through the same test path, so it comes
+from the training. On a recorded batch the losses and gradients equal the reference's
+(*Equivalence with the reference code*). What a training here does not share with the
+authors': their normal images and graspness labels, generated here from the paper's
+equations, and their eight processes, replaced by four with accumulated gradients. Which
+of these, or the seed, accounts for it was not investigated: one run, one seed.
 
 </details>
 
@@ -68,9 +86,10 @@ Not scored yet: there is no FineGrasp config for GraspClutter6D.
 
 ## Weights
 
-GraspPanda publishes no weights for this method. Download
+GraspPanda publishes no weights for this method: those trained here are below the paper,
+and the [metafile](metafile.yaml) lists them without a link. Download
 `finegrasp_pipeline/model.safetensors` from the authors' model repository (link and
-SHA-256 in the [metafile](metafile.yaml)) and convert it once; testing needs no asset:
+SHA-256 in the metafile) and convert it once; testing needs no asset:
 
 ```bash
 python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
@@ -92,8 +111,7 @@ grasppanda test  finegrasp/finegrasp_sunet14_g1b-realsense_10e --weights <checkp
 ```
 
 The compact labels are EconomicGrasp's asset; if that exists, nothing is generated. The
-graspness asset is a new one, as large as the scene-normalised asset: 100 training scenes
-took 70 minutes with 14 worker processes.
+graspness asset is a new one: 100 training scenes took 70 minutes with 14 worker processes.
 
 **Memory decides how to launch it.** Training takes about 1.5 GB of GPU memory per frame
 (6.0 GB allocated with 4 frames in a batch, 11.7 GB with 8), so the config as written, one
@@ -105,7 +123,7 @@ four frames each. With fewer GPUs, sum the gradients of several batches: a step 
 # 8 GPUs: the published recipe
 torchrun --nproc_per_node=8 -m grasppanda.cli.main train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
     --opts data.train.batch_size=4
-# 4 GPUs of 24 GB
+# 4 GPUs of 24 GB: how the model of Results was trained
 torchrun --nproc_per_node=4 -m grasppanda.cli.main train finegrasp/finegrasp_sunet14_g1b-realsense_10e \
     --opts data.train.batch_size=4 train.accumulate=2
 # 1 GPU of 24 GB
@@ -134,9 +152,8 @@ the two files); what is the same is interchangeable between the two methods.
 | Collision filter | optional, voxel 0.005 m | optional, voxel 0.01 m | **same component** (`ModelFreeCollisionFilter`), another value |
 
 So a FineGrasp model differs from an EconomicGrasp model in three config entries
-(`point_features`, `backbone.in_channels`, `grouper`), and each of the paper's three ideas
-can be switched on alone, for example instance-normalised graspness under EconomicGrasp
-(the asset is the one FineGrasp trains on):
+(`point_features`, `backbone.in_channels`, `grouper`), and each of the paper's ideas can
+be switched on alone, for example instance-normalised graspness under EconomicGrasp:
 
 ```bash
 grasppanda prepare graspnet1b --graspness --camera realsense \
@@ -146,17 +163,16 @@ grasppanda train economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
 ```
 
 `MultiScaleGroup` takes any grouper that crops among the seeds as its branch and emits the
-axes of a single cylinder, so it also fits other seed-based heads. Neither variant has
-been trained here. Which method ships what in each slot:
+axes of a single cylinder, so it fits other seed-based heads. Neither variant has been
+trained here. What each method ships:
 [Methods](https://daeda1used.github.io/GraspPanda/methods/#what-each-method-ships).
 
-What the label change acts on, in the first 20 training scenes (192 object instances): the
-best label point of an object reaches, on the median, 54 % of the graspness of the best
-point of its scene; for 89 objects it stays below half and for 37 below a quarter, down to
-0.7 %. Instance normalisation sets every one of these ratios to 1. In the asset built for
-scene 0 (eight frames), with scene normalisation one or two of the seven to nine visible
-objects have no visible point above the seed threshold of 0.1, with instance
-normalisation none.
+What the label change acts on, in the first 20 training scenes (192 objects): the best
+label point of an object reaches, on the median, 54 % of the graspness of the best point
+of its scene, and for 37 objects less than a quarter. Instance normalisation sets every
+such ratio to 1. In scene 0, scene normalisation leaves one or two of the seven to nine
+visible objects without a point above the seed threshold of 0.1; instance normalisation
+leaves none.
 
 </details>
 
@@ -193,12 +209,11 @@ which costs half of the AP here. It is not reproduced.
 <details markdown="1"><summary>Equivalence with the reference code</summary>
 
 Checked with the authors' weights (sha256 `30c1f335…8f79`) against release 0.4.0 of
-`robo_orchard_lab` (its FineGrasp model, loss, label-matching, dataset and metric files are
-those of `221ec0e`), in an existing environment (Python 3.10, torch 2.4.0,
-MinkowskiEngine 0.5.4). Three things the reference does not ship were supplied, as
-`tools/oracle/finegrasp_reference.py` documents: the `knn` wrapper of its label matching,
-the `pointnet2` sources, and the normal images above. From
-`tests/integration/test_finegrasp_parity.py`; parity measurements, not benchmark results.
+`robo_orchard_lab` (its FineGrasp files are those of `221ec0e`; Python 3.10, torch 2.4.0,
+MinkowskiEngine 0.5.4). `tools/oracle/finegrasp_reference.py` supplies what the reference
+does not ship: the `knn` wrapper of its label matching, the `pointnet2` sources and the
+normal images above. From `tests/integration/test_finegrasp_parity.py`; parity
+measurements, not benchmark results.
 
 | What | Result |
 |---|---|
@@ -213,12 +228,11 @@ the `pointnet2` sources, and the normal images above. From
 | Scale fusion against `nn.TransformerEncoder` | equal to 2e-6 in evaluation mode and, without dropout, in training mode |
 
 The training comparison replays what the reference draws at random or leaves undefined
-(the sampled view of every seed, every dropout mask, the choice among template views that
-share a labelled view). Two parts are weaker: the attention dropout inside the fusion
-layers is drawn in a compiled kernel of the reference and was off on both sides (only the
-unit test pins its place), and the graspness labels of that batch are scene-normalised
-files of the dataset; the instance-normalised asset is verified against its definition on
-synthetic data (`tests/unit/test_finegrasp_graspness.py`).
+(sampled views, dropout masks, the choice among template views that share a labelled
+view). Two parts are weaker: the attention dropout inside the fusion layers, drawn in a
+compiled kernel of the reference, was off on both sides, and the graspness labels of that
+batch are the dataset's scene-normalised files; the instance-normalised asset is verified
+against its definition on synthetic data (`tests/unit/test_finegrasp_graspness.py`).
 
 **A sample of the benchmark.** Every 64th frame of every seen test scene: 120 frames,
 RealSense, AP without / with the collision filter; not an `author-ckpt` result.
@@ -230,25 +244,22 @@ RealSense, AP without / with the collision filter; not an `author-ckpt` result.
 | `grasppanda test`, its own point sampling | 71.21 / 72.99 |
 | Reported, whole split, for orientation | 71.67 / 73.71 |
 
-Fed the same input, GraspPanda scores one frame differently without the filter (by 0.1
-AP, the frame of the one arg-max above). With the filter 52 frames differ, by −2.5 to +3.5
-AP and −0.02 on average: the evaluation engine hands the filter the cloud in single
-precision, the reference's detector voxelises it in double. Given the double-precision
-cloud, GraspPanda's filter result is the reference's on all 120 frames (73.87).
+Fed the same input, one frame scores differently without the filter (0.1 AP, the arg-max
+above). With it 52 frames differ, by −0.02 AP on average: the evaluation engine hands the
+filter the cloud in single precision, the reference voxelises it in double; given the
+double-precision cloud, the result is the reference's on all 120 frames (73.87).
 
-Not verified: any training run (two epochs on 90 frames ran through `grasppanda train` as
-a smoke test), the Kinect camera (the authors publish RealSense only), the weights trained
-with simulation data (`finegrasp_pipeline_sim`, which take no normals), and the behaviour
-on GraspClutter6D.
+Not verified: that a training reaches the paper (the run of *Results* ends below it), the
+Kinect camera (the authors publish RealSense only), the weights trained with simulation
+data (`finegrasp_pipeline_sim`, no normals), and GraspClutter6D.
 
 </details>
 
 <details markdown="1"><summary>Reference behaviours kept as named options</summary>
 
 Each of these changes numbers; an alternative is a controlled variant with its own
-experiment name. The options inherited from EconomicGrasp (`view.train_selection`,
-`assigner.*`, `head.*`, `grouper.branch.centre_coordinates`, `compact_labels.*`) are
-listed in [its README](../economicgrasp/README.md) and have the same values here.
+experiment name. The options inherited from EconomicGrasp are listed in
+[its README](../economicgrasp/README.md) and have the same values here.
 
 | Option | Value | What the reference does |
 |---|---|---|
@@ -270,15 +281,14 @@ listed in [its README](../economicgrasp/README.md) and have the same values here
   set are not published. Both are generated here from the paper's equations; the normals
   are checked through the AP of the released weights, the graspness labels cannot be
   checked against the authors' at all.
-- The published recipe uses eight processes with four frames each; the config as written
-  uses one process with 32, which keeps the learning rate and the number of steps but
-  gives batch norm 32 frames instead of 4 and needs 48 GB. *Train and test* above gives
-  the launch that keeps both on the GPUs you have.
+- The published recipe uses eight processes of four frames; the config as written uses
+  one process with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
+  *Train and test* gives the launch that keeps both on the GPUs you have.
 - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
-  repeats, and a frame with none yields an empty result (as for EconomicGrasp).
+  repeats, and a frame with none an empty result (as for EconomicGrasp).
 - The released inference processor also drops grasps as wide as the gripper, applies
   grasp NMS and sorts by score: deployment post-processing, not part of the benchmark
-  metric nor of these configs (`GraspNMS` exists as a post-processor).
+  nor of these configs (`GraspNMS` is a post-processor).
 
 </details>
 

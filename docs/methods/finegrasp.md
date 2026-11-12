@@ -8,7 +8,7 @@ hide: [toc]
 
 # FineGrasp
 
-<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="FineGrasp: Towards Robust Grasping for Delicate Objects">arXiv 2025</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_finegrasp_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span></div>
+<div class="gp-chips"><span class="gp-chip" title="Seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp">Seed-based skeleton</span> <span class="gp-chip" title="FineGrasp: Towards Robust Grasping for Delicate Objects">arXiv 2025</span> <span class="gp-chip">depth input</span> <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_finegrasp_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span></div>
 
 From the point cloud of a depth image and its surface normals, it predicts grasps as EconomicGrasp does, with graspness normalised within every object and crops at four radii fused by attention.
 
@@ -20,7 +20,7 @@ Four steps from the authors' checkpoint to grasps. A [test](https://github.com/D
 
 ### 1. Get the weights {#run-weights}
 
-GraspPanda publishes no weights for FineGrasp: the file to download is the authors' checkpoint, under its licence. Download [`finegrasp_pipeline/model.safetensors`](https://huggingface.co/HorizonRobotics/FineGrasp/blob/main/finegrasp_pipeline/model.safetensors) (Hugging Face) and convert it once, from the root of a GraspPanda checkout:
+GraspPanda trained FineGrasp once, but those weights are not published yet: the file to download is the authors' checkpoint. Download [`finegrasp_pipeline/model.safetensors`](https://huggingface.co/HorizonRobotics/FineGrasp/blob/main/finegrasp_pipeline/model.safetensors) (Hugging Face) and convert it once, from the root of a GraspPanda checkout:
 
 ```bash
 python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
@@ -33,6 +33,7 @@ python -m tools.convert_checkpoint finegrasp_pipeline/model.safetensors \
     - **Licence**: apache-2.0 on the model card; trained on GraspNet-1Billion, whose data and labels are CC BY-NC-SA 4.0
     - **SHA-256** of the download: `30c1f335567dcd726c11fb60249da65e26cc92c2f82928a4e4123ac235b38f79`
     - **What the converter writes**: `finegrasp_realsense.pth`, every tensor of the downloaded file under the name of the module that plays its role here, no value changed, with a note of the file it came from. A tensor left over or missing stops the conversion with a report; nothing is ever loaded partially. The converter is a tool of the repository; it is not installed with the package.
+    - **The weights trained here** (the `reproduced` rows of [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/README.md)): trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided.
 
 ### 2. Grasps on the example scene {#run-demo}
 
@@ -145,14 +146,17 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 | reported (paper) | on | 73.71 | 64.56 | 28.14 | — |
 | authors' weights | off | 71.56 | 62.80 | 27.42 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_raw.json) |
 | authors' weights | on | 73.69 | 64.62 | 28.18 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_author-ckpt_test_cd.json) |
+| trained here | off | 69.77 | 59.72 | 25.77 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_raw.json) |
+| trained here | on | 72.43 | 61.87 | 26.94 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_reproduced_test_cd.json) |
 
 </div>
 
 ??? note "Where these numbers come from"
 
-    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; nothing trained here yet.
+    - **The status of these numbers**: authors' weights scored here, the authors' checkpoint, converted and scored on whole test splits; trained here, a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers.
     - **reported**: paper (arXiv 2507.05978), Table I, 'FineGrasp'; the same row is in the README of the upstream project and on the model card, which names this weight file; paper (arXiv 2507.05978), Table I, 'FineGrasp + CD'; the same row is in the README of the upstream project and on the model card, which names this weight file.
     - **authors' weights, scored here**: the authors' checkpoint, converted and run through `grasppanda test` on every frame of the test split; the record holds the per-scene values, the config hash and the hashes of code and weights.
+    - **trained here**: a model trained from scratch by GraspPanda with the config's recipe, scored the same way.
     - **Inputs**: workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace).
     - Other cameras, GraspClutter6D and what is known about each gap: [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/README.md#results-on-graspnet-1billion); every method side by side: [Model zoo](../model_zoo.md).
 
@@ -734,15 +738,14 @@ Every option that fits FineGrasp, except `target-mask`, was composed under it; t
       set are not published. Both are generated here from the paper's equations; the normals
       are checked through the AP of the released weights, the graspness labels cannot be
       checked against the authors' at all.
-    - The published recipe uses eight processes with four frames each; the config as written
-      uses one process with 32, which keeps the learning rate and the number of steps but
-      gives batch norm 32 frames instead of 4 and needs 48 GB. *Train and test* above gives
-      the launch that keeps both on the GPUs you have.
+    - The published recipe uses eight processes of four frames; the config as written uses
+      one process with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
+      *Train and test* gives the launch that keeps both on the GPUs you have.
     - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
-      repeats, and a frame with none yields an empty result (as for EconomicGrasp).
+      repeats, and a frame with none an empty result (as for EconomicGrasp).
     - The released inference processor also drops grasps as wide as the gripper, applies
       grasp NMS and sorts by score: deployment post-processing, not part of the benchmark
-      metric nor of these configs (`GraspNMS` exists as a post-processor).
+      nor of these configs (`GraspNMS` is a post-processor).
 
     How it was checked, stage by stage: `tests/integration/test_finegrasp_parity.py` and [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/README.md).
 

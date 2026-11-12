@@ -29,7 +29,7 @@ Six published methods, each ported stage by stage and checked against its refere
 
     Graspness-guided seeds on a sparse U-Net, one of 300 views, a grid of angles and depths.
 
-    <span class="gp-chip gp-chip--ok" title="stage by stage against the reference implementation (graspness_unofficial, third-party), the same weights loaded into both: tests/integration/test_gsnet_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="a model trained by GraspPanda, scored on whole test splits">trained here</span>
+    <span class="gp-chip gp-chip--ok" title="stage by stage against the reference implementation (graspness_unofficial, third-party), the same weights loaded into both: tests/integration/test_gsnet_parity.py">equal to the reference ✓</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span>
 
 -   **[Scale-Balanced-Grasp](scale_balanced_grasp.md)** · CoRL 2022 · depth
 
@@ -53,7 +53,7 @@ Six published methods, each ported stage by stage and checked against its refere
 
     Surface normals as input, graspness per object, four crop radii fused by attention.
 
-    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_finegrasp_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits; nothing trained here yet">authors&#x27; weights scored here</span>
+    <span class="gp-chip gp-chip--ok" title="stage by stage against the authors&#x27; code, the same weights loaded into both: tests/integration/test_finegrasp_parity.py">equal to the reference ✓</span> <span class="gp-chip gp-chip--ok" title="the authors&#x27; checkpoint, converted and scored on whole test splits">authors&#x27; weights scored here</span> <span class="gp-chip" title="a model trained by GraspPanda, scored on whole test splits; not within 1 AP of the reported numbers">trained here</span>
 
 </div>
 
@@ -83,7 +83,7 @@ Computed from the configs and the metafiles.
 | [GSNet](gsnet.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense; training |
 | [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | — | RealSense | transfer from RealSense |
 | [EconomicGrasp](economicgrasp.md) | Kinect, RealSense | — | Kinect, RealSense | transfer from Kinect, RealSense; training |
-| [FineGrasp](finegrasp.md) | RealSense | — | RealSense | — |
+| [FineGrasp](finegrasp.md) | RealSense | RealSense, not published | RealSense | — |
 | [HGGD](hggd.md) | RealSense, Kinect | — | Kinect, RealSense | transfer from RealSense |
 
 </div>
