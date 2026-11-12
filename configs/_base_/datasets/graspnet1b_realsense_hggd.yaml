@@ -24,8 +24,13 @@ data:
       load_labels: true
       object_labels: false       # HGGD does not read the dense grasp grids
       images: [rgb, depth]
-      view_grasps:               # every value is the reference converter's; see
-        friction_threshold: 0.2  # grasppanda/datasets/view_grasps.py for the full list
+      # Every value is the released converter's (grasppanda/datasets/view_grasps.py has the
+      # full list). NOTE: its suppression, `nms_distance: 0.02` and `nms_angle: 60.0`, leaves
+      # about seven positive angle classes a frame, and a training on these labels ends 8 to
+      # 10 AP below the authors' checkpoint, which fits denser labels (configs/hggd/README.md,
+      # "Results"). Denser labels: set the two keys here, e.g. 0.01 and 30.0, and prepare again.
+      view_grasps:
+        friction_threshold: 0.2
       preprocess:
         - {type: DepthToCloud}
         - {type: NoWorkspace}    # every pixel with depth; nothing derived from ground truth
