@@ -11,6 +11,7 @@ import pytest
 
 from grasppanda.registry import TRANSFORMS
 from grasppanda.structures import ContractError, SampleKey
+from grasppanda.transforms.base import config_fingerprint
 from grasppanda.transforms.frame import PointSample
 from grasppanda.transforms.normals import CoordinateFeatures, DepthNormals, depth_normal_map
 from grasppanda.transforms.points import RandomFlip, RandomSample
@@ -270,8 +271,10 @@ def test_both_are_registered_and_describe_themselves():
         "encoding": "unit",
         "keep_depth": False,
     }
-    assert TRANSFORMS.build({"type": "CoordinateFeatures"}).config() == {
-        "type": "CoordinateFeatures",
-        "version": 1,
-        "median_depth": None,
-    }
+    # the option it gained later is not part of its identity while it is unused, so the
+    # fingerprint of an asset built with this step before the option existed still holds
+    plain = TRANSFORMS.build({"type": "CoordinateFeatures"})
+    assert plain.config() == {"type": "CoordinateFeatures", "version": 1}
+    assert config_fingerprint([plain.config()]) == "0577672878ecdcc5"
+    moved = TRANSFORMS.build({"type": "CoordinateFeatures", "median_depth": 0.42})
+    assert moved.config() == {"type": "CoordinateFeatures", "version": 1, "median_depth": 0.42}

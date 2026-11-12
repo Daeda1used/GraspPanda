@@ -70,17 +70,26 @@ class Transform:
         raise NotImplementedError
 
     def config(self) -> dict[str, Any]:
-        """``{type, version, **arguments}``: what this instance does, as plain data."""
+        """``{type, version, **arguments}``: what this instance does, as plain data.
+
+        An argument the class gained later (its ``hash_neutral``) is left out at the value
+        that keeps the behaviour, as in the hash of a config: the fingerprints of assets
+        built before the argument existed stay valid.
+        """
         name = type(self).__name__
         node: dict[str, Any] = {"type": name, "version": self.version}
         parameters, _ = component_parameters(type(self))
+        neutral = getattr(type(self), "hash_neutral", None) or {}
         for parameter in parameters:
             if not hasattr(self, parameter):
                 raise TypeError(
                     f"{name} must keep its constructor argument '{parameter}' as "
                     f"self.{parameter} so that its configuration can be fingerprinted"
                 )
-            node[parameter] = _plain(getattr(self, parameter), f"{name}.{parameter}")
+            value = _plain(getattr(self, parameter), f"{name}.{parameter}")
+            if parameter in neutral and value == neutral[parameter]:
+                continue
+            node[parameter] = value
         return node
 
     def __repr__(self) -> str:
