@@ -250,6 +250,11 @@ stated. Results with and without collision filtering are always separate rows.
     hash, the code commit and the sha256 of the weights. A test recomputes every measured
     number of the tables above from those per-scene values.
 
+    Two directories beside it hold whole-split records that no line of this page states:
+    `repeats/`, the config of a zoo row trained again (GSNet), and `variants/`, the weights
+    of a zoo row with one option changed (FineGrasp's features on GraspClutter6D). The
+    method's README states their numbers, and a test holds the two together.
+
 ### Recording a result
 
 Two commands turn a finished test run into a row of this page.
