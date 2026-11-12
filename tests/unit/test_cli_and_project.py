@@ -120,9 +120,21 @@ def test_env_says_what_keeps_a_method_from_running(capsys, monkeypatch):
     base = {"cuda_build": "12.6", "cuda_available": True, "optional": {"spconv": "2.3.8"}}
     assert command.notes(base) == []
     # a PyTorch built for a CUDA version the driver does not run: no GPU, and the fix
+    monkeypatch.setattr(command.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     newer = {**base, "cuda_build": "13.0", "cuda_available": False}
     (note,) = command.notes(newer)
-    assert "built for CUDA 13.0 and sees no GPU" in note and "whl/cu126" in note
+    assert "built for CUDA 13.0 and sees no GPU" in note and "whl/cu126`" in note
+    # an older build that the driver does not run either: no newer build is suggested
+    (note,) = command.notes({**newer, "cuda_build": "11.8"})
+    assert "built for CUDA 11.8 and sees no GPU" in note and "whl/cu126" not in note
+    assert "whl/cu<version>" in note
+    # GPUs hidden on purpose, or a machine without any: nothing to fix
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+    assert command.notes(newer) == []
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES")
+    monkeypatch.setattr(command.shutil, "which", lambda name: None)
+    assert command.notes(newer) == []
     # no sparse convolution: which methods need it, and the command for this PyTorch
     monkeypatch.setattr("grasppanda.utils.imports._torch_cuda", lambda: "12.6")
     (note,) = command.notes({**base, "optional": {"spconv": None}})
