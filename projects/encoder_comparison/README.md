@@ -32,6 +32,45 @@ four into `work_dirs/gsnet_encoders/summary_test.md`. A run that is recorded is 
 
 ## Results
 
-Not measured yet. When the runs are in, this section holds the AP of each encoder on seen,
-similar and novel scenes, with and without the collision filter, from result records of
-the whole test split, and what one seed can and cannot say.
+AP on the whole GraspNet-1Billion test split (RealSense, 23,040 frames) as seen / similar /
+novel. The loss is the total training loss over the last epoch; the heads and labels are
+the same in every run, so it compares.
+
+| Encoder | Parameters | Collision filter off | On | Loss |
+|---|---|---|---|---|
+| `sunet14` | 15.4 M | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 | 0.76 |
+| `spunet` | 39.9 M | 68.84 / 60.22 / 25.04 | 70.98 / 62.22 / 26.36 | 0.79 |
+| `ptv3` | 46.4 M | 59.07 / 52.55 / 21.91 | 62.28 / 55.62 / 23.48 | 0.96 |
+| `litept` | 12.9 M | training | | |
+
+**No difference is shown for SpUNet.** With 2.6 times the parameters it ends 0.2 to 0.7 AP
+below the encoder GSNet ships. GSNet itself, trained three times from this config and seed,
+moved by up to 1.12 AP ([its README](../../configs/gsnet/README.md)): one run cannot tell
+the two apart.
+
+**PTv3 is 10.4 AP lower on seen scenes, and under-trained.** The gap is far outside what a
+seed explains, and the loss says where it comes from: after ten epochs PTv3 stands at 0.96,
+above where the shipped encoder was after five (0.85). It has not fitted the training
+scenes. GSNet's recipe is Adam at 1e-3 from the first step, without weight decay, and its
+rate is still 6.3e-4 when training stops: tuned for a sparse CNN. The row measures an
+encoder with a recipe made for another one, which is what the header of a composed config
+says under *what must be re-tuned*.
+
+Records: [`records/`](records/), and
+[`run3`](../../configs/gsnet/repeats/) of GSNet for `sunet14`. A unit test holds the table
+to them.
+
+## Encoder or recipe
+
+[`gsnet_recipe.yaml`](gsnet_recipe.yaml) asks what the PTv3 row leaves open. It trains
+GSNet with the shipped encoder and with PTv3 under the recipe Pointcept trains PTv3 with,
+the recipe preset `adamw-onecycle`: AdamW with weight decay 0.05, a warm-up over the first
+5 % of the steps, then a cosine down to almost zero. With the two rows above it makes a
+two by two of encoder and recipe.
+
+```bash
+grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
+    --opts evaluation.num_workers=8
+```
+
+Not measured yet.

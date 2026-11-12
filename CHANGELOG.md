@@ -27,7 +27,7 @@ none of their code is part of this history. Each line below has its full account
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
-- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file; results are not in yet.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file. First results, one run each on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, so a second sweep trains both encoders with the recipe PTv3 is trained with elsewhere.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
@@ -493,6 +493,13 @@ Classes now count levels, and every method lists the options of each of its slot
   60.71 / 25.42 AP without and 71.69 / 62.77 / 26.59 with the collision filter. The three
   trainings of one config and seed span 1.12 / 0.36 / 0.37 AP without the filter, on seen
   about as much as the admission gate allows; its records are in `repeats/` as well.
+- The encoder comparison, GSNet with another scene encoder and nothing else changed, one
+  training each: SpUNet 68.84 / 60.22 / 25.04 AP without and 70.98 / 62.22 / 26.36 with the
+  collision filter, 0.2 to 0.7 AP below the shipped encoder and inside the spread of GSNet's
+  own three trainings; PTv3 59.07 / 52.55 / 21.91 and 62.28 / 55.62 / 23.48, with a training
+  loss after ten epochs (0.96) above the shipped encoder's after five (0.85). Records are in
+  `projects/encoder_comparison/records/`; LitePT is training. `gsnet_recipe.yaml` adds the
+  recipe preset `adamw-onecycle` for the shipped encoder and for PTv3.
 - GraspNet-baseline was trained from scratch on one RTX 3090 with the recipe of its
   config: 31.76 / 26.18 / 10.19 AP without and 46.81 / 41.90 / 16.74 with the collision
   filter. With the filter, the setting its repository reports, that is
