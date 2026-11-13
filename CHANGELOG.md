@@ -27,7 +27,7 @@ none of their code is part of this history. Each line below has its full account
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
-- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file. First results, one run each on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, LitePT 14.2 AP lower with a loss that rose mid-training, so a second sweep trains both encoders with the recipe PTv3 is trained with elsewhere (the shipped encoder under it: within a seed of itself); normalising graspness per object, the first of FineGrasp's changes, shows no difference. The documentation has a page for such runs, [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/), with what the two short checks had said about each swap: all three had passed both, so the short checks filter and do not rank.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file. First results, one run each on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, LitePT 14.2 AP lower with a loss that rose mid-training, so a second sweep trains both encoders with the recipe PTv3 is trained with elsewhere (the shipped encoder under it: within a seed of itself); of FineGrasp's changes, normalising graspness per object shows no difference and the four-radius crop alone ends 1.2 to 2.8 AP lower. [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/) sets these runs beside the two short checks: all three swaps had passed both, so those filter and do not rank.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
@@ -50,6 +50,7 @@ none of their code is part of this history. Each line below has its full account
 ### Fixed
 
 - `train --resume` into another run directory no longer writes into the checkpoint's run.
+- `config.resolved.yaml` of a run loads again with the same hash; FineGrasp's could not be loaded at all.
 - A `_base_` that names a shipped config loads from any directory and from a wheel.
 - The CPU-only spconv wheel computes correctly: its sparse convolutions run on one thread.
 - `infer --input DIR` on a plain folder stops with what the reader looked for.
@@ -508,8 +509,24 @@ Classes now count levels, and every method lists the options of each of its slot
 - The ablation of FineGrasp (`projects/finegrasp_ablation`), EconomicGrasp with one of
   FineGrasp's changes at a time, one training each. Graspness normalised per object:
   70.03 / 61.03 / 26.21 AP without and 71.47 / 62.12 / 26.73 with the collision filter,
-  within 0.7 AP of EconomicGrasp trained here on every split. The cells `normals`,
-  `multi-scale` and `all` are training.
+  within 0.7 AP of EconomicGrasp trained here on every split. The four-radius crop alone:
+  68.10 / 58.63 / 24.05 and 69.84 / 59.77 / 24.71, lower by 1.24 / 2.78 / 2.16 AP without
+  the filter, with a lower training loss (2.77 against 2.98) and no dependence on its
+  training mode. The cells `normals` and `all` are training.
+- `tools/train_fit.py` measures how closely weights fit training frames: their training
+  loss with the layers as in training and as in evaluation. FineGrasp trained here has
+  the lower loss than its authors' weights on every term (2.67 against 2.92 on 160
+  frames) and the lower AP on the test split; the two sets of weights of EconomicGrasp
+  are 0.03 apart. Records in `configs/finegrasp/diagnostics/`,
+  `configs/economicgrasp/diagnostics/` and `projects/finegrasp_ablation/records/`.
+- A run's `config.resolved.yaml` wrote out the defaults of PyTorch's optimizer and
+  scheduler classes, which the config hash leaves out on purpose: loaded again, the file
+  hashed to another experiment, so the resume it is recommended for was refused, and it
+  listed arguments that another PyTorch version does not have. It now writes the
+  defaults GraspPanda decides and leaves a library class as written; `print-config
+  --defaults` prints the same. FineGrasp's file was refused by the config check for the
+  default radius of its crop branch; the check accepts the default. A test loads the
+  resolved file of every shipped config and compares the hash.
 - GraspNet-baseline was trained from scratch on one RTX 3090 with the recipe of its
   config: 31.76 / 26.18 / 10.19 AP without and 46.81 / 41.90 / 16.74 with the collision
   filter. With the filter, the setting its repository reports, that is

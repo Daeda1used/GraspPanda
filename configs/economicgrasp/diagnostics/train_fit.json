@@ -1,0 +1,54 @@
+{
+  "about": "Training loss of weights on training frames by tools/train_fit.py, no gradient: `training` with every layer as in training, `evaluation` with no dropout and batch-norm on its running statistics, as the model predicts. The lower loss fits the training frames closer; a loss that is higher in `evaluation` than in `training` says the weights lean on their training mode. Any other row switches one kind of layer alone, a state no run is in.",
+  "config": "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e",
+  "opts": [],
+  "split": "val_dev",
+  "frame_step": 16,
+  "weights": {
+    "authors": {
+      "training": {
+        "loss/objectness": 0.0838,
+        "loss/graspness": 0.0359,
+        "loss/view": 0.5513,
+        "loss/angle": 0.8878,
+        "loss/depth": 0.4824,
+        "loss/score": 0.8245,
+        "loss/width": 0.2156,
+        "loss": 3.0813
+      },
+      "evaluation": {
+        "loss/objectness": 0.0822,
+        "loss/graspness": 0.0359,
+        "loss/view": 0.5427,
+        "loss/angle": 0.8547,
+        "loss/depth": 0.4645,
+        "loss/score": 0.7902,
+        "loss/width": 0.1989,
+        "loss": 2.9691
+      }
+    },
+    "trained": {
+      "training": {
+        "loss/objectness": 0.0832,
+        "loss/graspness": 0.021,
+        "loss/view": 0.5601,
+        "loss/angle": 0.8996,
+        "loss/depth": 0.4835,
+        "loss/score": 0.8309,
+        "loss/width": 0.2156,
+        "loss": 3.0938
+      },
+      "evaluation": {
+        "loss/objectness": 0.0816,
+        "loss/graspness": 0.0214,
+        "loss/view": 0.5529,
+        "loss/angle": 0.8705,
+        "loss/depth": 0.4661,
+        "loss/score": 0.8001,
+        "loss/width": 0.2031,
+        "loss": 2.9957
+      }
+    }
+  },
+  "frames": 160
+}

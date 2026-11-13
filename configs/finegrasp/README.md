@@ -64,17 +64,19 @@ are reconstructed here (*The normals* under Notes); their agreement with the pap
 whole-split evidence for that reconstruction.
 
 **The training.** At commit `400b733` with the four-GPU command of *Train and test*: four
-processes of four frames and the gradients of two batches per step, 32 frames a step as
-in the published recipe; 10 epochs, seed 0, 5.1 hours on four RTX 3090 shared with other
+processes of four frames, the gradients of two batches per step (32 frames, as
+published); 10 epochs, seed 0, 5.1 hours on four RTX 3090 shared with other
 jobs. The checkpoint of epoch 10 (SHA-256 `e8b99d4390d9…`) was scored at the same commit.
 
 **The gap.** The authors' weights reach the paper through the same test path, so it comes
 from the training. A recorded batch gives the reference's losses and gradients, and
-EconomicGrasp, the detector underneath, trained here lands on its authors' checkpoint:
-what the two share trains as it should. That leaves what FineGrasp adds, the normal images
-and graspness labels generated here from the paper's equations, and its recipe on four
-processes in place of eight. Trained here FineGrasp is +0.43 / −1.69 / −0.44 AP from
-EconomicGrasp (filter off); with both authors' weights,
+EconomicGrasp underneath, trained here, lands on its authors' checkpoint: what the two
+share trains well. That leaves the normal images and graspness labels generated
+here, and four processes in place of eight. On 160 training frames its training loss is
+the lower one, 2.67 against the authors' 2.92, on every term (EconomicGrasp's two: 0.03
+apart; [`train_fit`](diagnostics/train_fit.json)): it fits the training scenes closer and
+detects worse on the test scenes. Trained here FineGrasp is
++0.43 / −1.69 / −0.44 AP from EconomicGrasp (filter off); with both authors' weights,
 +2.28 / +1.30 / +2.25. One run, one seed.
 
 </details>
@@ -104,11 +106,11 @@ The cloud the model is fed has a median depth of 0.42 m on GraspNet-1Billion (0.
 test frames). `CoordinateFeatures.median_depth` shifts the depth coordinate of the
 features so that the median of a frame is the given value; points, voxels and grasps stay.
 It is a setting of the test, not of the published method: the zoo lists the rows *as
-published*. One run each, seed 0; the dataset's paper has no FineGrasp row.
+published*. One run each, seed 0.
 
 The override also serves `demo`, `infer` and `GraspInferencer(..., overrides=[...])` on a
 camera of your own. EconomicGrasp, the same model with constant input features, scores
-21.69 AP here; the other methods read no coordinates either (HGGD centres its depth).
+21.69 AP here; no other method reads coordinates (HGGD centres its depth).
 
 </details>
 
@@ -295,13 +297,13 @@ experiment name. The options inherited from EconomicGrasp are listed in
   are checked through the AP of the released weights, the graspness labels cannot be
   checked against the authors' at all.
 - The published recipe uses eight processes of four frames; the config as written uses
-  one process with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
-  *Train and test* gives the launch that keeps both on the GPUs you have.
+  one with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
+  *Train and test* gives the launch that keeps both.
 - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
   repeats, and a frame with none an empty result (as for EconomicGrasp).
 - The released inference processor also drops grasps as wide as the gripper, applies
-  grasp NMS and sorts by score: deployment post-processing, not part of the benchmark
-  nor of these configs (`GraspNMS` is a post-processor).
+  grasp NMS and sorts by score: deployment post-processing, not part of these configs
+  (`GraspNMS` is a post-processor).
 
 </details>
 

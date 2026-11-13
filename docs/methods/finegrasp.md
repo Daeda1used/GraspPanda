@@ -741,13 +741,13 @@ Every option that fits FineGrasp, except `target-mask`, was composed under it; t
       are checked through the AP of the released weights, the graspness labels cannot be
       checked against the authors' at all.
     - The published recipe uses eight processes of four frames; the config as written uses
-      one process with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
-      *Train and test* gives the launch that keeps both on the GPUs you have.
+      one with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
+      *Train and test* gives the launch that keeps both.
     - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
       repeats, and a frame with none an empty result (as for EconomicGrasp).
     - The released inference processor also drops grasps as wide as the gripper, applies
-      grasp NMS and sorts by score: deployment post-processing, not part of the benchmark
-      nor of these configs (`GraspNMS` is a post-processor).
+      grasp NMS and sorts by score: deployment post-processing, not part of these configs
+      (`GraspNMS` is a post-processor).
 
     How it was checked, stage by stage: `tests/integration/test_finegrasp_parity.py` and [the README](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/README.md).
 
