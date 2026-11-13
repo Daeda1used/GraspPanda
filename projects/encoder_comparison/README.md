@@ -74,8 +74,8 @@ these sentences to them.
 [`gsnet_recipe.yaml`](gsnet_recipe.yaml) asks what the PTv3 row leaves open. It trains
 GSNet with the shipped encoder and with PTv3 under the recipe Pointcept trains PTv3 with,
 the recipe preset `adamw-onecycle`: AdamW with weight decay 0.05, a warm-up over the first
-5 % of the steps, then a cosine down to almost zero. With the two rows above it makes a
-two by two of encoder and recipe.
+5 % of the steps, then a cosine down to almost zero: *one-cycle* below. With the two rows
+above it makes a two by two of encoder and recipe.
 
 ```bash
 grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
@@ -85,9 +85,9 @@ grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
 | Encoder | Recipe | Collision filter off | On | Loss |
 |---|---|---|---|---|
 | `sunet14` | GSNet's | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 | 0.76 |
-| `sunet14` | `adamw-onecycle` | 70.41 / 61.48 / 24.83 | 72.63 / 63.54 / 26.19 | 0.74 |
+| `sunet14` | one-cycle | 70.41 / 61.48 / 24.83 | 72.63 / 63.54 / 26.19 | 0.74 |
 | `ptv3` | GSNet's | 59.07 / 52.55 / 21.91 | 62.28 / 55.62 / 23.48 | 0.96 |
-| `ptv3` | `adamw-onecycle` | 65.85 / 57.95 / 24.58 | 68.50 / 60.40 / 25.92 | 0.84 |
+| `ptv3` | one-cycle | 65.85 / 57.95 / 24.58 | 68.50 / 60.40 / 25.92 | 0.84 |
 
 **The recipe is not shown to change the shipped encoder.** It fits the training scenes
 closer (0.74 against 0.76) and ends +0.95 AP on seen and −0.59 on novel scenes without the
