@@ -55,11 +55,15 @@ warm-up, then a cosine down to almost zero (*one-cycle* below).
 
 ## What the cheaper checks had said {#cheaper-checks}
 
+<div class="gp-figures" markdown>
+
 | Swap | [Does it run?](measured_combinations.md) | [Trains like shipped?](learns_like_reference.md) | Trained in full: seen, filter off |
 |---|---|---|---|
 | `spunet` | runs | on a par | −0.62 AP, within a seed |
 | `ptv3` | runs | on a par | −10.39 AP; −4.56 under `adamw-onecycle` |
 | `litept` | runs | on a par | −14.23 AP |
+
+</div>
 
 All three passed both. In 250 iterations on eight frames PTv3 brought the graspness loss
 lower than the shipped encoder did; over ten epochs on 25,600 frames it fell behind. The
