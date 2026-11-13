@@ -106,8 +106,8 @@ grasppanda probe hggd_dinov2.yaml
 PTv3 runs under 5/5 seed-based methods; under 4/5 it trains like shipped, on a par with the
 method's own encoder (worse under FineGrasp). The DINOv2 encoder runs under HGGD and trains
 on a par with HGGD's own. A probe shows that a combination trains, not how good it becomes:
-fully trained under GSNet, PTv3 ends 4.6 to 10.4 AP lower,
-[depending on the recipe](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/).
+fully trained, PTv3 ends 3.8 to 10.4 AP lower,
+[depending on method and recipe](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/).
 A swapped model has no weights until you train it.
 
 **Next:** [run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/) from its released weights, first grasps in minutes ·

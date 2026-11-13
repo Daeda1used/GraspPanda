@@ -139,23 +139,27 @@ def test_the_evidence_page_quotes_the_cheaper_checks_from_their_records():
     """Each swap trained in full, with what the probe and the 250-iteration check had said
     about it and how far it ended from the shipped encoder on seen scenes."""
     cells = {
-        cell["option"]: cell
+        (cell["method"], cell["option"]): cell
         for cell in json.loads(
             (REPO / "docs/advanced_guides/learns_like_reference.json").read_text(encoding="utf-8")
         )["cells"]
-        if cell["method"] == "GSNet" and cell["kind"] == "encoder"
+        if cell["kind"] == "encoder"
     }
     page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
     rows = table_under(page, "## What the cheaper checks had said")
     assert [row[0].strip("`") for row in rows] == ["spunet", "ptv3", "litept"]
     for row in rows:
         name = row[0].strip("`")
-        cell = cells[f"backbone={name}"]
+        cell = cells["GSNet", f"backbone={name}"]
         assert row[1:3] == [cell["level1"], cell["outcome"]], name
         if name in ENCODER_RECORDS:
             assert row[3].startswith(f"−{below_shipped(name)[0]:.2f} AP"), name
         else:
             assert row[3] == "training", name
+    # the swap trained under another method had passed the two checks as well
+    other = cells["EconomicGrasp", "backbone=ptv3"]
+    assert (other["level1"], other["outcome"]) == ("runs", "on a par")
+    assert "All three passed both, and so did PTv3 under EconomicGrasp." in " ".join(page.split())
 
 
 # -------------------------------------------------------------------- encoder or recipe
@@ -247,7 +251,7 @@ def test_what_the_two_by_two_says_is_computed_from_its_records():
         (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8"),
         "## What the cheaper checks had said",
     )
-    assert f"−{left['seen']:.2f} under `adamw-onecycle`" in checks[1][3]
+    assert f"−{left['seen']:.2f} under one-cycle" in checks[1][3]
 
 
 def test_the_evidence_page_shows_the_two_by_two_of_the_project():
@@ -257,6 +261,119 @@ def test_the_evidence_page_shows_the_two_by_two_of_the_project():
     assert table_under(include, "|") == table_under(readme, "## Encoder or recipe")
     page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
     assert page.count('--8<-- "docs/includes/trained_recipes.md"') == 1
+
+
+# ------------------------------------------------------- the same swap under EconomicGrasp
+
+#: EconomicGrasp with the encoder it ships (the model zoo's row) and with PTv3 → the config
+#: that was trained and the stem of the two records.
+ECONOMICGRASP_RUNS = {
+    "sunet14": (
+        "economicgrasp/economicgrasp_sunet14_g1b-realsense_10e",
+        "configs/economicgrasp/records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test",
+    ),
+    "ptv3": (
+        "experimental/economicgrasp_ptv3_g1b-realsense_10e",
+        "projects/encoder_comparison/records/economicgrasp_ptv3_test",
+    ),
+}
+
+
+def economicgrasp_record(name: str, variant: str) -> dict:
+    path = REPO / f"{ECONOMICGRASP_RUNS[name][1]}_{variant}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def below_shipped_economicgrasp() -> list[float]:
+    """How far PTv3 ends below the encoder EconomicGrasp ships: seen, similar, novel without
+    the collision filter, then with it."""
+    return [
+        value - record_result.headline(economicgrasp_record("ptv3", variant))["AP"][split]
+        for variant in ("raw", "cd")
+        for split, value in record_result.headline(economicgrasp_record("sunet14", variant))[
+            "AP"
+        ].items()
+    ]
+
+
+def test_the_swap_under_economicgrasp_prints_what_its_records_hold():
+    """Both rows are a shipped config trained with seed 0 for its ten epochs and scored on
+    the whole test split: the weights of a record were trained from the config of its row,
+    and the loss is that of the last epoch."""
+    from grasppanda.config import Config, resolve_config_path
+
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    rows = {
+        row[0].strip("`"): row
+        for row in table_under(readme, "## The same swap under EconomicGrasp")
+    }
+    assert list(rows) == list(ECONOMICGRASP_RUNS)
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["economicgrasp_runs"]
+    assert set(runs) == set(rows)
+    for name, row in rows.items():
+        trained = Config.load(resolve_config_path(ECONOMICGRASP_RUNS[name][0])).digest()
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            record = economicgrasp_record(name, variant)
+            assert record["variant"] == variant and not record["partial"], name
+            assert record["scored"] == record["requested"] == 23040, name
+            assert record["seed"] == 0 and record["weights"]["epoch"] == 10, name
+            assert record["weights"]["config_hash"] == trained, name
+            numbers = record_result.headline(record)["AP"]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
+        assert len(runs[name]) == losses["epochs"]
+        assert row[3] == f"{runs[name][-1]:.2f}", name
+    # the shipped encoder's training is the ablation's run without a change: one record
+    ablation = json.loads(
+        (REPO / "projects/finegrasp_ablation/records/training_loss.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert runs["sunet14"] == ablation["runs"]["none"]
+
+
+def test_what_the_swap_under_economicgrasp_says_is_computed_from_its_records():
+    """The gap under EconomicGrasp beside the two under GSNet, and the loss that shows PTv3
+    has not fitted the training scenes there either: in the project and on the evidence
+    page."""
+    gap = below_shipped_economicgrasp()
+    under_gsnet = below_shipped("ptv3")[0]
+    one_cycle = recipe_ap("sunet14", "raw")["seen"] - recipe_ap("ptv3", "raw")["seen"]
+    assert min(gap) > 1.12, "lower on every split, outside what one seed moves"
+    assert abs(gap[0] - one_cycle) < 1.12 < under_gsnet - gap[0], "the smaller of the two gaps"
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["economicgrasp_runs"]
+    assert runs["sunet14"][4] < runs["ptv3"][-1] < runs["sunet14"][3], "after four, not five"
+    project = " ".join((PROJECT / "README.md").read_text(encoding="utf-8").split())
+    page = " ".join(
+        (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8").split()
+    )
+    fitted = (
+        f"After ten epochs its loss, {runs['ptv3'][-1]:.2f}, is where the shipped encoder was "
+        f"after four ({runs['sunet14'][3]:.2f})"
+    )
+    assert fitted in project and fitted in page
+    assert (
+        f"PTv3 ends {gap[0]:.1f} AP lower on seen scenes, {gap[2]:.1f} on novel." in project
+        and f"the one-cycle recipe ({one_cycle:.1f}), not the one under GSNet's own "
+        f"({under_gsnet:.1f})"
+        in project
+    )
+    assert (
+        f"PTv3: {gap[0]:.1f} AP lower on seen scenes." in page
+        and f"under one-cycle ({one_cycle:.1f}), not the one under its own recipe "
+        f"({under_gsnet:.1f})"
+        in page
+    )
+
+
+def test_the_evidence_page_shows_the_swap_under_economicgrasp():
+    include = (REPO / "docs/includes/trained_economicgrasp.md").read_text(encoding="utf-8")
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    assert include.strip() in readme
+    assert table_under(include, "|") == table_under(readme, "## The same swap under EconomicGrasp")
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    assert page.count('--8<-- "docs/includes/trained_economicgrasp.md"') == 1
 
 
 # ------------------------------------------------------------------ FineGrasp's changes

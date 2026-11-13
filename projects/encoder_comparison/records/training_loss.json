@@ -1,5 +1,5 @@
 {
-  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run. `runs` holds the runs of gsnet_encoders.yaml, `recipe_runs` those of gsnet_recipe.yaml by the encoder of the run.",
+  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run. `runs` holds the runs of gsnet_encoders.yaml, `recipe_runs` those of gsnet_recipe.yaml by the encoder of the run. `economicgrasp_runs` holds EconomicGrasp with the encoder it ships (the training of the model zoo's row) and with PTv3 (experimental/economicgrasp_ptv3_g1b-realsense_10e): another method with other loss terms, so these compare with each other only.",
   "epochs": 10,
   "runs": {
     "sunet14": [
@@ -75,6 +75,32 @@
       0.8704,
       0.8509,
       0.8421
+    ]
+  },
+  "economicgrasp_runs": {
+    "sunet14": [
+      4.4024,
+      3.7444,
+      3.4782,
+      3.3304,
+      3.2269,
+      3.1465,
+      3.085,
+      3.0337,
+      3.0002,
+      2.9817
+    ],
+    "ptv3": [
+      4.3694,
+      3.8897,
+      3.6634,
+      3.5657,
+      3.503,
+      3.4521,
+      3.4046,
+      3.3587,
+      3.3272,
+      3.3082
     ]
   }
 }
