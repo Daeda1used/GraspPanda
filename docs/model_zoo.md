@@ -143,10 +143,11 @@ AP0.8 and AP0.4 of every split are in the record of a row:
       and graspness labels are not published, so a training here generates both from the
       paper's equations, and it ran as four processes with accumulated gradients in place of
       the eight of the published recipe (`configs/finegrasp/README.md`).
-    - **One seed.** GSNet was trained three times with it; its line is the first training,
-      and the three lie within 1.12 AP of one another on every split. The other five
-      were trained once. Other seeds were not trained, nor was a training with unmodified
-      reference code run. Each training run is described in its method's README.
+    - **One seed.** GSNet was trained three times with it and EconomicGrasp twice; a line
+      is the first training. GSNet's three lie within 1.12 AP of one another on every
+      split, EconomicGrasp's two within 1.44. The other four were trained once. Other
+      seeds were not trained, nor was a training with unmodified reference code run. Each
+      training run is described in its method's README.
     - **The weights are not published yet.** They were trained on GraspNet-1Billion (CC
       BY-NC-SA 4.0), and whether and where they are published has not been decided. The
       metafile lists them with their sha256 and no url, so the zoo, `GraspInferencer` and
@@ -248,9 +249,10 @@ stated. Results with and without collision filtering are always separate rows.
     number of the tables above from those per-scene values.
 
     Two directories beside it hold whole-split records that no line of this page states:
-    `repeats/`, the config of a zoo row trained again (GSNet), and `variants/`, the weights
-    of a zoo row with one option changed (FineGrasp's features on GraspClutter6D). The
-    method's README states their numbers, and a test holds the two together.
+    `repeats/`, the config of a zoo row trained again (GSNet, EconomicGrasp), and
+    `variants/`, the weights of a zoo row with one option changed (FineGrasp's features on
+    GraspClutter6D). The method's README states their numbers, and a test holds the two
+    together.
 
 ### Recording a result
 
