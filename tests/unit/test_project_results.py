@@ -22,6 +22,7 @@ ENCODER_RECORDS = {
 #: Encoder of a run of ``gsnet_recipe.yaml`` → stem of its two records.
 RECIPE_RECORDS = {
     "sunet14": "projects/encoder_comparison/records/sunet14_adamw-onecycle_test",
+    "ptv3": "projects/encoder_comparison/records/ptv3_adamw-onecycle_test",
 }
 
 
@@ -221,6 +222,31 @@ def test_what_the_two_by_two_says_is_computed_from_its_records():
         f"({losses['recipe_runs']['sunet14'][-1]:.2f} against {losses['runs']['sunet14'][-1]:.2f})"
     )
     assert fitted in project
+    # PTv3: what the recipe gains it, and what is left to the shipped encoder under the
+    # same recipe, on seen and on novel scenes without the collision filter
+    gained = recipe_ap("ptv3", "raw")["seen"] - encoder_ap("ptv3", "raw")["seen"]
+    left = {
+        split: recipe_ap("sunet14", "raw")[split] - recipe_ap("ptv3", "raw")[split]
+        for split in ("seen", "novel")
+    }
+    before = below_shipped("ptv3")[0]
+    assert 0.5 < (before - left["seen"]) / before < 1, "more than half of the gap"
+    recipe_losses = losses["recipe_runs"]
+    assert recipe_losses["ptv3"][-1] > recipe_losses["sunet14"][-1]
+    for sentence in (
+        f"It gains {gained:.1f} AP on seen scenes and ends {left['seen']:.1f} AP below the "
+        "shipped encoder under the same recipe",
+        f"on novel scenes the two are {left['novel']:.2f} apart",
+        f"Its loss, {recipe_losses['ptv3'][-1]:.2f}, stays above the shipped encoder's "
+        f"{recipe_losses['sunet14'][-1]:.2f}",
+    ):
+        assert sentence in project and sentence in page, sentence
+    assert f"where it was {before:.1f} below under GSNet's" in project
+    checks = table_under(
+        (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8"),
+        "## What the cheaper checks had said",
+    )
+    assert f"−{left['seen']:.2f} under `adamw-onecycle`" in checks[1][3]
 
 
 def test_the_evidence_page_shows_the_two_by_two_of_the_project():

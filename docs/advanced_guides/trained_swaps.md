@@ -49,14 +49,16 @@ down to almost zero.
 
 - **Shipped encoder: the recipe is not shown to matter.** +0.95 AP on seen and −0.59 on
   novel scenes without the collision filter, inside what one seed moves.
-- **PTv3:** training.
+- **PTv3: the recipe was more than half of the gap.** It gains 6.8 AP on seen scenes and
+  ends 4.6 AP below the shipped encoder under the same recipe; on novel scenes the two are
+  0.25 apart. Its loss, 0.84, stays above the shipped encoder's 0.74.
 
 ## What the cheaper checks had said {#cheaper-checks}
 
 | Swap | [Does it run?](measured_combinations.md) | [Trains like shipped?](learns_like_reference.md) | Trained in full: seen, filter off |
 |---|---|---|---|
 | `spunet` | runs | on a par | −0.62 AP, within a seed |
-| `ptv3` | runs | on a par | −10.39 AP |
+| `ptv3` | runs | on a par | −10.39 AP; −4.56 under `adamw-onecycle` |
 | `litept` | runs | on a par | −14.23 AP |
 
 All three passed both. In 250 iterations on eight frames PTv3 brought the graspness loss

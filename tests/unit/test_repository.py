@@ -277,6 +277,12 @@ def claims(chips) -> dict[str, dict[str, bool]]:
 
     build = max(int(name.rsplit("cu", 1)[1]) for name in EXTRA_BUILDS["spconv"] if "-cu" in name)
     cuda = f"CUDA {build // 10}.{build % 10}"
+    # PTv3 trained in full under GSNet: how far it ends below the shipped encoder on seen
+    # scenes, under the recipe it is known for and under GSNet's (the encoder comparison)
+    from .test_project_results import below_shipped, recipe_ap
+
+    own = recipe_ap("sunet14", "raw")["seen"] - recipe_ap("ptv3", "raw")["seen"]
+    lower = f"{own:.1f} to {below_shipped('ptv3')[0]:.1f} AP"
     shared = {
         # PTv3 reaches every seed-based method at runs; trains like shipped except where worse
         "ptv3 runs everywhere": ptv3.fraction == f"{seed}/{seed}" and ptv3.tone == "ok",
@@ -300,6 +306,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             "(worse under FineGrasp)": shared["ptv3 worse"],
             "The DINOv2 encoder runs under HGGD": shared["dino runs"],
             "trains on a par with HGGD's own": shared["dino level 2"],
+            f"PTv3 ends {lower} lower": own < below_shipped("ptv3")[0],
             f"All {every} methods": chips.SCOPE_TEXT["all"] == f"All {every} methods",
             f"Seed-based · {seed} methods": chips.SCOPE_TEXT["seed-based"]
             == f"Seed-based · {seed} methods",
@@ -325,6 +332,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             "（FineGrasp 下较差）": shared["ptv3 worse"],
             "DINOv2 编码器在 HGGD 下能跑": shared["dino runs"],
             "训练得和 HGGD 的原装组件不相上下": shared["dino level 2"],
+            f"PTv3 低 {lower.replace(' to ', ' 到 ')}": own < below_shipped("ptv3")[0],
             f"全部 {every} 个方法": True,
             f"基于种子点 · {seed} 个方法": True,
             f"相差不超过 {ap}": True,
