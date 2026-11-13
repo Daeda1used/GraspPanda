@@ -102,3 +102,36 @@ encoder's 0.74: these ten epochs do not fit it either. What is left of the gap i
 encoder, or a schedule still too short for it; that is not measured.
 
 Records: [`records/`](records/), the runs of this file by `<encoder>_adamw-onecycle`.
+
+## The same swap under EconomicGrasp
+
+Is the gap GSNet's?
+[`economicgrasp_ptv3_g1b-realsense_10e`](../../configs/experimental/economicgrasp_ptv3_g1b-realsense_10e.yaml)
+is EconomicGrasp with PTv3 for its encoder and nothing else changed, trained with
+EconomicGrasp's recipe: Adam at 1e-3 without warm-up or weight decay, as GSNet's, but on a
+cosine that ends at zero. The first row is the model zoo's
+[EconomicGrasp](../../configs/economicgrasp/README.md#results-on-graspnet-1billion): the
+same config and seed with the encoder it ships.
+
+```bash
+grasppanda train experimental/economicgrasp_ptv3_g1b-realsense_10e
+grasppanda test experimental/economicgrasp_ptv3_g1b-realsense_10e \
+    --weights <the checkpoint of epoch 10> --opts evaluation.num_workers=8
+```
+
+| Encoder | Collision filter off | On | Loss |
+|---|---|---|---|
+| `sunet14` | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 | 2.98 |
+| `ptv3` | 65.52 / 57.11 / 23.91 | 67.14 / 58.43 / 24.49 | 3.31 |
+
+**PTv3 ends 3.8 AP lower on seen scenes, 2.3 on novel.** That is the gap GSNet keeps under
+the one-cycle recipe (4.6), not the one under GSNet's own (10.4). Both recipes with the
+smaller gap anneal the rate to almost zero, and GSNet's stops at 6.3e-4; the two methods
+differ in more than that, and one run each does not say that this is why.
+
+**It is under-trained here too.** After ten epochs its loss, 3.31, is where the shipped
+encoder was after four (3.33). The loss terms are EconomicGrasp's, so the column compares
+within this table only.
+
+Records: [`records/`](records/) as `economicgrasp_ptv3`, and EconomicGrasp's
+[reproduced records](../../configs/economicgrasp/records/) for the first row.

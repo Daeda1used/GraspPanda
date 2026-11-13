@@ -53,6 +53,24 @@ warm-up, then a cosine down to almost zero (*one-cycle* below).
   ends 4.6 AP below the shipped encoder under the same recipe; on novel scenes the two are
   0.25 apart. Its loss, 0.84, stays above the shipped encoder's 0.74.
 
+## The same swap under EconomicGrasp {#economicgrasp}
+
+EconomicGrasp with PTv3 and nothing else changed, under EconomicGrasp's recipe: Adam at 1e-3
+as GSNet's, on a cosine that ends at zero. The first row is the
+[model zoo's](../model_zoo.md).
+
+<div class="gp-figures" markdown>
+
+--8<-- "docs/includes/trained_economicgrasp.md"
+
+</div>
+
+- **PTv3: 3.8 AP lower on seen scenes.** The gap GSNet keeps under one-cycle (4.6), not the
+  one under its own recipe (10.4). Both recipes with the smaller gap anneal the rate to
+  almost zero; one run each does not say that this is why.
+- **Under-trained here too.** After ten epochs its loss, 3.31, is where the shipped encoder
+  was after four (3.33).
+
 ## What the cheaper checks had said {#cheaper-checks}
 
 <div class="gp-figures" markdown>
@@ -60,15 +78,15 @@ warm-up, then a cosine down to almost zero (*one-cycle* below).
 | Swap | [Does it run?](measured_combinations.md) | [Trains like shipped?](learns_like_reference.md) | Trained in full: seen, filter off |
 |---|---|---|---|
 | `spunet` | runs | on a par | −0.62 AP, within a seed |
-| `ptv3` | runs | on a par | −10.39 AP; −4.56 under `adamw-onecycle` |
+| `ptv3` | runs | on a par | −10.39 AP; −4.56 under one-cycle |
 | `litept` | runs | on a par | −14.23 AP |
 
 </div>
 
-All three passed both. In 250 iterations on eight frames PTv3 brought the graspness loss
-lower than the shipped encoder did; over ten epochs on 25,600 frames it fell behind. The
-short checks sort out the combinations that fail or diverge. They do not rank the ones that
-pass.
+All three passed both, and so did PTv3 under EconomicGrasp. In 250 iterations on eight
+frames PTv3 under GSNet brought the graspness loss lower than the shipped encoder did; over
+ten epochs on 25,600 frames it fell behind. The short checks sort out the combinations that
+fail or diverge. They do not rank the ones that pass.
 
 ## Run it {#run}
 
