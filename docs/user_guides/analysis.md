@@ -197,7 +197,8 @@ The record behind every measured number of the [model zoo](../model_zoo.md) is c
 and reads the same way by its file. Nothing has to be downloaded or scored:
 
 ```bash
-grasppanda analyze configs/gsnet/records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_cd.json
+grasppanda analyze \
+    configs/gsnet/records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_cd.json
 ```
 
 *By split* then has a row for seen, similar and novel. Its `mean` is the AP the zoo prints;

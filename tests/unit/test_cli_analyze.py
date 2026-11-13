@@ -382,7 +382,7 @@ def test_the_guide_reads_a_committed_record_as_it_says():
     """Section 6 of the guide: its command names a committed record, its table is that record's."""
     page = (REPO / "docs/user_guides/analysis.md").read_text(encoding="utf-8")
     section = page.split("## 6. Read a record of this repository")[1].split("## Next")[0]
-    command = re.search(r"grasppanda analyze (configs/\S+\.json)\n", section)
+    command = re.search(r"grasppanda analyze \\\n\s+(configs/\S+\.json)\n", section)
     assert command, "the guide no longer names a committed record"
     (loaded,), _ = load_records(str(REPO / command.group(1)))
     by_split = report(loaded).split("\nBy split\n")[1].split("\n\n")[0]
