@@ -7,7 +7,9 @@ nothing else changes? This project trains GSNet with the encoder it ships and wi
 others, with GSNet's recipe, data and evaluator, and scores each on the whole
 GraspNet-1Billion test split. It is the first use of the swappable stages beyond a
 [probe](https://daeda1used.github.io/GraspPanda/evidence/): a probe says that a combination
-trains, this says how good it becomes.
+trains, this says how good it becomes. Two questions the first table leaves open follow:
+[is it the encoder or the recipe](#encoder-or-recipe), and
+[is it GSNet](#the-same-swap-under-economicgrasp).
 
 ```bash
 grasppanda prepare graspnet1b --labels
