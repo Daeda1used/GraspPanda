@@ -524,3 +524,29 @@ def test_what_the_ablation_says_is_computed_from_its_records():
         f"under EconomicGrasp's the model ends {min(below['all']):.1f} to "
         f"{max(below['all']):.1f} AP below the checkpoint" in finegrasp
     )
+
+
+def test_the_evidence_page_shows_the_ablation_of_the_project():
+    """Its table is the project's (an include), and its three findings are the project's
+    sentences in short: the same numbers, computed from the records there."""
+    include = (REPO / "docs/includes/trained_changes.md").read_text(encoding="utf-8")
+    readme = (ABLATION / "README.md").read_text(encoding="utf-8")
+    assert include.strip() in readme
+    assert table_under(include, "|") == table_under(readme, "## Results")
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    assert page.count('--8<-- "docs/includes/trained_changes.md"') == 1
+    flat = " ".join(page.split())
+    normals, scales = from_no_change("normals"), from_no_change("multi-scale")
+    everything = from_no_change("all")
+    below = {
+        "all": below_the_authors(ABLATION_RECORDS["all"]),
+        "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
+    }
+    for sentence in (
+        f"{signed(normals[0])} AP on seen scenes for `normals`",
+        f"`multi-scale` alone ends {-max(scales[:3]):.2f} to {-min(scales[:3]):.2f} AP lower",
+        f"{signed(everything[0])} AP on seen and {signed(everything[2])} on novel scenes",
+        f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
+        f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
+    ):
+        assert sentence in flat, sentence
