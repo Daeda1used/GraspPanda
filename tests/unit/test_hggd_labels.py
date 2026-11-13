@@ -1364,6 +1364,28 @@ def test_prepare_generates_resumes_and_reports(tree, config, capsys):  # noqa: F
     assert "metres" in manifest["about"]["depth"] and manifest["uses_ground_truth"] is False
 
 
+def test_prepare_builds_the_labels_of_a_run_with_the_same_overrides(tree, config, capsys):  # noqa: F811
+    """``--opts`` are the overrides of the run the asset is for: other labels, another asset,
+    and the command a check prints for it repeats them."""
+    write_models(tree["root"])
+    base = ["prepare", "tinygraspnet", "--config", config]
+    denser = ["--opts", "data.train.dataset.view_grasps.nms_distance=0.001"]
+    assert main([*base, "--labels"]) == 0
+    assert main([*base, "--view-grasps", "--workers", "1"]) == 0
+    shipped = capsys.readouterr().out.split("view-grasp asset: ")[1].split()[0]
+
+    assert main([*base, "--check", *denser]) == 1  # the labels of that run are not built yet
+    out = capsys.readouterr().out
+    assert "view grasps 0/2 scenes" in out
+    command = f"--view-grasps --camera realsense --config {config} {' '.join(denser)}"
+    assert command in out
+    assert main([*base, "--view-grasps", "--workers", "1", *denser]) == 0
+    other = capsys.readouterr().out.split("view-grasp asset: ")[1].split()[0]
+    assert other != shipped and Path(other).parent == Path(shipped).parent
+    assert main([*base, "--check", *denser]) == 0 and main([*base, "--check"]) == 0
+    assert capsys.readouterr().out.count("view grasps 2/2 scenes") == 2
+
+
 def test_prepare_needs_a_view_grasps_section_and_the_models(tree, config, tmp_path, capsys):  # noqa: F811
     base = ["prepare", "tinygraspnet", "--config", config]
     assert main([*base, "--labels"]) == 0
