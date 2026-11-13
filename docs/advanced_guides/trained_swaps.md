@@ -37,9 +37,9 @@ the total training loss over the last epoch. `sunet14` is the encoder GSNet ship
 
 ### Encoder or recipe {#recipe}
 
-Both encoders again under the recipe PTv3 is trained with elsewhere, the preset
-[`adamw-onecycle`](../slots/recipe.md): AdamW with weight decay, a warm-up, then a cosine
-down to almost zero (*one-cycle* below).
+The shipped encoder, PTv3 and LitePT again, under the recipe PTv3 is trained with
+elsewhere: the preset [`adamw-onecycle`](../slots/recipe.md), AdamW with weight decay, a
+warm-up, then a cosine down to almost zero (*one-cycle* below).
 
 <div class="gp-figures" markdown>
 

@@ -1,10 +1,10 @@
-# Is it the encoder, or the recipe it is trained with? GSNet with the encoder it ships and
-# with Point Transformer V3, both under the recipe Pointcept trains PTv3 with: AdamW with
-# weight decay, a one-cycle schedule that warms up and ends near zero. The runs under
-# GSNet's own recipe are the cells `sunet14` and `ptv3` of gsnet_encoders.yaml.
+# Is it the encoder, or the recipe it is trained with? GSNet with the encoder it ships, with
+# Point Transformer V3 and with LitePT, each under the recipe Pointcept trains PTv3 with:
+# AdamW with weight decay, a one-cycle schedule that warms up and ends near zero. The runs
+# under GSNet's own recipe are the cells of the same names of gsnet_encoders.yaml.
 #
 #   grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --dry-run
-#   grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
+#   grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1,2 \
 #       --opts evaluation.num_workers=8
 #
 # The three overrides are the recipe preset `adamw-onecycle`, what
@@ -13,6 +13,7 @@
 base:
   sunet14: gsnet/gsnet_sunet14_g1b-realsense_10e
   ptv3: experimental/gsnet_ptv3_g1b-realsense_10e
+  litept: experimental/gsnet_litept_g1b-realsense_10e
 seeds: [0]
 axes:
   recipe:
