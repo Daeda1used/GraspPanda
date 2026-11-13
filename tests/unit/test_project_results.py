@@ -17,6 +17,7 @@ ENCODER_RECORDS = {
     "sunet14": "configs/gsnet/repeats/gsnet_sunet14_g1b-realsense_10e_run3_test",
     "spunet": "projects/encoder_comparison/records/spunet_test",
     "ptv3": "projects/encoder_comparison/records/ptv3_test",
+    "litept": "projects/encoder_comparison/records/litept_test",
 }
 #: Encoder of a run of ``gsnet_recipe.yaml`` → stem of its two records.
 RECIPE_RECORDS = {
@@ -80,12 +81,13 @@ def test_the_loss_column_of_the_encoder_comparison_is_the_recorded_last_epoch():
 
 
 def test_what_the_encoder_comparison_says_is_computed_from_its_records():
-    """The sentences of the project and of the evidence page: how far SpUNet and PTv3 end
-    from the shipped encoder, the parameters, and the two losses that show PTv3 has not
-    fitted the training scenes."""
+    """The sentences of the project and of the evidence page: how far SpUNet, PTv3 and
+    LitePT end from the shipped encoder, the parameters, the two losses that show PTv3 has
+    not fitted the training scenes and the three that show LitePT's loss rising."""
     losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
     runs = losses["runs"]
     spunet, ptv3 = below_shipped("spunet"), below_shipped("ptv3")
+    litept = below_shipped("litept")
     rows = {
         row[0].strip("`"): row
         for row in table_under((PROJECT / "README.md").read_text(encoding="utf-8"), "## Results")
@@ -95,9 +97,16 @@ def test_what_the_encoder_comparison_says_is_computed_from_its_records():
         f"{parameters['spunet'] / parameters['sunet14']:.1f} times the parameters",
         f"{min(spunet):.1f} to {max(spunet):.1f} AP",
         f"{ptv3[0]:.1f} AP lower on seen scenes",
+        f"{litept[0]:.1f} AP lower on seen scenes",
+        # LitePT's loss: after the second epoch, at its highest after that, at the end
+        f"rose from {runs['litept'][1]:.2f} after the second epoch "
+        f"to {max(runs['litept'][1:]):.2f} after the fourth",
+        f"ends at {runs['litept'][-1]:.2f}",
     ]
-    assert max(spunet) < 1.12 < min(ptv3), "what one seed moves separates the two findings"
+    assert max(spunet) < 1.12 < min(ptv3 + litept), "what one seed moves separates the findings"
     assert runs["ptv3"][-1] > runs["sunet14"][4], "PTv3 after ten epochs, the shipped after five"
+    assert runs["litept"].index(max(runs["litept"][1:])) == 3, "the fourth epoch"
+    assert runs["litept"][-1] > runs["sunet14"][1], "LitePT after ten epochs, the shipped after two"
     pages = {
         "the project": (PROJECT / "README.md").read_text(encoding="utf-8"),
         "the evidence page": (REPO / "docs/advanced_guides/trained_swaps.md").read_text(
@@ -110,7 +119,9 @@ def test_what_the_encoder_comparison_says_is_computed_from_its_records():
             assert sentence in flat, f"{where} does not say: {sentence}"
     # the page of the 250-iteration check points at the swap it called on a par
     short = (REPO / "docs/advanced_guides/learns_like_reference.md").read_text(encoding="utf-8")
-    assert f"on a par here and {ptv3[0]:.0f} AP lower there" in short
+    assert f"on a par here and {ptv3[0]:.0f} and {litept[0]:.0f} AP lower there" in short
+    project = " ".join(pages["the project"].split())
+    assert f"above the shipped encoder's after two epochs ({runs['sunet14'][1]:.2f})" in project
 
 
 def test_the_evidence_page_shows_the_results_of_the_project():

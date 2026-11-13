@@ -32,6 +32,8 @@ the total training loss over the last epoch. `sunet14` is the encoder GSNet ship
   loss, 0.96, is above the shipped encoder's after five, 0.85. GSNet's recipe is Adam at 1e-3
   from the first step, without weight decay, tuned for a sparse CNN: the row measures an
   encoder under a recipe made for another one.
+- **LitePT: 14.2 AP lower on seen scenes, and unsteady.** Its training loss rose from 1.34
+  after the second epoch to 1.66 after the fourth, and ends at 1.18.
 
 ### Encoder or recipe {#recipe}
 
@@ -55,7 +57,7 @@ down to almost zero.
 |---|---|---|---|
 | `spunet` | runs | on a par | −0.62 AP, within a seed |
 | `ptv3` | runs | on a par | −10.39 AP |
-| `litept` | runs | on a par | training |
+| `litept` | runs | on a par | −14.23 AP |
 
 All three passed both. In 250 iterations on eight frames PTv3 brought the graspness loss
 lower than the shipped encoder did; over ten epochs on 25,600 frames it fell behind. The

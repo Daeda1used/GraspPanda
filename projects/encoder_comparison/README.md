@@ -41,7 +41,7 @@ the same in every run, so it compares.
 | `sunet14` | 15.4 M | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 | 0.76 |
 | `spunet` | 39.9 M | 68.84 / 60.22 / 25.04 | 70.98 / 62.22 / 26.36 | 0.79 |
 | `ptv3` | 46.4 M | 59.07 / 52.55 / 21.91 | 62.28 / 55.62 / 23.48 | 0.96 |
-| `litept` | 12.9 M | training | | |
+| `litept` | 12.9 M | 55.23 / 50.03 / 21.60 | 59.18 / 53.50 / 23.04 | 1.18 |
 
 **No difference is shown for SpUNet.** With 2.6 times the parameters it ends 0.2 to 0.7 AP
 below the encoder GSNet ships. GSNet itself, trained three times from this config and seed,
@@ -55,6 +55,11 @@ scenes. GSNet's recipe is Adam at 1e-3 from the first step, without weight decay
 rate is still 6.3e-4 when training stops: tuned for a sparse CNN. The row measures an
 encoder with a recipe made for another one, which is what the header of a composed config
 says under *what must be re-tuned*.
+
+**LitePT is 14.2 AP lower on seen scenes, and did not train steadily.** Its loss rose from
+1.34 after the second epoch to 1.66 after the fourth before it fell again, and ends at 1.18,
+above the shipped encoder's after two epochs (1.05). It is the same recipe: 1e-3 from the
+first step, no warm-up. Under another recipe LitePT has not been trained here.
 
 The 250-iteration check of the documentation had called all three swaps on a par with
 the shipped encoder: it sorts out what fails or diverges and does not rank what passes
