@@ -505,6 +505,7 @@ PROJECT_SWEEPS = {
         "litept_adamw-onecycle",
     ],
     "finegrasp_ablation/changes.yaml": ["graspness", "normals", "multi-scale", "all"],
+    "hggd_labels/labels.yaml": ["1cm-30deg", "unsuppressed"],
 }
 
 

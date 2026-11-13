@@ -28,7 +28,8 @@ data:
       # full list). NOTE: its suppression, `nms_distance: 0.02` and `nms_angle: 60.0`, leaves
       # about seven positive angle classes a frame, and a training on these labels ends 8 to
       # 10 AP below the authors' checkpoint, which fits denser labels (configs/hggd/README.md,
-      # "Results"). Denser labels: set the two keys here, e.g. 0.01 and 30.0, and prepare again.
+      # "Results"). On RealSense a training on 0.01 and 30.0 lands on that checkpoint:
+      # projects/hggd_labels has the two overrides and the command that prepares their labels.
       view_grasps:
         friction_threshold: 0.2
       preprocess:
