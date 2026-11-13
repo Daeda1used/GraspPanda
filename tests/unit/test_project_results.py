@@ -634,6 +634,154 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
         assert sentence in flat, sentence
 
 
+# ------------------------------------------------------------------ HGGD's labels
+
+LABELS = REPO / "projects/hggd_labels"
+HGGD = "configs/hggd/records/hggd_r34w8_g1b-realsense_15e"
+#: Row of the project's results → stem of its two records. The first row is HGGD trained
+#: here for the model zoo, on the labels the released converter writes; the last is the
+#: authors' checkpoint. A run of ``labels.yaml`` that is not listed has not been scored.
+LABEL_RECORDS = {
+    "converter": f"{HGGD}_reproduced_test",
+    "1cm-30deg": "projects/hggd_labels/records/1cm-30deg_test",
+    "checkpoint": f"{HGGD}_author-ckpt_test",
+}
+#: Suppression of a row's labels, as ``configs/hggd/diagnostics/label_fit.json`` keys it.
+LABEL_SUPPRESSION = {
+    "converter": (0.02, 60.0),
+    "1cm-30deg": (0.01, 30.0),
+    "unsuppressed": (1e-6, 1e-3),
+}
+
+
+def label_record(name: str, variant: str) -> dict:
+    path = REPO / f"{LABEL_RECORDS[name]}_{variant}.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def label_gap(name: str, other: str) -> list[float]:
+    """AP of one row minus another: seen, similar, novel without the collision filter, then
+    with it."""
+    return [
+        value - record_result.headline(label_record(other, variant))["AP"][split]
+        for variant in ("raw", "cd")
+        for split, value in record_result.headline(label_record(name, variant))["AP"].items()
+    ]
+
+
+def slashed(values: list[float]) -> str:
+    return " / ".join(signed(value) for value in values)
+
+
+def test_the_label_project_prints_what_its_records_hold():
+    """Every row of its results is the whole test split with seed 0. A run of the sweep is
+    scored with weights trained from exactly the config the sweep plans for it; a run
+    without records shows no AP. The labels a frame are those the label-fit record counts
+    for the suppression a run overrides."""
+    cells = {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
+    readme = (LABELS / "README.md").read_text(encoding="utf-8")
+    names = ["converter", *cells, "checkpoint"]
+    rows = table_under(readme, "## Results")
+    assert len(rows) == len(names)
+    for name, row in zip(names, rows):
+        assert (row[0] == f"`{name}`") is (name in cells), row[0]
+        if name not in LABEL_RECORDS:
+            assert not any(character.isdigit() for cell in row[1:] for character in cell), name
+            continue
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            record = label_record(name, variant)
+            assert record["variant"] == variant and not record["partial"], name
+            assert record["scored"] == record["requested"] == 23040, name
+            assert record["seed"] == 0 and record["gt_assisted"] == [], name
+            if name in cells:
+                assert record["weights"]["config_hash"] == cells[name].config.digest(), name
+                assert record["weights"]["epoch"] == 15, name
+            numbers = record_result.headline(record)["AP"]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
+
+    fit = json.loads((REPO / "configs/hggd/diagnostics/label_fit.json").read_text(encoding="utf-8"))
+    counted = {(row["nms_distance"], row["nms_angle"]): row["labels"] for row in fit["rows"]}
+    described = table_under(readme, "| Name |")
+    assert [row[0].partition(":")[0].strip("`") for row in described] == ["none", *cells]
+    for name, row in zip(("converter", *cells), described):
+        distance, angle = LABEL_SUPPRESSION[name]
+        assert row[2] == f"{counted[distance, angle]:.0f}", name
+        if name in cells:
+            node = cells[name].config.select("data.train.dataset.view_grasps")
+            assert (node["nms_distance"], node["nms_angle"]) == (distance, angle), name
+    for override in cells["1cm-30deg"].overrides[:2]:  # the README prepares this run's labels
+        assert override in readme, override
+
+
+def test_what_the_label_project_says_is_computed_from_its_records():
+    from grasppanda.hub import load_metafiles
+
+    from .test_repository import gate, spread, trainings
+
+    readme = " ".join((LABELS / "README.md").read_text(encoding="utf-8").split())
+    dense, sparse = label_gap("1cm-30deg", "checkpoint"), label_gap("converter", "checkpoint")
+    assert max(map(abs, dense)) < 1.5 and min(map(abs, sparse)) > 2, "on it, and far below it"
+    gained = label_gap("1cm-30deg", "converter")
+    # the two reported rows of HGGD: neither states the collision filter
+    reported = {
+        result.source: list(result.ap.values())
+        for meta in load_metafiles()
+        for model in meta.models
+        if model.name == "hggd_r34w8_g1b-realsense_15e"
+        for result in model.results
+        if result.provenance == "reported"
+    }
+    (repository,) = (ap for source, ap in reported.items() if "In repo" in source)
+    (paper,) = (ap for source, ap in reported.items() if source.startswith("paper"))
+    scored = {
+        variant: list(record_result.headline(label_record("1cm-30deg", variant))["AP"].values())
+        for variant in ("raw", "cd")
+    }
+    from_repository = [mine - theirs for mine, theirs in zip(scored["cd"], repository)]
+    from_paper = [mine - theirs for mine, theirs in zip(scored["raw"], paper)]
+    assert max(map(abs, from_repository)) <= gate() == 1.0, "inside the gate on every split"
+    validation = json.loads((LABELS / "records/validation.json").read_text(encoding="utf-8"))
+    runs = validation["runs"]
+    assert all(len(values) == validation["epochs"] == 15 for values in runs.values())
+    moved = [
+        spread(trainings(method, model))
+        for method, model in (
+            ("gsnet", "gsnet_sunet14_g1b-realsense_10e"),
+            ("economicgrasp", "economicgrasp_sunet14_g1b-realsense_10e"),
+        )
+    ]
+    for sentence in (
+        f"{slashed(dense[:3])} AP from it without the collision filter and {slashed(dense[3:])} "
+        "with it",
+        f"leave it {slashed(sparse[:3])} and {slashed(sparse[3:])}",
+        f"{signed(gained[0])} AP on seen scenes without the filter comes from the labels alone",
+        "lists " + " / ".join(f"{value:.2f}" for value in repository),
+        f"{slashed(from_repository)} AP from that",
+        "numbers, " + " / ".join(f"{value:.2f}" for value in paper),
+        f"{slashed(from_paper)} from them",
+        f"{runs['1cm-30deg'][3]:.2f} AP after four epochs and {runs['1cm-30deg'][-1]:.2f} after",
+        f"it is at {runs['converter'][3]:.2f} and {runs['converter'][-1]:.2f}",
+        f"moved by {moved[0]:.1f} and {moved[1]:.1f} AP",
+    ):
+        assert sentence in readme, sentence
+    # HGGD's README and the model zoo state the same result from the same records
+    hggd = " ".join((REPO / "configs/hggd/README.md").read_text(encoding="utf-8").split())
+    zoo = " ".join((REPO / "docs/model_zoo.md").read_text(encoding="utf-8").split())
+    for sentence in (
+        f"{slashed(dense[:3])} AP without the filter, {slashed(dense[3:])} with it",
+        " / ".join(f"{value:.2f}" for value in scored["raw"]) + " AP without the collision filter",
+        " / ".join(f"{value:.2f}" for value in scored["cd"]) + " with it",
+        f"{signed(gained[0])} and {signed(gained[3])} AP on seen scenes over the row above",
+        f"within {max(map(abs, dense[:3])):.2f} AP of the checkpoint without the filter",
+        f"within {max(map(abs, from_repository)):.2f} AP of the repository's numbers",
+    ):
+        assert sentence in hggd, sentence
+    assert (
+        f"HGGD ends {slashed(dense[:3])} AP from the checkpoint without the filter and "
+        f"{slashed(dense[3:])} with it" in zoo
+    )
+
+
 def test_the_pages_state_what_trainings_from_one_seed_differ_by():
     """The yardstick of every one-run comparison: a config trained again with its seed."""
     from .test_repository import spread, trainings

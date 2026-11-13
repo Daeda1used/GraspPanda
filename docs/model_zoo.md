@@ -17,8 +17,10 @@ percent; *Filter* says whether each method's own collision filter was off or on.
   Scale-Balanced-Grasp and EconomicGrasp land on their authors' checkpoints, and with them
   outside the gate; GSNet is above its paper by more than 1 AP on every split, FineGrasp
   below it. HGGD is 8 to 10 AP below its authors' checkpoint on seen: the labels its
-  released converter writes are not the ones that checkpoint fits. Their weights are not
-  published yet, so the zoo cannot download them.
+  released converter writes are not the ones that checkpoint fits, and on
+  [denser labels](https://github.com/Daeda1used/GraspPanda/tree/main/projects/hggd_labels)
+  it lands on the checkpoint. Their weights are not published yet, so the zoo cannot
+  download them.
 
 ## GraspNet-1Billion
 
@@ -124,8 +126,10 @@ AP0.8 and AP0.4 of every split are in the record of a row:
     - **HGGD is far below its authors' checkpoint**: −10.35 / −6.53 / −3.20 AP from it
       without the filter, −8.42 / −4.31 / −2.46 with it. The training step is the
       reference's, and the labels are those the released converter writes; the checkpoint
-      does not fit those labels and fits denser ones. A training on denser labels is
-      running (`configs/hggd/README.md` has the measurement).
+      does not fit those labels and fits denser ones. Trained on labels suppressed at
+      1 cm and 30° instead of 2 cm and 60°, HGGD ends −0.53 / +0.58 / +0.63 AP from the
+      checkpoint without the filter and −0.11 / +1.40 / +0.79 with it
+      (`projects/hggd_labels`; its line here stays the training on the converter's labels).
     - **EconomicGrasp lands on its authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it
       without the filter, +0.22 / −0.02 / +1.01 with it. That checkpoint is itself 1.07 AP
       above the reported number on seen, so what separates the training here from the

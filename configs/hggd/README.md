@@ -30,7 +30,7 @@ The options of every slot, with what was measured for each:
 ## Results on GraspNet-1Billion
 
 AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames per
-camera, all scored), protocol `graspnet1b-sv-v1`. Nothing in HGGD's input is derived from
+camera), protocol `graspnet1b-sv-v1`. Nothing in HGGD's input is derived from
 ground truth (`gt_assisted` is empty in every record).
 
 | Config | Camera | Provenance | Collision filter | Seen | Similar | Novel |
@@ -47,7 +47,7 @@ ground truth (`gt_assisted` is empty in every record).
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.30 | 46.85 | 19.22 |
 
 `author-ckpt` is the authors' checkpoint of each camera, converted and run through
-`grasppanda test`, one run each with seed 0. `off` is every decoded grasp (variant `raw`);
+`grasppanda test` with seed 0. `off` is every decoded grasp (variant `raw`);
 `on, then NMS` is what the released test script dumps (variant `cd`). Neither source
 states the collision filter; the closest pair is `cd` with "In repo", within 0.87 AP on
 every split and below it on all six.
@@ -55,7 +55,9 @@ every split and below it on all six.
 `reproduced`, trained from scratch with the config's recipe, is **8 to 10 AP below
 the authors' checkpoint on seen**: −10.35 / −6.53 / −3.20 AP without the filter,
 −8.42 / −4.31 / −2.46 with it. The cause is the labels: the released converter writes
-sparser ones than the checkpoint fits. A training on denser labels is running.
+sparser ones than the checkpoint fits. **On labels three times as dense it lands on the
+checkpoint**: −0.53 / +0.58 / +0.63 AP without the filter, −0.11 / +1.40 / +0.79 with it
+([`projects/hggd_labels`](../../projects/hggd_labels/)).
 
 <details markdown="1"><summary>Why the model trained here is below the checkpoint: the labels</summary>
 
@@ -88,6 +90,15 @@ Training loss on 160 frames of ten training scenes, the weights frozen:
 tried. So the checkpoint was trained on denser labels than the released converter writes.
 Which ones is not published; the reference loader's cap on the labels of an image,
 `--grasp-count`, defaults to 5000, where the released converter leaves about 130.
+
+**What confirmed it.** HGGD trained again with nothing changed but the suppression of its
+labels, 1 cm and 30°: 57.83 / 48.53 / 22.71 AP without the collision filter and
+63.61 / 54.31 / 24.95 with it, +9.82 and +8.31 AP on seen scenes over the row above. That
+is within 0.63 AP of the checkpoint without the filter, and with it within 0.84 AP of the
+repository's numbers on every split: inside the zoo's gate. One run, one seed;
+[`projects/hggd_labels`](../../projects/hggd_labels/) holds the sweep file, the commands
+and the records. The config ships the converter's labels, as released, and the rows above
+are trained on them; the two overrides of that project switch to the denser ones.
 
 </details>
 
@@ -147,7 +158,7 @@ of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 | off | 12.95 | 16.00 | 8.16 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_raw.json)) |
 | on, then NMS | 14.49 | 17.88 | 8.95 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_cd.json)) |
 
-No number is published for HGGD on this dataset. The model trained here is 1.29 AP below
+HGGD has no published number on this dataset. The model trained here is 1.29 AP below
 the checkpoint without the filter and 0.07 with it.
 
 <details markdown="1"><summary>The input on this dataset</summary>
@@ -164,8 +175,7 @@ What changes with the dataset is described in `docs/user_guides/cross_dataset.md
 GraspPanda publishes no weights for this method yet; for those trained here that is not
 decided (the training data is CC BY-NC-SA 4.0). Download `HGGD_realsense_checkpoint` and
 `HGGD_kinect_checkpoint` from the authors' folder (link and SHA-256 in the
-[metafile](metafile.yaml)): each holds two networks and the learned anchors. Convert them
-once:
+[metafile](metafile.yaml)) and convert them once:
 
 ```bash
 python -m tools.convert_checkpoint HGGD_realsense_checkpoint hggd_realsense.pth \
@@ -185,8 +195,8 @@ grasppanda test  hggd/hggd_r34w8_g1b-realsense_15e --weights hggd_realsense.pth
 grasppanda test  hggd/hggd_r34w8_g1b-kinect_15e --weights hggd_kinect.pth
 ```
 
-Every run reports both variants. The collision filter of `cd` also drops grasps with at
-most two points between the fingers.
+Every run reports both variants; `cd` also drops grasps with at most two points between
+the fingers.
 
 ## Notes
 
