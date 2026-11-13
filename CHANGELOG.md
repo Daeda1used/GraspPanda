@@ -531,7 +531,10 @@ Classes now count levels, and every method lists the options of each of its slot
   the lower loss than its authors' weights on every term (2.67 against 2.92 on 160
   frames) and the lower AP on the test split; the two sets of weights of EconomicGrasp
   are 0.03 apart. Records in `configs/finegrasp/diagnostics/`,
-  `configs/economicgrasp/diagnostics/` and `projects/finegrasp_ablation/records/`.
+  `configs/economicgrasp/diagnostics/` and `projects/finegrasp_ablation/records/`. The
+  same tool checks FineGrasp's graspness labels, whose originals are not published: the
+  authors' weights have a graspness loss of 0.05 on the labels generated here, normalised
+  per object, and 0.14 on labels normalised over the scene.
 - A run's `config.resolved.yaml` wrote out the defaults of PyTorch's optimizer and
   scheduler classes, which the config hash leaves out on purpose: loaded again, the file
   hashed to another experiment, so the resume it is recommended for was refused, and it

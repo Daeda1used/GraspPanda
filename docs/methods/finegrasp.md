@@ -737,14 +737,15 @@ Every option that fits FineGrasp, except `target-mask`, was composed under it; t
 
     - No model class of its own; one model instance trains and predicts.
     - The normal images and the instance-normalised graspness files of the authors' training
-      set are not published. Both are generated here from the paper's equations; the normals
-      are checked through the AP of the released weights, the graspness labels cannot be
-      checked against the authors' at all.
+      set are not published. Both are generated from the paper's equations and checked
+      through the released weights: the normals by their AP, the graspness labels by their
+      graspness loss, 0.05 on these, 0.14 on scene-normalised ones
+      ([record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/finegrasp/diagnostics/train_fit_scene_graspness.json)).
     - The published recipe uses eight processes of four frames; the config as written uses
       one with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
       *Train and test* gives the launch that keeps both.
     - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
-      repeats, and a frame with none an empty result (as for EconomicGrasp).
+      repeats, a frame with none an empty result (as EconomicGrasp).
     - The released inference processor also drops grasps as wide as the gripper, applies
       grasp NMS and sorts by score: deployment post-processing, not part of these configs
       (`GraspNMS` is a post-processor).

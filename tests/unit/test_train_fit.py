@@ -182,3 +182,28 @@ def test_the_readme_of_finegrasp_states_the_recorded_fit():
         f"{here['loss']:.2f} against the authors' {authors['loss']:.2f}, on every term "
         f"(EconomicGrasp's two: {apart:.2f} apart;"
     ) in flat("configs/finegrasp/README.md")
+
+
+def test_the_graspness_labels_of_finegrasp_are_checked_through_the_released_weights():
+    """The authors' graspness files are not published. Their weights tell which kind they
+    were trained on: the graspness loss on the labels generated here, normalised per
+    object, is far below the one on labels normalised over the scene, and every other
+    term is the same, because nothing else reads these labels."""
+    ours = record("configs/finegrasp/diagnostics/train_fit.json")
+    scene = record("configs/finegrasp/diagnostics/train_fit_scene_graspness.json")
+    assert scene["about"] == tool.ABOUT
+    assert scene["opts"] == ["data.train.dataset.graspness.normalization=scene"]
+    assert (scene["split"], scene["frames"]) == (ours["split"], ours["frames"])
+    for name in ("authors", "trained"):
+        here, there = (found["weights"][name]["evaluation"] for found in (ours, scene))
+        assert there["loss/graspness"] > 2 * here["loss/graspness"], name
+        assert all(
+            there[term] == here[term]
+            for term in here
+            if term.startswith("loss/") and term != "loss/graspness"
+        ), name
+    here, there = (found["weights"]["authors"]["evaluation"] for found in (ours, scene))
+    assert (
+        f"graspness loss, {here['loss/graspness']:.2f} on these, "
+        f"{there['loss/graspness']:.2f} on scene-normalised ones"
+    ) in flat("configs/finegrasp/README.md")
