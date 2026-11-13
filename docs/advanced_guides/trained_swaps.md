@@ -129,12 +129,15 @@ repeats the row above it from the same config and seed: the yardstick.
   0.7 AP; `normals` ends 0.96 to 1.29 AP below both trainings of EconomicGrasp on seen
   scenes; `multi-scale`, trained twice, ends below both on every split in both trainings,
   by 1.52 / 3.06 / 1.95 AP on average.
-- **All three: above both on seen scenes, between them elsewhere.** +1.20 and +1.53 AP on
-  seen. That is 1.0 to 2.5 AP below the authors' checkpoint, where FineGrasp trained with
-  its own recipe is 1.2 to 3.1 below: the recipe is not what separates the model trained
-  here from theirs.
-- **Trainings spread.** The two of EconomicGrasp differ by up to 1.44 AP, the two of
-  `multi-scale` by up to 1.95. `all` is being trained again.
+- **All three: no difference from EconomicGrasp is shown.** Trained twice, it ends
+  +0.72 / +0.09 / −0.12 AP from EconomicGrasp between the means of two. That is 1.0 to 3.3 AP
+  below the authors' checkpoint, where FineGrasp trained with its own recipe is 1.2 to 3.1
+  below: the recipe is not what separates the model trained here from theirs.
+- **The parts do not add up.** The crop loses alone and nothing with the two other changes
+  on: every training of `all` ends above every training of `multi-scale`. Which of the two
+  it needs is being trained.
+- **Trainings spread.** Two trainings of EconomicGrasp, `multi-scale` and `all` differ by up
+  to 1.44, 1.95 and 1.29 AP.
 
 ## Run it {#run}
 

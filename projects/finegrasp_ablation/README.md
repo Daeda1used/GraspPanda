@@ -1,6 +1,6 @@
 # FineGrasp's changes, one at a time
 
-**Support level: experimental.** One training run per change, one seed.
+**Support level: experimental.** One seed; one or two training runs per row.
 
 FineGrasp is EconomicGrasp with three changes, and here it is built as exactly that: three
 groups of config entries. This project switches each on alone, and all three together,
@@ -15,12 +15,12 @@ grasppanda prepare graspnet1b --graspness --camera realsense \
     --config finegrasp/finegrasp_sunet14_g1b-realsense_10e            # normalised per object
 grasppanda prepare graspnet1b --compact-labels \
     --config economicgrasp/economicgrasp_sunet14_g1b-realsense_10e
-grasppanda sweep projects/finegrasp_ablation/changes.yaml --dry-run   # four runs, each config checked
+grasppanda sweep projects/finegrasp_ablation/changes.yaml --dry-run   # six runs, each config checked
 grasppanda sweep projects/finegrasp_ablation/changes.yaml --gpus 0,1,2,3 \
     --opts evaluation.num_workers=8                                   # one run per GPU
 ```
 
-Every run writes into `work_dirs/changes/<change>/seed0/`, and the table of the four into
+Every run writes into `work_dirs/changes/<change>/seed0/`, and the table of the six into
 `work_dirs/changes/summary_test.md`. A run that is recorded is not repeated.
 
 | Name | What changes | Config entries |
@@ -28,6 +28,8 @@ Every run writes into `work_dirs/changes/<change>/seed0/`, and the table of the 
 | `graspness` | Graspness is normalised within every object before the frame, so a small object beside an easy one keeps seeds. | the label asset: `graspness.normalization: instance` |
 | `normals` | The encoder reads `[x, y, z, normal]` per point instead of three ones. | `model.point_features`, `backbone.in_channels`, two data transforms |
 | `multi-scale` | Every seed is cropped at four radii; attention over the scales fuses the four. | `model.grouper`: `MultiScaleGroup` around EconomicGrasp's crop |
+| `graspness+multi-scale` | The crop with per-object graspness. | the two groups |
+| `normals+multi-scale` | The crop with normals as encoder input. | the two groups |
 | `all` | The three together: FineGrasp's model and data, trained as EconomicGrasp is. | all of the above |
 
 The run without a change is the model zoo's
@@ -48,8 +50,9 @@ AP on the whole GraspNet-1Billion test split (RealSense, 23,040 frames) as seen 
 novel. A row *trained again* repeats the row above it from the same config and seed. The
 two trainings of EconomicGrasp differ by 0.33 / 1.39 / 1.12 AP without the collision filter
 ([its README](../../configs/economicgrasp/README.md#results-on-graspnet-1billion)), the two
-of `multi-scale` by 0.89 / 1.95 / 0.70: a change that moves a split by less is not a
-finding. Differences below are from the first row unless both are named.
+of `multi-scale` by 0.89 / 1.95 / 0.70 and the two of `all` by 1.29 / 0.93 / 0.25: a change
+that moves a split by less is not a finding. Differences below are from the first row
+unless both are named.
 
 | Change | Collision filter off | On |
 |---|---|---|
@@ -59,7 +62,10 @@ finding. Differences below are from the first row unless both are named.
 | `normals` | 68.05 / 60.78 / 26.23 | 70.11 / 62.00 / 26.77 |
 | `multi-scale` | 68.10 / 58.63 / 24.05 | 69.84 / 59.77 / 24.71 |
 | `multi-scale`, trained again | 67.21 / 56.68 / 23.35 | 69.09 / 57.92 / 24.06 |
+| `graspness+multi-scale` | training | |
+| `normals+multi-scale` | training | |
 | `all` | 70.54 / 61.27 / 25.41 | 71.72 / 62.09 / 25.96 |
+| `all`, trained again | 69.25 / 60.34 / 25.66 | 70.67 / 61.36 / 26.24 |
 
 **No difference is shown for `graspness`.** Normalising graspness per object moves no split
 by more than 0.7 AP: +0.69 on seen and −0.38 on similar without the collision filter.
@@ -78,18 +84,18 @@ loss is 2.86 with the layers as in training and 2.73 as in evaluation, measured 
 first training ([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes
 with the lower AP is not known.
 
-**`all`, the FineGrasp model, is above both trainings of EconomicGrasp on seen scenes and
-between them on the other splits.** On seen it ends +1.20 and +1.53 AP without the
-collision filter, +0.67 and +1.07 with it, where the two trainings differ by 0.33 and 0.40;
-one run of `all` does not make that a gain. It is 1.0 to 2.5 AP below the authors'
+**`all`, the FineGrasp model, is not shown to differ from EconomicGrasp.** Its first
+training ends above both trainings of EconomicGrasp on seen scenes, by 1.20 and 1.53 AP
+without the collision filter; its second ends between the two on every split. Between the
+means of two the difference is +0.72 / +0.09 / −0.12 AP without the filter and
++0.34 / −0.09 / −0.17 with it. Over its two trainings it is 1.0 to 3.3 AP below the authors'
 checkpoint, where FineGrasp trained with its own recipe is 1.2 to 3.1 below: the recipe is
 not what separates the model trained here from the authors'.
 
-**Whether the parts add up is open.** `multi-scale` alone ends below EconomicGrasp on
-every split in both of its trainings; with the two other changes on, the same crop ends
-above it on seen scenes in the one training of `all`. An interaction of the changes and
-the spread of trainings look the same until `all` is trained a second time, which is
-running.
+**The parts do not add up.** The four-radius crop loses 1.52 / 3.06 / 1.95 AP alone and
+nothing with the two other changes on: every training of `all` ends above every training
+of `multi-scale` on every split. Which of the two the crop needs is being measured:
+`graspness+multi-scale` and `normals+multi-scale` are training.
 
 Records: [`records/`](records/), with the loss of every epoch; EconomicGrasp's
 [reproduced records](../../configs/economicgrasp/records/) for the first row and its

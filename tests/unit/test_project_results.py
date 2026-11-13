@@ -532,6 +532,7 @@ ABLATION_RECORDS = {
     "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
     "multi-scale again": "projects/finegrasp_ablation/records/multi-scale_run2_test",
     "all": "projects/finegrasp_ablation/records/all_test",
+    "all again": "projects/finegrasp_ablation/records/all_run2_test",
 }
 #: FineGrasp in the model zoo: the authors' checkpoint and the model trained here with
 #: FineGrasp's own recipe → stem of the two records.
@@ -671,33 +672,55 @@ def test_what_the_ablation_says_is_computed_from_its_records():
         f"{runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
-    # all three, the FineGrasp model: above both trainings on seen scenes, between them on
-    # the other splits
+    # all three, the FineGrasp model, trained twice: the first training above both of
+    # EconomicGrasp on seen scenes, the second between the two on every split
     everything, everything_again = from_no_change("all"), from_no_change("all", "none again")
     assert min(everything[0], everything_again[0], everything[3], everything_again[3]) > 0
-    assert all(everything[i] < 0 < everything_again[i] for i in (1, 2, 4, 5))
+    second = [from_no_change("all again", base) for base in ("none", "none again")]
+    assert all(low <= 0 <= high for low, high in zip(*second)), "between the two"
+    joint = [
+        from_no_change(run, base) for run in ("all", "all again") for base in ("none", "none again")
+    ]
+    mean = [sum(run[index] for run in joint) / len(joint) for index in range(6)]
+    apart = from_no_change("all again", "all")
     # below the authors' checkpoint under EconomicGrasp's recipe as under FineGrasp's own
     below = {
-        "all": below_the_authors(ABLATION_RECORDS["all"]),
+        "all": [
+            value
+            for run in ("all", "all again")
+            for value in below_the_authors(ABLATION_RECORDS[run])
+        ],
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
     }
     assert min(below["all"]) > 0.9 and min(below["own"]) > 1.12
     for sentence in (
-        f"it ends {signed(everything[0])} and {signed(everything_again[0])} AP without",
-        f"{signed(everything[3])} and {signed(everything_again[3])} with it",
-        f"the two trainings differ by {-again[0]:.2f} and {-again[3]:.2f}",
-        f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
+        "the two of `all` by " + " / ".join(f"{abs(value):.2f}" for value in apart[:3]),
+        f"by {everything[0]:.2f} and {everything_again[0]:.2f} AP without the collision filter",
+        f"the difference is {slashed(mean[:3])} AP without the filter and {slashed(mean[3:])} "
+        "with it",
+        f"it is {min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' "
+        "checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
+        # the crop alone against the crop with the two other changes
+        "The four-radius crop loses "
+        + " / ".join(f"{-value:.2f}" for value in means)
+        + " AP alone",
     ):
         assert sentence in readme, sentence
-    # the crop alone below the first training on every split, with the other changes above it
-    assert max(crops[0][:3]) < 0 < everything[0]
+    # every training of all three above every training of the crop alone, on every split
+    for variant in ("raw", "cd"):
+        for split in ("seen", "similar", "novel"):
+            ap = {
+                run: record_result.headline(ablation_record(run, variant))["AP"][split]
+                for run in ("all", "all again", "multi-scale", "multi-scale again")
+            }
+            assert min(ap["all"], ap["all again"]) > max(ap["multi-scale"], ap["multi-scale again"])
     # FineGrasp's own README draws the conclusion from the same records
     finegrasp = " ".join((REPO / "configs/finegrasp/README.md").read_text(encoding="utf-8").split())
     assert (
         f"under EconomicGrasp's the model ends {min(below['all']):.1f} to "
         f"{max(below['all']):.1f} AP below the checkpoint" in finegrasp
-    )
+    ), "over its two trainings"
 
 
 def test_the_evidence_page_shows_the_ablation_of_the_project():
@@ -705,13 +728,18 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     sentences in short: the same numbers, computed from the records there."""
     include = (REPO / "docs/includes/trained_changes.md").read_text(encoding="utf-8")
     readme = (ABLATION / "README.md").read_text(encoding="utf-8")
-    assert include.strip() in readme
-    assert table_under(include, "|") == table_under(readme, "## Results")
+    # the page shows the rows that are scored; a run that is still training has no row there
+    scored = [
+        row
+        for row in table_under(readme, "## Results")
+        if any(character.isdigit() for cell in row[1:] for character in cell)
+    ]
+    assert table_under(include, "|") == scored
     page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
     assert page.count('--8<-- "docs/includes/trained_changes.md"') == 1
     flat = " ".join(page.split())
     again = from_no_change("none again")
-    graspness, everything = from_no_change("graspness"), from_no_change("all")
+    graspness = from_no_change("graspness")
     seen = sorted(-from_no_change("normals", base)[0] for base in ("none", "none again"))
     crops = [
         from_no_change(crop, base)
@@ -720,9 +748,21 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     ]
     assert max(value for crop in crops for value in crop) < 0
     means = [-sum(crop[index] for crop in crops) / len(crops) for index in range(3)]
-    between = from_no_change("multi-scale again", "multi-scale")
+    joint = [
+        from_no_change(run, base) for run in ("all", "all again") for base in ("none", "none again")
+    ]
+    together = [sum(run[index] for run in joint) / len(joint) for index in range(3)]
+    spreads = {
+        "EconomicGrasp": max(map(abs, again)),
+        "`multi-scale`": max(map(abs, from_no_change("multi-scale again", "multi-scale"))),
+        "`all`": max(map(abs, from_no_change("all again", "all"))),
+    }
     below = {
-        "all": below_the_authors(ABLATION_RECORDS["all"]),
+        "all": [
+            value
+            for run in ("all", "all again")
+            for value in below_the_authors(ABLATION_RECORDS[run])
+        ],
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
     }
     for sentence in (
@@ -731,11 +771,10 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
         "below both on every split in both trainings, by "
         + " / ".join(f"{value:.2f}" for value in means)
         + " AP on average",
-        f"the two of `multi-scale` by up to {max(map(abs, between)):.2f}",
-        f"{signed(everything[0])} and {signed(from_no_change('all', 'none again')[0])} AP on seen",
+        f"Trained twice, it ends {slashed(together)} AP from EconomicGrasp",
         f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
-        f"differ by up to {max(map(abs, again)):.2f} AP",
+        "differ by up to {:.2f}, {:.2f} and {:.2f} AP".format(*spreads.values()),
     ):
         assert sentence in flat, sentence
 
