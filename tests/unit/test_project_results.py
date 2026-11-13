@@ -23,6 +23,7 @@ ENCODER_RECORDS = {
 RECIPE_RECORDS = {
     "sunet14": "projects/encoder_comparison/records/sunet14_adamw-onecycle_test",
     "ptv3": "projects/encoder_comparison/records/ptv3_adamw-onecycle_test",
+    "litept": "projects/encoder_comparison/records/litept_adamw-onecycle_test",
 }
 
 
@@ -252,6 +253,22 @@ def test_what_the_two_by_two_says_is_computed_from_its_records():
         "## What the cheaper checks had said",
     )
     assert f"−{left['seen']:.2f} under one-cycle" in checks[1][3]
+    # LitePT: a loss that falls in every epoch, what the recipe gains it on seen scenes
+    # and what is left to the shipped encoder under the same recipe: a third of the gap less
+    steady = recipe_losses["litept"]
+    assert all(later < earlier for earlier, later in zip(steady, steady[1:]))
+    gained = recipe_ap("litept", "raw")["seen"] - encoder_ap("litept", "raw")["seen"]
+    left = recipe_ap("sunet14", "raw")["seen"] - recipe_ap("litept", "raw")["seen"]
+    before = below_shipped("litept")[0]
+    assert 0.3 < (before - left) / before < 0.4, "a third of the gap"
+    for sentence in (
+        f"Its loss now falls in every epoch and ends at {steady[-1]:.2f}.",
+        f"It gains {gained:.1f} AP on seen scenes and ends {left:.1f} AP below the shipped "
+        "encoder under the same recipe",
+    ):
+        assert sentence in project and sentence in page, sentence
+    assert f"where it was {before:.1f} below under GSNet's" in project
+    assert checks[2][3] == f"−{before:.2f} AP; −{left:.2f} under one-cycle"
 
 
 def test_the_evidence_page_shows_the_two_by_two_of_the_project():

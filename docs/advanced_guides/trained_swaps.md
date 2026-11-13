@@ -52,6 +52,9 @@ warm-up, then a cosine down to almost zero (*one-cycle* below).
 - **PTv3: the recipe was more than half of the gap.** It gains 6.8 AP on seen scenes and
   ends 4.6 AP below the shipped encoder under the same recipe; on novel scenes the two are
   0.25 apart. Its loss, 0.84, stays above the shipped encoder's 0.74.
+- **LitePT: steadier, and a third of the gap closed.** Its loss now falls in every epoch
+  and ends at 1.02. It gains 5.7 AP on seen scenes and ends 9.5 AP below the shipped
+  encoder under the same recipe.
 
 ## The same swap under EconomicGrasp {#economicgrasp}
 
@@ -79,7 +82,7 @@ as GSNet's, on a cosine that ends at zero. The first row is the
 |---|---|---|---|
 | `spunet` | runs | on a par | −0.62 AP, within a seed |
 | `ptv3` | runs | on a par | −10.39 AP; −4.56 under one-cycle |
-| `litept` | runs | on a par | −14.23 AP |
+| `litept` | runs | on a par | −14.23 AP; −9.47 under one-cycle |
 
 </div>
 

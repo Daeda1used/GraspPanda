@@ -89,7 +89,7 @@ grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1,2 \
 | `ptv3` | GSNet's | 59.07 / 52.55 / 21.91 | 62.28 / 55.62 / 23.48 | 0.96 |
 | `ptv3` | one-cycle | 65.85 / 57.95 / 24.58 | 68.50 / 60.40 / 25.92 | 0.84 |
 | `litept` | GSNet's | 55.23 / 50.03 / 21.60 | 59.18 / 53.50 / 23.04 | 1.18 |
-| `litept` | one-cycle | training | | |
+| `litept` | one-cycle | 60.94 / 54.55 / 23.48 | 64.89 / 57.94 / 24.97 | 1.02 |
 
 **The recipe is not shown to change the shipped encoder.** It fits the training scenes
 closer (0.74 against 0.76) and ends +0.95 AP on seen and −0.59 on novel scenes without the
@@ -100,6 +100,10 @@ ends 4.6 AP below the shipped encoder under the same recipe, where it was 10.4 b
 GSNet's; on novel scenes the two are 0.25 apart. Its loss, 0.84, stays above the shipped
 encoder's 0.74: these ten epochs do not fit it either. What is left of the gap is the
 encoder, or a schedule still too short for it; that is not measured.
+
+**For LitePT the recipe steadied the training and closed a third of the gap.** Its loss
+now falls in every epoch and ends at 1.02. It gains 5.7 AP on seen scenes and ends 9.5 AP
+below the shipped encoder under the same recipe, where it was 14.2 below under GSNet's.
 
 Records: [`records/`](records/), the runs of this file by `<encoder>_adamw-onecycle`.
 
