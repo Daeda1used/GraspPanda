@@ -59,7 +59,7 @@ says under *what must be re-tuned*.
 **LitePT is 14.2 AP lower on seen scenes, and did not train steadily.** Its loss rose from
 1.34 after the second epoch to 1.66 after the fourth before it fell again, and ends at 1.18,
 above the shipped encoder's after two epochs (1.05). It is the same recipe: 1e-3 from the
-first step, no warm-up. Under another recipe LitePT has not been trained here.
+first step, no warm-up. [Below](#encoder-or-recipe) it is trained under another one.
 
 The 250-iteration check of the documentation had called all three swaps on a par with
 the shipped encoder: it sorts out what fails or diverges and does not rank what passes
@@ -71,14 +71,14 @@ these sentences to them.
 
 ## Encoder or recipe
 
-[`gsnet_recipe.yaml`](gsnet_recipe.yaml) asks what the PTv3 row leaves open. It trains
-GSNet with the shipped encoder and with PTv3 under the recipe Pointcept trains PTv3 with,
-the recipe preset `adamw-onecycle`: AdamW with weight decay 0.05, a warm-up over the first
-5 % of the steps, then a cosine down to almost zero: *one-cycle* below. With the two rows
-above it makes a two by two of encoder and recipe.
+[`gsnet_recipe.yaml`](gsnet_recipe.yaml) asks what the PTv3 and LitePT rows leave open. It
+trains GSNet with the shipped encoder, with PTv3 and with LitePT under the recipe Pointcept
+trains PTv3 with, the recipe preset `adamw-onecycle` (*one-cycle* below): AdamW with weight
+decay 0.05, a warm-up over the first 5 % of the steps, then a cosine down to almost zero.
+With the rows above, each of the three stands under both recipes.
 
 ```bash
-grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
+grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1,2 \
     --opts evaluation.num_workers=8
 ```
 
@@ -88,6 +88,8 @@ grasppanda sweep projects/encoder_comparison/gsnet_recipe.yaml --gpus 0,1 \
 | `sunet14` | one-cycle | 70.41 / 61.48 / 24.83 | 72.63 / 63.54 / 26.19 | 0.74 |
 | `ptv3` | GSNet's | 59.07 / 52.55 / 21.91 | 62.28 / 55.62 / 23.48 | 0.96 |
 | `ptv3` | one-cycle | 65.85 / 57.95 / 24.58 | 68.50 / 60.40 / 25.92 | 0.84 |
+| `litept` | GSNet's | 55.23 / 50.03 / 21.60 | 59.18 / 53.50 / 23.04 | 1.18 |
+| `litept` | one-cycle | training | | |
 
 **The recipe is not shown to change the shipped encoder.** It fits the training scenes
 closer (0.74 against 0.76) and ends +0.95 AP on seen and −0.59 on novel scenes without the

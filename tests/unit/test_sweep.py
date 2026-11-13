@@ -143,17 +143,20 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     assert "--gpus needs at least one GPU id" in capsys.readouterr().err
     # an id this machine does not have would start a cell that sees no GPU: refused
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
-    monkeypatch.setattr(torch.cuda, "device_count", lambda: 0)
-    assert main(["sweep", str(path), "--gpus", "0"]) == 2
-    assert "PyTorch sees none here" in capsys.readouterr().err
-    monkeypatch.setattr(torch.cuda, "device_count", lambda: 9)  # the cells see none of them
-    assert main(["sweep", str(path), "--gpus", "7,9,a"]) == 2
-    assert "--gpus names 9, a: not a GPU of this machine's 9 (ids 0 to 8" in capsys.readouterr().err
+    with monkeypatch.context() as machine:
+        machine.setattr(torch.cuda, "device_count", lambda: 0)
+        assert main(["sweep", str(path), "--gpus", "0"]) == 2
+        assert "PyTorch sees none here" in capsys.readouterr().err
+        machine.setattr(torch.cuda, "device_count", lambda: 9)
+        assert main(["sweep", str(path), "--gpus", "7,9,a"]) == 2
+        refused = capsys.readouterr().err
+        assert "--gpus names 9, a: not a GPU of this machine's 9 (ids 0 to 8" in refused
     assert not (tmp_path / "work_dirs").exists()  # nothing ran
     assert main(["sweep", str(path), "--cell", "s128/seed0"]) == 2
     assert "no cell 's128/seed0'" in capsys.readouterr().err
 
-    # one cell alone, in this process: what the parallel runner starts for each cell
+    # one cell alone, in this process: what the parallel runner starts for each cell. It
+    # trains on the devices this machine has, so the machine is itself again here
     assert main(["sweep", str(path), "--cell", "s64/seed0"]) == 0
     capsys.readouterr()
     cells = tmp_path / "work_dirs/wide"
@@ -161,6 +164,8 @@ def test_sweep_runs_cells_in_parallel_one_per_gpu(write, tmp_path, monkeypatch, 
     assert main(["sweep", str(path), "--cell", "s64/seed0", "--gpus", "7"]) == 2
     assert "choose its GPU with CUDA_VISIBLE_DEVICES" in capsys.readouterr().err
 
+    # the parallel runner: this process only starts the cells, each in a process of its own
+    monkeypatch.setattr(torch.cuda, "device_count", lambda: 9)
     # another `grasppanda` in the working directory is not what a cell runs
     (tmp_path / "grasppanda").mkdir()
     (tmp_path / "grasppanda/__init__.py").write_text("raise SystemExit('another GraspPanda')\n")
@@ -494,7 +499,11 @@ def test_an_alternative_splices_in_other_alternatives_by_anchor(write):
 #: The sweeps of ``projects/``: file → the runs it plans.
 PROJECT_SWEEPS = {
     "encoder_comparison/gsnet_encoders.yaml": ["sunet14", "ptv3", "spunet", "litept"],
-    "encoder_comparison/gsnet_recipe.yaml": ["sunet14_adamw-onecycle", "ptv3_adamw-onecycle"],
+    "encoder_comparison/gsnet_recipe.yaml": [
+        "sunet14_adamw-onecycle",
+        "ptv3_adamw-onecycle",
+        "litept_adamw-onecycle",
+    ],
     "finegrasp_ablation/changes.yaml": ["graspness", "normals", "multi-scale", "all"],
 }
 
@@ -509,7 +518,7 @@ def test_the_sweeps_of_the_projects_plan_valid_runs(name):
 
 def test_the_recipe_of_the_encoder_comparison_is_the_recipe_preset():
     """Its overrides are what ``grasppanda compose --set recipe=adamw-onecycle`` writes, for
-    the shipped encoder and for PTv3: the sweep and the preset cannot drift apart."""
+    the shipped encoder and for each swap: the sweep and the preset cannot drift apart."""
     from grasppanda.combine.compose import compose
 
     gsnet = "gsnet/gsnet_sunet14_g1b-realsense_10e"
@@ -520,6 +529,7 @@ def test_the_recipe_of_the_encoder_comparison_is_the_recipe_preset():
     assert cells == {
         "sunet14": compose(gsnet, ["recipe=adamw-onecycle"]).config_hash,
         "ptv3": compose(gsnet, ["backbone=ptv3", "recipe=adamw-onecycle"]).config_hash,
+        "litept": compose(gsnet, ["backbone=litept", "recipe=adamw-onecycle"]).config_hash,
     }
 
 
