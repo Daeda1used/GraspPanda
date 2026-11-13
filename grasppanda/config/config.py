@@ -207,8 +207,20 @@ class Config(Mapping[str, Any]):
         return data
 
     def dump(self, *, defaults: bool = False) -> str:
-        """Serialise to YAML; with ``defaults`` every implicit value is written out."""
-        data = self.resolved() if defaults else self.to_dict()
+        """Serialise to YAML; with ``defaults`` every default GraspPanda decides is written out.
+
+        That is the schema and every component of GraspPanda. The arguments of a class of
+        an installed library (an optimizer or a scheduler of PyTorch named by class) stay
+        as they were written: its defaults belong to the installed version, and written
+        out they would make the file another experiment on the next machine. So the dump
+        loads again with the same :meth:`digest`: ``config.resolved.yaml`` of a run is the
+        config of that run.
+        """
+        if not defaults:
+            data = self.to_dict()
+        else:
+            data = fill_defaults(self._tree.data, library=False)
+            resolve_interpolations(data, self._builtins())
         return yaml.dump(data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100)
 
     def digest(self) -> str:

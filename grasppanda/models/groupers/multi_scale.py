@@ -206,8 +206,7 @@ class MultiScaleGroup(Grouper):
         if problems:
             raise ContractError(" ".join(problems))
         # A resolved config carries the default radius of the branch; any other value
-        # would be a second owner of the crop radius (`check_config` reports that for
-        # configs, where a default written out by hand can still be told apart).
+        # would be a second owner of the crop radius (`check_config` reports it for configs).
         default = component_parameters(branch_class)[0]["radius"].default
         if node.pop("radius", default) != default:
             raise ContractError(
@@ -236,8 +235,13 @@ class MultiScaleGroup(Grouper):
         branch = node.get("branch")
         if not (isinstance(branch, Mapping) and "type" in branch):
             return
-        yield from _branch_problems(GROUPERS.get(branch["type"]))
-        if "radius" in branch:
+        branch_class = GROUPERS.get(branch["type"])
+        yield from _branch_problems(branch_class)
+        # The default radius of the branch is what a resolved config writes out
+        # (`config.resolved.yaml` of a run): it loads again. Any other value would be a
+        # second owner of the crop radius.
+        default = component_parameters(branch_class)[0].get("radius")
+        if "radius" in branch and (default is None or branch["radius"] != default.default):
             yield (
                 "the radius of every branch is `radius * radius_scales[i]` of MultiScaleGroup; "
                 "remove `radius` from the branch."

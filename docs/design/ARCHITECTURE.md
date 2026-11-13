@@ -246,7 +246,7 @@ Every `train`, `test` and `sweep` run writes into `work_dir/<run_id>/`:
 
 | File | Content |
 |---|---|
-| `config.resolved.yaml` | Fully expanded config, interpolations resolved, defaults of every component filled in. |
+| `config.resolved.yaml` | Fully expanded config, interpolations resolved, defaults of the schema and of every GraspPanda component filled in; a class of an installed library keeps the arguments it was written with. It loads again with the same hash. |
 | `config.sources/` | The original leaf file and each base, unmodified, plus `overrides.txt`. |
 | `run.json` | Command line, start time, host, seed, `config_hash`, protocol id, parent run on resume. |
 | `git.json`, `diff.patch` | Commit, dirty flag, uncommitted diff. For a wheel install: package version and `RECORD` hash instead. |

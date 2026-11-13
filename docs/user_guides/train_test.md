@@ -150,7 +150,7 @@ for those commands) when it is not set.
 
 ```text
 work_dirs/toy_train/demo/
-├── config.resolved.yaml      the config with every default written out
+├── config.resolved.yaml      the config with its defaults written out; loads again, same hash
 ├── config.sources/           the files it was merged from, and overrides.txt
 ├── run.json  git.json  env.json  code.tar.gz  diff.patch
 ├── log.txt

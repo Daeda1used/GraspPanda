@@ -272,9 +272,12 @@ def test_gradients_reach_every_branch_and_the_fusion():
 
 
 def test_the_radius_has_one_owner():
-    problems = list(MultiScaleGroup.check_config({"branch": {**BRANCH, "radius": 0.05}}))
+    problems = list(MultiScaleGroup.check_config({"branch": {**BRANCH, "radius": 0.2}}))
     assert len(problems) == 1 and "remove `radius` from the branch" in problems[0]
     assert list(MultiScaleGroup.check_config({"branch": BRANCH})) == []
+    # the default, as a resolved config writes it out, is no second owner: the config check
+    # and the constructor agree, so `config.resolved.yaml` of a run loads again
+    assert list(MultiScaleGroup.check_config({"branch": {**BRANCH, "radius": 0.05}})) == []
     with pytest.raises(ContractError, match="remove `radius: 0.2` from the branch"):
         build(branch={**BRANCH, "radius": 0.2})
     # A resolved config carries the default radius of the branch: that is not a second owner.

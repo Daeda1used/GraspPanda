@@ -29,7 +29,10 @@ grasppanda print-config projects/example_project/configs/toy_detector.yaml \
 ```
 
 It prints the config after inheritance, overrides and interpolation, with every default
-written out. This is exactly what a run stores as `config.resolved.yaml`.
+GraspPanda decides written out. This is exactly what a run stores as `config.resolved.yaml`,
+and that file loads again as the same experiment, with the same hash. The optimizer and the
+scheduler are classes of PyTorch: their arguments stay as written, and what is not written
+is the default of the installed version.
 
 ??? example "The output"
 
@@ -76,21 +79,9 @@ written out. This is exactly what a run stores as `config.resolved.yaml`.
       type: Adam
       lr: 0.001
       weight_decay: 0.0
-      betas:
-      - 0.9
-      - 0.999
-      eps: 1.0e-08
-      amsgrad: false
-      foreach: null
-      maximize: false
-      capturable: false
-      differentiable: false
-      fused: null
-      decoupled_weight_decay: false
     scheduler:
       type: ExponentialLR
       gamma: 0.95
-      last_epoch: -1
     custom_imports:
     - ../toy_components.py
     model:
