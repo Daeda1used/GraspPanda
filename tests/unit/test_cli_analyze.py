@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +21,8 @@ from grasppanda.structures import SampleKey
 from .inference_fixtures import TOY_CONFIG, save_weights
 from .test_engine_tiny import single_thread  # noqa: F401  (autouse fixture)
 from .test_eval_breakdown import FRICTIONS, PROTOCOL, random_frame
+
+REPO = Path(__file__).resolve().parents[2]
 
 # ------------------------------------------------------------------ synthetic records
 
@@ -339,3 +342,57 @@ def test_a_training_run_is_read_at_its_last_evaluation(runs, tmp_path, capsys):
     (tmp_path / "unscored/results").mkdir(parents=True)
     assert main(["analyze", str(tmp_path / "unscored")]) == 1
     assert "holds no result record; was the run scored" in capsys.readouterr().err
+
+
+def test_a_record_is_read_by_its_file_among_the_records_of_other_runs(tmp_path, capsys):
+    """A directory of committed records holds several runs; a file names one of them."""
+    records = tmp_path / "records"
+    for model, seed in (("a", 1), ("b", 2)):
+        for variant, keep in (("raw", 1.0), ("cd", 0.4)):
+            record = synthetic_record(seed + 10 * (variant == "cd"), variant, keep=keep)
+            record.weights = {"sha256": model * 64}
+            record.write(records / f"{model}_test_{variant}.json")
+    for model in ("a", "b"):
+        file = records / f"{model}_test_cd.json"
+        (loaded,), note = load_records(str(file))
+        assert note == "" and loaded.path == file and loaded.record == ResultRecord.read(file)
+        assert loaded.label == str(file) and report(loaded).startswith(str(file))
+        # the variants of the same run, and of no other model in the directory
+        assert sorted(loaded.siblings) == ["cd", "raw"]
+        assert {other.weights["sha256"] for other in loaded.siblings.values()} == {model * 64}
+
+    filtered, _ = load_records(str(records), "cd")
+    assert [item.path.name for item in filtered] == ["a_test_cd.json", "b_test_cd.json"]
+    assert [item.short for item in filtered] == ["a_test_cd", "b_test_cd"]
+    assert main(["analyze", str(records)]) == 0
+    assert capsys.readouterr().out.count("Where the precision comes from") == 4
+
+    pair = [str(records / "a_test_cd.json"), str(records / "b_test_cd.json")]
+    assert main(["analyze", "--compare", *pair]) == 0
+    printed = capsys.readouterr().out
+    assert f"A  {pair[0]}" in printed and "Paired summary over scenes" in printed
+    assert main(["analyze", "--compare", f"{records}:cd", pair[1]]) == 1
+    error = capsys.readouterr().err
+    assert "holds 2 records (a_test_cd.json, b_test_cd.json); name the file of one" in error
+    assert main(["analyze", pair[0], "--variant", "raw"]) == 1
+    assert "has no record of variant 'raw'; it holds cd" in capsys.readouterr().err
+
+
+def test_the_guide_reads_a_committed_record_as_it_says():
+    """Section 6 of the guide: its command names a committed record, its table is that record's."""
+    page = (REPO / "docs/user_guides/analysis.md").read_text(encoding="utf-8")
+    section = page.split("## 6. Read a record of this repository")[1].split("## Next")[0]
+    command = re.search(r"grasppanda analyze (configs/\S+\.json)\n", section)
+    assert command, "the guide no longer names a committed record"
+    (loaded,), _ = load_records(str(REPO / command.group(1)))
+    by_split = report(loaded).split("\nBy split\n")[1].split("\n\n")[0]
+    assert by_split in section, f"the guide prints another table than the record gives:\n{by_split}"
+    assert [row.split()[0] for row in by_split.splitlines()[2:]] == [
+        "test_seen",
+        "test_similar",
+        "test_novel",
+        "test",
+    ]
+    assert "#6-read-a-record-of-this-repository" in (REPO / "docs/model_zoo.md").read_text(
+        encoding="utf-8"
+    )

@@ -28,6 +28,8 @@ AP on seen / similar / novel. `author-ckpt` is the released checkpoint, converte
 recipe of its config; both ran through `grasppanda test`. A `reported` number stands on a
 measured line only where its source states the same collision filter; one that does not
 has a line *not stated*.
+AP0.8 and AP0.4 of every split are in the record of a row:
+[`grasppanda analyze`](user_guides/analysis.md#6-read-a-record-of-this-repository) prints them.
 
 <div class="gp-figures" markdown>
 

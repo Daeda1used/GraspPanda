@@ -64,12 +64,19 @@ class Loaded:
         return parent
 
     @property
+    def loose(self) -> bool:
+        """Whether the record is a file on its own, not one of a run's ``results/``."""
+        return self.run == self.path.parent and self.path.stem != self.record.variant
+
+    @property
     def label(self) -> str:
-        return f"{self.run} · {self.record.variant}"
+        return str(self.path) if self.loose else f"{self.run} · {self.record.variant}"
 
     @property
     def short(self) -> str:
-        """``<work dir>/<run id> · <variant>``, for a chart title."""
+        """``<work dir>/<run id> · <variant>``, for a chart title; a loose record's file name."""
+        if self.loose:
+            return self.path.stem
         return f"{'/'.join(self.run.parts[-2:])} · {self.record.variant}"
 
 
@@ -132,34 +139,51 @@ def load_records(spec: str, variant: str | None = None) -> tuple[list[Loaded], s
         raise AnalyzeError(f"{path} does not exist")
     note = ""
     if path.is_file():
-        files = [path]
-        directory = path.parent
+        directory, named = path.parent, [path]
     else:
         directory, note = _results_directory(path)
-        files = sorted(directory.glob("*.json"))
-    records: dict[str, tuple[ResultRecord, Path]] = {}
-    for file in sorted(directory.glob("*.json")):
+        named = sorted(directory.glob("*.json"))
+    records: dict[Path, ResultRecord] = {}
+    for file in sorted({*named, *directory.glob("*.json")}):
         try:
-            record = ResultRecord.read(file)
+            records[file] = ResultRecord.read(file)
         except (ValueError, TypeError, KeyError) as error:
-            if file in files and path.is_file():
+            if path.is_file() and file == path:
                 raise AnalyzeError(f"{file} is not a result record: {error}") from error
-            continue
-        records[record.variant] = (record, file)
-    siblings = {name: record for name, (record, _) in records.items()}
     chosen = [
-        Loaded(record, file, siblings)
-        for record, file in records.values()
-        if file in files and (variant is None or record.variant == variant)
+        Loaded(records[file], file, _siblings(records[file], records.values()))
+        for file in named
+        if file in records and (variant is None or records[file].variant == variant)
     ]
     if not chosen:
-        have = ", ".join(sorted(records)) or "none"
+        have = ", ".join(sorted({records[file].variant for file in named if file in records}))
+        where = path if path.is_file() else directory
         raise AnalyzeError(
-            f"{directory} has no record of variant '{variant}'; it holds {have}"
+            f"{where} has no record of variant '{variant}'; it holds {have or 'none'}"
             if variant
-            else f"{directory} holds no result record"
+            else f"{where} holds no result record"
         )
     return chosen, note
+
+
+def _siblings(record: ResultRecord, others: Any) -> dict[str, ResultRecord]:
+    """The records of the same run among ``others``, by variant: one model on the same frames.
+
+    A run's ``results/`` holds one run; a directory of committed records holds several, and
+    a record of another model or split says nothing about this one's post-processing.
+    """
+
+    def run(item: ResultRecord) -> tuple[Any, ...]:
+        return (
+            item.dataset,
+            item.split,
+            tuple(item.cameras),
+            item.requested,
+            item.config_hash,
+            item.weights.get("sha256"),
+        )
+
+    return {other.variant: other for other in others if run(other) == run(record)}
 
 
 # -------------------------------------------------------------------------- analysis
@@ -762,6 +786,15 @@ def register(commands: Any) -> None:
     parser.set_defaults(handler=run)
 
 
+def _several(loaded: list[Loaded]) -> str:
+    """What was read where one record is needed, and how to name one."""
+    variants = [item.record.variant for item in loaded]
+    if len(set(variants)) == len(variants):
+        return f"the variants {', '.join(variants)}; pick one with <path>:<variant> or --variant"
+    files = ", ".join(item.path.name for item in loaded)
+    return f"{len(loaded)} records ({files}); name the file of one"
+
+
 def run(args: argparse.Namespace) -> int:
     try:
         if args.compare:
@@ -771,10 +804,7 @@ def run(args: argparse.Namespace) -> int:
             for spec in args.compare:
                 loaded, _ = load_records(spec, args.variant)
                 if len(loaded) != 1:
-                    have = ", ".join(item.record.variant for item in loaded)
-                    raise AnalyzeError(
-                        f"{spec} holds the variants {have}; pick one with {spec}:<variant> or --variant"
-                    )
+                    raise AnalyzeError(f"{spec} holds {_several(loaded)}")
                 pair.append(loaded[0])
             text, numbers = compare(
                 pair[0], pair[1], scenes=10 if args.scenes is None else args.scenes
@@ -804,10 +834,9 @@ def run(args: argparse.Namespace) -> int:
             print("\n" + "─" * 78 + "\n\nAll records\n" + overview(everything))
         if args.plot:
             if len(everything) != 1:
-                have = ", ".join(item.record.variant for item in everything)
                 raise AnalyzeError(
-                    f"--plot draws one record, but {len(everything)} were read ({have}); pick one "
-                    "with --variant"
+                    f"--plot draws one record, but {len(everything)} were read: "
+                    f"{_several(everything)}"
                 )
             _plot_one(everything[0], Path(args.plot))
             print(f"\nwrote {args.plot}")
