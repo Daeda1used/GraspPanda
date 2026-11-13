@@ -9,7 +9,8 @@ GraspNet-1Billion test split. It is the first use of the swappable stages beyond
 [probe](https://daeda1used.github.io/GraspPanda/evidence/): a probe says that a combination
 trains, this says how good it becomes. Two questions the first table leaves open follow:
 [is it the encoder or the recipe](#encoder-or-recipe), and
-[is it GSNet](#the-same-swap-under-economicgrasp).
+[is it GSNet](#the-same-swap-under-economicgrasp). A last section swaps the other way:
+[GSNet's encoder under GraspNet-baseline](#gsnets-encoder-under-graspnet-baseline).
 
 ```bash
 grasppanda prepare graspnet1b --labels
@@ -146,3 +147,42 @@ within this table only.
 
 Records: [`records/`](records/) as `economicgrasp_ptv3`, and EconomicGrasp's
 [reproduced records](../../configs/economicgrasp/records/) for the first row.
+
+## GSNet's encoder under GraspNet-baseline
+
+GSNet ends 37 AP above GraspNet-baseline on seen scenes. Is that its encoder?
+[`graspnet-baseline_sunet14-fps_g1b-realsense_18e`](../../configs/experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e.yaml)
+is GraspNet-baseline with the sparse U-Net in place of its PointNet++ and nothing else
+changed, trained with GraspNet-baseline's recipe. An adapter keeps the 1,024 points
+PointNet++ would end on, so both models predict at the same seeds. The first row is the
+model zoo's
+[GraspNet-baseline](../../configs/graspnet_baseline/README.md#results-on-graspnet-1billion):
+the same recipe and seed with the encoder it ships.
+
+```bash
+grasppanda train experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e
+grasppanda test experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e \
+    --weights <the checkpoint of epoch 18> --opts evaluation.num_workers=8
+```
+
+| Encoder | Collision filter off | On | Loss |
+|---|---|---|---|
+| `pointnet2` | 31.76 / 26.18 / 10.19 | 46.81 / 41.90 / 16.74 | 0.50 |
+| `sunet14` | 32.41 / 27.88 / 10.99 | 47.40 / 43.05 / 17.26 | 0.48 |
+
+**The sparse U-Net ends 0.5 to 1.7 AP higher on every split**: +0.65 / +1.70 / +0.80 AP
+without the collision filter, +0.59 / +1.15 / +0.52 with it, and it fits the training
+scenes closer (0.48 against 0.50). A second training from one config and seed moves GSNet
+by up to 1.12 AP and EconomicGrasp by up to 1.44; GraspNet-baseline was trained once, so
+a gain is likely and not shown.
+
+**The encoder is not what separates the two methods.** With the same encoder, GSNet ends
+at 68.83 AP on seen scenes without the filter and GraspNet-baseline at 32.41. Of the 37.07
+AP between the two methods as they ship, the encoder accounts for 0.65 under
+GraspNet-baseline: the rest lies in where they predict and what they predict there, which
+this run does not take apart.
+
+The training was stopped after its third epoch to free a GPU and resumed from that
+checkpoint. Records: [`records/`](records/) as `graspnet-baseline_sunet14`, and
+GraspNet-baseline's
+[reproduced records](../../configs/graspnet_baseline/records/) for the first row.

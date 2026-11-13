@@ -1,5 +1,5 @@
 {
-  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run. `runs` holds the runs of gsnet_encoders.yaml, `recipe_runs` those of gsnet_recipe.yaml by the encoder of the run. `economicgrasp_runs` holds EconomicGrasp with the encoder it ships (the training of the model zoo's row) and with PTv3 (experimental/economicgrasp_ptv3_g1b-realsense_10e): another method with other loss terms, so these compare with each other only.",
+  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch. The text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400, so this is the mean over every iteration of the epoch. Read from log.txt of each run. `runs` holds the runs of gsnet_encoders.yaml, `recipe_runs` those of gsnet_recipe.yaml by the encoder of the run. `economicgrasp_runs` holds EconomicGrasp with the encoder it ships (the training of the model zoo's row) and with PTv3 (experimental/economicgrasp_ptv3_g1b-realsense_10e): another method with other loss terms, so these compare with each other only. `graspnet_baseline_runs` holds GraspNet-baseline with the encoder it ships and with the sparse U-Net, 18 epochs of 12,800 iterations each (256 logged values an epoch); the second was stopped after epoch 3 and resumed from that checkpoint.",
   "epochs": 10,
   "runs": {
     "sunet14": [
@@ -113,6 +113,48 @@
       3.3587,
       3.3272,
       3.3082
+    ]
+  },
+  "graspnet_baseline_runs": {
+    "pointnet2": [
+      0.716,
+      0.5858,
+      0.5639,
+      0.5513,
+      0.5416,
+      0.5345,
+      0.5285,
+      0.5236,
+      0.5098,
+      0.5071,
+      0.5058,
+      0.5048,
+      0.5034,
+      0.503,
+      0.503,
+      0.5028,
+      0.5027,
+      0.5026
+    ],
+    "sunet14": [
+      0.6377,
+      0.5629,
+      0.5415,
+      0.5282,
+      0.5182,
+      0.5104,
+      0.5041,
+      0.4984,
+      0.4856,
+      0.4826,
+      0.4811,
+      0.4799,
+      0.4787,
+      0.4783,
+      0.478,
+      0.478,
+      0.478,
+      0.4778
     ]
   }
 }
