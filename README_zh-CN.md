@@ -79,7 +79,7 @@ grasppanda probe baseline_ptv3.yaml
 grasppanda probe hggd_dinov2.yaml
 ```
 
-`compose` 检查各阶段间的契约并写出配置，需要时插入适配器。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明一个组合能训练，不说明它有多好；替换后的模型训练前没有权重。
+`compose` 检查各阶段间的契约并写出配置，需要时插入适配器。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：GSNet 下完整训练后 PTv3 低 4.6 到 10.4 AP，[取决于训练方案](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)。替换后的模型训练前没有权重。
 
 **下一步：** [运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)（用已发布的权重，几分钟就能拿到第一批抓取）· [替换一个组件](https://daeda1used.github.io/GraspPanda/get_started/swap/) · [打开组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)
 
