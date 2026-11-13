@@ -193,7 +193,7 @@ grasppanda probe hggd_dinov2.yaml
 - [x] **M0 — 核心。** 配置系统、注册表、数据契约、参考算子、命令行、CI、文档、品牌。
 - [ ] **M1 — GraspNet-1Billion、它的评测器、第一个方法。** 已完成：评测器与官方一致；GSNet 与参考实现逐阶段一致，已在本工具箱内训练并在整个测试集上评测。未解决：与论文的差距尚未解释，权重暂未发布。
 - [ ] **M2 — EconomicGrasp，以及作为第二个家族的 HGGD。** 已完成：两者用作者的权重与参考实现逐阶段一致；EconomicGrasp 在本工具箱内训练后达到作者权重的成绩；HGGD 用公开转换脚本的标签在本工具箱内训练，远低于作者权重，原因在标签。进行中：用更密的标签训练 HGGD。
-- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致；GraspNet-baseline 在本工具箱内训练后通过了准入规则；Scale-Balanced-Grasp 在本工具箱内训练后达到作者权重的成绩；FineGrasp 已在本工具箱内训练。未解决：FineGrasp 与论文的差距。进行中：逐个打开 FineGrasp 的改动。计划：受控对比，相同的编码器、训练预算、输入和评测器。
+- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致；GraspNet-baseline 在本工具箱内训练后通过了准入规则；Scale-Balanced-Grasp 在本工具箱内训练后达到作者权重的成绩；FineGrasp 已在本工具箱内训练，它的三处改动也各自单独训练过。未解决：FineGrasp 与论文的差距，原因不在训练方案；三处改动在这里都没有显示增益。计划：受控对比，相同的编码器、训练预算、输入和评测器。
 - [ ] **M4 — GraspClutter6D。** 已完成：读取器、与官方一致的评测器、标签资产、迁移配置。计划：在 GraspClutter6D 上训练；Contact-GraspNet。
 - [ ] **M5 — 发布。** PyPI、模型库、文档网站。
 
