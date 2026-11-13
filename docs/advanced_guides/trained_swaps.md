@@ -97,8 +97,8 @@ fail or diverge. They do not rank the ones that pass.
 
 FineGrasp is EconomicGrasp with three changes, each a group of config entries: graspness
 normalised per object, normals as encoder input, and a crop at four radii. Each is switched
-on alone, and all three together, under EconomicGrasp's recipe. The first two rows are
-EconomicGrasp trained twice from one config and seed: the yardstick.
+on alone, and all three together, under EconomicGrasp's recipe. A row *trained again*
+repeats the row above it from the same config and seed: the yardstick.
 
 <div class="gp-figures" markdown>
 
@@ -106,15 +106,16 @@ EconomicGrasp trained twice from one config and seed: the yardstick.
 
 </div>
 
-- **No change alone shows a gain.** `graspness` moves no split by more than 0.7 AP;
-  `normals` ends 0.96 to 1.29 AP below both trainings of EconomicGrasp on seen scenes;
-  `multi-scale` ends below both on every split, by 0.91 to 2.78 AP.
+- **No change alone shows a gain, and one a loss.** `graspness` moves no split by more than
+  0.7 AP; `normals` ends 0.96 to 1.29 AP below both trainings of EconomicGrasp on seen
+  scenes; `multi-scale`, trained twice, ends below both on every split in both trainings,
+  by 1.52 / 3.06 / 1.95 AP on average.
 - **All three: above both on seen scenes, between them elsewhere.** +1.20 and +1.53 AP on
   seen. That is 1.0 to 2.5 AP below the authors' checkpoint, where FineGrasp trained with
   its own recipe is 1.2 to 3.1 below: the recipe is not what separates the model trained
   here from theirs.
-- **One run each, and trainings spread.** The two of EconomicGrasp differ by up to 1.4 AP.
-  `multi-scale` and `all` are being trained again.
+- **Trainings spread.** The two of EconomicGrasp differ by up to 1.44 AP, the two of
+  `multi-scale` by up to 1.95. `all` is being trained again.
 
 ## Run it {#run}
 
