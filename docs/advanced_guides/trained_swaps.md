@@ -88,6 +88,30 @@ frames PTv3 under GSNet brought the graspness loss lower than the shipped encode
 ten epochs on 25,600 frames it fell behind. The short checks sort out the combinations that
 fail or diverge. They do not rank the ones that pass.
 
+## FineGrasp's changes, one at a time {#finegrasp}
+
+FineGrasp is EconomicGrasp with three changes, each a group of config entries: graspness
+normalised per object, normals as encoder input, and a crop at four radii. Each is switched
+on alone, and all three together, under EconomicGrasp's recipe. The first row is
+EconomicGrasp trained here.
+
+<div class="gp-figures" markdown>
+
+--8<-- "docs/includes/trained_changes.md"
+
+</div>
+
+- **No change alone shows a gain.** `graspness` and `normals` stay within a seed of
+  EconomicGrasp but for one number, −1.29 AP on seen scenes for `normals`; `multi-scale`
+  alone ends 1.24 to 2.78 AP lower.
+- **All three: no gain that holds across the splits.** +1.20 AP on seen and −0.80 on novel
+  scenes, 1.0 to 2.5 AP below the authors' checkpoint, where FineGrasp trained with its own
+  recipe is 1.2 to 3.1 below: the recipe is not what separates the model trained here from
+  theirs.
+- **The parts do not add up.** With the two other changes on, `multi-scale` loses nothing
+  on seen and similar scenes. Two rows are being trained again to tell an interaction from
+  the spread of trainings.
+
 ## Run it {#run}
 
 Each experiment is a sweep file under
@@ -96,5 +120,7 @@ beside it and the result records of every row:
 
 ```bash
 grasppanda sweep projects/encoder_comparison/gsnet_encoders.yaml --gpus 0,1,2,3 \
+    --opts evaluation.num_workers=8
+grasppanda sweep projects/finegrasp_ablation/changes.yaml --gpus 0,1,2,3 \
     --opts evaluation.num_workers=8
 ```
