@@ -73,10 +73,10 @@ EconomicGrasp's: 2.97 against 2.98 over the last epoch.
 on every split, with the collision filter and without. Between the means of two that is
 1.52 / 3.06 / 1.95 AP without the filter. It is not under-trained: its training loss is the
 lower one, 2.77 and 2.78 against EconomicGrasp's 2.98 over the last epoch with the same
-labels and loss terms. Nor does it lean on its training mode: on 160 training frames the
-loss of the first training is 2.86 with the layers as in training and 2.73 as in evaluation
-([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes with the lower
-AP is not known.
+labels and loss terms. Nor does it lean on its training mode: on 160 training frames its
+loss is 2.86 with the layers as in training and 2.73 as in evaluation, measured on the
+first training ([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes
+with the lower AP is not known.
 
 **`all`, the FineGrasp model, is above both trainings of EconomicGrasp on seen scenes and
 between them on the other splits.** On seen it ends +1.20 and +1.53 AP without the
