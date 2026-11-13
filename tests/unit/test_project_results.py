@@ -424,6 +424,7 @@ ABLATION_RECORDS = {
     "graspness": "projects/finegrasp_ablation/records/graspness_test",
     "normals": "projects/finegrasp_ablation/records/normals_test",
     "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
+    "multi-scale again": "projects/finegrasp_ablation/records/multi-scale_run2_test",
     "all": "projects/finegrasp_ablation/records/all_test",
 }
 #: FineGrasp in the model zoo: the authors' checkpoint and the model trained here with
@@ -442,7 +443,7 @@ def ablation_record(name: str, variant: str) -> dict:
 def ablation_rows() -> dict[str, list[str]]:
     """Rows of the project's results by the name of the change."""
     rows = table_under((ABLATION / "README.md").read_text(encoding="utf-8"), "## Results")
-    return {row[0].partition(":")[0].strip("`").replace(", trained", ""): row for row in rows}
+    return {row[0].partition(":")[0].replace("`", "").replace(", trained", ""): row for row in rows}
 
 
 def test_the_ablation_prints_what_its_records_hold():
@@ -454,7 +455,14 @@ def test_the_ablation_prints_what_its_records_hold():
         for cell in load_sweep(ABLATION / "changes.yaml").plan()
     }
     rows = ablation_rows()
-    assert list(rows) == ["none", "none again", *planned]
+    # a training that was repeated has its second row right below the first
+    expected = [
+        row
+        for name in ("none", *planned)
+        for row in (name, f"{name} again")
+        if not row.endswith(" again") or row in ABLATION_RECORDS
+    ]
+    assert list(rows) == expected
     for name, row in rows.items():
         if name not in ABLATION_RECORDS:
             assert not any(character.isdigit() for cell in row[1:] for character in cell), name
@@ -464,8 +472,9 @@ def test_the_ablation_prints_what_its_records_hold():
             assert record["variant"] == variant and not record["partial"], name
             assert record["scored"] == record["requested"] == 23040, name
             assert record["seed"] == 0, name
-            if name in planned:
-                assert record["weights"]["path"].startswith(f"{planned[name]}/"), name
+            run = name.removesuffix(" again")
+            if run in planned:
+                assert record["weights"]["path"].startswith(f"{planned[run]}/"), name
             numbers = record_result.headline(record)["AP"]
             assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
 
@@ -535,18 +544,25 @@ def test_what_the_ablation_says_is_computed_from_its_records():
         f"{runs['normals'][-1]:.2f} against {runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
-    # the four-radius crop: below both trainings on every split, with the lower training loss
-    scales, scales_again = (
-        from_no_change("multi-scale"),
-        from_no_change("multi-scale", "none again"),
-    )
-    assert max(*scales, *scales_again) < 0, "lower on every split than both trainings"
-    assert all(abs(-scales_again[i] - -again[i]) < 0.1 for i in (1, 2)), "similar, novel"
-    assert runs["multi-scale"][-1] < min(runs["none"][-1], runs["none again"][-1])
+    # the four-radius crop, trained twice: both trainings below both of EconomicGrasp on
+    # every split, with the lower training loss
+    crops = [
+        from_no_change(crop, base)
+        for crop in ("multi-scale", "multi-scale again")
+        for base in ("none", "none again")
+    ]
+    assert max(value for crop in crops for value in crop) < 0, "below both, in both trainings"
+    means = [sum(crop[index] for crop in crops) / len(crops) for index in range(3)]
+    between = from_no_change("multi-scale again", "multi-scale")
+    crop_losses = [runs["multi-scale"][-1], runs["multi-scale again"][-1]]
+    assert max(crop_losses) < min(runs["none"][-1], runs["none again"][-1])
     for sentence in (
-        "by " + " / ".join(f"{-value:.2f}" for value in scales[:3]) + " AP from the first",
-        "and " + " / ".join(f"{-value:.2f}" for value in scales_again[:3]) + " from the second",
-        f"{runs['multi-scale'][-1]:.2f} against EconomicGrasp's {runs['none'][-1]:.2f}",
+        "the two of `multi-scale` by " + " / ".join(f"{-value:.2f}" for value in between[:3]),
+        "Between the means of two that is "
+        + " / ".join(f"{-value:.2f}" for value in means)
+        + " AP without the filter",
+        f"{crop_losses[0]:.2f} and {crop_losses[1]:.2f} against EconomicGrasp's "
+        f"{runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
     # all three, the FineGrasp model: above both trainings on seen scenes, between them on
@@ -569,7 +585,7 @@ def test_what_the_ablation_says_is_computed_from_its_records():
     ):
         assert sentence in readme, sentence
     # the crop alone below the first training on every split, with the other changes above it
-    assert max(scales[:3]) < 0 < everything[0]
+    assert max(crops[0][:3]) < 0 < everything[0]
     # FineGrasp's own README draws the conclusion from the same records
     finegrasp = " ".join((REPO / "configs/finegrasp/README.md").read_text(encoding="utf-8").split())
     assert (
@@ -591,11 +607,14 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     again = from_no_change("none again")
     graspness, everything = from_no_change("graspness"), from_no_change("all")
     seen = sorted(-from_no_change("normals", base)[0] for base in ("none", "none again"))
-    scales = [
-        -value
+    crops = [
+        from_no_change(crop, base)
+        for crop in ("multi-scale", "multi-scale again")
         for base in ("none", "none again")
-        for value in from_no_change("multi-scale", base)[:3]
     ]
+    assert max(value for crop in crops for value in crop) < 0
+    means = [-sum(crop[index] for crop in crops) / len(crops) for index in range(3)]
+    between = from_no_change("multi-scale again", "multi-scale")
     below = {
         "all": below_the_authors(ABLATION_RECORDS["all"]),
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
@@ -603,11 +622,14 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     for sentence in (
         f"`graspness` moves no split by more than {max(map(abs, graspness)):.1f} AP",
         f"`normals` ends {seen[0]:.2f} to {seen[1]:.2f} AP below both trainings",
-        f"below both on every split, by {min(scales):.2f} to {max(scales):.2f} AP",
+        "below both on every split in both trainings, by "
+        + " / ".join(f"{value:.2f}" for value in means)
+        + " AP on average",
+        f"the two of `multi-scale` by up to {max(map(abs, between)):.2f}",
         f"{signed(everything[0])} and {signed(from_no_change('all', 'none again')[0])} AP on seen",
         f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
-        f"differ by up to {max(map(abs, again)):.1f} AP",
+        f"differ by up to {max(map(abs, again)):.2f} AP",
     ):
         assert sentence in flat, sentence
 
