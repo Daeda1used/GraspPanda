@@ -76,6 +76,25 @@ as GSNet's, on a cosine that ends at zero. The first row is the
 - **Under-trained here too.** After ten epochs its loss, 3.31, is where the shipped encoder
   was after four (3.33).
 
+## GSNet's encoder under GraspNet-baseline {#graspnet-baseline}
+
+The swap the other way: GraspNet-baseline with GSNet's sparse U-Net in place of its
+PointNet++ and nothing else changed, under GraspNet-baseline's recipe. The first row is the
+[model zoo's](../model_zoo.md).
+
+<div class="gp-figures" markdown>
+
+--8<-- "docs/includes/trained_baseline.md"
+
+</div>
+
+- **The sparse U-Net: 0.5 to 1.7 AP higher on every split.** GraspNet-baseline was trained
+  once, and a second training moves two other methods by 1.12 and 1.44 AP: likely a gain,
+  not shown.
+- **Not what separates the two methods.** With the same encoder GSNet ends at 68.83 AP on
+  seen scenes and GraspNet-baseline at 32.41: of the 37.07 AP between them, the encoder
+  accounts for 0.65.
+
 ## What the cheaper checks had said {#cheaper-checks}
 
 <div class="gp-figures" markdown>

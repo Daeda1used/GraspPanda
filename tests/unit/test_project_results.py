@@ -412,6 +412,112 @@ def test_the_evidence_page_shows_the_swap_under_economicgrasp():
     assert page.count('--8<-- "docs/includes/trained_economicgrasp.md"') == 1
 
 
+# ------------------------------------------------- GSNet's encoder under GraspNet-baseline
+
+#: Encoder → (config, stem of its two records). The first is the model zoo's
+#: GraspNet-baseline, the second the same recipe and seed with the sparse U-Net of GSNet.
+BASELINE_RUNS = {
+    "pointnet2": (
+        "graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e",
+        "configs/graspnet_baseline/records/"
+        "graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test",
+    ),
+    "sunet14": (
+        "experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e",
+        "projects/encoder_comparison/records/graspnet-baseline_sunet14_test",
+    ),
+}
+BASELINE_SECTION = "## GSNet's encoder under GraspNet-baseline"
+
+
+def baseline_ap(name: str, variant: str) -> dict[str, float]:
+    path = REPO / f"{BASELINE_RUNS[name][1]}_{variant}.json"
+    return record_result.headline(json.loads(path.read_text(encoding="utf-8")))["AP"]
+
+
+def test_the_swap_under_graspnet_baseline_prints_what_its_records_hold():
+    """Both rows are a shipped config trained with seed 0 for its eighteen epochs and scored
+    on the whole test split: the weights of a record were trained from the config of its
+    row, and the loss is that of the last epoch."""
+    from grasppanda.config import Config, resolve_config_path
+
+    readme = (PROJECT / "README.md").read_text(encoding="utf-8")
+    rows = {row[0].strip("`"): row for row in table_under(readme, BASELINE_SECTION)}
+    assert list(rows) == list(BASELINE_RUNS)
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["graspnet_baseline_runs"]
+    assert set(runs) == set(rows)
+    for name, row in rows.items():
+        trained = Config.load(resolve_config_path(BASELINE_RUNS[name][0])).digest()
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            path = REPO / f"{BASELINE_RUNS[name][1]}_{variant}.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            assert record["variant"] == variant and not record["partial"], name
+            assert record["scored"] == record["requested"] == 23040, name
+            assert record["seed"] == 0 and record["weights"]["epoch"] == 18, name
+            assert record["weights"]["config_hash"] == trained, name
+            numbers = record_result.headline(record)["AP"]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
+        assert len(runs[name]) == 18
+        assert row[3] == f"{runs[name][-1]:.2f}", name
+    include = (REPO / "docs/includes/trained_baseline.md").read_text(encoding="utf-8")
+    assert include.strip() in readme
+    assert table_under(include, "|") == table_under(readme, BASELINE_SECTION)
+    page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
+    assert page.count('--8<-- "docs/includes/trained_baseline.md"') == 1
+
+
+def test_what_the_swap_under_graspnet_baseline_says_is_computed_from_its_records():
+    """The sparse U-Net ends a little higher on every split, and of what lies between GSNet
+    and GraspNet-baseline it accounts for a small part: in the project and on the evidence
+    page."""
+    from .test_repository import spread, trainings
+
+    gained = [
+        value - baseline_ap("pointnet2", variant)[split]
+        for variant in ("raw", "cd")
+        for split, value in baseline_ap("sunet14", variant).items()
+    ]
+    assert min(gained) > 0, "higher on every split"
+    gsnet = trainings("gsnet", "gsnet_sunet14_g1b-realsense_10e")
+    economic = trainings("economicgrasp", "economicgrasp_sunet14_g1b-realsense_10e")
+    assert max(gained) < 1.5 * spread(economic), "not far beyond what a second training moves"
+    seen = {
+        "gsnet": gsnet[0]["raw"]["seen"],  # the model zoo's row: the first training
+        "pointnet2": baseline_ap("pointnet2", "raw")["seen"],
+        "sunet14": baseline_ap("sunet14", "raw")["seen"],
+    }
+    between = seen["gsnet"] - seen["pointnet2"]
+    losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["graspnet_baseline_runs"]
+    project = " ".join((PROJECT / "README.md").read_text(encoding="utf-8").split())
+    page = " ".join(
+        (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8").split()
+    )
+    higher = f"{min(gained):.1f} to {max(gained):.1f} AP higher on every split"
+    assert f"The sparse U-Net ends {higher}" in project
+    assert f"The sparse U-Net: {higher}" in page
+    for sentence in (
+        f"{slashed(gained[:3])} AP without the collision filter, {slashed(gained[3:])} with it",
+        f"({runs['sunet14'][-1]:.2f} against {runs['pointnet2'][-1]:.2f})",
+        f"GSNet by up to {spread(gsnet):.2f} AP and EconomicGrasp by up to {spread(economic):.2f}",
+        f"GSNet ends {between:.0f} AP above GraspNet-baseline on seen scenes",
+        f"GSNet ends at {seen['gsnet']:.2f} AP on seen scenes without the filter and "
+        f"GraspNet-baseline at {seen['sunet14']:.2f}",
+        f"Of the {between:.2f} AP between the two methods as they ship, the encoder accounts "
+        f"for {seen['sunet14'] - seen['pointnet2']:.2f}",
+    ):
+        assert sentence in project, sentence
+    for sentence in (
+        f"by {spread(gsnet):.2f} and {spread(economic):.2f} AP",
+        f"GSNet ends at {seen['gsnet']:.2f} AP on seen scenes and GraspNet-baseline at "
+        f"{seen['sunet14']:.2f}",
+        f"of the {between:.2f} AP between them, the encoder accounts for "
+        f"{seen['sunet14'] - seen['pointnet2']:.2f}",
+    ):
+        assert sentence in page, sentence
+
+
 # ------------------------------------------------------------------ FineGrasp's changes
 
 ABLATION = REPO / "projects/finegrasp_ablation"
