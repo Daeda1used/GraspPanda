@@ -180,11 +180,12 @@ def test_the_two_by_two_of_encoder_and_recipe_prints_what_its_records_hold():
     losses = json.loads((PROJECT / "records/training_loss.json").read_text(encoding="utf-8"))
     assert set(losses["recipe_runs"]) == set(RECIPE_RECORDS)
     rows = table_under(readme, "## Encoder or recipe")
-    assert [(row[0].strip("`"), row[1].strip("`")) for row in rows] == [
-        (name, recipe) for name in planned for recipe in ("GSNet's", "adamw-onecycle")
+    assert [(row[0].strip("`"), row[1]) for row in rows] == [
+        (name, recipe) for name in planned for recipe in ("GSNet's", "one-cycle")
     ]
+    assert "*one-cycle* below" in readme  # the text above the table says which preset that is
     for row in rows:
-        name, recipe = row[0].strip("`"), row[1].strip("`")
+        name, recipe = row[0].strip("`"), row[1]
         if recipe == "GSNet's":
             assert row[2:] == results[name][2:], name
         elif name not in RECIPE_RECORDS:
