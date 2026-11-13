@@ -27,7 +27,7 @@ none of their code is part of this history. Each line below has its full account
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
-- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file. First results, one run each on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, so a second sweep trains both encoders with the recipe PTv3 is trained with elsewhere (the shipped encoder under it: within a seed of itself); normalising graspness per object, the first of FineGrasp's changes, shows no difference. The documentation has a page for such runs, [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/), with what the two short checks had said about each swap: all three had passed both.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp. No code beside the file. First results, one run each on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, LitePT 14.2 AP lower with a loss that rose mid-training, so a second sweep trains both encoders with the recipe PTv3 is trained with elsewhere (the shipped encoder under it: within a seed of itself); normalising graspness per object, the first of FineGrasp's changes, shows no difference. The documentation has a page for such runs, [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/), with what the two short checks had said about each swap: all three had passed both, so the short checks filter and do not rank.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
@@ -498,7 +498,9 @@ Classes now count levels, and every method lists the options of each of its slot
   collision filter, 0.2 to 0.7 AP below the shipped encoder and inside the spread of GSNet's
   own three trainings; PTv3 59.07 / 52.55 / 21.91 and 62.28 / 55.62 / 23.48, with a training
   loss after ten epochs (0.96) above the shipped encoder's after five (0.85). Records are in
-  `projects/encoder_comparison/records/`; LitePT is training. `gsnet_recipe.yaml` adds the
+  `projects/encoder_comparison/records/`. LitePT: 55.23 / 50.03 / 21.60 and 59.18 / 53.50 /
+  23.04; its loss rose from 1.34 after the second epoch to 1.66 after the fourth and ends
+  at 1.18. `gsnet_recipe.yaml` adds the
   recipe preset `adamw-onecycle` for the shipped encoder and for PTv3. The shipped encoder
   under it: 70.41 / 61.48 / 24.83 and 72.63 / 63.54 / 26.19, +0.95 AP on seen and −0.59 on
   novel scenes without the filter, inside the spread of GSNet's own trainings; PTv3 under
@@ -704,8 +706,9 @@ Classes now count levels, and every method lists the options of each of its slot
   unmodified reference code was not run here. The other numbers are `author-ckpt` (see
   above): each is one run with seed 0, and where a number differs from the reported one
   the cause is not known.
-- Of the options added beside the six ported methods, two scene encoders under GSNet have
-  been trained in full and evaluated, once each (`projects/encoder_comparison`). For every
+- Of the options added beside the six ported methods, three scene encoders under GSNet
+  and one recipe have been trained in full and evaluated, once each
+  (`projects/encoder_comparison`). For every
   other option a measured verdict says that a combination builds, trains for 20 iterations
   and predicts, and no more.
 - Mixed precision (`train.amp`, preset `hooks=amp`) does not work with the shipped
