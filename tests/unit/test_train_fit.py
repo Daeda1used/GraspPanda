@@ -102,7 +102,7 @@ def test_rows_are_the_two_modes_and_on_request_what_lies_between():
 
 def test_a_pattern_that_matches_no_dropout_layer_names_the_layers():
     with pytest.raises(ValueError, match=r"matches no dropout layer; the model has drop, head\.0"):
-        tool.rows(toy(), batches, off={"typo": r"^dorp$"})
+        tool.rows(toy(), batches, off={"absent": r"^no_such_layer$"})
 
 
 def test_names_and_patterns_are_checked_on_the_command_line():
