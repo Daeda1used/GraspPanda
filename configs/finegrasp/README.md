@@ -75,7 +75,7 @@ recipe: under EconomicGrasp's the model ends 1.0 to 2.5 AP below the checkpoint
 graspness labels generated here. On 160 training frames its training loss is
 the lower one, 2.67 against the authors' 2.92, on every term (EconomicGrasp's two: 0.03
 apart; [`train_fit`](diagnostics/train_fit.json)): it fits the training scenes closer and
-detects worse on the test scenes. Trained here FineGrasp is
+detects worse on test scenes. Trained here FineGrasp is
 +0.43 / −1.69 / −0.44 AP from EconomicGrasp (filter off); with both authors' weights,
 +2.28 / +1.30 / +2.25. One run, one seed.
 
@@ -293,14 +293,15 @@ experiment name. The options inherited from EconomicGrasp are listed in
 
 - No model class of its own; one model instance trains and predicts.
 - The normal images and the instance-normalised graspness files of the authors' training
-  set are not published. Both are generated here from the paper's equations; the normals
-  are checked through the AP of the released weights, the graspness labels cannot be
-  checked against the authors' at all.
+  set are not published. Both are generated from the paper's equations and checked
+  through the released weights: the normals by their AP, the graspness labels by their
+  graspness loss, 0.05 on these, 0.14 on scene-normalised ones
+  ([record](diagnostics/train_fit_scene_graspness.json)).
 - The published recipe uses eight processes of four frames; the config as written uses
   one with 32, which gives batch norm 32 frames instead of 4 and needs 48 GB.
   *Train and test* gives the launch that keeps both.
 - A frame with fewer graspable candidates than seeds yields fewer grasps instead of
-  repeats, and a frame with none an empty result (as for EconomicGrasp).
+  repeats, a frame with none an empty result (as EconomicGrasp).
 - The released inference processor also drops grasps as wide as the gripper, applies
   grasp NMS and sorts by score: deployment post-processing, not part of these configs
   (`GraspNMS` is a post-processor).
