@@ -1,0 +1,30 @@
+{
+  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch (the text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400). Read from log.txt of each run. Only runs that share EconomicGrasp's labels and loss terms are listed, so the values compare: `none` is the training of the model zoo's EconomicGrasp row.",
+  "epochs": 10,
+  "runs": {
+    "none": [
+      4.4024,
+      3.7444,
+      3.4782,
+      3.3304,
+      3.2269,
+      3.1465,
+      3.085,
+      3.0337,
+      3.0002,
+      2.9817
+    ],
+    "multi-scale": [
+      4.385,
+      3.5703,
+      3.2966,
+      3.1476,
+      3.0379,
+      2.9509,
+      2.8827,
+      2.8256,
+      2.7879,
+      2.7662
+    ]
+  }
+}

@@ -53,12 +53,20 @@ novel. GSNet, trained three times from one config and seed, moved by up to 1.12 
 | none: EconomicGrasp | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 |
 | `graspness` | 70.03 / 61.03 / 26.21 | 71.47 / 62.12 / 26.73 |
 | `normals` | training | |
-| `multi-scale` | training | |
+| `multi-scale` | 68.10 / 58.63 / 24.05 | 69.84 / 59.77 / 24.71 |
 | `all` | training | |
 
 **No difference is shown for `graspness`.** Normalising graspness per object moves no split
 by more than 0.7 AP: +0.69 on seen and −0.38 on similar without the collision filter.
 
-Records: [`records/`](records/), and EconomicGrasp's
+**`multi-scale` alone ends lower on every split**: −1.24 AP on seen, −2.78 on similar and
+−2.16 on novel scenes without the collision filter, more than a seed moves. It is not
+under-trained: its training loss is the lower one, 2.77 against EconomicGrasp's 2.98 over
+the last epoch with the same labels and loss terms. Nor does it lean on its training mode:
+on 160 training frames its loss is 2.86 with the layers as in training and 2.73 as in
+evaluation ([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes
+with the lower AP is not known.
+
+Records: [`records/`](records/), with the loss of every epoch, and EconomicGrasp's
 [reproduced records](../../configs/economicgrasp/records/) for the first row. Unit tests
 hold the table and these sentences to them.

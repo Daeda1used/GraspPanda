@@ -240,6 +240,7 @@ ABLATION = REPO / "projects/finegrasp_ablation"
 ABLATION_RECORDS = {
     "none": "configs/economicgrasp/records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test",
     "graspness": "projects/finegrasp_ablation/records/graspness_test",
+    "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
 }
 
 
@@ -300,5 +301,18 @@ def test_what_the_ablation_says_is_computed_from_its_records():
     for sentence in (
         f"by more than {max(abs(value) for value in graspness):.1f} AP",
         f"{signed(graspness[0])} on seen and {signed(graspness[1])} on similar",
+    ):
+        assert sentence in readme, sentence
+    # the four-radius crop: lower by more than a seed moves, with the lower training loss
+    scales = from_no_change("multi-scale")
+    assert max(scales) < -1.12, "lower on every split, outside what one seed moves"
+    losses = json.loads((ABLATION / "records/training_loss.json").read_text(encoding="utf-8"))
+    runs = losses["runs"]
+    assert all(len(values) == losses["epochs"] == 10 for values in runs.values())
+    assert runs["multi-scale"][-1] < runs["none"][-1]
+    for sentence in (
+        f"{signed(scales[0])} AP on seen, {signed(scales[1])} on similar and "
+        f"{signed(scales[2])} on novel scenes",
+        f"{runs['multi-scale'][-1]:.2f} against EconomicGrasp's {runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
