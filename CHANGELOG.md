@@ -110,7 +110,10 @@ none of their code is part of this history. Each line below has its full account
   reason for each method left out; see "Measured records" below for the numbers. No AP.
 - **Inference and analysis.** `GraspInferencer` and `grasppanda demo` (depth image, point
   cloud, dataset frame or the built-in synthetic scene); `grasppanda analyze` splits an AP
-  by scene, object and cause.
+  by friction threshold, split, scene, object and cause. It reads a run, or a record
+  committed here by its file: AP0.8 and AP0.4 of seen, similar and novel, with nothing
+  to score. A directory that holds the records of several runs is read whole, and a
+  record is paired with the variants of its own run only.
 - **Speed.** Optional compiled kernels for furthest point sampling, ball query, cylinder
   query and nearest neighbours with bit-identical results; dense label grids are read where
   they are matched instead of being copied into every batch.

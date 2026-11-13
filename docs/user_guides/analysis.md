@@ -191,6 +191,30 @@ one observation.
     share earned and lost, and every scene; for a comparison the difference of every scene
     around zero.
 
+## 6. Read a record of this repository
+
+The record behind every measured number of the [model zoo](../model_zoo.md) is committed,
+and reads the same way by its file. Nothing has to be downloaded or scored:
+
+```bash
+grasppanda analyze configs/gsnet/records/gsnet_sunet14_g1b-realsense_10e_reproduced_test_cd.json
+```
+
+*By split* then has a row for seen, similar and novel. Its `mean` is the AP the zoo prints;
+the columns μ≤0.8 and μ≤0.4 are the AP0.8 and AP0.4 a paper prints beside it.
+
+```text
+By split
+split         scenes  frames  mean    μ≤0.2   μ≤0.4   μ≤0.6   μ≤0.8   μ≤1     μ≤1.2
+────────────  ──────  ──────  ──────  ──────  ──────  ──────  ──────  ──────  ──────
+test_seen     30/30   7680    0.7123  0.2862  0.6492  0.7894  0.8353  0.8526  0.8610
+test_similar  30/30   7680    0.6229  0.1832  0.5245  0.6980  0.7585  0.7810  0.7922
+test_novel    30/30   7680    0.2642  0.0365  0.1403  0.2451  0.3311  0.3940  0.4383
+test          90/90   23040   0.5331  0.1686  0.4380  0.5775  0.6416  0.6759  0.6972
+```
+
+`--compare` takes two such files and says in how many of the 90 scenes one model is ahead.
+
 ## Next
 
 - [Model zoo](../model_zoo.md): whole-split results of every method, with their records.
