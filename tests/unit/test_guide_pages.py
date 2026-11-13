@@ -110,8 +110,9 @@ def test_the_prepare_commands_of_a_method_build_what_its_config_reads(method):
         flags = {word for word in argv if word.startswith("--")}
         built |= flags & ({"--labels"} | set(ASSET_SECTIONS))
         option = dict(zip(argv, [*argv[1:], None], strict=True))
+        assert "--opts" not in flags, "a shipped config is prepared as it is written"
         args = argparse.Namespace(
-            config=option.get("--config"), loader="train", root=None, split=None
+            config=option.get("--config"), opts=[], loader="train", root=None, split=None
         )
         node = prepare._node(args, cls, option.get("--camera"))
         for flag in flags & set(ASSET_SECTIONS):
