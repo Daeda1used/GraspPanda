@@ -116,6 +116,23 @@ def test_shipped_configs_are_valid():
             Config.load(path)
 
 
+def test_the_resolved_config_of_a_run_loads_again(tmp_path):
+    """A run stores its config with every default written out, and that file is what a
+    resume or a second look at the run loads: it is the same experiment, for every config
+    that ships."""
+    from grasppanda.config import Config, configs_root
+
+    for path in sorted(configs_root().rglob("*.yaml")):
+        if path.name == "metafile.yaml" or "_base_" in path.parts:
+            continue
+        config = Config.load(path)
+        resolved = tmp_path / "config.resolved.yaml"
+        resolved.write_text(config.dump(defaults=True), encoding="utf-8")
+        again = Config.load(resolved)
+        assert again.digest() == config.digest(), path.name
+        assert again.dump(defaults=True) == config.dump(defaults=True), path.name
+
+
 def test_the_brand_pictures_are_what_their_tool_writes():
     from tools import make_brand_assets
 
@@ -814,21 +831,8 @@ def test_the_tour_of_the_config_shows_what_the_cli_prints_now():
         [toy, "--opts", "model.head.num_angles=6"],
         [toy, "--opts", "model.grouper.type=ToyDepthGrouper"],
     ):
-        printed = without_torch_version_keys(cli("print-config", *args).strip())
-        pages = [without_torch_version_keys(block.strip()) for block in shown]
-        assert printed in pages, f"stale output of {args}"
-
-
-#: Constructor arguments PyTorch added or dropped between the versions CI runs (Adam's
-#: ``decoupled_weight_decay`` since 2.6, the schedulers' ``verbose`` until 2.7): `--defaults`
-#: prints them only under the versions that have them.
-TORCH_VERSION_KEYS = ("decoupled_weight_decay:", "verbose:")
-
-
-def without_torch_version_keys(output: str) -> str:
-    return "\n".join(
-        line for line in output.splitlines() if not line.strip().startswith(TORCH_VERSION_KEYS)
-    )
+        printed = cli("print-config", *args).strip()
+        assert printed in [block.strip() for block in shown], f"stale output of {args}"
 
 
 def test_the_toy_inherits_the_method_neutral_recipe_the_tour_names():

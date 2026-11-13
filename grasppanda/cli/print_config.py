@@ -39,7 +39,9 @@ def register(commands: Any) -> None:
         "--no-check", action="store_true", help="print the merged config without validating it"
     )
     parser.add_argument(
-        "--defaults", action="store_true", help="also write out every default value"
+        "--defaults",
+        action="store_true",
+        help="also write out every default GraspPanda decides, as config.resolved.yaml of a run does",
     )
     parser.add_argument(
         "--for",

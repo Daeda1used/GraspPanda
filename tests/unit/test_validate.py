@@ -210,4 +210,11 @@ def test_dump_round_trips():
     from grasppanda.config import parse_yaml
 
     assert parse_yaml(config.dump()) == config.to_dict()
-    assert parse_yaml(config.dump(defaults=True)) == config.resolved()
+    # With defaults: every default GraspPanda decides, and a class of PyTorch as it was
+    # written, so that the dump is the same experiment on every machine.
+    written = parse_yaml(config.dump(defaults=True))
+    assert written["optimizer"] == {"type": "Adam", "lr": 1e-5}
+    assert "betas" in config.resolved()["optimizer"]  # what is built knows the library's
+    assert written["train"] == config.resolved()["train"]
+    assert written["model"] == config.resolved()["model"]
+    assert Config.from_dict(written).digest() == config.digest()
