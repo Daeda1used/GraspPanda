@@ -386,6 +386,13 @@ ABLATION_RECORDS = {
     "graspness": "projects/finegrasp_ablation/records/graspness_test",
     "normals": "projects/finegrasp_ablation/records/normals_test",
     "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
+    "all": "projects/finegrasp_ablation/records/all_test",
+}
+#: FineGrasp in the model zoo: the authors' checkpoint and the model trained here with
+#: FineGrasp's own recipe → stem of the two records.
+FINEGRASP_RECORDS = {
+    provenance: f"configs/finegrasp/records/finegrasp_sunet14_g1b-realsense_10e_{provenance}_test"
+    for provenance in ("author-ckpt", "reproduced")
 }
 
 
@@ -435,6 +442,21 @@ def from_no_change(name: str) -> list[float]:
     ]
 
 
+def below_the_authors(stem: str) -> list[float]:
+    """How far a FineGrasp model ends below the authors' checkpoint: seen, similar, novel
+    without the collision filter, then with it. ``stem`` names its two records."""
+
+    def ap(stem: str, variant: str) -> dict[str, float]:
+        record = json.loads((REPO / f"{stem}_{variant}.json").read_text(encoding="utf-8"))
+        return record_result.headline(record)["AP"]
+
+    return [
+        value - ap(stem, variant)[split]
+        for variant in ("raw", "cd")
+        for split, value in ap(FINEGRASP_RECORDS["author-ckpt"], variant).items()
+    ]
+
+
 def signed(value: float) -> str:
     return f"{'+' if value >= 0 else '−'}{abs(value):.2f}"
 
@@ -474,3 +496,31 @@ def test_what_the_ablation_says_is_computed_from_its_records():
         f"{runs['multi-scale'][-1]:.2f} against EconomicGrasp's {runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
+    # all three, the FineGrasp model: seen scenes without the filter at the edge of what a
+    # seed moves, nothing else beyond it
+    everything = from_no_change("all")
+    assert everything[0] == max(everything) and 1.12 < everything[0] < 1.5
+    assert max(abs(value) for value in everything[1:]) < 1.12
+    # below the authors' checkpoint under EconomicGrasp's recipe as under FineGrasp's own
+    below = {
+        "all": below_the_authors(ABLATION_RECORDS["all"]),
+        "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
+    }
+    assert min(below["all"]) > 0.9 and min(below["own"]) > 1.12
+    for sentence in (
+        f"it ends {signed(everything[0])} AP on seen scenes",
+        f"{signed(everything[1])} on similar and {signed(everything[2])} on novel",
+        "with the filter " + " / ".join(signed(value) for value in everything[3:]),
+        f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
+        f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
+        # the four-radius crop alone against the crop with the two other changes
+        f"`multi-scale` alone loses {-max(scales[:3]):.2f} to {-min(scales[:3]):.2f} AP",
+    ):
+        assert sentence in readme, sentence
+    assert min(everything[:2]) > -0.5 and max(scales[:2]) < -1.12, "none of that on seen, similar"
+    # FineGrasp's own README draws the conclusion from the same records
+    finegrasp = " ".join((REPO / "configs/finegrasp/README.md").read_text(encoding="utf-8").split())
+    assert (
+        f"under EconomicGrasp's the model ends {min(below['all']):.1f} to "
+        f"{max(below['all']):.1f} AP below the checkpoint" in finegrasp
+    )
