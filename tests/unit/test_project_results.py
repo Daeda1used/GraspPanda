@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from itertools import pairwise
 
 from grasppanda.sweep import load_sweep
 from tools import record_result
@@ -256,7 +257,7 @@ def test_what_the_two_by_two_says_is_computed_from_its_records():
     # LitePT: a loss that falls in every epoch, what the recipe gains it on seen scenes
     # and what is left to the shipped encoder under the same recipe: a third of the gap less
     steady = recipe_losses["litept"]
-    assert all(later < earlier for earlier, later in zip(steady, steady[1:]))
+    assert all(later < earlier for earlier, later in pairwise(steady))
     gained = recipe_ap("litept", "raw")["seen"] - encoder_ap("litept", "raw")["seen"]
     left = recipe_ap("sunet14", "raw")["seen"] - recipe_ap("litept", "raw")["seen"]
     before = below_shipped("litept")[0]
