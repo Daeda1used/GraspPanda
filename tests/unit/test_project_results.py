@@ -206,7 +206,9 @@ def test_what_the_two_by_two_says_is_computed_from_its_records():
     )
     moved = f"{signed(shipped[0])} AP on seen and {signed(shipped[2])} on novel scenes"
     assert moved in project and moved in page
-    fitted = f"({losses['recipe_runs']['sunet14'][-1]:.2f} against {losses['runs']['sunet14'][-1]:.2f})"
+    fitted = (
+        f"({losses['recipe_runs']['sunet14'][-1]:.2f} against {losses['runs']['sunet14'][-1]:.2f})"
+    )
     assert fitted in project
 
 
