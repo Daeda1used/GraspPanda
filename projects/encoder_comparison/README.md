@@ -135,6 +135,11 @@ the one-cycle recipe (4.6), not the one under GSNet's own (10.4). Both recipes w
 smaller gap anneal the rate to almost zero, and GSNet's stops at 6.3e-4; the two methods
 differ in more than that, and one run each does not say that this is why.
 
+**The gap on seen scenes is not the spread of trainings; the one on novel may be.** The
+first row trained a second time ends at 69.01 / 60.02 / 25.09 AP without the filter
+([records](../../configs/economicgrasp/repeats/)): 0.33 lower on seen and 1.12 on novel.
+From that training PTv3 is 3.5 AP lower on seen scenes and 1.2 on novel.
+
 **It is under-trained here too.** After ten epochs its loss, 3.31, is where the shipped
 encoder was after four (3.33). The loss terms are EconomicGrasp's, so the column compares
 within this table only.

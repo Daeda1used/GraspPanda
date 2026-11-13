@@ -45,12 +45,16 @@ it does not, in the three changes as they are generated here.
 ## Results
 
 AP on the whole GraspNet-1Billion test split (RealSense, 23,040 frames) as seen / similar /
-novel. GSNet, trained three times from one config and seed, moved by up to 1.12 AP
-([its README](../../configs/gsnet/README.md)): a smaller difference is not a finding.
+novel. The first two rows are EconomicGrasp trained twice from one config and seed: they
+differ by 0.33 / 1.39 / 1.12 AP without the collision filter
+([its README](../../configs/economicgrasp/README.md#results-on-graspnet-1billion)). A
+change that moves a split by less is not a finding. Differences below are from the first
+row unless both are named.
 
 | Change | Collision filter off | On |
 |---|---|---|
 | none: EconomicGrasp | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 |
+| none, trained again | 69.01 / 60.02 / 25.09 | 70.65 / 61.10 / 25.74 |
 | `graspness` | 70.03 / 61.03 / 26.21 | 71.47 / 62.12 / 26.73 |
 | `normals` | 68.05 / 60.78 / 26.23 | 70.11 / 62.00 / 26.77 |
 | `multi-scale` | 68.10 / 58.63 / 24.05 | 69.84 / 59.77 / 24.71 |
@@ -59,31 +63,34 @@ novel. GSNet, trained three times from one config and seed, moved by up to 1.12 
 **No difference is shown for `graspness`.** Normalising graspness per object moves no split
 by more than 0.7 AP: +0.69 on seen and −0.38 on similar without the collision filter.
 
-**No gain is shown for `normals`.** Reading the surface normal moves five of the six numbers
-by less than a seed does, −0.94 to +0.02 AP; the sixth, seen scenes without the collision
-filter, is −1.29. Its training loss is EconomicGrasp's: 2.97 against 2.98 over the last
-epoch.
+**No gain is shown for `normals`.** Reading the surface normal ends below both trainings of
+EconomicGrasp on seen scenes, by 1.29 and 0.96 AP without the collision filter. On the
+other splits it lies between the two, but for +0.02 AP on novel. Its training loss is
+EconomicGrasp's: 2.97 against 2.98 over the last epoch.
 
-**`multi-scale` alone ends lower on every split**: −1.24 AP on seen, −2.78 on similar and
-−2.16 on novel scenes without the collision filter, more than a seed moves. It is not
-under-trained: its training loss is the lower one, 2.77 against EconomicGrasp's 2.98 over
-the last epoch with the same labels and loss terms. Nor does it lean on its training mode:
-on 160 training frames its loss is 2.86 with the layers as in training and 2.73 as in
-evaluation ([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes
-with the lower AP is not known.
+**`multi-scale` alone ends below both trainings of EconomicGrasp on every split**: by
+1.24 / 2.78 / 2.16 AP from the first and 0.91 / 1.39 / 1.04 from the second, without the
+collision filter. On similar and novel the two trainings differ by as much as it lies
+below the second: a loss is likely, and one run does not show it. It is not under-trained:
+its training loss is the lower one, 2.77 against EconomicGrasp's 2.98 over the last epoch
+with the same labels and loss terms. Nor does it lean on its training mode: on 160
+training frames its loss is 2.86 with the layers as in training and 2.73 as in evaluation
+([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes with the lower
+AP is not known.
 
-**`all`, the FineGrasp model, shows no gain that holds across the splits.** Without the
-collision filter it ends +1.20 AP on seen scenes, at the edge of what a seed moves, −0.14 on
-similar and −0.80 on novel; with the filter +0.67 / −0.45 / −0.85. That is 1.0 to 2.5 AP
-below the authors' checkpoint, where FineGrasp trained with its own recipe is 1.2 to 3.1
-below: the recipe is not what separates the model trained here from the authors'.
+**`all`, the FineGrasp model, is above both trainings of EconomicGrasp on seen scenes and
+between them on the other splits.** On seen it ends +1.20 and +1.53 AP without the
+collision filter, +0.67 and +1.07 with it, where the two trainings differ by 0.33 and 0.40;
+one run of `all` does not make that a gain. It is 1.0 to 2.5 AP below the authors'
+checkpoint, where FineGrasp trained with its own recipe is 1.2 to 3.1 below: the recipe is
+not what separates the model trained here from the authors'.
 
-**The parts do not add up.** `multi-scale` alone loses 1.24 to 2.78 AP without the filter;
-together with the two other changes it loses none of that on seen and similar scenes. One
-run each cannot tell an interaction of the changes from trainings that spread wider than
-GSNet's: a second training of EconomicGrasp from the same config and seed is running to
-measure that spread.
+**Whether the parts add up is open.** `multi-scale` alone ends below EconomicGrasp on
+every split; with the two other changes on, the same crop ends above it on seen scenes.
+With one run each, an interaction of the changes and the spread of trainings look the
+same: `multi-scale` and `all` are being trained a second time.
 
-Records: [`records/`](records/), with the loss of every epoch, and EconomicGrasp's
-[reproduced records](../../configs/economicgrasp/records/) for the first row. Unit tests
-hold the table and these sentences to them.
+Records: [`records/`](records/), with the loss of every epoch; EconomicGrasp's
+[reproduced records](../../configs/economicgrasp/records/) for the first row and its
+[second training](../../configs/economicgrasp/repeats/) for the second. Unit tests hold
+the table and these sentences to them.

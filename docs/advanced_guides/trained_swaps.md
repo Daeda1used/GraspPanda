@@ -11,8 +11,9 @@ test split, as the [model zoo](../model_zoo.md) scores a method. It is the one c
 measures what a swap is worth, and so the one that says what the two cheaper checks are
 worth.
 
-**One training per row, seed 0.** GSNet, trained three times from one config and seed, moved
-by up to 1.12 AP: a difference below about 1 AP is not a finding.
+**One training per row, seed 0.** Trained again from one config and seed, GSNet moved by up
+to 1.12 AP over three trainings and EconomicGrasp by up to 1.44 over two: a difference
+below about 1 AP is not a finding.
 
 ## Scene encoders under GSNet {#encoders}
 
@@ -70,7 +71,8 @@ as GSNet's, on a cosine that ends at zero. The first row is the
 
 - **PTv3: 3.8 AP lower on seen scenes.** The gap GSNet keeps under one-cycle (4.6), not the
   one under its own recipe (10.4). Both recipes with the smaller gap anneal the rate to
-  almost zero; one run each does not say that this is why.
+  almost zero; one run each does not say that this is why. The first row trained again
+  ends 0.33 AP lower on seen scenes: the gap is not the spread of trainings.
 - **Under-trained here too.** After ten epochs its loss, 3.31, is where the shipped encoder
   was after four (3.33).
 
@@ -95,8 +97,8 @@ fail or diverge. They do not rank the ones that pass.
 
 FineGrasp is EconomicGrasp with three changes, each a group of config entries: graspness
 normalised per object, normals as encoder input, and a crop at four radii. Each is switched
-on alone, and all three together, under EconomicGrasp's recipe. The first row is
-EconomicGrasp trained here.
+on alone, and all three together, under EconomicGrasp's recipe. The first two rows are
+EconomicGrasp trained twice from one config and seed: the yardstick.
 
 <div class="gp-figures" markdown>
 
@@ -104,16 +106,15 @@ EconomicGrasp trained here.
 
 </div>
 
-- **No change alone shows a gain.** `graspness` and `normals` stay within a seed of
-  EconomicGrasp but for one number, −1.29 AP on seen scenes for `normals`; `multi-scale`
-  alone ends 1.24 to 2.78 AP lower.
-- **All three: no gain that holds across the splits.** +1.20 AP on seen and −0.80 on novel
-  scenes, 1.0 to 2.5 AP below the authors' checkpoint, where FineGrasp trained with its own
-  recipe is 1.2 to 3.1 below: the recipe is not what separates the model trained here from
-  theirs.
-- **The parts do not add up.** With the two other changes on, `multi-scale` loses nothing
-  on seen and similar scenes. Two rows are being trained again to tell an interaction from
-  the spread of trainings.
+- **No change alone shows a gain.** `graspness` moves no split by more than 0.7 AP;
+  `normals` ends 0.96 to 1.29 AP below both trainings of EconomicGrasp on seen scenes;
+  `multi-scale` ends below both on every split, by 0.91 to 2.78 AP.
+- **All three: above both on seen scenes, between them elsewhere.** +1.20 and +1.53 AP on
+  seen. That is 1.0 to 2.5 AP below the authors' checkpoint, where FineGrasp trained with
+  its own recipe is 1.2 to 3.1 below: the recipe is not what separates the model trained
+  here from theirs.
+- **One run each, and trainings spread.** The two of EconomicGrasp differ by up to 1.4 AP.
+  `multi-scale` and `all` are being trained again.
 
 ## Run it {#run}
 
