@@ -54,7 +54,7 @@ novel. GSNet, trained three times from one config and seed, moved by up to 1.12 
 | `graspness` | 70.03 / 61.03 / 26.21 | 71.47 / 62.12 / 26.73 |
 | `normals` | 68.05 / 60.78 / 26.23 | 70.11 / 62.00 / 26.77 |
 | `multi-scale` | 68.10 / 58.63 / 24.05 | 69.84 / 59.77 / 24.71 |
-| `all` | training | |
+| `all` | 70.54 / 61.27 / 25.41 | 71.72 / 62.09 / 25.96 |
 
 **No difference is shown for `graspness`.** Normalising graspness per object moves no split
 by more than 0.7 AP: +0.69 on seen and −0.38 on similar without the collision filter.
@@ -71,6 +71,18 @@ the last epoch with the same labels and loss terms. Nor does it lean on its trai
 on 160 training frames its loss is 2.86 with the layers as in training and 2.73 as in
 evaluation ([`tools/train_fit.py`](../../tools/train_fit.py)). Why the lower loss comes
 with the lower AP is not known.
+
+**`all`, the FineGrasp model, shows no gain that holds across the splits.** Without the
+collision filter it ends +1.20 AP on seen scenes, at the edge of what a seed moves, −0.14 on
+similar and −0.80 on novel; with the filter +0.67 / −0.45 / −0.85. That is 1.0 to 2.5 AP
+below the authors' checkpoint, where FineGrasp trained with its own recipe is 1.2 to 3.1
+below: the recipe is not what separates the model trained here from the authors'.
+
+**The parts do not add up.** `multi-scale` alone loses 1.24 to 2.78 AP without the filter;
+together with the two other changes it loses none of that on seen and similar scenes. One
+run each cannot tell an interaction of the changes from trainings that spread wider than
+GSNet's: a second training of EconomicGrasp from the same config and seed is running to
+measure that spread.
 
 Records: [`records/`](records/), with the loss of every epoch, and EconomicGrasp's
 [reproduced records](../../configs/economicgrasp/records/) for the first row. Unit tests
