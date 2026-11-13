@@ -70,7 +70,7 @@ published); 10 epochs, seed 0, 5.1 hours on four shared RTX 3090. The checkpoint
 **The gap.** The authors' weights reach the paper through the same test path, so it comes
 from the training. A recorded batch gives the reference's losses and gradients, and
 EconomicGrasp underneath, trained here, lands on its authors' checkpoint. Nor is it the
-recipe: under EconomicGrasp's the model ends 1.0 to 2.5 AP below the checkpoint
+recipe: under EconomicGrasp's the model ends 1.0 to 3.3 AP below the checkpoint
 ([ablation](../../projects/finegrasp_ablation/)). That leaves the normal images and
 graspness labels generated here. On 160 training frames its training loss is
 the lower one, 2.67 against the authors' 2.92, on every term (EconomicGrasp's two: 0.03

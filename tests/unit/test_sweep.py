@@ -504,7 +504,14 @@ PROJECT_SWEEPS = {
         "ptv3_adamw-onecycle",
         "litept_adamw-onecycle",
     ],
-    "finegrasp_ablation/changes.yaml": ["graspness", "normals", "multi-scale", "all"],
+    "finegrasp_ablation/changes.yaml": [
+        "graspness",
+        "normals",
+        "multi-scale",
+        "graspness+multi-scale",
+        "normals+multi-scale",
+        "all",
+    ],
     "hggd_labels/labels.yaml": ["1cm-30deg", "unsuppressed"],
 }
 
@@ -560,3 +567,10 @@ def test_the_ablation_adds_up_to_finegrasp_under_the_recipe_of_economicgrasp():
     assert cells["normals"].select("model.backbone.in_channels") == 6
     assert cells["multi-scale"].select("model.grouper") == fine.select("model.grouper")
     assert cells["multi-scale"].select("data") == economic.select("data")
+    # the crop with one of the two other changes: FineGrasp without the third
+    for other, without in (("graspness", "normals"), ("normals", "graspness")):
+        pair = cells[f"{other}+multi-scale"]
+        assert pair.select("model.grouper") == fine.select("model.grouper")
+        assert pair.select("data") == cells[other].select("data")
+        assert pair.select("model.backbone") == cells[other].select("model.backbone")
+        assert pair.select("data") != cells[without].select("data"), "the third change is off"

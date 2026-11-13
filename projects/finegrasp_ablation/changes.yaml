@@ -1,7 +1,8 @@
 # FineGrasp is EconomicGrasp with three changes. Each cell trains EconomicGrasp with one of
-# them, and `all` with the three together: the FineGrasp model under EconomicGrasp's recipe
-# (one process, batches of four, Adam at 1e-3). Data, evaluator and seed are the same; each
-# run trains for the ten epochs of the recipe and is scored on the whole test split.
+# them, with the four-radius crop and one other, or with the three together (`all`): the
+# FineGrasp model under EconomicGrasp's recipe (one process, batches of four, Adam at 1e-3).
+# Data, evaluator and seed are the same; each run trains for the ten epochs of the recipe
+# and is scored on the whole test split.
 #
 #   grasppanda prepare graspnet1b --graspness --camera realsense \
 #       --config finegrasp/finegrasp_sunet14_g1b-realsense_10e      # the instance-normalised asset
@@ -30,4 +31,7 @@ axes:
     # Every seed is cropped at four radii; attention over the scales fuses the four.
     multi-scale: &multi_scale
       - "model.grouper={type: MultiScaleGroup, radius: 0.07, radius_scales: [0.25, 0.5, 0.75, 1.0], fusion_layers: 2, fusion_heads: 8, fusion_feedforward_channels: 1024, fusion_dropout: 0.1, branch: {type: CylinderInteractionGroup, hmin: -0.02, hmax: 0.04, nsample: 16, mlp_channels: [256, 256], centre_coordinates: true, attention_heads: 1, attention_dropout: 0.05, post_mlp_channels: [256, 256]}}"
+    # The crop with one of the two other changes: alone it loses, with both it does not.
+    graspness+multi-scale: [*graspness, *multi_scale]
+    normals+multi-scale: [*normals, *multi_scale]
     all: [*graspness, *normals, *multi_scale]

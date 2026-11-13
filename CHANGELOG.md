@@ -551,7 +551,15 @@ Classes now count levels, and every method lists the options of each of its slot
   without and 69.09 / 57.92 / 24.06 with the collision filter. Both of its trainings end
   below both of EconomicGrasp's on every split, 1.52 / 3.06 / 1.95 AP between the means of
   two without the filter: alone, the crop loses. Its training loss stays the lower one
-  (2.77 and 2.78 against 2.98). `all` is being trained again.
+  (2.77 and 2.78 against 2.98).
+- All three changes together were trained a second time: 69.25 / 60.34 / 25.66 AP without
+  and 70.67 / 61.36 / 26.24 with the collision filter, between the two trainings of
+  EconomicGrasp on every split. Between the means of two, the FineGrasp model under
+  EconomicGrasp's recipe is +0.72 / +0.09 / −0.12 AP from EconomicGrasp: no difference is
+  shown, and the +1.20 AP of its first training on seen scenes was spread. Over both
+  trainings it is 1.0 to 3.3 AP below the authors' checkpoint. The parts do not add up:
+  every training of all three ends above every training of the crop alone. The sweep file
+  gains the crop with each of the two other changes, to tell which one it needs.
 - `tools/train_fit.py` measures how closely weights fit training frames: their training
   loss with the layers as in training and as in evaluation. FineGrasp trained here has
   the lower loss than its authors' weights on every term (2.67 against 2.92 on 160
