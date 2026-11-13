@@ -18,7 +18,7 @@ loaded through `custom_imports`. Start from [`example_project/`](example_project
 | Project | Level | What it is |
 |---|---|---|
 | [`example_project/`](example_project/) | `example` | A toy detector: how a project registers components and configs. |
-| [`encoder_comparison/`](encoder_comparison/) | `experimental` | Four scene encoders under GSNet, each trained and scored on the whole test split; then encoder against recipe. |
-| [`finegrasp_ablation/`](finegrasp_ablation/) | `experimental` | FineGrasp's three changes, switched on one at a time under EconomicGrasp. |
+| [`encoder_comparison/`](encoder_comparison/) | `experimental` | Four scene encoders under GSNet, each trained and scored on the whole test split; then encoder against recipe, and the same swap under EconomicGrasp. |
+| [`finegrasp_ablation/`](finegrasp_ablation/) | `experimental` | FineGrasp's three changes, switched on one at a time and together under EconomicGrasp. |
 
-The last two are sweep files and nothing else: the experiment is a config.
+The last two hold sweep files and result records, no code: the experiment is a config.
