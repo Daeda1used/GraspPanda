@@ -5,14 +5,16 @@ graspness parameters, the per-view grasp parameters), so every action reads a da
 config: ``_base_/datasets/<dataset>_<camera>.yaml`` unless ``--config`` names another.
 For GraspNet-1Billion that is ``graspnet1b_realsense.yaml`` (``--camera kinect``:
 ``graspnet1b_kinect.yaml``), the data recipe GSNet, EconomicGrasp and FineGrasp train
-with; the other methods read assets of their own, so name a config of theirs. What gets
-built is exactly what that config will later ask for; nothing is written into the
-dataset tree.
+with; the other methods read assets of their own, so name a config of theirs. ``--opts``
+overrides values of that config as ``train`` and ``test`` do, for a run that changes what
+an asset depends on. What gets built is exactly what that config will later ask for;
+nothing is written into the dataset tree.
 """
 
 from __future__ import annotations
 
 import argparse
+import shlex
 import sys
 import time
 from collections.abc import Callable, Sequence
@@ -106,6 +108,14 @@ def register(commands: Any) -> None:
         "method, pass its config)",
     )
     parser.add_argument(
+        "--opts",
+        nargs="+",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override config values as train and test take them: the asset is built for the "
+        "run that passes the same ones, e.g. data.train.dataset.view_grasps.nms_distance=0.01",
+    )
+    parser.add_argument(
         "--loader",
         default="train",
         choices=["train", "val", "test"],
@@ -134,7 +144,7 @@ def _custom_imports(args: argparse.Namespace) -> list[tuple[str, str | None]]:
     """Out-of-tree modules of ``--config`` (imported by loading it), for worker processes."""
     if not args.config:
         return []
-    config = Config.load(args.config)
+    config = Config.load(args.config, overrides=args.opts)
     entries = config.get("custom_imports") or []
     return [(entry, config.source_of(f"custom_imports.{i}")) for i, entry in enumerate(entries)]
 
@@ -142,7 +152,7 @@ def _custom_imports(args: argparse.Namespace) -> list[tuple[str, str | None]]:
 def _node(args: argparse.Namespace, cls: Any, camera: str | None) -> dict[str, Any]:
     """The dataset config node the requested action works for."""
     source = args.config or cls.default_config(camera)
-    node = Config.load(source).select(f"data.{args.loader}.dataset")
+    node = Config.load(source, overrides=args.opts).select(f"data.{args.loader}.dataset")
     if not isinstance(node, dict):
         raise SystemExit(f"{source} has no data.{args.loader}.dataset to prepare for")
     node = dict(node)
@@ -171,8 +181,10 @@ def _scope(args: argparse.Namespace) -> str:
     if args.loader != "train":
         scope += f" --loader {args.loader}"
     if args.scenes:
-        return scope + f" --scenes {args.scenes}"
-    return scope + (f" --split {args.split}" if args.split else "")
+        scope += f" --scenes {args.scenes}"
+    elif args.split:
+        scope += f" --split {args.split}"
+    return scope + (f" --opts {shlex.join(args.opts)}" if args.opts else "")
 
 
 class _Lines:

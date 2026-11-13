@@ -82,7 +82,9 @@ none of their code is part of this history. Each line below has its full account
 - **Benchmarks.** Readers, derived label assets and evaluators for GraspNet-1Billion and
   GraspClutter6D. Both evaluators agree with the official tools on recorded frames (1,592
   and 254; `tests/integration/test_eval_parity.py`, `test_eval_clutter_parity.py`). One
-  command scores a GraspNet-1Billion model on GraspClutter6D.
+  command scores a GraspNet-1Billion model on GraspClutter6D. `prepare` takes `--opts` as
+  `train` and `test` do, and builds the asset of a run that overrides what its labels
+  depend on.
 - **Methods as interchangeable components**, each equal to its reference implementation
   stage by stage with converted weights: GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
   EconomicGrasp and FineGrasp on one seed-based skeleton, and HGGD as a family of its own.

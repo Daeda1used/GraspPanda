@@ -136,8 +136,9 @@ use `--camera kinect` with it):
 Every action reads a dataset config: the one named with `--config`, or else the shipped
 base of the dataset and camera (`_base_/datasets/graspnet1b_<camera>.yaml`, the graspness
 recipe of GSNet, EconomicGrasp and FineGrasp). What is built is exactly what that config
-later asks for. `--split` and `--scenes 5,9,13` restrict the scenes; generation is
-resumable and finished shards are skipped.
+later asks for. A run that overrides what an asset depends on needs an asset of its own:
+pass `prepare` the same `--opts` as the run. `--split` and `--scenes 5,9,13` restrict the
+scenes; generation is resumable and finished shards are skipped.
 
 **Expected result:** `grasppanda prepare graspnet1b --check --config <method config>` marks
 the tree and every asset of that config with ✓. The test suite holds the commands above
