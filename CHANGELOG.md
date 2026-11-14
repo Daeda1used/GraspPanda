@@ -618,9 +618,11 @@ Classes now count levels, and every method lists the options of each of its slot
   nothing else changed (`projects/hggd_labels`), HGGD scores 57.83 / 48.53 / 22.71 AP
   without and 63.61 / 54.31 / 24.95 with the collision filter: within 0.63 AP of the
   checkpoint without the filter, and with it within 0.84 AP of the numbers of HGGD's
-  repository on every split. The shipped config keeps the converter's labels. On
-  GraspClutter6D the model scores 12.95 / 16.00 / 8.16 and 14.49 / 17.88 / 8.95
-  (AP / AP0.8 / AP0.4), 0.07 AP below the checkpoint with the filter.
+  repository on every split. Trained on every label, without suppression, it ends 4.04 AP
+  above the checkpoint on seen scenes and 0.53 below it on novel without the filter. The
+  shipped config keeps the converter's labels. On GraspClutter6D the model scores
+  12.95 / 16.00 / 8.16 and 14.49 / 17.88 / 8.95 (AP / AP0.8 / AP0.4), 0.07 AP below the
+  checkpoint with the filter.
 - EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
   69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
   within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on
