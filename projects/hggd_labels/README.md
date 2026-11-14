@@ -61,7 +61,7 @@ the denser labels is at 48.57 AP after four epochs and 52.18 after the fifteenth
 converter's labels it is at 32.65 and 43.76 ([`validation.json`](records/validation.json)).
 
 **What it does not say.** One training per row: HGGD has not been trained twice from one
-config here, and two other methods moved by 1.1 and 1.4 AP when they were. Whether these
+config here, and two other methods moved by 1.12 and 1.75 AP when they were. Whether these
 are the labels the checkpoint was trained on is not known either; they are the ones a
 commented line of the released converter writes, and the checkpoint fits them better than
 the converter's. The shipped config keeps the converter's labels, as released.

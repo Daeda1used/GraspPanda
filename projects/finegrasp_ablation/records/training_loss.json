@@ -1,5 +1,5 @@
 {
-  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch (the text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400). Read from log.txt of each run. Only runs that share EconomicGrasp's labels and loss terms are listed, so the values compare: `none` is the training of the model zoo's EconomicGrasp row. A run named `again` is the second training of the run it names, from the same config and seed.",
+  "about": "Total training loss, one value per epoch: the mean of the 128 values a run logs in an epoch (the text logger prints every 50 iterations the mean over the last 50, and an epoch has 6,400). Read from log.txt of each run. Only runs that share EconomicGrasp's labels and loss terms are listed, so the values compare: `none` is the training of the model zoo's EconomicGrasp row. A run named `again` or `third` is the second or third training of the run it names, from the same config and seed.",
   "epochs": 10,
   "runs": {
     "none": [
@@ -25,6 +25,18 @@
       3.0317,
       2.9975,
       2.9789
+    ],
+    "none third": [
+      4.3824,
+      3.7412,
+      3.4744,
+      3.3269,
+      3.2247,
+      3.1452,
+      3.0852,
+      3.0378,
+      3.0042,
+      2.9841
     ],
     "normals": [
       4.3382,

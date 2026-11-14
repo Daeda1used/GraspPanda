@@ -20,14 +20,14 @@ none of their code is part of this history. Each line below has its full account
 - **Measured records.** Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).
 - **Refusals that say why.** Each refusal names its kind; `compose` lifts the ones an adapter or a setting fixes.
 - **The combination explorer** on the documentation site, and `grasppanda explore` on your machine, with a tab that runs a method.
-- **Model zoo.** Released weights scored on whole test splits; all six methods trained here, GSNet three times and EconomicGrasp twice; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
+- **Model zoo.** Released weights scored on whole test splits; all six methods trained here, GSNet and EconomicGrasp three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.
 - **Run a method in five minutes**: a page per method, from the released file to grasps and a first number.
 - **Inference and analysis.** `GraspInferencer`, `grasppanda demo` and `grasppanda analyze`.
 - **`grasppanda env` says what to fix.** Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
-- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp; `projects/hggd_labels` trains HGGD on denser labels, where it reaches its authors' checkpoint. No code beside the file. First results on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, 4.6 under the recipe it is trained with elsewhere and 3.8 under EconomicGrasp; LitePT is 14.2 AP lower, 9.5 under that recipe; GSNet's encoder gains GraspNet-baseline 0.5 to 1.7 AP; of FineGrasp's changes, none shows a gain alone and the four-radius crop a loss, read against EconomicGrasp trained twice, which moves by up to 1.4 AP. [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/) sets these runs beside the two short checks, which filter and do not rank.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp; `projects/hggd_labels` trains HGGD on denser labels, where it reaches its authors' checkpoint. No code beside the file. First results on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, 4.6 under the recipe it is trained with elsewhere and 3.8 under EconomicGrasp; LitePT is 14.2 AP lower, 9.5 under that recipe; GSNet's encoder gains GraspNet-baseline 0.5 to 1.7 AP; of FineGrasp's changes, none shows a gain alone and the four-radius crop a loss, read against EconomicGrasp trained three times, which moves by up to 1.75 AP. [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/) sets these runs beside the two short checks, which filter and do not rank.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
@@ -560,6 +560,14 @@ Classes now count levels, and every method lists the options of each of its slot
   trainings it is 1.0 to 3.3 AP below the authors' checkpoint. The parts do not add up:
   every training of all three ends above every training of the crop alone. The sweep file
   gains the crop with each of the two other changes, to tell which one it needs.
+- EconomicGrasp was trained a third time: 68.84 / 61.59 / 25.70 AP without and
+  70.53 / 62.85 / 26.38 with the collision filter. Its three trainings lie
+  0.50 / 1.57 / 1.12 AP apart without the filter and up to 1.75 with it, and the authors'
+  checkpoint lies inside their range on every split. The ablation is now read against the
+  range of the three: per-object graspness ends 0.69 to 1.19 AP above it on seen scenes
+  and the normals 0.79 to 1.29 below it, one run each; the crop alone is below it on every
+  split in both of its trainings (1.41 / 3.35 / 1.97 AP between the means); all three
+  changes are +0.83 / −0.20 / −0.13 AP from EconomicGrasp between the means.
 - `tools/train_fit.py` measures how closely weights fit training frames: their training
   loss with the layers as in training and as in evaluation. FineGrasp trained here has
   the lower loss than its authors' weights on every term (2.67 against 2.92 on 160
