@@ -66,6 +66,30 @@ are the labels the checkpoint was trained on is not known either; they are the o
 commented line of the released converter writes, and the checkpoint fits them better than
 the converter's. The shipped config keeps the converter's labels, as released.
 
+## On Kinect
+
+The same two overrides under HGGD's Kinect config, trained and scored on the Kinect frames
+of the test split:
+
+```bash
+grasppanda prepare graspnet1b --view-grasps --camera kinect \
+    --config hggd/hggd_r34w8_g1b-kinect_15e --opts <the two overrides of `1cm-30deg`>
+grasppanda train hggd/hggd_r34w8_g1b-kinect_15e --opts <the same two>
+```
+
+| Labels | Collision filter off | On |
+|---|---|---|
+| the converter's | training | |
+| `1cm-30deg` | 59.08 / 46.05 / 17.13 | 62.77 / 49.45 / 18.28 |
+| the authors' checkpoint | 56.98 / 43.97 / 18.56 | 60.30 / 46.85 / 19.22 |
+
+**On Kinect the denser labels end above the authors' checkpoint on seen and similar scenes,
+and below it on novel**: +2.10 / +2.08 / −1.43 AP without the collision filter and
++2.47 / +2.60 / −0.94 with it. Against the repository's Kinect numbers, 61.17 / 47.02 / 19.37,
+that is +1.60 / +2.43 / −1.09 AP with the filter: outside the zoo's gate on every split.
+HGGD on the converter's labels has not been trained on Kinect before; that training is
+running, to tell what the labels give on this camera.
+
 Records: [`records/`](records/), and HGGD's
-[records](../../configs/hggd/records/) for the first and the last row. Unit tests hold the
-table and these sentences to them.
+[records](../../configs/hggd/records/) for the authors' checkpoint and the model zoo's row.
+Unit tests hold the tables and these sentences to them.
