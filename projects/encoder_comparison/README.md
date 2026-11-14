@@ -136,10 +136,10 @@ the one-cycle recipe (4.6), not the one under GSNet's own (10.4). Both recipes w
 smaller gap anneal the rate to almost zero, and GSNet's stops at 6.3e-4; the two methods
 differ in more than that, and one run each does not say that this is why.
 
-**The gap on seen scenes is not the spread of trainings; the one on novel may be.** The
-first row trained a second time ends at 69.01 / 60.02 / 25.09 AP without the filter
-([records](../../configs/economicgrasp/repeats/)): 0.33 lower on seen and 1.12 on novel.
-From that training PTv3 is 3.5 AP lower on seen scenes and 1.2 on novel.
+**The gap on seen scenes is not the spread of trainings; the one on novel may be.** Three
+trainings of the first row lie within 0.50 AP of one another on seen scenes and 1.12 on
+novel, without the filter ([records](../../configs/economicgrasp/repeats/)). From the
+lowest of the three PTv3 is 3.3 AP lower on seen scenes and 1.2 on novel.
 
 **It is under-trained here too.** After ten epochs its loss, 3.31, is where the shipped
 encoder was after four (3.33). The loss terms are EconomicGrasp's, so the column compares
@@ -172,9 +172,9 @@ grasppanda test experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e \
 
 **The sparse U-Net ends 0.5 to 1.7 AP higher on every split**: +0.65 / +1.70 / +0.80 AP
 without the collision filter, +0.59 / +1.15 / +0.52 with it, and it fits the training
-scenes closer (0.48 against 0.50). A second training from one config and seed moves GSNet
-by up to 1.12 AP and EconomicGrasp by up to 1.44; GraspNet-baseline was trained once, so
-a gain is likely and not shown.
+scenes closer (0.48 against 0.50). Training again from one config and seed moves GSNet by
+up to 1.12 AP and EconomicGrasp by up to 1.75; GraspNet-baseline was trained once, so a
+gain is likely and not shown.
 
 **The encoder is not what separates the two methods.** With the same encoder, GSNet ends
 at 68.83 AP on seen scenes without the filter and GraspNet-baseline at 32.41. Of the 37.07

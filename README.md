@@ -207,11 +207,10 @@ released weights.
   scores here, within about half an AP. Both are below the paper by more than the gate
   allows on the seen and similar splits, so the gap is not one of training. Its weights are
   not published yet.
-- **EconomicGrasp** was trained here twice with the same seed. Both trainings score what
-  its authors' checkpoint scores here, within about one and a half AP, which is also what
-  they differ by from each other. The checkpoint is above the published table on seen by
-  slightly more than the gate allows; why the table is lower is not known. Its weights are
-  not published yet.
+- **EconomicGrasp** was trained here three times with the same seed. The trainings lie up
+  to 1.75 AP apart, and the score of its authors' checkpoint here lies among them on every
+  split. The checkpoint is above the published table on seen by slightly more than the
+  gate allows; why the table is lower is not known. Its weights are not published yet.
 - **FineGrasp** was trained here once and is below the paper by more than the gate allows,
   which is not explained either. The authors' weights give the paper's numbers through the
   same test, so the gap comes from training; their normal images and graspness labels are

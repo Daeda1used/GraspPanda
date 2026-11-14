@@ -59,31 +59,32 @@ AP: both are about 1.1 AP above the published table on seen, unexplained.
 
 `reproduced` is trained here from scratch with the config's recipe. **It lands on the
 authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it (filter off) and
-+0.22 / −0.02 / +1.01 (on). Trained again from the same config and seed, it moved by up to
-1.44 AP: the +1.04 on novel is spread, not gain. From the table: +1.13 / +0.22 / +0.73, on
-seen 0.13 AP outside the zoo's 1 AP gate, like the checkpoint.
++0.22 / −0.02 / +1.01 (on). Trained three times from one config and seed, it moves by
+up to 1.75 AP: the +1.04 on novel is spread, not gain. From the table: +1.13 / +0.22 / +0.73,
+on seen 0.13 AP outside the zoo's 1 AP gate, like the checkpoint.
 
-<details markdown="1"><summary>How it was trained, trained twice, and what is known about the gap</summary>
+<details markdown="1"><summary>How it was trained, trained three times, and what is known about the gap</summary>
 
 **The training.** `grasppanda train economicgrasp/economicgrasp_sunet14_g1b-realsense_10e`
 at commit `7ac91b5`, nothing overridden: 10 epochs, batch size 4, seed 0, 17.0 hours on one
 RTX 3090 shared with other jobs. The checkpoint of epoch 10 (SHA-256 `22f17fd571a2…`) was
 scored at commit `400b733`.
 
-**Trained twice.** The same config and seed were trained again on an RTX 3090, and the
-checkpoint of epoch 10 was scored on the whole test split:
+**Trained three times.** The same config and seed were trained twice more on an RTX 3090,
+and each checkpoint of epoch 10 was scored on the whole test split:
 
 | Training | Collision filter off | on |
 |---|---|---|
 | first, the rows above | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 |
 | second: trained and scored at `7b3ddd4`, `c1c760135460…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 69.01 / 60.02 / 25.09 | 70.65 / 61.10 / 25.74 |
+| third: trained and scored at `7b3ddd4`, `1e848aff36b8…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 68.84 / 61.59 / 25.70 | 70.53 / 62.85 / 26.38 |
 
-Second minus first: −0.33 / −1.39 / −1.12 AP without the filter, −0.40 / −1.44 / −1.07
-with it. One config and one seed gave two models, as for GSNet, and on similar and novel
-they lie further apart than GSNet's three (0.36 / 0.37 AP). From the authors' checkpoint
-the second is −0.27 / −1.48 / −0.08 AP without the filter: the two trainings lie on either
-side of it on novel, and both on or below it on similar. The training loss of the two over
-the last epoch is 2.98 and 2.98. Other seeds were not trained.
+Highest minus lowest: 0.50 / 1.57 / 1.12 AP without the filter, 0.52 / 1.75 / 1.07 with
+it. One config and one seed gave three models, as for GSNet, and on similar and novel they
+lie further apart than GSNet's three (0.36 / 0.37 AP). The mean of the three is
+−0.22 / −0.49 / +0.50 AP from the authors' checkpoint without the filter, and the checkpoint
+lies inside their range on every split. The training loss over the last epoch is 2.98 in
+all three. Other seeds were not trained.
 
 **The gap to the published table.** The checkpoints were scored at commit `ccb8704`
 (Kinect) and `4bc5333` (RealSense).

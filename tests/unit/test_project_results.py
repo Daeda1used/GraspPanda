@@ -383,24 +383,26 @@ def test_what_the_swap_under_economicgrasp_says_is_computed_from_its_records():
         f"({under_gsnet:.1f})"
         in page
     )
-    # the shipped encoder trained a second time: the gap on seen scenes is far outside what
-    # the two trainings differ by, the one on novel is not
-    stem = "configs/economicgrasp/repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test"
-    again = record_result.headline(
-        json.loads((REPO / f"{stem}_raw.json").read_text(encoding="utf-8"))
-    )["AP"]
-    first = record_result.headline(economicgrasp_record("sunet14", "raw"))["AP"]
+    # the shipped encoder trained three times: the gap on seen scenes is far outside what
+    # the trainings differ by, the one on novel is not
+    from .test_repository import trainings
+
+    three = [
+        run["raw"] for run in trainings("economicgrasp", "economicgrasp_sunet14_g1b-realsense_10e")
+    ]
+    assert len(three) == 3
     ptv3 = record_result.headline(economicgrasp_record("ptv3", "raw"))["AP"]
-    lower = {split: first[split] - again[split] for split in first}
-    left = {split: again[split] - ptv3[split] for split in first}
-    assert left["seen"] > 5 * lower["seen"] > 0 and left["novel"] < 1.5 * lower["novel"]
+    lowest = {split: min(run[split] for run in three) for split in ptv3}
+    within = {split: max(run[split] for run in three) - lowest[split] for split in ptv3}
+    left = {split: lowest[split] - ptv3[split] for split in ptv3}
+    assert left["seen"] > 5 * within["seen"] and left["novel"] < 1.5 * within["novel"]
     for sentence in (
-        "ends at " + " / ".join(f"{value:.2f}" for value in again.values()) + " AP without",
-        f"{lower['seen']:.2f} lower on seen and {lower['novel']:.2f} on novel",
+        f"lie within {within['seen']:.2f} AP of one another on seen scenes and "
+        f"{within['novel']:.2f} on novel",
         f"PTv3 is {left['seen']:.1f} AP lower on seen scenes and {left['novel']:.1f} on novel",
     ):
         assert sentence in project, sentence
-    assert f"ends {lower['seen']:.2f} AP lower on seen scenes" in page
+    assert f"lie within {within['seen']:.2f} AP on seen scenes" in page
 
 
 def test_the_evidence_page_shows_the_swap_under_economicgrasp():
@@ -509,7 +511,7 @@ def test_what_the_swap_under_graspnet_baseline_says_is_computed_from_its_records
     ):
         assert sentence in project, sentence
     for sentence in (
-        f"by {spread(gsnet):.2f} and {spread(economic):.2f} AP",
+        f"by up to {spread(gsnet):.2f} and {spread(economic):.2f} AP",
         f"GSNet ends at {seen['gsnet']:.2f} AP on seen scenes and GraspNet-baseline at "
         f"{seen['sunet14']:.2f}",
         f"of the {between:.2f} AP between them, the encoder accounts for "
@@ -527,6 +529,7 @@ ABLATION = REPO / "projects/finegrasp_ablation"
 ABLATION_RECORDS = {
     "none": "configs/economicgrasp/records/economicgrasp_sunet14_g1b-realsense_10e_reproduced_test",
     "none again": "configs/economicgrasp/repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test",
+    "none third": "configs/economicgrasp/repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test",
     "graspness": "projects/finegrasp_ablation/records/graspness_test",
     "normals": "projects/finegrasp_ablation/records/normals_test",
     "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
@@ -550,7 +553,15 @@ def ablation_record(name: str, variant: str) -> dict:
 def ablation_rows() -> dict[str, list[str]]:
     """Rows of the project's results by the name of the change."""
     rows = table_under((ABLATION / "README.md").read_text(encoding="utf-8"), "## Results")
-    return {row[0].partition(":")[0].replace("`", "").replace(", trained", ""): row for row in rows}
+    repeats = {", trained again": " again", ", trained a third time": " third"}
+
+    def name(cell: str) -> str:
+        cell = cell.partition(":")[0].replace("`", "")
+        for words, suffix in repeats.items():
+            cell = cell.replace(words, suffix)
+        return cell
+
+    return {name(row[0]): row for row in rows}
 
 
 def test_the_ablation_prints_what_its_records_hold():
@@ -566,8 +577,8 @@ def test_the_ablation_prints_what_its_records_hold():
     expected = [
         row
         for name in ("none", *planned)
-        for row in (name, f"{name} again")
-        if not row.endswith(" again") or row in ABLATION_RECORDS
+        for row in (name, f"{name} again", f"{name} third")
+        if row == name or row in ABLATION_RECORDS
     ]
     assert list(rows) == expected
     for name, row in rows.items():
@@ -579,7 +590,7 @@ def test_the_ablation_prints_what_its_records_hold():
             assert record["variant"] == variant and not record["partial"], name
             assert record["scored"] == record["requested"] == 23040, name
             assert record["seed"] == 0, name
-            run = name.removesuffix(" again")
+            run = name.removesuffix(" again").removesuffix(" third")
             if run in planned:
                 assert record["weights"]["path"].startswith(f"{planned[run]}/"), name
             numbers = record_result.headline(record)["AP"]
@@ -595,6 +606,46 @@ def from_no_change(name: str, base: str = "none") -> list[float]:
         for variant in ("raw", "cd")
         for split, value in record_result.headline(ablation_record(name, variant))["AP"].items()
     ]
+
+
+def ablation_ap(name: str) -> list[float]:
+    """AP of one training: seen, similar, novel without the collision filter, then with it."""
+    return [
+        value
+        for variant in ("raw", "cd")
+        for value in record_result.headline(ablation_record(name, variant))["AP"].values()
+    ]
+
+
+def trainings_of(name: str) -> list[str]:
+    """The trainings of a row that are scored: the row, then its repeats."""
+    return [run for run in (name, f"{name} again", f"{name} third") if run in ABLATION_RECORDS]
+
+
+def from_range(name: str) -> tuple[list[float], list[float]]:
+    """One training against the trainings of EconomicGrasp: its AP minus their lowest, and
+    minus their highest, per number of :func:`ablation_ap`."""
+    base = [ablation_ap(run) for run in trainings_of("none")]
+    mine = ablation_ap(name)
+    return (
+        [value - min(column) for value, column in zip(mine, zip(*base))],
+        [value - max(column) for value, column in zip(mine, zip(*base))],
+    )
+
+
+def mean_ap(name: str) -> list[float]:
+    runs = [ablation_ap(run) for run in trainings_of(name)]
+    return [sum(column) / len(column) for column in zip(*runs)]
+
+
+def apart(name: str) -> list[float]:
+    """Highest minus lowest over the trainings of a row."""
+    runs = [ablation_ap(run) for run in trainings_of(name)]
+    return [max(column) - min(column) for column in zip(*runs)]
+
+
+def plain(values: list[float]) -> str:
+    return " / ".join(f"{value:.2f}" for value in values)
 
 
 def below_the_authors(stem: str) -> list[float]:
@@ -618,103 +669,88 @@ def signed(value: float) -> str:
 
 def test_what_the_ablation_says_is_computed_from_its_records():
     readme = " ".join((ABLATION / "README.md").read_text(encoding="utf-8").split())
-    # the yardstick: EconomicGrasp trained twice from one config and seed
-    again = from_no_change("none again")
-    assert "differ by " + " / ".join(f"{-value:.2f}" for value in again[:3]) + " AP" in readme
-    assert max(again) < 0, "the second training is the lower one on every split"
-    yardstick = max(abs(value) for value in again)
-    graspness = from_no_change("graspness")
-    assert max(abs(value) for value in graspness) < yardstick, "inside what the two differ by"
+    # the yardstick: a row trained again from one config and seed
+    assert [len(trainings_of(name)) for name in ("none", "multi-scale", "all")] == [3, 2, 2]
     for sentence in (
-        f"by more than {max(abs(value) for value in graspness):.1f} AP",
-        f"{signed(graspness[0])} on seen and {signed(graspness[1])} on similar",
+        f"three trainings of EconomicGrasp lie {plain(apart('none')[:3])} AP apart",
+        f"the two of `multi-scale` {plain(apart('multi-scale')[:3])}",
+        f"the two of `all` {plain(apart('all')[:3])}",
     ):
         assert sentence in readme, sentence
     losses = json.loads((ABLATION / "records/training_loss.json").read_text(encoding="utf-8"))
     runs = losses["runs"]
     assert set(runs) <= set(ABLATION_RECORDS)
     assert all(len(values) == losses["epochs"] == 10 for values in runs.values())
-    # the normals: below both trainings on seen scenes, between the two on the other splits
-    # but for a novel split level with the first, and the training loss of EconomicGrasp
-    normals, normals_again = from_no_change("normals"), from_no_change("normals", "none again")
-    assert max(normals[0], normals_again[0], normals[3], normals_again[3]) < 0
-    assert all(
-        first <= 0.02 and second >= 0
-        for first, second in zip(normals, normals_again)
-        if (first, second) not in ((normals[0], normals_again[0]), (normals[3], normals_again[3]))
-    )
-    assert max(normals) == normals[2] > 0
+    base_loss = [runs[run][-1] for run in trainings_of("none")]
+    assert max(base_loss) - min(base_loss) < 0.01
+
+    # graspness, one run: above the three on seen scenes, inside their range elsewhere
+    low, high = from_range("graspness")
+    assert min(high[0], high[3]) > 0, "above the highest on seen scenes"
+    assert all(low[i] >= 0 and high[i] <= 0.005 for i in (1, 2, 4, 5)), "inside the range"
+    first_of_all = from_range("all")[1]
+    assert first_of_all[0] > high[0], "the first training of all three was above by more"
+    assert f"by {high[0]:.2f} to {low[0]:.2f} AP without the collision filter" in readme
+
+    # the normals, one run: below the three on seen scenes, inside their range elsewhere but
+    # for a novel split level with the highest; the training loss of EconomicGrasp
+    low, high = from_range("normals")
+    assert max(low[0], low[3]) < 0, "below the lowest on seen scenes"
+    assert all(low[i] >= 0 and high[i] <= 0.02 for i in (1, 2, 4, 5))
+    assert max(high) == high[2] > 0
     assert abs(runs["normals"][-1] - runs["none"][-1]) < 0.05
     for sentence in (
-        f"by {-normals[0]:.2f} and {-normals_again[0]:.2f} AP without the collision filter",
-        f"but for {signed(normals[2])} AP on novel",
+        f"by {-low[0]:.2f} to {-high[0]:.2f} AP without the collision filter",
+        f"but for {signed(high[2])} AP on novel",
         f"{runs['normals'][-1]:.2f} against {runs['none'][-1]:.2f}",
     ):
         assert sentence in readme, sentence
-    # the four-radius crop, trained twice: both trainings below both of EconomicGrasp on
-    # every split, with the lower training loss
-    crops = [
-        from_no_change(crop, base)
-        for crop in ("multi-scale", "multi-scale again")
-        for base in ("none", "none again")
-    ]
-    assert max(value for crop in crops for value in crop) < 0, "below both, in both trainings"
-    means = [sum(crop[index] for crop in crops) / len(crops) for index in range(3)]
-    between = from_no_change("multi-scale again", "multi-scale")
-    crop_losses = [runs["multi-scale"][-1], runs["multi-scale again"][-1]]
-    assert max(crop_losses) < min(runs["none"][-1], runs["none again"][-1])
+
+    # the four-radius crop, trained twice: both trainings below all three of EconomicGrasp
+    # on every split, with the lower training loss
+    for crop in trainings_of("multi-scale"):
+        assert max(from_range(crop)[0]) < 0, crop
+    lost = [base - crop for base, crop in zip(mean_ap("none"), mean_ap("multi-scale"))]
+    crop_losses = [runs[run][-1] for run in trainings_of("multi-scale")]
+    assert max(crop_losses) < min(base_loss)
     for sentence in (
-        "the two of `multi-scale` by " + " / ".join(f"{-value:.2f}" for value in between[:3]),
-        "Between the means of two that is "
-        + " / ".join(f"{-value:.2f}" for value in means)
-        + " AP without the filter",
+        f"Between the means that is {plain(lost[:3])} AP without the filter",
         f"{crop_losses[0]:.2f} and {crop_losses[1]:.2f} against EconomicGrasp's "
         f"{runs['none'][-1]:.2f}",
+        f"The four-radius crop loses {plain(lost[:3])} AP alone",
     ):
         assert sentence in readme, sentence
-    # all three, the FineGrasp model, trained twice: the first training above both of
-    # EconomicGrasp on seen scenes, the second between the two on every split
-    everything, everything_again = from_no_change("all"), from_no_change("all", "none again")
-    assert min(everything[0], everything_again[0], everything[3], everything_again[3]) > 0
-    second = [from_no_change("all again", base) for base in ("none", "none again")]
-    assert all(low <= 0 <= high for low, high in zip(*second)), "between the two"
-    joint = [
-        from_no_change(run, base) for run in ("all", "all again") for base in ("none", "none again")
-    ]
-    mean = [sum(run[index] for run in joint) / len(joint) for index in range(6)]
-    apart = from_no_change("all again", "all")
+
+    # all three, the FineGrasp model, trained twice: the first training above the three of
+    # EconomicGrasp on seen scenes, the second inside their range on every split
+    low, high = from_range("all")
+    assert min(high[0], high[3]) > 0
+    second = from_range("all again")
+    assert all(below >= 0 >= above for below, above in zip(*second)), "inside the range"
+    gained = [mine - base for mine, base in zip(mean_ap("all"), mean_ap("none"))]
     # below the authors' checkpoint under EconomicGrasp's recipe as under FineGrasp's own
     below = {
         "all": [
             value
-            for run in ("all", "all again")
+            for run in trainings_of("all")
             for value in below_the_authors(ABLATION_RECORDS[run])
         ],
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
     }
     assert min(below["all"]) > 0.9 and min(below["own"]) > 1.12
     for sentence in (
-        "the two of `all` by " + " / ".join(f"{abs(value):.2f}" for value in apart[:3]),
-        f"by {everything[0]:.2f} and {everything_again[0]:.2f} AP without the collision filter",
-        f"the difference is {slashed(mean[:3])} AP without the filter and {slashed(mean[3:])} "
-        "with it",
+        f"by {high[0]:.2f} to {low[0]:.2f} AP without the collision filter; its second",
+        f"the difference is {slashed(gained[:3])} AP without the filter and "
+        f"{slashed(gained[3:])} with it",
         f"it is {min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' "
         "checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
-        # the crop alone against the crop with the two other changes
-        "The four-radius crop loses "
-        + " / ".join(f"{-value:.2f}" for value in means)
-        + " AP alone",
     ):
         assert sentence in readme, sentence
     # every training of all three above every training of the crop alone, on every split
-    for variant in ("raw", "cd"):
-        for split in ("seen", "similar", "novel"):
-            ap = {
-                run: record_result.headline(ablation_record(run, variant))["AP"][split]
-                for run in ("all", "all again", "multi-scale", "multi-scale again")
-            }
-            assert min(ap["all"], ap["all again"]) > max(ap["multi-scale"], ap["multi-scale again"])
+    together = [ablation_ap(run) for run in trainings_of("all")]
+    alone = [ablation_ap(run) for run in trainings_of("multi-scale")]
+    assert all(min(ours) > max(theirs) for ours, theirs in zip(zip(*together), zip(*alone)))
     # FineGrasp's own README draws the conclusion from the same records
     finegrasp = " ".join((REPO / "configs/finegrasp/README.md").read_text(encoding="utf-8").split())
     assert (
@@ -738,43 +774,30 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
     assert page.count('--8<-- "docs/includes/trained_changes.md"') == 1
     flat = " ".join(page.split())
-    again = from_no_change("none again")
-    graspness = from_no_change("graspness")
-    seen = sorted(-from_no_change("normals", base)[0] for base in ("none", "none again"))
-    crops = [
-        from_no_change(crop, base)
-        for crop in ("multi-scale", "multi-scale again")
-        for base in ("none", "none again")
-    ]
-    assert max(value for crop in crops for value in crop) < 0
-    means = [-sum(crop[index] for crop in crops) / len(crops) for index in range(3)]
-    joint = [
-        from_no_change(run, base) for run in ("all", "all again") for base in ("none", "none again")
-    ]
-    together = [sum(run[index] for run in joint) / len(joint) for index in range(3)]
-    spreads = {
-        "EconomicGrasp": max(map(abs, again)),
-        "`multi-scale`": max(map(abs, from_no_change("multi-scale again", "multi-scale"))),
-        "`all`": max(map(abs, from_no_change("all again", "all"))),
-    }
+    graspness, normals = from_range("graspness"), from_range("normals")
+    for crop in trainings_of("multi-scale"):
+        assert max(from_range(crop)[0]) < 0, crop
+    lost = [base - crop for base, crop in zip(mean_ap("none"), mean_ap("multi-scale"))]
+    gained = [mine - base for mine, base in zip(mean_ap("all"), mean_ap("none"))]
     below = {
         "all": [
             value
-            for run in ("all", "all again")
+            for run in trainings_of("all")
             for value in below_the_authors(ABLATION_RECORDS[run])
         ],
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
     }
     for sentence in (
-        f"`graspness` moves no split by more than {max(map(abs, graspness)):.1f} AP",
-        f"`normals` ends {seen[0]:.2f} to {seen[1]:.2f} AP below both trainings",
-        "below both on every split in both trainings, by "
-        + " / ".join(f"{value:.2f}" for value in means)
-        + " AP on average",
-        f"Trained twice, it ends {slashed(together)} AP from EconomicGrasp",
+        f"`graspness` ends {graspness[1][0]:.2f} to {graspness[0][0]:.2f} AP above the three "
+        "trainings of EconomicGrasp on seen scenes",
+        f"`normals` {-normals[0][0]:.2f} to {-normals[1][0]:.2f} below them",
+        f"below all three on every split in both trainings, by {plain(lost[:3])} AP",
+        f"Trained twice, it ends {slashed(gained[:3])} AP from EconomicGrasp",
         f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
-        "differ by up to {:.2f}, {:.2f} and {:.2f} AP".format(*spreads.values()),
+        "lie up to {:.2f}, {:.2f} and {:.2f} AP apart".format(
+            *(max(apart(name)) for name in ("none", "multi-scale", "all"))
+        ),
     ):
         assert sentence in flat, sentence
 
@@ -906,7 +929,7 @@ def test_what_the_label_project_says_is_computed_from_its_records():
         f"{slashed(from_paper)} from them",
         f"{runs['1cm-30deg'][3]:.2f} AP after four epochs and {runs['1cm-30deg'][-1]:.2f} after",
         f"it is at {runs['converter'][3]:.2f} and {runs['converter'][-1]:.2f}",
-        f"moved by {moved[0]:.1f} and {moved[1]:.1f} AP",
+        f"moved by {moved[0]:.2f} and {moved[1]:.2f} AP",
     ):
         assert sentence in readme, sentence
     # HGGD's README and the model zoo state the same result from the same records
@@ -933,20 +956,20 @@ def test_the_pages_state_what_trainings_from_one_seed_differ_by():
 
     gsnet = trainings("gsnet", "gsnet_sunet14_g1b-realsense_10e")
     economic = trainings("economicgrasp", "economicgrasp_sunet14_g1b-realsense_10e")
-    assert (len(gsnet), len(economic)) == (3, 2)
+    assert (len(gsnet), len(economic)) == (3, 3)
     page = " ".join(
         (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8").split()
     )
     assert (
-        f"GSNet moved by up to {spread(gsnet):.2f} AP over three trainings and EconomicGrasp "
-        f"by up to {spread(economic):.2f} over two" in page
+        f"Trained three times from one config and seed, GSNet moved by up to "
+        f"{spread(gsnet):.2f} AP and EconomicGrasp by up to {spread(economic):.2f}" in page
     )
     zoo = " ".join((REPO / "docs/model_zoo.md").read_text(encoding="utf-8").split())
     assert (
         f"GSNet's three lie within {spread(gsnet):.2f} AP of one another on every split, "
-        f"EconomicGrasp's two within {spread(economic):.2f}" in zoo
+        f"EconomicGrasp's within {spread(economic):.2f}" in zoo
     )
     readme = " ".join(
         (REPO / "configs/economicgrasp/README.md").read_text(encoding="utf-8").split()
     )
-    assert f"it moved by up to {spread(economic):.2f} AP" in readme
+    assert f"it moves by up to {spread(economic):.2f} AP" in readme

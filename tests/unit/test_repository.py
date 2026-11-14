@@ -271,10 +271,14 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     economic = "economicgrasp_sunet14_g1b-realsense_10e"
     economic_runs = trainings("economicgrasp", economic)
     checkpoint = trainings("economicgrasp", economic, "author-ckpt")[0]
-    from_checkpoint = max(spread([run, checkpoint]) for run in economic_runs)
-    one_and_a_half = all(  # "about one and a half AP": between the trainings, and from it
-        abs(value - 1.5) <= 0.25 for value in (spread(economic_runs), from_checkpoint)
+    among = all(  # the checkpoint inside the range of the trainings, on every split
+        min(run[variant][split] for run in economic_runs)
+        <= checkpoint[variant][split]
+        <= max(run[variant][split] for run in economic_runs)
+        for variant in checkpoint
+        for split in checkpoint[variant]
     )
+    economic_apart = f"{spread(economic_runs):.2f} AP"
     papers = {
         name: re.findall(r"\[(\w+)\]\(https://arxiv\.org/abs/([\d.]+)\)", text(name))
         for name in READMES
@@ -333,8 +337,8 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"value for value on {frames} recorded frames": True,
             f"{words[len(gsnet_runs)]} times with the same seed": True,
             "the trainings differ by about one AP at most": about_one,
-            "trained here twice with the same seed": len(economic_runs) == 2,
-            "within about one and a half AP": one_and_a_half,
+            f"trained here {words[len(economic_runs)]} times with the same seed": among,
+            f"to {economic_apart} apart": True,
             "GSNet reports 65.70 AP": shared["gsnet off"],
             "without the filter and 67.12 with it": shared["gsnet on"],
             "lists 59.36 AP": shared["hggd sets"],
@@ -359,8 +363,8 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"在 {frames} 个记录帧上": True,
             f"从零训练了{chinese[len(gsnet_runs)]}次（同一个随机种子）": True,
             f"{chinese[len(gsnet_runs)]}次的成绩最多相差约一个 AP": about_one,
-            "用同一个随机种子训练了两次": len(economic_runs) == 2,
-            "相差都在约一个半 AP 以内": one_and_a_half,
+            f"用同一个随机种子训练了{chinese[len(economic_runs)]}次": among,
+            f"{chinese[len(economic_runs)]}次的成绩最多相差 {economic_apart}": True,
             "不加过滤是 65.70 AP": shared["gsnet off"],
             "加了是 67.12": shared["gsnet on"],
             "把 59.36 AP": shared["hggd sets"],
