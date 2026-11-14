@@ -41,24 +41,34 @@ novel. *On* is HGGD's collision filter, then its NMS: what the released test scr
 |---|---|---|
 | the converter's: HGGD in the model zoo | 48.01 / 41.42 / 18.88 | 55.30 / 48.60 / 21.70 |
 | `1cm-30deg` | 57.83 / 48.53 / 22.71 | 63.61 / 54.31 / 24.95 |
-| `unsuppressed` | training | |
+| `unsuppressed` | 62.40 / 49.54 / 21.55 | 67.14 / 54.01 / 23.72 |
 | the authors' checkpoint | 58.36 / 47.95 / 22.08 | 63.72 / 52.91 / 24.16 |
 
-**On the denser labels HGGD lands on its authors' checkpoint.** It ends
+**On `1cm-30deg` HGGD lands on its authors' checkpoint.** It ends
 −0.53 / +0.58 / +0.63 AP from it without the collision filter and −0.11 / +1.40 / +0.79
 with it, where the converter's labels leave it −10.35 / −6.53 / −3.20 and
 −8.42 / −4.31 / −2.46. Nothing but the two label options differs between the two
 trainings: +9.82 AP on seen scenes without the filter comes from the labels alone.
 
 **It is inside the model zoo's gate against the repository's numbers.** HGGD's repository
-lists 64.45 / 53.59 / 24.59; with the filter the model trained on the denser labels is
+lists 64.45 / 53.59 / 24.59; with the filter the model trained on `1cm-30deg` is
 −0.84 / +0.72 / +0.36 AP from that, where the gate is 1 AP on each split. The paper's
 numbers, 59.36 / 51.20 / 22.17, do not state the filter either; without it the model is
 −1.53 / −2.67 / +0.54 from them.
 
+**Without suppression it ends above the checkpoint on seen scenes, not on novel.** On all
+4,611 labels a frame HGGD ends +4.04 / +1.59 / −0.53 AP from the checkpoint without the
+collision filter and +3.42 / +1.10 / −0.44 with it; with the filter that is
++2.69 / +0.42 / −0.87 from the repository's numbers, outside the gate on seen scenes.
+Against `1cm-30deg` it is +4.57 / +1.01 / −1.16 AP without the filter: on seen scenes far
+beyond the 1.75 AP by which training again moved EconomicGrasp, on novel inside it. Of the
+three densities `1cm-30deg` is the one on the checkpoint; the checkpoint's loss does not
+tell the two denser ones apart: 1.85 on `1cm-30deg`, 1.67 on the unsuppressed labels.
+
 **The gap opens in the first epochs.** On 160 frames of the training scenes the model on
-the denser labels is at 48.57 AP after four epochs and 52.18 after the fifteenth; on the
-converter's labels it is at 32.65 and 43.76 ([`validation.json`](records/validation.json)).
+`1cm-30deg` is at 48.57 AP after four epochs and 52.18 after the fifteenth, the one on the
+unsuppressed labels at 49.62 and 58.04; on the converter's labels it is at 32.65 and 43.76
+([`validation.json`](records/validation.json)).
 
 **What it does not say.** One training per row: HGGD has not been trained twice from one
 config here, and two other methods moved by 1.12 and 1.75 AP when they were. Whether these

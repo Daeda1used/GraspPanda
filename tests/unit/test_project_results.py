@@ -849,6 +849,7 @@ HGGD = "configs/hggd/records/hggd_r34w8_g1b-realsense_15e"
 LABEL_RECORDS = {
     "converter": f"{HGGD}_reproduced_test",
     "1cm-30deg": "projects/hggd_labels/records/1cm-30deg_test",
+    "unsuppressed": "projects/hggd_labels/records/unsuppressed_test",
     "checkpoint": f"{HGGD}_author-ckpt_test",
 }
 #: Suppression of a row's labels, as ``configs/hggd/diagnostics/label_fit.json`` keys it.
@@ -955,9 +956,41 @@ def test_what_the_label_project_says_is_computed_from_its_records():
             ("economicgrasp", "economicgrasp_sunet14_g1b-realsense_10e"),
         )
     ]
+    # without suppression: above the checkpoint on seen scenes, below it on novel
+    full = label_gap("unsuppressed", "checkpoint")
+    assert full[0] > 2 and full[3] > 2 and full[2] < 0 and full[5] < 0
+    over = label_gap("unsuppressed", "1cm-30deg")
+    full_from_repository = [
+        mine - theirs
+        for mine, theirs in zip(
+            record_result.headline(label_record("unsuppressed", "cd"))["AP"].values(), repository
+        )
+    ]
+    assert abs(full_from_repository[0]) > gate() and abs(from_repository[0]) <= gate()
+    assert over[0] > moved[1] > abs(over[2]), "beyond the spread on seen, inside it on novel"
+    fit = json.loads((REPO / "configs/hggd/diagnostics/label_fit.json").read_text("utf-8"))
+    author_loss = {
+        (row["nms_distance"], row["nms_angle"]): row["weights"]["authors"]["loss"]
+        for row in fit["rows"]
+    }
+    (labels,) = (
+        row["labels"]
+        for row in fit["rows"]
+        if (row["nms_distance"], row["nms_angle"]) == LABEL_SUPPRESSION["unsuppressed"]
+    )
     for sentence in (
         f"{slashed(dense[:3])} AP from it without the collision filter and {slashed(dense[3:])} "
         "with it",
+        f"On all {labels:,.0f} labels a frame HGGD ends {slashed(full[:3])} AP from the "
+        "checkpoint without the collision filter and "
+        f"{slashed(full[3:])} with it",
+        f"that is {slashed(full_from_repository)} from the repository's numbers, outside the gate "
+        "on seen scenes",
+        f"Against `1cm-30deg` it is {slashed(over[:3])} AP without the filter",
+        f"beyond the {moved[1]:.2f} AP by which training again moved EconomicGrasp",
+        f"{author_loss[LABEL_SUPPRESSION['1cm-30deg']]:.2f} on `1cm-30deg`, "
+        f"{author_loss[LABEL_SUPPRESSION['unsuppressed']]:.2f} on the unsuppressed labels",
+        f"unsuppressed labels at {runs['unsuppressed'][3]:.2f} and {runs['unsuppressed'][-1]:.2f}",
         f"leave it {slashed(sparse[:3])} and {slashed(sparse[3:])}",
         f"{signed(gained[0])} AP on seen scenes without the filter comes from the labels alone",
         "lists " + " / ".join(f"{value:.2f}" for value in repository),
@@ -979,6 +1012,8 @@ def test_what_the_label_project_says_is_computed_from_its_records():
         f"{signed(gained[0])} and {signed(gained[3])} AP on seen scenes over the row above",
         f"within {max(map(abs, dense[:3])):.2f} AP of the checkpoint without the filter",
         f"within {max(map(abs, from_repository)):.2f} AP of the repository's numbers",
+        f"ends {signed(full[0])} AP from the checkpoint on seen scenes and {signed(full[2])} on "
+        "novel, without the filter",
     ):
         assert sentence in hggd, sentence
     assert (

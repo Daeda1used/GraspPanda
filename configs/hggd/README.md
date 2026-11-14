@@ -95,10 +95,12 @@ Which ones is not published; the reference loader's cap on the labels of an imag
 labels, 1 cm and 30°: 57.83 / 48.53 / 22.71 AP without the collision filter and
 63.61 / 54.31 / 24.95 with it, +9.82 and +8.31 AP on seen scenes over the row above. That
 is within 0.63 AP of the checkpoint without the filter, and with it within 0.84 AP of the
-repository's numbers on every split: inside the zoo's gate. One run, one seed;
-[`projects/hggd_labels`](../../projects/hggd_labels/) holds the sweep file, the commands
-and the records. The config ships the converter's labels, as released, and the rows above
-are trained on them; the two overrides of that project switch to the denser ones. On
+repository's numbers on every split: inside the zoo's gate. Without any suppression it
+ends +4.04 AP from the checkpoint on seen scenes and −0.53 on novel, without the filter.
+One run per density, one seed; [`projects/hggd_labels`](../../projects/hggd_labels/) holds
+the sweep file, the commands and the records. The config ships the converter's labels, as
+released, and the rows above are trained on them; the two overrides of `1cm-30deg` in that
+project switch to the 1 cm, 30° ones. On
 Kinect the same two overrides end above the checkpoint on seen and similar scenes and
 below it on novel; a training on the converter's Kinect labels is running.
 
