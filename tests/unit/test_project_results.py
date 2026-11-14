@@ -531,9 +531,13 @@ ABLATION_RECORDS = {
     "none again": "configs/economicgrasp/repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test",
     "none third": "configs/economicgrasp/repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test",
     "graspness": "projects/finegrasp_ablation/records/graspness_test",
+    "graspness again": "projects/finegrasp_ablation/records/graspness_run2_test",
     "normals": "projects/finegrasp_ablation/records/normals_test",
+    "normals again": "projects/finegrasp_ablation/records/normals_run2_test",
     "multi-scale": "projects/finegrasp_ablation/records/multi-scale_test",
     "multi-scale again": "projects/finegrasp_ablation/records/multi-scale_run2_test",
+    "graspness+multi-scale": "projects/finegrasp_ablation/records/graspness+multi-scale_test",
+    "normals+multi-scale": "projects/finegrasp_ablation/records/normals+multi-scale_test",
     "all": "projects/finegrasp_ablation/records/all_test",
     "all again": "projects/finegrasp_ablation/records/all_run2_test",
 }
@@ -670,11 +674,12 @@ def signed(value: float) -> str:
 def test_what_the_ablation_says_is_computed_from_its_records():
     readme = " ".join((ABLATION / "README.md").read_text(encoding="utf-8").split())
     # the yardstick: a row trained again from one config and seed
-    assert [len(trainings_of(name)) for name in ("none", "multi-scale", "all")] == [3, 2, 2]
+    changes = ("graspness", "normals", "multi-scale", "all")
+    assert [len(trainings_of(name)) for name in ("none", *changes)] == [3, 2, 2, 2, 2]
+    widest = [max(column) for column in zip(*(apart(name) for name in changes))]
     for sentence in (
         f"three trainings of EconomicGrasp lie {plain(apart('none')[:3])} AP apart",
-        f"the two of `multi-scale` {plain(apart('multi-scale')[:3])}",
-        f"the two of `all` {plain(apart('all')[:3])}",
+        f"two trainings of a change up to {plain(widest[:3])}",
     ):
         assert sentence in readme, sentence
     losses = json.loads((ABLATION / "records/training_loss.json").read_text(encoding="utf-8"))
@@ -684,27 +689,42 @@ def test_what_the_ablation_says_is_computed_from_its_records():
     base_loss = [runs[run][-1] for run in trainings_of("none")]
     assert max(base_loss) - min(base_loss) < 0.01
 
-    # graspness, one run: above the three on seen scenes, inside their range elsewhere
-    low, high = from_range("graspness")
-    assert min(high[0], high[3]) > 0, "above the highest on seen scenes"
-    assert all(low[i] >= 0 and high[i] <= 0.005 for i in (1, 2, 4, 5)), "inside the range"
-    first_of_all = from_range("all")[1]
-    assert first_of_all[0] > high[0], "the first training of all three was above by more"
-    assert f"by {high[0]:.2f} to {low[0]:.2f} AP without the collision filter" in readme
-
-    # the normals, one run: below the three on seen scenes, inside their range elsewhere but
-    # for a novel split level with the highest; the training loss of EconomicGrasp
-    low, high = from_range("normals")
-    assert max(low[0], low[3]) < 0, "below the lowest on seen scenes"
-    assert all(low[i] >= 0 and high[i] <= 0.02 for i in (1, 2, 4, 5))
-    assert max(high) == high[2] > 0
-    assert abs(runs["normals"][-1] - runs["none"][-1]) < 0.05
+    # graspness, trained twice: the first above the three on seen scenes, the second at their
+    # edge; both inside their range on the other splits
+    first, second = from_range("graspness")[1], from_range("graspness again")[1]
+    assert first[0] > 0.5 and abs(second[0]) < 0.1
+    for run in trainings_of("graspness"):
+        low, high = from_range(run)
+        assert all(low[i] >= 0 and high[i] <= 0.005 for i in (1, 2, 4, 5)), run
+    gained = [mine - base for mine, base in zip(mean_ap("graspness"), mean_ap("none"))]
     for sentence in (
-        f"by {-low[0]:.2f} to {-high[0]:.2f} AP without the collision filter",
-        f"but for {signed(high[2])} AP on novel",
-        f"{runs['normals'][-1]:.2f} against {runs['none'][-1]:.2f}",
+        f"Its first training ends {first[0]:.2f} AP above the three trainings of EconomicGrasp "
+        f"on seen scenes without the collision filter, its second {second[0]:.2f}",
+        f"Between the means that is {slashed(gained[:3])} AP.",
     ):
         assert sentence in readme, sentence
+
+    # the normals, trained twice: both below the three on seen scenes and close together,
+    # inside their range elsewhere but for a novel split level with the highest
+    seen_below = []
+    for run in trainings_of("normals"):
+        low, high = from_range(run)
+        assert max(low[0], low[3]) < 0, run
+        assert all(low[i] >= 0 and high[i] <= 0.02 for i in (1, 2, 4, 5)), run
+        seen_below += [-low[0], -high[0]]
+    assert max(from_range("normals")[1]) == from_range("normals")[1][2] > 0
+    lost = [mine - base for mine, base in zip(mean_ap("normals"), mean_ap("none"))]
+    normal_losses = [runs[run][-1] for run in trainings_of("normals")]
+    assert max(abs(value - runs["none"][-1]) for value in normal_losses) < 0.05
+    for sentence in (
+        f"by {min(seen_below):.2f} to {max(seen_below):.2f} AP without the collision filter, "
+        f"and lie {apart('normals')[0]:.2f} AP apart",
+        f"but for {signed(from_range('normals')[1][2])} AP on novel",
+        f"Between the means that is {slashed(lost[:3])} AP. Its training loss",
+        f"{normal_losses[0]:.2f} in both trainings against {runs['none'][-1]:.2f}",
+    ):
+        assert sentence in readme, sentence
+    assert f"{normal_losses[1]:.2f}" == f"{normal_losses[0]:.2f}"
 
     # the four-radius crop, trained twice: both trainings below all three of EconomicGrasp
     # on every split, with the lower training loss
@@ -717,9 +737,19 @@ def test_what_the_ablation_says_is_computed_from_its_records():
         f"Between the means that is {plain(lost[:3])} AP without the filter",
         f"{crop_losses[0]:.2f} and {crop_losses[1]:.2f} against EconomicGrasp's "
         f"{runs['none'][-1]:.2f}",
-        f"The four-radius crop loses {plain(lost[:3])} AP alone",
+        f"The crop loses {plain(lost[:3])} AP alone",
     ):
         assert sentence in readme, sentence
+    # the crop with one other change, one run each: with graspness below the three on every
+    # split; with normals below them on similar scenes only, without the filter
+    low = from_range("graspness+multi-scale")[0]
+    assert max(low) < 0
+    low = from_range("normals+multi-scale")[0]
+    assert low[1] < 0 < min(low[0], low[2])
+    for pair in ("graspness+multi-scale", "normals+multi-scale"):
+        assert len(trainings_of(pair)) == 1
+        moved = [mine - base for mine, base in zip(mean_ap(pair), mean_ap("none"))]
+        assert f"{slashed(moved[:3])}" in readme, pair
 
     # all three, the FineGrasp model, trained twice: the first training above the three of
     # EconomicGrasp on seen scenes, the second inside their range on every split
@@ -774,11 +804,19 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
     page = (REPO / "docs/advanced_guides/trained_swaps.md").read_text(encoding="utf-8")
     assert page.count('--8<-- "docs/includes/trained_changes.md"') == 1
     flat = " ".join(page.split())
-    graspness, normals = from_range("graspness"), from_range("normals")
+    for change in ("graspness", "normals", "multi-scale", "all"):
+        assert len(trainings_of(change)) == 2, change
+    graspness = [mine - base for mine, base in zip(mean_ap("graspness"), mean_ap("none"))]
+    seen_below = [
+        -value for run in trainings_of("normals") for value in (pair[0] for pair in from_range(run))
+    ]
     for crop in trainings_of("multi-scale"):
         assert max(from_range(crop)[0]) < 0, crop
     lost = [base - crop for base, crop in zip(mean_ap("none"), mean_ap("multi-scale"))]
     gained = [mine - base for mine, base in zip(mean_ap("all"), mean_ap("none"))]
+    assert max(from_range("graspness+multi-scale")[0]) < 0
+    with_normals = from_range("normals+multi-scale")[0]
+    assert with_normals[1] < 0 < min(with_normals[0], with_normals[2])
     below = {
         "all": [
             value
@@ -788,10 +826,9 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
         "own": below_the_authors(FINEGRASP_RECORDS["reproduced"]),
     }
     for sentence in (
-        f"`graspness` ends {graspness[1][0]:.2f} to {graspness[0][0]:.2f} AP above the three "
-        "trainings of EconomicGrasp on seen scenes",
-        f"`normals` {-normals[0][0]:.2f} to {-normals[1][0]:.2f} below them",
-        f"below all three on every split in both trainings, by {plain(lost[:3])} AP",
+        f"`graspness` ends {slashed(graspness[:3])} AP from EconomicGrasp between the means",
+        f"on seen scenes, by {min(seen_below):.2f} to {max(seen_below):.2f} AP; `multi-scale`",
+        f"below all three on every split, by {plain(lost[:3])} AP between the means",
         f"Trained twice, it ends {slashed(gained[:3])} AP from EconomicGrasp",
         f"{min(below['all']):.1f} to {max(below['all']):.1f} AP below the authors' checkpoint",
         f"own recipe is {min(below['own']):.1f} to {max(below['own']):.1f} below",
@@ -948,6 +985,78 @@ def test_what_the_label_project_says_is_computed_from_its_records():
         f"HGGD ends {slashed(dense[:3])} AP from the checkpoint without the filter and "
         f"{slashed(dense[3:])} with it" in zoo
     )
+
+
+#: Row of the Kinect table → stem of its two records; the converter's row is training.
+KINECT_RECORDS = {
+    "1cm-30deg": "projects/hggd_labels/records/kinect_1cm-30deg_test",
+    "checkpoint": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test",
+}
+
+
+def kinect_ap(name: str) -> list[float]:
+    return [
+        value
+        for variant in ("raw", "cd")
+        for value in record_result.headline(
+            json.loads((REPO / f"{KINECT_RECORDS[name]}_{variant}.json").read_text("utf-8"))
+        )["AP"].values()
+    ]
+
+
+def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
+    """The Kinect run is the Kinect config with the two overrides of ``1cm-30deg``, scored on
+    the whole Kinect test split; its sentences are computed from its records and the
+    metafile's Kinect rows."""
+    from grasppanda.config import Config, resolve_config_path
+    from grasppanda.hub import load_metafiles
+
+    from .test_repository import gate
+
+    readme = (LABELS / "README.md").read_text(encoding="utf-8")
+    rows = table_under(readme, "## On Kinect")
+    assert [row[0] for row in rows] == ["the converter's", "`1cm-30deg`", "the authors' checkpoint"]
+    assert rows[0][1:] == ["training", ""]
+    cells = {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
+    overrides = cells["1cm-30deg"].overrides[:2]
+    trained = Config.load(
+        resolve_config_path("hggd/hggd_r34w8_g1b-kinect_15e"), overrides=overrides
+    ).digest()
+    for row, name in zip(rows[1:], KINECT_RECORDS):
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            path = REPO / f"{KINECT_RECORDS[name]}_{variant}.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            assert record["cameras"] == ["kinect"] and not record["partial"], name
+            assert record["scored"] == record["requested"] == 23040 and record["seed"] == 0
+            if name == "1cm-30deg":
+                assert record["weights"]["config_hash"] == trained
+                assert record["weights"]["epoch"] == 15
+            numbers = record_result.headline(record)["AP"]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
+
+    flat = " ".join(readme.split())
+    dense = [mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg"), kinect_ap("checkpoint"))]
+    assert dense[0] > 0 and dense[1] > 0 > dense[2] and dense[3] > 0 and dense[4] > 0 > dense[5]
+    (repository,) = (
+        list(result.ap.values())
+        for meta in load_metafiles()
+        for model in meta.models
+        if model.name == "hggd_r34w8_g1b-kinect_15e"
+        for result in model.results
+        if result.provenance == "reported" and "In repo" in result.source
+    )
+    from_repository = [
+        mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg")[3:], repository)
+    ]
+    assert min(map(abs, from_repository)) > gate(), "outside the gate on every split"
+    for sentence in (
+        f"{slashed(dense[:3])} AP without the collision filter and {slashed(dense[3:])} with it",
+        "Kinect numbers, " + " / ".join(f"{value:.2f}" for value in repository),
+        f"that is {slashed(from_repository)} AP with the filter",
+    ):
+        assert sentence in flat, sentence
+    for override in overrides:  # the commands name the cell whose two overrides they take
+        assert override in readme
 
 
 def test_the_pages_state_what_trainings_from_one_seed_differ_by():

@@ -98,7 +98,9 @@ is within 0.63 AP of the checkpoint without the filter, and with it within 0.84 
 repository's numbers on every split: inside the zoo's gate. One run, one seed;
 [`projects/hggd_labels`](../../projects/hggd_labels/) holds the sweep file, the commands
 and the records. The config ships the converter's labels, as released, and the rows above
-are trained on them; the two overrides of that project switch to the denser ones.
+are trained on them; the two overrides of that project switch to the denser ones. On
+Kinect the same two overrides end above the checkpoint on seen and similar scenes and
+below it on novel; a training on the converter's Kinect labels is running.
 
 </details>
 
