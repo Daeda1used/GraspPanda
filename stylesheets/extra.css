@@ -1,0 +1,327 @@
+/* GraspPanda documentation theme. Colours are shared with the explorer
+ * (docs/explorer/explorer.css) so the site and the app read as one product. */
+
+/* ------------------------------------------------------------------ fonts
+ * Inter and JetBrains Mono, served from this site (docs/assets/fonts, subsets of the
+ * releases named in THIRD_PARTY_NOTICES.md): no request leaves the site, and a reader
+ * behind a firewall sees the same page. `theme.font: false` in mkdocs.yml switches the
+ * theme's own font request off. */
+@font-face {
+  font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("../assets/fonts/Inter.var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter"; font-style: italic; font-weight: 100 900; font-display: swap;
+  src: url("../assets/fonts/Inter-Italic.var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono"; font-style: normal; font-weight: 100 800; font-display: swap;
+  src: url("../assets/fonts/JetBrainsMono.var.woff2") format("woff2");
+}
+
+:root {
+  --md-text-font: "Inter";
+  --md-code-font: "JetBrains Mono";
+  --md-accent-fg-color: #1a7f37;
+  --md-accent-fg-color--transparent: #1a7f371a;
+  --md-typeset-a-color: #0969da;
+  --gp-ink: #1f2328;
+  --gp-muted: #59636e;
+  --gp-line: #d1d9e0;
+  --gp-line-soft: #e6eaef;
+  --gp-surface: #f6f8fa;
+  --gp-chip-bg: #eff2f5;
+  --gp-chip-fg: #1f2328;
+  --gp-ok: #1a7f37;
+  --gp-ok-bg: #dafbe1;
+  --gp-warn: #9a6700;
+  --gp-warn-bg: #fff8c5;
+  --gp-no: #cf222e;
+  --gp-no-bg: #ffebe9;
+  --gp-hero-bg: linear-gradient(180deg, #f6f8fa 0%, #ffffff 100%);
+  --gp-radius: 0.4rem;
+  --gp-bar-bg: rgba(255, 255, 255, 0.86);
+}
+
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #0969da;
+  --md-typeset-color: var(--gp-ink);
+  --md-code-bg-color: var(--gp-surface);
+  --md-code-fg-color: var(--gp-ink);
+  --md-code-hl-keyword-color: #0550ae;
+  --md-code-hl-string-color: #116329;
+}
+
+/* The dark scheme stands on the surfaces of the explorer, so a page, a figure and the
+ * app share one background. */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0d1117;
+  --md-default-fg-color: #e6edf3;
+  --md-default-fg-color--light: #9198a1;
+  --md-default-fg-color--lighter: #6e7681;
+  --md-default-fg-color--lightest: #21262d;
+  --md-typeset-color: #d1d7e0;
+  --md-code-bg-color: #151b23;
+  --md-code-fg-color: #e6edf3;
+  --md-typeset-a-color: #4493f8;
+  --md-accent-fg-color: #3fb950;
+  --md-accent-fg-color--transparent: #3fb9501a;
+  --gp-ink: #e6edf3;
+  --gp-muted: #9198a1;
+  --gp-line: #30363d;
+  --gp-line-soft: #21262d;
+  --gp-surface: #151b23;
+  --gp-chip-bg: #262c36;
+  --gp-chip-fg: #e6edf3;
+  --gp-ok: #3fb950;
+  --gp-ok-bg: #12261e;
+  --gp-warn: #d29922;
+  --gp-warn-bg: #272115;
+  --gp-no: #f85149;
+  --gp-no-bg: #2d1416;
+  --gp-hero-bg: linear-gradient(180deg, #151b23 0%, var(--md-default-bg-color) 100%);
+  --gp-bar-bg: rgba(13, 17, 23, 0.82);
+  --md-code-hl-keyword-color: #79c0ff;
+  --md-code-hl-string-color: #7ee787;
+}
+/* Highlighting in two colours and a grey: keywords and keys in blue, strings in green,
+ * comments muted. Numbers, built-ins, escapes and names stay in ink, so a command line
+ * shows no accidental red (a backslash, `test`, 0.35). */
+[data-md-color-scheme] {
+  --md-code-hl-number-color: var(--md-code-fg-color);
+  --md-code-hl-special-color: var(--md-code-fg-color);
+  --md-code-hl-constant-color: var(--md-code-fg-color);
+  --md-code-hl-function-color: var(--md-code-fg-color);
+  --md-code-hl-variable-color: var(--md-code-fg-color);
+  --md-code-hl-comment-color: var(--gp-muted);
+}
+
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+
+/* ------------------------------------------------------------------ chrome
+ * One quiet bar: a hairline instead of a shadow, the page showing through. */
+.md-header, .md-header--shadow {
+  color: var(--gp-ink); background-color: var(--gp-bar-bg); box-shadow: none;
+  border-bottom: 1px solid var(--gp-line-soft);
+  -webkit-backdrop-filter: saturate(180%) blur(14px); backdrop-filter: saturate(180%) blur(14px);
+}
+.md-tabs { color: var(--gp-ink); background-color: transparent; }
+.md-header__title { font-weight: 650; letter-spacing: -0.01em; }
+.md-tabs__link { margin-top: 0.7rem; padding-bottom: 0.7rem; opacity: 1; color: var(--gp-muted); border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
+.md-tabs__link:is(:hover, :focus-visible) { color: var(--gp-ink); }
+.md-tabs__item--active .md-tabs__link { color: var(--gp-ink); font-weight: 600; border-bottom-color: var(--gp-ink); }
+.md-tabs__item { height: auto; }
+.md-tabs__list { align-items: flex-end; }
+.md-source { color: var(--gp-ink); }
+.md-source__repository { font-weight: 500; }
+@media screen and (min-width: 60em) {
+  .md-search__form {
+    height: 1.7rem; border-radius: var(--gp-radius); background-color: var(--gp-surface);
+    box-shadow: inset 0 0 0 1px var(--gp-line); transition: box-shadow 0.15s, background-color 0.15s;
+  }
+  .md-search__form:hover { background-color: var(--gp-surface); box-shadow: inset 0 0 0 1px var(--gp-muted); }
+  .md-search__input { color: var(--gp-ink); font-size: 0.72rem; }
+  .md-search__input::placeholder { color: var(--gp-muted); }
+  .md-search__icon[for="__search"] { top: 0.25rem; color: var(--gp-muted); }
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form { border-radius: var(--gp-radius) var(--gp-radius) 0 0; background-color: var(--md-default-bg-color); }
+}
+.md-nav__title { color: var(--gp-ink); }
+.md-nav__link { color: var(--gp-muted); }
+.md-nav__link:is(:hover, :focus-visible) { color: var(--gp-ink); }
+.md-nav__item .md-nav__link--active, .md-nav__link--active code { color: var(--gp-ink); font-weight: 600; }
+.md-nav--secondary .md-nav__link--active { color: var(--md-accent-fg-color); }
+@media screen and (min-width: 76.25em) {
+  .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link { color: var(--gp-ink); }
+  .md-nav__item--section > .md-nav__link { font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gp-muted); }
+}
+.md-path { font-size: 0.66rem; }
+
+.md-footer {
+  --md-footer-fg-color: var(--gp-ink);
+  --md-footer-fg-color--light: var(--gp-muted);
+  --md-footer-fg-color--lighter: var(--gp-muted);
+  --md-footer-bg-color: var(--md-default-bg-color);
+  --md-footer-bg-color--dark: var(--md-default-bg-color);
+  border-top: 1px solid var(--gp-line-soft);
+}
+.md-footer__link { opacity: 1; padding-top: 1.1rem; padding-bottom: 0.9rem; }
+.md-footer__title { font-size: 0.8rem; font-weight: 600; }
+.md-footer__direction { font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; opacity: 1; color: var(--gp-muted); }
+.md-footer-meta { border-top: 1px solid var(--gp-line-soft); }
+.md-copyright { font-size: 0.62rem; }
+.md-top { border-radius: 1rem; box-shadow: 0 0 0 1px var(--gp-line), 0 4px 12px rgba(31, 35, 40, 0.08); }
+
+/* ------------------------------------------------------------------ type */
+.md-typeset { font-feature-settings: "calt", "cv05", "cv08"; }
+.md-typeset h1 { margin-bottom: 1em; font-size: 1.8em; font-weight: 650; letter-spacing: -0.022em; color: var(--gp-ink); }
+.md-typeset h2 { margin-top: 2em; font-size: 1.35em; font-weight: 650; letter-spacing: -0.017em; }
+.md-typeset h3 { font-size: 1.1em; font-weight: 600; letter-spacing: -0.01em; }
+.md-typeset h4 { font-weight: 600; }
+.md-typeset :is(h2, h3, h4) { color: var(--gp-ink); }
+.md-typeset :is(strong, b) { font-weight: 600; color: var(--gp-ink); }
+.md-typeset a { text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+.md-typeset a:is(:hover, :focus-visible) { color: var(--md-typeset-a-color); text-decoration: underline; }
+.md-typeset :is(a.md-button, a.gp-chip, a.headerlink, .grid.cards a, .md-content__button):is(:hover, :focus-visible) { text-decoration: none; }
+.md-typeset hr { border-bottom-color: var(--gp-line-soft); }
+
+/* ------------------------------------------------------------------ code */
+.md-typeset code { font-size: 0.84em; border-radius: 0.3rem; font-feature-settings: "calt" 0, "liga" 0; }
+.md-typeset :not(pre) > code { padding: 0.1em 0.38em; box-shadow: inset 0 0 0 1px var(--gp-line-soft); }
+.md-typeset :is(h1, h2, h3, h4) code { box-shadow: none; }
+.md-typeset pre > code { border-radius: var(--gp-radius); box-shadow: inset 0 0 0 1px var(--gp-line-soft); font-size: 0.8em; line-height: 1.6; }
+.md-typeset .highlight span.filename { border-radius: var(--gp-radius) var(--gp-radius) 0 0; border-bottom: 0; box-shadow: inset 0 0 0 1px var(--gp-line-soft); font-weight: 600; }
+.md-typeset .md-code__button, .md-typeset .md-clipboard { color: var(--gp-muted); }
+/* The copy button stands on the block's own colour: a long line ends under it instead of
+ * showing through. */
+.md-typeset .md-code__nav, .md-typeset :hover > .md-code__nav { background-color: var(--md-code-bg-color); }
+/* Six method names fit the column without a scroller. */
+.md-typeset .tabbed-labels > label { padding-left: 0.85em; padding-right: 0.85em; font-weight: 600; font-size: 0.66rem; color: var(--gp-muted); }
+.md-typeset .tabbed-labels > label:hover { color: var(--gp-ink); }
+.md-typeset kbd { box-shadow: 0 0 0 1px var(--gp-line), 0 1px 0 1px var(--gp-line); border-radius: 0.25rem; }
+
+/* The repository widget of the header names the repository and nothing else: the release
+ * GitHub reports is a tag of the earlier, unrelated code base (v0.56), and star and fork
+ * counters say nothing a reader of the documentation came for. */
+.md-source__facts { display: none; }
+
+/* A measured combination that predicted no grasp on any probed frame
+ * (tools/make_combination_docs.py, tools/make_method_pages.py). */
+.gp-nograsp { color: var(--md-default-fg-color--light); opacity: 0.75; }
+
+/* ------------------------------------------------------------------ hero */
+.gp-hero { background: var(--gp-hero-bg); border-bottom: 1px solid var(--gp-line); }
+.gp-hero__inner { padding: 3.2rem 0.8rem 2.6rem; }
+.gp-hero__text { max-width: 40rem; }
+.gp-hero h1 {
+  margin: 0 0 0.9rem; font-size: 2.3rem; line-height: 1.1; font-weight: 700;
+  letter-spacing: -0.03em; color: var(--gp-ink);
+}
+.gp-hero__lead { margin: 0 0 1.5rem; font-size: 1.05rem; line-height: 1.55; color: var(--gp-muted); }
+.gp-hero__badge {
+  display: inline-block; margin: 0 0 1.1rem; padding: 0.12rem 0.65rem; border-radius: 1rem;
+  font-size: 0.66rem; font-weight: 600; letter-spacing: 0.01em; color: var(--gp-ok);
+  background: var(--gp-ok-bg);
+}
+.gp-hero .md-button {
+  margin: 0 0.5rem 0.5rem 0; padding: 0.5em 1.4em; border-width: 1px; border-radius: var(--gp-radius);
+  font-size: 0.76rem; font-weight: 600; color: var(--gp-ink); border-color: var(--gp-line);
+  background: var(--md-default-bg-color); transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.gp-hero .md-button--primary {
+  color: var(--md-default-bg-color); background: var(--gp-ink); border-color: var(--gp-ink);
+}
+.gp-hero .md-button:is(:hover, :focus-visible) { color: var(--gp-ink); background: var(--gp-surface); border-color: var(--gp-muted); }
+.gp-hero .md-button--primary:is(:hover, :focus-visible) { color: #ffffff; background: var(--md-accent-fg-color); border-color: var(--md-accent-fg-color); }
+
+/* ------------------------------------------------------------------ chips */
+.md-typeset .gp-chip {
+  display: inline-block; padding: 0.05rem 0.5rem; border-radius: 1rem; font-size: 0.68rem;
+  line-height: 1.5; font-weight: 600; white-space: nowrap; vertical-align: baseline;
+  color: var(--gp-chip-fg); background: var(--gp-chip-bg);
+}
+.md-typeset .gp-chip--ok { color: var(--gp-ok); background: var(--gp-ok-bg); }
+.md-typeset .gp-chip--warn { color: var(--gp-warn); background: var(--gp-warn-bg); }
+.md-typeset .gp-chip--no { color: var(--gp-no); background: var(--gp-no-bg); }
+.md-typeset .gp-chip--muted { color: var(--gp-muted); background: transparent; border: 1px solid var(--gp-line); }
+.md-typeset .gp-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: -0.4rem 0 1.2rem; }
+
+/* ------------------------------------------------------------------ cards */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border: 1px solid var(--gp-line); border-radius: 0.5rem;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  border-color: var(--gp-muted); box-shadow: 0 6px 20px -8px rgba(31, 35, 40, 0.18);
+}
+.md-typeset .grid.cards > ul > li > hr { margin: 0.5rem 0; }
+
+/* ------------------------------------------------------------------ method strip */
+.md-typeset .gp-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; margin: 0.4rem 0 1rem; }
+.md-typeset .gp-strip__label { font-size: 0.7rem; font-weight: 600; color: var(--gp-muted); margin-right: 0.3rem; }
+
+/* ------------------------------------------------------------------ tables
+ * Hairlines and a quiet header. */
+.md-typeset table:not([class]) {
+  font-size: 0.74rem; border: 1px solid var(--gp-line); border-radius: var(--gp-radius);
+  box-shadow: none;
+}
+.md-typeset table:not([class]) th {
+  padding: 0.6em 0.9em; font-size: 0.68rem; font-weight: 600; color: var(--gp-muted);
+  background-color: var(--gp-surface); border-bottom: 1px solid var(--gp-line);
+}
+.md-typeset table:not([class]) th code { color: var(--gp-ink); }
+.md-typeset table:not([class]) td { padding: 0.55em 0.9em; border-top: 1px solid var(--gp-line-soft); }
+.md-typeset table:not([class]) tbody tr { transition: background-color 0.12s; }
+.md-typeset table:not([class]) tbody tr:hover { background-color: var(--gp-surface); box-shadow: none; }
+.md-typeset__table { margin-bottom: 1.2em; }
+/* Names that must not break inside (option names, extras). */
+.md-typeset .gp-nowrap { white-space: nowrap; }
+/* A slot x method matrix: columns narrow to fit, headers may wrap at hyphens. */
+.md-typeset .gp-matrix table:not([class]) th { min-width: 0; white-space: normal; }
+.md-typeset .gp-matrix table:not([class]) th,
+.md-typeset .gp-matrix table:not([class]) td { padding: 0.5em 0.6em; }
+/* ... and the name that leads a row stays on one line (Post-processing). */
+.md-typeset .gp-matrix table:not([class]) td:first-child { white-space: nowrap; }
+
+/* Tables of figures (<div class="gp-figures" markdown>, the model zoo): tables of one
+ * schema share one width, a row stays on one line and its figures line up. On a phone the
+ * table scrolls sideways instead of folding every number onto three lines. */
+.md-typeset .gp-figures .md-typeset__table { min-width: 100%; }
+.md-typeset .gp-figures table:not([class]) { display: table; }
+.md-typeset .gp-figures table:not([class]) td { white-space: nowrap; }
+.md-typeset .gp-figures table:not([class]) td:nth-child(n+2) { font-variant-numeric: tabular-nums; }
+
+/* A table whose first column is a short label (<div class="gp-keys" markdown>): the label
+ * stays on one line. */
+.md-typeset .gp-keys table:not([class]) td:first-child { white-space: nowrap; }
+
+/* Identifiers in tables keep their shape: a column grows instead of breaking a name. */
+.md-typeset table:not([class]) td code { word-break: normal; overflow-wrap: normal; }
+
+/* Folds read as quiet "more" rows, not as a stack of coloured notes. */
+.md-typeset :is(.admonition, details) { border-width: 1px; border-radius: var(--gp-radius); box-shadow: none; font-size: 0.72rem; }
+.md-typeset details.note { border-color: var(--gp-line); box-shadow: none; }
+.md-typeset details.note > summary { background-color: transparent; }
+.md-typeset details.note > summary::before { background-color: var(--gp-muted); }
+.md-typeset details.note > summary::after { color: var(--gp-muted); }
+
+/* The probe caveat (docs/includes/caveat_probe.md), one look everywhere. */
+.md-typeset .gp-caveat { color: var(--gp-muted); font-size: 0.72rem; border-left: 2px solid var(--gp-line); padding-left: 0.7rem; }
+
+/* Option tables of the slot pages (<div class="gp-options" markdown>): on a phone the
+ * description column gives way to the measured ones. */
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gp-options :is(th, td):nth-child(2) { display: none; }
+}
+
+/* Code in table headers keeps its shape too (stage names in the swap rules). */
+.md-typeset table:not([class]) th code { word-break: normal; overflow-wrap: normal; }
+/* Info and example folds read like the quiet notes. */
+.md-typeset details:is(.info, .example) { border-color: var(--gp-line); box-shadow: none; }
+.md-typeset details:is(.info, .example) > summary { background-color: transparent; }
+.md-typeset details:is(.info, .example) > summary::before { background-color: var(--gp-muted); }
+.md-typeset details:is(.info, .example) > summary::after { color: var(--gp-muted); }
+.md-typeset details > summary { font-weight: 600; }
+.md-typeset details[open] > summary { border-bottom: 1px solid var(--gp-line-soft); }
+/* A fold says what it is by its chevron; the note icon (a pencil) read as "edit". */
+.md-typeset details > summary::before { display: none; }
+[dir="ltr"] .md-typeset details > summary { padding-left: 0.6rem; }
+[dir="rtl"] .md-typeset details > summary { padding-right: 0.6rem; }
+/* Folds that follow each other are one list, not a ladder of boxes. */
+.md-typeset details { margin: 1.2em 0; }
+.md-typeset details + details { margin-top: calc(-1.2em - 1px); border-top-left-radius: 0; border-top-right-radius: 0; }
+.md-typeset details:has(+ details) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+/* The option tables give their description room; on a phone the chips may wrap. */
+.md-typeset .gp-options td:nth-child(2) { min-width: 15rem; }
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gp-options td:nth-child(2) { min-width: 0; }
+  .md-typeset .gp-options :is(.gp-chip, .gp-nowrap) { white-space: normal; }
+  .md-typeset .gp-slots :is(th, td):nth-child(3),
+  .md-typeset .gp-slots :is(th, td):nth-child(4) { display: none; }
+}
+/* Screenshots of the app sit in a frame, so a light picture reads as a card in dark mode. */
+.md-typeset img.gp-shot, .md-typeset img[src$="explore-run.webp"] {
+  border: 1px solid var(--gp-line); border-radius: 0.5rem; box-shadow: var(--md-shadow-z1);
+}

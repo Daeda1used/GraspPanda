@@ -1,0 +1,3648 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A toolbox for 6-DoF grasp detection in cluttered scenes">
+      
+      
+      
+        <link rel="canonical" href="https://daeda1used.github.io/GraspPanda/changelog/">
+      
+      
+        <link rel="prev" href="../faq/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Changelog - GraspPanda</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="GraspPanda" class="md-header__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GraspPanda
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../get_started/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../explorer/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Explorer
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../methods/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Methods
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../slots/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Components
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../user_guides/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../evidence/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Evidence
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../components/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="GraspPanda" class="md-nav__button md-logo" aria-label="GraspPanda" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    GraspPanda
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Daeda1used/GraspPanda" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Daeda1used/GraspPanda
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../get_started/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get started
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/run_a_method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/swap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../get_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tour the config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../methods/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methods
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Methods
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/graspnet_baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraspNet-baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/gsnet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GSNet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/scale_balanced_grasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scale-Balanced-Grasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/economicgrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EconomicGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/finegrasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FineGrasp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../methods/hggd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HGGD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../slots/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Components
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scene encoders
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scene encoders
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_point/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Point-based networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_sparse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sparse-voxel networks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/scene_encoders_transformer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transformers and sequence models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/image_encoders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image encoders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seed proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/grouper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grouper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/head_loss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heads and assigners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/post/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Post-processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slots/recipe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training recipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../user_guides/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/train_test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Train and test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/cross_dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-dataset evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your camera and Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read an analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user_guides/combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose and probe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/add_component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Add a component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../evidence/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evidence
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Evidence
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/measured_combinations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it run?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/learns_like_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Does it train like the shipped component?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/trained_swaps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How good does it become?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/swapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swap rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_zoo_backbones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Encoders checked against their authors' code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registered classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contracts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/data_loading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_guides/operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators and backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_5" id="__nav_8_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/structures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In detail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#in-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In detail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../components/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Reference
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Daeda1used/GraspPanda/edit/main/docs/changelog.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to GraspPanda are recorded here. The format follows
+<a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a> and the project follows
+<a href="https://semver.org/">Semantic Versioning</a>.</p>
+<h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<p>GraspPanda was rebuilt from scratch in October 2026. The releases up to v0.56 are an earlier
+code base with a different design; they stay under their tags and on the <code class="gp-nowrap">legacy</code> branch, and
+none of their code is part of this history. Each line below has its full account in
+<a href="#in-detail">In detail</a>.</p>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Methods.</strong> GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp and FineGrasp on one seed-based skeleton, and HGGD as a family of its own; each equal to its reference stage by stage with converted weights.</li>
+<li><strong>Datasets and evaluation.</strong> Readers, label assets and evaluators for GraspNet-1Billion and GraspClutter6D, equal to the official tools; one command scores a GraspNet-1Billion model on GraspClutter6D.</li>
+<li><strong>Options for every slot</strong>, from published code and model libraries: image and scene encoders, seed proposal, view, grouper, heads, losses, post-processing and the training recipe.</li>
+<li><strong>Compose and probe.</strong> <code>grasppanda compose</code> builds a checked combination from a method config and presets; <code>grasppanda probe</code> trains it briefly on real frames and ends with one verdict.</li>
+<li><strong>Measured records.</strong> Every option was composed under each method it fits; those accepted were probed; the few without a record say why. Each probe is decided at four levels (composes, runs, learns, predicts), and swaps that train were trained longer beside the component the method ships, to see whether they train like shipped (level 2).</li>
+<li><strong>Refusals that say why.</strong> Each refusal names its kind; <code class="gp-nowrap">compose</code> lifts the ones an adapter or a setting fixes.</li>
+<li><strong>The combination explorer</strong> on the documentation site, and <code>grasppanda explore</code> on your machine, with a tab that runs a method.</li>
+<li><strong>Model zoo.</strong> Released weights scored on whole test splits; all six methods trained here, GSNet and EconomicGrasp three times; each number backed by a committed result record. A model may state the rows of the authors' checkpoint beside those of a training here.</li>
+<li><strong>Run a method in five minutes</strong>: a page per method, from the released file to grasps and a first number.</li>
+<li><strong>Inference and analysis.</strong> <code class="gp-nowrap">GraspInferencer</code>, <code>grasppanda demo</code> and <code>grasppanda analyze</code>.</li>
+<li><strong><code>grasppanda env</code> says what to fix.</strong> Below the report: a PyTorch built for a CUDA version the driver does not run, a missing sparse convolution, each with its command.</li>
+<li><strong><code class="gp-nowrap">runtime.tf32</code>.</strong> A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.</li>
+<li><strong>Sweeps on several GPUs.</strong> <code>grasppanda sweep &lt;file&gt; --gpus 0,1,2,3</code> runs the cells of a grid side by side, one run per GPU at a time, the ids as <code class="gp-nowrap">nvidia-smi</code> numbers them; <code class="gp-nowrap">--cell</code> runs one. A sweep can compare several composed configs (<code class="gp-nowrap">base</code> by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as <code class="gp-nowrap">test</code> does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (<code>both: [*a, *b]</code>).</li>
+<li><strong><code class="gp-nowrap">runtime.gpu_memory_fraction</code></strong> caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.</li>
+<li><strong>Experiments as sweep files.</strong> <code class="gp-nowrap">projects/encoder_comparison</code> trains four scene encoders under GSNet; <code class="gp-nowrap">projects/finegrasp_ablation</code> switches FineGrasp's three changes on one at a time under EconomicGrasp; <code class="gp-nowrap">projects/hggd_labels</code> trains HGGD on denser labels, where it reaches its authors' checkpoint. No code beside the file. First results on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, 4.6 under the recipe it is trained with elsewhere and 3.8 under EconomicGrasp; LitePT is 14.2 AP lower, 9.5 under that recipe; GSNet's encoder gains GraspNet-baseline 0.5 to 1.7 AP; of FineGrasp's changes, none shows a gain alone and the four-radius crop a loss, read against EconomicGrasp trained three times, which moves by up to 1.75 AP. <a href="https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/">How good does it become?</a> sets these runs beside the two short checks, which filter and do not rank.</li>
+<li><strong>FineGrasp on GraspClutter6D, and the camera distance it knows.</strong> Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once <code class="gp-nowrap">CoordinateFeatures.median_depth</code> moves the depth of the features to the training distance.</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Documentation</strong> rebuilt around tasks: install, run a method, swap a component, read the evidence; short pages with the detail folded.</li>
+<li><strong>The README</strong> is short: one picture, a quick start, what is inside and the targets; the rest is folded or in the documentation.</li>
+<li><strong>Method order</strong> is by family, then year, on every page, table and list.</li>
+<li><strong>Where an option works</strong> is shown as a fraction of the methods it applies to, with the reason for each method left out, instead of a class word.</li>
+<li><strong>The pipeline figure</strong> shows both detector families and the parts they share, drawn like the picture of the home page and readable at the width a README shows it.</li>
+<li><strong>The toy example</strong> inherits a method-neutral recipe, <code class="gp-nowrap">_base_/schedules/adam_10e.yaml</code>.</li>
+<li><strong>The config hash</strong> leaves out the defaults of library classes, so one config hashes the same on every machine.</li>
+<li><strong><code>compose --help</code> and <code>probe --help</code></strong> name the slots, examples, verdicts and exit statuses.</li>
+<li><strong>Float32 by default.</strong> PyTorch lets convolutions round to TF32 on recent GPUs; runs no longer do unless <code>runtime.tf32: true</code>. Three released checkpoints compute convolutions that this touches: their whole-split records were scored again in float32, and no number moved by more than 0.07 AP (HGGD) or 0.02 AP (GraspNet-baseline, Scale-Balanced-Grasp).</li>
+<li><strong>One typeface.</strong> The documentation site, the page of <code>grasppanda explore</code> and the pictures of the README are set in Inter and JetBrains Mono, served with the site and the wheel; nothing is fetched from a font service.</li>
+<li><strong>The picture of <code class="gp-nowrap">demo</code> and of the explorer's Run tab</strong> is centred on the grasps it shows, with a caption in a readable face.</li>
+<li><strong>A quieter site.</strong> Code is highlighted in two colours, folds that follow each other form one list, a short identifier no longer breaks at its hyphen, the tables of the model zoo share one width with aligned figures, and method pages give their option tables the whole column.</li>
+<li><strong>The model zoo page</strong> has one table per benchmark: the reported number, the authors' weights and the model trained here side by side, with measured minus reported in a fold. A training adds no line.</li>
+<li><strong><code class="gp-nowrap">test</code> prints AP in percent</strong>, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.</li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>train --resume</code> into another run directory no longer writes into the checkpoint's run.</li>
+<li><code class="gp-nowrap">config.resolved.yaml</code> of a run loads again with the same hash; FineGrasp's could not be loaded at all.</li>
+<li>A <code class="gp-nowrap">_base_</code> that names a shipped config loads from any directory and from a wheel.</li>
+<li>The CPU-only spconv wheel computes correctly: its sparse convolutions run on one thread.</li>
+<li><code>infer --input DIR</code> on a plain folder stops with what the reader looked for.</li>
+<li>Data loaders below a <code class="gp-nowrap">TMPDIR</code> too deep for their sockets stop with the fix instead of hanging.</li>
+<li>Combinations that used to fail in the first iteration are refused by the config check with the fix.</li>
+<li><code class="gp-nowrap">ASSANet</code> no longer returns zeros for constant input features.</li>
+<li>Image-encoder bridges say when their library downloads weights, and under which licence.</li>
+<li><code class="gp-nowrap">prepare</code> prints a progress line a minute where its output is not a terminal, instead of nothing for an hour.</li>
+<li><code>prepare --check --config</code> reports the camera of that config and every asset it reads, the scale statistic too, and prints the exact command for each one that is missing.</li>
+</ul>
+<h3 id="known-limits">Known limits<a class="headerlink" href="#known-limits" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The zoo has no weights to download yet. Trained here, GraspNet-baseline passes the admission gate; Scale-Balanced-Grasp and EconomicGrasp reach their authors' checkpoints, which are themselves outside the gate; HGGD, trained on the labels its released converter writes, is 8 to 10 AP below its checkpoint on seen, and the labels are why; where trained weights are published is not decided. GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.</li>
+<li>Of the options beside the ported methods, two scene encoders under GSNet have been trained in full and evaluated, once each. For every other option a probe says a combination trains, not how good it is.</li>
+<li>Mixed precision is refused for the shipped detectors; <code class="gp-nowrap">optimizer=soap</code> under HGGD is not verified (one CUDA illegal memory access on a shared GPU).</li>
+<li>No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.</li>
+<li>Point painting is not written by <code class="gp-nowrap">compose</code> and has no probe record.</li>
+<li>Most combinations of two or more swapped options have no record.</li>
+</ul>
+<h3 id="in-detail">In detail<a class="headerlink" href="#in-detail" title="Permanent link">&para;</a></h3>
+<details>
+<summary>Initial public version of the rebuild</summary>
+<ul>
+<li><strong>Core.</strong> YAML configs with inheritance and three layers of validation; registries with
+  lazy imports; typed data contracts between pipeline stages; run snapshots. Commands:
+  <code class="gp-nowrap">train</code>, <code class="gp-nowrap">test</code>, <code class="gp-nowrap">infer</code>, <code class="gp-nowrap">demo</code>, <code class="gp-nowrap">analyze</code>, <code class="gp-nowrap">components</code>, <code class="gp-nowrap">compose</code>, <code class="gp-nowrap">probe</code>,
+  <code class="gp-nowrap">explore</code>, <code class="gp-nowrap">sweep</code>, <code class="gp-nowrap">prepare</code>, <code class="gp-nowrap">print-config</code>, <code class="gp-nowrap">env</code>.</li>
+<li><strong>Benchmarks.</strong> Readers, derived label assets and evaluators for GraspNet-1Billion and
+  GraspClutter6D. Both evaluators agree with the official tools on recorded frames (1,592
+  and 254; <code>tests/integration/test_eval_parity.py</code>, <code class="gp-nowrap">test_eval_clutter_parity.py</code>). One
+  command scores a GraspNet-1Billion model on GraspClutter6D. <code class="gp-nowrap">prepare</code> takes <code class="gp-nowrap">--opts</code> as
+  <code class="gp-nowrap">train</code> and <code class="gp-nowrap">test</code> do, and builds the asset of a run that overrides what its labels
+  depend on.</li>
+<li><strong>Methods as interchangeable components</strong>, each equal to its reference implementation
+  stage by stage with converted weights: GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
+  EconomicGrasp and FineGrasp on one seed-based skeleton, and HGGD as a family of its own.
+  <code class="gp-nowrap">tools/convert_checkpoint.py</code> converts the authors' checkpoints strictly.</li>
+<li><strong>Scene encoders.</strong> Sparse U-Net, SpUNet, OA-CNNs, PointNet++ (two layouts), PointNeXt,
+  Point Transformer V3 (also with Sonata, Concerto and Utonia weights), LitePT, the
+  transformer encoder of Scale-Balanced-Grasp, and adapters between dense and sub-sampled
+  encoders. Five are weights-verified (<code class="gp-nowrap">PointNet2</code>, <code class="gp-nowrap">PTv3</code>, <code class="gp-nowrap">PTv3Sonata</code>, <code class="gp-nowrap">PTv3Utonia</code>,
+  <code class="gp-nowrap">LitePT</code>): released weights load strictly and reproduce the official outputs. SpUNet,
+  OA-CNNs and PointNeXt were compared with the official code on synthetic weights only.</li>
+<li><strong>Interchange.</strong> <code>grasppanda components</code> lists every component with its contract, status
+  and source. A swap-matrix test shows, on synthetic scenes, that every combination of
+  registered stages either trains and predicts or is refused at config time with the
+  conflict and the fix. On real frames the probes record some accepted swaps that fail or
+  train unstably.
+  <code class="gp-nowrap">configs/experimental/</code> holds ready-made encoder swaps.</li>
+<li><strong>Combinations.</strong> <code>grasppanda compose &lt;method config&gt; --set &lt;slot&gt;=&lt;preset or component&gt;</code>
+  writes a checked config, inserting the one encoder adapter the stage contracts ask for;
+  a refused combination prints the conflict and the fix. Presets
+  (<code class="gp-nowrap">grasppanda/presets/&lt;slot&gt;/</code>) hold the settings of every encoder and stage variant for
+  table-top depth clouds. <code>grasppanda probe &lt;config&gt;</code> runs the real trainer for a few
+  iterations on the <code class="gp-nowrap">sample</code> split and predicts, ending with one verdict. The generated
+  page <code>docs/advanced_guides/measured_combinations.md</code> records the combinations probed on
+  real frames and, for every option, the fraction of the methods it runs under, with the
+  reason for each method left out; see "Measured records" below for the numbers. No AP.</li>
+<li><strong>Inference and analysis.</strong> <code class="gp-nowrap">GraspInferencer</code> and <code>grasppanda demo</code> (depth image, point
+  cloud, dataset frame or the built-in synthetic scene); <code>grasppanda analyze</code> splits an AP
+  by friction threshold, split, scene, object and cause. It reads a run, or a record
+  committed here by its file: AP0.8 and AP0.4 of seen, similar and novel, with nothing
+  to score. A directory that holds the records of several runs is read whole, and a
+  record is paired with the variants of its own run only.</li>
+<li><strong>Speed.</strong> Optional compiled kernels for furthest point sampling, ball query, cylinder
+  query and nearest neighbours with bit-identical results; dense label grids are read where
+  they are matched instead of being copied into every batch.</li>
+</ul>
+</details>
+<details>
+<summary>Added: options for every slot</summary>
+<p>Options taken from published code and model libraries, by three routes (a bridge to an
+optional library, source adapted from a repository under the MIT, BSD or Apache-2.0
+licence and listed in <code class="gp-nowrap">THIRD_PARTY_NOTICES.md</code>, released weights for a class that exists).
+Each has a preset, a unit test of its contract, a row and a command on its slot page
+(<code class="gp-nowrap">docs/slots/</code>, starting at <code class="gp-nowrap">docs/slots/index.md</code>) and a measured verdict per method.
+<strong>No accuracy is claimed for any of them.</strong></p>
+<ul>
+<li><strong>Image encoders</strong> (<code class="gp-nowrap">model.image_encoder</code>, registry <code class="gp-nowrap">IMAGE_ENCODERS</code>). HGGD's image
+  encoder is a slot: <code class="gp-nowrap">TimmImageEncoder</code>, <code class="gp-nowrap">HFImageEncoder</code> and <code class="gp-nowrap">TorchvisionImageEncoder</code>
+  (extras <code class="gp-nowrap">timm</code>, <code class="gp-nowrap">transformers</code>, <code class="gp-nowrap">torchvision</code>) with 38 presets, depth as an explicit
+  option, and a pyramid decoder that takes any strides and widths. Left out, the model is
+  the reference network. <code class="gp-nowrap">ImagePainted</code> and <code class="gp-nowrap">ImagePaintedSubsampled</code> give the points of a
+  seed-based method the image features at their pixel.</li>
+<li><strong>Scene encoders.</strong> Point-based: <code class="gp-nowrap">PointNet2MSG</code>, <code class="gp-nowrap">PointNet2MSGDense</code>, <code class="gp-nowrap">PointMetaBase</code>,
+  <code class="gp-nowrap">PointVector</code>, <code class="gp-nowrap">ASSANet</code>, <code class="gp-nowrap">PointMLP</code>, <code class="gp-nowrap">DeLA</code>, <code class="gp-nowrap">DGCNN</code>, <code class="gp-nowrap">RandLANet</code>, the bridge
+  <code class="gp-nowrap">PyGPointEncoder</code> (extra <code class="gp-nowrap">torch_geometric</code>) and three more PointNeXt sizes. Sparse:
+  <code class="gp-nowrap">MinkUNet</code> (14 to 101). Transformers and tokens: <code class="gp-nowrap">PointTransformerV1</code>,
+  <code class="gp-nowrap">PointTransformerV2</code>, <code class="gp-nowrap">Volt</code>, <code class="gp-nowrap">OctFormer</code> (extra <code class="gp-nowrap">ocnn</code>), <code class="gp-nowrap">PointViT</code>, <code class="gp-nowrap">PointMamba</code>
+  (extra <code class="gp-nowrap">mamba-ssm</code>), <code class="gp-nowrap">Uni3D</code> (extra <code class="gp-nowrap">timm</code>).</li>
+<li><strong>Released encoder weights.</strong> <code>pretrained: &lt;name or path&gt;</code> on <code class="gp-nowrap">SpUNet</code>, <code class="gp-nowrap">MinkUNet</code>,
+  <code class="gp-nowrap">PTv3</code>, <code class="gp-nowrap">PTv3Sonata</code>, <code class="gp-nowrap">PTv3Utonia</code> and <code class="gp-nowrap">LitePT</code>, with fifteen published checkpoints
+  registered by name; <code class="gp-nowrap">tools/convert_backbone_weights.py</code> (PointNeXt, VoteNet, Contrastive
+  Scene Contexts) and <code>tools/convert_encoder_checkpoint.py</code> (Point-MAE, MaskPoint,
+  PointMamba, Uni3D, Volt). Weights are never shipped; several are non-commercial.</li>
+<li><strong>Seed proposal.</strong> <code class="gp-nowrap">ScoredSeeds</code> (the selecting score, the candidate rule, the sampler
+  and the padding as options) and <code class="gp-nowrap">SampledSeeds</code>; a registry <code class="gp-nowrap">SAMPLERS</code> with eleven
+  samplers (FPS, feature and fusion FPS, score-weighted FPS, top-k, random, voxel grid,
+  FPS then top-k, score NMS, bridges to <code class="gp-nowrap">fpsample</code> and <code class="gp-nowrap">torch_cluster</code>); 22 presets.</li>
+<li><strong>View.</strong> <code class="gp-nowrap">LatticeViewStage</code> (a lattice of any size, classification, angular class
+  loss, soft arg-max, top-k), <code class="gp-nowrap">IcosphereViewStage</code> (extra <code class="gp-nowrap">trimesh</code>), <code class="gp-nowrap">HealpixViewStage</code>
+  (extra <code class="gp-nowrap">healpix</code>), <code class="gp-nowrap">DirectionViewStage</code>, <code class="gp-nowrap">TwoVectorViewStage</code>, <code class="gp-nowrap">RomaRotationViewStage</code>
+  (extra <code class="gp-nowrap">roma</code>); 18 presets.</li>
+<li><strong>Grouper.</strong> <code class="gp-nowrap">LocalGroup</code> and <code class="gp-nowrap">DepthLocalGroup</code> (shape, encoder and pooling as
+  options), <code class="gp-nowrap">RoIGridGroup</code>, <code class="gp-nowrap">RoIAwareGroup</code>, <code class="gp-nowrap">VoxelSetAbstractionGroup</code>, <code class="gp-nowrap">PyGConvGroup</code>
+  (extra <code class="gp-nowrap">torch_geometric</code>), <code class="gp-nowrap">MultiRadiusGroup</code>, the axis adapters <code class="gp-nowrap">DepthEmbedGroup</code> and
+  <code class="gp-nowrap">DepthPoolGroup</code>, and <code class="gp-nowrap">DepthCylinderProjectionGroup</code>; 25 presets.</li>
+<li><strong>Heads and losses.</strong> Losses are a typed slot: every loss term names its kind (<code class="gp-nowrap">class</code>,
+  <code class="gp-nowrap">unit</code>, <code class="gp-nowrap">value</code>, <code class="gp-nowrap">bins</code>), every loss the kinds it fits, and the config check refuses
+  another pairing with the losses that fit. Twenty loss presets, set per term
+  (<code>--set head.score_loss=quality-focal</code>; extras <code class="gp-nowrap">torchvision</code>, <code class="gp-nowrap">kornia</code>), three of them
+  wrappers (hard example mining, class balance, uncertainty weighting).
+  <code class="gp-nowrap">DecoupledGridHead</code> with four presets, and <code class="gp-nowrap">swad-focal</code>, <code class="gp-nowrap">economic-focal</code>.</li>
+<li><strong>Post-processing.</strong> Twelve steps beside the collision filter and the NMS (<code class="gp-nowrap">TopK</code>,
+  <code class="gp-nowrap">ScoreThreshold</code>, <code class="gp-nowrap">FurthestGraspSampling</code>, <code class="gp-nowrap">WorkspaceFilter</code>, <code class="gp-nowrap">ApproachAngleFilter</code>,
+  <code class="gp-nowrap">TablePlaneFilter</code>, <code class="gp-nowrap">MaskFilter</code>, <code class="gp-nowrap">GripperLimits</code>, <code class="gp-nowrap">GripperCentering</code>, <code class="gp-nowrap">WidthFromCloud</code>,
+  <code class="gp-nowrap">ToFrame</code>, <code class="gp-nowrap">GripperMeshCollisionFilter</code> with the extra <code class="gp-nowrap">trimesh</code>); <code>--post STEP...</code> for
+  <code class="gp-nowrap">test</code>, <code class="gp-nowrap">infer</code> and <code class="gp-nowrap">demo</code>, <code class="gp-nowrap">post=</code> for <code class="gp-nowrap">GraspInferencer</code>, and <code>--set post=a+b</code> for
+  <code class="gp-nowrap">compose</code>; 15 presets.</li>
+<li><strong>Training recipe.</strong> <code class="gp-nowrap">compose</code> takes <code>--set optimizer=</code>, <code class="gp-nowrap">schedule=</code>, <code class="gp-nowrap">hooks=a+b</code>,
+  <code class="gp-nowrap">augment=a+b</code> and <code class="gp-nowrap">recipe=</code> for every detector; 37 presets under <code class="gp-nowrap">grasppanda/recipes/</code>.
+  <code class="gp-nowrap">TimmOptimizer</code>, <code class="gp-nowrap">PytorchOptimizer</code>, <code class="gp-nowrap">ScheduleFree</code>, <code class="gp-nowrap">TimmSchedule</code> (extra <code class="gp-nowrap">optim</code>),
+  <code class="gp-nowrap">ParamGroups</code> (rates per module, layer-wise decay), <code class="gp-nowrap">EMAHook</code>, <code class="gp-nowrap">SWAHook</code>, <code class="gp-nowrap">FreezeHook</code>,
+  <code class="gp-nowrap">ScheduleFreeHook</code>, <code class="gp-nowrap">AdaptiveGradClipHook</code>, and the augmentations <code class="gp-nowrap">RandomJitter</code>,
+  <code class="gp-nowrap">RandomDropout</code>, <code class="gp-nowrap">RandomShift</code>.</li>
+<li><strong>Slot documentation.</strong> <code class="gp-nowrap">docs/slots/index.md</code> (the pipeline, the task of every slot, the
+  number of its options, one table that classifies every option from the measured
+  records, how to try one), an overview of the scene encoders and one page per slot.</li>
+</ul>
+</details>
+<details>
+<summary>Added: the combination explorer</summary>
+<ul>
+<li>A documentation page (<code class="gp-nowrap">docs/explorer/</code>) that answers a selection of method and slot
+  options from the measured records: the verdict, the reason of a refusal or failure, the
+  compose and probe commands, the preset; a grid of option by method per slot. Data
+  generated by <code class="gp-nowrap">tools/make_explorer.py</code>.</li>
+<li><code class="gp-nowrap">tools/make_explorer_contracts.py</code> stores what <code>grasppanda compose</code> answers for every
+  option alone and every two options of two slots; the page shows them as a contract
+  check, apart from measured verdicts.</li>
+<li><code>grasppanda explore</code> serves the explorer on 127.0.0.1 from the installed package and
+  checks every selection with the real <code class="gp-nowrap">compose</code>; an accepted combination can be saved
+  as a config. Nothing is trained.</li>
+<li>The explorer's tab <em>Run a method</em>: <code>grasppanda explore --weights-dir DIR</code> (or
+  <code>--weights NAME=PATH</code>) runs a ported method, or the composed selection, on the example
+  scene or on an uploaded depth image with its intrinsics, and shows the picture, the best
+  grasps, the counts through the post-processing and the <code>(G, 17)</code> array as a download, as
+  <code>grasppanda demo</code> does. Weights only from the files the command line named, uploads up
+  to 20 MB in a temporary directory, one run at a time. Greyed on the documentation site,
+  with the command that enables it.</li>
+<li>An animated README picture (<code>resources/showcase-{light,dark}.svg</code>) generated by
+  <code class="gp-nowrap">tools/make_showcase.py</code> from a captured transcript of the three commands it shows.</li>
+<li>The README opens with a recording of the explorer in use, light and dark
+  (<code>resources/explorer-{light,dark}.webp</code>), made by <code class="gp-nowrap">tools/record_explorer_demo.py</code> from the
+  built documentation site.</li>
+<li>The explorer redesigned as a product interface: a header with the verdict mix of the
+  records and its caveats behind an information button; Build as a configuration column
+  (method tiles, the pipeline as slot rows, a searchable picker per slot, a bottom sheet on
+  a phone) beside a result card (status, changes, the four levels, numbers, the fall of
+  every loss term, alerts, the commands in a terminal, folded details); Compare as a slot
+  sidebar and a matrix of tiles at the chosen level with tooltips and a cell menu; Run with
+  numbered steps, drop zones and a result card. One SVG icon set, colour tokens with dark
+  variants, keyboard support throughout; <code>grasppanda explore</code> gets an app bar and a dark
+  mode. The answer of the contract check stays an outline, apart from measured verdicts.</li>
+</ul>
+</details>
+<details>
+<summary>Measured records</summary>
+<ul>
+<li>1262 cells (1014 <code class="gp-nowrap">runs</code>, 174 <code class="gp-nowrap">runs-empty</code>, 29 <code class="gp-nowrap">runs-unstable</code>, each of those probed a
+  second time, 41 <code class="gp-nowrap">refused</code>, 4 <code class="gp-nowrap">fails</code>), every one probed on real frames with judge 2 and
+  the constant schedule. Beside one slot replaced at a time under every method the grid
+  has groups for the image encoders of HGGD, every post-processing preset under all six
+  methods, every loss preset in one term of every kind it fits, every recipe preset under
+  every method it applies to, and <code class="gp-nowrap">cross</code>: eighteen requests that replace an encoder
+  together with options of other slots, at least two per method (all eighteen run).</li>
+<li>The contract rules accept 9104 sets of stage options, counted per kind of encoder output;
+  95 were probed, picked so that every stage variant appears in a probed set under each
+  kind of encoder, and the others are counted as not probed. The 3014 sets on the Swap
+  rules page count the same rules over registered classes.</li>
+<li>Every record names the run that measured it; a probe that runs out of GPU memory is
+  retried alone and, if memory stays short, not recorded.</li>
+<li><code>grasppanda probe</code> tells a stage that learns from one that is only wired in (judge 2):
+  it keeps the loss of every iteration, gives every loss term its fall over the
+  iterations in which it was active with the flags <code class="gp-nowrap">flat</code>, <code class="gp-nowrap">rising</code>, <code class="gp-nowrap">zero_at_end</code> and
+  <code class="gp-nowrap">constant</code>, names the sub-modules (depth 2) that no gradient reached and the parts whose
+  weights did not change, and reports the scores of the predicted grasps and how far the
+  schedule lowered the learning rate within the probe. A run that predicts no grasp on any
+  frame is the verdict <code class="gp-nowrap">runs-empty</code> (exit status 0); the rest is reported, not judged.
+  <code class="gp-nowrap">tools/probe_grid.py</code> exports all of it, with the per-iteration losses in a side file;
+  the records on the measured page were made by the first judge and say so until the grid
+  is probed again.</li>
+<li><code>grasppanda probe --schedule constant</code> trains every step at the recipe's peak learning
+  rate instead of running the recipe's schedule over the few epochs of a probe, which
+  decays GSNet to 0.63 and EconomicGrasp to 2.4 % of its rate within 20 iterations and
+  keeps FineGrasp in its warm-up. The optimizer, its weight decay, clipping and hooks stay
+  the recipe's and the config hash is unchanged; the report states the schedule and the
+  rate. <code>--schedule recipe</code> (the default) runs the recipe as shipped.</li>
+<li>The measured grid covers post-processing, recipe and loss presets under every method
+  they apply to: every post-processing preset under all six methods (84 cells), every recipe
+  preset under all six (the five seed-based ones for a preset that names the scene encoder;
+  217 cells), every loss preset in one term of every kind it accepts under every seed-based
+  method with such a term (the last term of the kind in the pipeline), beside the
+  hand-picked loss cells (134 cells). The 302 new cells are listed as not probed yet until
+  their records are exported. Grid probes run with <code>--schedule constant</code>, except a cell
+  whose request sets the schedule. The four groupers that need an option only a preset
+  supplies no longer have cells under their type names (20 refusals that were not
+  combinations); their presets keep theirs. <code>python -m tools.probe_grid refresh</code> rewrites
+  the measured file for a changed grid without probing.</li>
+<li><code>python -m tools.probe_grid run</code> takes <code class="gp-nowrap">--predict-frames</code> (the frames every probe
+  predicts on) and <code class="gp-nowrap">--seed</code> (<code class="gp-nowrap">runtime.seed</code> of every probe). A seeded run records the hash
+  of the config with that seed, so probes of two seeds never stand for each other; without
+  either option the commands and records are those of before.</li>
+<li>Level 2 of the measured grid, <code>python -m tools.learn_check</code>: does an option train like
+  the stage the method ships ("trains like shipped")? A cell whose level-1 verdict is <code class="gp-nowrap">runs</code>, <code class="gp-nowrap">runs-empty</code> or
+  <code class="gp-nowrap">runs-unstable</code> trains for 250 iterations on the same 8 frames (seed 0, <code>--schedule
+  constant</code>, prediction on 4 frames), and the mean of every loss term over the last 25
+  iterations is put beside that of the method as shipped under the same settings. Outcome
+  per cell: <code>on a par</code>, <code class="gp-nowrap">worse</code>, <code class="gp-nowrap">diverging</code>, <code>not comparable</code> (every term redefined by the
+  cell), <code class="gp-nowrap">fails</code> or <code>no reference</code>; a term the cell redefines (a loss preset, a head bundle,
+  an assigner, a proposal or view stage that computes its loss with other code) is marked
+  not comparable and the cell is judged on the others. The tolerance of a method is
+  calibrated from its reference trained under two seeds: 1.25, or the first multiple of
+  0.05 above the largest seed ratio of a term (1.25 for the five seed-based methods, 1.55
+  for HGGD); the rising threshold likewise. FineGrasp's reference and cells keep its
+  recipe's warm-up: at the constant rate its fusion of crop scales gives every seed one
+  feature in a short run. Post-processing, which trains nothing, is left out. The runs are
+  probe_grid run directories (<code class="gp-nowrap">L2-&lt;kind&gt;</code>), resumable; <code class="gp-nowrap">export</code> writes per-cell files
+  under <code class="gp-nowrap">$GRASPPANDA_CACHE/verification/L2/</code> and the committed summary
+  <code>docs/advanced_guides/learns_like_reference.json</code>, <code class="gp-nowrap">page</code> the page "Does it train like
+  the shipped component?" (in the docs nav), checked by the unit suite like the measured page. Every
+  cell is recorded: 983 cells on top of the six references trained twice, 555 <code>on a par</code>,
+  347 <code class="gp-nowrap">worse</code>, 77 <code class="gp-nowrap">diverging</code>, 4 <code>not comparable</code> (groupers 97 of 128 on a par, losses 101
+  of 130, encoders 108 of 230; one run each, a statement about training dynamics, not
+  accuracy).</li>
+</ul>
+</details>
+<details>
+<summary>Added: classes of levels, and the options that fit each method</summary>
+<p>A class used to count the methods under which a component <em>worked</em> (built, trained 20
+iterations, predicted), so "universal" meant "accepted by the contracts and did not crash".
+Classes now count levels, and every method lists the options of each of its slots.</p>
+<ul>
+<li><code class="gp-nowrap">grasppanda.combine.levels</code> decides every measured cell at four levels from its record
+  alone: <strong>composes</strong> (the config check accepts it), <strong>runs</strong> (the probe ran clean;
+  <code class="gp-nowrap">runs-unstable</code> counts as not running only after a repeat of the probe, read from a
+  <code class="gp-nowrap">repeat</code> field of the record, and is <em>unstable, not repeated</em> until then), <strong>learns</strong>
+  (judge 2: every loss term active in at least half of the iterations fell by at least
+  5 %, none flat, rising or constant, every unit reached by a gradient, every part
+  changed) and <strong>predicts</strong> (judge 2: grasps on every predicted frame, scores not all
+  the same). A record of the first judge runs at most and says <em>not checked</em> above. The
+  class of an option is counted per level: <code class="gp-nowrap">universal</code> only when it reached the level
+  under every method it applies to, which include the five seed-based ones; <code class="gp-nowrap">most</code>,
+  <code class="gp-nowrap">some</code>, <code class="gp-nowrap">specific</code>, <code class="gp-nowrap">none</code> for a stage decided under all five; else <em>N of M probed</em>,
+  with the undecided methods named. A refusal by policy (<code class="gp-nowrap">trust_remote_code</code>) waits for
+  consent and is never <code class="gp-nowrap">none</code>; a refusal shows its kind (structural, not-implemented,
+  policy, not-a-combination) where the record has one. <code class="gp-nowrap">grasppanda.combine.options</code>
+  lists the options of every slot of a method from the grid and the records.</li>
+<li>The measured page and the slot index show the classes per level, one table per level,
+  each with the sentence "one run, seed 0, 20 iterations, 8 frames of one scene; a class
+  counts verdicts, not accuracy"; the definitions and thresholds are printed from
+  <code class="gp-nowrap">grasppanda.combine.levels</code>. Every probed cell shows its grasps per frame and, for
+  judge 2, the fall of its loss terms and the levels it missed; a probe that predicted
+  no grasp is greyed. The numbers below a table give the fall of every term and what kept
+  a run from <em>learns</em> or <em>predicts</em>.</li>
+<li><code>grasppanda compose &lt;method config&gt; --list [&lt;slot&gt;]</code> lists only the options of that
+  method's slots, each with its verdict, levels, class, grasps per frame and fall per
+  loss term; the options that do not fit with the reason, kind and lift; the options
+  without a record as <em>not probed</em>, with the reason (<code class="gp-nowrap">--json</code>: everything, every message
+  whole). <code class="gp-nowrap">--list</code> without a config still lists the presets. The wheel ships the measured
+  records for it (<code class="gp-nowrap">grasppanda/_measured/</code>).</li>
+<li>The explorer offers, in the lanes of a method, exactly the options of that method's
+  list, shows the four levels of every record, the grasps per frame in every cell of the
+  grid (greyed without a grasp), the class of an option per level with a level picker for
+  the filters, the reason an option has no cell, and the kind of a refusal where compose
+  reports one.</li>
+<li>Every shipped method config names <code>grasppanda compose &lt;config&gt; --list &lt;slot&gt;</code> for each
+  of its slots, in a comment block and above the slot in its bases (config hashes
+  unchanged).</li>
+<li>A generated page per method, <code class="gp-nowrap">docs/methods/&lt;method&gt;.md</code> (<code class="gp-nowrap">tools/make_method_pages.py</code>,
+  with <code class="gp-nowrap">--check</code> in the unit suite): every slot, what the method ships, the options that
+  fit (verdict, levels, class, grasps, fall per term, the compose command), those that do
+  not (reason, kind, lift) and those not probed. Linked from the method READMEs and from
+  every slot page, whose class columns are now the class at <em>runs</em>, written from the
+  records by the same tool. A test holds the explorer's lanes to the lists of <code class="gp-nowrap">compose</code>.</li>
+</ul>
+</details>
+<details>
+<summary>Added: authors' checkpoints on whole test splits</summary>
+<ul>
+<li>The model-zoo page (<code class="gp-nowrap">docs/model_zoo.md</code>) has two tables of <code class="gp-nowrap">author-ckpt</code> numbers, the
+  authors' released weights scored by this toolbox, with and without collision filter and
+  with the reported number beside each. "Authors' checkpoints scored by this toolbox":
+  GraspNet-1Billion, the whole test split (23,040 frames), for GraspNet-baseline,
+  Scale-Balanced-Grasp, EconomicGrasp, FineGrasp and HGGD on RealSense and for
+  EconomicGrasp and HGGD on Kinect. "GraspClutter6D transfers": the whole test split (3,055
+  frames) for GraspNet-baseline, Scale-Balanced-Grasp, EconomicGrasp and HGGD. They are
+  not reproductions. Each method's README states every difference from the reported
+  number and what is and is not known about it.</li>
+<li><code>python -m tools.record_result &lt;run directory&gt; --method &lt;configs directory&gt;</code> puts a
+  whole-split evaluation into the zoo: it checks the run (every frame scored, clean code,
+  hashed weights that are the file the metafile lists), copies its result records to
+  <code class="gp-nowrap">configs/&lt;method&gt;/records/</code> without the paths of the machine, and prints the metafile
+  rows with the numbers computed from the per-scene values.</li>
+<li>A metafile row names the splits of its protocol (<code class="gp-nowrap">seen</code> / <code class="gp-nowrap">similar</code> / <code class="gp-nowrap">novel</code>, or <code class="gp-nowrap">test</code>
+  for GraspClutter6D) and may state <code class="gp-nowrap">AP0.8</code> and <code class="gp-nowrap">AP0.4</code>; a measured row whose record file
+  is missing is a validation error. One test holds every measured row of every method to
+  its record: whole split, clean code, and exactly the numbers of the row.</li>
+</ul>
+</details>
+<details>
+<summary>Added: the first model trained here</summary>
+<ul>
+<li>GSNet, trained from scratch with the recipe of <code>gsnet/gsnet_sunet14_g1b-realsense_10e</code>
+  (10 epochs, seed 0), is the first <code class="gp-nowrap">reproduced</code> entry of the zoo: on the whole
+  GraspNet-1Billion test split 68.83 / 60.35 / 25.20 AP without and 71.23 / 62.29 / 26.42
+  with the collision filter, against 65.70 / 53.75 / 23.98 and 67.12 / 54.81 / 24.31 in the
+  paper; on the whole GraspClutter6D test split 25.58 / 31.38 / 19.42 and 26.87 / 33.00 /
+  20.04 (AP / AP0.8 / AP0.4). It is one training run with one seed, above the paper by
+  more than the 1 AP of the admission gate, and the gap is not explained;
+  <code class="gp-nowrap">configs/gsnet/README.md</code> says what is known about it.</li>
+<li>Its weights are not published yet. A weights entry of <code>source: grasppanda</code> may have
+  <code>url: null</code> with a <code class="gp-nowrap">note</code> saying so, beside its sha256; the zoo, <code class="gp-nowrap">GraspInferencer</code> and
+  <code>grasppanda demo &lt;config&gt;</code> without <code class="gp-nowrap">--weights</code> then say that the weights are not
+  published instead of failing on the missing link.</li>
+</ul>
+</details>
+<details>
+<summary>Added: refusals that say why, and the ones compose lifts</summary>
+<ul>
+<li>Every refusal of the stage contracts and of the config check carries a kind:
+  <code class="gp-nowrap">structural</code> (a genuine incompatibility), <code class="gp-nowrap">not-implemented</code> (the lift is named),
+  <code class="gp-nowrap">fixed-by-compose</code>, <code class="gp-nowrap">not-a-combination</code> (a component without a required option, options
+  that disagree) or <code class="gp-nowrap">policy</code>. <code>grasppanda compose</code> prints it before each message and lists
+  it in <code class="gp-nowrap">refusal_kinds</code> of its <code class="gp-nowrap">--json</code> report; the pair tables of the swapping page start
+  each reason with it.</li>
+<li><code>grasppanda compose</code> now inserts the axis adapter between a grouper and a head bundle
+  whose axes differ (<code class="gp-nowrap">DepthEmbedGroup</code> repeats a crop over the depth bins, <code class="gp-nowrap">DepthPoolGroup</code>
+  pools over them), sets the assigner options a stage reads, lets a scoring proposal
+  predict graspness only next to <code class="gp-nowrap">ObjectnessViewStage</code> (<code class="gp-nowrap">ScoredSeeds</code> with <code>select_by:
+  graspness_only</code>, a new value of that option), sets the decode option of a head whose
+  score no stage predicts, and writes the label set of the head bundle into the assigner
+  and the data recipe (<code>--set labels=dense|compact</code> asks for it). <code>--unset key.path</code> puts an
+  option back to the default of its component. A data recipe refusal that remains prints
+  the exact <code class="gp-nowrap">--set</code>, <code class="gp-nowrap">--unset</code> and <code class="gp-nowrap">--opts</code> that rewrite it. <code class="gp-nowrap">--no-adapter</code> leaves every
+  such pair refused. Of the 198 refused cells of the earlier records, compose accepts 142;
+  the records now hold their probes.</li>
+<li><code class="gp-nowrap">SWADHead</code>, <code class="gp-nowrap">EconomicHead</code>, <code class="gp-nowrap">DecoupledGridHead</code> and <code class="gp-nowrap">TemplateViewStage</code> apply a weight
+  per seed (a weighted mean over their supervised entries, as <code class="gp-nowrap">OperationHead</code>), so
+  <code class="gp-nowrap">ScaleBalancedAssigner</code> combines with every shipped stage. A stage that does not apply
+  one is reported as a warning, no longer refused.</li>
+</ul>
+</details>
+<details>
+<summary>Added: the conversion command in the metafile</summary>
+<ul>
+<li>A metafile weights entry of <code>source: author</code> states its <code class="gp-nowrap">convert</code> command, exactly as
+  the method's README prints it (a test holds the two together); a model whose weights
+  were trained here may list the checkpoint the authors released for it as
+  <code class="gp-nowrap">author_weights</code>. The zoo's note, which <code>grasppanda demo &lt;config&gt;</code> prints without
+  <code class="gp-nowrap">--weights</code>, now gives that command and the file to pass. HGGD's README converts the
+  file under the name the authors publish it (<code class="gp-nowrap">HGGD_realsense_checkpoint</code>), and
+  EconomicGrasp's gives the RealSense command beside the Kinect one.</li>
+</ul>
+</details>
+<details>
+<summary>Added: run a method in five minutes</summary>
+<ul>
+<li>Every method page (<code class="gp-nowrap">docs/methods/&lt;method&gt;.md</code>) starts with <em>Run <method> in five
+  minutes</em>: the released file, its licence and sha256, and that the project publishes no
+  weights converted from it; the conversion command and the file it writes; the demo on
+  the example scene with what it prints and writes, the measured wall time and grasp
+  counts; the same from Python (<code class="gp-nowrap">GraspInferencer</code>, six statements); the browser route
+  (<code>grasppanda explore --weights-dir</code>, tab <em>Run a method</em>); the test on every 64th frame of
+  <code class="gp-nowrap">test_seen</code> with its AP beside the whole-split row, its provenance, collision filter and
+  ground-truth-derived inputs. Every measurement names its date, commit and machine.
+  GSNet's section offers the checkpoint released with the reference code, which runs but
+  is far below the paper (19.23 / 39.75 AP on the 120 frames, without and with the
+  collision filter), beside the weights trained here, which are not published.</li>
+<li><code class="gp-nowrap">tools/make_method_pages.py</code> writes the sections from the metafile, the config and
+  <code class="gp-nowrap">docs/methods/five_minutes.json</code> (the measured runs; nothing measured is in the
+  generator). <code>tests/unit/test_method_quickstart.py</code> takes the commands from the pages:
+  each parses with the parser of its program and names what exists, the demo, its camera
+  variant and the Python block run on the CPU over each method's real pipeline with a toy
+  detector and give the same grasps, the browser route picks each converted file for its
+  method, and the measured runs agree with the metafiles and the configs.</li>
+<li>The README quick start, <code class="gp-nowrap">docs/get_started/quickstart.md</code>, the inference guide and every
+  method README link the six sections.</li>
+</ul>
+</details>
+<details>
+<summary>Added: tested on a second machine, and the precision of a run</summary>
+<ul>
+<li>The unit suite and the first-number test of every method page were run on a machine
+  with six RTX 3090 (24 GB), with the stack of the development machine (Python 3.12,
+  PyTorch 2.7.1 with CUDA 11.8) and with a current one (Python 3.11, PyTorch 2.14.1 with
+  CUDA 12.6, the package installed as a wheel). The released checkpoints of the five
+  seed-based methods score the same AP within 0.01 on all three; every method page states
+  its numbers per machine. A fresh clone was also taken through the quick start with
+  Python 3.10 and a plain <code>pip install torch</code>.</li>
+<li>HGGD's checkpoint did not: 58.16 and 64.14 AP (without and with the collision filter)
+  on the RTX A6000, 58.52 and 64.66 on the RTX 3090, 58.79 and 65.05 there with the newer
+  stack, with identical weights, config and frames, and the same numbers on every repeat on
+  one machine. The cause is TF32: PyTorch lets cuDNN convolutions round their products to a
+  10-bit mantissa on Ampere and newer GPUs by default, what that loses depends on the GPU
+  model and the cuDNN version, and HGGD thresholds the heat map of a convolutional network.
+  With TF32 off the two stacks of the RTX 3090 give 57.99 and 64.46 against 57.98 and
+  64.44, and the same number of grasps on all 120 frames (on 38 with TF32). The sparse
+  convolutions of GSNet, EconomicGrasp and FineGrasp are not cuDNN's, and their AP is the
+  same with and without TF32. The 1 × 1 convolutions of PointNet++ are: GraspNet-baseline
+  moves from 32.60 and 48.67 to 32.51 and 48.65, Scale-Balanced-Grasp from 57.87 and 62.84
+  to 57.96 and 62.87, by the same amount on every machine tried.</li>
+<li>Distributed training ran on GPUs for the first time: GSNet on two RTX 3090 and
+  FineGrasp on four, with NCCL. FineGrasp's recipe takes 1.5 GB of GPU memory per frame;
+  its README gives the launch for eight, four and one GPU that keeps 32 frames per step and
+  4 per batch norm.</li>
+<li><code class="gp-nowrap">runtime.tf32</code> (default <code class="gp-nowrap">false</code>) sets both switches of PyTorch for a run, a probe and
+  <code class="gp-nowrap">GraspInferencer</code>, and puts them back afterwards; <code class="gp-nowrap">env.json</code> of a run records what it
+  computed in, and the header of a run says when TF32 is on. At its default the option
+  leaves every config hash as it was; <code>tf32: true</code> is another hash.</li>
+</ul>
+</details>
+<details>
+<summary>Added: trainings on the second machine</summary>
+<ul>
+<li>GSNet was trained a second time, with the config and seed of the zoo row, on an RTX 3090:
+  68.34 / 60.35 / 25.57 AP without and 70.89 / 62.71 / 26.83 with the collision filter on
+  the whole test split, within 0.5 AP of the first training on every split and, like it,
+  above the paper by more than 1 AP. The zoo keeps the rows of the first training; the
+  records of the second are in <code class="gp-nowrap">configs/gsnet/repeats/</code> and its README states them.</li>
+<li>A third GSNet training, the <code class="gp-nowrap">sunet14</code> run of <code class="gp-nowrap">projects/encoder_comparison</code>: 69.46 /
+  60.71 / 25.42 AP without and 71.69 / 62.77 / 26.59 with the collision filter. The three
+  trainings of one config and seed span 1.12 / 0.36 / 0.37 AP without the filter, on seen
+  about as much as the admission gate allows; its records are in <code class="gp-nowrap">repeats/</code> as well.</li>
+<li>The encoder comparison, GSNet with another scene encoder and nothing else changed, one
+  training each: SpUNet 68.84 / 60.22 / 25.04 AP without and 70.98 / 62.22 / 26.36 with the
+  collision filter, 0.2 to 0.7 AP below the shipped encoder and inside the spread of GSNet's
+  own three trainings; PTv3 59.07 / 52.55 / 21.91 and 62.28 / 55.62 / 23.48, with a training
+  loss after ten epochs (0.96) above the shipped encoder's after five (0.85). Records are in
+  <code>projects/encoder_comparison/records/</code>. LitePT: 55.23 / 50.03 / 21.60 and 59.18 / 53.50 /
+  23.04; its loss rose from 1.34 after the second epoch to 1.66 after the fourth and ends
+  at 1.18. <code class="gp-nowrap">gsnet_recipe.yaml</code> adds the
+  recipe preset <code class="gp-nowrap">adamw-onecycle</code> for the shipped encoder and for PTv3. The shipped encoder
+  under it: 70.41 / 61.48 / 24.83 and 72.63 / 63.54 / 26.19, +0.95 AP on seen and −0.59 on
+  novel scenes without the filter, inside the spread of GSNet's own trainings. PTv3 under
+  it: 65.85 / 57.95 / 24.58 and 68.50 / 60.40 / 25.92, 6.8 AP above its run under GSNet's
+  recipe on seen scenes and 4.6 AP below the shipped encoder under the same recipe, with a
+  final training loss of 0.84 against 0.74. EconomicGrasp with PTv3
+  (<code>experimental/economicgrasp_ptv3_g1b-realsense_10e</code>, EconomicGrasp's recipe):
+  65.52 / 57.11 / 23.91 and 67.14 / 58.43 / 24.49, 3.8 AP below EconomicGrasp trained here
+  on seen scenes and 2.3 on novel, with a final training loss of 3.31 against 2.98. LitePT
+  under the preset: 60.94 / 54.55 / 23.48 and 64.89 / 57.94 / 24.97, 5.7 AP above its run
+  under GSNet's recipe on seen scenes and 9.5 AP below the shipped encoder under the same
+  recipe; its loss falls in every epoch and ends at 1.02.</li>
+<li>GSNet's encoder under GraspNet-baseline
+  (<code>experimental/graspnet-baseline_sunet14-fps_g1b-realsense_18e</code>, GraspNet-baseline's
+  recipe, the same seeds through an adapter): 32.41 / 27.88 / 10.99 AP without and
+  47.40 / 43.05 / 17.26 with the collision filter, 0.5 to 1.7 AP above the PointNet++ it
+  replaces, with a training loss of 0.48 against 0.50. Of the 37.07 AP between GSNet and
+  GraspNet-baseline on seen scenes, the encoder accounts for 0.65 under GraspNet-baseline.
+  One run; the training was resumed once from its third epoch.</li>
+<li>The ablation of FineGrasp (<code class="gp-nowrap">projects/finegrasp_ablation</code>), EconomicGrasp with one of
+  FineGrasp's changes at a time, one training each. Graspness normalised per object:
+  70.03 / 61.03 / 26.21 AP without and 71.47 / 62.12 / 26.73 with the collision filter,
+  within 0.7 AP of EconomicGrasp trained here on every split. The four-radius crop alone:
+  68.10 / 58.63 / 24.05 and 69.84 / 59.77 / 24.71, lower by 1.24 / 2.78 / 2.16 AP without
+  the filter, with a lower training loss (2.77 against 2.98) and no dependence on its
+  training mode. Normals as encoder input: 68.05 / 60.78 / 26.23 and 70.11 / 62.00 / 26.77,
+  −1.29 AP on seen scenes without the filter and within 0.94 AP on the other five numbers,
+  with EconomicGrasp's training loss (2.97 against 2.98). All three, the FineGrasp model
+  under EconomicGrasp's recipe: 70.54 / 61.27 / 25.41 and 71.72 / 62.09 / 25.96, +1.20 AP
+  on seen scenes without the filter and within 0.85 AP elsewhere, 1.0 to 2.5 AP below the
+  authors' checkpoint as under FineGrasp's own recipe (1.2 to 3.1).</li>
+<li>EconomicGrasp was trained a second time from the same config and seed, to measure what
+  two trainings differ by: 69.01 / 60.02 / 25.09 AP without and 70.65 / 61.10 / 25.74 with
+  the collision filter, 0.33 / 1.39 / 1.12 AP below the first. Read against both, the
+  ablation says less than against one: the four-radius crop alone is below both on every
+  split (0.91 to 2.78 AP), the normals below both on seen scenes (0.96 and 1.29), and all
+  three changes together above both on seen scenes (1.20 and 1.53) and between them on the
+  other splits. The +1.04 AP of the first training over the authors' checkpoint on novel
+  is spread: the second is 0.08 below it. PTv3 under EconomicGrasp stays 3.5 AP below the
+  second training on seen scenes.</li>
+<li>The four-radius crop alone was trained a second time too: 67.21 / 56.68 / 23.35 AP
+  without and 69.09 / 57.92 / 24.06 with the collision filter. Both of its trainings end
+  below both of EconomicGrasp's on every split, 1.52 / 3.06 / 1.95 AP between the means of
+  two without the filter: alone, the crop loses. Its training loss stays the lower one
+  (2.77 and 2.78 against 2.98).</li>
+<li>All three changes together were trained a second time: 69.25 / 60.34 / 25.66 AP without
+  and 70.67 / 61.36 / 26.24 with the collision filter, between the two trainings of
+  EconomicGrasp on every split. Between the means of two, the FineGrasp model under
+  EconomicGrasp's recipe is +0.72 / +0.09 / −0.12 AP from EconomicGrasp: no difference is
+  shown, and the +1.20 AP of its first training on seen scenes was spread. Over both
+  trainings it is 1.0 to 3.3 AP below the authors' checkpoint. The parts do not add up:
+  every training of all three ends above every training of the crop alone. The sweep file
+  gains the crop with each of the two other changes, to tell which one it needs.</li>
+<li>EconomicGrasp was trained a third time: 68.84 / 61.59 / 25.70 AP without and
+  70.53 / 62.85 / 26.38 with the collision filter. Its three trainings lie
+  0.50 / 1.57 / 1.12 AP apart without the filter and up to 1.75 with it, and the authors'
+  checkpoint lies inside their range on every split. The ablation is now read against the
+  range of the three: per-object graspness ends 0.69 to 1.19 AP above it on seen scenes
+  and the normals 0.79 to 1.29 below it, one run each; the crop alone is below it on every
+  split in both of its trainings (1.41 / 3.35 / 1.97 AP between the means); all three
+  changes are +0.83 / −0.20 / −0.13 AP from EconomicGrasp between the means.</li>
+<li><code class="gp-nowrap">tools/train_fit.py</code> measures how closely weights fit training frames: their training
+  loss with the layers as in training and as in evaluation. FineGrasp trained here has
+  the lower loss than its authors' weights on every term (2.67 against 2.92 on 160
+  frames) and the lower AP on the test split; the two sets of weights of EconomicGrasp
+  are 0.03 apart. Records in <code class="gp-nowrap">configs/finegrasp/diagnostics/</code>,
+  <code class="gp-nowrap">configs/economicgrasp/diagnostics/</code> and <code>projects/finegrasp_ablation/records/</code>. The
+  same tool checks FineGrasp's graspness labels, whose originals are not published: the
+  authors' weights have a graspness loss of 0.05 on the labels generated here, normalised
+  per object, and 0.14 on labels normalised over the scene.</li>
+<li>A run's <code class="gp-nowrap">config.resolved.yaml</code> wrote out the defaults of PyTorch's optimizer and
+  scheduler classes, which the config hash leaves out on purpose: loaded again, the file
+  hashed to another experiment, so the resume it is recommended for was refused, and it
+  listed arguments that another PyTorch version does not have. It now writes the
+  defaults GraspPanda decides and leaves a library class as written; <code>print-config
+  --defaults</code> prints the same. FineGrasp's file was refused by the config check for the
+  default radius of its crop branch; the check accepts the default. A test loads the
+  resolved file of every shipped config and compares the hash.</li>
+<li>GraspNet-baseline was trained from scratch on one RTX 3090 with the recipe of its
+  config: 31.76 / 26.18 / 10.19 AP without and 46.81 / 41.90 / 16.74 with the collision
+  filter. With the filter, the setting its repository reports, that is
+  −0.66 / −0.37 / +0.13 AP from the reported row: the first model trained here within the
+  admission gate on every split, and its method page shows <em>reproduced ✓</em>. It is about
+  1 AP below the authors' checkpoint on seen, and transfers worse to GraspClutter6D:
+  7.44 / 8.87 / 5.99 and 14.09 / 16.90 / 10.73 (AP / AP0.8 / AP0.4), 3.05 AP below the
+  checkpoint with the filter.</li>
+<li>Scale-Balanced-Grasp was trained from scratch on one RTX 3090 with the recipe of its
+  config: 57.23 / 51.13 / 21.98 AP without and 62.00 / 56.28 / 23.74 with the collision
+  filter, within 0.55 AP of the authors' checkpoint on every split and, like it, 1.2 to 2.2
+  AP below the paper on seen and similar: the gap to the paper is not one of training. On
+  GraspClutter6D it scores 21.90 / 26.54 / 16.30 and 22.75 / 27.61 / 16.64 (AP / AP0.8 /
+  AP0.4), within 0.14 AP of the checkpoint.</li>
+<li>HGGD was trained from scratch on one RTX 3090 with the recipe of its config and the
+  per-view labels its released converter writes: 48.01 / 41.42 / 18.88 AP without and
+  55.30 / 48.60 / 21.70 with the collision filter, 8 to 10 AP below the authors' checkpoint
+  on seen. The training step equals the reference's on a recorded batch, so the labels
+  were examined: the converter suppresses them at 2 cm and 60 degrees, which leaves about
+  seven positive angle classes per frame, and the authors' checkpoint has a training loss
+  of 4.15 on them where the model trained here reaches 2.15. On labels suppressed at 1 cm
+  and 30 degrees, the values of a line the converter has commented out, the checkpoint's
+  loss is 1.85. <code class="gp-nowrap">tools/hggd_label_fit.py</code> measures this. Trained on those labels with
+  nothing else changed (<code class="gp-nowrap">projects/hggd_labels</code>), HGGD scores 57.83 / 48.53 / 22.71 AP
+  without and 63.61 / 54.31 / 24.95 with the collision filter: within 0.63 AP of the
+  checkpoint without the filter, and with it within 0.84 AP of the numbers of HGGD's
+  repository on every split. The shipped config keeps the converter's labels. On
+  GraspClutter6D the model scores 12.95 / 16.00 / 8.16 and 14.49 / 17.88 / 8.95
+  (AP / AP0.8 / AP0.4), 0.07 AP below the checkpoint with the filter.</li>
+<li>EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
+  69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
+  within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on
+  novel. Against the published table that is +1.13 AP on seen, 0.13 outside the admission
+  gate, where the authors' checkpoint stands as well (+1.07). On GraspClutter6D the model
+  scores 23.24 / 28.58 / 17.04 and 23.72 / 29.16 / 17.20 (AP / AP0.8 / AP0.4), about 1.5 AP
+  above the authors' checkpoint. With the detector underneath FineGrasp reproduced, what
+  is left of FineGrasp's gap lies in its three changes as generated here or in its recipe
+  as run here; <code class="gp-nowrap">projects/finegrasp_ablation</code> trains each change alone to tell which.</li>
+<li>FineGrasp was trained from scratch on four RTX 3090 (four processes with four frames
+  each, the gradients of two batches per step): 69.77 / 59.72 / 25.77 AP without and
+  72.43 / 61.87 / 26.94 with the collision filter, below the paper by 1.2 to 3.1 AP on
+  every split. The authors' weights give the paper's numbers through the same test path;
+  the gap of the training is not explained (<code class="gp-nowrap">configs/finegrasp/README.md</code>).</li>
+<li>A zoo model may list the weights trained here (<code class="gp-nowrap">weights</code>) beside the authors' checkpoint
+  (<code class="gp-nowrap">author_weights</code>) and state the measured rows of both, each kind backed by its file.
+  A method page then shows every row of the shipped config, and its <em>trained here</em> chip
+  turns into <em>reproduced ✓</em> only within the 1 AP of the admission gate.</li>
+</ul>
+</details>
+<details>
+<summary>Added: FineGrasp on GraspClutter6D, and the camera distance its features carry</summary>
+<ul>
+<li><code>finegrasp/finegrasp_sunet14_g1b-realsense-to-gc6d-d435_10e</code> scores FineGrasp on
+  GraspClutter6D, so all six methods have a transfer config. With the authors' weights
+  the whole test split gives 12.56 AP without and 13.14 AP with the collision filter, far
+  below EconomicGrasp (21.69), the model FineGrasp extends.</li>
+<li>The cause is an input: FineGrasp feeds the coordinates of every point to its encoder.
+  The clouds it was trained on have a median depth of 0.34 to 0.46 m, those of this split
+  of 0.51 to 1.61 m. <code class="gp-nowrap">CoordinateFeatures.median_depth</code> (default none, the reference) moves
+  the depth coordinate of the features so that the median of a frame is the given value
+  and leaves points, voxels and grasps where they are; at 0.42 m the same weights score
+  24.39 and 25.02 AP. The model trained here does alike: 16.12 and 17.00 AP as published,
+  23.90 and 25.18 with the depth moved. The zoo rows are the method as published; the
+  records of the variant are in <code class="gp-nowrap">configs/finegrasp/variants/</code>. The other five methods
+  read no coordinates (HGGD centres its depth image).</li>
+<li>A component may name the arguments it gained after config hashes were recorded
+  (<code class="gp-nowrap">hash_neutral</code>): at the value that keeps the behaviour they are left out of the hash,
+  as <code class="gp-nowrap">runtime.tf32</code> is, so every FineGrasp config hashes as it did.</li>
+</ul>
+</details>
+<details>
+<summary>Fixed, in full</summary>
+<ul>
+<li><code>train --resume &lt;checkpoint&gt;</code> with another <code class="gp-nowrap">--work-dir</code> or <code class="gp-nowrap">runtime.run_id</code>, or with
+  <code class="gp-nowrap">runtime.allow_config_mismatch</code>, wrote into the run directory of the checkpoint; with a
+  config mismatch it replaced that run's later checkpoints and <code class="gp-nowrap">best.pth</code>. Such a resume
+  now starts a new run directory below <code class="gp-nowrap">runtime.work_dir</code>, whose <code class="gp-nowrap">run.json</code> records
+  <code class="gp-nowrap">resumed_from</code>, and leaves the original run as it is; a mismatch without the flag is
+  refused before anything is written. Training longer than planned is therefore a new run
+  directory.</li>
+<li>A <code class="gp-nowrap">_base_</code> entry that is not a file next to the config names a shipped config
+  (<code class="gp-nowrap">_base_/default_runtime.yaml</code>, <code>gsnet/gsnet_sunet14_g1b-realsense_10e.yaml</code>), so a
+  child of a shipped config and the example project load from any directory and from an
+  installed wheel; the example project inherits by name. A missing base is reported at the
+  file that names it.</li>
+<li>With the CPU-only spconv wheel and more than one thread (the default), every config with
+  a sparse encoder stopped at the self-check, and 163 unit tests failed. The wheel's
+  convolutions and their backward now run on one PyTorch thread, the thread count is
+  restored for the other operators, and the log of a run and the <code class="gp-nowrap">probe</code> report say so
+  once. The self-check stays and now compares the input gradient too. A synthetic probe of
+  GSNet with PTv3 on the CPU with three threads: <code class="gp-nowrap">wired</code> in 18 s (it stopped at the
+  self-check before; 23 s with <code class="gp-nowrap">OMP_NUM_THREADS=1</code>).</li>
+<li><code>infer --input DIR</code> on a plain folder of frames ended in a raw traceback from the
+  reader. It now checks the directory before anything runs (the reader of the section has
+  a <code class="gp-nowrap">root</code> parameter and reads its first frame) and otherwise stops with an <code class="gp-nowrap">InputError</code>
+  that names what the reader looked for and points to <code>demo --depth FILE --intrinsics</code> and
+  <code class="gp-nowrap">GraspInferencer</code>; <code>demo --depth DIR</code> says the same.</li>
+<li>A data loader with workers below a <code class="gp-nowrap">TMPDIR</code> too deep for the sockets of its workers
+  (beyond about 75 characters) waited forever for its first batch: every worker dropped
+  its batches with <code>AF_UNIX path too long</code>, which only the worker printed. The loaders of
+  <code class="gp-nowrap">train</code> and <code class="gp-nowrap">test</code> now refuse such a setting with the reason and the fix
+  (<code class="gp-nowrap">docs/faq.md</code>).</li>
+<li>A model on a data recipe that does not serve its labels is refused by the config check
+  instead of failing at the first loss. Stages declare what they read from the training
+  supervision (<code class="gp-nowrap">needs_supervision</code>), dataset readers what a config makes them serve
+  (<code class="gp-nowrap">served_supervision</code>), and a rule compares the two at <code class="gp-nowrap">data.train.dataset</code>, naming the
+  field, the stage that reads it and the section or transform that would serve it.
+  <code>grasppanda compose</code> answers with the shipped configs whose recipe serves the labels,
+  or with the preset that brings the missing dataset section.</li>
+<li>The width of the seed features is one contract. An encoder declares the width it
+  returns for its options (<code class="gp-nowrap">Backbone.output_channels</code>), a grouper the width it needs
+  (<code class="gp-nowrap">Grouper.required_seed_channels</code>) and the variant that takes any width; the config
+  check compares them without building anything. Compose sets a new encoder's
+  <code class="gp-nowrap">out_channels</code> to the width the grouper needs and otherwise puts
+  <code class="gp-nowrap">DepthCylinderProjectionGroup</code> in place; <code class="gp-nowrap">--no-adapter</code> leaves the pair refused.
+  Encoders of a fixed width used to pass the check under Scale-Balanced-Grasp and fail
+  when built.</li>
+<li>A composed config can be the base of another compose. <code>compose -o</code> no longer replaces
+  an existing file without <code class="gp-nowrap">--force</code>, and never the base config or a file it inherits.</li>
+<li>
+<p><code>grasppanda probe</code>: a count below one and an unknown split are argument errors (exit
+  status 2), not verdicts; a loss that is not finite in the very first iteration is
+  <code class="gp-nowrap">fails</code>, not <code class="gp-nowrap">runs-unstable</code>.</p>
+</li>
+<li>
+<p>Combinations that passed the config check and failed in the first iteration are now
+  refused with the conflict and the fix: a head bundle or a view stage on another grid
+  than the labels of the dataset (<code class="gp-nowrap">num_angle</code>, <code class="gp-nowrap">num_depth</code>, <code class="gp-nowrap">num_views</code>, <code class="gp-nowrap">label_views</code>);
+  <code class="gp-nowrap">SubsampledSeeds.num_seeds</code> against the points a sub-sampling encoder returns
+  (<code class="gp-nowrap">output_points</code>); <code class="gp-nowrap">top_k</code> and <code class="gp-nowrap">friction_range</code> out of range (<code class="gp-nowrap">option_problems</code>); a
+  point transform that moves points on a dataset section that serves images
+  (<code class="gp-nowrap">moves_points</code>); a post-processor that needs the cloud before sub-sampling on a
+  section that drops it (<code class="gp-nowrap">reads_full_points</code>; <code>compose --set post=collision...</code> switches
+  <code class="gp-nowrap">keep_full_points</code> on and says so); <code>train.amp: true</code> for a detector that does not
+  declare <code class="gp-nowrap">amp_ready</code>.</p>
+</li>
+<li><code class="gp-nowrap">ASSANet</code> returned zeros for the constant input features most methods feed (its stem
+  batch-normalises them) and was recorded as <code class="gp-nowrap">runs</code>. It has the option <code class="gp-nowrap">use_xyz</code> (on in
+  the preset) and refuses constant features without it; a unit test runs every encoder
+  preset on constant features.</li>
+<li><code>grasppanda probe</code> on real frames records the parts of the model that received no
+  gradient (<code class="gp-nowrap">no_gradient</code>) and reports <code class="gp-nowrap">runs-unstable</code> for one; it prints what every step
+  of a post-processing chain left; a CUDA launch failure gets the note that out-of-memory
+  has. The synthetic wiring check labels its scene on the grid of the dataset and reads
+  the image size of a GraspClutter6D camera.</li>
+<li>Image-encoder bridges print one line when their library fetches pretrained weights,
+  with the licence it states. The presets with non-commercial weights (<code class="gp-nowrap">convnextv2-tiny</code>,
+  <code class="gp-nowrap">convnextv2-atto</code>, <code class="gp-nowrap">hf-hiera-tiny</code>) ship with <code>pretrained: false</code>; a model that runs
+  code from its hub repository (<code class="gp-nowrap">hf-radio-v3-base</code>) is refused until the config says
+  <code>accept_remote_code: true</code>.</li>
+<li><code>compose --list image_encoder</code> lists the image encoders; a head refused for its label
+  set names the shipped configs that serve it at once; <code>--set image_encoder=</code> under a
+  seed-based method points to point painting.</li>
+<li>Install hints name <code>pip install "grasppanda[&lt;extra&gt;]"</code> when GraspPanda runs from an
+  installed wheel and <code>pip install -e ".[&lt;extra&gt;]"</code> from the repository root of a checkout.
+  For spconv they name the build that matches the installed PyTorch (<code class="gp-nowrap">spconv-cu118</code>, ...,
+  <code class="gp-nowrap">spconv-cpu</code> for a CPU-only PyTorch) and list the others, instead of always
+  <code class="gp-nowrap">spconv-cu118</code>.</li>
+<li><code class="gp-nowrap">tools/probe_grid.py</code> refuses to record from a working tree with uncommitted changes
+  (<code class="gp-nowrap">--allow-dirty</code> overrides) and records the versions of the optional libraries of a run.</li>
+<li><code>grasppanda prepare &lt;dataset&gt; --check --config &lt;config&gt;</code> used to report every camera of
+  the dataset, so a complete RealSense setup ended with a red line for Kinect and exit
+  status 1, and it did not look at the scale statistic of Scale-Balanced-Grasp, so its
+  check was green and its training stopped at the first line. The check now reports the
+  camera the config names (<code class="gp-nowrap">--camera</code> asks for another), includes the scale statistic, and
+  ends with the exact command for every asset that is not complete, in build order,
+  instead of the list of all flags.</li>
+<li><code class="gp-nowrap">approach_to_rotation</code> was rewritten independently (cross products and a turn about the
+  approach axis); the convention and its tests are unchanged.</li>
+</ul>
+</details>
+<details>
+<summary>Changed, in full</summary>
+<ul>
+<li><code>compose --help</code> and <code>probe --help</code> name the slots, the base, examples, the verdicts
+  and the exit statuses; <code>grasppanda components &lt;name&gt;</code> names the presets of a component.</li>
+<li>The config hash of the HGGD configs changed (one more detector option); the model and
+  its checkpoints did not.</li>
+<li>The config hash no longer includes the defaults of library classes (PyTorch's optimizers
+  and schedulers, named by class), which differ between PyTorch versions: one config now
+  hashes the same on every machine. Hashes written before this change differ; a checkpoint
+  saved before it resumes with <code class="gp-nowrap">runtime.allow_config_mismatch=true</code>, and
+  <code>python -m tools.probe_grid rehash</code> rewrites the hashes of measured records.</li>
+</ul>
+</details>
+<details>
+<summary>Known limits, in full</summary>
+<ul>
+<li>The zoo has no weights to download yet. Of the six models trained here,
+  GraspNet-baseline is within the admission gate on every split; EconomicGrasp reaches
+  its authors' checkpoint and is 0.13 AP outside the gate on seen, where that checkpoint
+  is 0.07 outside it; Scale-Balanced-Grasp reaches its authors' checkpoint, and both are
+  1.2 to 2.2 AP below the paper on seen and similar; HGGD is 8 to 10 AP below its authors'
+  checkpoint on seen, because that checkpoint fits denser labels than the released
+  converter writes; GSNet is above its paper by more than 1 AP and FineGrasp below, both
+  unexplained. None of their weights is published: where is not decided. A training with
+  unmodified reference code was not run here. The other numbers are <code class="gp-nowrap">author-ckpt</code> (see
+  above): each is one run with seed 0, and where a number differs from the reported one
+  the cause is not known.</li>
+<li>Of the options added beside the six ported methods, three scene encoders under GSNet
+  and one recipe have been trained in full and evaluated, once each
+  (<code class="gp-nowrap">projects/encoder_comparison</code>). For every
+  other option a measured verdict says that a combination builds, trains for 20 iterations
+  and predicts, and no more.</li>
+<li>Mixed precision (<code class="gp-nowrap">train.amp</code>, preset <code class="gp-nowrap">hooks=amp</code>) does not work with the shipped
+  detectors and is refused by the config check: GSNet stopped at a half/float mismatch in
+  the label assigner, HGGD's first loss was not finite. <code class="gp-nowrap">optimizer=soap</code> under HGGD is not
+  verified: its one probe stopped at the second step with a CUDA illegal memory access on a
+  shared GPU, which says nothing about whether it fits (it runs under GSNet).</li>
+<li>No shipped augmentation moves image and cloud together, so a detector that reads images
+  (HGGD) has no geometric augmentation; point transforms that move points are refused there.</li>
+<li>The point-painting wrappers (<code class="gp-nowrap">image-painted</code>, <code class="gp-nowrap">image-painted-subsampled</code>) are not written
+  by <code class="gp-nowrap">compose</code> and have no cell in the measured records; the table of their probes in
+  <code class="gp-nowrap">docs/slots/image_encoders.md</code> was measured once by hand.</li>
+<li><code>grasppanda probe --synthetic</code> (also the fallback when a dataset is missing) can report
+  <code class="gp-nowrap">fails</code> for FineGrasp with the encoders <code class="gp-nowrap">spunet</code> and <code class="gp-nowrap">minkunet34c-pointcontrast</code>, whose
+  record on real frames is <code class="gp-nowrap">runs</code>: after the second optimizer step on the random labels of
+  the synthetic scene the attention of the grouper returns a value that is not finite. The
+  cause is not found.</li>
+<li>51 measured cells (48 sets of stages and 3 others) were probed from a working tree with
+  uncommitted changes (<code class="gp-nowrap">run</code> ends in <code class="gp-nowrap">+dirty</code>): the commit they name does not identify the
+  probed code exactly. The runner refuses that from now on.</li>
+<li>The unit tests of <code class="gp-nowrap">OctFormer</code>, <code class="gp-nowrap">PointMamba</code>, the HEALPix view stages and
+  <code class="gp-nowrap">hf-radio-v3-base</code> need <code class="gp-nowrap">ocnn</code>, <code class="gp-nowrap">mamba-ssm</code>, <code class="gp-nowrap">healpix</code> and <code class="gp-nowrap">open_clip_torch</code>, which the
+  shared test environments do not hold: those tests skip there, and the measured cells of
+  those options were probed with the libraries in a private environment. Runs recorded
+  before this change do not name the versions of the optional libraries.</li>
+<li>The strict-loading checks of released third-party weights (integration tests) skip when
+  the files are absent; they were run once with the files and are not repeated by CI.</li>
+<li>The slot pages differ in how they lay out their tables (method names as columns on
+  some, abbreviations or one slash-separated cell on others).</li>
+<li>Most combinations of two or more replaced options have no measured record.</li>
+<li>The CPU-only wheel of spconv 2.3.8 miscomputes with more than one OpenMP thread; sparse
+  layers detect this and stop with an explanation (see the installation guide).</li>
+</ul>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../faq/" class="md-footer__link md-footer__link--prev" aria-label="Previous: FAQ">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                FAQ
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 The GraspPanda Contributors
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.path", "navigation.footer", "navigation.top", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "content.tabs.link", "content.tooltips", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
