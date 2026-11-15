@@ -8,9 +8,9 @@ HGGD reads an RGB-D **image**, not only a cloud. A small encoder-decoder predict
 of grasp centres together with the in-plane angle, width and depth offset at each centre.
 Up to 48 peaks become *partial grasps*; each is lifted to 3-D, a ball of scene points is cut
 around it, and a PointNet completes the grasp by classifying 7 × 7 learned rotation anchors
-with a centre offset per anchor. It is a detector family of its own: it has none of the
-seed-based slots, and shares the outer contracts (inputs, grasps, datasets, trainer,
-post-processing, evaluator) with the other five methods.
+with a centre offset per anchor. It is a detector family of its own: none of the
+seed-based slots, the outer contracts (inputs, grasps, datasets, trainer, post-processing,
+evaluator) of the other five methods.
 
 **Run it in five minutes:** [the method page](https://daeda1used.github.io/GraspPanda/methods/hggd/#run-in-five-minutes): the weights, grasps on the example scene, the same from Python and in the browser, and a first number on the benchmark, each with what it printed when it was measured.
 
@@ -31,7 +31,7 @@ The options of every slot, with what was measured for each:
 
 AP on seen / similar / novel over the whole test split (90 scenes, 23,040 frames per
 camera), protocol `graspnet1b-sv-v1`. Nothing in HGGD's input is derived from
-ground truth (`gt_assisted` is empty in every record).
+ground truth.
 
 | Config | Camera | Provenance | Collision filter | Seen | Similar | Novel |
 |---|---|---|:---:|---:|---:|---:|
@@ -45,26 +45,31 @@ ground truth (`gt_assisted` is empty in every record).
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.56 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.30 | 46.85 | 19.22 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_raw.json)) | off | 49.73 | 40.52 | 17.41 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_cd.json)) | on, then NMS | 54.46 | 44.57 | 18.83 |
 
-`author-ckpt` is the authors' checkpoint of each camera, converted and run through
-`grasppanda test` with seed 0. `off` is every decoded grasp (variant `raw`);
+`author-ckpt` is the authors' checkpoint of each camera, converted and scored with
+seed 0. `off` is every decoded grasp (variant `raw`);
 `on, then NMS` is what the released test script dumps (variant `cd`). Neither source
 states the collision filter; the closest pair is `cd` with "In repo", within 0.87 AP on
 every split and below it on all six.
 
-`reproduced`, trained from scratch with the config's recipe, is **8 to 10 AP below
-the authors' checkpoint on seen**: −10.35 / −6.53 / −3.20 AP without the filter,
-−8.42 / −4.31 / −2.46 with it. The cause is the labels: the released converter writes
-sparser ones than the checkpoint fits. **On labels three times as dense it lands on the
-checkpoint**: −0.53 / +0.58 / +0.63 AP without the filter, −0.11 / +1.40 / +0.79 with it
-([`projects/hggd_labels`](../../projects/hggd_labels/)).
+`reproduced`, trained from scratch with the config's recipe, is **6 to 10 AP below
+the authors' checkpoints on seen**; on RealSense −10.35 / −6.53 / −3.20 AP
+without the filter, −8.42 / −4.31 / −2.46 with it. The cause: the released converter
+writes sparser labels than the checkpoint fits. **On labels three times as dense it lands
+on the checkpoint**: −0.53 / +0.58 / +0.63 AP without the filter,
+−0.11 / +1.40 / +0.79 with it ([`projects/hggd_labels`](../../projects/hggd_labels/)).
 
-<details markdown="1"><summary>Why the model trained here is below the checkpoint: the labels</summary>
+<details markdown="1"><summary>Why the models trained here are below the checkpoints: the labels</summary>
 
 **The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `400b733`,
 nothing overridden: 15 epochs, batches of 4 with two per optimizer step, seed 0, float32,
 23.6 hours on one RTX 3090 shared with other jobs. The checkpoint of epoch 15 (SHA-256
-`0d774db966c3…`) was scored at the same commit. One run, one seed.
+`0d774db966c3…`) was scored at the same commit. The Kinect config was trained the same
+way at commit `a0a92f3` in 9.9 hours (SHA-256 `360c894506e5…`); it ends
+−7.25 / −3.45 / −1.15 AP from its checkpoint without the filter and −5.84 / −2.28 / −0.39
+with it. One run, one seed each.
 
 **What was ruled out.** The training step: on a recorded batch its loss terms and
 gradients equal the reference's (*Equivalence with the reference code*, below). The label
@@ -82,7 +87,6 @@ falls and the other model's does not:
 |---|---|---|---|---|
 | 2 cm, 60°: the released converter | 131 | 7 | 4.15 | 2.15 |
 | 1 cm, 30°: a line the converter has commented out | 419 | 66 | 1.85 | 2.10 |
-| 0.5 cm, 30° | 1013 | 234 | 1.67 | 2.17 |
 | none | 4611 | 513 | 1.67 | 2.25 |
 
 Training loss on 160 frames of ten training scenes, the weights frozen:
@@ -101,8 +105,9 @@ One run per density, one seed; [`projects/hggd_labels`](../../projects/hggd_labe
 the sweep file, the commands and the records. The config ships the converter's labels, as
 released, and the rows above are trained on them; the two overrides of `1cm-30deg` in that
 project switch to the 1 cm, 30° ones. On
-Kinect the same two overrides end above the checkpoint on seen and similar scenes and
-below it on novel; a training on the converter's Kinect labels is running.
+Kinect the same two overrides gain +9.35 / +5.53 / −0.28 AP over the converter's labels
+without the filter and end above the checkpoint on seen and similar scenes, below it on
+novel.
 
 </details>
 
@@ -239,11 +244,10 @@ checkpoints (four RealSense and two Kinect test frames, one training batch per c
 | Image features on points, lifted centres | features identical for all but 20 of 153,600 points (a near-tie for the 8th neighbour); centres within 1e-7 m, including 13 on pixels without depth |
 | Regions, with the reference's random draws replayed | the same points in 1,294 of 1,295 regions, the same sample order in 1,292 |
 | Region network | within 1e-6 of the largest value |
-| Decoding | equal to 1e-15 in double precision |
+| Decoding; anchor shift | within 1e-15 and 3e-16 in double precision |
 | Collision filter, NMS, final dump | 32,680 of 32,681 voxels identical after half-float rounding; 2,603 of 2,603 decisions, the NMS and the dump identical |
 | Training targets | heat-map, label counts and width offsets identical; angle, depth and anchor targets within 4e-6; the same 2,957 matches and positive anchors |
 | Loss terms and gradients of both networks | terms within 2e-7, total within 4e-6; six gradient tensors within 8e-3 of each one's largest entry |
-| Anchor shift | within 3e-16 |
 
 Not reproducible bit for bit, by construction: the reference draws random numbers *at
 inference* (scene sub-sampling, a 0.5 mm jitter of region points, the start point of the

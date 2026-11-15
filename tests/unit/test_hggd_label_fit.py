@@ -19,7 +19,6 @@ from .test_zoo_pages import table_under
 SHOWN = {
     "2 cm, 60°": (0.02, 60.0),
     "1 cm, 30°": (0.01, 30.0),
-    "0.5 cm, 30°": (0.005, 30.0),
     "none": (1e-06, 0.001),
 }
 

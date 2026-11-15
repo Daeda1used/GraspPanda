@@ -619,8 +619,11 @@ Classes now count levels, and every method lists the options of each of its slot
   without and 63.61 / 54.31 / 24.95 with the collision filter: within 0.63 AP of the
   checkpoint without the filter, and with it within 0.84 AP of the numbers of HGGD's
   repository on every split. Trained on every label, without suppression, it ends 4.04 AP
-  above the checkpoint on seen scenes and 0.53 below it on novel without the filter. The
-  shipped config keeps the converter's labels. On GraspClutter6D the model scores
+  above the checkpoint on seen scenes and 0.53 below it on novel without the filter. HGGD's
+  Kinect config, trained the same way on the converter's labels, scores
+  49.73 / 40.52 / 17.41 and 54.46 / 44.57 / 18.83 AP, 7.25 AP below its checkpoint on seen
+  without the filter; 1 cm and 30 degrees gain it 9.35 AP on seen scenes and nothing on
+  novel. The shipped configs keep the converter's labels. On GraspClutter6D the model scores
   12.95 / 16.00 / 8.16 and 14.49 / 17.88 / 8.95 (AP / AP0.8 / AP0.4), 0.07 AP below the
   checkpoint with the filter.
 - EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
