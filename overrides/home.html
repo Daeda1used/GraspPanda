@@ -17,12 +17,12 @@
     .gp-hero__lead { font-size: 0.9rem; }
     .gp-hero__figure { flex: 1 1 28rem; max-width: 34rem; margin: 0 0 0 auto; }
     .gp-hero__figure img { display: block; width: 100%; height: auto; }
-    .gp-hero__figure figcaption { margin: 0.2rem 0 0; font-size: 0.6rem; line-height: 1.4; color: var(--gp-muted); text-align: right; }
+    .gp-hero__figure figcaption { margin: 0.2rem 0 0; font-size: 0.6rem; line-height: 1.4; color: var(--gp-muted); text-align: center; }
     /* below 76em the picture goes under the text, as wide as the column */
     @media screen and (max-width: 75.9375em) {
       .gp-hero__inner { flex-direction: column; align-items: stretch; gap: 1.2rem; }
-      .gp-hero__text { max-width: 36rem; }
-      .gp-hero__figure { max-width: 40rem; margin: 0 auto; }
+      .gp-hero__text { flex: none; max-width: 36rem; }
+      .gp-hero__figure { flex: none; width: 100%; max-width: 36rem; margin: 0 auto; }
       .gp-hero__figure figcaption { text-align: center; }
     }
     .gp-home .gp-pipeline { margin: 0.4rem 0 1.6rem; }

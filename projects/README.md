@@ -20,6 +20,6 @@ loaded through `custom_imports`. Start from [`example_project/`](example_project
 | [`example_project/`](example_project/) | `example` | A toy detector: how a project registers components and configs. |
 | [`encoder_comparison/`](encoder_comparison/) | `experimental` | Four scene encoders under GSNet, each trained and scored on the whole test split; then encoder against recipe, the same swap under EconomicGrasp, and GSNet's encoder under GraspNet-baseline. |
 | [`finegrasp_ablation/`](finegrasp_ablation/) | `experimental` | FineGrasp's three changes, switched on one at a time and together under EconomicGrasp. |
-| [`hggd_labels/`](hggd_labels/) | `experimental` | HGGD trained on denser labels than its released converter writes: it lands on the authors' checkpoint. |
+| [`hggd_labels/`](hggd_labels/) | `experimental` | HGGD on labels of three densities: why its config sets denser ones than its released converter writes. |
 
 The last three hold sweep files and result records, no code: the experiment is a config.
