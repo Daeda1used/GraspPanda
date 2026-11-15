@@ -84,7 +84,7 @@ Computed from the configs and the metafiles.
 | [Scale-Balanced-Grasp](scale_balanced_grasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
 | [EconomicGrasp](economicgrasp.md) | Kinect, RealSense | RealSense, not published | Kinect, RealSense | transfer from Kinect, RealSense; training |
 | [FineGrasp](finegrasp.md) | RealSense | RealSense, not published | RealSense | transfer from RealSense |
-| [HGGD](hggd.md) | RealSense, Kinect | RealSense, not published | Kinect, RealSense | transfer from RealSense |
+| [HGGD](hggd.md) | RealSense, Kinect | RealSense, Kinect, not published | Kinect, RealSense | transfer from RealSense |
 
 </div>
 

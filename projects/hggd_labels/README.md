@@ -89,16 +89,21 @@ grasppanda train hggd/hggd_r34w8_g1b-kinect_15e --opts <the same two>
 
 | Labels | Collision filter off | On |
 |---|---|---|
-| the converter's | training | |
+| the converter's: HGGD in the model zoo | 49.73 / 40.52 / 17.41 | 54.46 / 44.57 / 18.83 |
 | `1cm-30deg` | 59.08 / 46.05 / 17.13 | 62.77 / 49.45 / 18.28 |
 | the authors' checkpoint | 56.98 / 43.97 / 18.56 | 60.30 / 46.85 / 19.22 |
 
-**On Kinect the denser labels end above the authors' checkpoint on seen and similar scenes,
-and below it on novel**: +2.10 / +2.08 / −1.43 AP without the collision filter and
-+2.47 / +2.60 / −0.94 with it. Against the repository's Kinect numbers, 61.17 / 47.02 / 19.37,
-that is +1.60 / +2.43 / −1.09 AP with the filter: outside the zoo's gate on every split.
-HGGD on the converter's labels has not been trained on Kinect before; that training is
-running, to tell what the labels give on this camera.
+**On Kinect the converter's labels leave HGGD below the checkpoint as on RealSense**:
+−7.25 / −3.45 / −1.15 AP without the collision filter and −5.84 / −2.28 / −0.39 with it.
+`1cm-30deg` gains +9.35 / +5.53 / −0.28 and +8.31 / +4.88 / −0.55 over them: on seen
+scenes about as much as on RealSense (+9.82), on novel nothing, where RealSense gained
++3.83.
+
+**The denser labels end above the checkpoint on seen and similar scenes, and below it on
+novel**: +2.10 / +2.08 / −1.43 AP without the filter and +2.47 / +2.60 / −0.94 with it.
+Against the repository's Kinect numbers, 61.17 / 47.02 / 19.37, that is
++1.60 / +2.43 / −1.09 AP with the filter: outside the zoo's gate on every split. On this
+camera neither label set lands on the checkpoint.
 
 Records: [`records/`](records/), and HGGD's
 [records](../../configs/hggd/records/) for the authors' checkpoint and the model zoo's row.

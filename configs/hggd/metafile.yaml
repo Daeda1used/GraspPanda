@@ -1,8 +1,8 @@
 # HGGD: machine-readable source of the model-zoo rows of this method.
 #
 # Reported numbers, the authors' two checkpoints scored by this toolbox on whole test
-# splits (`author-ckpt`) and the RealSense model trained here from scratch (`reproduced`),
-# each measured row with its result record.
+# splits (`author-ckpt`) and the two models trained here from scratch (`reproduced`), each
+# measured row with its result record.
 method: HGGD
 title: "Efficient Heatmap-Guided 6-DoF Grasp Detection in Cluttered Scenes"
 venue: RA-L 2023
@@ -138,6 +138,18 @@ models:
     protocol: graspnet1b-sv-v1
     camera: kinect
     weights:
+      # Trained here from scratch: `grasppanda train hggd/hggd_r34w8_g1b-kinect_15e` at
+      # commit a0a92f3, the recipe of that config unchanged (as for RealSense above; one
+      # RTX 3090 shared with other jobs, 9.9 hours), on the 25,600 Kinect frames of the
+      # training scenes with the per-view labels of that config (suppressed at 2 cm and 60
+      # degrees, as the released converter writes them); the file is the checkpoint of
+      # epoch 15 (41,479,165 bytes). One training run with one seed.
+      url: null
+      sha256: 360c894506e5faa436beb2c530bea3b91e04aec05af49b0c4dfe58aabf964154
+      license: null
+      source: grasppanda
+      note: "Not published yet: trained on GraspNet-1Billion (CC BY-NC-SA 4.0); whether and where these weights are published has not been decided."
+    author_weights:
       # The file HGGD_kinect_checkpoint of the same folder, converted with `convert` (the
       # command of README.md).
       # The digest is that of the file that was converted for the records below and of a
@@ -172,3 +184,20 @@ models:
         record: records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json
         inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
         AP: {seen: 60.30, similar: 46.85, novel: 19.22}
+      # The model trained here (`weights` above): the whole test split (90 scenes, 23,040
+      # frames) through `grasppanda test` at commit a0a92f3, scored by GraspNet1BEvaluator.
+      # It is below the authors' checkpoint as on RealSense: −7.25 / −3.45 / −1.15 AP (off)
+      # and −5.84 / −2.28 / −0.39 (on); README.md, "Results", says why.
+      - provenance: reproduced
+        collision_filter: false
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-kinect_15e_reproduced_test_raw.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 49.73, similar: 40.52, novel: 17.41}
+      # Post-processing of 'cd': ModelFreeCollisionFilter, then GraspNMS.
+      - provenance: reproduced
+        collision_filter: true
+        evaluator: GraspNet1BEvaluator
+        record: records/hggd_r34w8_g1b-kinect_15e_reproduced_test_cd.json
+        inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
+        AP: {seen: 54.46, similar: 44.57, novel: 18.83}

@@ -1022,8 +1022,10 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     )
 
 
-#: Row of the Kinect table → stem of its two records; the converter's row is training.
+#: Row of the Kinect table → stem of its two records. The first row is HGGD's Kinect config
+#: trained here for the model zoo, on the labels the released converter writes.
 KINECT_RECORDS = {
+    "converter": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_reproduced_test",
     "1cm-30deg": "projects/hggd_labels/records/kinect_1cm-30deg_test",
     "checkpoint": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test",
 }
@@ -1050,22 +1052,27 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
 
     readme = (LABELS / "README.md").read_text(encoding="utf-8")
     rows = table_under(readme, "## On Kinect")
-    assert [row[0] for row in rows] == ["the converter's", "`1cm-30deg`", "the authors' checkpoint"]
-    assert rows[0][1:] == ["training", ""]
+    assert [row[0] for row in rows] == [
+        "the converter's: HGGD in the model zoo",
+        "`1cm-30deg`",
+        "the authors' checkpoint",
+    ]
     cells = {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
     overrides = cells["1cm-30deg"].overrides[:2]
-    trained = Config.load(
-        resolve_config_path("hggd/hggd_r34w8_g1b-kinect_15e"), overrides=overrides
-    ).digest()
-    for row, name in zip(rows[1:], KINECT_RECORDS):
+    kinect = resolve_config_path("hggd/hggd_r34w8_g1b-kinect_15e")
+    trained = {
+        "converter": Config.load(kinect).digest(),
+        "1cm-30deg": Config.load(kinect, overrides=overrides).digest(),
+    }
+    for row, name in zip(rows, KINECT_RECORDS, strict=True):
         for cell, variant in zip(row[1:3], ("raw", "cd")):
             path = REPO / f"{KINECT_RECORDS[name]}_{variant}.json"
             record = json.loads(path.read_text(encoding="utf-8"))
             assert record["cameras"] == ["kinect"] and not record["partial"], name
             assert record["scored"] == record["requested"] == 23040 and record["seed"] == 0
-            if name == "1cm-30deg":
-                assert record["weights"]["config_hash"] == trained
-                assert record["weights"]["epoch"] == 15
+            if name in trained:
+                assert record["weights"]["config_hash"] == trained[name], name
+                assert record["weights"]["epoch"] == 15, name
             numbers = record_result.headline(record)["AP"]
             assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
 
@@ -1084,14 +1091,33 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
         mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg")[3:], repository)
     ]
     assert min(map(abs, from_repository)) > gate(), "outside the gate on every split"
+    sparse = [
+        mine - theirs for mine, theirs in zip(kinect_ap("converter"), kinect_ap("checkpoint"))
+    ]
+    gained = [mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg"), kinect_ap("converter"))]
+    assert all(value < 0 for value in sparse) and gained[0] > 8 > abs(gained[2])
+    on_realsense = label_gap("1cm-30deg", "converter")
     for sentence in (
-        f"{slashed(dense[:3])} AP without the collision filter and {slashed(dense[3:])} with it",
+        f"{slashed(sparse[:3])} AP without the collision filter and {slashed(sparse[3:])} with it",
+        f"`1cm-30deg` gains {slashed(gained[:3])} and {slashed(gained[3:])} over them",
+        f"as on RealSense ({signed(on_realsense[0])})",
+        f"where RealSense gained {signed(on_realsense[2])}",
+        f"{slashed(dense[:3])} AP without the filter and {slashed(dense[3:])} with it",
         "Kinect numbers, " + " / ".join(f"{value:.2f}" for value in repository),
         f"that is {slashed(from_repository)} AP with the filter",
     ):
         assert sentence in flat, sentence
     for override in overrides:  # the commands name the cell whose two overrides they take
         assert override in readme
+    # HGGD's README and the model zoo state the Kinect training from the same records
+    hggd = " ".join((REPO / "configs/hggd/README.md").read_text(encoding="utf-8").split())
+    zoo = " ".join((REPO / "docs/model_zoo.md").read_text(encoding="utf-8").split())
+    assert (
+        f"it ends {slashed(sparse[:3])} AP from its checkpoint without the filter and "
+        f"{slashed(sparse[3:])} with it" in hggd
+    )
+    assert f"gain {slashed(gained[:3])} AP over the converter's labels" in hggd
+    assert f"converter's labels is {slashed(sparse[:3])} and {slashed(sparse[3:])} from" in zoo
 
 
 def test_the_pages_state_what_trainings_from_one_seed_differ_by():

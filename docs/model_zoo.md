@@ -16,8 +16,8 @@ percent; *Filter* says whether each method's own collision filter was off or on.
   GraspNet-baseline is within the [admission gate](#admission-gate) on every split.
   Scale-Balanced-Grasp and EconomicGrasp land on their authors' checkpoints, and with them
   outside the gate; GSNet is above its paper by more than 1 AP on every split, FineGrasp
-  below it. HGGD is 8 to 10 AP below its authors' checkpoint on seen: the labels its
-  released converter writes are not the ones that checkpoint fits, and on
+  below it. HGGD is 6 to 10 AP below its authors' checkpoints on seen: the labels its
+  released converter writes are not the ones those checkpoints fit, and on
   [denser labels](https://github.com/Daeda1used/GraspPanda/tree/main/projects/hggd_labels)
   it lands on the checkpoint. Their weights are not published yet, so the zoo cannot
   download them.
@@ -54,8 +54,8 @@ AP0.8 and AP0.4 of every split are in the record of a row:
 | HGGD | RealSense | on | — | 63.72 / 52.91 / 24.16 | 55.30 / 48.60 / 21.70 |
 | HGGD | RealSense | not stated | 59.36 / 51.20 / 22.17 | — | — |
 | HGGD | RealSense | not stated | 64.45 / 53.59 / 24.59 | — | — |
-| HGGD | Kinect | off | — | 56.98 / 43.97 / 18.56 | — |
-| HGGD | Kinect | on | — | 60.30 / 46.85 / 19.22 | — |
+| HGGD | Kinect | off | — | 56.98 / 43.97 / 18.56 | 49.73 / 40.52 / 17.41 |
+| HGGD | Kinect | on | — | 60.30 / 46.85 / 19.22 | 54.46 / 44.57 / 18.83 |
 | HGGD | Kinect | not stated | 60.26 / 48.59 / 18.43 | — | — |
 | HGGD | Kinect | not stated | 61.17 / 47.02 / 19.37 | — | — |
 
@@ -130,6 +130,8 @@ AP0.8 and AP0.4 of every split are in the record of a row:
       1 cm and 30° instead of 2 cm and 60°, HGGD ends −0.53 / +0.58 / +0.63 AP from the
       checkpoint without the filter and −0.11 / +1.40 / +0.79 with it
       (`projects/hggd_labels`; its line here stays the training on the converter's labels).
+      On Kinect the training on the converter's labels is −7.25 / −3.45 / −1.15 and
+      −5.84 / −2.28 / −0.39 from the checkpoint.
     - **EconomicGrasp lands on its authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it
       without the filter, +0.22 / −0.02 / +1.01 with it. That checkpoint is itself 1.07 AP
       above the reported number on seen, so what separates the training here from the
