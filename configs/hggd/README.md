@@ -39,14 +39,14 @@ ground truth.
 | | | `reported` (README row "In repo") | not stated | 64.45 | 53.59 | 24.59 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json)) | off | 58.36 | 47.95 | 22.08 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json)) | on, then NMS | 63.72 | 52.91 | 24.16 |
-| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json)) | off | 48.01 | 41.42 | 18.88 |
-| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json)) | on, then NMS | 55.30 | 48.60 | 21.70 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json)) | off | 57.83 | 48.53 | 22.71 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json)) | on, then NMS | 63.61 | 54.31 | 24.95 |
 | [hggd_r34w8_g1b-kinect_15e](hggd_r34w8_g1b-kinect_15e.yaml) | Kinect | `reported` (paper; README row "In paper") | not stated | 60.26 | 48.59 | 18.43 |
 | | | `reported` (README row "In repo") | not stated | 61.17 | 47.02 | 19.37 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_raw.json)) | off | 56.98 | 43.97 | 18.56 |
 | | | `author-ckpt` ([record](records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test_cd.json)) | on, then NMS | 60.30 | 46.85 | 19.22 |
-| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_raw.json)) | off | 49.73 | 40.52 | 17.41 |
-| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_cd.json)) | on, then NMS | 54.46 | 44.57 | 18.83 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_raw.json)) | off | 59.08 | 46.05 | 17.13 |
+| | | `reproduced` ([record](records/hggd_r34w8_g1b-kinect_15e_reproduced_test_cd.json)) | on, then NMS | 62.77 | 49.45 | 18.28 |
 
 `author-ckpt` is the authors' checkpoint of each camera, converted and scored with
 seed 0. `off` is every decoded grasp (variant `raw`);
@@ -54,34 +54,33 @@ seed 0. `off` is every decoded grasp (variant `raw`);
 states the collision filter; the closest pair is `cd` with "In repo", within 0.87 AP on
 every split and below it on all six.
 
-`reproduced`, trained from scratch with the config's recipe, is **6 to 10 AP below
-the authors' checkpoints on seen**; on RealSense −10.35 / −6.53 / −3.20 AP
-without the filter, −8.42 / −4.31 / −2.46 with it. The cause: the released converter
-writes sparser labels than the checkpoint fits. **On labels three times as dense it lands
-on the checkpoint**: −0.53 / +0.58 / +0.63 AP without the filter,
-−0.11 / +1.40 / +0.79 with it ([`projects/hggd_labels`](../../projects/hggd_labels/)).
+`reproduced`, trained from scratch with the config as shipped, **lands on the authors'
+checkpoint on RealSense**: −0.53 / +0.58 / +0.63 AP without the filter,
+−0.11 / +1.40 / +0.79 with it. On Kinect it ends above it on seen and similar, below on
+novel. Both train on labels suppressed at 1 cm and 30°; on the released converter's 2 cm
+and 60° HGGD ends 7 to 10 AP lower on seen
+([`projects/hggd_labels`](../../projects/hggd_labels/)).
 
-<details markdown="1"><summary>Why the models trained here are below the checkpoints: the labels</summary>
+<details markdown="1"><summary>Why the config sets denser labels than the released converter</summary>
 
-**The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `400b733`,
-nothing overridden: 15 epochs, batches of 4 with two per optimizer step, seed 0, float32,
-23.6 hours on one RTX 3090 shared with other jobs. The checkpoint of epoch 15 (SHA-256
-`0d774db966c3…`) was scored at the same commit. The Kinect config was trained the same
-way at commit `a0a92f3` in 9.9 hours (SHA-256 `360c894506e5…`); it ends
-−7.25 / −3.45 / −1.15 AP from its checkpoint without the filter and −5.84 / −2.28 / −0.39
-with it. One run, one seed each.
+**The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `400b733`
+with the two label options the config now sets, the same config hash: 15 epochs, batches
+of 4 with two per optimizer step, seed 0, float32, about 19 hours in two parts on one
+RTX 3090 shared with other jobs. Kinect: the same at commit `a0a92f3`, 11.6 hours. The
+checkpoints of epoch 15 (SHA-256 `71b91709aaed…` and `62e8841991d5…`) were scored at those
+commits. One run, one seed each.
 
-**What was ruled out.** The training step: on a recorded batch its loss terms and
-gradients equal the reference's (*Equivalence with the reference code*, below). The label
-converter: the labels are those the released `convert_grasp.py` writes, grasp by grasp
-(`tests/integration/test_hggd_labels.py`).
-
-**What was found.** The converter thins the grasps of a frame by a suppression at 2 cm and
-60°, and a cell of the heat-map is a positive of an angle class only from two labels on:
-these labels leave 7 positives a frame. The authors' checkpoint does not fit
-them. Its training loss on them is 4.15, where the model trained on them
-reaches 2.15 and scores 10 AP less. On denser labels the checkpoint's loss
-falls and the other model's does not:
+**What was found.** Trained first on the labels of the released converter, HGGD ended
+−10.35 / −6.53 / −3.20 AP from the checkpoint on RealSense without the filter, and
+−7.25 / −3.45 / −1.15 on Kinect. The training step is not why: on a recorded batch its loss
+terms and gradients equal the reference's (*Equivalence with the reference code*, below).
+The labels were those the released `convert_grasp.py` writes, grasp by grasp
+(`tests/integration/test_hggd_labels.py`). The converter thins the grasps of a frame by a
+suppression at 2 cm and 60°, and a cell of the heat-map is a positive of an angle class
+only from two labels on: these labels leave 7 positives a frame. The authors' checkpoint
+does not fit them. Its training loss on them is 4.15, where the model trained on them
+reaches 2.15 and scores 10 AP less. On denser labels the checkpoint's loss falls and the
+other model's does not:
 
 | Suppression of the labels | Labels a frame | Positives a frame | Loss, authors' checkpoint | Loss, trained here |
 |---|---|---|---|---|
@@ -95,19 +94,14 @@ tried. So the checkpoint was trained on denser labels than the released converte
 Which ones is not published; the reference loader's cap on the labels of an image,
 `--grasp-count`, defaults to 5000, where the released converter leaves about 130.
 
-**What confirmed it.** HGGD trained again with nothing changed but the suppression of its
-labels, 1 cm and 30°: 57.83 / 48.53 / 22.71 AP without the collision filter and
-63.61 / 54.31 / 24.95 with it, +9.82 and +8.31 AP on seen scenes over the row above. That
-is within 0.63 AP of the checkpoint without the filter, and with it within 0.84 AP of the
-repository's numbers on every split: inside the zoo's gate. Without any suppression it
-ends +4.04 AP from the checkpoint on seen scenes and −0.53 on novel, without the filter.
-One run per density, one seed; [`projects/hggd_labels`](../../projects/hggd_labels/) holds
-the sweep file, the commands and the records. The config ships the converter's labels, as
-released, and the rows above are trained on them; the two overrides of `1cm-30deg` in that
-project switch to the 1 cm, 30° ones. On
-Kinect the same two overrides gain +9.35 / +5.53 / −0.28 AP over the converter's labels
-without the filter and end above the checkpoint on seen and similar scenes, below it on
-novel.
+**What confirmed it.** With nothing changed but the suppression, 1 cm and 30° gains
++9.82 and +8.31 AP on seen scenes on RealSense, without the filter and with it, and
++9.35 and +8.31 on Kinect; on RealSense it lands on the checkpoint. Without any suppression
+HGGD ends +4.04 AP from the checkpoint on seen scenes and −0.53 on novel, without the
+filter. So the config sets 1 cm and 30°. To train on the converter's labels as released:
+`--opts data.train.dataset.view_grasps.nms_distance=0.02 data.train.dataset.view_grasps.nms_angle=60.0`.
+[`projects/hggd_labels`](../../projects/hggd_labels/) holds every training, its sweep file
+and the records.
 
 </details>
 
@@ -164,11 +158,11 @@ of the RealSense D435), protocol `graspclutter6d-sv-v1`, config
 |---|---|---|---|---|
 | off | 14.24 | 17.40 | 9.24 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_raw.json)) |
 | on, then NMS | 14.56 | 17.75 | 9.38 | author-ckpt ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test_cd.json)) |
-| off | 12.95 | 16.00 | 8.16 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_raw.json)) |
-| on, then NMS | 14.49 | 17.88 | 8.95 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_cd.json)) |
+| off | 14.19 | 17.57 | 9.56 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_raw.json)) |
+| on, then NMS | 14.18 | 17.56 | 9.37 | reproduced ([record](records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test_cd.json)) |
 
-HGGD has no published number on this dataset. The model trained here is 1.29 AP below
-the checkpoint without the filter and 0.07 with it.
+HGGD has no published number on this dataset. The model trained here is 0.05 AP below
+the checkpoint without the filter and 0.38 with it.
 
 <details markdown="1"><summary>The input on this dataset</summary>
 

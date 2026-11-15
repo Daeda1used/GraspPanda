@@ -226,39 +226,24 @@ def test_the_whole_split_table_of_the_transfer_guide_is_that_of_the_metafiles():
     )
 
 
-#: How the zoo tables of the READMEs write the collision filter.
-FILTER_WORDS = {"off": False, "on": True, "关": False, "开": True}
-
-
-def reproduced_by_target() -> dict[tuple[str, bool], str]:
-    """``(method, collision filter)`` -> numbers of every GraspNet-1Billion reproduced row
-    that has a target: a reported row of its model with the same collision filter."""
-    return {
-        (meta.method, result.collision_filter): numbers_text(result)
-        for meta, model, result in MEASURED
-        if result.provenance == "reproduced"
-        and model.protocol == "graspnet1b-sv-v1"
-        and any(
-            r.provenance == "reported" and r.collision_filter is result.collision_filter
-            for r in model.results
-        )
-    }
-
-
 @pytest.mark.parametrize(
     ("page", "heading"),
-    [("README.md", "## Model zoo"), ("README_zh-CN.md", "## 模型库")],
+    [("README.md", "## Results"), ("README_zh-CN.md", "## 结果")],
 )
-def test_the_reproduced_column_of_the_targets_shows_exactly_the_reproduced_rows(page, heading):
-    """A target line shows the reproduced numbers of its method and filter, and only those."""
-    expected = reproduced_by_target()
-    shown = {}
+def test_the_reproduced_column_of_the_readme_shows_reproduced_rows(page, heading):
+    """The last column of a README's results is a reproduced row of its method, with the
+    filter the row names (``test_repository.py`` holds which one)."""
+    rows = {}
+    for meta, model, result in MEASURED:
+        if (
+            result.provenance == "reproduced"
+            and model.protocol == "graspnet1b-sv-v1"
+            and model.camera == "realsense"
+        ):
+            rows.setdefault(meta.method, []).append(numbers_text(result))
     for cells in table_under((REPO / page).read_text(encoding="utf-8"), heading):
-        method = cells[0].split(" (")[0]
-        state = FILTER_WORDS.get(cells[-3])  # the column before "Reported"
-        if cells[-1] != "—":
-            shown[(method, state)] = cells[-1]
-    assert shown == expected, f"{page}: the last column of the targets"
+        method = re.sub(r"^\[([^\]]+)\].*$", r"\1", cells[0])
+        assert cells[-1] in rows[method], (page, method, cells[-1])
 
 
 def test_the_zoo_page_says_how_each_reproduction_stands_against_the_admission_rule():

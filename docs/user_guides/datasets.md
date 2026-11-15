@@ -252,7 +252,7 @@ Testing a GraspNet-1Billion model on it is the subject of
     | Graspness, one camera | `... --graspness --camera realsense-d435` | 2.2 MB, 3 min with 3 workers | about 0.3 GB, 5 h with 4 workers |
     | Compact labels | `... --compact-labels --config economicgrasp/economicgrasp_sunet14_gc6d-d435_10e` | 24 MB, 11 s | about 3 GB, 25 min |
     | Tolerance | `... --tolerance --config _base_/datasets/graspclutter6d_d435_tolerance.yaml` | 332 MB, 1 min with 4 workers | about 4 GB, 10 min |
-    | Per-view grasps, one camera | `... --view-grasps --camera realsense-d435 --config _base_/datasets/graspclutter6d_d435_hggd.yaml` | 96 kB, 1 min with 3 workers | about 15 MB, 1.5 h with 4 workers |
+    | Per-view grasps, one camera | `... --view-grasps --camera realsense-d435 --config _base_/datasets/graspclutter6d_d435_hggd.yaml` | 195 kB, under 1 min with 3 workers | about 30 MB, 1.5 h with 4 workers |
 
     The whole-split figures are extrapolations from the three scenes, not measurements. The
     label store is the large one; only training reads it. The evaluator keeps a cache of its
@@ -264,8 +264,9 @@ Testing a GraspNet-1Billion model on it is the subject of
     - Only 9.6 % of the annotated grasp points keep a collision-free grasp of friction
       ≤ 0.4 (10,401 of 108,094); on GraspNet-1Billion 39 % do. The scenes are far more
       cluttered, so compact labels supervise far fewer seeds per frame.
-    - The per-view labels of HGGD come to 17 to 67 per frame (GraspNet-1Billion scene 0:
-      59), from 471 to 1,964 candidate grasps per scene.
+    - The per-view labels of HGGD, suppressed at 1 cm and 30° as its recipe sets, come to
+      45 to 166 per frame (GraspNet-1Billion scene 0: 187), from 471 to 1,964 candidate
+      grasps per scene.
 
 ??? note "Dataset configs for GraspClutter6D"
 

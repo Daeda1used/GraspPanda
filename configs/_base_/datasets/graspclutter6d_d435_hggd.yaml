@@ -8,9 +8,10 @@
 # GraspNet-1Billion images are twice it); the detector accepts any integer factor. The
 # Azure Kinect images (3840 x 2160) fit as well, the Zivid images (1920 x 1200) do not.
 #
-# Two `view_grasps` values differ from the GraspNet-1Billion recipe because the dataset
-# does: object poses come from scene_gt.json (the only source), and labels are projected
-# with the calibration of each frame, which varies from view to view here (the
+# The labels are suppressed at 1 cm and 30 degrees, as in the GraspNet-1Billion recipe
+# (projects/hggd_labels says why). Two `view_grasps` values differ from that recipe because
+# the dataset does: object poses come from scene_gt.json (the only source), and labels are
+# projected with the calibration of each frame, which varies from view to view here (the
 # reference's per-camera constants exist for GraspNet-1Billion only). Build the asset with
 #     grasppanda prepare graspclutter6d --labels
 #     grasppanda prepare graspclutter6d --view-grasps --camera realsense-d435 \
@@ -26,6 +27,8 @@ data:
       images: [rgb, depth]
       view_grasps:               # every other value is the reference converter's; see
         friction_threshold: 0.2  # grasppanda/datasets/view_grasps.py for the full list
+        nms_distance: 0.01       # metres; the released converter: 0.02
+        nms_angle: 30.0          # degrees; the released converter: 60.0
         poses: scene_gt
         intrinsics: frame
       preprocess:

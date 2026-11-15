@@ -2,7 +2,7 @@
 <defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1.5 1.6 L9.6 5 L1.5 8.4 z" fill="#9198a1"/></marker></defs>
 <rect x="1" y="1" width="678" height="566" rx="14" fill="#0d1117" stroke="#3d444d" stroke-width="1.5"/>
 <text x="24" y="40" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e6edf3" font-weight="700" letter-spacing="-0.5">Two detector families, one toolbox</text>
-<text x="24" y="63" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">A box with a green key is a slot: swap it with one line, <tspan font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="12">--set &lt;slot&gt;=&lt;option&gt;</tspan></text>
+<text x="24" y="63" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#9198a1">Every box with a key is a slot: swap it with one line, <tspan font-family="'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace" font-size="12">--set &lt;slot&gt;=&lt;option&gt;</tspan></text>
 <rect x="36" y="78" width="150.1" height="26" rx="13" fill="#0d1117" stroke="#3d444d" stroke-width="1.4"/>
 <text x="111.05" y="95.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#e6edf3" text-anchor="middle" font-weight="600">GraspNet-1Billion</text>
 <rect x="196.1" y="78" width="128.2" height="26" rx="13" fill="#0d1117" stroke="#3d444d" stroke-width="1.4"/>
@@ -47,7 +47,7 @@
 <rect x="26" y="536" width="18" height="12" rx="3.5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1.6"/>
 <text x="52" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a slot</text>
 <rect x="107.4" y="536" width="18" height="12" rx="3.5" fill="#12261e" stroke="#3fb950" stroke-width="1.6"/>
-<text x="133.4" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">shared by all 6 methods</text>
+<text x="133.4" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a slot of all 6 methods</text>
 <rect x="289.1" y="536" width="18" height="12" rx="3.5" fill="#151b23" stroke="#656c76" stroke-width="1.4" stroke-dasharray="4 3"/>
 <text x="315.1" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a fixed part of the method</text>
 </svg>

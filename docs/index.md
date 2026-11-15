@@ -28,7 +28,7 @@ hide: [navigation, toc]
 
 -   :material-camera-outline: **Your camera**
 
-    A depth image and its intrinsics; HGGD also reads the colour image.
+    Run on your own depth camera: a depth image and its intrinsics; HGGD also reads colour.
 
     [Your camera and Python →](user_guides/inference.md)
 

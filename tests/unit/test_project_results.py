@@ -843,21 +843,24 @@ def test_the_evidence_page_shows_the_ablation_of_the_project():
 
 LABELS = REPO / "projects/hggd_labels"
 HGGD = "configs/hggd/records/hggd_r34w8_g1b-realsense_15e"
-#: Row of the project's results → stem of its two records. The first row is HGGD trained
-#: here for the model zoo, on the labels the released converter writes; the last is the
-#: authors' checkpoint. A run of ``labels.yaml`` that is not listed has not been scored.
+#: Row of the project's results → stem of its two records, in the order of the table: the
+#: runs of ``labels.yaml`` by name, ``zoo`` the model zoo's HGGD row (the config as shipped,
+#: 1 cm and 30 degrees), ``checkpoint`` the authors'. A run of the sweep that is not listed
+#: has not been scored.
 LABEL_RECORDS = {
-    "converter": f"{HGGD}_reproduced_test",
-    "1cm-30deg": "projects/hggd_labels/records/1cm-30deg_test",
+    "converter": "projects/hggd_labels/records/converter_test",
+    "zoo": f"{HGGD}_reproduced_test",
     "unsuppressed": "projects/hggd_labels/records/unsuppressed_test",
     "checkpoint": f"{HGGD}_author-ckpt_test",
 }
 #: Suppression of a row's labels, as ``configs/hggd/diagnostics/label_fit.json`` keys it.
 LABEL_SUPPRESSION = {
     "converter": (0.02, 60.0),
-    "1cm-30deg": (0.01, 30.0),
+    "zoo": (0.01, 30.0),
     "unsuppressed": (1e-6, 1e-3),
 }
+#: The first cell of the rows that are not runs of the sweep.
+LABEL_ROWS = {"zoo": "1 cm, 30°: HGGD in the model zoo", "checkpoint": "the authors' checkpoint"}
 
 
 def label_record(name: str, variant: str) -> dict:
@@ -879,28 +882,34 @@ def slashed(values: list[float]) -> str:
     return " / ".join(signed(value) for value in values)
 
 
+def label_cells() -> dict:
+    return {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
+
+
 def test_the_label_project_prints_what_its_records_hold():
-    """Every row of its results is the whole test split with seed 0. A run of the sweep is
-    scored with weights trained from exactly the config the sweep plans for it; a run
-    without records shows no AP. The labels a frame are those the label-fit record counts
-    for the suppression a run overrides."""
-    cells = {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
+    """Every row of its results is the whole test split with seed 0, scored with weights
+    trained from exactly the config of the row: a cell of the sweep, or the config as it
+    ships for the model zoo's row. The labels a frame are those the label-fit record counts
+    for the suppression of the row, and the config sets that of the model zoo's row."""
+    from grasppanda.config import Config, resolve_config_path
+
+    cells = label_cells()
+    assert set(cells) == {"converter", "unsuppressed"}
+    shipped = Config.load(resolve_config_path("hggd/hggd_r34w8_g1b-realsense_15e"))
+    trained = {name: cell.config for name, cell in cells.items()} | {"zoo": shipped}
     readme = (LABELS / "README.md").read_text(encoding="utf-8")
-    names = ["converter", *cells, "checkpoint"]
     rows = table_under(readme, "## Results")
-    assert len(rows) == len(names)
-    for name, row in zip(names, rows):
-        assert (row[0] == f"`{name}`") is (name in cells), row[0]
-        if name not in LABEL_RECORDS:
-            assert not any(character.isdigit() for cell in row[1:] for character in cell), name
-            continue
+    assert [row[0] for row in rows] == [
+        f"`{name}`" if name in cells else LABEL_ROWS[name] for name in LABEL_RECORDS
+    ]
+    for name, row in zip(LABEL_RECORDS, rows, strict=True):
         for cell, variant in zip(row[1:3], ("raw", "cd")):
             record = label_record(name, variant)
             assert record["variant"] == variant and not record["partial"], name
             assert record["scored"] == record["requested"] == 23040, name
             assert record["seed"] == 0 and record["gt_assisted"] == [], name
-            if name in cells:
-                assert record["weights"]["config_hash"] == cells[name].config.digest(), name
+            if name in trained:
+                assert record["weights"]["config_hash"] == trained[name].digest(), name
                 assert record["weights"]["epoch"] == 15, name
             numbers = record_result.headline(record)["AP"]
             assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
@@ -908,14 +917,14 @@ def test_the_label_project_prints_what_its_records_hold():
     fit = json.loads((REPO / "configs/hggd/diagnostics/label_fit.json").read_text(encoding="utf-8"))
     counted = {(row["nms_distance"], row["nms_angle"]): row["labels"] for row in fit["rows"]}
     described = table_under(readme, "| Name |")
-    assert [row[0].partition(":")[0].strip("`") for row in described] == ["none", *cells]
-    for name, row in zip(("converter", *cells), described):
+    names = [row[0].partition(":")[0].strip("`") for row in described]
+    assert names == ["converter", "none", "unsuppressed"]
+    for name, row in zip(("converter", "zoo", "unsuppressed"), described, strict=True):
         distance, angle = LABEL_SUPPRESSION[name]
         assert row[2] == f"{counted[distance, angle]:.0f}", name
-        if name in cells:
-            node = cells[name].config.select("data.train.dataset.view_grasps")
-            assert (node["nms_distance"], node["nms_angle"]) == (distance, angle), name
-    for override in cells["1cm-30deg"].overrides[:2]:  # the README prepares this run's labels
+        node = trained[name].select("data.train.dataset.view_grasps")
+        assert (node["nms_distance"], node["nms_angle"]) == (distance, angle), name
+    for override in cells["converter"].overrides[:2]:  # the README prepares this run's labels
         assert override in readme, override
 
 
@@ -925,9 +934,9 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     from .test_repository import gate, spread, trainings
 
     readme = " ".join((LABELS / "README.md").read_text(encoding="utf-8").split())
-    dense, sparse = label_gap("1cm-30deg", "checkpoint"), label_gap("converter", "checkpoint")
+    dense, sparse = label_gap("zoo", "checkpoint"), label_gap("converter", "checkpoint")
     assert max(map(abs, dense)) < 1.5 and min(map(abs, sparse)) > 2, "on it, and far below it"
-    gained = label_gap("1cm-30deg", "converter")
+    gained = label_gap("zoo", "converter")
     # the two reported rows of HGGD: neither states the collision filter
     reported = {
         result.source: list(result.ap.values())
@@ -940,7 +949,7 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     (repository,) = (ap for source, ap in reported.items() if "In repo" in source)
     (paper,) = (ap for source, ap in reported.items() if source.startswith("paper"))
     scored = {
-        variant: list(record_result.headline(label_record("1cm-30deg", variant))["AP"].values())
+        variant: list(record_result.headline(label_record("zoo", variant))["AP"].values())
         for variant in ("raw", "cd")
     }
     from_repository = [mine - theirs for mine, theirs in zip(scored["cd"], repository)]
@@ -948,6 +957,7 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     assert max(map(abs, from_repository)) <= gate() == 1.0, "inside the gate on every split"
     validation = json.loads((LABELS / "records/validation.json").read_text(encoding="utf-8"))
     runs = validation["runs"]
+    assert set(runs) == {"converter", "1cm-30deg", "unsuppressed"}
     assert all(len(values) == validation["epochs"] == 15 for values in runs.values())
     moved = [
         spread(trainings(method, model))
@@ -959,7 +969,7 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     # without suppression: above the checkpoint on seen scenes, below it on novel
     full = label_gap("unsuppressed", "checkpoint")
     assert full[0] > 2 and full[3] > 2 and full[2] < 0 and full[5] < 0
-    over = label_gap("unsuppressed", "1cm-30deg")
+    over = label_gap("unsuppressed", "zoo")
     full_from_repository = [
         mine - theirs
         for mine, theirs in zip(
@@ -986,9 +996,9 @@ def test_what_the_label_project_says_is_computed_from_its_records():
         f"{slashed(full[3:])} with it",
         f"that is {slashed(full_from_repository)} from the repository's numbers, outside the gate "
         "on seen scenes",
-        f"Against `1cm-30deg` it is {slashed(over[:3])} AP without the filter",
+        f"Against the model zoo's row it is {slashed(over[:3])} AP without the filter",
         f"beyond the {moved[1]:.2f} AP by which training again moved EconomicGrasp",
-        f"{author_loss[LABEL_SUPPRESSION['1cm-30deg']]:.2f} on `1cm-30deg`, "
+        f"{author_loss[LABEL_SUPPRESSION['zoo']]:.2f} on 1 cm and 30°, "
         f"{author_loss[LABEL_SUPPRESSION['unsuppressed']]:.2f} on the unsuppressed labels",
         f"unsuppressed labels at {runs['unsuppressed'][3]:.2f} and {runs['unsuppressed'][-1]:.2f}",
         f"leave it {slashed(sparse[:3])} and {slashed(sparse[3:])}",
@@ -1007,26 +1017,24 @@ def test_what_the_label_project_says_is_computed_from_its_records():
     zoo = " ".join((REPO / "docs/model_zoo.md").read_text(encoding="utf-8").split())
     for sentence in (
         f"{slashed(dense[:3])} AP without the filter, {slashed(dense[3:])} with it",
-        " / ".join(f"{value:.2f}" for value in scored["raw"]) + " AP without the collision filter",
-        " / ".join(f"{value:.2f}" for value in scored["cd"]) + " with it",
-        f"{signed(gained[0])} and {signed(gained[3])} AP on seen scenes over the row above",
-        f"within {max(map(abs, dense[:3])):.2f} AP of the checkpoint without the filter",
-        f"within {max(map(abs, from_repository)):.2f} AP of the repository's numbers",
-        f"ends {signed(full[0])} AP from the checkpoint on seen scenes and {signed(full[2])} on "
-        "novel, without the filter",
+        f"HGGD ended {slashed(sparse[:3])} AP from the checkpoint on RealSense without the filter",
+        f"1 cm and 30° gains {signed(gained[0])} and {signed(gained[3])} AP on seen scenes on "
+        "RealSense",
+        f"HGGD ends {signed(full[0])} AP from the checkpoint on seen scenes and {signed(full[2])} "
+        "on novel",
     ):
         assert sentence in hggd, sentence
     assert (
         f"HGGD ends {slashed(dense[:3])} AP from the checkpoint without the filter and "
         f"{slashed(dense[3:])} with it" in zoo
     )
+    assert f"trained on them ends 7 to {-sparse[0]:.0f} AP below it on seen" in zoo
 
 
-#: Row of the Kinect table → stem of its two records. The first row is HGGD's Kinect config
-#: trained here for the model zoo, on the labels the released converter writes.
+#: Row of the Kinect table → stem of its two records, as for RealSense.
 KINECT_RECORDS = {
-    "converter": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_reproduced_test",
-    "1cm-30deg": "projects/hggd_labels/records/kinect_1cm-30deg_test",
+    "converter": "projects/hggd_labels/records/kinect_converter_test",
+    "zoo": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_reproduced_test",
     "checkpoint": "configs/hggd/records/hggd_r34w8_g1b-kinect_15e_author-ckpt_test",
 }
 
@@ -1042,9 +1050,9 @@ def kinect_ap(name: str) -> list[float]:
 
 
 def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
-    """The Kinect run is the Kinect config with the two overrides of ``1cm-30deg``, scored on
-    the whole Kinect test split; its sentences are computed from its records and the
-    metafile's Kinect rows."""
+    """The Kinect runs are HGGD's Kinect config as it ships and with the two overrides of
+    ``converter``, scored on the whole Kinect test split; its sentences are computed from
+    its records and the metafile's Kinect rows."""
     from grasppanda.config import Config, resolve_config_path
     from grasppanda.hub import load_metafiles
 
@@ -1052,17 +1060,12 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
 
     readme = (LABELS / "README.md").read_text(encoding="utf-8")
     rows = table_under(readme, "## On Kinect")
-    assert [row[0] for row in rows] == [
-        "the converter's: HGGD in the model zoo",
-        "`1cm-30deg`",
-        "the authors' checkpoint",
-    ]
-    cells = {cell.choices["labels"]: cell for cell in load_sweep(LABELS / "labels.yaml").plan()}
-    overrides = cells["1cm-30deg"].overrides[:2]
+    assert [row[0] for row in rows] == ["`converter`", *LABEL_ROWS.values()]
+    overrides = label_cells()["converter"].overrides[:2]
     kinect = resolve_config_path("hggd/hggd_r34w8_g1b-kinect_15e")
     trained = {
-        "converter": Config.load(kinect).digest(),
-        "1cm-30deg": Config.load(kinect, overrides=overrides).digest(),
+        "converter": Config.load(kinect, overrides=overrides).digest(),
+        "zoo": Config.load(kinect).digest(),
     }
     for row, name in zip(rows, KINECT_RECORDS, strict=True):
         for cell, variant in zip(row[1:3], ("raw", "cd")):
@@ -1077,7 +1080,7 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
             assert cell == " / ".join(f"{value:.2f}" for value in numbers.values()), name
 
     flat = " ".join(readme.split())
-    dense = [mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg"), kinect_ap("checkpoint"))]
+    dense = [mine - theirs for mine, theirs in zip(kinect_ap("zoo"), kinect_ap("checkpoint"))]
     assert dense[0] > 0 and dense[1] > 0 > dense[2] and dense[3] > 0 and dense[4] > 0 > dense[5]
     (repository,) = (
         list(result.ap.values())
@@ -1087,19 +1090,17 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
         for result in model.results
         if result.provenance == "reported" and "In repo" in result.source
     )
-    from_repository = [
-        mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg")[3:], repository)
-    ]
+    from_repository = [mine - theirs for mine, theirs in zip(kinect_ap("zoo")[3:], repository)]
     assert min(map(abs, from_repository)) > gate(), "outside the gate on every split"
     sparse = [
         mine - theirs for mine, theirs in zip(kinect_ap("converter"), kinect_ap("checkpoint"))
     ]
-    gained = [mine - theirs for mine, theirs in zip(kinect_ap("1cm-30deg"), kinect_ap("converter"))]
+    gained = [mine - theirs for mine, theirs in zip(kinect_ap("zoo"), kinect_ap("converter"))]
     assert all(value < 0 for value in sparse) and gained[0] > 8 > abs(gained[2])
-    on_realsense = label_gap("1cm-30deg", "converter")
+    on_realsense = label_gap("zoo", "converter")
     for sentence in (
         f"{slashed(sparse[:3])} AP without the collision filter and {slashed(sparse[3:])} with it",
-        f"`1cm-30deg` gains {slashed(gained[:3])} and {slashed(gained[3:])} over them",
+        f"1 cm and 30° gain {slashed(gained[:3])} and {slashed(gained[3:])} over them",
         f"as on RealSense ({signed(on_realsense[0])})",
         f"where RealSense gained {signed(on_realsense[2])}",
         f"{slashed(dense[:3])} AP without the filter and {slashed(dense[3:])} with it",
@@ -1107,17 +1108,10 @@ def test_the_label_project_on_kinect_prints_and_says_what_its_records_hold():
         f"that is {slashed(from_repository)} AP with the filter",
     ):
         assert sentence in flat, sentence
-    for override in overrides:  # the commands name the cell whose two overrides they take
-        assert override in readme
-    # HGGD's README and the model zoo state the Kinect training from the same records
+    # HGGD's README and the model zoo state the Kinect trainings from the same records
     hggd = " ".join((REPO / "configs/hggd/README.md").read_text(encoding="utf-8").split())
-    zoo = " ".join((REPO / "docs/model_zoo.md").read_text(encoding="utf-8").split())
-    assert (
-        f"it ends {slashed(sparse[:3])} AP from its checkpoint without the filter and "
-        f"{slashed(sparse[3:])} with it" in hggd
-    )
-    assert f"gain {slashed(gained[:3])} AP over the converter's labels" in hggd
-    assert f"converter's labels is {slashed(sparse[:3])} and {slashed(sparse[3:])} from" in zoo
+    assert f"and {slashed(sparse[:3])} on Kinect" in hggd
+    assert f"and {signed(gained[0])} and {signed(gained[3])} on Kinect" in hggd
 
 
 def test_the_pages_state_what_trainings_from_one_seed_differ_by():
@@ -1143,3 +1137,47 @@ def test_the_pages_state_what_trainings_from_one_seed_differ_by():
         (REPO / "configs/economicgrasp/README.md").read_text(encoding="utf-8").split()
     )
     assert f"it moves by up to {spread(economic):.2f} AP" in readme
+
+
+#: Row of the GraspClutter6D table → stem of its two records, as on GraspNet-1Billion.
+GC6D_RECORDS = {
+    "converter": "projects/hggd_labels/records/gc6d_converter_test",
+    "zoo": "configs/hggd/records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_reproduced_test",
+    "checkpoint": "configs/hggd/records/hggd_r34w8_g1b-realsense-to-gc6d-d435_15e_author-ckpt_test",
+}
+
+
+def test_the_label_project_on_graspclutter6d_prints_and_says_what_its_records_hold():
+    """The RealSense weights of the converter's labels and of the model zoo's row, scored on
+    the whole GraspClutter6D test split; AP / AP0.8 / AP0.4 as the records hold them."""
+    readme = (LABELS / "README.md").read_text(encoding="utf-8")
+    rows = table_under(readme, "## On GraspClutter6D")
+    assert [row[0] for row in rows] == ["`converter`", *LABEL_ROWS.values()]
+    ap = {}
+    for row, name in zip(rows, GC6D_RECORDS, strict=True):
+        for cell, variant in zip(row[1:3], ("raw", "cd")):
+            path = REPO / f"{GC6D_RECORDS[name]}_{variant}.json"
+            record = json.loads(path.read_text(encoding="utf-8"))
+            assert record["dataset"] == "graspclutter6d" and not record["partial"], name
+            assert record["scored"] == record["requested"] == 3055 and record["seed"] == 0
+            numbers = [
+                next(iter(value.values())) for value in record_result.headline(record).values()
+            ]
+            assert cell == " / ".join(f"{value:.2f}" for value in numbers), name
+            ap[name, variant] = numbers[0]
+    # the converter's weights are those of the training the project names `converter`
+    trained = json.loads((REPO / f"{LABEL_RECORDS['converter']}_raw.json").read_text("utf-8"))
+    shown = json.loads((REPO / f"{GC6D_RECORDS['converter']}_raw.json").read_text("utf-8"))
+    assert shown["weights"]["sha256"] == trained["weights"]["sha256"]
+    gained = [ap["zoo", variant] - ap["converter", variant] for variant in ("raw", "cd")]
+    apart = max(
+        abs(ap[name, variant] - ap["checkpoint", variant])
+        for name in ("converter", "zoo")
+        for variant in ("raw", "cd")
+    )
+    flat = " ".join(readme.split())
+    assert (
+        f"gain {signed(gained[0])} AP over the converter's labels without the collision filter "
+        f"and {signed(gained[1])} with it" in flat
+    )
+    assert f"within {apart:.2f} AP of the checkpoint" in flat

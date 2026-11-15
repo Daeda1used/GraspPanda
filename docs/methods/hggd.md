@@ -144,8 +144,8 @@ GraspNet-1Billion, RealSense, the whole test split: AP on seen / similar / novel
 | reported (repository README) | not stated | 64.45 | 53.59 | 24.59 | — |
 | authors' weights | off | 58.36 | 47.95 | 22.08 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_raw.json) |
 | authors' weights | on | 63.72 | 52.91 | 24.16 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_author-ckpt_test_cd.json) |
-| trained here | off | 48.01 | 41.42 | 18.88 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json) |
-| trained here | on | 55.30 | 48.60 | 21.70 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json) |
+| trained here | off | 57.83 | 48.53 | 22.71 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_raw.json) |
+| trained here | on | 63.61 | 54.31 | 24.95 | [record](https://github.com/Daeda1used/GraspPanda/blob/main/configs/hggd/records/hggd_r34w8_g1b-realsense_15e_reproduced_test_cd.json) |
 
 </div>
 

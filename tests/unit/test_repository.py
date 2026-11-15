@@ -25,8 +25,8 @@ except ModuleNotFoundError:  # Python 3.10: the backport, which pip and pytest b
 from .conftest import REPO
 
 READMES = ("README.md", "README_zh-CN.md")
-#: The heading of the model zoo in each README (GitHub anchors ``#model-zoo``, ``#模型库``).
-ZOO = {"README.md": "## Model zoo", "README_zh-CN.md": "## 模型库"}
+#: The heading of the results in each README (GitHub anchors ``#results``, ``#结果``).
+ZOO = {"README.md": "## Results", "README_zh-CN.md": "## 结果"}
 #: The documentation site the READMEs link: on GitHub a page of ``docs/`` is MkDocs source
 #: (folds, tabs and chips do not render), so the READMEs link the built page.
 SITE = "https://daeda1used.github.io/GraspPanda/"
@@ -100,12 +100,19 @@ def test_brand_assets_referenced_by_the_readme_exist(name):
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_readme_has_one_hero_and_few_code_blocks(name):
-    """One picture above the fold (the explorer recording), at most three visible code blocks."""
+    """The lockup, one picture of grasps (``tools/make_hero.py``) and the recording of a swap;
+    at most three visible code blocks. A picture stands alone on its lines: inside a link on
+    the same line, GitHub drops its ``<source>`` for the dark theme."""
     page = re.sub(r"<details.*?</details>", "", text(name), flags=re.S)
     pictures = re.findall(r'<img src="(resources/[^"]+)"', page)
-    assert pictures == ["resources/banner-light.png", "resources/explorer-light.webp"]
+    assert pictures == [
+        "resources/banner-light.png",
+        "resources/hero.webp",
+        "resources/showcase-light.svg",
+    ]
     assert page.count("```") // 2 <= 3
-    assert "showcase" not in text(name) and "demo.webp" not in text(name)
+    assert not re.search(r"<a [^>]*><picture>", text(name)), "a picture inside a link"
+    assert "explorer-light.webp" not in text(name) and "demo.webp" not in text(name)
 
 
 def test_shipped_configs_are_valid():
@@ -255,7 +262,6 @@ def claims(chips) -> dict[str, dict[str, bool]]:
 
     every = len(chips.methods())
     seed = sum(info.family == "seed-based" for info in chips.methods())
-    families = len({info.family for info in chips.methods()})
     ptv3, ptv3_learns = reach("backbone", "ptv3"), level2("backbone", "ptv3")
     dino = reach("image_encoder", "dinov2-small-reg-depth-stem")
     dino_learns = level2("image_encoder", "dinov2-small-reg-depth-stem")
@@ -321,7 +327,6 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     return {
         "README.md": {
             f"{words[every].capitalize()} published methods": True,
-            f"{words[every].capitalize()} methods in {words[families]} families": True,
             f"PTv3 runs under {ptv3.fraction} seed-based methods": shared["ptv3 runs everywhere"],
             f"under {par}/{seed} it trains like shipped": shared["ptv3 level 2"],
             "(worse under FineGrasp)": shared["ptv3 worse"],
@@ -340,7 +345,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"trained here {words[len(economic_runs)]} times with the same seed": among,
             f"to {economic_apart} apart": True,
             "GSNet reports 65.70 AP": shared["gsnet off"],
-            "without the filter and 67.12 with it": shared["gsnet on"],
+            "collision filter and 67.12 with it": shared["gsnet on"],
             "lists 59.36 AP": shared["hggd sets"],
             "and 64.45 as its repository result": shared["hggd sets"],
             f"{words[len(reruns)]} later papers that re-ran it": shared["hggd re-runs"],
@@ -349,13 +354,12 @@ def claims(chips) -> dict[str, dict[str, bool]]:
         },
         "README_zh-CN.md": {
             f"{chinese[every]}个已发表的方法": True,
-            f"{chinese[families]}个家族共{chinese[every]}个方法": True,
             f"PTv3 在全部 {seed} 个基于种子点的方法下都能跑": shared["ptv3 runs everywhere"],
             f"其中 {par} 个方法下训练得和原装组件不相上下": shared["ptv3 level 2"],
             "（FineGrasp 下较差）": shared["ptv3 worse"],
             "DINOv2 编码器在 HGGD 下能跑": shared["dino runs"],
             "训练得和 HGGD 的原装组件不相上下": shared["dino level 2"],
-            f"PTv3 低 {lower.replace(' to ', ' 到 ')}": gaps[0] > 1.12,
+            f"PTv3 比方法原装的编码器低 {lower.replace(' to ', ' 到 ')}": gaps[0] > 1.12,
             f"全部 {every} 个方法": True,
             f"基于种子点 · {seed} 个方法": True,
             f"相差不超过 {ap}": True,
@@ -387,7 +391,7 @@ def visible_prose(name: str, chips) -> str:
     page = re.sub(r"<!--.*?-->|<[^>]+>|`[^`]*`|\]\([^)]*\)", " ", page, flags=re.S)
     for info in chips.methods():
         page = page.replace(info.venue, " ")
-    page = re.sub(r"\b\d{4}-\d{2}\b|Apache License 2\.0", " ", page)
+    page = re.sub(r"\b\d{4}-\d{2}\b|Apache License 2\.0|CC BY-NC-SA 4\.0", " ", page)
     return flat(page)
 
 
@@ -423,22 +427,14 @@ def test_the_readmes_print_no_number_that_is_not_computed(name, chips):
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_methods_of_the_readme_are_those_of_the_metafiles_in_page_order(name, chips):
-    family = {
-        "README.md": {"seed-based": "seed-based skeleton", "own": "own family"},
-        "README_zh-CN.md": {"seed-based": "基于种子点的骨架", "own": "自成一族"},
-    }[name]
+    """The results table has one row per method, in page order: its page, venue and input."""
     reads = {"README.md": {"depth": "depth"}, "README_zh-CN.md": {"depth": "深度"}}[name]
     expected = [
-        [
-            f"[{info.name}]({site_page(info.page)})",
-            info.venue,
-            family[info.family],
-            reads.get(info.inputs, info.inputs),
-        ]
+        [f"[{info.name}]({site_page(info.page)})", info.venue, reads.get(info.inputs, info.inputs)]
         for info in chips.methods()
     ]
-    heading = {"README.md": "## What's inside", "README_zh-CN.md": "## 内容一览"}[name]
-    assert table(text(name), heading) == expected, f"{name}: the methods table"
+    shown = [cells[:3] for cells in table(text(name), ZOO[name])]
+    assert shown == expected, f"{name}: the methods of the results table"
 
 
 #: The words of the scope table of each README → the slots they name.
@@ -482,7 +478,7 @@ def test_the_scope_of_every_slot_in_the_readme_is_computed(name, chips):
             "hggd": "仅 HGGD",
         },
     }[name]
-    start = {"README.md": "**Slots**", "README_zh-CN.md": "**槽位**"}[name]
+    start = {"README.md": "| Slots | Applies to |", "README_zh-CN.md": "| 槽位 | 适用于 |"}[name]
     named = []
     for slots_text, scope_text in table(text(name), start):
         for word in re.split(r", |、", slots_text):
@@ -525,46 +521,56 @@ def test_the_loss_key_of_the_readmes_is_one_compose_accepts(chips):
                 compose(info.config, ["loss=focal"])
 
 
-#: How the targets table of each README writes the collision filter.
+#: How the results table of each README writes the collision filter.
 FILTER = {"on": True, "off": False, "not stated": None, "开": True, "关": False, "未说明": None}
 
 
+def shown_row(results: list) -> tuple:
+    """The reported row a README shows for a method: the one without the collision filter
+    if the method reports one, else the one with it, else the last that states neither (a
+    repository's number after a paper's); and the training here it is set against: with
+    the same filter, or with the filter on when the reported row states none (what the
+    method's released test script dumps)."""
+    reported = [result for result in results if result.provenance == "reported"]
+    for state in (False, True):
+        chosen = [result for result in reported if result.collision_filter is state]
+        if chosen:
+            break
+    else:
+        chosen = [result for result in reported if result.collision_filter is None]
+    target = chosen[-1]
+    state = True if target.collision_filter is None else target.collision_filter
+    (trained,) = [
+        result
+        for result in results
+        if result.provenance == "reproduced" and result.collision_filter is state
+    ]
+    return target, trained
+
+
 @pytest.mark.parametrize("name", READMES)
-def test_the_targets_of_the_readme_are_the_reported_rows_of_the_metafiles(name, chips):
-    """Every reported RealSense row on GraspNet-1Billion, once, in page order, with the
-    collision filter its metafile states (the venues are in the table of methods above)."""
+def test_the_results_of_the_readme_are_rows_of_the_metafiles(name, chips):
+    """Each method's row: a reported RealSense number on GraspNet-1Billion (:func:`shown_row`)
+    with the collision filter its metafile states, and the training here with that filter."""
     from grasppanda.hub import load_metafiles
 
     from .test_zoo_pages import numbers_text
 
-    order = [info.name for info in chips.methods()]
-    expected = set()
+    rows = {}
     for meta in load_metafiles():
         for model in meta.models:
-            if model.protocol != "graspnet1b-sv-v1" or model.camera != "realsense":
-                continue
-            for result in model.results:
-                if result.provenance == "reported":
-                    expected.add((meta.method, result.collision_filter, numbers_text(result)))
-    shown, positions = set(), []
-    for cells in table(text(name), ZOO[name]):
-        method = cells[0]
-        assert len(cells) == 4, (name, cells)
-        state = FILTER[cells[1]]
-        for numbers in re.findall(r"\d+\.\d\d / \d+\.\d\d / \d+\.\d\d", cells[2]):
-            shown.add((method, state, numbers))
-        positions.append(order.index(method))
-    assert shown == expected, f"{name}: the targets table and the metafiles disagree"
-    assert positions == sorted(positions), f"{name}: the targets are not in page order"
-
-
-def test_the_core_dependencies_named_by_the_readmes_are_those_of_the_package():
-    project = tomllib.loads(text("pyproject.toml"))["project"]
-    names = {re.split(r"[<>=!~ \[]", spec)[0] for spec in project["dependencies"]}
-    lead = {"README.md": "**Small core.**", "README_zh-CN.md": "**核心很小。**"}
-    for name in READMES:
-        item = text(name).split(lead[name])[1].split("\n\n")[0]  # the rest of that feature
-        assert set(re.findall(r"`([a-z_-]+)`", item)) == names, name
+            if model.protocol == "graspnet1b-sv-v1" and model.camera == "realsense":
+                rows[meta.method] = shown_row(model.results)
+    shown = table(text(name), ZOO[name])
+    assert len(shown) == len(chips.methods())
+    for cells, info in zip(shown, chips.methods(), strict=True):
+        target, trained = rows[info.name]
+        states = [FILTER[word.strip()] for word in cells[3].split("·")]
+        expected = [target.collision_filter]
+        if target.collision_filter is None:
+            expected.append(trained.collision_filter)
+        assert states == expected, (name, info.name, cells[3])
+        assert cells[4:] == [numbers_text(target), numbers_text(trained)], (name, info.name)
 
 
 def test_every_option_is_probed_under_each_method_it_applies_to_or_says_why():

@@ -24,14 +24,19 @@ data:
       load_labels: true
       object_labels: false       # HGGD does not read the dense grasp grids
       images: [rgb, depth]
-      # Every value is the released converter's (grasppanda/datasets/view_grasps.py has the
-      # full list). NOTE: its suppression, `nms_distance: 0.02` and `nms_angle: 60.0`, leaves
-      # about seven positive angle classes a frame, and a training on these labels ends 8 to
-      # 10 AP below the authors' checkpoint, which fits denser labels (configs/hggd/README.md,
-      # "Results"). On RealSense a training on 0.01 and 30.0 lands on that checkpoint:
-      # projects/hggd_labels has the two overrides and the command that prepares their labels.
+      # Every other value is the released converter's (grasppanda/datasets/view_grasps.py
+      # has the full list). The suppression is not: the converter keeps one grasp per 2 cm
+      # and 60 degrees, which leaves about seven positive angle classes a frame, and HGGD
+      # trained on those labels ends 7 to 10 AP below the authors' checkpoint on seen
+      # scenes. 1 cm and 30 degrees, a line the converter has commented out, gives three
+      # times as many labels and lands on that checkpoint (configs/hggd/README.md,
+      # "Results"; projects/hggd_labels). For the converter's labels, as released:
+      #     --opts data.train.dataset.view_grasps.nms_distance=0.02 \
+      #            data.train.dataset.view_grasps.nms_angle=60.0
       view_grasps:
         friction_threshold: 0.2
+        nms_distance: 0.01         # metres; the released converter: 0.02
+        nms_angle: 30.0            # degrees; the released converter: 60.0
       preprocess:
         - {type: DepthToCloud}
         - {type: NoWorkspace}    # every pixel with depth; nothing derived from ground truth

@@ -1,5 +1,5 @@
 {
-  "about": "AP of HGGD on the 160 frames of the split val_dev (every 16th frame of ten training scenes, RealSense) after each epoch, without the collision filter, as the training log prints it. `converter` is the training of the model zoo's HGGD row, on the labels the released converter writes (2 cm, 60 degrees); `1cm-30deg` and `unsuppressed` are the runs of those names of labels.yaml. A check during training on frames the model is trained on: not a benchmark number.",
+  "about": "AP of HGGD on the 160 frames of the split val_dev (every 16th frame of ten training scenes, RealSense) after each epoch, without the collision filter, as the training log prints it. `1cm-30deg` is the training of the model zoo's HGGD row, on the labels the config sets (1 cm, 30 degrees); `converter` (the released converter's labels, 2 cm and 60 degrees) and `unsuppressed` are the runs of those names of labels.yaml. A check during training on frames the model is trained on: not a benchmark number.",
   "split": "val_dev",
   "frames": 160,
   "epochs": 15,
