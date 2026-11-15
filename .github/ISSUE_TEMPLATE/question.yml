@@ -1,0 +1,17 @@
+name: Question
+description: Ask how to do something with GraspPanda
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What you want to do, what you tried, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: The output of `grasppanda env`, if the question is about running something.
+      render: text

@@ -1,6 +1,7 @@
-# HGGD's released converter keeps one grasp label per 2 cm and 60 degrees. Each cell trains
-# HGGD on labels of another density and changes nothing else: model, recipe, evaluator and
-# seed are those of the model zoo's HGGD row, which is the cell without a change.
+# HGGD's config trains on labels suppressed at 1 cm and 30 degrees; the released converter
+# keeps one grasp label per 2 cm and 60 degrees. Each cell trains HGGD on labels of another
+# density and changes nothing else: model, recipe, evaluator and seed are those of the
+# model zoo's HGGD row, which is the cell without a change.
 #
 #   grasppanda prepare graspnet1b --labels
 #   grasppanda prepare graspnet1b --view-grasps --camera realsense \
@@ -13,10 +14,10 @@ base: hggd/hggd_r34w8_g1b-realsense_15e
 seeds: [0]
 axes:
   labels:
-    # One label per 1 cm and 30 degrees: about three times as many as the converter keeps.
-    1cm-30deg:
-      - "data.train.dataset.view_grasps.nms_distance=0.01"
-      - "data.train.dataset.view_grasps.nms_angle=30.0"
+    # The labels of the released converter: a third as many.
+    converter:
+      - "data.train.dataset.view_grasps.nms_distance=0.02"
+      - "data.train.dataset.view_grasps.nms_angle=60.0"
     # No suppression: every annotated grasp that passes the converter's other filters.
     unsuppressed:
       - "data.train.dataset.view_grasps.nms_distance=1.0e-06"

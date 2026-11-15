@@ -512,7 +512,7 @@ PROJECT_SWEEPS = {
         "normals+multi-scale",
         "all",
     ],
-    "hggd_labels/labels.yaml": ["1cm-30deg", "unsuppressed"],
+    "hggd_labels/labels.yaml": ["converter", "unsuppressed"],
 }
 
 

@@ -27,13 +27,13 @@ none of their code is part of this history. Each line below has its full account
 - **`runtime.tf32`.** A run states whether CUDA convolutions may round to TF32; the default is float32, so the same weights give the same numbers on every GPU. It holds in a process that set PyTorch's precision through either of its two interfaces, and that setting is put back afterwards.
 - **Sweeps on several GPUs.** `grasppanda sweep <file> --gpus 0,1,2,3` runs the cells of a grid side by side, one run per GPU at a time, the ids as `nvidia-smi` numbers them; `--cell` runs one. A sweep can compare several composed configs (`base` by name) and give every cell the same overrides. Its tables print a benchmark's AP in percent, as `test` does; a GPU id the machine does not have is refused before anything starts; a run that fails does not stop the others; stopping the sweep stops its runs; each run executes the code of the sweep that started it, whatever else is installed or lies in the working directory. An alternative may splice in others by YAML anchor (`both: [*a, *b]`).
 - **`runtime.gpu_memory_fraction`** caps what a run or a probe takes of its GPU, so two runs can share a 24 GB card.
-- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp; `projects/hggd_labels` trains HGGD on denser labels, where it reaches its authors' checkpoint. No code beside the file. First results on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, 4.6 under the recipe it is trained with elsewhere and 3.8 under EconomicGrasp; LitePT is 14.2 AP lower, 9.5 under that recipe; GSNet's encoder gains GraspNet-baseline 0.5 to 1.7 AP; of FineGrasp's changes, none shows a gain alone, the normals and the four-radius crop a loss, read against EconomicGrasp trained three times. [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/) sets these runs beside the two short checks, which filter and do not rank.
+- **Experiments as sweep files.** `projects/encoder_comparison` trains four scene encoders under GSNet; `projects/finegrasp_ablation` switches FineGrasp's three changes on one at a time under EconomicGrasp; `projects/hggd_labels` trains HGGD on three densities of labels. No code beside the file. First results on the whole test split: SpUNet is within a seed of the encoder GSNet ships; PTv3 under GSNet's unchanged recipe is 10.4 AP lower on seen scenes and under-trained, 4.6 under the recipe it is trained with elsewhere and 3.8 under EconomicGrasp; LitePT is 14.2 AP lower, 9.5 under that recipe; GSNet's encoder gains GraspNet-baseline 0.5 to 1.7 AP; of FineGrasp's changes, none shows a gain alone, the normals and the four-radius crop a loss, read against EconomicGrasp trained three times. [How good does it become?](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/) sets them beside the short checks.
 - **FineGrasp on GraspClutter6D, and the camera distance it knows.** Its encoder reads the coordinates of every point: as published the authors' weights score 12.56 AP on the whole test split, and 24.39 AP once `CoordinateFeatures.median_depth` moves the depth of the features to the training distance.
 
 ### Changed
 
 - **Documentation** rebuilt around tasks: install, run a method, swap a component, read the evidence; short pages with the detail folded.
-- **The README** is short: one picture, a quick start, what is inside and the targets; the rest is folded or in the documentation.
+- **The README** opens with grasps a method predicts, then a quick start that ends in grasps, a swap and one table of results.
 - **Method order** is by family, then year, on every page, table and list.
 - **Where an option works** is shown as a fraction of the methods it applies to, with the reason for each method left out, instead of a class word.
 - **The pipeline figure** shows both detector families and the parts they share, drawn like the picture of the home page and readable at the width a README shows it.
@@ -45,6 +45,7 @@ none of their code is part of this history. Each line below has its full account
 - **The picture of `demo` and of the explorer's Run tab** is centred on the grasps it shows, with a caption in a readable face.
 - **A quieter site.** Code is highlighted in two colours, folds that follow each other form one list, a short identifier no longer breaks at its hyphen, the tables of the model zoo share one width with aligned figures, and method pages give their option tables the whole column.
 - **The model zoo page** has one table per benchmark: the reported number, the authors' weights and the model trained here side by side, with measured minus reported in a fold. A training adds no line.
+- **HGGD trains on denser labels**, 1 cm and 30°, from a line its released converter has commented out; on the converter's it ends 7 to 10 AP below its authors' checkpoint (`projects/hggd_labels`). Rebuild them: `grasppanda prepare graspnet1b --view-grasps`.
 - **`test` prints AP in percent**, 68.75 as papers and the model zoo print it, where it printed the fraction with two decimals (0.69); result records keep the fraction.
 
 ### Fixed
@@ -63,7 +64,7 @@ none of their code is part of this history. Each line below has its full account
 
 ### Known limits
 
-- The zoo has no weights to download yet. Trained here, GraspNet-baseline passes the admission gate; Scale-Balanced-Grasp and EconomicGrasp reach their authors' checkpoints, which are themselves outside the gate; HGGD, trained on the labels its released converter writes, is 8 to 10 AP below its checkpoint on seen, and the labels are why; where trained weights are published is not decided. GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
+- The zoo has no weights to download yet. Trained here, GraspNet-baseline passes the admission gate; Scale-Balanced-Grasp and EconomicGrasp reach their authors' checkpoints, which are themselves outside the gate, and HGGD its RealSense checkpoint; where trained weights are published is not decided. GSNet is above its paper by more than 1 AP and FineGrasp below, and neither gap is explained.
 - Of the options beside the ported methods, two scene encoders under GSNet have been trained in full and evaluated, once each. For every other option a probe says a combination trains, not how good it is.
 - Mixed precision is refused for the shipped detectors; `optimizer=soap` under HGGD is not verified (one CUDA illegal memory access on a shared GPU).
 - No shipped augmentation moves image and cloud together, so HGGD has no geometric augmentation.
@@ -623,9 +624,9 @@ Classes now count levels, and every method lists the options of each of its slot
   Kinect config, trained the same way on the converter's labels, scores
   49.73 / 40.52 / 17.41 and 54.46 / 44.57 / 18.83 AP, 7.25 AP below its checkpoint on seen
   without the filter; 1 cm and 30 degrees gain it 9.35 AP on seen scenes and nothing on
-  novel. The shipped configs keep the converter's labels. On GraspClutter6D the model scores
-  12.95 / 16.00 / 8.16 and 14.49 / 17.88 / 8.95 (AP / AP0.8 / AP0.4), 0.07 AP below the
-  checkpoint with the filter.
+  novel. HGGD's configs set 1 cm and 30 degrees since, and its rows in the model zoo are
+  these two trainings. On GraspClutter6D the RealSense model scores 14.19 / 17.57 / 9.56
+  and 14.18 / 17.56 / 9.37 (AP / AP0.8 / AP0.4), within 0.38 AP of the checkpoint.
 - EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
   69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
   within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on
@@ -790,9 +791,9 @@ Classes now count levels, and every method lists the options of each of its slot
   GraspNet-baseline is within the admission gate on every split; EconomicGrasp reaches
   its authors' checkpoint and is 0.13 AP outside the gate on seen, where that checkpoint
   is 0.07 outside it; Scale-Balanced-Grasp reaches its authors' checkpoint, and both are
-  1.2 to 2.2 AP below the paper on seen and similar; HGGD is 8 to 10 AP below its authors'
-  checkpoint on seen, because that checkpoint fits denser labels than the released
-  converter writes; GSNet is above its paper by more than 1 AP and FineGrasp below, both
+  1.2 to 2.2 AP below the paper on seen and similar; HGGD reaches its authors' RealSense
+  checkpoint on denser labels than its released converter writes, which its configs set;
+  GSNet is above its paper by more than 1 AP and FineGrasp below, both
   unexplained. None of their weights is published: where is not decided. A training with
   unmodified reference code was not run here. The other numbers are `author-ckpt` (see
   above): each is one run with seed 0, and where a number differs from the reported one

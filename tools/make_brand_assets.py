@@ -37,7 +37,6 @@ INK, PAPER, GREEN, DEEP_GREEN = "#1f2328", "#ffffff", "#2da44e", "#1a7f37"
 SANS = "'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif"
 MONO = "'JetBrains Mono', 'DejaVu Sans Mono', 'SFMono-Regular', Consolas, monospace"
 TAGLINE = "A toolbox for 6-DoF grasp detection in cluttered scenes"
-PILLARS = "Run published methods  ·  Swap any stage  ·  See what was measured"
 DATASETS = ("GraspNet-1Billion", "GraspClutter6D")
 
 
@@ -67,14 +66,14 @@ def logo_svg(dark: bool) -> str:
 
 
 def banner_svg(dark: bool) -> str:
-    text, muted = ("#e6edf3", "#8b949e") if dark else (INK, "#57606a")
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-label="GraspPanda: {TAGLINE}">
-  <g transform="translate(70 28) scale(0.515)">{logo_body(dark)}</g>
-  <text x="372" y="158" font-family="{SANS}" font-size="104" font-weight="700" letter-spacing="-3.5">
+    """The lockup: the logo and the wordmark. The README sets the tagline in text below it,
+    where it can be read on a phone, translated and searched."""
+    text = "#e6edf3" if dark else INK
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="GraspPanda: {TAGLINE}">
+  <g transform="translate(16 12) scale(0.5)">{logo_body(dark)}</g>
+  <text x="300" y="176" font-family="{SANS}" font-size="112" font-weight="700" letter-spacing="-4">
     <tspan fill="{GREEN}">Grasp</tspan><tspan fill="{text}">Panda</tspan>
   </text>
-  <text x="378" y="210" font-family="{SANS}" font-size="28" fill="{text}">{TAGLINE}</text>
-  <text x="378" y="256" font-family="{SANS}" font-size="21" fill="{muted}">{PILLARS}</text>
 </svg>
 """
 
@@ -324,7 +323,7 @@ def pipeline_svg(dark: bool = False) -> str:
             letter_spacing="-0.5",
         ),
         f'<text x="24" y="63" font-family="{SANS}" font-size="13" fill="{c["muted"]}">'
-        "A box with a green key is a slot: swap it with one line, "
+        "Every box with a key is a slot: swap it with one line, "
         f'<tspan font-family="{MONO}" font-size="12">--set &lt;slot&gt;=&lt;option&gt;</tspan>'
         "</text>",
     ]
@@ -430,7 +429,7 @@ def pipeline_svg(dark: bool = False) -> str:
     entries = [
         ("a slot", f'fill="{c["box"]}" stroke="{c["box_line"]}" stroke-width="1.6"'),
         (
-            f"shared by all {every} methods",
+            f"a slot of all {every} methods",
             f'fill="{c["shared"]}" stroke="{c["shared_line"]}" stroke-width="1.6"',
         ),
         (
@@ -727,8 +726,8 @@ def main(argv: list[str] | None = None) -> int:
     exports = {
         "logo.svg": 512,
         "logo-dark.svg": 512,
-        "banner-light.svg": 2560,
-        "banner-dark.svg": 2560,
+        "banner-light.svg": 1920,
+        "banner-dark.svg": 1920,
         "pipeline.svg": 2040,
         "pipeline-dark.svg": 2040,
     }

@@ -304,7 +304,7 @@ D435; the last column is the AP of the GraspClutter6D paper where it has a row. 
 | FineGrasp | 12.56 / 15.47 / 9.01 | 13.14 / 16.20 / 9.19 | — |
 | FineGrasp, trained here | 16.12 / 19.78 / 11.53 | 17.00 / 20.85 / 11.86 | — |
 | HGGD | 14.24 / 17.40 / 9.24 | 14.56 / 17.75 / 9.38 | — |
-| HGGD, trained here | 12.95 / 16.00 / 8.16 | 14.49 / 17.88 / 8.95 | — |
+| HGGD, trained here | 14.19 / 17.57 / 9.56 | 14.18 / 17.56 / 9.37 | — |
 
 </div>
 
@@ -340,9 +340,8 @@ applied to some methods and not to others was not investigated.
 
 Whether a model trained here transfers like its authors' checkpoint differs by method:
 Scale-Balanced-Grasp scores within 0.14 AP of its checkpoint, EconomicGrasp 1.55 AP above,
-GraspNet-baseline 3.05 below with the filter, each from one training. HGGD, which the
-released label converter leaves 8 to 10 AP below its checkpoint on GraspNet-1Billion, is
-1.29 AP below it here without the filter and 0.07 with it.
+GraspNet-baseline 3.05 below with the filter, each from one training. HGGD is 0.05 AP
+below its checkpoint here without the filter and 0.38 with it.
 
 ??? note "Entering a result into the model zoo"
 

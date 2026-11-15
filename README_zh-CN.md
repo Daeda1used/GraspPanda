@@ -2,99 +2,70 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="resources/banner-dark.png">
-  <img src="resources/banner-light.png" alt="GraspPanda：面向杂乱场景 6-DoF 抓取检测的工具箱" width="820">
+  <img src="resources/banner-light.png" alt="GraspPanda" width="420">
 </picture>
 
-[English](README.md) | **简体中文**
+### 杂乱场景的 6-DoF 抓取检测，一次换一个阶段
+
+六个已发表的方法，同一套 PyTorch 流水线，同一个锁定版本的评测器。
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
 [![docs](https://img.shields.io/badge/docs-online-0969da)](https://daeda1used.github.io/GraspPanda)
-[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-0969da)](pyproject.toml)
 [![license](https://img.shields.io/badge/license-Apache--2.0-0969da)](LICENSE)
-[![status](https://img.shields.io/badge/status-alpha-0969da)](#路线图)
 
-[文档](https://daeda1used.github.io/GraspPanda) ·
-[快速上手](https://daeda1used.github.io/GraspPanda/get_started/) ·
+[English](README.md) · **简体中文** ·
+[文档（英文）](https://daeda1used.github.io/GraspPanda) ·
+[上手试试](#上手试试) ·
 [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/) ·
-[模型库](#模型库) ·
-[设计](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) ·
-[参与贡献](CONTRIBUTING.md)
+[结果](#结果)
 
-<a href="https://daeda1used.github.io/GraspPanda/explorer/"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="resources/explorer-dark.webp">
-  <img src="resources/explorer-light.webp" alt="组合浏览器：按两个家族排列的六个方法；GraspNet-baseline 换上另一篇论文的 PTv3 场景编码器，可以运行；再换上 EconomicGrasp 的检测头，因设计上不兼容被拒绝，并给出原因；HGGD 换上 DINOv2 图像编码器；Compare 视图先列出后处理在全部六个方法下的结果，再列出场景编码器在五个基于种子点的方法下的结果" width="820">
-</picture></a>
+<img src="resources/hero.webp" alt="以彩色点云呈现的杂乱桌面：蓝色碗、绿色漏斗、方块、玩具动物和一个红黄相间的玩具，平行夹爪画在 EconomicGrasp 预测的抓取位置上" width="820">
+
+<sub>EconomicGrasp 用作者发布的权重，在 GraspNet-1Billion 的一个场景上预测的最佳抓取（已做碰撞过滤）；场景里的物体它在训练中从未见过。场景数据采用 CC BY-NC-SA 4.0 许可。</sub>
 
 </div>
 
-**GraspPanda 是一个开源工具箱，用于杂乱场景的 6-DoF 平行夹爪抓取检测。** 它围绕 GraspNet-1Billion 构建，也能在 GraspClutter6D 上评测。已移植六个已发表的方法，与各自的参考代码逐阶段一致。基于种子点的骨架的各个阶段、HGGD 的图像编码器、后处理和训练方案都是槽位，一行命令就能替换。每个选项都在它适用的每个方法下试过：先检查，再用真实帧短暂训练；被拒绝的组合和少数没有记录的选项都会说明原因。各方法可直接用参考代码发布的权重运行。
+## 为什么做 GraspPanda
 
-<details>
-<summary>为什么做 GraspPanda</summary>
+杂乱场景抓取检测已经有很强的方法和很好的基准，但各家的数字没法直接比。GSNet 在 GraspNet-1Billion（RealSense，seen）上不加过滤是 65.70 AP，加了是 67.12，而对比表常常拿其中一个去比另一个。HGGD 自己的 README 把 59.36 AP 列为论文结果，把 64.45 列为代码仓库的结果；后来复测它的两篇论文 [RNGNet](https://arxiv.org/abs/2406.01767) 和 [GraRe](https://arxiv.org/abs/2608.00946) 给出的是 58.35 和 63.37。
 
-<br>
+GraspPanda 让每个方法都走同一套流水线、同一个评测器；这个评测器在 1,592 个记录帧上与 `graspnetAPI` 逐值一致（[测试](tests/integration/test_eval_parity.py)）。每个方法都与参考代码逐阶段一致，下面的每个数字都有提交在仓库里的记录可查。
 
-杂乱场景抓取检测已经有很强的方法和很好的基准，但要公平地比较它们，比想象中难。
+## 上手试试
 
-- **加和不加碰撞过滤的数字被混在一起比。** GSNet 在 GraspNet-1Billion（RealSense，seen）上不加过滤是 65.70 AP，加了是 67.12。拿其中一个去比另一个，差距就超过了不少论文声称的提升。
-- **同一个方法，数字不一样。** HGGD 自己的 README 把 59.36 AP（RealSense，seen）列为论文结果，把 64.45 列为代码仓库的结果；后来复测它的两篇论文 [RNGNet](https://arxiv.org/abs/2406.01767) 和 [GraRe](https://arxiv.org/abs/2608.00946) 给出的是 58.35 和 63.37。
-- **每个方法各住各的仓库**，各有各的数据流程、标签文件和编译算子，往往还带一份自己的评测器。
-
-GraspPanda 的回答是：一条流程，每个数据集一个锁定版本的评测器，外加一条规则——只宣传验证过的能力。
-
-</details>
-
-## 特性
-
-- **任何阶段都能换。** 编码器、种子点提议、视角、分组、检测头、损失、后处理和训练方案都是槽位。
-- **实测，而非假设。** 每个选项都标明它在几个方法下能跑、能学，以及其余方法为什么不行。
-- **忠实移植。** 两个家族共六个方法，用转换后的权重与参考实现逐阶段一致。
-- **锁定版本的评测器。** GraspNet-1Billion 和 GraspClutter6D，与官方工具一致；碰撞过滤开、关都报告。GraspNet-1Billion 的评测器在 1,592 个记录帧上与 `graspnetAPI` 逐值一致（[测试](tests/integration/test_eval_parity.py)）。
-- **错误的替换尽早拦下。** 大多数错误的组合在构建之前就被拒绝，并指出冲突和改法；其余由一次短暂的 probe 发现。
-- **核心很小。** 只依赖 `torch`、`numpy`、`scipy`、`pyyaml`、`pillow` 和 `tqdm`；稀疏卷积和模型库是可选扩展。
-
-## 快速上手
-
-先装为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积没有更新的构建），再装 GraspPanda 和下文用到的可选扩展，用一个极简示例检测器检查安装：
+用已发表模型的权重，在随包附带的场景上预测抓取，不需要下载数据集。先安装为 CUDA 12.6 或更早版本构建的 PyTorch（稀疏卷积还没有更新版本的构建）：
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
-pip install -e ".[spconv-cu126,timm]"   # 与 PyTorch 的 CUDA 版本对应的 spconv 构建
-grasppanda env                          # 查看安装了什么、还需要修什么
-# 极简示例检测器，CPU 上一分钟内训完
-grasppanda train projects/example_project/configs/toy_train.yaml
+pip install -e ".[spconv-cu126,timm]"   # `grasppanda env` 会列出装了什么、还需要修什么
+curl -LO https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
+    --source-format economicgrasp --camera realsense
+grasppanda demo economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
+    --weights economicgrasp_realsense.pth --example --collision-filter
 ```
 
-一行命令替换一个阶段：给 GraspNet-baseline 换上另一篇论文的场景编码器，给 HGGD 换上预训练的图像编码器。
+`demo` 会写出预测的抓取和一张抓取图。每个方法都可以这样运行，输入可以是数据集里的一帧、一张深度图或一个点云：[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)。
+
+## 替换一个阶段
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="resources/showcase-dark.svg">
+  <img src="resources/showcase-light.svg" alt="grasppanda 的终端录屏：FineGrasp 的各个阶段排成一行方框；换上另一篇论文的场景编码器和分组；一个视角阶段被拒绝，因为它读取的标签分配器并不提供，并给出冲突和修复办法；probe 短暂训练这个组合并给出结论" width="820">
+</picture>
+
+检测器的每个阶段都是一个槽位。`compose` 一行命令替换一个阶段，检查各阶段间的契约，需要时插入适配器；行不通的组合会被拒绝，并给出原因和修复办法：
 
 ```bash
 grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e \
     --set backbone=ptv3 -o baseline_ptv3.yaml
 grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
     --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
-# 准备好 GraspNet-1Billion 时，probe 在真实帧上短暂训练；
-# 否则只做合成场景检查，结果为 `wired`
-grasppanda probe baseline_ptv3.yaml
-grasppanda probe hggd_dinov2.yaml
+grasppanda probe baseline_ptv3.yaml   # 短暂训练它；没有数据集时只做合成场景检查
 ```
 
-`compose` 检查各阶段间的契约并写出配置，需要时插入适配器。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：完整训练后 PTv3 低 3.8 到 10.4 AP，[取决于方法和训练方案](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)。替换后的模型训练前没有权重。
-
-**下一步：** [运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)（用已发布的权重，几分钟就能拿到第一批抓取）· [替换一个组件](https://daeda1used.github.io/GraspPanda/get_started/swap/) · [打开组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)
-
-## 内容一览
-
-| 方法 | 发表 | 家族 | 输入 |
-|---|---|---|---|
-| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | 基于种子点的骨架 | 深度 |
-| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | 基于种子点的骨架 | 深度 |
-| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | 基于种子点的骨架 | 深度 |
-| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | 基于种子点的骨架 | 深度 |
-| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | 基于种子点的骨架 | 深度 |
-| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | 自成一族 | RGB-D |
-
-**数据集：** GraspNet-1Billion 和 GraspClutter6D，各有读取器、标签资产和与官方一致的评测器。**槽位**及其适用的方法：
+PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：完整训练后，PTv3 比方法原装的编码器低 3.8 到 10.4 AP（[完整训练的替换](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)）。
 
 | 槽位 | 适用于 |
 |---|---|
@@ -129,75 +100,45 @@ grasppanda probe hggd_dinov2.yaml
 
 </details>
 
-## 模型库
+## 结果
 
-目标：作者在 GraspNet-1Billion 上报告的数字（RealSense，seen / similar / novel 的 AP）；末列是这里训练的模型。
+GraspNet-1Billion（RealSense）上 seen / similar / novel 的 AP：各方法报告的数字，以及按其配置中的训练方案在这里从零训练的结果。
 
-| 方法 | 碰撞过滤 | 作者报告的 AP（seen / similar / novel） | 本工具箱复现 |
-|---|:---:|---|:---:|
-| GraspNet-baseline | 未说明 | 27.56 / 26.11 / 10.55（论文） | — |
-| GraspNet-baseline | 开 | 47.47 / 42.27 / 16.61（代码仓库） | 46.81 / 41.90 / 16.74 |
-| GSNet | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
-| GSNet | 开 | 67.12 / 54.81 / 24.31 | 71.23 / 62.29 / 26.42 |
-| Scale-Balanced-Grasp | 关 | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
-| Scale-Balanced-Grasp | 开 | 63.83 / 58.46 / 24.63 | 62.00 / 56.28 / 23.74 |
-| EconomicGrasp | 关 | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
-| FineGrasp | 关 | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
-| FineGrasp | 开 | 73.71 / 64.56 / 28.14 | 72.43 / 61.87 / 26.94 |
-| HGGD | 未说明 | 59.36 / 51.20 / 22.17（论文）· 64.45 / 53.59 / 24.59（代码仓库） | — |
+| 方法 | 发表 | 输入 | 碰撞过滤 | 报告 | 这里训练 |
+|---|---|---|:---:|---|---|
+| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | 深度 | 开 | 47.47 / 42.27 / 16.61 | 46.81 / 41.90 / 16.74 |
+| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | 深度 | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | 深度 | 关 | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
+| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | 深度 | 关 | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
+| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | 深度 | 关 | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
+| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | RGB-D | 未说明 · 开 | 64.45 / 53.59 / 24.59 | 63.61 / 54.31 / 24.95 |
 
-方法要在这里训练、成绩与报告数字相差不超过 1 AP（或把差距解释清楚），才能进入模型库。GraspNet-baseline 已通过，Scale-Balanced-Grasp 和 EconomicGrasp 达到作者权重的成绩；训练的权重暂未发布，请用已发布的权重[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)。
+GraspNet-baseline 在每个划分上与报告数字相差不超过 1 AP。Scale-Balanced-Grasp、EconomicGrasp 和 HGGD 达到作者权重的成绩；GSNet 高于论文，FineGrasp 低于论文，两处差距原因都尚不清楚。[模型库](https://daeda1used.github.io/GraspPanda/model_zoo/)列出全部数字：碰撞过滤开和关的结果，以及作者权重在这里测得的成绩。这里训练的权重暂未发布；每个方法都可以用作者发布的权重运行。
 
 <details>
 <summary>关于这些数字</summary>
 
 <br>
 
-- **GraspNet-baseline** 在本工具箱内训练了一次，与官方仓库公布的数字（说明了碰撞过滤的那一组）相比，每个 split 都在准入规则的允许范围内。它的权重暂未发布。
-- **GSNet** 按其配置中的训练方案在本工具箱内从零训练了三次（同一个随机种子），三次的成绩最多相差约一个 AP。它比论文数字高出的幅度超过了准入规则的允许范围，原因尚不清楚。已知的是：移植版与参考实现逐阶段一致；用参考代码训练的模型（标签集有改动）同样高于论文；作者的原始代码没有公开（[详情](https://daeda1used.github.io/GraspPanda/model_zoo/#graspnet-1billion)）。它的权重暂未发布。
-- **Scale-Balanced-Grasp** 在本工具箱内训练了一次，与作者权重在这里测得的成绩相差约半个 AP 以内。两者在 seen 和 similar 上都比论文低，幅度超出准入规则的允许范围，所以差距不来自训练。它的权重暂未发布。
-- **EconomicGrasp** 在本工具箱内用同一个随机种子训练了三次。三次的成绩最多相差 1.75 AP，作者权重在这里测得的成绩在每个划分上都落在三次之间。作者权重在 seen 上比论文表格高，幅度略超准入规则的允许范围；表格为什么偏低尚不清楚。它的权重暂未发布。
-- **FineGrasp** 在本工具箱内训练了一次，成绩低于论文，差距同样超出准入规则的允许范围，原因也尚不清楚。作者的权重在同一套评测下能得到论文的数字，所以差距来自训练；作者训练用的法向图和 graspness 标签没有公开，这里是按论文重新生成的。它的权重暂未发布。
-- **除 GSNet 外，各方法作者发布的权重**在本工具箱里跑完了整个测试集，碰撞过滤开、关各一次。这些 `author-ckpt` 数字列在[模型库页面](https://daeda1used.github.io/GraspPanda/model_zoo/)，每个都有提交在仓库里的结果记录可查。它们不是复现。
-- **HGGD** 公开了两组数字，且没有说明是否做碰撞过滤；它发布的测试脚本在保存抓取前会过滤碰撞。用它公开的标签转换脚本生成的标签在本工具箱内训练，seen 上远低于作者权重：作者权重拟合的是比转换脚本更密的标签；换用[更密的标签](projects/hggd_labels/)训练后，成绩达到作者权重。它的权重暂未发布。
-- **准入规则：** 配置、带 sha256 的权重、训练日志和锁定版本的评测器产出的结果记录，每个 split 上相差不超过 1 AP，否则写明差距。
+- **GraspNet-baseline** 在本工具箱内训练了一次，与官方仓库公布的数字（说明了碰撞过滤的那一组）相比，每个划分都在准入规则的允许范围内。
+- **GSNet** 在本工具箱内从零训练了三次（同一个随机种子），三次的成绩最多相差约一个 AP。它比论文数字高出的幅度超过了准入规则的允许范围，原因尚不清楚。已知的是：移植版与参考实现逐阶段一致；用参考代码训练的模型（标签集有改动）同样高于论文；作者的原始代码没有公开（[详情](https://daeda1used.github.io/GraspPanda/model_zoo/#graspnet-1billion)）。
+- **Scale-Balanced-Grasp** 在本工具箱内训练了一次，与作者权重在这里测得的成绩相差约半个 AP 以内。两者在 seen 和 similar 上都比论文低，幅度超出准入规则的允许范围，所以差距不来自训练。
+- **EconomicGrasp** 在本工具箱内用同一个随机种子训练了三次。三次的成绩最多相差 1.75 AP，作者权重在这里测得的成绩在每个划分上都落在三次之间。作者权重在 seen 上比论文表格高，幅度略超准入规则的允许范围；表格为什么偏低尚不清楚。
+- **FineGrasp** 在本工具箱内训练了一次，成绩低于论文，差距同样超出准入规则的允许范围，原因也尚不清楚。作者的权重在同一套评测下能得到论文的数字，所以差距来自训练；作者训练用的法向图和 graspness 标签没有公开，这里是按论文重新生成的。
+- **HGGD** 公开了两组数字：论文的和代码仓库的（即上表那一行），都没有说明是否做碰撞过滤；它发布的测试脚本在保存抓取前会过滤碰撞。在本工具箱内用比公开转换脚本[更密的标签](projects/hggd_labels/)训练，达到作者 RealSense 权重的成绩；用转换脚本原样的标签则远低于作者权重。
+- **除 GSNet 外，各方法作者发布的权重**都在本工具箱里跑完了整个测试集，碰撞过滤开、关各一次，即模型库里的 `author-ckpt` 行。它们不是复现。
+- **准入规则：** 配置、带 sha256 的权重、训练日志和锁定版本的评测器产出的结果记录，每个划分上相差不超过 1 AP，否则写明差距。
 
 </details>
 
-## 新闻
+## 了解更多
 
-- **2026-11** — 换一台机器复测：运行[声明计算精度](https://daeda1used.github.io/GraspPanda/user_guides/train_test/#reference)，各显卡数字一致；`grasppanda sweep --gpus` 多卡并行跑对比实验。
-- **2026-10** — 会训练的替换还和原装组件对照着训练，看它是否[训练得和原装组件一样](https://daeda1used.github.io/GraspPanda/advanced_guides/learns_like_reference/)。
+- [运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)：每个方法都能用已发布的权重运行，附许可证和一次实测运行的记录。
+- [替换一个组件](https://daeda1used.github.io/GraspPanda/get_started/swap/)：组合、试跑、训练。
+- [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：每个选项在每个方法下的实测情况，以及组合被拒绝的原因。
+- [设计](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) · [参与贡献](CONTRIBUTING.md) · [更新日志](CHANGELOG.md)
 
-<details>
-<summary>更早的新闻</summary>
-
-<br>
-
-- **2026-10** — 文档按任务重新组织：运行一个方法、替换一个组件、查看证据。
-- **2026-10** — 拒绝都会说明原因：每次拒绝标明类别，适配器或某个设置能解决的，`compose` 会自动处理。
-- **2026-10** — [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：选一个方法、换一个槽位，查看实测记录和拒绝的原因。`grasppanda explore` 可以在本地运行它。
-- **2026-10** — 每个槽位都有了可选组件，取自已发表的代码和模型库，每个都在它适用的方法下试跑过。
-- **2026-10** — `grasppanda compose` 用方法配置和预设拼出一个组合；`grasppanda probe` 在真实帧上短暂训练它。
-- **2026-10** — 重建后的第一个公开版本。v0.56 及更早的版本属于另一套无关的代码，仍保留在各自的标签和 `legacy` 分支上。
-
-</details>
-
-## 路线图
-
-<details>
-<summary>里程碑</summary>
-
-<br>
-
-- [x] **M0 — 核心。** 配置系统、注册表、数据契约、参考算子、命令行、CI、文档、品牌。
-- [ ] **M1 — GraspNet-1Billion、它的评测器、第一个方法。** 已完成：评测器与官方一致；GSNet 与参考实现逐阶段一致，已在本工具箱内训练并在整个测试集上评测。未解决：与论文的差距尚未解释，权重暂未发布。
-- [ ] **M2 — EconomicGrasp，以及作为第二个家族的 HGGD。** 已完成：两者用作者的权重与参考实现逐阶段一致；EconomicGrasp 在本工具箱内训练后达到作者权重的成绩；HGGD 用公开转换脚本的标签在本工具箱内训练，远低于作者权重，原因在标签：换用更密的标签后达到作者权重的成绩。未完成：权重尚未发布。
-- [ ] **M3 — 其余基于种子点的方法。** 已完成：GraspNet-baseline、Scale-Balanced-Grasp 和 FineGrasp 与参考实现一致；GraspNet-baseline 在本工具箱内训练后通过了准入规则；Scale-Balanced-Grasp 在本工具箱内训练后达到作者权重的成绩；FineGrasp 已在本工具箱内训练，它的每处改动也各自单独训练过。未解决：FineGrasp 与论文的差距，原因不在训练方案；这些改动在这里都没有显示增益。计划：受控对比，相同的编码器、训练预算、输入和评测器。
-- [ ] **M4 — GraspClutter6D。** 已完成：读取器、与官方一致的评测器、标签资产、迁移配置。计划：在 GraspClutter6D 上训练；Contact-GraspNet。
-- [ ] **M5 — 发布。** PyPI、模型库、文档网站。
-
-</details>
+**状态：** alpha。接下来：发布这里训练的权重，在 PyPI 上发布。v0.56 及更早的版本属于另一套无关的代码，仍保留在各自的标签和 `legacy` 分支上。
 
 ## 引用
 

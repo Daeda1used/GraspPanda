@@ -16,11 +16,10 @@ percent; *Filter* says whether each method's own collision filter was off or on.
   GraspNet-baseline is within the [admission gate](#admission-gate) on every split.
   Scale-Balanced-Grasp and EconomicGrasp land on their authors' checkpoints, and with them
   outside the gate; GSNet is above its paper by more than 1 AP on every split, FineGrasp
-  below it. HGGD is 6 to 10 AP below its authors' checkpoints on seen: the labels its
-  released converter writes are not the ones those checkpoints fit, and on
+  below it. HGGD lands on its authors' RealSense checkpoint, on
   [denser labels](https://github.com/Daeda1used/GraspPanda/tree/main/projects/hggd_labels)
-  it lands on the checkpoint. Their weights are not published yet, so the zoo cannot
-  download them.
+  than its released converter writes; on the converter's it is 7 to 10 AP below on seen.
+  Their weights are not published yet, so the zoo cannot download them.
 
 ## GraspNet-1Billion
 
@@ -50,12 +49,12 @@ AP0.8 and AP0.4 of every split are in the record of a row:
 | EconomicGrasp | Kinect | on | — | 65.47 / 53.64 / 20.36 | — |
 | FineGrasp | RealSense | off | 71.67 / 62.83 / 27.40 | 71.56 / 62.80 / 27.42 | 69.77 / 59.72 / 25.77 |
 | FineGrasp | RealSense | on | 73.71 / 64.56 / 28.14 | 73.69 / 64.62 / 28.18 | 72.43 / 61.87 / 26.94 |
-| HGGD | RealSense | off | — | 58.36 / 47.95 / 22.08 | 48.01 / 41.42 / 18.88 |
-| HGGD | RealSense | on | — | 63.72 / 52.91 / 24.16 | 55.30 / 48.60 / 21.70 |
+| HGGD | RealSense | off | — | 58.36 / 47.95 / 22.08 | 57.83 / 48.53 / 22.71 |
+| HGGD | RealSense | on | — | 63.72 / 52.91 / 24.16 | 63.61 / 54.31 / 24.95 |
 | HGGD | RealSense | not stated | 59.36 / 51.20 / 22.17 | — | — |
 | HGGD | RealSense | not stated | 64.45 / 53.59 / 24.59 | — | — |
-| HGGD | Kinect | off | — | 56.98 / 43.97 / 18.56 | 49.73 / 40.52 / 17.41 |
-| HGGD | Kinect | on | — | 60.30 / 46.85 / 19.22 | 54.46 / 44.57 / 18.83 |
+| HGGD | Kinect | off | — | 56.98 / 43.97 / 18.56 | 59.08 / 46.05 / 17.13 |
+| HGGD | Kinect | on | — | 60.30 / 46.85 / 19.22 | 62.77 / 49.45 / 18.28 |
 | HGGD | Kinect | not stated | 60.26 / 48.59 / 18.43 | — | — |
 | HGGD | Kinect | not stated | 61.17 / 47.02 / 19.37 | — | — |
 
@@ -123,15 +122,13 @@ AP0.8 and AP0.4 of every split are in the record of a row:
       1.2 to 1.7 AP below the paper on seen and similar, so the gap to the paper is not one
       of training; object-balanced sampling, which the paper describes, is not implemented
       (`configs/scale_balanced_grasp/README.md`).
-    - **HGGD is far below its authors' checkpoint**: −10.35 / −6.53 / −3.20 AP from it
-      without the filter, −8.42 / −4.31 / −2.46 with it. The training step is the
-      reference's, and the labels are those the released converter writes; the checkpoint
-      does not fit those labels and fits denser ones. Trained on labels suppressed at
-      1 cm and 30° instead of 2 cm and 60°, HGGD ends −0.53 / +0.58 / +0.63 AP from the
-      checkpoint without the filter and −0.11 / +1.40 / +0.79 with it
-      (`projects/hggd_labels`; its line here stays the training on the converter's labels).
-      On Kinect the training on the converter's labels is −7.25 / −3.45 / −1.15 and
-      −5.84 / −2.28 / −0.39 from the checkpoint.
+    - **HGGD lands on its authors' RealSense checkpoint**: HGGD ends
+      −0.53 / +0.58 / +0.63 AP from the checkpoint without the filter and
+      −0.11 / +1.40 / +0.79 with it. On Kinect it ends above the checkpoint on seen and
+      similar and below it on novel. Its config suppresses the labels at 1 cm and 30°, a
+      line its released converter has commented out: on the converter's 2 cm and 60° the
+      checkpoint does not fit the labels, and HGGD trained on them ends 7 to 10 AP below
+      it on seen (`projects/hggd_labels`).
     - **EconomicGrasp lands on its authors' checkpoint**: +0.06 / −0.09 / +1.04 AP from it
       without the filter, +0.22 / −0.02 / +1.01 with it. That checkpoint is itself 1.07 AP
       above the reported number on seen, so what separates the training here from the
@@ -185,8 +182,8 @@ collision filter nor the checkpoints, so it stands beside no measured number.
 | EconomicGrasp | not stated | 21.67 / 26.62 / 15.90 | — | — |
 | FineGrasp | off | — | 12.56 / 15.47 / 9.01 | 16.12 / 19.78 / 11.53 |
 | FineGrasp | on | — | 13.14 / 16.20 / 9.19 | 17.00 / 20.85 / 11.86 |
-| HGGD | off | — | 14.24 / 17.40 / 9.24 | 12.95 / 16.00 / 8.16 |
-| HGGD | on | — | 14.56 / 17.75 / 9.38 | 14.49 / 17.88 / 8.95 |
+| HGGD | off | — | 14.24 / 17.40 / 9.24 | 14.19 / 17.57 / 9.56 |
+| HGGD | on | — | 14.56 / 17.75 / 9.38 | 14.18 / 17.56 / 9.37 |
 
 </div>
 
@@ -222,8 +219,8 @@ note).
       the filter. EconomicGrasp is 1.55 AP above its checkpoint without the filter and 1.47
       with it; GraspNet-baseline is 1.26 AP below without and 3.05 below with it. On
       GraspNet-1Billion each of the three differs from its checkpoint by about 1 AP at
-      most. HGGD, 8 to 10 AP below its checkpoint there, is 1.29 AP below it here without
-      the filter and 0.07 with it. One training each: how much of this a second training
+      most. HGGD is 0.05 AP below its checkpoint here without the filter and 0.38 with
+      it. One training each: how much of this a second training
       would keep was not measured.
     - **The subset numbers of the user guide** (other cameras, other crops, the Kinect
       weights) were measured on 24 scenes and are not benchmark numbers.
