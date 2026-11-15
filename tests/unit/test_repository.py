@@ -427,13 +427,9 @@ def test_the_readmes_print_no_number_that_is_not_computed(name, chips):
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_methods_of_the_readme_are_those_of_the_metafiles_in_page_order(name, chips):
-    """The results table has one row per method, in page order: its page, venue and input."""
-    reads = {"README.md": {"depth": "depth"}, "README_zh-CN.md": {"depth": "深度"}}[name]
-    expected = [
-        [f"[{info.name}]({site_page(info.page)})", info.venue, reads.get(info.inputs, info.inputs)]
-        for info in chips.methods()
-    ]
-    shown = [cells[:3] for cells in table(text(name), ZOO[name])]
+    """The results table has one row per method, in page order: its page and venue."""
+    expected = [[f"[{info.name}]({site_page(info.page)})", info.venue] for info in chips.methods()]
+    shown = [cells[:2] for cells in table(text(name), ZOO[name])]
     assert shown == expected, f"{name}: the methods of the results table"
 
 
@@ -565,12 +561,12 @@ def test_the_results_of_the_readme_are_rows_of_the_metafiles(name, chips):
     assert len(shown) == len(chips.methods())
     for cells, info in zip(shown, chips.methods(), strict=True):
         target, trained = rows[info.name]
-        states = [FILTER[word.strip()] for word in cells[3].split("·")]
+        states = [FILTER[word.strip()] for word in cells[2].split("·")]
         expected = [target.collision_filter]
         if target.collision_filter is None:
             expected.append(trained.collision_filter)
-        assert states == expected, (name, info.name, cells[3])
-        assert cells[4:] == [numbers_text(target), numbers_text(trained)], (name, info.name)
+        assert states == expected, (name, info.name, cells[2])
+        assert cells[3:] == [numbers_text(target), numbers_text(trained)], (name, info.name)
 
 
 def test_every_option_is_probed_under_each_method_it_applies_to_or_says_why():

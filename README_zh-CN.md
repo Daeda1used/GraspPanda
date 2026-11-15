@@ -38,15 +38,16 @@ GraspPanda 让每个方法都走同一套流水线、同一个评测器；这个
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
-pip install -e ".[spconv-cu126,timm]"   # `grasppanda env` 会列出装了什么、还需要修什么
-curl -LO https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+pip install -e ".[spconv-cu126,timm]"
+curl -LO \
+  https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
 python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
     --source-format economicgrasp --camera realsense
 grasppanda demo economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
     --weights economicgrasp_realsense.pth --example --collision-filter
 ```
 
-`demo` 会写出预测的抓取和一张抓取图。每个方法都可以这样运行，输入可以是数据集里的一帧、一张深度图或一个点云：[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)。
+`demo` 会写出预测的抓取和一张抓取图；`grasppanda env` 会列出装了什么、还需要修什么。每个方法都可以这样运行，输入可以是数据集里的一帧、一张深度图或一个点云：[运行一个方法](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/)。
 
 ## 替换一个阶段
 
@@ -62,10 +63,10 @@ grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_1
     --set backbone=ptv3 -o baseline_ptv3.yaml
 grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
     --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
-grasppanda probe baseline_ptv3.yaml   # 短暂训练它；没有数据集时只做合成场景检查
+grasppanda probe baseline_ptv3.yaml   # 短暂训练它
 ```
 
-PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：完整训练后，PTv3 比方法原装的编码器低 3.8 到 10.4 AP（[完整训练的替换](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)）。
+没有数据集时，probe 只做合成场景检查。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：完整训练后，PTv3 比方法原装的编码器低 3.8 到 10.4 AP（[完整训练的替换](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)）。
 
 | 槽位 | 适用于 |
 |---|---|
@@ -104,14 +105,14 @@ PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下
 
 GraspNet-1Billion（RealSense）上 seen / similar / novel 的 AP：各方法报告的数字，以及按其配置中的训练方案在这里从零训练的结果。
 
-| 方法 | 发表 | 输入 | 碰撞过滤 | 报告 | 这里训练 |
-|---|---|---|:---:|---|---|
-| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | 深度 | 开 | 47.47 / 42.27 / 16.61 | 46.81 / 41.90 / 16.74 |
-| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | 深度 | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
-| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | 深度 | 关 | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
-| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | 深度 | 关 | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
-| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | 深度 | 关 | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
-| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | RGB-D | 未说明 · 开 | 64.45 / 53.59 / 24.59 | 63.61 / 54.31 / 24.95 |
+| 方法 | 发表 | 碰撞过滤 | 报告 | 这里训练 |
+|---|---|:---:|---|---|
+| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | 开 | 47.47 / 42.27 / 16.61 | 46.81 / 41.90 / 16.74 |
+| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | 关 | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | 关 | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
+| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | 关 | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
+| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | 关 | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
+| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | 未说明 · 开 | 64.45 / 53.59 / 24.59 | 63.61 / 54.31 / 24.95 |
 
 GraspNet-baseline 在每个划分上与报告数字相差不超过 1 AP。Scale-Balanced-Grasp、EconomicGrasp 和 HGGD 达到作者权重的成绩；GSNet 高于论文，FineGrasp 低于论文，两处差距原因都尚不清楚。[模型库](https://daeda1used.github.io/GraspPanda/model_zoo/)列出全部数字：碰撞过滤开和关的结果，以及作者权重在这里测得的成绩。这里训练的权重暂未发布；每个方法都可以用作者发布的权重运行。
 

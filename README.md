@@ -48,16 +48,18 @@ one):
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
-pip install -e ".[spconv-cu126,timm]"   # `grasppanda env` says what is installed and what to fix
-curl -LO https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+pip install -e ".[spconv-cu126,timm]"
+curl -LO \
+  https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
 python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
     --source-format economicgrasp --camera realsense
 grasppanda demo economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
     --weights economicgrasp_realsense.pth --example --collision-filter
 ```
 
-`demo` writes the grasps and a picture of them. Every method runs the same way, on a
-dataset frame, a depth image or a point cloud:
+`demo` writes the grasps and a picture of them; `grasppanda env` says what is installed
+and what to fix. Every method runs the same way, on a dataset frame, a depth image or a
+point cloud:
 [run a method](https://daeda1used.github.io/GraspPanda/get_started/run_a_method/).
 
 ## Swap a stage
@@ -76,10 +78,11 @@ grasppanda compose graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_1
     --set backbone=ptv3 -o baseline_ptv3.yaml
 grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
     --set image_encoder=dinov2-small-reg-depth-stem -o hggd_dinov2.yaml
-grasppanda probe baseline_ptv3.yaml   # trains it briefly; without the dataset, a synthetic check
+grasppanda probe baseline_ptv3.yaml   # trains it briefly
 ```
 
-PTv3 runs under 5/5 seed-based methods; under 4/5 it trains like shipped (worse under
+Without the dataset, a probe runs a synthetic check instead. PTv3 runs under 5/5
+seed-based methods; under 4/5 it trains like shipped (worse under
 FineGrasp). The DINOv2 encoder runs under HGGD and trains on a par with HGGD's own. A probe
 says a swap trains, not how well: fully trained, PTv3 ends 3.8 to 10.4 AP lower
 ([trained swaps](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)).
@@ -124,14 +127,14 @@ Where each option runs, under which method and why not elsewhere: the
 AP on GraspNet-1Billion (RealSense) as seen / similar / novel: what each method reports,
 and the method trained here from scratch with the recipe of its config.
 
-| Method | Venue | Reads | Collision filter | Reported | Trained here |
-|---|---|---|:---:|---|---|
-| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | depth | on | 47.47 / 42.27 / 16.61 | 46.81 / 41.90 / 16.74 |
-| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | depth | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
-| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | depth | off | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
-| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | depth | off | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
-| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | depth | off | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
-| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | RGB-D | not stated · on | 64.45 / 53.59 / 24.59 | 63.61 / 54.31 / 24.95 |
+| Method | Venue | Collision filter | Reported | Trained here |
+|---|---|:---:|---|---|
+| [GraspNet-baseline](https://daeda1used.github.io/GraspPanda/methods/graspnet_baseline/) | CVPR 2020 | on | 47.47 / 42.27 / 16.61 | 46.81 / 41.90 / 16.74 |
+| [GSNet](https://daeda1used.github.io/GraspPanda/methods/gsnet/) | ICCV 2021 | off | 65.70 / 53.75 / 23.98 | 68.83 / 60.35 / 25.20 |
+| [Scale-Balanced-Grasp](https://daeda1used.github.io/GraspPanda/methods/scale_balanced_grasp/) | CoRL 2022 | off | 58.95 / 52.97 / 22.63 | 57.23 / 51.13 / 21.98 |
+| [EconomicGrasp](https://daeda1used.github.io/GraspPanda/methods/economicgrasp/) | ECCV 2024 | off | 68.21 / 61.19 / 25.48 | 69.34 / 61.41 / 26.21 |
+| [FineGrasp](https://daeda1used.github.io/GraspPanda/methods/finegrasp/) | arXiv 2025 | off | 71.67 / 62.83 / 27.40 | 69.77 / 59.72 / 25.77 |
+| [HGGD](https://daeda1used.github.io/GraspPanda/methods/hggd/) | RA-L 2023 | not stated · on | 64.45 / 53.59 / 24.59 | 63.61 / 54.31 / 24.95 |
 
 GraspNet-baseline is within 1 AP of the reported number on every split. Scale-Balanced-Grasp,
 EconomicGrasp and HGGD land on their authors' checkpoints; GSNet ends above its paper and

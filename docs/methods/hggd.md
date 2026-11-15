@@ -189,48 +189,46 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
 
     | Option | Runs | Trains like shipped | Under HGGD |
     |---|---|---|---|
-    | <code class="gp-nowrap">convnextv2-atto</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped); predicts ✗: no grasp on any frame |
-    | <code class="gp-nowrap">convnextv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">convnextv2-atto</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset rose 6 % |
+    | <code class="gp-nowrap">convnextv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
     | <code class="gp-nowrap">dinov2-small-reg-depth-stem</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
-    | <code class="gp-nowrap">dinov2-small-reg</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">dinov3-convnext-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">dinov3-vits16</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">efficientnetv2-s</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">efficientvit-b1</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">eva02-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">fastvit-sa12</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">fastvit-t8</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">hf-convnextv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">hf-depth-anything-v2-small</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
-    | <code class="gp-nowrap">hf-dinov2-small-reg</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">dinov2-small-reg</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset rose 76 % |
+    | <code class="gp-nowrap">dinov3-convnext-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rising |
+    | <code class="gp-nowrap">dinov3-vits16</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> | learns ✗: anchor_offset rose 43 % |
+    | <code class="gp-nowrap">efficientnetv2-s</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">efficientvit-b1</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
+    | <code class="gp-nowrap">eva02-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset rose 13 % |
+    | <code class="gp-nowrap">fastvit-sa12</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rising |
+    | <code class="gp-nowrap">fastvit-t8</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 135 % |
+    | <code class="gp-nowrap">hf-convnextv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">hf-depth-anything-v2-small</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset rose 50 % |
+    | <code class="gp-nowrap">hf-dinov2-small-reg</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 12 % |
     | <code class="gp-nowrap">hf-dinov2-small</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
-    | <code class="gp-nowrap">hf-hiera-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">hf-hiera-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset flat |
     | <code class="gp-nowrap">hf-radio-v3-base</code> | <span class="gp-chip gp-chip--muted" title="undecided (needs your consent (remote code))">HGGD ?</span><br><small>undecided (needs your consent (remote code))</small> | <span class="gp-chip gp-chip--muted">not compared</span> | needs your consent: model.image_encoder: HFImageEncoder: `model_args.trust_remote_code: true` runs Python code downloaded from the hub repository 'nvidia/C-RADIOv3-B' on this machine. Read that repository, then state that you accept it with `accept_remote_code: true` (`--opts model.image_encoder.accept_remote_code=true`). |
-    | <code class="gp-nowrap">hf-siglip2-base</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">hf-siglip2-base</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 18 % |
     | <code class="gp-nowrap">hf-swinv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
-    | <code class="gp-nowrap">hggd-residual</code> | <span class="gp-chip gp-chip--muted" title="own in HGGD">own only</span><br><small>own in HGGD</small> | <span class="gp-chip gp-chip--muted">not compared</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">hiera-small-abswin</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">maxvit-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">mobilenetv4-conv-small</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">mobilenetv4-hybrid-medium</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped); predicts ✗: no grasp on any frame |
-    | <code class="gp-nowrap">pe-spatial-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">repvit-m1</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">resnet18</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">resnet34-rgbd</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">hggd-residual</code> | <span class="gp-chip gp-chip--muted" title="own in HGGD">own only</span><br><small>own in HGGD</small> | <span class="gp-chip gp-chip--muted">not compared</span> | ✓ |
+    | <code class="gp-nowrap">hiera-small-abswin</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 14 % |
+    | <code class="gp-nowrap">maxvit-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 12 % |
+    | <code class="gp-nowrap">mobilenetv4-conv-small</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">mobilenetv4-hybrid-medium</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rising; predicts ✗: no grasp on any frame |
+    | <code class="gp-nowrap">pe-spatial-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
+    | <code class="gp-nowrap">repvit-m1</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset rose 42 % |
+    | <code class="gp-nowrap">resnet18</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rose 80 % |
+    | <code class="gp-nowrap">resnet34-rgbd</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
     | <code class="gp-nowrap">resnet34</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
-    | <code class="gp-nowrap">resnet50</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">sam2-hiera-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">siglip2-base</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">swinv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">tv-convnext-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">tv-efficientnetv2-s</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">tv-mobilenetv3-large</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">tv-regnet-y-800mf</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
-    | <code class="gp-nowrap">tv-resnet34</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">resnet50</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">sam2-hiera-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
+    | <code class="gp-nowrap">siglip2-base</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset rising |
+    | <code class="gp-nowrap">swinv2-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | ✓ |
+    | <code class="gp-nowrap">tv-convnext-tiny</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> | learns ✗: anchor_offset flat |
+    | <code class="gp-nowrap">tv-efficientnetv2-s</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">tv-mobilenetv3-large</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
+    | <code class="gp-nowrap">tv-regnet-y-800mf</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | learns ✗: anchor_offset active in 7 of 20 iterations |
+    | <code class="gp-nowrap">tv-resnet34</code> | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> | ✓ |
 
     </div>
-
-    *learns ? (as shipped)*: HGGD as shipped does not reach *learns* in a short run either (anchor_offset flat), so under HGGD that level says nothing about an option.
 
     </div>
 
@@ -245,25 +243,23 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
 
     | Option | Runs | Trains like shipped | Under HGGD |
     |---|---|---|---|
-    | <code class="gp-nowrap">approach-cone</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
-    | <code class="gp-nowrap">center-gripper</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
-    | <code class="gp-nowrap">collision-strict</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
+    | <code class="gp-nowrap">approach-cone</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
+    | <code class="gp-nowrap">center-gripper</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
+    | <code class="gp-nowrap">collision-strict</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">collision</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
-    | <code class="gp-nowrap">furthest-sampling</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
+    | <code class="gp-nowrap">furthest-sampling</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ✗: anchor_offset flat |
     | <code class="gp-nowrap">gripper-limits</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">mesh-collision</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">nms</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
-    | <code class="gp-nowrap">score-threshold</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
-    | <code class="gp-nowrap">table-plane</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
+    | <code class="gp-nowrap">score-threshold</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
+    | <code class="gp-nowrap">table-plane</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">to-base-frame</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">top-k</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">width-from-cloud</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
-    | <code class="gp-nowrap">workspace</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | learns ? (as shipped) |
+    | <code class="gp-nowrap">workspace</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">target-mask</code> | <span class="gp-chip gp-chip--muted" title="reads observation.masks, which no shipped dataset fills">no record</span><br><small>reads observation.masks, which no shipped dataset fills</small> | — | no record |
 
     </div>
-
-    *learns ? (as shipped)*: HGGD as shipped does not reach *learns* in a short run either (anchor_offset flat), so under HGGD that level says nothing about an option.
 
     *Trains like shipped*: — (post-processing trains nothing: it changes predictions, not the training).
 
@@ -284,23 +280,21 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
     | <code class="gp-nowrap">adamw</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp, HGGD</small> | ✓ |
     | <code class="gp-nowrap">ademamix</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small> | ✓ |
     | <code class="gp-nowrap">prodigy</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under Scale-Balanced-Grasp, FineGrasp">4/6 on a par · 2 worse</span><br><small>worse under Scale-Balanced-Grasp, FineGrasp</small> | ✓ |
-    | <code class="gp-nowrap">schedulefree-adamw</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span> | learns ? (as shipped) |
-    | <code class="gp-nowrap">schedulefree-radam</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">schedulefree-adamw</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span> | learns ✗: offsets flat; anchor_offset rose 11 % |
+    | <code class="gp-nowrap">schedulefree-radam</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped">not compared</span> | learns ✗: offsets flat; anchor flat |
     | <code class="gp-nowrap">schedulefree-sgd</code> | <span class="gp-chip gp-chip--warn" title="not GSNet, EconomicGrasp, FineGrasp (unstable twice in the short probe)">3/6</span> | <span class="gp-chip gp-chip--muted" title="not compared under GraspNet-baseline, Scale-Balanced-Grasp, HGGD: it trained on a schedule of its own, not on that of the method as shipped; not compared under GSNet, EconomicGrasp, FineGrasp: the swap did not run at level 1">not compared</span> | ✓ |
     | <code class="gp-nowrap">soap</code> | <span class="gp-chip gp-chip--warn" title="not HGGD (not verified: one CUDA illegal memory access on a shared GPU)">5/6</span> | <span class="gp-chip gp-chip--warn" title="worse under FineGrasp">4/5 on a par · 1 worse</span><br><small>worse under FineGrasp</small> | not verified: one CUDA illegal memory access on a shared GPU |
     | <code class="gp-nowrap">stableadamw</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, FineGrasp, HGGD</small> | ✓ |
     | <code class="gp-nowrap">timm-adan</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp, HGGD; diverging under FineGrasp">2/6 on a par · 1 diverging · 3 worse</span> | ✓ |
-    | <code class="gp-nowrap">timm-adopt</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under EconomicGrasp, FineGrasp, HGGD</small> | learns ? (as shipped) |
+    | <code class="gp-nowrap">timm-adopt</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp, HGGD">3/6 on a par · 3 worse</span><br><small>worse under EconomicGrasp, FineGrasp, HGGD</small> | ✓ |
     | <code class="gp-nowrap">timm-lamb</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--no" title="diverging under FineGrasp">5/6 on a par · 1 diverging</span><br><small>diverging under FineGrasp</small> | ✓ |
-    | <code class="gp-nowrap">timm-lion</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp, HGGD; diverging under Scale-Balanced-Grasp">0/6 on a par · 1 diverging · 5 worse</span> | ✓ |
+    | <code class="gp-nowrap">timm-lion</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp, FineGrasp, HGGD; diverging under Scale-Balanced-Grasp">0/6 on a par · 1 diverging · 5 worse</span> | learns ✗: anchor_offset flat |
     | <code class="gp-nowrap">timm-madgrad</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--no" title="diverging under GraspNet-baseline; worse under Scale-Balanced-Grasp, FineGrasp">3/6 on a par · 1 diverging · 2 worse</span> | ✓ |
-    | <code class="gp-nowrap">timm-mars</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small> | learns ? (as shipped) |
+    | <code class="gp-nowrap">timm-mars</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under FineGrasp, HGGD">4/6 on a par · 2 worse</span><br><small>worse under FineGrasp, HGGD</small> | ✓ |
     | <code class="gp-nowrap">encoder-lr-0.1</code> | <span class="gp-chip gp-chip--ok">5/5</span> | <span class="gp-chip gp-chip--no" title="worse under GraspNet-baseline, GSNet, EconomicGrasp; diverging under FineGrasp">1/5 on a par · 1 diverging · 3 worse</span> | refused (incompatible by design): it is written for the scene encoder of the seed-based skeleton (`model.backbone`), which HGGD does not have. |
     | <code class="gp-nowrap">layer-decay</code> | <span class="gp-chip gp-chip--ok">5/5</span> | <span class="gp-chip gp-chip--no" title="worse under GSNet, EconomicGrasp; diverging under FineGrasp">2/5 on a par · 1 diverging · 2 worse</span><br><small>worse under GSNet, EconomicGrasp; diverging under FineGrasp</small> | refused (incompatible by design): it is written for the scene encoder of the seed-based skeleton (`model.backbone`), which HGGD does not have. |
 
     </div>
-
-    *learns ? (as shipped)*: HGGD as shipped does not reach *learns* in a short run either (anchor_offset flat), so under HGGD that level says nothing about an option.
 
     Who is left out, and why:
 
@@ -324,10 +318,10 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
     | <code class="gp-nowrap">constant</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | ✓ |
     | <code class="gp-nowrap">cosine-restarts</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | ✓ |
     | <code class="gp-nowrap">cosine</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | ✓ |
-    | <code class="gp-nowrap">multistep-warmup</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | learns ? (as shipped) |
+    | <code class="gp-nowrap">multistep-warmup</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | learns ✗: anchor_offset flat |
     | <code class="gp-nowrap">onecycle</code> | <span class="gp-chip gp-chip--ok">6/6</span> | — | ✓ |
     | <code class="gp-nowrap">poly</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | ✓ |
-    | <code class="gp-nowrap">warmup-cosine</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | learns ? (as shipped) |
+    | <code class="gp-nowrap">warmup-cosine</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">5/6</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | — | ✓ |
 
     </div>
 
@@ -343,7 +337,7 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
     | <code class="gp-nowrap">accumulate-2</code> | <span class="gp-chip gp-chip--ok" title="own in HGGD">5/5</span><br><small>own in HGGD</small> | <span class="gp-chip gp-chip--warn" title="worse under GraspNet-baseline, GSNet, EconomicGrasp">2/5 on a par · 3 worse</span><br><small>worse under GraspNet-baseline, GSNet, EconomicGrasp</small> | shipped |
     | <code class="gp-nowrap">agc</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--ok">6/6 on a par</span> | ✓ |
     | <code class="gp-nowrap">amp</code> | <span class="gp-chip gp-chip--no" title="not supported yet">0/6</span><br><small>not supported yet</small> | <span class="gp-chip gp-chip--muted">not compared</span> | refused (not supported yet): train.amp: mixed precision is not supported by HGGD yet: its loss is not written for half-precision tensors (the detector does not declare `amp_ready = True`). |
-    | <code class="gp-nowrap">ema</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--ok">6/6 on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">ema</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--ok">6/6 on a par</span> | ✓ |
     | <code class="gp-nowrap">grad-clip</code> | <span class="gp-chip gp-chip--ok">6/6</span> | <span class="gp-chip gp-chip--warn" title="worse under FineGrasp">5/6 on a par · 1 worse</span><br><small>worse under FineGrasp</small> | ✓ |
     | <code class="gp-nowrap">swa</code> | <span class="gp-chip gp-chip--warn" title="not GraspNet-baseline, Scale-Balanced-Grasp (not verified: the probe is shorter than the epoch at which averaging starts)">4/6</span> | <span class="gp-chip gp-chip--ok">4/4 on a par</span> | ✓ |
     | <code class="gp-nowrap">freeze-encoder</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (unstable twice in the short probe)">4/5</span><br><small>not FineGrasp (unstable twice in the short probe)</small> | <span class="gp-chip gp-chip--ok" title="not compared under FineGrasp: the swap did not run at level 1">4/4 on a par</span> | refused (incompatible by design): it is written for the scene encoder of the seed-based skeleton (`model.backbone`), which HGGD does not have. |
@@ -362,7 +356,7 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
 
     | Option | Runs | Trains like shipped | Under HGGD |
     |---|---|---|---|
-    | <code class="gp-nowrap">dropout</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (fails: the transform order of the composed config is wrong (DepthNormals must run first))">5/6</span> | <span class="gp-chip gp-chip--ok">5/5 on a par</span> | learns ? (as shipped) |
+    | <code class="gp-nowrap">dropout</code> | <span class="gp-chip gp-chip--warn" title="not FineGrasp (fails: the transform order of the composed config is wrong (DepthNormals must run first))">5/6</span> | <span class="gp-chip gp-chip--ok">5/5 on a par</span> | ✓ |
     | <code class="gp-nowrap">jitter</code> | <span class="gp-chip gp-chip--warn" title="not HGGD (not supported yet)">5/6</span><br><small>not HGGD (not supported yet)</small> | <span class="gp-chip gp-chip--ok">5/5 on a par</span> | refused (not supported yet): data.train.dataset.transforms: RandomJitter moves the points, but this dataset section also serves image-space data (`rgb`, `depth`, `view_grasps`), which would stay where it was. |
     | <code class="gp-nowrap">shift</code> | <span class="gp-chip gp-chip--warn" title="not HGGD (not supported yet)">5/6</span><br><small>not HGGD (not supported yet)</small> | <span class="gp-chip gp-chip--warn" title="worse under EconomicGrasp, FineGrasp">3/5 on a par · 2 worse</span><br><small>worse under EconomicGrasp, FineGrasp</small> | refused (not supported yet): data.train.dataset.transforms: RandomShift moves the points, but this dataset section also serves image-space data (`rgb`, `depth`, `view_grasps`), which would stay where it was. |
 
