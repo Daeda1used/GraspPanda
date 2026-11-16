@@ -40,7 +40,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
 pip install -e ".[spconv-cu126,timm]"
 curl -LO \
-  https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
 python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
     --source-format economicgrasp --camera realsense
 grasppanda demo economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
@@ -66,7 +66,7 @@ grasppanda compose hggd/hggd_r34w8_g1b-realsense_15e \
 grasppanda probe baseline_ptv3.yaml   # 短暂训练它
 ```
 
-没有数据集时，probe 只做合成场景检查。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，训练得和 HGGD 的原装组件不相上下。`probe` 只说明组合能训练，不说明最终多好：完整训练后，PTv3 比方法原装的编码器低 3.8 到 10.4 AP（[完整训练的替换](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)）。
+没有数据集时，probe 只做合成场景检查。PTv3 在全部 5 个基于种子点的方法下都能跑，其中 4 个方法下训练得和原装组件不相上下（FineGrasp 下较差）。DINOv2 编码器在 HGGD 下能跑，但训练得不如 HGGD 的原装组件。`probe` 只说明组合能训练，不说明最终多好：完整训练后，PTv3 比方法原装的编码器低 3.8 到 10.4 AP（[完整训练的替换](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)）。
 
 | 槽位 | 适用于 |
 |---|---|

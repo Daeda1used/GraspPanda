@@ -500,12 +500,12 @@ def test_a_level_the_method_as_shipped_misses_too_is_undecided_under_it():
         assert generator.level2_needs(records) in page
         assert generator.level2_needs(records).startswith("Level 2 needs *runs*, not *learns*")
         assert f"[{title}](../advanced_guides/learns_like_reference.md)" in page
-    # FineGrasp and Scale-Balanced-Grasp as shipped predict nothing useful; HGGD as shipped
-    # has a flat term
+    # FineGrasp and Scale-Balanced-Grasp as shipped predict nothing useful. HGGD as shipped
+    # learns: on the labels of its config every loss term falls (on the converter's labels
+    # its anchor offset stayed flat)
     assert undecided == {
         ("Scale-Balanced-Grasp", "predicts"),
         ("FineGrasp", "predicts"),
-        ("HGGD", "learns"),
     }
     # the rows of the review: no grasp (or one score) under the method as shipped either
     finegrasp = (REPO / "docs" / "methods" / "finegrasp.md").read_text(encoding="utf-8")

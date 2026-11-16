@@ -316,7 +316,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
         "ptv3 level 2": len(ptv3_learns.compared) == seed and ptv3_learns.excluded == {},
         "ptv3 worse": ptv3_learns.tail == "worse under FineGrasp",
         "dino runs": dino.fraction == "HGGD ✓",
-        "dino level 2": dino_learns.fraction == "HGGD: on a par",
+        "dino level 2": dino_learns.fraction == "HGGD: worse",
         # the collision-filter mix-up: GSNet's seen AP without and with the filter
         "gsnet off": f"{gsnet[False]:.2f}" == "65.70",
         "gsnet on": f"{gsnet[True]:.2f}" == "67.12",
@@ -331,7 +331,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"under {par}/{seed} it trains like shipped": shared["ptv3 level 2"],
             "(worse under FineGrasp)": shared["ptv3 worse"],
             "The DINOv2 encoder runs under HGGD": shared["dino runs"],
-            "trains on a par with HGGD's own": shared["dino level 2"],
+            "where it trains worse than HGGD's own": shared["dino level 2"],
             f"PTv3 ends {lower} lower": gaps[0] > 1.12,
             f"All {every} methods": chips.SCOPE_TEXT["all"] == f"All {every} methods",
             f"Seed-based · {seed} methods": chips.SCOPE_TEXT["seed-based"]
@@ -358,7 +358,7 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"其中 {par} 个方法下训练得和原装组件不相上下": shared["ptv3 level 2"],
             "（FineGrasp 下较差）": shared["ptv3 worse"],
             "DINOv2 编码器在 HGGD 下能跑": shared["dino runs"],
-            "训练得和 HGGD 的原装组件不相上下": shared["dino level 2"],
+            "但训练得不如 HGGD 的原装组件": shared["dino level 2"],
             f"PTv3 比方法原装的编码器低 {lower.replace(' to ', ' 到 ')}": gaps[0] > 1.12,
             f"全部 {every} 个方法": True,
             f"基于种子点 · {seed} 个方法": True,
