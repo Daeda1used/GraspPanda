@@ -247,6 +247,102 @@ def spread(grasps: np.ndarray, count: int, apart: float) -> np.ndarray:
     return np.array(kept)
 
 
+def in_table_frame(grasps: np.ndarray, table_from_camera: np.ndarray) -> np.ndarray:
+    """Grasps of ``demo`` (camera frame) moved into the frame of the table."""
+    rotation = table_from_camera[:3, :3]
+    moved = grasps.astype(np.float64).copy()
+    moved[:, 4:13] = np.einsum("ij,njk->nik", rotation, moved[:, 4:13].reshape(-1, 3, 3)).reshape(
+        -1, 9
+    )
+    moved[:, 13:16] = moved[:, 13:16] @ rotation.T + table_from_camera[:3, 3]
+    return moved
+
+
+def hands(grasps: np.ndarray) -> list[np.ndarray]:
+    """The corners of the gripper boxes of every grasp."""
+    return [
+        box_triangles(lower, upper)[0].reshape(-1, 3) @ grasp[4:13].reshape(3, 3).T + grasp[13:16]
+        for grasp in grasps
+        for lower, upper in gripper_boxes(grasp[1], grasp[3])
+    ]
+
+
+class Stage:
+    """One frame of a scene, cropped around its objects, and a camera that frames it: every
+    picture drawn from one stage lines up with the others."""
+
+    def __init__(self, root: Path, scene: int, frame: int = 0, margin: float = 0.07):
+        points, colours, self.table_from_camera = load_scene(root, scene, frame)
+        board = np.abs(points[:, 2]) < 0.004
+        keep_box = np.percentile(points[board][:, :2], [3.0, 97.0], axis=0)
+        above = points[
+            (points[:, 2] > 0.01)
+            & np.all((points[:, :2] >= keep_box[0]) & (points[:, :2] <= keep_box[1]), axis=1)
+        ]
+        around = (
+            np.percentile(above[:, :2], [1.0, 99.0], axis=0) + np.array([[-1.0], [1.0]]) * margin
+        )
+        keep_box = np.stack(
+            [np.maximum(keep_box[0], around[0]), np.minimum(keep_box[1], around[1])]
+        )
+        inside = np.all((points[:, :2] >= keep_box[0]) & (points[:, :2] <= keep_box[1]), axis=1)
+        inside &= (points[:, 2] > -0.004) & (points[:, 2] < 0.30)
+        self.points, self.colours = points[inside], colours[inside]
+        (x0, y0), (x1, y1) = keep_box
+        self.corners = np.array([[x0, y0, 0.0], [x1, y0, 0.0], [x1, y1, 0.0], [x0, y1, 0.0]])
+        flat = np.abs(self.points[:, 2]) < 0.003
+        self.board_colour = np.median(self.colours[flat], axis=0) * 0.80
+        self.objects = self.points[self.points[:, 2] > 0.01]
+        self.target = np.array([(x0 + x1) / 2, (y0 + y1) / 2, 0.0])
+        self.target[:2] = 0.5 * self.target[:2] + 0.5 * np.median(self.objects[:, :2], axis=0)
+        sensor = self.table_from_camera[:3, 3]  # where the camera of the frame stood
+        self.base = np.degrees(np.arctan2(sensor[1] - self.target[1], sensor[0] - self.target[0]))
+
+    def grasps(self, path: Path, count: int, apart: float) -> np.ndarray:
+        """The best grasps ``demo`` wrote, in the table frame, ``apart`` metres apart."""
+        return spread(in_table_frame(np.load(path), self.table_from_camera), count, apart)
+
+    def view(
+        self,
+        size: tuple[int, int],
+        drawn: list[np.ndarray],
+        azimuth: float,
+        elevation: float,
+        fov: float,
+        fill: float,
+    ) -> View:
+        """The camera at ``azimuth`` (from where the sensor stood) and ``elevation`` that fits
+        the board, the objects and the grasps ``drawn`` (one array per picture) in ``size``."""
+        objects = self.objects[:: max(1, len(self.objects) // 4000)]
+        extent = np.concatenate([self.corners, objects, *[c for g in drawn for c in hands(g)]])
+        a, e = np.radians(self.base + azimuth), np.radians(elevation)
+        direction = np.array([np.cos(e) * np.cos(a), np.cos(e) * np.sin(a), np.sin(e)])
+        low, high = 0.2, 5.0
+        for _ in range(40):  # the distance at which the scene spans `fill` of the picture
+            middle = (low + high) / 2
+            pixels, _ = View(self.target + middle * direction, self.target, size, fov).project(
+                extent
+            )
+            span = (pixels.max(0) - pixels.min(0)) / np.array(size)
+            low, high = (middle, high) if max(span[0] / fill, span[1] / 0.9) > 1 else (low, middle)
+        view = View(self.target + high * direction, self.target, size, fov)
+        pixels, _ = view.project(extent)  # centre what is drawn
+        view.offset = (pixels.max(0) + pixels.min(0)) / 2 - np.array(size) / 2
+        return view
+
+    def picture(self, grasps: np.ndarray, view: View, supersample: int = 3) -> Image.Image:
+        image, coverage = render(
+            self.points,
+            self.colours,
+            grasps,
+            view,
+            supersample,
+            len(grasps),
+            (self.corners, self.board_colour),
+        )
+        return finish(image, coverage, supersample)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("grasps", type=Path, help="grasps.npy written by `grasppanda demo`")
@@ -276,70 +372,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = args.root or Path(os.environ["GRASPPANDA_GRASPNET1B_ROOT"])
-    points, colours, table_from_camera = load_scene(root, args.scene, args.frame)
-    grasps = np.load(args.grasps).astype(np.float64)
-    rotation = table_from_camera[:3, :3]
-    moved = grasps.copy()
-    moved[:, 4:13] = np.einsum("ij,njk->nik", rotation, grasps[:, 4:13].reshape(-1, 3, 3)).reshape(
-        -1, 9
-    )
-    moved[:, 13:16] = grasps[:, 13:16] @ rotation.T + table_from_camera[:3, 3]
-    moved = spread(moved, args.top_k, args.apart)
-
-    board = np.abs(points[:, 2]) < 0.004
-    keep_box = np.percentile(points[board][:, :2], [3.0, 97.0], axis=0)
-    above = points[
-        (points[:, 2] > 0.01)
-        & np.all((points[:, :2] >= keep_box[0]) & (points[:, :2] <= keep_box[1]), axis=1)
-    ]
-    around = (
-        np.percentile(above[:, :2], [1.0, 99.0], axis=0) + np.array([[-1.0], [1.0]]) * args.margin
-    )
-    keep_box = np.stack([np.maximum(keep_box[0], around[0]), np.minimum(keep_box[1], around[1])])
-    inside = np.all((points[:, :2] >= keep_box[0]) & (points[:, :2] <= keep_box[1]), axis=1)
-    inside &= (points[:, 2] > -0.004) & (points[:, 2] < 0.30)
-    points, colours = points[inside], colours[inside]
-    (x0, y0), (x1, y1) = keep_box
-    corners = np.array([[x0, y0, 0.0], [x1, y0, 0.0], [x1, y1, 0.0], [x0, y1, 0.0]])
-    board_colour = np.median(colours[np.abs(points[:, 2]) < 0.003], axis=0) * 0.80
-    objects = points[points[:, 2] > 0.01]
-    target = np.array([(x0 + x1) / 2, (y0 + y1) / 2, 0.0])
-    target[:2] = 0.5 * target[:2] + 0.5 * np.median(objects[:, :2], axis=0)
-    sensor = table_from_camera[:3, 3]  # where the camera of the frame stood, in the table frame
-    base = np.degrees(np.arctan2(sensor[1] - target[1], sensor[0] - target[0]))
-
+    stage = Stage(root, args.scene, args.frame, args.margin)
+    grasps = stage.grasps(args.grasps, args.top_k, args.apart)
     supersample = 3
     size = (args.size[0] * supersample, args.size[1] * supersample)
-    hands = [
-        box_triangles(lower, upper)[0].reshape(-1, 3) @ grasp[4:13].reshape(3, 3).T + grasp[13:16]
-        for grasp in moved
-        for lower, upper in gripper_boxes(grasp[1], grasp[3])
-    ]
-    extent = np.concatenate([corners, objects[:: max(1, len(objects) // 4000)], *hands])
-
-    def view_at(azimuth: float) -> View:
-        a, e = np.radians(base + azimuth), np.radians(args.elevation)
-        direction = np.array([np.cos(e) * np.cos(a), np.cos(e) * np.sin(a), np.sin(e)])
-        low, high = 0.2, 5.0
-        for _ in range(40):  # the distance at which the scene spans `fill` of the picture
-            middle = (low + high) / 2
-            pixels, _ = View(target + middle * direction, target, size, args.fov).project(extent)
-            span = (pixels.max(0) - pixels.min(0)) / np.array(size)
-            low, high = (
-                (middle, high) if max(span[0] / args.fill, span[1] / 0.9) > 1 else (low, middle)
-            )
-        view = View(target + high * direction, target, size, args.fov)
-        pixels, _ = view.project(extent)  # centre what is drawn
-        shift = (pixels.max(0) + pixels.min(0)) / 2 - np.array(size) / 2
-        view.offset = shift
-        return view
 
     def picture(azimuth: float) -> Image.Image:
-        view = view_at(azimuth)
-        image, coverage = render(
-            points, colours, moved, view, supersample, args.top_k, (corners, board_colour)
-        )
-        return finish(image, coverage, supersample)
+        view = stage.view(size, [grasps], azimuth, args.elevation, args.fov, args.fill)
+        return stage.picture(grasps, view, supersample)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     if args.frames:
@@ -357,7 +397,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         options = {"quality": 92, "method": 6} if args.out.suffix == ".webp" else {"optimize": True}
         picture(args.azimuth).save(args.out, **options)
-    print(f"wrote {args.out} ({args.out.stat().st_size / 1e6:.2f} MB), {len(moved)} grasps")
+    print(f"wrote {args.out} ({args.out.stat().st_size / 1e6:.2f} MB), {len(grasps)} grasps")
     return 0
 
 

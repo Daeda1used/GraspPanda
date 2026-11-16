@@ -1,0 +1,345 @@
+<!doctype html>
+<!-- The page tools/make_hero_animation.py records frame by frame: window.render(t) draws the
+     state at t seconds, nothing animates on its own. DATA is filled in by the tool. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: Inter; src: url("{{FONTS}}/Inter.var.woff2") format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: "JetBrains Mono"; src: url("{{FONTS}}/JetBrainsMono.var.woff2") format("woff2"); font-weight: 100 900; }
+  :root {
+    --ink: #e6edf3; --muted: #8b949e; --faint: #484f58; --line: rgba(240, 246, 252, 0.09);
+    --green: #3fb950; --teal: #39c5cf; --blue: #79c0ff; --panel: rgba(240, 246, 252, 0.035);
+  }
+  html, body { margin: 0; background: transparent; }
+  #stage {
+    position: relative; width: 1600px; height: 900px; overflow: hidden; border-radius: 28px;
+    font-family: Inter, sans-serif; color: var(--ink); font-feature-settings: "tnum" 1, "cv11" 1;
+    background:
+      radial-gradient(1200px 600px at 78% 8%, rgba(57, 197, 207, 0.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 100%, rgba(63, 185, 80, 0.10), transparent 60%),
+      linear-gradient(180deg, #0d1117 0%, #0b0e13 100%);
+  }
+  #veil { position: absolute; inset: 0; background: #0b0e13; pointer-events: none; z-index: 20; }
+
+  /* header */
+  #lockup { position: absolute; left: 64px; top: 40px; display: flex; align-items: center; gap: 14px; }
+  #lockup svg { width: 46px; height: 46px; }
+  #lockup b { font-size: 28px; letter-spacing: -0.8px; font-weight: 750; }
+  #lockup b i { font-style: normal; color: var(--green); }
+  .title { position: absolute; left: 64px; top: 104px; font-size: 52px; font-weight: 800;
+    letter-spacing: -1.6px; line-height: 1; white-space: nowrap;
+    background: linear-gradient(90deg, #e6edf3 0%, #e6edf3 35%, #7ee787 50%, #39c5cf 62%, #e6edf3 78%, #e6edf3 100%);
+    background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { position: absolute; left: 66px; top: 168px; font-size: 21px; color: var(--muted); white-space: nowrap; }
+  #pills { position: absolute; right: 64px; top: 48px; display: flex; gap: 10px; }
+  .pill { font-size: 17px; font-weight: 600; padding: 9px 16px; border-radius: 999px; color: var(--muted);
+    border: 1px solid var(--line); background: var(--panel); display: flex; gap: 9px; align-items: center; }
+  .pill span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px;
+    background: rgba(240, 246, 252, 0.08); color: var(--muted); }
+  .pill.on { color: #0b0e13; background: linear-gradient(90deg, #7ee787, #39c5cf); border-color: transparent; }
+  .pill.on span { background: rgba(11, 14, 19, 0.85); color: #7ee787; }
+
+  /* the card of stages */
+  .card { position: absolute; left: 60px; top: 232px; width: 524px; border-radius: 22px;
+    background: var(--panel); border: 1px solid var(--line); box-sizing: border-box; padding: 26px 28px; }
+  .card h3 { position: relative; height: 42px; margin: 0; font-size: 34px; font-weight: 750; letter-spacing: -0.8px; display: flex; align-items: center; gap: 14px; }
+  .chip { font-size: 15px; font-weight: 600; letter-spacing: 0; padding: 5px 11px; border-radius: 999px;
+    color: var(--muted); border: 1px solid var(--line); }
+  .chip.hot { color: #0b0e13; background: linear-gradient(90deg, #7ee787, #39c5cf); border-color: transparent; }
+  .rows { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .row { position: relative; height: 62px; border-radius: 14px; border: 1px solid var(--line);
+    background: rgba(240, 246, 252, 0.025); box-sizing: border-box; padding: 0 18px; display: flex; align-items: center; }
+  .row .slot { position: relative; width: 150px; height: 62px; overflow: hidden; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .row .slot span { position: absolute; left: 0; top: 50%; transform: translateY(-50%); white-space: nowrap; }
+  .row .val { position: absolute; left: 168px; right: 14px; top: 0; bottom: 0; overflow: hidden; }
+  .row .val div { position: absolute; left: 0; top: 50%; transform: translateY(-50%); white-space: nowrap;
+    font-family: "JetBrains Mono", monospace; font-size: 22px; font-weight: 500; color: var(--ink); }
+  .row .val div.fixed { color: var(--faint); font-family: Inter, sans-serif; font-style: italic; font-size: 20px; }
+  .row .glow { opacity: 0; position: absolute; inset: -1px; border-radius: 14px; pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(126, 231, 135, 0.9), 0 0 28px rgba(57, 197, 207, 0.35); }
+
+  /* grasps */
+  #view { position: absolute; left: 616px; top: 206px; width: 820px; height: 410px; }
+  #view img { position: absolute; left: 0; top: 0; width: 820px; height: 410px; }
+  #tag { position: absolute; left: 616px; top: 214px; z-index: 2; font-size: 18px; font-weight: 600; padding: 8px 14px;
+    border-radius: 12px; background: rgba(11, 14, 19, 0.72); border: 1px solid var(--line); white-space: nowrap; }
+  #ap { position: absolute; right: 64px; top: 210px; text-align: right; }
+  #ap .num { position: relative; height: 84px; overflow: hidden; font-size: 78px; font-weight: 800; letter-spacing: -2.5px; line-height: 1; }
+  #ap .lab { font-size: 17px; color: var(--muted); margin-top: 6px; letter-spacing: 0.3px; }
+
+  /* chart */
+  #chartbox { position: absolute; left: 616px; top: 622px; width: 920px; height: 230px; border-radius: 20px;
+    background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
+  #chart { position: absolute; left: 0; top: 0; width: 920px; height: 230px; }
+  #note { position: absolute; left: 66px; top: 848px; width: 500px; font-size: 14px; line-height: 1.45; color: var(--faint); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="lockup">{{LOGO}}<b><i>Grasp</i>Panda</b></div>
+  <div id="titles"></div>
+  <div id="pills"></div>
+  <div id="cards"></div>
+  <div id="view"><img id="imgA" alt="" style="visibility:hidden"><img id="imgB" alt=""></div>
+  <div id="tag"></div>
+  <div id="ap"><div class="num" id="apnum"></div><div class="lab" id="aplab"></div></div>
+  <div id="chartbox"><svg id="chart" viewBox="0 0 920 230"></svg></div>
+  <div id="note"></div>
+  <div id="veil"></div>
+</div>
+<script>
+const DATA = {{DATA}};
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = (x) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const out = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const span = (t, a, b) => clamp((t - a) / (b - a));
+const steps = DATA.steps, T = DATA.timing;
+
+// the start of every step, and of every act
+let at = T.intro; const start = [];
+steps.forEach((s, i) => {
+  if (i > 0 && s.act !== steps[i - 1].act) at += T.between;
+  start.push(at); at += T.step[s.act];
+});
+const actStart = [start[0], start[steps.findIndex((s) => s.act === 1)], at];
+const finale = at, total = at + T.finale;
+window.TOTAL = total;
+
+// header
+$("titles").innerHTML = DATA.acts.map((a, i) =>
+  `<div class="title" id="t${i}">${a.title}</div><div class="sub" id="s${i}">${a.sub}</div>`).join("");
+$("pills").innerHTML = DATA.acts.map((a, i) =>
+  `<div class="pill" id="p${i}"><span>${i + 1}</span>${a.pill}</div>`).join("");
+$("note").textContent = DATA.note;
+$("aplab").textContent = DATA.metric;
+
+// chart geometry
+const W = 920, H = 230, padL = 58, padR = 26, yTop = 52, yBottom = 196;
+const xs = steps.map((_, i) => padL + (W - padL - padR) * (i + 0.5) / steps.length);
+const y = (v) => yBottom - (yBottom - yTop) * (v - DATA.range[0]) / (DATA.range[1] - DATA.range[0]);
+const svgNS = "http://www.w3.org/2000/svg";
+const chart = $("chart");
+chart.innerHTML = `
+  <defs>
+    <linearGradient id="stroke" x1="0" x2="1"><stop offset="0" stop-color="#7ee787"/><stop offset="1" stop-color="#39c5cf"/></linearGradient>
+    <linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#39c5cf" stop-opacity="0.28"/><stop offset="1" stop-color="#39c5cf" stop-opacity="0"/></linearGradient>
+    <linearGradient id="areaA" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8b949e" stop-opacity="0.16"/><stop offset="1" stop-color="#8b949e" stop-opacity="0"/></linearGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <g id="zoom">
+    <g id="grid"></g>
+    <path id="areaPath0" fill="url(#areaA)"/><path id="linePath0" fill="none" stroke="#8b949e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path id="areaPath1" fill="url(#area)"/><path id="glowPath1" fill="none" stroke="url(#stroke)" stroke-width="7" opacity="0.35" filter="url(#soft)"/>
+    <path id="linePath1" fill="none" stroke="url(#stroke)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line id="best" stroke="#7ee787" stroke-width="1.4" stroke-dasharray="4 5"/>
+    <g id="dots"></g>
+    <circle id="ring" fill="none" stroke="#7ee787" stroke-width="2"/>
+    <g id="flag"><rect id="flagbox" rx="9" ry="9" fill="rgba(11,14,19,0.86)" stroke="rgba(240,246,252,0.14)"/>
+      <text id="flagtext" font-family="Inter" font-size="15" font-weight="600" fill="#e6edf3" text-anchor="middle"></text></g>
+    <g id="crown" opacity="0"><text id="crownnum" font-family="Inter" font-size="30" font-weight="800" fill="url(#stroke)" text-anchor="middle"></text>
+      <text id="crownlab" font-family="Inter" font-size="12" font-weight="600" fill="#8b949e" text-anchor="middle"></text></g>
+  </g>
+  <text x="${padL}" y="${H - 12}" font-family="Inter" font-size="13" fill="#484f58" id="seg0">Methods as published</text>
+  <text x="0" y="${H - 12}" font-family="Inter" font-size="13" fill="#484f58" id="seg1">GSNet, one stage swapped</text>
+  <text x="${W - padR}" y="24" font-family="Inter" font-size="13" fill="#484f58" text-anchor="end">AP · seen</text>`;
+const grid = $("grid");
+for (const v of DATA.gridlines) {
+  grid.insertAdjacentHTML("beforeend",
+    `<line x1="${padL - 6}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(240,246,252,0.07)"/>` +
+    `<text x="${padL - 14}" y="${y(v) + 5}" fill="#484f58" font-size="14" text-anchor="end" font-family="Inter">${v}</text>`);
+}
+const divider = (xs[DATA.split - 1] + xs[DATA.split]) / 2;
+grid.insertAdjacentHTML("beforeend",
+  `<line x1="${divider}" x2="${divider}" y1="${yTop - 20}" y2="${yBottom + 8}" stroke="rgba(240,246,252,0.10)" stroke-dasharray="3 5"/>`);
+steps.forEach((s, i) => {
+  $("dots").insertAdjacentHTML("beforeend", `<circle id="d${i}" cx="${xs[i]}" cy="${y(s.ap)}" r="0"/>`);
+});
+$("seg1").setAttribute("x", (divider + 14).toFixed(1));
+
+// a monotone curve through the points of a series (Fritsch-Carlson), sampled densely: it never
+// passes above or below the values it joins
+function curve(idx) {
+  const p = idx.map((i) => [xs[i], y(steps[i].ap)]), n = p.length;
+  const d = [], m = new Array(n).fill(0);
+  for (let k = 0; k < n - 1; k++) d.push((p[k + 1][1] - p[k][1]) / (p[k + 1][0] - p[k][0]));
+  for (let k = 1; k < n - 1; k++) m[k] = d[k - 1] * d[k] <= 0 ? 0 : (d[k - 1] + d[k]) / 2;
+  if (n > 1) { m[0] = d[0]; m[n - 1] = d[n - 2]; }
+  for (let k = 0; k < n - 1; k++) {
+    if (d[k] === 0) { m[k] = m[k + 1] = 0; continue; }
+    const a = m[k] / d[k], b = m[k + 1] / d[k], h = a * a + b * b;
+    if (h > 9) { const s = 3 / Math.sqrt(h); m[k] = s * a * d[k]; m[k + 1] = s * b * d[k]; }
+  }
+  const samples = [[p[0], 0]];
+  for (let k = 0; k < n - 1; k++) {
+    const dx = p[k + 1][0] - p[k][0];
+    for (let j = 1; j <= 24; j++) {
+      const u = j / 24, h00 = 2 * u ** 3 - 3 * u ** 2 + 1, h10 = u ** 3 - 2 * u ** 2 + u, h01 = -2 * u ** 3 + 3 * u ** 2, h11 = u ** 3 - u ** 2;
+      samples.push([[p[k][0] + u * dx, h00 * p[k][1] + h10 * dx * m[k] + h01 * p[k + 1][1] + h11 * dx * m[k + 1]], k + u]);
+    }
+  }
+  return samples;
+}
+const series = [0, 1].map((a) => steps.map((s, i) => [s, i]).filter(([s]) => s.act === a).map(([, i]) => i));
+const curves = series.map(curve);
+function drawSeries(k, upto) {   // upto: segments drawn, e.g. 2.4
+  const pts = curves[k].filter(([, u]) => u <= upto + 1e-9).map(([p]) => p);
+  const line = $("linePath" + k), area = $("areaPath" + k);
+  if (pts.length < 2 || upto <= 0) { line.setAttribute("d", ""); area.setAttribute("d", ""); if (k === 1) $("glowPath1").setAttribute("d", ""); return; }
+  const d = "M" + pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join("L");
+  line.setAttribute("d", d);
+  if (k === 1) $("glowPath1").setAttribute("d", d);
+  area.setAttribute("d", d + `L${pts[pts.length - 1][0].toFixed(1)},${yBottom}L${pts[0][0].toFixed(1)},${yBottom}Z`);
+}
+
+// one card: its title and its six rows; a step changes what they say
+const ROWS = Math.max(...steps.map((s) => s.rows.length));
+function size(value) {   // monospace: a character is about 0.61 em; the cell is 236 px wide
+  return `font-size:${Math.min(22, 222 / (0.62 * Math.max(1, (value || "").length))).toFixed(1)}px`;
+}
+$("cards").innerHTML = `<div class="card" id="card"><h3 id="head"></h3><div class="rows">` +
+  Array.from({ length: ROWS }, (_, r) => `<div class="row" id="r${r}"><div class="slot" id="k${r}"></div>` +
+    `<div class="val" id="v${r}"></div><div class="glow" id="g${r}"></div></div>`).join("") + `</div></div>`;
+function slide(old, now, u, delay, cls, fitOld = size, fitNew = size) {   // the old text leaves left, the new one enters from the right
+  const a = out(span(u, delay, delay + 0.32)), b = out(span(u, delay + 0.1, delay + 0.45));
+  if (old === now || old === null) return `<div class="${cls(now)}" style="${fitNew(now || "")}">${now || ""}</div>`;
+  return `<div class="${cls(old)}" style="${fitOld(old)};transform:translate(${(-36 * a).toFixed(1)}px,-50%);opacity:${(1 - a).toFixed(3)}">${old}</div>` +
+    `<div class="${cls(now)}" style="${fitNew(now || "")};transform:translate(${(36 * (1 - b)).toFixed(1)}px,-50%);opacity:${b.toFixed(3)}">${now || ""}</div>`;
+}
+function cardFont(s) {   // one size for the values of a card: the one its longest value fits
+  const longest = Math.max(...s.rows.filter((r) => !r.fixed).map((r) => r.value.length));
+  return `font-size:${Math.min(22, 276 / (0.62 * longest)).toFixed(1)}px`;
+}
+function headHTML(s) {
+  const px = Math.min(34, 330 / (0.56 * s.card.length));
+  return `<span style="font-size:${px.toFixed(1)}px">${s.card}</span><span class="chip ${s.hot ? "hot" : ""}">${s.chip}</span>`;
+}
+function stepAt(t) { let i = 0; while (i + 1 < steps.length && t >= start[i + 1]) i++; return i; }
+function fmt(v) { return v.toFixed(2); }
+
+window.render = function (t) {
+  const i = stepAt(t), s = steps[i], u = t - start[i];
+  const prev = i > 0 ? steps[i - 1] : null;
+  const act = t >= finale ? 2 : s.act;
+
+  // veil: in and out
+  $("veil").style.opacity = Math.max(1 - out(span(t, 0, 0.6)), ease(span(t, total - 0.5, total))).toFixed(3);
+
+  // titles: the act's, swept in
+  DATA.acts.forEach((a, k) => {
+    const from = k === 0 ? 0 : (k === 1 ? actStart[1] - T.between : finale);
+    const to = k === 0 ? actStart[1] - T.between : (k === 1 ? finale : total + 1);
+    const vis = clamp(Math.min(span(t, from + 0.05, from + 0.55), 1 - span(t, to - 0.3, to)));
+    for (const id of ["t" + k, "s" + k]) {
+      const el = $(id);
+      el.style.opacity = vis.toFixed(3);
+      el.style.transform = `translateY(${((1 - out(span(t, from + 0.05, from + 0.6))) * 18).toFixed(1)}px)`;
+    }
+    $("t" + k).style.backgroundPosition = `${(100 - 100 * out(span(t, from + 0.1, from + 1.4))).toFixed(1)}% 0`;
+    $("p" + k).className = "pill" + (act === k ? " on" : "");
+  });
+
+  // the card: every row whose text changes slides it, one row after the other
+  const head = $("head"), moving = prev && headHTML(prev) !== headHTML(s) && u < 0.5;
+  head.innerHTML = moving
+    ? `<span style="position:absolute;opacity:${(1 - out(span(u, 0, 0.25))).toFixed(3)};transform:translateY(${(-14 * out(span(u, 0, 0.25))).toFixed(1)}px)">${headHTML(prev)}</span>` +
+      `<span style="display:flex;align-items:center;gap:14px;opacity:${out(span(u, 0.12, 0.4)).toFixed(3)};transform:translateY(${(14 * (1 - out(span(u, 0.12, 0.4)))).toFixed(1)}px)">${headHTML(s)}</span>`
+    : `<span style="display:flex;align-items:center;gap:14px">${headHTML(s)}</span>`;
+  for (let r = 0; r < ROWS; r++) {
+    const info = s.rows[r] || null, before = prev ? (prev.rows[r] || null) : info;
+    const row = $("r" + r), delay = 0.035 * r;
+    const shownNow = info !== null, shownBefore = before !== null;
+    row.style.opacity = (shownNow && shownBefore ? 1 : shownNow ? out(span(u, delay, delay + 0.4)) : 1 - out(span(u, delay, delay + 0.3))).toFixed(3);
+    const fixedCls = (v) => (info && info.fixed && v === info.value) || (before && before.fixed && v === before.value) ? "fixed" : "";
+    $("k" + r).innerHTML = slide(before ? before.slot : null, info ? info.slot : (before ? before.slot : ""), u, delay, () => "", () => "", () => "").replace(/<div /g, '<span ').replace(/<\/div>/g, "</span>");
+    $("v" + r).innerHTML = slide(before ? before.value : null, info ? info.value : (before ? before.value : ""), u, delay, fixedCls,
+      () => cardFont(prev || s), () => cardFont(s));
+    const changed = info && before && before.value !== info.value;
+    const lit = (s.act === 1 && info && info.swapped) ? (changed ? out(span(u, 0, 0.3)) : 0.55) : 0;
+    const kept = t >= finale && info && info.best;
+    $("g" + r).style.opacity = (kept ? 0.55 + 0.45 * Math.sin((t - finale) * 3) ** 2 : lit).toFixed(3);
+  }
+
+  // grasps: cross-fade to the step's picture
+  const a = $("imgA"), b = $("imgB");
+  if (prev && prev.image !== s.image) {
+    if (a.getAttribute("src") !== prev.image) a.setAttribute("src", prev.image);
+    if (b.getAttribute("src") !== s.image) b.setAttribute("src", s.image);
+    a.style.visibility = "visible";
+    b.style.opacity = ease(span(u, 0.08, 0.6)).toFixed(3);
+  } else {
+    if (b.getAttribute("src") !== s.image) b.setAttribute("src", s.image);
+    a.style.visibility = "hidden";   // an image without a picture would draw an empty frame
+    b.style.opacity = 1;
+  }
+  $("tag").textContent = s.tag;
+
+  // the number: the old value leaves upwards, the new one rises in; no value in between is shown
+  const num = $("apnum"), e = out(span(u, 0.12, 0.55));
+  const rise = (value, dy, alpha) =>
+    `<span style="display:inline-block;transform:translateY(${dy.toFixed(1)}px);opacity:${alpha.toFixed(3)}">${fmt(value)}</span>`;
+  if (t >= finale) num.textContent = fmt(DATA.best.ap);   // plain text: the gradient fills it
+  else if (!prev) num.innerHTML = rise(s.ap, 84 * (1 - e), e);
+  else if (e >= 1 || prev.ap === s.ap) num.innerHTML = rise(s.ap, 0, 1);
+  else num.innerHTML = `<span style="position:absolute;right:0;top:0">${rise(prev.ap, -84 * e, 1 - e)}</span>` + rise(s.ap, 84 * (1 - e), e);
+  const z = ease(span(t, finale, finale + 1.4));
+  num.style.background = "linear-gradient(90deg, #7ee787, #39c5cf)";
+  num.style.webkitBackgroundClip = "text"; num.style.backgroundClip = "text";
+  num.style.color = z > 0 ? "transparent" : "#e6edf3";
+  num.style.filter = z > 0 ? `drop-shadow(0 0 ${(18 * z).toFixed(1)}px rgba(57,197,207,${(0.55 * z).toFixed(2)}))` : "none";
+  num.style.transform = `scale(${(1 + 0.12 * z).toFixed(3)})`; num.style.transformOrigin = "100% 0";
+  $("aplab").textContent = t >= finale ? DATA.best.label : DATA.metric;
+
+  // chart: each series grows to the current point
+  const grow = out(span(u, 0.15, 0.75));
+  series.forEach((idx, k) => {
+    const pos = idx.indexOf(i);
+    let upto;
+    if (pos >= 0) upto = pos - 1 + (prev && prev.act === k ? grow : 1);
+    else upto = idx[0] > i ? 0 : idx.length - 1;
+    drawSeries(k, upto);
+  });
+  steps.forEach((st, k) => {
+    const d = $("d" + k);
+    const reached = k < i || (k === i && grow > 0.98) || (k === i && st.act !== (prev ? prev.act : 0));
+    const pop = k === i ? out(span(u, 0.6, 0.85)) : (k < i ? 1 : 0);
+    const isBest = k === DATA.best.index;
+    const dim = t >= finale && !isBest ? 1 - 0.75 * z : 1;
+    d.setAttribute("r", (reached || pop > 0 ? (isBest && t >= finale ? 6 + 3 * z : 5) * Math.max(pop, reached ? 1 : 0) : 0).toFixed(2));
+    d.setAttribute("fill", st.act === 0 ? "#c9d1d9" : "#7ee787");
+    d.setAttribute("stroke", "#0b0e13"); d.setAttribute("stroke-width", "2.5");
+    d.setAttribute("opacity", dim.toFixed(3));
+  });
+  const flagText = s.short + (s.short2 ? " · " + s.short2 : "");
+  const ft = $("flagtext"); ft.textContent = flagText;
+  const fx = clamp(xs[i], padL + 70, W - padR - 70), fy = y(s.ap) - 22;
+  ft.setAttribute("x", fx); ft.setAttribute("y", fy);
+  const fw = 14 + 8.2 * flagText.length;
+  const fb = $("flagbox"); fb.setAttribute("x", (fx - fw / 2).toFixed(1)); fb.setAttribute("y", (fy - 17).toFixed(1));
+  fb.setAttribute("width", fw.toFixed(1)); fb.setAttribute("height", 25);
+  $("flag").setAttribute("opacity", (t >= finale ? 1 - z : out(span(u, 0.55, 0.85))).toFixed(3));
+  ["linePath0", "areaPath0"].forEach((id) => $(id).setAttribute("opacity", (t >= finale ? 1 - 0.7 * z : 1).toFixed(3)));
+
+  // the finale: zoom on the best point, a ring, a line to the axis
+  const bx = xs[DATA.best.index], by = y(DATA.best.ap);
+  const scale = 1 + 1.15 * z, cx = W * 0.56, cy = H * 0.62;
+  $("zoom").setAttribute("transform",
+    `translate(${((cx - bx * scale) * z).toFixed(1)},${((cy - by * scale) * z).toFixed(1)}) scale(${(1 + (scale - 1)).toFixed(3)})`);
+  const best = $("best");
+  best.setAttribute("x1", (padL - 6).toFixed(1)); best.setAttribute("x2", bx.toFixed(1));
+  best.setAttribute("y1", by.toFixed(1)); best.setAttribute("y2", by.toFixed(1));
+  best.setAttribute("opacity", (z * 0.8).toFixed(3));
+  $("crown").setAttribute("opacity", out(span(t, finale + 0.9, finale + 1.6)).toFixed(3));
+  $("crownnum").textContent = fmt(DATA.best.ap); $("crownnum").setAttribute("x", bx); $("crownnum").setAttribute("y", by - 22);
+  $("crownlab").textContent = DATA.best.short; $("crownlab").setAttribute("x", bx); $("crownlab").setAttribute("y", by - 54);
+  ["seg0", "seg1"].forEach((id) => $(id).setAttribute("opacity", (1 - z).toFixed(3)));
+  const ring = $("ring"), phase = t >= finale ? ((t - finale - 0.9) % 1.6) / 1.6 : -1;
+  ring.setAttribute("cx", bx); ring.setAttribute("cy", by);
+  ring.setAttribute("r", phase >= 0 ? (8 + 22 * out(phase)).toFixed(1) : 0);
+  ring.setAttribute("opacity", phase >= 0 ? (0.9 * (1 - phase)).toFixed(3) : 0);
+};
+window.render(0);
+</script>
+</body>
+</html>

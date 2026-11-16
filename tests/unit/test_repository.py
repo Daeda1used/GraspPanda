@@ -100,19 +100,20 @@ def test_brand_assets_referenced_by_the_readme_exist(name):
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_readme_has_one_hero_and_few_code_blocks(name):
-    """The lockup, one picture of grasps (``tools/make_hero.py``) and the recording of a swap;
+    """The lockup, the animation of runs and swaps (``tools/make_hero_animation.py``) and the
+    recording of a swap;
     at most three visible code blocks. A picture stands alone on its lines: inside a link on
     the same line, GitHub drops its ``<source>`` for the dark theme."""
     page = re.sub(r"<details.*?</details>", "", text(name), flags=re.S)
     pictures = re.findall(r'<img src="(resources/[^"]+)"', page)
     assert pictures == [
         "resources/banner-light.png",
-        "resources/hero.webp",
+        "resources/hero-swap.webp",
         "resources/showcase-light.svg",
     ]
     assert page.count("```") // 2 <= 3
     assert not re.search(r"<a [^>]*><picture>", text(name)), "a picture inside a link"
-    assert "explorer-light.webp" not in text(name) and "demo.webp" not in text(name)
+    assert "demo.webp" not in text(name)
 
 
 def test_shipped_configs_are_valid():

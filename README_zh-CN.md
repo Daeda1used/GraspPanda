@@ -19,9 +19,9 @@
 [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/) ·
 [结果](#结果)
 
-<img src="resources/hero.webp" alt="以彩色点云呈现的杂乱桌面：蓝色碗、绿色漏斗、方块、玩具动物和一个红黄相间的玩具，平行夹爪画在 EconomicGrasp 预测的抓取位置上" width="820">
+<img src="resources/hero-swap.webp" alt="三幕动画。运行已发表的方法：六个方法依次出现，各自的阶段、在一个杂乱测试场景上的抓取和 AP，AP 落成折线图上的一个点。一次换一个阶段：GSNet 的场景编码器依次换成 SpUNet、PTv3 和 LitePT，再把训练方案换成 one-cycle，每次替换都给出抓取和 AP。留下最好的：折线图聚焦到最高点，即原装编码器配 one-cycle 训练方案的 GSNet，72.63 AP。" width="820">
 
-<sub>EconomicGrasp 用作者发布的权重，在 GraspNet-1Billion 的一个场景上预测的最佳抓取（已做碰撞过滤）；场景里的物体它在训练中从未见过。场景数据采用 CC BY-NC-SA 4.0 许可。</sub>
+<sub>每个点都是在这里训练、在 GraspNet-1Billion 整个测试集上评测的一个模型（各训练一次）；抓取是它在一个测试场景上的预测（场景数据采用 CC BY-NC-SA 4.0 许可）。</sub>
 
 </div>
 
