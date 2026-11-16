@@ -626,7 +626,11 @@ Classes now count levels, and every method lists the options of each of its slot
   without the filter; 1 cm and 30 degrees gain it 9.35 AP on seen scenes and nothing on
   novel. HGGD's configs set 1 cm and 30 degrees since, and its rows in the model zoo are
   these two trainings. On GraspClutter6D the RealSense model scores 14.19 / 17.57 / 9.56
-  and 14.18 / 17.56 / 9.37 (AP / AP0.8 / AP0.4), within 0.38 AP of the checkpoint.
+  and 14.18 / 17.56 / 9.37 (AP / AP0.8 / AP0.4), within 0.38 AP of the checkpoint. HGGD's
+  combinations were probed again on these labels. In level 1 HGGD as shipped now learns
+  every loss term (its anchor offset stayed flat on the converter's labels). In level 2 its
+  seeds lie closer together, so the tolerance tightens from 1.55 to 1.35: 15 of 37 image
+  encoders train on a par with HGGD's own (24 before) and 19 of 27 recipe presets (12).
 - EconomicGrasp was trained from scratch on one RTX 3090 with the recipe of its config:
   69.34 / 61.41 / 26.21 AP without and 71.05 / 62.54 / 26.81 with the collision filter,
   within 0.22 AP of the authors' checkpoint on seen and similar and 1.0 AP above it on

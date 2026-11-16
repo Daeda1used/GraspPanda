@@ -50,7 +50,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu126
 git clone https://github.com/Daeda1used/GraspPanda.git && cd GraspPanda
 pip install -e ".[spconv-cu126,timm]"
 curl -LO \
-  https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
+https://github.com/iSEE-Laboratory/EconomicGrasp/releases/download/v1/economicgrasp_realsense.tar
 python -m tools.convert_checkpoint economicgrasp_realsense.tar economicgrasp_realsense.pth \
     --source-format economicgrasp --camera realsense
 grasppanda demo economicgrasp/economicgrasp_sunet14_g1b-realsense_10e \
@@ -83,7 +83,7 @@ grasppanda probe baseline_ptv3.yaml   # trains it briefly
 
 Without the dataset, a probe runs a synthetic check instead. PTv3 runs under 5/5
 seed-based methods; under 4/5 it trains like shipped (worse under
-FineGrasp). The DINOv2 encoder runs under HGGD and trains on a par with HGGD's own. A probe
+FineGrasp). The DINOv2 encoder runs under HGGD, where it trains worse than HGGD's own. A probe
 says a swap trains, not how well: fully trained, PTv3 ends 3.8 to 10.4 AP lower
 ([trained swaps](https://daeda1used.github.io/GraspPanda/advanced_guides/trained_swaps/)).
 

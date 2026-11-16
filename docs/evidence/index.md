@@ -61,7 +61,7 @@ The 244 options a user can `--set`, slot by slot: how many **run**, and how many
 
 | Slot | Options | Run | Train like shipped |
 |---|---|---|---|
-| [Image encoder](../advanced_guides/measured_combinations.md#image-encoders) | 38 | 36 of 37 | 23 of 36 |
+| [Image encoder](../advanced_guides/measured_combinations.md#image-encoders) | 38 | 36 of 37 | 14 of 36 |
 | [Scene encoder](../advanced_guides/measured_combinations.md#scene-encoders) | 47 | 37 of 47 | 9 of 47 |
 | [Seed proposal](../advanced_guides/measured_combinations.md#seed-proposals) | 24 | 22 of 24 | 1 of 24 |
 | [View](../advanced_guides/measured_combinations.md#view-stages) | 21 | 19 of 21 | 3 of 21 |

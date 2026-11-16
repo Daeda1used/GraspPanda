@@ -41,28 +41,28 @@ One option of a preset changes on the same line, for example
 
     | Option | What it is | Runs | Trains like shipped |
     |---|---|---|---|
-    | `convnextv2-atto`{ .gp-nowrap } | ConvNeXt V2-Atto from timm (FCMAE, fine-tuned on ImageNet-1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
-    | `convnextv2-tiny`{ .gp-nowrap } | ConvNeXt V2-Tiny from timm (FCMAE, fine-tuned on ImageNet-22k and 1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `dinov2-small-reg`{ .gp-nowrap } | DINOv2 ViT-S/14 with registers from timm (LVD-142M), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
-    | `dinov2-small-reg-depth-stem`{ .gp-nowrap } | Frozen DINOv2 ViT-S/14 with registers (timm) and a trained depth stem in front. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `dinov3-convnext-tiny`{ .gp-nowrap } | ConvNeXt-Tiny distilled from DINOv3 (LVD-1689M) from timm, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `dinov3-vits16`{ .gp-nowrap } | DINOv3 ViT-S/16 from timm (LVD-1689M), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
-    | `efficientnetv2-s`{ .gp-nowrap } | EfficientNetV2-S from timm (ImageNet-21k, fine-tuned on 1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `efficientvit-b1`{ .gp-nowrap } | EfficientViT-B1 (MIT Han lab) from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
-    | `eva02-tiny`{ .gp-nowrap } | EVA-02 Tiny/14 from timm (masked image modelling on ImageNet-22k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `convnextv2-atto`{ .gp-nowrap } | ConvNeXt V2-Atto from timm (FCMAE, fine-tuned on ImageNet-1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
+    | `convnextv2-tiny`{ .gp-nowrap } | ConvNeXt V2-Tiny from timm (FCMAE, fine-tuned on ImageNet-22k and 1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
+    | `dinov2-small-reg`{ .gp-nowrap } | DINOv2 ViT-S/14 with registers from timm (LVD-142M), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
+    | `dinov2-small-reg-depth-stem`{ .gp-nowrap } | Frozen DINOv2 ViT-S/14 with registers (timm) and a trained depth stem in front. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `dinov3-convnext-tiny`{ .gp-nowrap } | ConvNeXt-Tiny distilled from DINOv3 (LVD-1689M) from timm, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `dinov3-vits16`{ .gp-nowrap } | DINOv3 ViT-S/16 from timm (LVD-1689M), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `efficientnetv2-s`{ .gp-nowrap } | EfficientNetV2-S from timm (ImageNet-21k, fine-tuned on 1k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `efficientvit-b1`{ .gp-nowrap } | EfficientViT-B1 (MIT Han lab) from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
+    | `eva02-tiny`{ .gp-nowrap } | EVA-02 Tiny/14 from timm (masked image modelling on ImageNet-22k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
     | `fastvit-sa12`{ .gp-nowrap } | FastViT-SA12 from timm with Apple's ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `fastvit-t8`{ .gp-nowrap } | FastViT-T8 from timm with Apple's ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `hiera-small-abswin`{ .gp-nowrap } | Hiera-Small (absolute window positions) from timm, ImageNet-12k then 1k, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `maxvit-tiny`{ .gp-nowrap } | MaxViT-Tiny from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
+    | `hiera-small-abswin`{ .gp-nowrap } | Hiera-Small (absolute window positions) from timm, ImageNet-12k then 1k, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `maxvit-tiny`{ .gp-nowrap } | MaxViT-Tiny from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `mobilenetv4-conv-small`{ .gp-nowrap } | MobileNetV4-Conv-Small from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `mobilenetv4-hybrid-medium`{ .gp-nowrap } | MobileNetV4-Hybrid-Medium from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `pe-spatial-tiny`{ .gp-nowrap } | Perception Encoder Spatial Tiny/16 from timm, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `repvit-m1`{ .gp-nowrap } | RepViT-M1 from timm with distilled ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `resnet18`{ .gp-nowrap } | ResNet-18 from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `resnet34`{ .gp-nowrap } | ResNet-34 from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `resnet34-rgbd`{ .gp-nowrap } | ResNet-34 from timm with ImageNet-1k weights and a fourth input channel for depth. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `resnet50`{ .gp-nowrap } | ResNet-50 from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `sam2-hiera-tiny`{ .gp-nowrap } | The image encoder of SAM 2.1 (Hiera-Tiny) from timm, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `resnet34-rgbd`{ .gp-nowrap } | ResNet-34 from timm with ImageNet-1k weights and a fourth input channel for depth. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `resnet50`{ .gp-nowrap } | ResNet-50 from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
+    | `sam2-hiera-tiny`{ .gp-nowrap } | The image encoder of SAM 2.1 (Hiera-Tiny) from timm, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `siglip2-base`{ .gp-nowrap } | The image tower of SigLIP 2 Base/16 from timm (WebLI), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `swinv2-tiny`{ .gp-nowrap } | Swin Transformer V2-Tiny from timm with ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
 
@@ -77,10 +77,10 @@ One option of a preset changes on the same line, for example
     | `hf-convnextv2-tiny`{ .gp-nowrap } | ConvNeXt V2-Tiny through transformers `AutoBackbone` (ImageNet-22k), colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `hf-depth-anything-v2-small`{ .gp-nowrap } | The encoder of Depth Anything V2 Small (a DINOv2 ViT-S/14) through transformers. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `hf-dinov2-small`{ .gp-nowrap } | DINOv2 ViT-S/14 through transformers `AutoBackbone`, four layers, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
-    | `hf-dinov2-small-reg`{ .gp-nowrap } | DINOv2 ViT-S/14 with registers through transformers `AutoBackbone`, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
+    | `hf-dinov2-small-reg`{ .gp-nowrap } | DINOv2 ViT-S/14 with registers through transformers `AutoBackbone`, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `hf-hiera-tiny`{ .gp-nowrap } | Hiera-Tiny through transformers `AutoBackbone`, colour only, at its fixed 224 x 224. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `hf-radio-v3-base`{ .gp-nowrap } | C-RADIOv3-B (NVIDIA's agglomerative ViT-B/16) through transformers and its hub code, colour only. | <span class="gp-chip gp-chip--muted" title="undecided (needs your consent (remote code))">HGGD ?</span><br><small>undecided (needs your consent (remote code))</small> | <span class="gp-chip gp-chip--muted">not compared</span> |
-    | `hf-siglip2-base`{ .gp-nowrap } | The image tower of SigLIP 2 Base/16 through transformers `AutoModel`, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
+    | `hf-siglip2-base`{ .gp-nowrap } | The image tower of SigLIP 2 Base/16 through transformers `AutoModel`, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
     | `hf-swinv2-tiny`{ .gp-nowrap } | Swin Transformer V2-Tiny through transformers `AutoBackbone`, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
 
     </div>
@@ -91,11 +91,11 @@ One option of a preset changes on the same line, for example
 
     | Option | What it is | Runs | Trains like shipped |
     |---|---|---|---|
-    | `tv-convnext-tiny`{ .gp-nowrap } | ConvNeXt-Tiny from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
+    | `tv-convnext-tiny`{ .gp-nowrap } | ConvNeXt-Tiny from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--no">HGGD: diverging</span> |
     | `tv-efficientnetv2-s`{ .gp-nowrap } | EfficientNetV2-S from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `tv-mobilenetv3-large`{ .gp-nowrap } | MobileNetV3-Large from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
     | `tv-regnet-y-800mf`{ .gp-nowrap } | RegNetY-800MF from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
-    | `tv-resnet34`{ .gp-nowrap } | ResNet-34 from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--ok">HGGD: on a par</span> |
+    | `tv-resnet34`{ .gp-nowrap } | ResNet-34 from torchvision with its ImageNet-1k weights, colour only. | <span class="gp-chip gp-chip--ok">HGGD ✓</span> | <span class="gp-chip gp-chip--warn">HGGD: worse</span> |
 
     </div>
 
