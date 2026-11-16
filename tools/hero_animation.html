@@ -106,6 +106,8 @@ steps.forEach((s, i) => {
 const actStart = [start[0], start[steps.findIndex((s) => s.act === 1)], at];
 const finale = at, total = at + T.finale;
 window.TOTAL = total;
+// the first recorded moment: the first step drawn in full, so a still of the file is a picture
+window.FIRST = start[0] + 0.9;
 
 // header
 $("titles").innerHTML = DATA.acts.map((a, i) =>
@@ -224,7 +226,7 @@ window.render = function (t) {
   const act = t >= finale ? 2 : s.act;
 
   // veil: in and out
-  $("veil").style.opacity = Math.max(1 - out(span(t, 0, 0.6)), ease(span(t, total - 0.5, total))).toFixed(3);
+  $("veil").style.opacity = ease(span(t, total - 0.45, total)).toFixed(3);
 
   // titles: the act's, swept in
   DATA.acts.forEach((a, k) => {
