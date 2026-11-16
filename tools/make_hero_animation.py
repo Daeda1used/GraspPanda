@@ -299,10 +299,11 @@ async def record_frames(target: Path, frames_dir: Path, fps: int) -> list[Path]:
         await tab.goto(target.as_uri())
         await tab.evaluate("document.fonts.ready")
         total = await tab.evaluate("window.TOTAL")
-        count = int(total * fps)
+        first = await tab.evaluate("window.FIRST")
+        count = int((total - first) * fps)
         stage = await tab.query_selector("#stage")
         for index in range(count):
-            await tab.evaluate(f"window.render({index / fps})")
+            await tab.evaluate(f"window.render({first + index / fps})")
             await tab.evaluate(
                 "Promise.all([...document.images].filter(i => i.src).map(i => i.decode().catch(() => 0)))"
             )
