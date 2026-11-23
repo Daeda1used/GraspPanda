@@ -19,7 +19,7 @@ models:
       # with two batches per optimizer step, AdamW at 1e-2 divided by ten every 5 epochs,
       # seed 0, float32), on the 25,600 RealSense frames of the training scenes with the
       # per-view labels of the config (suppressed at 1 cm and 30 degrees): `grasppanda
-      # train` at commit 400b733 with the two label options this config now sets, the
+      # train` at commit 7f22915 with the two label options this config now sets, the
       # same config hash; one RTX 3090 shared with other jobs, about 19 hours in two parts
       # (resumed from the checkpoint of epoch 4). The file is the checkpoint of epoch 15
       # (41,479,165 bytes). One training run with one seed.
@@ -50,7 +50,7 @@ models:
         AP: {seen: 64.45, similar: 53.59, novel: 24.59}
         source: "repository README, row 'In repo' (also the arXiv version)"
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733 (float32, an RTX 3090), scored by
+      # through `grasppanda test` at commit 7f22915 (float32, an RTX 3090), scored by
       # GraspNet1BEvaluator. The network draws random numbers at inference; these rows are
       # one run with seed 0.
       - provenance: author-ckpt
@@ -68,7 +68,7 @@ models:
         inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
         AP: {seen: 63.72, similar: 52.91, novel: 24.16}
       # The model trained here (`weights` above): the whole test split (90 scenes, 23,040
-      # frames) through `grasppanda test` at commit 400b733, scored by GraspNet1BEvaluator.
+      # frames) through `grasppanda test` at commit 7f22915, scored by GraspNet1BEvaluator.
       # It lands on the authors' checkpoint: −0.53 / +0.58 / +0.63 AP (off) and
       # −0.11 / +1.40 / +0.79 (on). On the labels the released converter writes it is
       # 8 to 10 AP below it on seen (README.md, "Results"; projects/hggd_labels).
@@ -95,7 +95,7 @@ models:
     author_weights: *realsense_author_weights
     results:
       # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
-      # through `grasppanda test` at commit 400b733 (float32, an RTX 3090), scored by
+      # through `grasppanda test` at commit 7f22915 (float32, an RTX 3090), scored by
       # GraspClutter6DEvaluator.
       - provenance: author-ckpt
         collision_filter: false
@@ -115,7 +115,7 @@ models:
         AP0.8: {test: 17.75}
         AP0.4: {test: 9.38}
       # The model trained here: the whole test split (235 scenes, 3,055 frames) through
-      # `grasppanda test` at commit 400b733, scored by GraspClutter6DEvaluator. From the
+      # `grasppanda test` at commit 7f22915, scored by GraspClutter6DEvaluator. From the
       # authors' checkpoint: −0.05 / +0.17 / +0.32 (off) and −0.38 / −0.19 / −0.01 (on).
       - provenance: reproduced
         collision_filter: false
@@ -140,7 +140,7 @@ models:
     camera: kinect
     weights:
       # Trained here from scratch as the RealSense model above, on the 25,600 Kinect frames
-      # of the training scenes: `grasppanda train` at commit a0a92f3 with the two label
+      # of the training scenes: `grasppanda train` at commit 5eaaaa6 with the two label
       # options this config now sets, the same config hash; one RTX 3090 shared with other
       # jobs, 11.6 hours. The file is the checkpoint of epoch 15 (41,479,165 bytes). One
       # training run with one seed.
@@ -169,7 +169,7 @@ models:
         AP: {seen: 61.17, similar: 47.02, novel: 19.37}
         source: "repository README, row 'In repo'"
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733 in float32 on an RTX 3090, scored by
+      # through `grasppanda test` at commit 7f22915 in float32 on an RTX 3090, scored by
       # GraspNet1BEvaluator. One run with seed 0, as for the RealSense rows.
       - provenance: author-ckpt
         collision_filter: false
@@ -185,7 +185,7 @@ models:
         inputs: "nothing derived from ground truth: HGGD crops no workspace (gt_assisted: none)"
         AP: {seen: 60.30, similar: 46.85, novel: 19.22}
       # The model trained here (`weights` above): the whole test split (90 scenes, 23,040
-      # frames) through `grasppanda test` at commit a0a92f3, scored by GraspNet1BEvaluator.
+      # frames) through `grasppanda test` at commit 5eaaaa6, scored by GraspNet1BEvaluator.
       # It is above the authors' checkpoint on seen and similar and below it on novel:
       # +2.10 / +2.08 / −1.43 AP (off) and +2.47 / +2.60 / −0.94 (on). On the labels the
       # released converter writes it is 6 to 7 AP below it on seen (projects/hggd_labels).

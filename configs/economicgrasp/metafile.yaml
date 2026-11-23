@@ -51,7 +51,7 @@ models:
     camera: realsense
     weights: &realsense_weights
       # Trained here from scratch: `grasppanda train economicgrasp/economicgrasp_sunet14_g1b-realsense_10e`
-      # at commit 7ac91b5, the recipe of that config unchanged (10 epochs, batch size 4,
+      # at commit f2ab5ee, the recipe of that config unchanged (10 epochs, batch size 4,
       # Adam at 1e-3 on a cosine evaluated once per epoch, seed 0, one RTX 3090 shared with
       # other jobs, 17.0 hours), on the 25,600 RealSense frames of the training scenes; the
       # file is the checkpoint of epoch 10 (189,288,052 bytes). One training run with one seed.
@@ -90,7 +90,7 @@ models:
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 70.83, similar: 62.56, novel: 25.80}
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733, scored by GraspNet1BEvaluator.
+      # through `grasppanda test` at commit 7f22915, scored by GraspNet1BEvaluator.
       # Within 0.22 AP of the authors' checkpoint on seen and similar, and 1.04 (off) and
       # 1.01 (on) above it on novel. Against the reported row +1.13 / +0.22 / +0.73: on seen
       # as far above it as the authors' checkpoint is (+1.07).
@@ -139,7 +139,7 @@ models:
         AP0.8: {test: 27.30}
         AP0.4: {test: 16.06}
       # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
-      # through `grasppanda test` at commit 400b733, scored by GraspClutter6DEvaluator.
+      # through `grasppanda test` at commit 7f22915, scored by GraspClutter6DEvaluator.
       # Above the authors' checkpoint by 1.55 / 1.94 / 1.25 (off) and 1.47 / 1.86 / 1.14 (on).
       - provenance: reproduced
         collision_filter: false

@@ -40,7 +40,7 @@ ground-truth segmentation, as in the reference (`gt_assisted: workspace`).
 | `reproduced` | on | 46.81 / 41.90 / 16.74 | [record](records/graspnet-baseline_pointnet2_g1b-realsense_18e_reproduced_test_cd.json) |
 
 `author-ckpt` is the authors' `checkpoint-rs.tar`, converted and run through
-`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0.
+`grasppanda test` at commit `7f22915` (float32, an RTX 3090), one run with seed 0.
 `reproduced` is a model trained here from scratch with the config's recipe. **Measured
 minus reported, with the collision filter**, against the "In repo" row, the setting of
 the `cd` variant: +0.43 / +0.43 / +0.36 AP for the authors' checkpoint and
@@ -50,9 +50,9 @@ every split**.
 <details markdown="1"><summary>The training, the run without the filter, and a 20-frame check with the reference code</summary>
 
 **The training.** `grasppanda train graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e`
-at commit `7ac91b5`, nothing overridden: 18 epochs, batch size 2, seed 0, 18.8 hours on one
+at commit `f2ab5ee`, nothing overridden: 18 epochs, batch size 2, seed 0, 18.8 hours on one
 RTX 3090 shared with other jobs. The checkpoint of epoch 18 (SHA-256 `5a2434279c1a…`) was
-scored at commit `400b733`. It is −0.87 / −1.30 / −0.23 AP from the authors' checkpoint
+scored at commit `7f22915`. It is −0.87 / −1.30 / −0.23 AP from the authors' checkpoint
 without the filter and −1.09 / −0.80 / −0.23 with it. Whether that is the spread between
 trainings was not measured: one run, one seed (GSNet's three trainings with one seed span
 1.12 AP on seen and 0.36 on similar).

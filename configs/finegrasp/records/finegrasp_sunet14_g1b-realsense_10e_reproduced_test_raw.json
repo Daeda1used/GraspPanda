@@ -3760,9 +3760,9 @@
     "realsense"
   ],
   "code": {
-    "commit": "400b7330bc13cb0b3ab8da95356dbc57be8f836c",
+    "commit": "7f229152ff6979562dbc78b241bebf1cdba26dcb",
     "dirty": false,
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   },
   "config_hash": "dee71211aaf261f169ebeebed41f01c29f14f628bd4eaec4b2bc03608651e6dd",
   "coverage": 1.0,
@@ -5333,6 +5333,6 @@
     "kind": "model",
     "path": "$GRASPPANDA_WEIGHTS/trained/finegrasp_sunet14_g1b-realsense_10e_4x4x2_seed0.pth",
     "sha256": "e8b99d4390d908abb4cfc5ed51958bd1608124add3c1d26d7f54d5f5f7e2dea8",
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   }
 }

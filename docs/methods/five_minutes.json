@@ -23,7 +23,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 15.0,
               "points": 15000,
@@ -59,7 +59,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 10.7,
               "grasps": 418,
@@ -70,7 +70,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 67,
               "split": "test_seen",
@@ -92,7 +92,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 93,
               "split": "test_seen",
@@ -141,7 +141,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 15.0,
               "points": 15000,
@@ -177,7 +177,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 11.3,
               "grasps": 689,
@@ -188,7 +188,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 88,
               "split": "test_seen",
@@ -210,7 +210,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 90,
               "split": "test_seen",
@@ -264,7 +264,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 14.2,
               "points": 20000,
@@ -300,7 +300,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 11.3,
               "grasps": 725,
@@ -311,7 +311,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 74,
               "split": "test_seen",
@@ -333,7 +333,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 97,
               "split": "test_seen",
@@ -387,7 +387,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 15.1,
               "points": 20000,
@@ -440,7 +440,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 11.3,
               "grasps": 613,
@@ -460,7 +460,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 82,
               "split": "test_seen",
@@ -482,7 +482,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 96,
               "split": "test_seen",
@@ -536,7 +536,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 10.2,
               "points": 20000,
@@ -572,7 +572,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 6.3,
               "grasps": 286,
@@ -583,7 +583,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 66,
               "split": "test_seen",
@@ -605,7 +605,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 84,
               "split": "test_seen",
@@ -659,7 +659,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 10.6,
               "points": 20000,
@@ -695,7 +695,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 5.5,
               "grasps": 189,
@@ -706,7 +706,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 66,
               "split": "test_seen",
@@ -728,7 +728,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 89,
               "split": "test_seen",
@@ -782,7 +782,7 @@
           "demo": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 15.2,
               "points": 25600,
@@ -847,7 +847,7 @@
           "python": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 5.8,
               "grasps": 68,
@@ -867,7 +867,7 @@
           "test": [
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090",
               "wall_s": 85,
               "split": "test_seen",
@@ -887,7 +887,7 @@
             },
             {
               "date": "2026-11-11",
-              "commit": "400b733",
+              "commit": "7f22915",
               "machine": "rtx-3090-torch214",
               "wall_s": 106,
               "split": "test_seen",

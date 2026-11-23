@@ -68,8 +68,8 @@ test split:
 | Training | Collision filter off | on |
 |---|---|---|
 | first, the rows above | 68.83 / 60.35 / 25.20 | 71.23 / 62.29 / 26.42 |
-| second: trained at `7ac91b5`, `69d8c76f59b9…`, scored at `400b733` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 68.34 / 60.35 / 25.57 | 70.89 / 62.71 / 26.83 |
-| third: the `sunet14` run of `projects/encoder_comparison` at `b890dd9`, `e1a5b662c072…` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 |
+| second: trained at `f2ab5ee`, `69d8c76f59b9…`, scored at `7f22915` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 68.34 / 60.35 / 25.57 | 70.89 / 62.71 / 26.83 |
+| third: the `sunet14` run of `projects/encoder_comparison` at `4a5f33b`, `e1a5b662c072…` ([off](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/gsnet_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 69.46 / 60.71 / 25.42 | 71.69 / 62.77 / 26.59 |
 
 Highest minus lowest: 1.12 / 0.36 / 0.37 AP without the filter, 0.80 / 0.48 / 0.41 AP with
 it. One config and one seed gave three models, so a training here is not bit-reproducible

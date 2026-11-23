@@ -3760,9 +3760,9 @@
     "realsense"
   ],
   "code": {
-    "commit": "400b7330bc13cb0b3ab8da95356dbc57be8f836c",
+    "commit": "7f229152ff6979562dbc78b241bebf1cdba26dcb",
     "dirty": false,
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   },
   "config_hash": "c4f0b2fd9003a0d88a4d9971af822d62c7fa0bfb10afe3a028836f4f9d65f06f",
   "coverage": 1.0,
@@ -5437,6 +5437,6 @@
     "kind": "model",
     "path": "$GRASPPANDA_WEIGHTS/trained/sbg_pointnet2-transformer_g1b-realsense_18e_seed0.pth",
     "sha256": "572ce817b1736b9bb995f769634a1581fe9449928098fe15064400b4076f6356",
-    "version": "0.1.0.dev11+g7ac91b59e"
+    "version": "0.1.0.dev11+gf2ab5eef7"
   }
 }

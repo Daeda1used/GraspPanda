@@ -21,7 +21,7 @@ models:
     protocol: graspnet1b-sv-v1
     camera: realsense
     weights: &realsense_weights
-      # Trained here from scratch: the config at commit 400b733 with the README's command
+      # Trained here from scratch: the config at commit 7f22915 with the README's command
       # for four 24 GB GPUs (4 processes, 4 frames each, the gradients of 2 batches per
       # step: 32 frames a step as in the published recipe), 10 epochs, seed 0, about 5.1
       # hours on four RTX 3090; the file is the checkpoint of epoch 10 (230,240,145
@@ -67,7 +67,7 @@ models:
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 73.69, similar: 64.62, novel: 28.18}
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733, scored by GraspNet1BEvaluator.
+      # through `grasppanda test` at commit 7f22915, scored by GraspNet1BEvaluator.
       # Below the paper by 1.90 / 3.11 / 1.63 AP (off) and 1.28 / 2.69 / 1.20 (on); see
       # README.md, "Results", for what is known about the gap.
       - provenance: reproduced
@@ -93,7 +93,7 @@ models:
     author_weights: *authors_weights
     results:
       # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
-      # through `grasppanda test` at commit 084cdcf, scored by GraspClutter6DEvaluator.
+      # through `grasppanda test` at commit bd76e84, scored by GraspClutter6DEvaluator.
       # The GraspClutter6D paper has no FineGrasp row, so nothing is reported to compare with.
       - provenance: author-ckpt
         collision_filter: false

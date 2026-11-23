@@ -3760,9 +3760,9 @@
     "realsense"
   ],
   "code": {
-    "commit": "400b7330bc13cb0b3ab8da95356dbc57be8f836c",
+    "commit": "7f229152ff6979562dbc78b241bebf1cdba26dcb",
     "dirty": false,
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   },
   "config_hash": "d42c01bf13b1afe5289f83a09da9af509032f04240289acbc3ad0dd4a5429c8d",
   "coverage": 1.0,
@@ -5331,6 +5331,6 @@
     "kind": "model",
     "path": "$GRASPPANDA_WEIGHTS/trained/hggd_r34w8_g1b-realsense_15e_seed0.pth",
     "sha256": "0d774db966c362cf8dc012798e2037f1e5d53bf50a315da624e2b0e1e2c6bad1",
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   }
 }

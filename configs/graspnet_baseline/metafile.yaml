@@ -21,7 +21,7 @@ models:
     camera: realsense
     weights: &realsense_weights
       # Trained here from scratch: `grasppanda train graspnet_baseline/graspnet-baseline_pointnet2_g1b-realsense_18e`
-      # at commit 7ac91b5, the recipe of that config unchanged (18 epochs, batch size 2,
+      # at commit f2ab5ee, the recipe of that config unchanged (18 epochs, batch size 2,
       # Adam at 1e-3 divided by ten after epochs 8, 12 and 16, seed 0, one RTX 3090 shared
       # with other jobs, 18.8 hours), on the 25,600 RealSense frames of the training scenes;
       # the file is the checkpoint of epoch 18 (12,497,787 bytes). One training run with one seed.
@@ -49,7 +49,7 @@ models:
         source: paper, as quoted in the reference repository README ("In paper")
         AP: {seen: 27.56, similar: 26.11, novel: 10.55}
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733 (float32, an RTX 3090), scored by
+      # through `grasppanda test` at commit 7f22915 (float32, an RTX 3090), scored by
       # GraspNet1BEvaluator. With the collision filter the checkpoint is 0.36 to 0.43 AP
       # above the "In repo" row.
       - provenance: author-ckpt
@@ -65,7 +65,7 @@ models:
         inputs: "workspace crop from the ground-truth segmentation, as in the reference (gt_assisted: workspace)"
         AP: {seen: 47.90, similar: 42.70, novel: 16.97}
       # GraspNet-1Billion, the whole test split (90 scenes, 23,040 frames)
-      # through `grasppanda test` at commit 400b733, scored by GraspNet1BEvaluator.
+      # through `grasppanda test` at commit 7f22915, scored by GraspNet1BEvaluator.
       # With the collision filter −0.66 / −0.37 / +0.13 AP from the "In repo" row: within
       # the admission gate of 1 AP on every split. From the authors' checkpoint it is
       # −0.87 / −1.30 / −0.23 (off) and −1.09 / −0.80 / −0.23 (on).
@@ -96,7 +96,7 @@ models:
         AP0.8: {test: 21.54}
         AP0.4: {test: 13.53}
       # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
-      # through `grasppanda test` at commit 400b733 (float32, an RTX 3090), scored by
+      # through `grasppanda test` at commit 7f22915 (float32, an RTX 3090), scored by
       # GraspClutter6DEvaluator.
       - provenance: author-ckpt
         collision_filter: false
@@ -115,7 +115,7 @@ models:
         AP0.8: {test: 20.60}
         AP0.4: {test: 12.87}
       # GraspClutter6D, the whole test split (235 scenes, 3,055 frames)
-      # through `grasppanda test` at commit 400b733, scored by GraspClutter6DEvaluator.
+      # through `grasppanda test` at commit 7f22915, scored by GraspClutter6DEvaluator.
       # Below the authors' checkpoint by 1.26 / 1.48 / 0.98 (off) and 3.05 / 3.70 / 2.14 (on).
       - provenance: reproduced
         collision_filter: false

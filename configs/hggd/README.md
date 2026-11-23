@@ -63,10 +63,10 @@ and 60° HGGD ends 7 to 10 AP lower on seen
 
 <details markdown="1"><summary>Why the config sets denser labels than the released converter</summary>
 
-**The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `400b733`
+**The training.** `grasppanda train hggd/hggd_r34w8_g1b-realsense_15e` at commit `7f22915`
 with the two label options the config now sets, the same config hash: 15 epochs, batches
 of 4 with two per optimizer step, seed 0, float32, about 19 hours in two parts on one
-RTX 3090 shared with other jobs. Kinect: the same at commit `a0a92f3`, 11.6 hours. The
+RTX 3090 shared with other jobs. Kinect: the same at commit `5eaaaa6`, 11.6 hours. The
 checkpoints of epoch 15 (SHA-256 `71b91709aaed…` and `62e8841991d5…`) were scored at those
 commits. One run, one seed each.
 
@@ -107,7 +107,7 @@ and the records.
 
 <details markdown="1"><summary>Against the reported rows, and a 20-frame check with the reference code</summary>
 
-The checkpoints were scored at commit `400b733` in float32 on an RTX 3090. Measured minus
+The checkpoints were scored at commit `7f22915` in float32 on an RTX 3090. Measured minus
 reported, on seen / similar / novel:
 
 | Camera | Measured | minus "In paper" | minus "In repo" |

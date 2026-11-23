@@ -6919,9 +6919,9 @@
     "realsense-d435"
   ],
   "code": {
-    "commit": "400b7330bc13cb0b3ab8da95356dbc57be8f836c",
+    "commit": "7f229152ff6979562dbc78b241bebf1cdba26dcb",
     "dirty": false,
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   },
   "config_hash": "0d155e1cd8175e13ee7b029188b4292c4796c00baac3443c95f74a6962b51d25",
   "coverage": 1.0,
@@ -11289,6 +11289,6 @@
     "kind": "model",
     "path": "$GRASPPANDA_WEIGHTS/trained/hggd_r34w8_g1b-realsense_15e_labels-1cm-30deg_seed0.pth",
     "sha256": "71b91709aaed24e2e6c9a8364db2c350bb50969007383f97391edb1393c7b07f",
-    "version": "0.1.0.dev16+g400b7330b"
+    "version": "0.1.0.dev16+g7f229152f"
   }
 }

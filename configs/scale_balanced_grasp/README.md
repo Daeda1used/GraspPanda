@@ -43,7 +43,7 @@ ground-truth segmentation, as in the reference (`gt_assisted: workspace`).
 | `reproduced` | on | 62.00 / 56.28 / 23.74 | [record](records/sbg_pointnet2-transformer_g1b-realsense_18e_reproduced_test_cd.json) |
 
 `author-ckpt` is the authors' `checkpoint-rs.tar`, converted and run through
-`grasppanda test` at commit `400b733` (float32, an RTX 3090), one run with seed 0.
+`grasppanda test` at commit `7f22915` (float32, an RTX 3090), one run with seed 0.
 **Measured minus reported**: −1.17 / −1.30 / −0.51 AP without the collision filter and
 −1.54 / −1.65 / −0.64 AP with it, below the paper by more than 1 AP on seen and similar.
 
@@ -57,9 +57,9 @@ paper's rows were produced.
 <details markdown="1"><summary>The training, what is known about the gap, and a 20-frame check with the reference code</summary>
 
 **The training.** `grasppanda train scale_balanced_grasp/sbg_pointnet2-transformer_g1b-realsense_18e`
-at commit `7ac91b5`, nothing overridden: 18 epochs, batch size 2, seed 0, 24.1 hours on one
+at commit `f2ab5ee`, nothing overridden: 18 epochs, batch size 2, seed 0, 24.1 hours on one
 RTX 3090 shared with other jobs. The checkpoint of epoch 18 (SHA-256 `572ce817b173…`) was
-scored at commit `400b733`. One run, one seed: GSNet, trained three times from one config
+scored at commit `7f22915`. One run, one seed: GSNet, trained three times from one config
 and seed, moved by up to 1.12 AP, so the half point to the checkpoint is not a finding.
 
 **The gap to the paper.** Its rows are quoted from Table 2 (arXiv 2212.05275); whether they

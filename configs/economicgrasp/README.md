@@ -66,9 +66,9 @@ on seen 0.13 AP outside the zoo's 1 AP gate, like the checkpoint.
 <details markdown="1"><summary>How it was trained, trained three times, and what is known about the gap</summary>
 
 **The training.** `grasppanda train economicgrasp/economicgrasp_sunet14_g1b-realsense_10e`
-at commit `7ac91b5`, nothing overridden: 10 epochs, batch size 4, seed 0, 17.0 hours on one
+at commit `f2ab5ee`, nothing overridden: 10 epochs, batch size 4, seed 0, 17.0 hours on one
 RTX 3090 shared with other jobs. The checkpoint of epoch 10 (SHA-256 `22f17fd571a2…`) was
-scored at commit `400b733`.
+scored at commit `7f22915`.
 
 **Trained three times.** The same config and seed were trained twice more on an RTX 3090,
 and each checkpoint of epoch 10 was scored on the whole test split:
@@ -76,8 +76,8 @@ and each checkpoint of epoch 10 was scored on the whole test split:
 | Training | Collision filter off | on |
 |---|---|---|
 | first, the rows above | 69.34 / 61.41 / 26.21 | 71.05 / 62.54 / 26.81 |
-| second: trained and scored at `7b3ddd4`, `c1c760135460…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 69.01 / 60.02 / 25.09 | 70.65 / 61.10 / 25.74 |
-| third: trained and scored at `7b3ddd4`, `1e848aff36b8…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 68.84 / 61.59 / 25.70 | 70.53 / 62.85 / 26.38 |
+| second: trained and scored at `e4389fe`, `c1c760135460…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run2_test_cd.json)) | 69.01 / 60.02 / 25.09 | 70.65 / 61.10 / 25.74 |
+| third: trained and scored at `e4389fe`, `1e848aff36b8…` ([off](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_raw.json), [on](repeats/economicgrasp_sunet14_g1b-realsense_10e_run3_test_cd.json)) | 68.84 / 61.59 / 25.70 | 70.53 / 62.85 / 26.38 |
 
 Highest minus lowest: 0.50 / 1.57 / 1.12 AP without the filter, 0.52 / 1.75 / 1.07 with
 it. One config and one seed gave three models, as for GSNet, and on similar and novel they

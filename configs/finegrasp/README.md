@@ -63,7 +63,7 @@ every split. The gap is not explained: run the method from the authors' weights.
 are reconstructed here (*The normals* under Notes); their agreement with the paper is the
 whole-split evidence for that reconstruction.
 
-**The training.** At commit `400b733` with the four-GPU command of *Train and test*: four
+**The training.** At commit `7f22915` with the four-GPU command of *Train and test*: four
 processes of four frames, the gradients of two batches per step (32 frames, as
 published); 10 epochs, seed 0, 5.1 hours on four shared RTX 3090. The checkpoint of epoch 10 (SHA-256 `e8b99d4390d9…`) was scored at the same commit.
 
