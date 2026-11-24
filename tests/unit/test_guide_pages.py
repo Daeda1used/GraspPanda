@@ -256,7 +256,7 @@ def test_every_method_has_the_stage_parity_test_the_operators_page_names():
     for stem in stems.values():
         assert (REPO / f"tests/integration/test_{stem}_parity.py").is_file(), stem
     text = (REPO / "docs/advanced_guides/operators.md").read_text(encoding="utf-8")
-    assert "the stage-parity tests of all six ported methods" in text.replace("\n    ", " ")
+    assert "the stage-parity tests of every ported method" in text.replace("\n    ", " ")
 
 
 def needs_spconv(name: str) -> bool:

@@ -261,7 +261,6 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     """Per README: every phrase with a number in it, and whether the records back it."""
     from grasppanda.combine.reach import level2, reach
 
-    every = len(chips.methods())
     seed = sum(info.family == "seed-based" for info in chips.methods())
     ptv3, ptv3_learns = reach("backbone", "ptv3"), level2("backbone", "ptv3")
     dino = reach("image_encoder", "dinov2-small-reg-depth-stem")
@@ -353,15 +352,15 @@ def claims(chips) -> dict[str, dict[str, bool]]:
             f"built for {cuda} or older": f"spconv-cu{build}" in text("README.md"),
         },
         "README_zh-CN.md": {
-            f"{chinese[every]}个已发表的方法": True,
+            "持续扩充的已发表方法": True,
             f"PTv3 在全部 {seed} 个基于种子点的方法下都能跑": shared["ptv3 runs everywhere"],
             f"其中 {par} 个方法下训练得和原装组件不相上下": shared["ptv3 level 2"],
             "（FineGrasp 下较差）": shared["ptv3 worse"],
             "DINOv2 编码器在 HGGD 下能跑": shared["dino runs"],
             "但训练得不如 HGGD 的原装组件": shared["dino level 2"],
             f"PTv3 比方法原装的编码器低 {lower.replace(' to ', ' 到 ')}": gaps[0] > 1.12,
-            f"全部 {every} 个方法": True,
-            f"基于种子点 · {seed} 个方法": True,
+            "全部方法": True,
+            "基于种子点的方法": True,
             f"相差不超过 {ap}": True,
             f"**HGGD** 公开了{chinese[len(hggd)]}组数字": True,
             f"在 {frames} 个记录帧上": True,
@@ -464,13 +463,11 @@ SLOT_WORDS = {
 
 @pytest.mark.parametrize("name", READMES)
 def test_the_scope_of_every_slot_in_the_readme_is_computed(name, chips):
-    every = len(chips.methods())
-    seed = sum(info.family == "seed-based" for info in chips.methods())
     scope_words = {
         "README.md": dict(chips.SCOPE_TEXT),
         "README_zh-CN.md": {
-            "all": f"全部 {every} 个方法",
-            "seed-based": f"基于种子点 · {seed} 个方法",
+            "all": "全部方法",
+            "seed-based": "基于种子点的方法",
             "hggd": "仅 HGGD",
         },
     }[name]
