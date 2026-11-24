@@ -3,7 +3,7 @@
 **Goal:** get grasps from a trained detector on frames of your own camera: on the command
 line, from Python, or in a browser page.
 
-**You need:** weights for one of the six methods. GraspPanda downloads no grasp checkpoint:
+**You need:** weights for one of the methods. GraspPanda downloads no grasp checkpoint:
 you take the released file yourself, under its licence, and convert it once. Each method
 page walks through it, with the file, its licence and the command, then a first picture of
 the example scene:

@@ -142,7 +142,7 @@ scenes; generation is resumable and finished shards are skipped.
 
 **Expected result:** `grasppanda prepare graspnet1b --check --config <method config>` marks
 the tree and every asset of that config with ✓. The test suite holds the commands above
-to the dataset sections of the six method configs.
+to the dataset sections of the method configs.
 
 ??? note "Troubleshooting"
 

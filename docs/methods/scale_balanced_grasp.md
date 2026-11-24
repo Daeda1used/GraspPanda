@@ -747,4 +747,4 @@ Every option that fits Scale-Balanced-Grasp, except `target-mask`, was composed 
 
 - [Swap a component](../get_started/swap.md): change one slot of Scale-Balanced-Grasp with a single line.
 - <a href="../../explorer/#m=Scale-Balanced-Grasp">Open Scale-Balanced-Grasp in the explorer</a>: every option of every slot, with what was measured.
-- [All six methods](index.md) side by side, and the [model zoo](../model_zoo.md).
+- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).

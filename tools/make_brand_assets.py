@@ -125,7 +125,7 @@ class Lanes:
 
 
 def lanes() -> Lanes:
-    """The lanes of the figure: the seed-based skeleton, HGGD, and what all six share."""
+    """The lanes of the figure: the seed-based skeleton, HGGD, and what every method shares."""
     sys.path.insert(0, str(REPO))
     from tools import docs_chips
 
@@ -228,7 +228,6 @@ def pipeline_svg(dark: bool = False) -> str:
     """
     c = DARK if dark else LIGHT
     found = lanes()
-    every = len(found.seed_methods) + len(found.own_methods)
     width = 680
     rail_left, rail_right = 14, 666  # the rails run outside the lanes
     lane_x, lane_w = 26, 628
@@ -352,9 +351,9 @@ def pipeline_svg(dark: bool = False) -> str:
 
     # the lanes first: the rails run into them and would be covered by a lane drawn later
     own = " · ".join(found.own_methods)
-    parts.append(lane(seed_y, seed_h, f"Seed-based skeleton · {len(found.seed_methods)} methods"))
+    parts.append(lane(seed_y, seed_h, "Seed-based skeleton"))
     parts.append(lane(own_y, own_h, f"{own} · own family", "reads a colour image and its depth"))
-    parts.append(lane(shared_y, shared_h, f"Shared by all {every} methods"))
+    parts.append(lane(shared_y, shared_h, "Shared by every method"))
     parts += [line(f"M{centre:g} 104 V112") for centre in centres]
     parts.append(line(f"M{centres[-1]:g} 112 H{rail_left} V{own_mid:g} H{inner}", arrow=True))
     parts.append(line(f"M{rail_left} {seed_mid:g} H{inner}", arrow=True))
@@ -429,7 +428,7 @@ def pipeline_svg(dark: bool = False) -> str:
     entries = [
         ("a slot", f'fill="{c["box"]}" stroke="{c["box_line"]}" stroke-width="1.6"'),
         (
-            f"a slot of all {every} methods",
+            "a slot of every method",
             f'fill="{c["shared"]}" stroke="{c["shared_line"]}" stroke-width="1.6"',
         ),
         (
@@ -454,12 +453,11 @@ def alt_text(found: Lanes | None = None) -> str:
     found = found or lanes()
     seed = ", ".join(" ".join(box.lines).lower() for box in found.seed_boxes)
     own = ", ".join(" ".join(box.lines).lower() for box in found.own_boxes)
-    every = len(found.seed_methods) + len(found.own_methods)
     return (
         f"GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based "
-        f"skeleton of {len(found.seed_methods)} methods has the slots {seed}, and losses. "
+        f"skeleton has the slots {seed}, and losses. "
         f"HGGD has its own family: {own}. Post-processing and the training recipe are shared "
-        f"by all {every} methods."
+        "by every method."
     )
 
 
@@ -477,7 +475,6 @@ def hero_html() -> str:
     methods share, and one swap per lane shown as a cross-fade into an option drawn in the
     "swapped option" style (still when the reader prefers reduced motion)."""
     found = lanes()
-    every = len(found.seed_methods) + len(found.own_methods)
     width, height = 560, 400
     box_w, box_h, gap = 76, 52, 9
     rail_left, rail_right = 12, 548  # the rails run outside the lanes
@@ -601,7 +598,7 @@ def hero_html() -> str:
         return inner + len(items) * (box_w + gap) - gap
 
     # lane 1: the seed-based skeleton; its losses hang under the head bundle
-    lane(seed_y, seed_h, f"Seed-based skeleton · {len(found.seed_methods)} methods")
+    lane(seed_y, seed_h, "Seed-based skeleton")
     seed_end = row(found.seed_boxes, seed_top)
     if found.losses is not None:
         x = seed_end - box_w
@@ -622,7 +619,7 @@ def hero_html() -> str:
     own_end = row(found.own_boxes, own_top, late=True)
 
     # what every method shares; both lanes run into its post-processing down the right rail
-    lane(shared_y, shared_h, f"Shared by all {every} methods")
+    lane(shared_y, shared_h, "Shared by every method")
     recipe = " · ".join(slot for slot in RECIPE if slot in found.shared)
     recipe_w = 300  # wide enough for the keys of the recipe, written out
     post_w = lane_w - 12 - gap - recipe_w

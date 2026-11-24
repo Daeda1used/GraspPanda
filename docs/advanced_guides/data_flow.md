@@ -8,7 +8,7 @@ Which structures a method uses depends on its family:
 
 | Structures | Used by |
 |---|---|
-| `Observation`, `Supervision`, `GraspGroup` | every detector: the outer contract of all six methods |
+| `Observation`, `Supervision`, `GraspGroup` | every detector: the outer contract of every method |
 | `PointSet`, `PointFeatures`, `SeedSet`, `ApproachSet`, `GroupFeatures` | the seed-based skeleton: GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp, FineGrasp |
 | `ImagePredictions`, `PartialGraspSet`, `RegionSet` | HGGD only, private to `grasppanda/models/detectors/hggd/structures.py` |
 

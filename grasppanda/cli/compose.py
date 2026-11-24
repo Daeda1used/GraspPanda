@@ -38,8 +38,8 @@ __all__ = ["register"]
 EPILOG = """\
 slots, by the methods they apply to (in the order data flows, then the training recipe):
   HGGD only                image_encoder
-  Seed-based · 5 methods   backbone  proposal  view  assigner  grouper  head  loss
-  All 6 methods            post  optimizer  schedule  hooks  augment  recipe
+  Seed-based methods       backbone  proposal  view  assigner  grouper  head  loss
+  All methods              post  optimizer  schedule  hooks  augment  recipe
 The seed-based methods are GraspNet-baseline, GSNet, Scale-Balanced-Grasp, EconomicGrasp
 and FineGrasp. The five recipe presets written for the scene encoder (`model.backbone`)
 apply to them only; compose refuses them under HGGD. A loss goes into a loss option of a

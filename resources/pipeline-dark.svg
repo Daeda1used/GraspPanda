@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 568" width="680" height="568" role="img" aria-label="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton of 5 methods has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses. HGGD has its own family: image encoder, heat-map stage, region stage. Post-processing and the training recipe are shared by all 6 methods.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 568" width="680" height="568" role="img" aria-label="GraspNet-1Billion and GraspClutter6D feed two detector families. The seed-based skeleton has the slots scene encoder, seed proposal, view, assigner, grouper, head bundle, and losses. HGGD has its own family: image encoder, heat-map stage, region stage. Post-processing and the training recipe are shared by every method.">
 <defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1.5 1.6 L9.6 5 L1.5 8.4 z" fill="#9198a1"/></marker></defs>
 <rect x="1" y="1" width="678" height="566" rx="14" fill="#0d1117" stroke="#3d444d" stroke-width="1.5"/>
 <text x="24" y="40" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" fill="#e6edf3" font-weight="700" letter-spacing="-0.5">Two detector families, one toolbox</text>
@@ -7,9 +7,9 @@
 <text x="111.05" y="95.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#e6edf3" text-anchor="middle" font-weight="600">GraspNet-1Billion</text>
 <rect x="196.1" y="78" width="128.2" height="26" rx="13" fill="#0d1117" stroke="#3d444d" stroke-width="1.4"/>
 <text x="260.2" y="95.5" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#e6edf3" text-anchor="middle" font-weight="600">GraspClutter6D</text>
-<rect x="26" y="122" width="628" height="160" rx="11" fill="#151b23" stroke="#3d444d" stroke-width="1.2"/><text x="38" y="143" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#e6edf3">Seed-based skeleton · 5 methods</text>
+<rect x="26" y="122" width="628" height="160" rx="11" fill="#151b23" stroke="#3d444d" stroke-width="1.2"/><text x="38" y="143" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#e6edf3">Seed-based skeleton</text>
 <rect x="26" y="294" width="628" height="114" rx="11" fill="#151b23" stroke="#3d444d" stroke-width="1.2"/><text x="38" y="315" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#e6edf3">HGGD · own family<tspan dx="10" font-size="12" font-weight="400" fill="#9198a1">reads a colour image and its depth</tspan></text>
-<rect x="26" y="420" width="628" height="98" rx="11" fill="#151b23" stroke="#3d444d" stroke-width="1.2"/><text x="38" y="441" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#e6edf3">Shared by all 6 methods</text>
+<rect x="26" y="420" width="628" height="98" rx="11" fill="#151b23" stroke="#3d444d" stroke-width="1.2"/><text x="38" y="441" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#e6edf3">Shared by every method</text>
 <path d="M111.05 104 V112" fill="none" stroke="#9198a1" stroke-width="1.4" stroke-linejoin="round"/>
 <path d="M260.2 104 V112" fill="none" stroke="#9198a1" stroke-width="1.4" stroke-linejoin="round"/>
 <path d="M260.2 112 H14 V361 H36" fill="none" stroke="#9198a1" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#a)"/>
@@ -47,7 +47,7 @@
 <rect x="26" y="536" width="18" height="12" rx="3.5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1.6"/>
 <text x="52" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a slot</text>
 <rect x="107.4" y="536" width="18" height="12" rx="3.5" fill="#12261e" stroke="#3fb950" stroke-width="1.6"/>
-<text x="133.4" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a slot of all 6 methods</text>
-<rect x="289.1" y="536" width="18" height="12" rx="3.5" fill="#151b23" stroke="#656c76" stroke-width="1.4" stroke-dasharray="4 3"/>
-<text x="315.1" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a fixed part of the method</text>
+<text x="133.4" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a slot of every method</text>
+<rect x="283.2" y="536" width="18" height="12" rx="3.5" fill="#151b23" stroke="#656c76" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="309.2" y="546" font-family="'Inter', 'DejaVu Sans', 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#9198a1">a fixed part of the method</text>
 </svg>

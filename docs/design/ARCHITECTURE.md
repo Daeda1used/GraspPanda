@@ -19,7 +19,7 @@ Every section is folded; open the one you need.
   papers and libraries that no shipped method uses, most scene encoders among them. Each
   was composed under every method it fits and, where accepted, probed on real frames; the
   few without a record say why ([Evidence](../evidence/index.md)).
-- §4 and §8.2. Six methods are ported: five on the seed-based skeleton and HGGD. The
+- §4 and §8.2. Methods are ported on the seed-based skeleton and, for HGGD, as a family of its own. The
   dense-contact family (Contact-GraspNet) was not implemented. HGGD's image encoder is a
   registered slot (`image_encoder`); its other parts are options of the detector.
   `grasppanda/combine/` (compose, probe, the measured records) and `grasppanda/presets/`

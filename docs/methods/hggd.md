@@ -433,4 +433,4 @@ Every option that fits HGGD, except `target-mask`, was composed under it; those 
 
 - [Swap a component](../get_started/swap.md): change one slot of HGGD with a single line.
 - <a href="../../explorer/#m=HGGD">Open HGGD in the explorer</a>: every option of every slot, with what was measured.
-- [All six methods](index.md) side by side, and the [model zoo](../model_zoo.md).
+- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).

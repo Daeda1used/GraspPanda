@@ -729,4 +729,4 @@ Every option that fits GraspNet-baseline, except `target-mask`, was composed und
 
 - [Swap a component](../get_started/swap.md): change one slot of GraspNet-baseline with a single line.
 - <a href="../../explorer/#m=GraspNet-baseline">Open GraspNet-baseline in the explorer</a>: every option of every slot, with what was measured.
-- [All six methods](index.md) side by side, and the [model zoo](../model_zoo.md).
+- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).

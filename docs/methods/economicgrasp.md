@@ -737,4 +737,4 @@ Every option that fits EconomicGrasp, except `target-mask`, was composed under i
 
 - [Swap a component](../get_started/swap.md): change one slot of EconomicGrasp with a single line.
 - <a href="../../explorer/#m=EconomicGrasp">Open EconomicGrasp in the explorer</a>: every option of every slot, with what was measured.
-- [All six methods](index.md) side by side, and the [model zoo](../model_zoo.md).
+- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).

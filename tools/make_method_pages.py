@@ -28,7 +28,7 @@
 
 How the port differs from its reference is read from the fold of the same name in
 ``configs/<method>/README.md``, so it is written once. ``docs/methods/index.md`` puts the
-six methods side by side (cards by family, a method × capability table computed from the
+every method side by side (cards by family, a method × capability table computed from the
 configs and the metafiles), and ``docs/includes/choose_method.md`` is the table that helps
 a reader choose, with the measured demo times of ``five_minutes.json`` (included by the
 overview and by Get started).
@@ -1740,8 +1740,7 @@ def next_section(method: str) -> list[str]:
         "single line.",
         f'- <a href="{EXPLORER}#m={quote(method)}">Open {method} in the explorer</a>: every '
         "option of every slot, with what was measured.",
-        f"- [All {_words(len(chips().methods()))} methods](index.md) side by side, and the "
-        "[model zoo](../model_zoo.md).",
+        "- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).",
     ]
 
 
@@ -1953,17 +1952,15 @@ def index_page(records: option_lists.Measured) -> str:
         "",
         "# Methods",
         "",
-        f"{_words(len(every)).capitalize()} published methods, each ported stage by stage and "
+        "Published methods, each ported stage by stage and "
         "checked against its reference code, the same weights loaded into both."
-        f"{others} {_words(len(seed)).capitalize()} share the seed-based skeleton and its "
+        f"{others} The seed-based ones share one skeleton and its "
         f"slots; {', '.join(info.name for info in own)} reads RGB-D images and is a family of "
         "its own.",
         "",
     ]
     for family, members in (("seed-based", seed), ("own", own)):
         title = dc.FAMILY_NAMES[family]
-        if len(members) > 1:
-            title += f" · {len(members)} methods"
         lines += [f"## {title}", "", '<div class="grid cards" markdown>', ""]
         for info in members:
             status = " ".join(dc.chip(*status) for status in numbers_status(info.name))

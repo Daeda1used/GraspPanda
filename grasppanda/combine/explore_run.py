@@ -589,7 +589,7 @@ class Runner:
 
     Args:
         weights: The files the server may read.
-        methods: Method name → config; default the six ported methods.
+        methods: Method name → config; default every ported method.
         device: ``auto``, ``cpu``, ``cuda`` or ``cuda:N``; ``None`` takes the config's.
         picture_size: Size of the picture, as ``grasppanda demo --size``.
     """

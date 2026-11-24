@@ -66,7 +66,7 @@ first call on a device, and in the test suite.
     3. **In the test-suite.** `tests/unit/test_ops.py` runs every oracle test on both
        backends; `tests/unit/test_ops_equivalence.py` and
        `tests/integration/test_ops_cuda.py` compare the backends on some 2,700 (CPU) and
-       4,700 (CUDA) randomized calls; the stage-parity tests of all six ported methods
+       4,700 (CUDA) randomized calls; the stage-parity tests of every ported method
        (`tests/integration/test_<method>_parity.py`) and the backbone-oracle tests run with
        the default backend, `auto`, so with the kernels wherever they are built.
 
@@ -290,7 +290,7 @@ end.
   in `tests/unit/test_ops.py`.
 * A kernel is accepted when it returns identical integers and bit-identical distances
   on `tests/unit/test_ops_equivalence.py` and `tests/integration/test_ops_cuda.py`, and
-  when the stage-parity tests of the six methods and the backbone oracle tests pass
+  when the stage-parity tests of the ported methods and the backbone oracle tests pass
   with it as default. Add the cases your change makes interesting to the randomized
   comparisons, and a self-check to `grasppanda/ops/backends.py`.
 * Where the reference goes through arithmetic that cannot be mirrored (a BLAS, a

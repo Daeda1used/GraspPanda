@@ -45,7 +45,7 @@ train on real frames.
 |---|---|
 | **slot** | a stage of a detector you can replace: `--set <slot>=…` on the command line, `model.<slot>` in a config |
 | **option** | what goes into a slot: a preset or a component name |
-| **seed-based skeleton** | the pipeline five methods share: scene encoder → seeds → view → grouper → head; HGGD is its own family |
+| **seed-based skeleton** | the pipeline the seed-based methods share: scene encoder → seeds → view → grouper → head; HGGD is its own family |
 | **scene encoder** | the point-cloud encoder of the seed-based methods; its slot is `backbone` |
 | **image encoder** | the image encoder of HGGD; its slot is `image_encoder` |
 | `composes` · `runs` · `learns` · `predicts` | the levels a swap is measured at: config accepted · trains on real frames without error · its losses fall · it ranks grasps |

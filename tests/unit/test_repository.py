@@ -327,16 +327,15 @@ def claims(chips) -> dict[str, dict[str, bool]]:
     }
     return {
         "README.md": {
-            f"{words[every].capitalize()} published methods": True,
+            "A growing set of published methods": True,
             f"PTv3 runs under {ptv3.fraction} seed-based methods": shared["ptv3 runs everywhere"],
             f"under {par}/{seed} it trains like shipped": shared["ptv3 level 2"],
             "(worse under FineGrasp)": shared["ptv3 worse"],
             "The DINOv2 encoder runs under HGGD": shared["dino runs"],
             "where it trains worse than HGGD's own": shared["dino level 2"],
             f"PTv3 ends {lower} lower": gaps[0] > 1.12,
-            f"All {every} methods": chips.SCOPE_TEXT["all"] == f"All {every} methods",
-            f"Seed-based · {seed} methods": chips.SCOPE_TEXT["seed-based"]
-            == f"Seed-based · {seed} methods",
+            "All methods": chips.SCOPE_TEXT["all"] == "All methods",
+            "Seed-based methods": chips.SCOPE_TEXT["seed-based"] == "Seed-based methods",
             f"within {ap} of the reported number": True,
             f"within {ap} on each split": True,
             f"HGGD** publishes {words[len(hggd)]} sets of numbers": True,

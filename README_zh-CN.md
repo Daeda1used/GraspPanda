@@ -7,7 +7,7 @@
 
 ### 杂乱场景的 6-DoF 抓取检测，一次换一个阶段
 
-六个已发表的方法，同一套 PyTorch 流水线，同一个锁定版本的评测器。
+持续扩充的已发表方法，同一套 PyTorch 流水线，同一个锁定版本的评测器。
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
 [![docs](https://img.shields.io/badge/docs-online-0969da)](https://daeda1used.github.io/GraspPanda)
@@ -19,7 +19,7 @@
 [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/) ·
 [结果](#结果)
 
-<img src="resources/hero-swap.webp" alt="三幕动画。运行已发表的方法：六个方法依次出现，各自的阶段、在一个杂乱测试场景上的抓取和 AP，AP 落成折线图上的一个点。一次换一个阶段：GSNet 的场景编码器依次换成 SpUNet、PTv3 和 LitePT，再把训练方案换成 one-cycle，每次替换都给出抓取和 AP。留下最好的：折线图聚焦到最高点，即原装编码器配 one-cycle 训练方案的 GSNet，72.63 AP。" width="820">
+<img src="resources/hero-swap.webp" alt="三幕动画。运行已发表的方法：已发表的方法依次出现，各自的阶段、在一个杂乱测试场景上的抓取和 AP，AP 落成折线图上的一个点。一次换一个阶段：GSNet 的场景编码器依次换成 SpUNet、PTv3 和 LitePT，再把训练方案换成 one-cycle，每次替换都给出抓取和 AP。留下最好的：折线图聚焦到最高点，即原装编码器配 one-cycle 训练方案的 GSNet，72.63 AP。" width="820">
 
 <sub>每个点都是在这里训练、在 GraspNet-1Billion 整个测试集上评测的一个模型（各训练一次）；抓取是它在一个测试场景上的预测（场景数据采用 CC BY-NC-SA 4.0 许可）。</sub>
 
@@ -70,8 +70,8 @@ grasppanda probe baseline_ptv3.yaml   # 短暂训练它
 
 | 槽位 | 适用于 |
 |---|---|
-| 后处理、训练方案 | 全部 6 个方法 |
-| 场景编码器、种子点提议、视角、分配器、分组、检测头、损失 | 基于种子点 · 5 个方法 |
+| 后处理、训练方案 | 全部方法 |
+| 场景编码器、种子点提议、视角、分配器、分组、检测头、损失 | 基于种子点的方法 |
 | 图像编码器 | 仅 HGGD |
 
 <details>

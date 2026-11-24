@@ -291,8 +291,8 @@ def test_the_slot_scopes_named_by_compose_and_probe_are_those_of_the_methods():
     assert (len(seed), having("image_encoder"), len(NAMES)) == (5, ["HGGD"], 6)
     text = " ".join(page("combinations.md").split())
     assert (
-        "the scene-encoder and stage slots exist in the five seed-based methods, the image "
-        "encoder in HGGD, post-processing and the training recipe in all six"
+        "the scene-encoder and stage slots exist in the seed-based methods, the image "
+        "encoder in HGGD, post-processing and the training recipe in every method"
     ) in text
 
 

@@ -7,7 +7,7 @@
 
 ### 6-DoF grasp detection in clutter, one stage at a time
 
-Six published methods in one PyTorch pipeline, scored by one pinned evaluator.
+A growing set of published methods in one PyTorch pipeline, scored by one pinned evaluator.
 
 [![tests](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml/badge.svg)](https://github.com/Daeda1used/GraspPanda/actions/workflows/test.yml)
 [![docs](https://img.shields.io/badge/docs-online-0969da)](https://daeda1used.github.io/GraspPanda)
@@ -19,7 +19,7 @@ Six published methods in one PyTorch pipeline, scored by one pinned evaluator.
 [Explorer](https://daeda1used.github.io/GraspPanda/explorer/) ·
 [Results](#results)
 
-<img src="resources/hero-swap.webp" alt="An animation in three acts. Run published methods: six methods in turn, each with its stages, its grasps on a cluttered test scene and its AP, a point on a line chart. Swap one stage at a time: GSNet's scene encoder replaced by SpUNet, PTv3 and LitePT, then its training recipe by one-cycle, each swap with its grasps and AP. Keep the best: the chart zooms on the highest point, GSNet with its own encoder under the one-cycle recipe at 72.63 AP." width="820">
+<img src="resources/hero-swap.webp" alt="An animation in three acts. Run published methods: each in turn, each with its stages, its grasps on a cluttered test scene and its AP, a point on a line chart. Swap one stage at a time: GSNet's scene encoder replaced by SpUNet, PTv3 and LitePT, then its training recipe by one-cycle, each swap with its grasps and AP. Keep the best: the chart zooms on the highest point, GSNet with its own encoder under the one-cycle recipe at 72.63 AP." width="820">
 
 <sub>Every point is a model trained here and scored on the whole GraspNet-1Billion test split, once; the grasps are its predictions on one test scene (CC BY-NC-SA 4.0).</sub>
 
@@ -89,8 +89,8 @@ says a swap trains, not how well: fully trained, PTv3 ends 3.8 to 10.4 AP lower
 
 | Slots | Applies to |
 |---|---|
-| post-processing, training recipe | All 6 methods |
-| scene encoder, seed proposal, view, assigner, grouper, head bundle, loss | Seed-based · 5 methods |
+| post-processing, training recipe | All methods |
+| scene encoder, seed proposal, view, assigner, grouper, head bundle, loss | Seed-based methods |
 | image encoder | HGGD only |
 
 <details>

@@ -1,6 +1,6 @@
 # Swap rules
 
-<span class="gp-chip">Seed-based · 5 methods</span>
+<span class="gp-chip">Seed-based methods</span>
 
 This page covers the **seed-based skeleton**: GraspNet-baseline, GSNet, Scale-Balanced-Grasp,
 EconomicGrasp and FineGrasp, which share the stages scene encoder → seed proposal → view →

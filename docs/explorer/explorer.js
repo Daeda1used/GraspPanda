@@ -341,7 +341,7 @@
     ["none", "", "Not tested"],
   ];
 
-  /* Which methods have a slot, as the pages say it: All 6 methods, Seed-based · 5 methods,
+  /* Which methods have a slot, as the pages say it: All methods, Seed-based methods,
    * HGGD only. */
   function scopeChip(entry) {
     if (!entry || !entry.scope) return null;

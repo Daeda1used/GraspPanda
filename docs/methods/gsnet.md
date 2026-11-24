@@ -735,4 +735,4 @@ Every option that fits GSNet, except `target-mask`, was composed under it; those
 
 - [Swap a component](../get_started/swap.md): change one slot of GSNet with a single line.
 - <a href="../../explorer/#m=GSNet">Open GSNet in the explorer</a>: every option of every slot, with what was measured.
-- [All six methods](index.md) side by side, and the [model zoo](../model_zoo.md).
+- [All methods](index.md) side by side, and the [model zoo](../model_zoo.md).

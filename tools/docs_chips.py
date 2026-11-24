@@ -7,8 +7,8 @@ in this module is typed by hand from a record.
 
 * methods: :func:`methods` (page order: the seed-based skeleton by year, then HGGD; venue and
   title from ``configs/<method>/metafile.yaml``);
-* the scope of a slot: :func:`scope` / :func:`scope_chip` (``All 6 methods``,
-  ``Seed-based · 5 methods``, ``HGGD only``) and :func:`scope_matrix` (slot × method);
+* the scope of a slot: :func:`scope` / :func:`scope_chip` (``All methods``,
+  ``Seed-based methods``, ``HGGD only``) and :func:`scope_matrix` (slot × method);
 * where an option works: :func:`reach_chip` (level 1) and :func:`level2_chip` (level 2), with
   their plain-text tails as tooltips;
 * where things are: :data:`SLOT_TITLES`, :data:`SLOT_PAGES`;
@@ -37,8 +37,8 @@ LEVEL2 = ROOT / "docs" / "advanced_guides" / "learns_like_reference.json"
 FAMILY_NAMES = {"seed-based": "Seed-based skeleton", "own": "Own family"}
 #: Scope key → chip text.
 SCOPE_TEXT = {
-    "all": "All 6 methods",
-    "seed-based": "Seed-based · 5 methods",
+    "all": "All methods",
+    "seed-based": "Seed-based methods",
     "hggd": "HGGD only",
 }
 #: Slot → what the pages call it.

@@ -30,8 +30,8 @@ measured for it under that method, and the options that do not fit with the reas
 a slot it lists every slot of the method; without a method config, every option of the
 slot. `grasppanda compose --show backbone=ptv3` prints one option with its notes. Which
 slots a method has is on the [Components](../slots/index.md) page: the scene-encoder and
-stage slots exist in the five seed-based methods, the image encoder in HGGD,
-post-processing and the training recipe in all six.
+stage slots exist in the seed-based methods, the image encoder in HGGD,
+post-processing and the training recipe in every method.
 
 ??? note "Options, presets and components"
 

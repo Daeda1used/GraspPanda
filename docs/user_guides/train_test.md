@@ -1,6 +1,6 @@
 # Train and test
 
-**Goal:** train one of the six methods on GraspNet-1Billion, score it on the benchmark,
+**Goal:** train a method on GraspNet-1Billion, score it on the benchmark,
 and resume or reuse a run.
 
 `grasppanda train`, `grasppanda test` and `grasppanda infer` take a config and nothing
@@ -354,7 +354,7 @@ into a directory that already holds a run.
     Accepted layouts: a GraspPanda checkpoint, a bare state dict, or a mapping with a
     `state_dict` / `model_state_dict` entry; a uniform `module.` prefix is stripped. Each of
     these is stated in the report. Files that pickle other objects must be converted first;
-    the released checkpoints of the six methods are converted by `tools/convert_checkpoint.py`
+    the released checkpoints of the methods are converted by `tools/convert_checkpoint.py`
     (each [method page](../methods/index.md) has the command).
 
 ??? note "Evaluation, result records and partial results"

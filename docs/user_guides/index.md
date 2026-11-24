@@ -21,7 +21,7 @@ page gives the commands for every method it applies to.
 
     ---
 
-    Train one of the six methods, score it on the benchmark, resume a run.
+    Train a method, score it on the benchmark, resume a run.
 
 -   :material-swap-horizontal:{ .lg .middle } **[Cross-dataset evaluation](cross_dataset.md)**
 

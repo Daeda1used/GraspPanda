@@ -9,9 +9,9 @@ hide:
 
 # Methods
 
-Six published methods, each ported stage by stage and checked against its reference code, the same weights loaded into both. For GSNet, the reference code is a third-party implementation ([graspnet/graspness_unofficial](https://github.com/graspnet/graspness_unofficial)). Five share the seed-based skeleton and its slots; HGGD reads RGB-D images and is a family of its own.
+Published methods, each ported stage by stage and checked against its reference code, the same weights loaded into both. For GSNet, the reference code is a third-party implementation ([graspnet/graspness_unofficial](https://github.com/graspnet/graspness_unofficial)). The seed-based ones share one skeleton and its slots; HGGD reads RGB-D images and is a family of its own.
 
-## Seed-based skeleton · 5 methods
+## Seed-based skeleton
 
 <div class="grid cards" markdown>
 

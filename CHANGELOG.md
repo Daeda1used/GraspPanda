@@ -32,7 +32,7 @@ of this history. Each line below has its full account in [In detail](#in-detail)
 ### Changed
 
 - **Documentation** rebuilt around tasks: install, run a method, swap a component, read the evidence; short pages with the detail folded.
-- **The README** opens with an animation of real runs: six methods, GSNet one stage swapped at a time, the best run.
+- **The README** opens with an animation of real runs: the published methods, GSNet one stage swapped at a time, the best run.
 - **Method order** is by family, then year, on every page, table and list.
 - **Where an option works** is shown as a fraction of the methods it applies to, with the reason for each method left out, instead of a class word.
 - **The pipeline figure** shows both detector families and the parts they share, drawn like the picture of the home page and readable at the width a README shows it.

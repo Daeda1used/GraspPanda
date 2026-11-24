@@ -1910,7 +1910,6 @@ def slots_index(records: Records | None = None) -> str:
     del records
     chips = _chips()
     infos = chips.methods()
-    seed = [info.name for info in infos if info.family == "seed-based"]
     own = [info.name for info in infos if info.family != "seed-based"]
     total = chips.option_count()
     scopes = {key: {chips.scope(slot) for slot in card.slots} for key, card in SLOTS.items()}
@@ -1931,11 +1930,10 @@ def slots_index(records: Records | None = None) -> str:
         "",
         "GraspPanda builds a grasp detector from stages, and every stage is a **slot**: a place "
         "in the config where one component can be swapped for another with one line, "
-        f"`--set <slot>=<option>`. {_number(len(seed)).capitalize()} methods share the seed-based "
-        "skeleton and its "
+        "`--set <slot>=<option>`. The seed-based methods share one skeleton and its "
         f"slots; {' and '.join(own)} reads images and has one slot of its own, the "
-        f"{' and the '.join(hggd)}. {_join_words(for_all)} apply to all "
-        f"{_number(len(infos))} methods. In all, {total} options you can `--set`.",
+        f"{' and the '.join(hggd)}. {_join_words(for_all)} apply to every "
+        f"method. In all, {total} options you can `--set`.",
         "",
         *pipeline_figure(),
         "",

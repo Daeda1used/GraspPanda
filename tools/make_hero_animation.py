@@ -3,7 +3,7 @@
     python -m tools.make_hero_animation predict --gpu 0   # grasps of every run on one scene
     python -m tools.make_hero_animation render            # resources/hero-swap.webp, docs/assets/hero-swap.{mp4,webp}
 
-Act 1 shows the six methods as trained here, act 2 GSNet with one stage swapped at a time
+Act 1 shows the published methods as trained here, act 2 GSNet with one stage swapped at a time
 (its scene encoder, then its training recipe), act 3 holds the run with the highest AP. Every
 step is a model trained here and scored on the whole GraspNet-1Billion test split: its AP is
 read from its committed result record (:data:`RUNS`), and its grasps are what that model
@@ -94,7 +94,7 @@ SWAPS = {
     "sunet14_onecycle": ("sparse-unet14", "adamw-onecycle"),
 }
 ACTS = [
-    {"title": "Run published methods", "sub": "Six methods in one pipeline, scored by one evaluator",
+    {"title": "Run published methods", "sub": "A growing set in one pipeline, scored by one evaluator",
      "pill": "Run"},
     {"title": "Swap one stage at a time", "sub": "GSNet taken apart: its scene encoder, then its recipe",
      "pill": "Swap"},

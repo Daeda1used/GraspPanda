@@ -317,8 +317,8 @@ def slot_methods(slot: str) -> list[str]:
 
 
 def scope(slot: str) -> str:
-    """The methods ``slot`` applies to, in the words of the pages: ``All 6 methods``,
-    ``Seed-based · 5 methods`` or ``HGGD only`` (``tools/docs_chips.py`` prints the same
+    """The methods ``slot`` applies to, in the words of the pages: ``All methods``,
+    ``Seed-based methods`` or ``HGGD only`` (``tools/docs_chips.py`` prints the same
     words; ``tests/unit/test_combine_compose.py`` holds the two together)."""
     from .grid import METHODS
 
@@ -326,9 +326,9 @@ def scope(slot: str) -> str:
     if not under:
         return "no method"
     if len(under) == len(methods()):
-        return f"All {len(under)} methods"
+        return "All methods"
     if set(under) == set(METHODS):
-        return f"Seed-based · {len(under)} methods"
+        return "Seed-based methods"
     if len(under) == 1:
         return f"{under[0]} only"
     return ", ".join(under)

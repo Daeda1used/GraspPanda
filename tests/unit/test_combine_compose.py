@@ -919,7 +919,7 @@ def test_the_help_and_the_listing_state_the_methods_each_slot_applies_to(capsys)
     chips = _docs_chips()
     scopes = {slot: options.scope(slot) for slot in options.SLOT_ORDER}
     assert scopes == {slot: chips.SCOPE_TEXT[chips.scope(slot)] for slot in options.SLOT_ORDER}
-    assert set(scopes.values()) == {"All 6 methods", "Seed-based · 5 methods", "HGGD only"}
+    assert set(scopes.values()) == {"All methods", "Seed-based methods", "HGGD only"}
     block = command.EPILOG.split("slots, by the methods they apply to")[1].splitlines()[1:4]
     stated = {}
     for line in block:
@@ -956,7 +956,7 @@ def test_the_options_of_a_method_say_where_each_ran_across_the_methods(capsys):
 
     assert main(["compose", SBG, "--list", "grouper", "--json"]) == 0
     (slot,) = json.loads(capsys.readouterr().out)["slots"]
-    assert slot["scope"] == "Seed-based · 5 methods"
+    assert slot["scope"] == "Seed-based methods"
     for item in slot["options"]:
         assert set(item["reach"]) == set(item["classes"]), item["option"]
         for level, found in item["reach"].items():

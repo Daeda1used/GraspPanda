@@ -25,7 +25,11 @@ SITE_COPY = REPO / "docs" / "assets" / "social-card.png"
 SIZE = (1280, 640)
 INK, MUTED, GREEN = (31, 35, 40), (87, 96, 106), (45, 164, 78)
 HEADLINE = "6-DoF grasp detection in clutter, one stage at a time"
-LINES = ("Six published methods in one PyTorch pipeline,", "scored by one pinned evaluator.")
+LINES = (
+    "A growing set of published methods",
+    "in one PyTorch pipeline, scored by",
+    "one pinned evaluator.",
+)
 ADDRESS = "github.com/Daeda1used/GraspPanda"
 
 
