@@ -191,9 +191,7 @@ yet; every method runs from its authors' weights.
 - [Design](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) ·
   [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-**Status:** alpha. Next: the weights trained here, and a release on PyPI. Releases up to
-v0.56 are an earlier, unrelated code base, kept under their tags and on the `legacy`
-branch.
+**Status:** alpha. Next: the weights trained here, and a release on PyPI.
 
 ## Citation
 

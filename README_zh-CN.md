@@ -139,7 +139,7 @@ GraspNet-baseline 在每个划分上与报告数字相差不超过 1 AP。Scale-
 - [组合浏览器](https://daeda1used.github.io/GraspPanda/explorer/)：每个选项在每个方法下的实测情况，以及组合被拒绝的原因。
 - [设计](https://daeda1used.github.io/GraspPanda/design/ARCHITECTURE/) · [参与贡献](CONTRIBUTING.md) · [更新日志](CHANGELOG.md)
 
-**状态：** alpha。接下来：发布这里训练的权重，在 PyPI 上发布。v0.56 及更早的版本属于另一套无关的代码，仍保留在各自的标签和 `legacy` 分支上。
+**状态：** alpha。接下来：发布这里训练的权重，在 PyPI 上发布。
 
 ## 引用
 

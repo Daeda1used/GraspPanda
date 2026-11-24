@@ -6,10 +6,9 @@ All notable changes to GraspPanda are recorded here. The format follows
 
 ## [Unreleased]
 
-GraspPanda was rebuilt from scratch in October 2026. The releases up to v0.56 are an earlier
-code base with a different design; they stay under their tags and on the `legacy` branch, and
-none of their code is part of this history. Each line below has its full account in
-[In detail](#in-detail).
+GraspPanda was rebuilt from scratch in October 2026. The releases up to v0.56 belonged to an
+earlier code base with a different design and have been withdrawn; none of their code is part
+of this history. Each line below has its full account in [In detail](#in-detail).
 
 ### Added
 
